@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_VERSION: 1.86.0
+
+jobs:
+  lint:
+    name: fmt / whitespace / clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ env.RUST_VERSION }}
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal \
+            --component clippy --component rustfmt
+          rustup default "$RUST_VERSION"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: lint-${{ env.RUST_VERSION }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: lint-${{ env.RUST_VERSION }}-
+
+      - name: cargo fmt --all -- --check
+        run: cargo fmt --all -- --check
+
+      # A bare `git diff --check` compares the working tree against the index,
+      # which is always clean after checkout and would pass unconditionally.
+      # Diffing the empty tree against HEAD scans every committed byte instead.
+      - name: git diff --check
+        run: git diff --check "$(git hash-object -t tree /dev/null)" HEAD
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+  test:
+    name: workspace + storage core tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ env.RUST_VERSION }}
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup default "$RUST_VERSION"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: test-${{ env.RUST_VERSION }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: test-${{ env.RUST_VERSION }}-
+
+      - name: cargo test --workspace
+        run: cargo test --workspace --no-fail-fast
+
+      - name: cargo test -p mdbx-storage (core profile)
+        run: cargo test -p mdbx-storage --no-default-features --features core
+
+  feature-cuts:
+    name: default + trimmed feature builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust ${{ env.RUST_VERSION }}
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup default "$RUST_VERSION"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cuts-${{ env.RUST_VERSION }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cuts-${{ env.RUST_VERSION }}-
+
+      - name: cargo check --workspace
+        run: cargo check --workspace --all-targets
+
+      - name: cargo check -p mdbx-cli (core profile)
+        run: cargo check -p mdbx-cli --no-default-features --features core
+
+      - name: cargo check -p mdbx-ffi (no default features)
+        run: cargo check -p mdbx-ffi --no-default-features

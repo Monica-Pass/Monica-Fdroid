@@ -1,0 +1,92 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace 'takagi.ru.monica.mdbx.engine'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 26
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    sourceSets {
+        main {
+            // libmdbx_ffi.so is built from Rust sources (F-Droid: no prebuilt binaries).
+            jniLibs.srcDir "${buildDir}/mdbxJniLibs"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+// ==== F-Droid: build libmdbx_ffi.so from Rust source ====
+// Source: https://github.com/Monica-Pass/Mdbx (MIT)
+// Pinned commit: 974c517465e7b6cac0947d2d59875aa4211fa16b ("build: standardize MDBX2 Android release assets")
+// Resolve order: -PmdbxRustSrc=<path> > MDBX_RUST_SRC env > <rootDir>/Mdbx-ffi
+def mdbxRustSourceDir = (project.findProperty('mdbxRustSrc')
+        ?: System.getenv('MDBX_RUST_SRC')
+        ?: new File(rootDir, 'Mdbx-ffi').absolutePath) as String
+def mdbxRustCommit = '974c517465e7b6cac0947d2d59875aa4211fa16b'
+
+tasks.register('buildMdbxFfiFromSource') {
+    group = 'build'
+    description = "Builds libmdbx_ffi.so from Rust sources at ${mdbxRustSourceDir} (commit ${mdbxRustCommit})"
+    def outputDir = new File(buildDir, 'mdbxJniLibs')
+    def sourceDir = new File(mdbxRustSourceDir)
+    inputs.dir new File(sourceDir, 'crates')
+    inputs.file new File(sourceDir, 'Cargo.lock')
+    inputs.property 'rustCommit', mdbxRustCommit
+    outputs.dir outputDir
+    doLast {
+        if (!new File(sourceDir, 'Cargo.toml').isFile()) {
+            throw new GradleException(
+                "MDBX Rust sources not found at ${sourceDir}. " +
+                "Clone https://github.com/Monica-Pass/Mdbx and checkout ${mdbxRustCommit}, " +
+                "or set -PmdbxRustSrc=<path> / MDBX_RUST_SRC env."
+            )
+        }
+        def command = ['cargo', 'ndk',
+                       '-t', 'arm64-v8a', '-t', 'armeabi-v7a', '-t', 'x86_64',
+                       '-o', outputDir.absolutePath,
+                       'build', '--release', '-p', 'mdbx-ffi']
+        println "Building libmdbx_ffi.so from ${sourceDir} (cargo ndk)"
+        def proc = new ProcessBuilder(command)
+                .directory(sourceDir)
+                .redirectErrorStream(true)
+                .start()
+        proc.inputStream.eachLine { line -> println line }
+        def exitCode = proc.waitFor()
+        if (exitCode != 0) {
+            throw new GradleException("cargo ndk build failed with exit code ${exitCode}")
+        }
+        ['arm64-v8a', 'armeabi-v7a', 'x86_64'].each { abi ->
+            def so = new File(outputDir, "${abi}/libmdbx_ffi.so")
+            if (!so.isFile()) {
+                throw new GradleException("cargo ndk did not produce ${so}")
+            }
+        }
+    }
+}
+
+tasks.named('preBuild') {
+    dependsOn 'buildMdbxFfiFromSource'
+}
+
+dependencies {
+    implementation 'net.java.dev.jna:jna:5.17.0@aar'
+    implementation 'androidx.annotation:annotation:1.9.1'
+
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+}

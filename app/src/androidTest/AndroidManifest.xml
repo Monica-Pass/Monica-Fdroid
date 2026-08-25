@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="takagi.ru.monica.repository.StaleSizeContentProvider"
+            android:authorities="takagi.ru.monica.test.stale-size"
+            android:exported="true"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

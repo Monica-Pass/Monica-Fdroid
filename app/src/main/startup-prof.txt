@@ -1,0 +1,14 @@
+Ltakagi/ru/monica/MonicaApplication;
+HSPLtakagi/ru/monica/MonicaApplication;->onCreate()V
+Ltakagi/ru/monica/MainActivity;
+HSPLtakagi/ru/monica/MainActivity;->onCreate(Landroid/os/Bundle;)V
+Ltakagi/ru/monica/MainActivityKt;
+Ltakagi/ru/monica/ui/base/BaseMonicaActivity;
+HSPLtakagi/ru/monica/ui/base/BaseMonicaActivity;->attachBaseContext(Landroid/content/Context;)V
+HSPLtakagi/ru/monica/ui/base/BaseMonicaActivity;->onCreate(Landroid/os/Bundle;)V
+Ltakagi/ru/monica/utils/StartupLanguageCache;
+Ltakagi/ru/monica/security/SessionManager;
+Ltakagi/ru/monica/security/SecurityManager;
+Ltakagi/ru/monica/data/PasswordDatabase;
+Ltakagi/ru/monica/data/PasswordDatabase_Impl;
+Ltakagi/ru/monica/ui/SimpleMainScreenKt;

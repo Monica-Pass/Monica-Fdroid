@@ -1,0 +1,37 @@
+plugins {
+    alias(libs.plugins.android.test)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.baseline.profile)
+}
+android {
+    namespace 'takagi.ru.monica.baselineprofile'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 28
+        targetSdk 34
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+
+    targetProjectPath = ':app'
+    experimentalProperties['android.experimental.self-instrumenting'] = true
+}
+
+baselineProfile {
+    useConnectedDevices = true
+}
+
+dependencies {
+    implementation libs.androidx.benchmark.macro.junit4
+    implementation libs.androidx.junit
+    implementation libs.androidx.test.uiautomator
+}
