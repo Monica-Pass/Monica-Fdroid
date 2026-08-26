@@ -2366,6 +2366,7 @@
     <string name="zip_config_export_continue">继续</string>
     <string name="zip_backup_password_title">设置备份密码</string>
     <string name="zip_backup_password_desc">导入加密备份时需要使用此密码，Monica 不会保存它。</string>
+    <string name="zip_backup_passkey_password_hint">备份中包含 %1$d 个通行密钥，通行密钥不允许明文导出，请设置备份密码后加密导出。</string>
     <string name="zip_backup_password_label">备份密码</string>
     <string name="zip_backup_password_confirm_label">确认备份密码</string>
     <string name="zip_backup_password_required">请输入备份密码</string>

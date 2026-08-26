@@ -1095,10 +1095,7 @@ private fun UnlockedVaultPane(
                         buildImeLetterIndex(
                             itemCount = uiState.entries.size
                         ) { index ->
-                            val entry = uiState.entries[index]
-                            entry.title.ifBlank {
-                                entry.website.ifBlank { entry.username }
-                            }
+                            imePasswordAlphabeticalLabel(uiState.entries[index])
                         }
                     }
 
@@ -1297,11 +1294,7 @@ internal fun buildImeLetterIndex(
     val seenLetters = mutableSetOf<String>()
 
     repeat(itemCount) { index ->
-        val letter = titleAt(index)
-            .firstOrNull()
-            ?.uppercaseChar()
-            ?.let { if (it.isLetter()) it.toString() else "#" }
-            ?: "#"
+        val letter = imeIndexLetter(normalizedImeSortKey(titleAt(index)))
 
         if (seenLetters.add(letter)) {
             result += letter to (index + itemOffset)
@@ -1408,12 +1401,7 @@ private fun AuthenticatorPane(
                 val lazyListState = rememberLazyListState()
                 val letterIndex = remember(uiState.authenticatorEntries) {
                     buildImeLetterIndex(itemCount = uiState.authenticatorEntries.size) { index ->
-                        val entry = uiState.authenticatorEntries[index]
-                        entry.title.ifBlank {
-                            entry.issuer.ifBlank {
-                                entry.accountName.ifBlank { entry.sourceLabel }
-                            }
-                        }
+                        imeAuthenticatorAlphabeticalLabel(uiState.authenticatorEntries[index])
                     }
                 }
 
@@ -1496,10 +1484,7 @@ private fun CardWalletPane(
                 val lazyListState = rememberLazyListState()
                 val letterIndex = remember(uiState.cardWalletEntries) {
                     buildImeLetterIndex(itemCount = uiState.cardWalletEntries.size) { index ->
-                        val entry = uiState.cardWalletEntries[index]
-                        entry.title.ifBlank {
-                            entry.subtitle.ifBlank { entry.typeLabel }
-                        }
+                        imeCardWalletAlphabeticalLabel(uiState.cardWalletEntries[index])
                     }
                 }
 

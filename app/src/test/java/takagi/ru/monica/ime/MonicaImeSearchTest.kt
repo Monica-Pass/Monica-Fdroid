@@ -89,6 +89,30 @@ class MonicaImeSearchTest {
         )
     }
 
+    @Test
+    fun letterIndexNeverUsesNonAsciiCharactersAsAnchors() {
+        val titles = listOf("高德地图", "百度网盘", "Alpha")
+
+        val index = buildImeLetterIndex(
+            itemCount = titles.size,
+            titleAt = titles::get
+        )
+
+        assertTrue(
+            index.all { group ->
+                (group.first.length == 1 && group.first[0] in 'A'..'Z') ||
+                    group.first == "#"
+            }
+        )
+        assertEquals("A", index.last().first)
+    }
+
+    @Test
+    fun normalizedImeSortKeyKeepsAsciiFastPathAndBlankFallback() {
+        assertEquals("Alpha 2", normalizedImeSortKey(" Alpha 2 "))
+        assertEquals("#", normalizedImeSortKey("   "))
+    }
+
     private fun sampleEntry(
         id: Long = 1L,
         title: String = "Example",

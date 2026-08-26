@@ -33,6 +33,8 @@ import takagi.ru.monica.data.SteamMaFileExportCandidate
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
 import takagi.ru.monica.ui.components.OutlinedTextField
+import takagi.ru.monica.utils.BackupContentPolicy
+import takagi.ru.monica.utils.BackupContentScope
 import takagi.ru.monica.utils.BiometricHelper
 import takagi.ru.monica.utils.WebDavHelper
 import java.io.File
@@ -91,6 +93,8 @@ fun ExportDataScreen(
     var zipEncryptionPasswordConfirmation by remember { mutableStateOf("") }
     var zipEncryptionPasswordVisible by remember { mutableStateOf(false) }
     var zipEncryptionPasswordError by remember { mutableStateOf<String?>(null) }
+    // 本次导出会包含的通行密钥数量（通行密钥不允许明文导出）
+    var passkeyCount by remember { mutableStateOf(0) }
 
     // Steam maFile 导出
     var steamMaFileExpanded by remember { mutableStateOf(false) }
@@ -119,6 +123,16 @@ fun ExportDataScreen(
             }
         } catch (e: Exception) {
             localKeePassCount = 0
+        }
+        try {
+            val database = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
+            passkeyCount = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                database.passkeyDao().getAllPasskeysSync().count { passkey ->
+                    BackupContentPolicy.shouldIncludePasskey(passkey, BackupContentScope.MONICA_LOCAL_ONLY)
+                }
+            }
+        } catch (e: Exception) {
+            passkeyCount = 0
         }
     }
 
@@ -346,7 +360,12 @@ fun ExportDataScreen(
         }
 
         if (selectedOption == ExportOption.ZIP_BACKUP) {
-            if (backupPreferences.includeWebDavConfig) {
+            // 通行密钥不允许明文导出：包含通行密钥时直接弹出密码设置弹窗
+            val requiresBackupPassword = backupPreferences.includePasskeys && passkeyCount > 0
+            if (requiresBackupPassword) {
+                resetZipEncryptionPassword()
+                showZipEncryptionPasswordDialog = true
+            } else if (backupPreferences.includeWebDavConfig) {
                 zipConfigExportEncrypted = true
                 showZipConfigExportDialog = true
             } else {
@@ -381,6 +400,11 @@ fun ExportDataScreen(
             confirmation = zipEncryptionPasswordConfirmation,
             passwordVisible = zipEncryptionPasswordVisible,
             errorMessage = zipEncryptionPasswordError,
+            hintMessage = if (backupPreferences.includePasskeys && passkeyCount > 0) {
+                context.getString(R.string.zip_backup_passkey_password_hint, passkeyCount)
+            } else {
+                null
+            },
             onPasswordChange = {
                 zipEncryptionPassword = it
                 zipEncryptionPasswordError = null
@@ -913,6 +937,7 @@ private fun ZipEncryptionPasswordDialog(
     confirmation: String,
     passwordVisible: Boolean,
     errorMessage: String?,
+    hintMessage: String? = null,
     onPasswordChange: (String) -> Unit,
     onConfirmationChange: (String) -> Unit,
     onPasswordVisibleChange: (Boolean) -> Unit,
@@ -938,6 +963,13 @@ private fun ZipEncryptionPasswordDialog(
                     text = stringResource(R.string.zip_backup_password_desc),
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                if (hintMessage != null) {
+                    Text(
+                        text = hintMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 OutlinedTextField(
                     value = password,
                     onValueChange = onPasswordChange,

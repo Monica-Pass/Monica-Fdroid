@@ -20,8 +20,8 @@ android {
     def previewVersionSuffix = project.findProperty('previewVersionSuffix')?.toString()?.trim()
     // F-Droid build: static version identity. versionCode must increase for every
     // release; override per build with -PappVersionCode=<n> when cutting a release.
-    def appVersionCode = project.findProperty('appVersionCode')?.toString()?.toInteger() ?: 13
-    def baseVersionName = previewVersionSuffix ? "1.0.306-${previewVersionSuffix}" : "1.0.306"
+    def appVersionCode = project.findProperty('appVersionCode')?.toString()?.toInteger() ?: 14
+    def baseVersionName = previewVersionSuffix ? "1.0.307-${previewVersionSuffix}" : "1.0.307"
 
     def sanitizeTag = { raw, fallback ->
         def value = raw?.toString()?.trim()

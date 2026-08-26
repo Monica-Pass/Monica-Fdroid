@@ -796,7 +796,10 @@ class MonicaInputMethodService : InputMethodService() {
             .filter { queryMatches(it, query) }
             .sortedWith(
                 compareByDescending<MonicaImeAuthenticatorEntry> { it.isFavorite }
-                    .thenBy { it.title.lowercase() }
+                    .thenBy {
+                        normalizedImeSortKey(imeAuthenticatorAlphabeticalLabel(it))
+                            .lowercase(Locale.ROOT)
+                    }
             )
     }
 
@@ -829,7 +832,10 @@ class MonicaInputMethodService : InputMethodService() {
             .sortedWith(
                 compareByDescending<MonicaImeCardWalletEntry> { it.isFavorite }
                     .thenBy { it.typeLabel }
-                    .thenBy { it.title.lowercase() }
+                    .thenBy {
+                        normalizedImeSortKey(imeCardWalletAlphabeticalLabel(it))
+                            .lowercase(Locale.ROOT)
+                    }
             )
     }
 
@@ -1543,14 +1549,14 @@ internal fun sortImePasswordEntries(
             }.thenByDescending { entry ->
                 entry.isFavorite
             }.thenBy { entry ->
-                imePasswordAlphabeticalLabel(entry).lowercase(Locale.ROOT)
+                normalizedImeSortKey(imePasswordAlphabeticalLabel(entry)).lowercase(Locale.ROOT)
             }.thenBy { entry ->
                 entry.id
             }
         )
         MonicaImePasswordSortMode.ALPHABETICAL -> entries.sortedWith(
             compareBy<MonicaImePasswordEntry> { entry ->
-                imePasswordAlphabeticalLabel(entry).lowercase(Locale.ROOT)
+                normalizedImeSortKey(imePasswordAlphabeticalLabel(entry)).lowercase(Locale.ROOT)
             }.thenBy { entry ->
                 entry.id
             }
@@ -1561,6 +1567,20 @@ internal fun sortImePasswordEntries(
 internal fun imePasswordAlphabeticalLabel(entry: MonicaImePasswordEntry): String {
     return entry.title.ifBlank {
         entry.website.ifBlank { entry.username }
+    }
+}
+
+internal fun imeAuthenticatorAlphabeticalLabel(entry: MonicaImeAuthenticatorEntry): String {
+    return entry.title.ifBlank {
+        entry.issuer.ifBlank {
+            entry.accountName.ifBlank { entry.sourceLabel }
+        }
+    }
+}
+
+internal fun imeCardWalletAlphabeticalLabel(entry: MonicaImeCardWalletEntry): String {
+    return entry.title.ifBlank {
+        entry.subtitle.ifBlank { entry.typeLabel }
     }
 }
 

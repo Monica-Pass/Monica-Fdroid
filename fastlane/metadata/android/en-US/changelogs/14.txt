@@ -1,0 +1,3 @@
+* IME: Chinese entries now indexed and sorted by pinyin initial letter
+* Export: backup password dialog now prompts when exporting ZIP with passkeys
+* Based on upstream 1.0.307

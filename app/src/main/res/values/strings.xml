@@ -2510,6 +2510,7 @@
     <string name="zip_config_export_continue">Continue</string>
     <string name="zip_backup_password_title">Set backup password</string>
     <string name="zip_backup_password_desc">Use this password when importing the encrypted backup. Monica does not store it.</string>
+    <string name="zip_backup_passkey_password_hint">The backup contains %1$d passkeys. Passkeys cannot be exported as plain text — set a backup password to export encrypted.</string>
     <string name="zip_backup_password_label">Backup password</string>
     <string name="zip_backup_password_confirm_label">Confirm password</string>
     <string name="zip_backup_password_required">Enter a backup password</string>
