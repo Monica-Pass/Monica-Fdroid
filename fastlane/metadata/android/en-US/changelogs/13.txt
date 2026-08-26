@@ -1,0 +1,6 @@
+First F-Droid release (build 13).
+
+* FOSS build: removed MSAL (OneDrive), ML Kit, Google Play Services dependencies
+* QR scanning rewritten on ZXing: fixed portrait camera scanning, gallery scanning with dual-binarizer fallback and high-resolution retry
+* OneDrive / Google Drive sync removed in this build; WebDAV sync fully available
+* Native MDBX engine compiled from source during build

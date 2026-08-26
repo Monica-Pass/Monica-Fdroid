@@ -1,0 +1,32 @@
+Monica is a local-first password manager built with modern Android technologies (Jetpack Compose, Material 3). This is the F-Droid build: it contains no Google Play Services and no proprietary SDKs.
+
+<b>Credential management</b>
+* Zero-knowledge vault: AES-256-GCM encryption keyed by your master password (PBKDF2), wrapped by the Android Keystore (TEE/SE)
+* Store passwords, secure notes, bank cards, ID documents, billing addresses, Wi-Fi and SSH keys
+* Password generator, strength analysis (zxcvbn), breach-style security analysis
+* Recycle bin, entry history, snapshots
+
+<b>Two-factor authentication</b>
+* Built-in TOTP/HOTP authenticator with 2-column code grid
+* Steam Guard support (optional integration; only contacts Steam servers when you use it)
+* Post-fill one-tap code popup after autofill
+
+<b>Autofill & Passkeys</b>
+* System autofill service with overlay picker and inline suggestions
+* Dedicated input-method (keyboard) autofill with biometric unlock
+* Passkey provider for Android 14+ (create and use passkeys from other apps)
+
+<b>Sync & backup — your cloud, your rules</b>
+* WebDAV sync and encrypted backups (Nextcloud, Synology, self-hosted)
+* KeePass (.kdbx) read/write compatibility
+* Bitwarden account import/sync (works with self-hosted Vaultwarden)
+* Encrypted local backups with optional auto-backup
+* Plain-HTTP WebDAV is blocked by default and requires an explicit opt-in per app settings
+
+<b>F-Droid build notes</b>
+* OneDrive/Google Drive cloud sync and SMS autofill (Play Services based) are removed in this build
+* The native MDBX database engine is compiled from source during the F-Droid build
+* Optional Steam integration connects to Steam's own servers, declared as NonFreeNet
+
+<b>Permissions</b>
+Camera is used only for QR code scanning. Biometrics are used only for local vault unlock. No analytics, no tracking, no ads.

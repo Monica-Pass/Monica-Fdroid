@@ -81,8 +81,9 @@ android {
 
     splits {
         abi {
-            // 仅输出 ARM 32/64 位两个 APK，不生成 universal 包。
-            enable true
+            // F-Droid 构建传 -PfdroidUniversal=true 时禁用 ABI 拆分，产出单个 universal APK
+            // （F-Droid 每个版本仅分发一个 APK）
+            enable project.findProperty('fdroidUniversal') != 'true'
             reset()
             if (project.hasProperty('includeX86TestAbi')) {
                 include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
