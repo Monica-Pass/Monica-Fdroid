@@ -17,12 +17,6 @@ android {
     namespace 'takagi.ru.monica'
     compileSdk 35
 
-    def previewVersionSuffix = project.findProperty('previewVersionSuffix')?.toString()?.trim()
-    // F-Droid build: static version identity. versionCode must increase for every
-    // release; override per build with -PappVersionCode=<n> when cutting a release.
-    def appVersionCode = project.findProperty('appVersionCode')?.toString()?.toInteger() ?: 14
-    def baseVersionName = previewVersionSuffix ? "1.0.307-${previewVersionSuffix}" : "1.0.307"
-
     def sanitizeTag = { raw, fallback ->
         def value = raw?.toString()?.trim()
         if (!value) {
@@ -60,8 +54,8 @@ android {
         applicationId "takagi.ru.monica.fdroid"
         minSdk 26
         targetSdk 34
-        versionCode appVersionCode
-        versionName baseVersionName
+        versionCode 14
+        versionName "1.0.307"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -72,9 +66,9 @@ android {
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', "\"${baseVersionName}\""
-        buildConfigField 'String', 'FULL_VERSION_NAME', "\"${baseVersionName}\""
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', "\"${appVersionCode}\""
+        buildConfigField 'String', 'BASE_VERSION_NAME', "1.0.307"
+        buildConfigField 'String', 'FULL_VERSION_NAME', "1.0.307"
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', "14"
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
@@ -135,7 +129,7 @@ android {
         variant.outputs.all { output ->
             // 目标格式: Monica-Android-[架构]-[版本号].APK
             def archTag = resolveArchTag(output)
-            def versionNameTag = sanitizeTag(baseVersionName, '0.0.0')
+            def versionNameTag = sanitizeTag('1.0.307', '0.0.0')
             outputFileName = "Monica-Android-${archTag}-${versionNameTag}.apk"
         }
     }
