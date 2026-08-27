@@ -66,9 +66,9 @@ android {
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', "1.0.307"
-        buildConfigField 'String', 'FULL_VERSION_NAME', "1.0.307"
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', "14"
+        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.307"'
+        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.307"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"14"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
