@@ -73,6 +73,13 @@ android {
 
     }
 
+    // AGP embeds a Google-encrypted dependency list in the signing block, which
+    // F-Droid's scanner rejects as an opaque binary blob.
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
+    }
+
     splits {
         abi {
             // F-Droid 构建传 -PfdroidUniversal=true 时禁用 ABI 拆分，产出单个 universal APK
