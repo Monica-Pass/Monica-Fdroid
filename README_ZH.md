@@ -374,12 +374,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 </div>
 
-## F-Droid contact
+## F-Droid 联系方式
 
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+这是 Monica 的 F-Droid 专用构建仓库。应用问题、功能建议和用户反馈请提交到 [Monica 主仓库](https://github.com/Monica-Pass/Monica/issues)，方便 Monica 团队查看和处理。
 
-
-## F-Droid contact
-
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
-
+F-Droid metadata 或打包问题请联系：joyin8888@foxmail.com

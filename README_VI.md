@@ -206,12 +206,8 @@ Monica duoc phat hanh theo [GNU General Public License v3.0](LICENSE).
 - Nguon icon the ngan hang/thanh toan: thu muc cuc bo [SVG Credit Card & Payment Icons](svg-credit-card-payment-icons-main) (Apache-2.0).
 - Ten thuong hieu va logo thuoc quyen so huu cua cac chu so huu tuong ung.
 
-## F-Droid contact
+## Liên hệ F-Droid
 
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+Đây là kho build Monica dành riêng cho F-Droid. Vui lòng báo lỗi ứng dụng, yêu cầu tính năng và phản hồi người dùng trong [kho chính của Monica](https://github.com/Monica-Pass/Monica/issues) để nhóm Monica có thể theo dõi và xử lý.
 
-
-## F-Droid contact
-
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
-
+Đối với vấn đề metadata hoặc đóng gói F-Droid, liên hệ: joyin8888@foxmail.com

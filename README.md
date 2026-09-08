@@ -226,23 +226,8 @@ Monica 基于 [GNU General Public License v3.0](LICENSE) 开源发布。
 - 银行卡/支付卡图标来源：本地目录 [SVG Credit Card & Payment Icons](svg-credit-card-payment-icons-main)（Apache-2.0）。
 - 品牌名称与 Logo 的商标权归各自权利人所有。
 
-## F-Droid contact
+## F-Droid 联系方式
 
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+这是 Monica 的 F-Droid 专用构建仓库。应用问题、功能建议和用户反馈请提交到 [Monica 主仓库](https://github.com/Monica-Pass/Monica/issues)，方便 Monica 团队查看和处理。
 
-## F-Droid contact
-
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
-
-
-## About this repository
-
-This is the F-Droid build repository for Monica. It contains the F-Droid-specific build configuration and source packaging used to build the app independently.
-
-The main Monica source repository is:
-https://github.com/Monica-Pass/Monica
-
-Please report app issues, feature requests, and user feedback in the main repository:
-https://github.com/Monica-Pass/Monica/issues
-
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+F-Droid metadata 或打包问题请联系：joyin8888@foxmail.com

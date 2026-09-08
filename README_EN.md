@@ -208,10 +208,6 @@ Monica is released under [GNU General Public License v3.0](LICENSE).
 
 ## F-Droid contact
 
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
-
-
-## F-Droid contact
+This is Monica’s dedicated F-Droid build repository. Please report app issues, feature requests, and user feedback in the [main Monica repository](https://github.com/Monica-Pass/Monica/issues), so the Monica team can track and handle them.
 
 For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
-

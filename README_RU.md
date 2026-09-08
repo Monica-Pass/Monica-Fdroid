@@ -206,12 +206,8 @@ Monica распространяется по лицензии [GNU General Publi
 - Источник иконок банковских/платежных карт: локальный каталог [SVG Credit Card & Payment Icons](svg-credit-card-payment-icons-main) (Apache-2.0).
 - Названия брендов и логотипы принадлежат соответствующим правообладателям.
 
-## F-Droid contact
+## Контакты F-Droid
 
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+Это специальный репозиторий сборки Monica для F-Droid. Сообщения о проблемах приложения, запросы функций и отзывы пользователей оставляйте в [основном репозитории Monica](https://github.com/Monica-Pass/Monica/issues), чтобы команда Monica могла их отслеживать и обрабатывать.
 
-
-## F-Droid contact
-
-For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
-
+По вопросам метаданных и упаковки F-Droid обращайтесь: joyin8888@foxmail.com
