@@ -378,3 +378,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
 
+
+## F-Droid contact
+
+For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+
