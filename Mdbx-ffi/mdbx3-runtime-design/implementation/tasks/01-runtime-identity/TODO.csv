@@ -1,0 +1,5 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"冻结 MDBX3 runtime 和 ABI 常量",DONE,"常量具有测试且与设计契约一致","cargo test -p mdbx-core",2026-08-19,0,"51 tests passed"
+2,"增加附加 UniFFI runtime manifest",DONE,"旧 build manifest 未改变，新函数无需 vault","cargo test -p mdbx-ffi",2026-08-19,0,"57 unit、1 batch、37 smoke、1 divergence 通过；1 performance test 按设计忽略"
+3,"执行兼容构建和格式校验",DONE,"FFI core profile、fmt 和 diff 全部通过","cargo check -p mdbx-ffi --no-default-features",2026-08-19,0,"check、fmt、git diff --check 通过"
+4,"更新文档、提交并推送",DONE,"子任务状态完成且远端包含提交","git rev-list --left-right --count origin/master...HEAD",2026-08-19,0,"提交 d6076b0 已推送；远端差异 0/0"

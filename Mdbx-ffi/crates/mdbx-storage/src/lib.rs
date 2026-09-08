@@ -27,6 +27,7 @@ pub mod presentation_metadata;
 pub mod recovery;
 pub mod repo;
 pub mod rollback_anchor;
+pub mod runtime;
 pub mod schema;
 #[cfg(feature = "derived-search-index")]
 pub mod search;

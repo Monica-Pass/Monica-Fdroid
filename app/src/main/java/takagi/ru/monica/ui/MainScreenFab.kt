@@ -44,6 +44,11 @@ import takagi.ru.monica.viewmodel.NoteViewModel
 import takagi.ru.monica.viewmodel.PasswordViewModel
 import takagi.ru.monica.viewmodel.TotpViewModel
 
+internal fun shouldHideVaultFloatingActionsForFastScroll(
+    isVaultV2Tab: Boolean,
+    isScrollbarInteracting: Boolean,
+): Boolean = isVaultV2Tab && isScrollbarInteracting
+
 internal data class VaultV2FabMenuAction(
     val icon: ImageVector,
     val labelRes: Int,
@@ -84,6 +89,7 @@ internal fun BoxScope.MainScreenFabOverlay(
     fastScrollStripProgress: Float,
     onFastScrollProgressChange: (Float) -> Unit,
     fastScrollIndicatorLabel: String?,
+    vaultV2FastScrollbarInteracting: Boolean,
     passwordListShowBackToTop: Boolean,
     onBackToTop: () -> Unit,
     quickAccessEnabled: Boolean,
@@ -163,6 +169,10 @@ internal fun BoxScope.MainScreenFabOverlay(
         !hasWideDetailSelection
 
     val isVaultLikeTab = currentTab == BottomNavItem.Passwords || currentTab == BottomNavItem.VaultV2
+    val hideForVaultFastScroll = shouldHideVaultFloatingActionsForFastScroll(
+        isVaultV2Tab = currentTab == BottomNavItem.VaultV2,
+        isScrollbarInteracting = vaultV2FastScrollbarInteracting,
+    )
     val fabOverlayModifier = if (isCompactWidth) {
         Modifier.fillMaxSize().zIndex(5f)
     } else {
@@ -172,14 +182,8 @@ internal fun BoxScope.MainScreenFabOverlay(
             .align(Alignment.TopStart)
             .zIndex(5f)
     }
-    val fabContainerColor = when (currentTab) {
-        BottomNavItem.CardWallet -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.primaryContainer
-    }
-    val fabIconTint = when (currentTab) {
-        BottomNavItem.CardWallet -> MaterialTheme.colorScheme.onPrimary
-        else -> MaterialTheme.colorScheme.onPrimaryContainer
-    }
+    val fabContainerColor = MaterialTheme.colorScheme.primaryContainer
+    val fabIconTint = MaterialTheme.colorScheme.onPrimaryContainer
     val navBarInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val fabBottomOffset = when {
         !isCompactWidth -> 24.dp
@@ -193,7 +197,8 @@ internal fun BoxScope.MainScreenFabOverlay(
             isVaultLikeTab &&
             !isAnySelectionMode &&
             passwordListShowBackToTop &&
-            !fastScrollStripVisible
+            !fastScrollStripVisible &&
+            !hideForVaultFastScroll
     val shouldShowQuickAccessFab =
         showFab &&
             isFabVisible &&
@@ -201,7 +206,8 @@ internal fun BoxScope.MainScreenFabOverlay(
             (currentTab == BottomNavItem.Passwords || currentTab == BottomNavItem.VaultV2) &&
             quickAccessEnabled &&
             !isAnySelectionMode &&
-            !fastScrollStripVisible
+            !fastScrollStripVisible &&
+            !hideForVaultFastScroll
     val shouldShowPasskeyFab =
         showFab &&
             isFabVisible &&
@@ -213,6 +219,15 @@ internal fun BoxScope.MainScreenFabOverlay(
     LaunchedEffect(showFab) {
         if (!showFab) {
             onFastScrollStripVisibleChange(false)
+        }
+    }
+
+    LaunchedEffect(hideForVaultFastScroll) {
+        if (hideForVaultFastScroll) {
+            onFabExpandedChange(false)
+            if (showPasswordQuickAccessSheet) {
+                onShowPasswordQuickAccessSheetChange(false)
+            }
         }
     }
 
@@ -328,11 +343,13 @@ internal fun BoxScope.MainScreenFabOverlay(
                             indication = null,
                             onClick = onBackToTop,
                             onLongClick = {
-                                onFastScrollStripVisibleChange(true)
-                                if (showPasswordQuickAccessSheet) {
-                                    onShowPasswordQuickAccessSheetChange(false)
+                                if (currentTab != BottomNavItem.VaultV2) {
+                                    onFastScrollStripVisibleChange(true)
+                                    if (showPasswordQuickAccessSheet) {
+                                        onShowPasswordQuickAccessSheetChange(false)
+                                    }
+                                    onFabExpandedChange(false)
                                 }
-                                onFabExpandedChange(false)
                             }
                         )
                 ) {
@@ -355,7 +372,7 @@ internal fun BoxScope.MainScreenFabOverlay(
             }
 
             MainScreenAddFab(
-                visible = !fastScrollStripVisible,
+                visible = !fastScrollStripVisible && !hideForVaultFastScroll,
                 fabBottomOffset = fabBottomOffset,
                 fabContainerColor = fabContainerColor,
                 fabIconTint = fabIconTint,

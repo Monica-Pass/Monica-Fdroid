@@ -1,0 +1,5 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"创建最小 Android loader 工程",DONE,"Manifest、Activity、JNI shim 和 ABI 过滤存在","Get-ChildItem mdbx3-runtime-design/android-smoke -Recurse -File",2026-08-31T00:00:00+08:00,0,"只验证装载和 contract，不引入产品 UI"
+2,"构建单 ABI APK",DONE,"APK 只含所选 ABI 的 mdbx_ffi 与 shim","powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-mdbx3-android-loader-smoke.ps1 -Abi x86_64",2026-08-31T00:00:00+08:00,0,"APK 内仅有 lib/x86_64/"
+3,"在 Android linker 上运行",DONE,"ADB 安装启动成功，contract 30，无 linker error","powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-mdbx3-android-loader-smoke.ps1 -Abi x86_64 -InstallAndRun",2026-08-31T00:00:00+08:00,0,"Pixel Fold API 35 AVD；android-loader-smoke-ok"
+4,"提交并推送 loader smoke",DONE,"独立提交同步到 origin/master","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"提交 116549b 已推送"

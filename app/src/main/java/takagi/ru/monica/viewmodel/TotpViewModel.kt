@@ -174,6 +174,9 @@ class TotpViewModel(
     private val bitwardenRepository = context?.let { BitwardenRepository.getInstance(it.applicationContext) }
     private val settingsManager = context?.let { SettingsManager(it.applicationContext) }
     private val parsedTotpDataCache = ConcurrentHashMap<String, TotpData>()
+    @Volatile
+    private var mergedParsedSnapshot = emptyMap<Long, Pair<SecureItem, TotpData?>>()
+    private var passwordTotpSnapshot = emptyMap<Long, Pair<PasswordEntry, TotpData?>>()
 
     private fun requestBitwardenMutationSync(vaultId: Long?) {
         vaultId?.let { bitwardenRepository?.requestLocalMutationSync(it) }
@@ -210,6 +213,11 @@ class TotpViewModel(
         fallbackIssuer: String = item.title,
         fallbackAccountName: String = ""
     ): TotpData? {
+        if (fallbackIssuer == item.title && fallbackAccountName.isEmpty()) {
+            mergedParsedSnapshot[item.id]?.takeIf {
+                it.second != null && it.first.itemData == item.itemData && it.first.title == item.title
+            }?.let { return it.second }
+        }
         val cacheKey = buildString {
             append("item|")
             append(item.id)
@@ -274,7 +282,9 @@ class TotpViewModel(
 
     init {
         restoreLastCategoryFilter()
-        viewModelScope.launch {
+        // Legacy binding repair scans the shared secure-item table. Keep it
+        // off the main dispatcher so it cannot delay the first authenticator frame.
+        viewModelScope.launch(Dispatchers.Default) {
             repairLegacyDetachedKeePassItems()
         }
     }
@@ -307,15 +317,22 @@ class TotpViewModel(
         storedTotps: List<SecureItem>,
         allPasswords: List<PasswordEntry>
     ): List<SecureItem> {
-        val displayStoredTotps = collapseDuplicateBoundStoredTotps(storedTotps)
-        val existingKeys = storedTotps.mapNotNull { item ->
-            parseStoredTotpData(item)
-                ?.let(::buildTotpIdentityKey)
-        }.toSet()
-
+        val parsedStored = storedTotps.associate { it.id to parseStoredTotpData(it) }
+        val seenBoundKeys = mutableSetOf<String>()
+        val displayStoredTotps = storedTotps.filter { item ->
+            val data = parsedStored[item.id]
+            val boundId = data?.boundPasswordId
+            boundId == null || seenBoundKeys.add("$boundId|${buildTotpIdentityKey(data)}")
+        }
+        val existingKeys = parsedStored.values.mapNotNull { it?.let(::buildTotpIdentityKey) }.toSet()
+        val nextParsed = storedTotps.associate { it.id to (it to parsedStored[it.id]) }.toMutableMap()
+        val nextPasswords = HashMap<Long, Pair<PasswordEntry, TotpData?>>()
         val seenVirtualKeys = mutableSetOf<String>()
         val virtualTotps = allPasswords.mapNotNull { password ->
-            val resolvedTotpData = resolvePasswordAuthenticatorTotp(password) ?: return@mapNotNull null
+            val cached = passwordTotpSnapshot[password.id]?.takeIf { it.first == password && it.second != null }
+                ?: (password to resolvePasswordAuthenticatorTotp(password))
+            nextPasswords[password.id] = cached
+            val resolvedTotpData = cached.second ?: return@mapNotNull null
             val identityKey = buildTotpIdentityKey(resolvedTotpData)
             if (identityKey in existingKeys || !seenVirtualKeys.add(identityKey)) {
                 return@mapNotNull null
@@ -337,41 +354,41 @@ class TotpViewModel(
                 bitwardenVaultId = password.bitwardenVaultId,
                 bitwardenFolderId = password.bitwardenFolderId,
                 mdbxDatabaseId = password.mdbxDatabaseId
-            )
+            ).also { nextParsed[it.id] = it to resolvedTotpData }
         }
 
+        mergedParsedSnapshot = nextParsed
+        passwordTotpSnapshot = nextPasswords
         return displayStoredTotps + virtualTotps
     }
 
-    private fun collapseDuplicateBoundStoredTotps(storedTotps: List<SecureItem>): List<SecureItem> {
-        val seenBoundKeys = mutableSetOf<String>()
-        return storedTotps.filter { item ->
-            val data = parseStoredTotpData(item)
-                ?: return@filter true
-            val boundPasswordId = data.boundPasswordId ?: return@filter true
-            val key = "$boundPasswordId|${buildTotpIdentityKey(data)}"
-            seenBoundKeys.add(key)
-        }
-    }
-
-    private val allTotpItemsSource: Flow<List<SecureItem>> = combine(
+    // Both the authenticator UI and the keyboard/detail panes consume the
+    // merged TOTP list. Keep one shared upstream subscription so a page entry
+    // does not start multiple Room queries and password-key parsing passes.
+    private val allTotpItemsSharingStarted = SharingStarted.WhileSubscribed(5000)
+    private val allTotpItemsSource: SharedFlow<List<SecureItem>> = combine(
         repository.getItemsByType(ItemType.TOTP),
-        passwordRepository.getAllPasswordEntries()
+        passwordRepository.getActiveAuthenticatorEntries().distinctUntilChanged()
     ) { storedTotps, allPasswords ->
         mergeStoredAndVirtualTotps(
             storedTotps = storedTotps,
             allPasswords = allPasswords
         )
     }.flowOn(Dispatchers.Default)
+        .shareIn(
+            scope = viewModelScope,
+            started = allTotpItemsSharingStarted,
+            replay = 1,
+        )
 
     val allTotpItems: StateFlow<List<SecureItem>> = allTotpItemsSource.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = allTotpItemsSharingStarted,
         initialValue = emptyList()
     )
     
     // TOTP项目列表 - 合并实际存储的TOTP和从密码authenticatorKey生成的虚拟TOTP
-    val totpItems: StateFlow<List<SecureItem>> = combine(
+    private val filteredTotpItemsSource: SharedFlow<List<SecureItem>> = combine(
         _searchQuery,
         _categoryFilter,
         allTotpItemsSource,
@@ -465,29 +482,32 @@ class TotpViewModel(
             }
         }
     }.flowOn(Dispatchers.Default)
-        .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+        .shareIn(viewModelScope, allTotpItemsSharingStarted, replay = 1)
 
-    val parsedTotpItems: StateFlow<List<ParsedTotpItem>> = totpItems
+    val totpItems: StateFlow<List<SecureItem>> = filteredTotpItemsSource
+        .stateIn(viewModelScope, allTotpItemsSharingStarted, emptyList())
+
+    // Readiness travels with the parsed snapshot. An initial empty StateFlow
+    // value must never be mistaken for a completed empty database query.
+    val parsedTotpState: StateFlow<LoadedListState<ParsedTotpItem>> = filteredTotpItemsSource
         .map { items ->
-            withContext(Dispatchers.Default) {
-                items.map { item ->
-                    ParsedTotpItem(
-                        item = item,
-                        totpData = parseStoredTotpData(item) ?: TotpData(secret = "")
-                    )
-                }
-            }
+            LoadedListState(
+                items = items.map { item ->
+                    ParsedTotpItem(item, parseStoredTotpData(item) ?: TotpData(secret = ""))
+                },
+                isReady = true
+            )
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-    
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, allTotpItemsSharingStarted, LoadedListState())
+
+    val parsedTotpItems: StateFlow<List<ParsedTotpItem>> = parsedTotpState
+        .map { it.items }
+        .stateIn(viewModelScope, allTotpItemsSharingStarted, emptyList())
+
+    val passwordTitles = passwordRepository.getActivePasswordTitles()
+        .flowOn(Dispatchers.Default)
+
     /**
      * 更新搜索查询
      */

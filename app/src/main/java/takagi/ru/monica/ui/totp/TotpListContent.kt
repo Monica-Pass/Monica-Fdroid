@@ -52,8 +52,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -133,6 +131,7 @@ import takagi.ru.monica.viewmodel.TotpViewModel
 import takagi.ru.monica.viewmodel.CategoryFilter
 import takagi.ru.monica.data.Category
 import takagi.ru.monica.data.AuthenticatorLayoutMode
+import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.viewmodel.BankCardViewModel
 import takagi.ru.monica.viewmodel.DocumentViewModel
 import takagi.ru.monica.viewmodel.GeneratorViewModel
@@ -167,6 +166,8 @@ import takagi.ru.monica.ui.components.QuickActionItem
 import takagi.ru.monica.ui.components.QuickAddCallback
 import takagi.ru.monica.ui.components.SyncStatusIcon
 import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
+import takagi.ru.monica.ui.components.MonicaItemCardShape
+import takagi.ru.monica.ui.components.MonicaTileGrid
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenu
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuDropdown
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuOffset
@@ -217,7 +218,6 @@ import takagi.ru.monica.ui.screens.AddEditSendScreen
 import takagi.ru.monica.ui.theme.MonicaTheme
 import takagi.ru.monica.util.TotpDataResolver
 import takagi.ru.monica.util.TotpGenerator
-import takagi.ru.monica.util.VibrationPatterns
 import takagi.ru.monica.data.model.OtpType
 import kotlin.math.PI
 import kotlin.math.cos
@@ -228,6 +228,8 @@ import kotlin.math.sin
 fun TotpListContent(
     viewModel: takagi.ru.monica.viewmodel.TotpViewModel,
     passwordViewModel: PasswordViewModel,
+    appSettings: AppSettings,
+    onAuthenticatorLayoutModeChange: (AuthenticatorLayoutMode) -> Unit,
     onTotpClick: (Long) -> Unit,
     onDeleteTotp: (takagi.ru.monica.data.SecureItem) -> Unit,
     onQuickScanTotp: () -> Unit,
@@ -275,17 +277,21 @@ fun TotpListContent(
             flow
         }
     }
-    val parsedTotpItems by viewModel.parsedTotpItems.collectAsState()
+    val parsedTotpState by viewModel.parsedTotpState.collectAsState()
+    val parsedTotpItems = parsedTotpState.items
     val totpItems = remember(parsedTotpItems) { parsedTotpItems.map { it.item } }
     val totpDataById = remember(parsedTotpItems) { parsedTotpItems.associate { it.item.id to it.totpData } }
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val passwords by passwordViewModel.allPasswords.collectAsState(initial = emptyList())
+    // The list only needs titles for bound-password delete messaging. Use the
+    // metadata-only stream so entering the authenticator does not decrypt every
+    // password just to build this lookup map.
+    val passwords by viewModel.passwordTitles.collectAsState(initial = emptyList())
     val passwordMap = remember(passwords) { passwords.associateBy { it.id } }
     val haptic = rememberHapticFeedback()
     val focusManager = LocalFocusManager.current
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
     var showTopActionsMenu by remember { mutableStateOf(false) }
-    
+
     // 分类选择状态
     var isCategorySheetVisible by rememberSaveable { mutableStateOf(false) }
     var categoryPillBoundsInWindow by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
@@ -409,8 +415,6 @@ fun TotpListContent(
     var passwordInput by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    val settingsManager = remember { takagi.ru.monica.utils.SettingsManager(context) }
-    val appSettings by settingsManager.settingsFlow.collectAsState(initial = takagi.ru.monica.data.AppSettings())
     val activity = context as? FragmentActivity
     val biometricHelper = remember { BiometricHelper(context) }
     val canUseBiometric = activity != null && appSettings.biometricEnabled && biometricHelper.isBiometricAvailable()
@@ -444,25 +448,16 @@ fun TotpListContent(
     var isScreenResumed by remember {
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
     }
-    val vibrator = remember(context) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val manager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
-            manager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        }
-    }
-    DisposableEffect(lifecycleOwner, vibrator) {
+    DisposableEffect(lifecycleOwner, haptic) {
         val lifecycle = lifecycleOwner.lifecycle
         val observer = LifecycleEventObserver { _, _ ->
             isScreenResumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
-            if (!isScreenResumed) vibrator?.cancel()
+            if (!isScreenResumed) haptic.cancel()
         }
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
-            vibrator?.cancel()
+            haptic.cancel()
         }
     }
     val expiringRemainingSeconds = remember(
@@ -494,16 +489,7 @@ fun TotpListContent(
             appSettings.validatorVibrationEnabled &&
             vibrationGate.shouldVibrate(sharedTickSeconds, expiringRemainingSeconds)
         ) {
-            vibrator?.let { activeVibrator ->
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    activeVibrator.vibrate(
-                        android.os.VibrationEffect.createWaveform(VibrationPatterns.TICK, -1)
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    activeVibrator.vibrate(VibrationPatterns.TICK, -1)
-                }
-            }
+            haptic.performCountdownTick()
         }
     }
 
@@ -856,6 +842,41 @@ fun TotpListContent(
                                     onQuickScanTotp()
                                 }
                             )
+                            val isTileLayout =
+                                appSettings.authenticatorLayoutMode == AuthenticatorLayoutMode.TILE
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            if (isTileLayout) {
+                                                R.string.authenticator_layout_standard
+                                            } else {
+                                                R.string.authenticator_layout_tile
+                                            }
+                                        )
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (isTileLayout) {
+                                            Icons.Default.ViewList
+                                        } else {
+                                            Icons.Default.GridView
+                                        },
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    showTopActionsMenu = false
+                                    onAuthenticatorLayoutModeChange(
+                                        if (isTileLayout) {
+                                            AuthenticatorLayoutMode.STANDARD
+                                        } else {
+                                            AuthenticatorLayoutMode.TILE
+                                        }
+                                    )
+                                }
+                            )
                             if (showStandaloneSettingsEntry) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.nav_settings)) },
@@ -984,8 +1005,10 @@ fun TotpListContent(
         val contentPullOffset = if (enableBitwardenPullSync) 0 else pullAction.currentOffset.toInt()
 
         // TOTP列表
-        if (filteredTotpItems.isEmpty()) {
-            // 空状态
+        if (!parsedTotpState.isReady) {
+            takagi.ru.monica.ui.components.LoadingIndicator()
+        } else if (filteredTotpItems.isEmpty()) {
+            // Empty is shown only after the first parsed database snapshot.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1061,16 +1084,12 @@ fun TotpListContent(
                     }
                 }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                MonicaTileGrid(
                     state = lazyGridState,
                     modifier = Modifier
                         .fillMaxSize()
                         .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
-                        .nestedScroll(pullAction.nestedScrollConnection),
-                    contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .nestedScroll(pullAction.nestedScrollConnection)
                 ) {
                     items(
                         items = localTotpItems,
@@ -1146,7 +1165,7 @@ fun TotpListContent(
                     }
                 }
             }
-            
+
             // 当拖动结束时保存新顺序
             LaunchedEffect(reorderableLazyListState.isAnyItemDragging) {
                 if (!reorderableLazyListState.isAnyItemDragging && isSelectionMode) {
@@ -1159,7 +1178,7 @@ fun TotpListContent(
                     }
                 }
             }
-            
+
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
@@ -1182,7 +1201,7 @@ fun TotpListContent(
                             if (isDragging) 8.dp else 0.dp,
                             label = "drag_elevation"
                         )
-                        
+
                         // 在多选模式下使用拖动手柄
                         val dragModifier = if (isSelectionMode) {
                             Modifier.longPressDraggableHandle(
@@ -1196,7 +1215,7 @@ fun TotpListContent(
                         } else {
                             Modifier
                         }
-                        
+
                         // Keep right-swipe selection available in selection mode; only disable delete swipe there.
                         takagi.ru.monica.ui.gestures.SwipeActions(
                             onSwipeLeft = {
@@ -1219,7 +1238,8 @@ fun TotpListContent(
                             isSwiped = itemToDelete?.id == item.id,
                             enabled = !isDragging,
                             allowSwipeLeft = !isSelectionMode,
-                            allowSwipeRight = true
+                            allowSwipeRight = true,
+                            cardShape = MonicaItemCardShape
                         ) {
                             // 包装卡片以支持拖动
                             Box(
@@ -1273,7 +1293,7 @@ fun TotpListContent(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                
+
                 item {
                     Spacer(modifier = Modifier.height(80.dp))
                 }
@@ -1326,9 +1346,15 @@ fun TotpListContent(
             itemTitle = item.title,
             itemType = stringResource(R.string.item_type_authenticator),
             biometricEnabled = appSettings.biometricEnabled,
+            skipIdentityVerification = appSettings.disablePasswordVerification,
             onDismiss = {
                 // 取消删除，恢复卡片显示
                 deletedItemIds = deletedItemIds - item.id
+                itemToDelete = null
+            },
+            onConfirmWithoutVerification = {
+                onDeleteTotp(item)
+                Toast.makeText(context, context.getString(R.string.deleted), Toast.LENGTH_SHORT).show()
                 itemToDelete = null
             },
             onConfirmWithPassword = { password ->
@@ -1386,7 +1412,8 @@ fun TotpListContent(
     
     // 批量删除验证对话框（统一 M3 身份验证弹窗）
     if (showBatchDeleteDialog) {
-        val biometricAction = if (canUseBiometric) {
+        val skipIdentityVerification = appSettings.disablePasswordVerification
+        val biometricAction = if (!skipIdentityVerification && canUseBiometric) {
             {
                 biometricHelper.authenticate(
                     activity = activity!!,
@@ -1431,7 +1458,7 @@ fun TotpListContent(
                 passwordError = false
             },
             onConfirm = {
-                if (SecurityManager(context).verifyMasterPassword(passwordInput)) {
+                if (skipIdentityVerification || SecurityManager(context).verifyMasterPassword(passwordInput)) {
                     coroutineScope.launch {
                         val toDelete = totpItems.filter { selectedItems.contains(it.id) }
                         viewModel.deleteTotpItems(toDelete)
@@ -1452,6 +1479,7 @@ fun TotpListContent(
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
+            requireIdentityVerification = !skipIdentityVerification,
             isPasswordError = passwordError,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             onBiometricClick = biometricAction,

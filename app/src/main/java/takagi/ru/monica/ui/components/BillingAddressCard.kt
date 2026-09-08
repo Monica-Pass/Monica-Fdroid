@@ -13,15 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
@@ -47,6 +44,7 @@ import takagi.ru.monica.data.model.BillingAddressData
 import takagi.ru.monica.data.model.CardWalletDataCodec
 import takagi.ru.monica.data.model.formatForDisplay
 import takagi.ru.monica.data.model.toBillingAddress
+import takagi.ru.monica.ui.cardwallet.billingAddressCardFacePreviewData
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -67,12 +65,7 @@ fun BillingAddressCard(
     val contentColor = if (isSelected) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
-        MaterialTheme.colorScheme.onSecondaryContainer
-    }
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.secondaryContainer
+        MaterialTheme.colorScheme.onSurface
     }
     val interactionModifier = if (isSelectionMode) {
         modifier
@@ -87,11 +80,25 @@ fun BillingAddressCard(
             )
     }
 
-    Card(
+    resolvedData.cardFace?.let { face ->
+        CustomCardFaceCard(
+            item = item,
+            previewData = billingAddressCardFacePreviewData(item.title, resolvedData),
+            imageAttachmentName = face.imageAttachmentName,
+            displayMode = face.displayMode,
+            modifier = interactionModifier,
+            isSelectionMode = isSelectionMode,
+            isSelected = isSelected,
+            onClick = onClick,
+            onDelete = onDelete,
+            onToggleFavorite = onToggleFavorite
+        )
+        return
+    }
+
+    MonicaItemCard(
         modifier = interactionModifier,
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+        isSelected = isSelected
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

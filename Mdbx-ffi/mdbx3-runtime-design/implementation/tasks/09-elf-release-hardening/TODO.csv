@@ -1,0 +1,6 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"记录 MDBX2 ELF 动态契约",DONE,"三 ABI baseline 的 SONAME 与 NEEDED 已读取","llvm-readelf -d target/mdbx2-android-baseline/android-jniLibs/<abi>/libmdbx_ffi.so",2026-08-31T00:00:00+08:00,0,"SONAME absent；NEEDED=libc/libdl/libm"
+2,"保留 strip 后唯一 build ID",DONE,"三 ABI 各有一个不同 SHA-1 GNU build ID","python -B scripts/verify-mdbx3-release.py --root target/mdbx3-android-buildid-test",2026-08-31T00:00:00+08:00,0,"Android linker 增加 --build-id=sha1"
+3,"验证 page alignment 与动态依赖",DONE,"64 位 16 KiB、ARM32 4 KiB，SONAME/NEEDED 与 baseline 一致","python -B scripts/verify-mdbx3-release.py --root target/mdbx3-android-buildid-test",2026-08-31T00:00:00+08:00,0,"release gate status=ready"
+4,"将 ELF 证据绑定 ABI 薄包",DONE,"split verifier 要求 release gate 中完整 ELF 属性","python -B scripts/verify-mdbx3-android-abi-splits.py --root target/mdbx3-android-buildid-splits",2026-08-31T00:00:00+08:00,0,"ABI split gate status=ready"
+5,"提交并推送 ELF release hardening",DONE,"独立提交同步到 origin/master","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"提交 15227a6 已推送"

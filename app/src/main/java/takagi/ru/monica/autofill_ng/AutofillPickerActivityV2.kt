@@ -107,6 +107,7 @@ import takagi.ru.monica.repository.CustomFieldRepository
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.repository.SecureItemRepository
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.service.MonicaAccessibilityService
 import takagi.ru.monica.ui.theme.MonicaTheme
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -399,7 +400,10 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
         }
         
         val database = PasswordDatabase.getDatabase(applicationContext)
-        val repository = PasswordRepository(database.passwordEntryDao())
+        val repository = PasswordRepository(
+            passwordEntryDao = database.passwordEntryDao(),
+            categoryDao = database.categoryDao(),
+        )
         val localKeePassDao = database.localKeePassDatabaseDao()
         val securityManager = SecurityManager(applicationContext)
         // settingsManager 已由 BaseMonicaActivity 初始化
@@ -420,9 +424,14 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
         
         // 主应用已解锁时可直接进入；否则在自动填充页内复用同款验证界面，
         // 但验证结果仅用于本次自动填充，不回写主应用共享会话。
-        val canOpenPicker = securityManager.canRestoreMainAppSession(
+        val startupSettings = cachedSettings ?: runBlocking { localSettingsManager.settingsFlow.first() }
+        val developerBypass = DeveloperVerificationPolicy.bypassesIdentityVerification(startupSettings)
+        if (developerBypass) {
+            securityManager.unlockVaultForDeveloperBypass(startupSettings.autoLockMinutes)
+        }
+        val canOpenPicker = developerBypass || securityManager.canRestoreMainAppSession(
             applicationContext,
-            cachedSettings?.autoLockMinutes ?: 5
+            startupSettings.autoLockMinutes
         )
         
         setContent {
@@ -460,7 +469,8 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
                     keepassDatabases = keepassDatabases,
                     generatorPreferences = generatorPreferences,
                     canSkipVerification = canOpenPicker,
-                    requireAuthentication = settings.autofillAuthRequired,
+                    requireAuthentication = settings.autofillAuthRequired &&
+                        DeveloperVerificationPolicy.requiresIdentityVerification(settings),
                     biometricEnabled = settings.biometricEnabled,
                     autoLockMinutes = settings.autoLockMinutes,
                     iconCardsEnabled = settings.iconCardsEnabled,
@@ -2502,6 +2512,7 @@ private fun AutofillPickerContent(
                         return BillingAddressViewModel(
                             repository = secureItemRepository,
                             securityManager = securityManager,
+                            context = context.applicationContext,
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

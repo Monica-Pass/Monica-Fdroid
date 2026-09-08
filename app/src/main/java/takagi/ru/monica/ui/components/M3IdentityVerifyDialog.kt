@@ -42,7 +42,8 @@ fun M3IdentityVerifyDialog(
     confirmText: String,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Default.Warning,
-    confirmEnabled: Boolean = passwordValue.isNotBlank(),
+    requireIdentityVerification: Boolean = true,
+    confirmEnabled: Boolean = !requireIdentityVerification || passwordValue.isNotBlank(),
     destructiveConfirm: Boolean = true,
     isPasswordError: Boolean = false,
     passwordErrorText: String? = null,
@@ -88,24 +89,26 @@ fun M3IdentityVerifyDialog(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                MasterPasswordTextField(
-                    value = passwordValue,
-                    onValueChange = onPasswordChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    visible = false,
-                    onVisibilityChange = {},
-                    imeAction = ImeAction.Done,
-                    showVisibilityToggle = false,
-                    isError = isPasswordError,
-                    label = { Text(stringResource(R.string.master_password)) },
-                    placeholder = { Text(stringResource(R.string.enter_master_password_confirm)) },
-                    supportingText = if (isPasswordError && !passwordErrorText.isNullOrBlank()) {
-                        { Text(passwordErrorText) }
-                    } else {
-                        null
-                    }
-                )
-                if (showBiometricSlot) {
+                if (requireIdentityVerification) {
+                    MasterPasswordTextField(
+                        value = passwordValue,
+                        onValueChange = onPasswordChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        visible = false,
+                        onVisibilityChange = {},
+                        imeAction = ImeAction.Done,
+                        showVisibilityToggle = false,
+                        isError = isPasswordError,
+                        label = { Text(stringResource(R.string.master_password)) },
+                        placeholder = { Text(stringResource(R.string.enter_master_password_confirm)) },
+                        supportingText = if (isPasswordError && !passwordErrorText.isNullOrBlank()) {
+                            { Text(passwordErrorText) }
+                        } else {
+                            null
+                        }
+                    )
+                }
+                if (requireIdentityVerification && showBiometricSlot) {
                     OutlinedButton(
                         onClick = { onBiometricClick?.invoke() },
                         enabled = onBiometricClick != null,

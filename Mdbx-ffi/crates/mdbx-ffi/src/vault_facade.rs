@@ -28,14 +28,14 @@ impl From<MigrationInfo> for MdbxMigrationInfo {
 }
 
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use mdbx_core::tiga::TigaMode;
 use mdbx_storage::backup::BackupService;
 use mdbx_storage::connection::{PendingVaultCreation, VaultConnection};
-use mdbx_storage::error::StorageError;
 use mdbx_storage::init::{initialize_vault, VaultInitParams};
 use mdbx_storage::migration::{inspect_migration_path, upgrade_path, MigrationInfo};
+use mdbx_storage::runtime::VaultRuntime;
 use mdbx_storage::unlock::UnlockService;
 use zeroize::Zeroizing;
 
@@ -99,7 +99,7 @@ pub fn create_vault_with_tiga_mode(
     UnlockService::setup_password_with_mode(creation.connection_mut(), password.as_str(), mode)?;
     let conn = creation.commit();
     Ok(Arc::new(MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id,
         vault_id: init.vault_id,
     }))
@@ -116,7 +116,7 @@ pub fn open_vault(
     UnlockService::unlock_with_password(&mut conn, password.as_str())?;
     let vault_id = read_vault_id(&conn)?;
     Ok(Arc::new(MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id,
         vault_id,
     }))
@@ -133,7 +133,7 @@ pub fn open_vault_with_security_key(
     UnlockService::unlock_with_security_key(&mut conn, key_material.as_slice())?;
     let vault_id = read_vault_id(&conn)?;
     Ok(Arc::new(MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id,
         vault_id,
     }))
@@ -156,17 +156,12 @@ pub fn open_vault_with_password_security_key(
     )?;
     let vault_id = read_vault_id(&conn)?;
     Ok(Arc::new(MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id,
         vault_id,
     }))
 }
 
 fn read_vault_id(conn: &VaultConnection) -> Result<String, MdbxFfiError> {
-    conn.inner()
-        .query_row("SELECT vault_id FROM vault_meta LIMIT 1", [], |row| {
-            row.get::<_, String>(0)
-        })
-        .map_err(StorageError::from)
-        .map_err(MdbxFfiError::from)
+    conn.vault_id().map_err(MdbxFfiError::from)
 }

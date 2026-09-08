@@ -1,0 +1,5 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"核查 MDBX2 的 FFI、SO、格式和同步兼容约束",DONE,"记录现有 libmdbx_ffi.so 名称、UniFFI 表面、schema 与兼容规则","git status --short",2026-08-17,0,"当前 HEAD 974c517；origin/master 同步；.codex-tasks 为既有未跟踪目录"
+2,"创建设计目录、规范和边界文档",DONE,"README、SPEC、PROGRESS、替换契约和边界文件存在","Get-ChildItem mdbx3-runtime-design -File",2026-08-17,0,"required-files-ok；git diff --check 通过"
+3,"编写架构、体积、性能、实施与验收文档",DONE,"03 至 06 文档覆盖全部主题且互相一致","Select-String -Path mdbx3-runtime-design\\*.md -Pattern 'TBD|TODO(?!\\.csv)'",2026-08-17,0,"second-doc-set-ok；no-placeholders；README 引用文件存在"
+4,"校验文档并提交到 origin/master",DONE,"Markdown、链接、Git 差异和远端提交全部验证成功","git diff --check",2026-08-17,0,"design-validation-ok；提交 d17c8d3 与 5fe4e9a 已推送；远端差异 0/0"

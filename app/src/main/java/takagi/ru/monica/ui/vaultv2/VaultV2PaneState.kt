@@ -53,10 +53,12 @@ class VaultV2PaneState internal constructor(
     val hasFolderNavigationHistory: Boolean
         get() = folderNavigationHistory.isNotEmpty()
 
-    var scrollIndex by mutableIntStateOf(scrollIndex)
+    // Persisted navigation metadata, not screen UI state. Updating it on every
+    // scroll frame must not invalidate the whole vault composable.
+    var scrollIndex: Int = scrollIndex
         private set
 
-    var scrollOffset by mutableIntStateOf(scrollOffset)
+    var scrollOffset: Int = scrollOffset
         private set
 
     var fastScrollRequestKey by mutableIntStateOf(fastScrollRequestKey)
@@ -71,6 +73,9 @@ class VaultV2PaneState internal constructor(
     var showBackToTop by mutableStateOf(false)
 
     var fastScrollIndicatorLabel by mutableStateOf<String?>(null)
+
+    var isFastScrollbarInteracting by mutableStateOf(false)
+        private set
 
     private var createFolderDialogRequested by mutableStateOf(false)
 
@@ -124,6 +129,10 @@ class VaultV2PaneState internal constructor(
 
     fun updateFastScrollProgress(progress: Float) {
         fastScrollProgress = progress.coerceIn(0f, 1f)
+    }
+
+    fun updateFastScrollbarInteraction(interacting: Boolean) {
+        isFastScrollbarInteracting = interacting
     }
 
     fun requestScrollToTop() {
@@ -191,6 +200,7 @@ class VaultV2PaneState internal constructor(
     fun clearTransientUi() {
         showBackToTop = false
         fastScrollIndicatorLabel = null
+        isFastScrollbarInteracting = false
     }
 
     fun clearRetainedListSnapshots() {

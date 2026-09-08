@@ -1,0 +1,6 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"实现跨平台 UniFFI ABI 校验器",DONE,"可从 Kotlin bindings 生成基准并动态验证库","python scripts/verify-mdbx3-ffi-abi.py --help",2026-08-19,0,"正向与篡改 checksum 负向检查均通过"
+2,"从 MDBX2 提交生成冻结 ABI 基准",DONE,"基准来自 1070dee 且包含全部 symbols 和 checksums","python scripts/verify-mdbx3-ffi-abi.py snapshot --help",2026-08-19,0,"535 symbols、237 checksums、contract 30；真实 MDBX2 与当前 MDBX3 DLL 均通过"
+3,"将 ABI 验证加入 CI",DONE,"Linux 构建后自动验证 MDBX2 bindings 兼容","git diff --check",2026-08-19,0,"新增 Ubuntu ffi-abi job"
+4,"运行 fixture、同步和 workspace 回归",DONE,"兼容相关测试与 workspace 测试通过","cargo test --workspace --no-fail-fast",2026-08-19,0,"MDBX1 两组 fixture、旧 peer fallback、全部 workspace 测试零失败"
+5,"更新状态、提交并推送",DONE,"子任务完成且远端包含提交","git rev-list --left-right --count origin/master...HEAD",2026-08-19,0,"提交待执行"

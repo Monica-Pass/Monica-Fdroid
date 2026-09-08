@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.utils.PasswordStrengthAnalyzer
+import takagi.ru.monica.ui.theme.LocalPowerSavePolicy
 import kotlin.math.sin
 import kotlin.math.PI
 
@@ -157,17 +158,23 @@ fun WaveProgressIndicator(
     trackColor: Color,
     modifier: Modifier = Modifier
 ) {
-    // 波浪动画状态
-    val infiniteTransition = rememberInfiniteTransition(label = "wave")
-    val waveOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave_offset"
-    )
+    // 波浪是纯装饰效果，省电模式下保持静态以避免持续重绘。
+    val waveOffset: Float
+    if (LocalPowerSavePolicy.current.allowContinuousDecorativeMotion) {
+        val infiniteTransition = rememberInfiniteTransition(label = "wave")
+        val animatedOffset by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 2f * PI.toFloat(),
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 3000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "wave_offset"
+        )
+        waveOffset = animatedOffset
+    } else {
+        waveOffset = 0f
+    }
     
     Canvas(modifier = modifier) {
         val width = size.width

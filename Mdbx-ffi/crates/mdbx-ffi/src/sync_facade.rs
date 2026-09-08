@@ -52,14 +52,16 @@ impl From<IncrementalBundleCheckpoint> for MdbxIncrementalSyncCheckpoint {
 
 impl MdbxIncrementalSyncCheckpoint {
     fn into_core(self) -> Result<IncrementalBundleCheckpoint, MdbxFfiError> {
-        if self.commit_inventory.is_empty() || self.delta_inventory.is_empty() {
+        let commit_empty = self.commit_inventory.is_empty();
+        let delta_empty = self.delta_inventory.is_empty();
+        if commit_empty != delta_empty {
             return Err(MdbxFfiError::SyncProtocol {
-                message: "incremental checkpoint tokens must not be empty".to_string(),
+                message: "incremental checkpoint tokens must be paired".to_string(),
             });
         }
         Ok(IncrementalBundleCheckpoint {
-            commit_inventory: Some(self.commit_inventory),
-            delta_inventory: Some(self.delta_inventory),
+            commit_inventory: (!commit_empty).then_some(self.commit_inventory),
+            delta_inventory: (!delta_empty).then_some(self.delta_inventory),
         })
     }
 }
@@ -1136,7 +1138,7 @@ impl MdbxVault {
         &self,
         destination: String,
     ) -> Result<MdbxIncrementalSyncBootstrapInfo, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
         let backup = BackupService::create_portable_copy(&conn, Path::new(&destination))?;
         let checkpoint = PeerSyncService::current_checkpoint(&conn)?;
         Ok(MdbxIncrementalSyncBootstrapInfo {
@@ -1148,7 +1150,7 @@ impl MdbxVault {
     pub fn incremental_sync_checkpoint(
         &self,
     ) -> Result<MdbxIncrementalSyncCheckpoint, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
         Ok(PeerSyncService::current_checkpoint(&conn)?.into())
     }
 
@@ -1164,7 +1166,7 @@ impl MdbxVault {
             .parent()
             .filter(|path| !path.as_os_str().is_empty())
             .unwrap_or_else(|| Path::new("."));
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
         let bundle = PeerSyncService::export_complete_bundle(&conn, &self.device_id)?;
         let integrity_key = sync_integrity_key(&conn)?;
         let mut temporary = NamedTempFile::new_in(parent).map_err(StorageError::from)?;
@@ -1187,7 +1189,7 @@ impl MdbxVault {
         &self,
         source: String,
     ) -> Result<MdbxManualSyncApplyResult, MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
         let (bundle, info) = read_manual_bundle(&conn, Path::new(&source))?;
         if bundle.vault_id != self.vault_id {
             return Err(StorageError::ConstraintViolation(format!(
@@ -1223,7 +1225,7 @@ impl MdbxVault {
             ))
             .into());
         }
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
         if conn.keyring().is_none() {
             return Err(StorageError::Validation(
                 "metadata benchmark requires an unlocked vault".to_string(),
@@ -1282,7 +1284,7 @@ impl MdbxVault {
             .parent()
             .filter(|path| !path.as_os_str().is_empty())
             .unwrap_or_else(|| Path::new("."));
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
         let bundle = PeerSyncService::export_incremental_segment(
             &conn,
             &self.device_id,
@@ -1332,7 +1334,7 @@ impl MdbxVault {
         let expected_resume = expected_resume
             .map(MdbxIncrementalSyncResume::into_core)
             .transpose()?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
         let (bundle, _) = read_incremental_segment(&conn, Path::new(&source))?;
         let applied = PeerSyncService::apply_incremental_segment(
             &mut conn,

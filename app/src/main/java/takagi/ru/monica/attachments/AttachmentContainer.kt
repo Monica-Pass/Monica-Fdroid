@@ -54,8 +54,6 @@ object AttachmentContainer {
     @Volatile private var keepassServiceOverride: KeePassKdbxService? = null
     @Volatile private var defaultKeePassServiceCache: KeePassKdbxService? = null
 
-    // ---------------------------------------------------------------- public API
-
     fun facade(context: Context): AttachmentFacade {
         val app = ensureContext(context)
         facadeCache?.let { return it }
@@ -96,9 +94,12 @@ object AttachmentContainer {
         reconcilerCache?.let { return it }
         synchronized(this) {
             reconcilerCache?.let { return it }
-            val reconciler = BitwardenAttachmentReconciler(
-                repository = repository(app),
-                storage = storage(app)
+            // BitwardenSyncService asks for this reconciler during repository
+            // construction. Keep Attachment Room/storage out of that startup path;
+            // the reconciler resolves them on its first real reconcile call.
+            val reconciler = BitwardenAttachmentReconciler.lazy(
+                repositoryProvider = { repository(app) },
+                storageProvider = { storage(app) }
             )
             reconcilerCache = reconciler
             return reconciler
@@ -132,16 +133,12 @@ object AttachmentContainer {
         }
     }
 
-    /** 供业务层替换 [KeePassKdbxService]（例如测试或复用已有实例）。 */
     fun registerKeePassService(service: KeePassKdbxService) {
         keepassServiceOverride = service
-        // 新 executor 会直接使用 override；旧 executor 也通过 provider 动态读取 override。
         keepassExecutorCache = null
         keepassReconcilerCache = null
         facadeCache = null
     }
-
-    // ---------------------------------------------------------------- lazy builders
 
     private fun storage(app: Context): AttachmentStorage =
         storageCache ?: synchronized(this) {

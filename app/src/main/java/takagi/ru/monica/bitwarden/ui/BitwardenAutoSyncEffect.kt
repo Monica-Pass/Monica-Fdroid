@@ -5,6 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel
+import takagi.ru.monica.ui.theme.LocalPowerSavePolicy
 
 private const val PAGE_ENTER_AUTO_SYNC_DELAY_MS = 1_200L
 
@@ -15,8 +16,9 @@ internal fun BitwardenAutoSyncEffect(
     isAllView: Boolean,
     enabled: Boolean = true
 ) {
-    DisposableEffect(viewModel, isAllView, enabled) {
-        val allViewSessionId = if (enabled && isAllView) {
+    val powerSavePolicy = LocalPowerSavePolicy.current
+    DisposableEffect(viewModel, isAllView, enabled, powerSavePolicy.allowBackgroundPrewarm) {
+        val allViewSessionId = if (enabled && isAllView && powerSavePolicy.allowBackgroundPrewarm) {
             viewModel?.beginAllViewAutoSync()
         } else {
             null
@@ -28,10 +30,10 @@ internal fun BitwardenAutoSyncEffect(
         }
     }
 
-    LaunchedEffect(viewModel, selectedVaultId, isAllView, enabled) {
+    LaunchedEffect(viewModel, selectedVaultId, isAllView, enabled, powerSavePolicy.allowBackgroundPrewarm) {
         val targetViewModel = viewModel ?: return@LaunchedEffect
         val targetVaultId = selectedVaultId ?: return@LaunchedEffect
-        if (!enabled || isAllView) return@LaunchedEffect
+        if (!enabled || isAllView || !powerSavePolicy.allowBackgroundPrewarm) return@LaunchedEffect
         delay(PAGE_ENTER_AUTO_SYNC_DELAY_MS)
         targetViewModel.requestPageEnterAutoSync(targetVaultId)
     }

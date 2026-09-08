@@ -339,7 +339,8 @@ internal fun PasswordListDialogs(
             }
         }
 
-        val biometricAction = if (canUseBiometric) {
+        val skipIdentityVerification = appSettings.disablePasswordVerification
+        val biometricAction = if (!skipIdentityVerification && canUseBiometric) {
             {
                 val hostActivity = activity
                 if (hostActivity == null) {
@@ -382,7 +383,7 @@ internal fun PasswordListDialogs(
                 onPasswordErrorChange(false)
             },
             onConfirm = {
-                if (SecurityManager(context).verifyMasterPassword(passwordInput)) {
+                if (skipIdentityVerification || SecurityManager(context).verifyMasterPassword(passwordInput)) {
                     viewModel.viewModelScope.launch {
                         executeBatchDelete()
                     }
@@ -392,6 +393,7 @@ internal fun PasswordListDialogs(
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
+            requireIdentityVerification = !skipIdentityVerification,
             isPasswordError = passwordError,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             onBiometricClick = biometricAction,
@@ -408,8 +410,16 @@ internal fun PasswordListDialogs(
             itemTitle = item.title,
             itemType = stringResource(R.string.item_type_password),
             biometricEnabled = appSettings.biometricEnabled,
+            skipIdentityVerification = appSettings.disablePasswordVerification,
             onDismiss = {
                 onItemToDeleteChange(null)
+            },
+            onConfirmWithoutVerification = {
+                coroutineScope.launch {
+                    viewModel.deletePasswordEntry(item)
+                    Toast.makeText(context, context.getString(R.string.deleted), Toast.LENGTH_SHORT).show()
+                    onItemToDeleteChange(null)
+                }
             },
             onConfirmWithPassword = { password ->
                 onSingleItemPasswordInputChange(password)

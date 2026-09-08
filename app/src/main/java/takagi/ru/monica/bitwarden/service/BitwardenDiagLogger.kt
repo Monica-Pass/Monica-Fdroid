@@ -26,33 +26,45 @@ object BitwardenDiagLogger {
     @Volatile
     private var persistentLogFile: File? = null
 
+    /**
+     * BitwardenRepository is created while the password screen is being wired.
+     * Queue diagnostic file I/O onto the logger's serial worker so repository
+     * construction never creates directories or writes a session header on the
+     * UI thread. The header is queued before the file is published, preserving
+     * header-before-log ordering for concurrent callers.
+     */
     fun initialize(context: Context) {
         if (persistentLogFile != null) return
         synchronized(fileLock) {
             if (persistentLogFile != null) return
-            runCatching {
-                val logDir = File(context.applicationContext.filesDir, LOG_DIR_NAME)
-                if (!logDir.exists()) {
-                    logDir.mkdirs()
+            val appContext = context.applicationContext
+            val logDir = File(appContext.filesDir, LOG_DIR_NAME)
+            val file = File(logDir, LOG_FILE_NAME)
+
+            writeExecutor.execute {
+                synchronized(fileLock) {
+                    runCatching {
+                        if (!logDir.exists()) {
+                            logDir.mkdirs()
+                        }
+                        val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+                        val header = buildString {
+                            appendLine("=== Monica Bitwarden Diag Session ===")
+                            appendLine("session_start=$time")
+                            appendLine("app_version=${BuildConfig.FULL_VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+                            appendLine("app_display_version=${BuildConfig.VERSION_NAME}")
+                            appendLine("build_time=${BuildConfig.BUILD_TIME}")
+                            appendLine("git_sha=${BuildConfig.GIT_SHA}")
+                            appendLine("bw_diag_schema=${BuildConfig.BW_DIAG_SCHEMA}")
+                            appendLine("android_api=${Build.VERSION.SDK_INT}")
+                            appendLine("device=${Build.MANUFACTURER} ${Build.MODEL}")
+                            appendLine("===")
+                        }
+                        file.appendText(header)
+                    }
                 }
-                val file = File(logDir, LOG_FILE_NAME)
-                persistentLogFile = file
-                // 写入构建身份头，便于日志归因
-                val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-                val header = buildString {
-                    appendLine("=== Monica Bitwarden Diag Session ===")
-                    appendLine("session_start=$time")
-                    appendLine("app_version=${BuildConfig.FULL_VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-                    appendLine("app_display_version=${BuildConfig.VERSION_NAME}")
-                    appendLine("build_time=${BuildConfig.BUILD_TIME}")
-                    appendLine("git_sha=${BuildConfig.GIT_SHA}")
-                    appendLine("bw_diag_schema=${BuildConfig.BW_DIAG_SCHEMA}")
-                    appendLine("android_api=${Build.VERSION.SDK_INT}")
-                    appendLine("device=${Build.MANUFACTURER} ${Build.MODEL}")
-                    appendLine("===")
-                }
-                file.appendText(header)
             }
+            persistentLogFile = file
         }
     }
 

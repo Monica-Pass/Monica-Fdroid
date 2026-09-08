@@ -346,7 +346,10 @@ fun NoteListScreen(
         viewModel = bitwardenViewModel,
         selectedVaultId = selectedBitwardenVaultId,
         isAllView = selectedCategoryFilter is NoteCategoryFilter.All,
-        enabled = hasRestoredCategoryFilter
+        // Notes must not start an all-vault Bitwarden sync while viewing local,
+        // KeePass, or MDBX notes. Only an explicitly selected Bitwarden vault
+        // has a valid sync target here.
+        enabled = hasRestoredCategoryFilter && selectedBitwardenVaultId != null
     )
     val isTopBarSyncing = selectedBitwardenVaultId?.let { vaultId ->
         bitwardenSyncStatusByVault[vaultId].isUserVisibleSyncInProgress()
@@ -390,6 +393,11 @@ fun NoteListScreen(
     }
     val filteredNoteUiItems = remember(filteredNotes, parsedNoteById) {
         filteredNotes.map { item ->
+            item.toNoteListItemUiModel(parsedNoteById.getValue(item.id).content)
+        }
+    }
+    val allNoteUiItems = remember(notes, parsedNoteById) {
+        notes.map { item ->
             item.toNoteListItemUiModel(parsedNoteById.getValue(item.id).content)
         }
     }
@@ -675,9 +683,9 @@ fun NoteListScreen(
                                 text = {
                                     Text(
                                         if (isGridLayout) {
-                                            stringResource(R.string.switch_to_list)
+                                            stringResource(R.string.authenticator_layout_standard)
                                         } else {
-                                            stringResource(R.string.switch_to_grid)
+                                            stringResource(R.string.authenticator_layout_tile)
                                         }
                                     )
                                 },
@@ -797,7 +805,8 @@ fun NoteListScreen(
         }
 
         if (showPasswordDialog) {
-            val biometricAction = if (activity != null && canUseBiometric) {
+            val skipIdentityVerification = settings.disablePasswordVerification
+            val biometricAction = if (!skipIdentityVerification && activity != null && canUseBiometric) {
                 {
                     biometricHelper.authenticate(
                         activity = activity,
@@ -831,7 +840,7 @@ fun NoteListScreen(
                     passwordError = false
                 },
                 onConfirm = {
-                    if (securityManager.verifyMasterPassword(masterPassword)) {
+                    if (skipIdentityVerification || securityManager.verifyMasterPassword(masterPassword)) {
                         performDelete()
                     } else {
                         passwordError = true
@@ -839,6 +848,7 @@ fun NoteListScreen(
                 },
                 confirmText = stringResource(R.string.delete),
                 destructiveConfirm = true,
+                requireIdentityVerification = !skipIdentityVerification,
                 isPasswordError = passwordError,
                 passwordErrorText = stringResource(R.string.current_password_incorrect),
                 onBiometricClick = biometricAction,
@@ -939,6 +949,7 @@ fun NoteListScreen(
 
         NoteListContent(
             notes = filteredNoteUiItems,
+            allNotes = allNoteUiItems,
             isInitialLoading = !parsedNotesState.isReady,
             isGridLayout = isGridLayout,
             isSearchExpanded = isSearchExpanded,
@@ -946,6 +957,7 @@ fun NoteListScreen(
             isBitwardenDatabaseView = isBitwardenDatabaseView,
             bitwardenRepository = bitwardenRepository,
             selectedNoteIds = selectedNoteIds,
+            onUpdateSortOrders = viewModel::updateSortOrders,
             onNoteClick = { noteId ->
                 if (isSelectionMode) {
                     selectedNoteIds = if (selectedNoteIds.contains(noteId)) {

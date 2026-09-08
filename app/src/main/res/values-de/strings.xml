@@ -1626,6 +1626,10 @@
     <string name="bitwarden_status_queued">Synchronisierung in der Warteschlange</string>
     <string name="bitwarden_status_synced">Synchronisiert</string>
 
+    <!-- Haptic Feedback -->
+    <string name="haptic_feedback">Haptisches Feedback</string>
+    <string name="haptic_feedback_description">Bei Wischgesten, langem Drücken und anderen Interaktionen vibrieren</string>
+
     <!-- Validator Vibration -->
     <string name="validator_vibration">Validator-Vibration</string>
     <string name="validator_vibration_description">Vibrieren, wenn der Countdown bald zu Ende geht</string>
@@ -2236,7 +2240,8 @@
     <string name="developer_share_logs_desc">Letzte Protokolle exportieren und teilen</string>
     <string name="developer_functions">Entwicklerfunktionen</string>
     <string name="developer_disable_password_verification">Passwortüberprüfung deaktivieren</string>
-    <string name="developer_disable_password_verification_desc">Passwortüberprüfung beim App-Start überspringen (nur für Entwicklungstests)</string>
+    <string name="developer_disable_password_verification_desc">Identitätsprüfung in der App, beim Autofill, in der Monica-Tastatur und bei gefährlichen Aktionen überspringen. Bestätigungen und Exportpasswörter bleiben erforderlich.</string>
+    <string name="developer_disable_password_verification_failed">Die vollständige Umgehung konnte nicht aktiviert werden. Entsperre Monica einmal normal und versuche es erneut.</string>
     <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS-Kompatibilität</string>
     <string name="developer_passkey_hyperos_biometric_bypass_desc">Überspringen Sie auf HyperOS-Geräten die biometrische Überprüfung Passkey und Auf das Master-Passwort zurückgreifen. Lassen Sie dies deaktiviert, es sei denn, biometrische Eingabeaufforderungen schlagen auf diesem Gerät fehl.</string>
     <string name="developer_launcher_name_use_pass">Verwenden Sie Monica Pass als Launcher-Namen</string>

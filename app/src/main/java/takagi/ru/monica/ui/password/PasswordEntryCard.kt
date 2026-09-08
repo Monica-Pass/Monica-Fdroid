@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -117,8 +118,14 @@ fun PasswordEntryCard(
                         val uploadedIcon = if (entry.customIconType == takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_UPLOADED) {
                             takagi.ru.monica.ui.icons.rememberUploadedPasswordIcon(entry.customIconValue)
                         } else null
-                        val primaryAppPackageName = entry.primaryLinkedAppPackageName()
+                        val hasResolvedCustomIcon = simpleIcon != null || uploadedIcon != null
+                        val primaryAppPackageName = if (hasResolvedCustomIcon) {
+                            ""
+                        } else {
+                            entry.primaryLinkedAppPackageName()
+                        }
                         val appIcon = if (
+                            !hasResolvedCustomIcon &&
                             primaryAppPackageName.isNotBlank() &&
                             !takagi.ru.monica.autofill_ng.ui.isWebAddress(entry.website)
                         ) {
@@ -129,10 +136,11 @@ fun PasswordEntryCard(
                             title = entry.title,
                             appPackageName = primaryAppPackageName,
                             tintColor = MaterialTheme.colorScheme.primary,
-                            enabled = entry.customIconType == takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_NONE
+                            enabled = !hasResolvedCustomIcon &&
+                                entry.customIconType == takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_NONE
                         )
 
-                        val favicon = if (entry.website.isNotBlank()) {
+                        val favicon = if (!hasResolvedCustomIcon && entry.website.isNotBlank()) {
                             takagi.ru.monica.autofill_ng.ui.rememberFavicon(
                                 url = entry.website,
                                 enabled = autoMatchedSimpleIcon.resolved && autoMatchedSimpleIcon.slug == null
@@ -304,12 +312,23 @@ fun PasswordEntryCard(
                         null
                     }
                     val shouldHideDisplayLines = hideOtherContentWhenAuthenticator && authenticatorState != null
-                    val displayLines = if (
-                        passwordCardDisplayMode == takagi.ru.monica.data.PasswordCardDisplayMode.TITLE_ONLY || shouldHideDisplayLines
+                    val displayLines = remember(
+                        entry.username,
+                        entry.website,
+                        entry.notes,
+                        entry.updatedAt,
+                        passwordCardDisplayFields,
+                        passwordCardDisplayMode,
+                        shouldHideDisplayLines,
                     ) {
-                        emptyList()
-                    } else {
-                        resolvePasswordCardDisplayLines(entry, passwordCardDisplayFields).take(3)
+                        if (
+                            passwordCardDisplayMode == takagi.ru.monica.data.PasswordCardDisplayMode.TITLE_ONLY ||
+                            shouldHideDisplayLines
+                        ) {
+                            emptyList()
+                        } else {
+                            resolvePasswordCardDisplayLines(entry, passwordCardDisplayFields).take(3)
+                        }
                     }
                     displayLines.forEach { line ->
                         Row(

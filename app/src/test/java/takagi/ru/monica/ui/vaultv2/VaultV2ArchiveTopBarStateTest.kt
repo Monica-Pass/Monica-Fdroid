@@ -53,6 +53,16 @@ class VaultV2ArchiveTopBarStateTest {
         assertEquals("Root/Work", state.storageFilterSecondaryKey)
     }
 
+    @Test
+    fun scrollPositionPersistenceDoesNotInvalidateTheWholePaneOnEveryScrollFrame() {
+        val paneState = projectFile(
+            "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2PaneState.kt"
+        ).readText()
+
+        assertFalse(paneState.contains("var scrollIndex by mutableIntStateOf"))
+        assertFalse(paneState.contains("var scrollOffset by mutableIntStateOf"))
+    }
+
     private fun projectFile(relativePath: String): File {
         var directory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
         while (

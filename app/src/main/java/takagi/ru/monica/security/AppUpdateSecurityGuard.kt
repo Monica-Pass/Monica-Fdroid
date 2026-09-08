@@ -1,9 +1,8 @@
 package takagi.ru.monica.security
 
 import android.content.Context
-import android.content.pm.PackageInfo
-import android.os.Build
 import android.util.Log
+import takagi.ru.monica.BuildConfig
 
 /**
  * Forces Monica back to a locked state when the installed app version changes.
@@ -21,15 +20,12 @@ object AppUpdateSecurityGuard {
 
     fun enforceLockIfAppUpdated(context: Context, reason: String) {
         val appContext = context.applicationContext
-        val packageInfo = runCatching {
-            getPackageInfoCompat(appContext)
-        }.getOrElse { error ->
-            Log.w(TAG, "Failed to inspect package info for reason=$reason", error)
-            return
-        }
 
-        val currentVersionCode = packageInfo.longVersionCodeCompat()
-        val currentVersionName = packageInfo.versionName.orEmpty()
+        // BuildConfig is generated from the installed APK's manifest version.
+        // Reading it avoids a PackageManager query on every cold start while
+        // preserving the same upgrade/downgrade detection semantics.
+        val currentVersionCode = BuildConfig.VERSION_CODE.toLong()
+        val currentVersionName = BuildConfig.VERSION_NAME
         val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastVersionCode = prefs.getLong(KEY_LAST_VERSION_CODE, Long.MIN_VALUE)
         val lastVersionName = prefs.getString(KEY_LAST_VERSION_NAME, null)
@@ -51,28 +47,6 @@ object AppUpdateSecurityGuard {
                 .putLong(KEY_LAST_VERSION_CODE, currentVersionCode)
                 .putString(KEY_LAST_VERSION_NAME, currentVersionName)
                 .apply()
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun getPackageInfoCompat(context: Context): PackageInfo {
-        val packageManager = context.packageManager
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            packageManager.getPackageInfo(
-                context.packageName,
-                android.content.pm.PackageManager.PackageInfoFlags.of(0)
-            )
-        } else {
-            packageManager.getPackageInfo(context.packageName, 0)
-        }
-    }
-
-    private fun PackageInfo.longVersionCodeCompat(): Long {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            longVersionCode
-        } else {
-            @Suppress("DEPRECATION")
-            versionCode.toLong()
         }
     }
 }

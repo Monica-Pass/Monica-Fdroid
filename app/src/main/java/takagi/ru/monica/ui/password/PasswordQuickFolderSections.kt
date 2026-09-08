@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import takagi.ru.monica.R
 import takagi.ru.monica.data.KeePassSyncPhase
 import takagi.ru.monica.data.KeePassSyncStatus
@@ -462,7 +463,8 @@ internal fun PasswordQuickFolderBreadcrumbPath(
     breadcrumbs: List<PasswordQuickFolderBreadcrumb>,
     currentFilter: CategoryFilter,
     onNavigate: (CategoryFilter) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontalContentPadding: Dp = 8.dp,
 ) {
     Box(
         modifier = modifier
@@ -474,7 +476,7 @@ internal fun PasswordQuickFolderBreadcrumbPath(
             modifier = Modifier
                 .fillMaxSize()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .padding(horizontal = horizontalContentPadding, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             breadcrumbs.forEachIndexed { index, crumb ->

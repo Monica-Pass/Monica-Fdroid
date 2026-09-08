@@ -33,6 +33,8 @@ fun ExtensionsScreen(
     onNavigateToMonicaPlus: () -> Unit = {},
     onNavigateToQuickSetup: () -> Unit = {},
     isPlusActivated: Boolean = false,
+    hapticFeedbackEnabled: Boolean = true,
+    onHapticFeedbackChange: (Boolean) -> Unit = {},
     validatorVibrationEnabled: Boolean = false,
     onValidatorVibrationChange: (Boolean) -> Unit = {},
     copyNextCodeWhenExpiring: Boolean = false,
@@ -327,6 +329,17 @@ fun ExtensionsScreen(
                 )
             }
              
+            Spacer(modifier = Modifier.height(8.dp))
+            ExtensionSection(title = stringResource(R.string.haptic_feedback)) {
+                ExtensionSwitchItem(
+                    icon = Icons.Default.Vibration,
+                    title = stringResource(R.string.haptic_feedback),
+                    description = stringResource(R.string.haptic_feedback_description),
+                    checked = hapticFeedbackEnabled,
+                    onCheckedChange = onHapticFeedbackChange
+                )
+            }
+
             // 验证器设置（需要 Plus）
             if (isPlusActivated) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -336,6 +349,7 @@ fun ExtensionsScreen(
                         title = stringResource(R.string.validator_vibration),
                         description = stringResource(R.string.validator_vibration_description),
                         checked = validatorVibrationEnabled,
+                        enabled = hapticFeedbackEnabled,
                         onCheckedChange = onValidatorVibrationChange
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))

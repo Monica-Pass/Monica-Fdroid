@@ -7,11 +7,11 @@ import org.junit.Test
 class FrozenVersionCodeGuardTest {
 
     @Test
-    fun `version code remains frozen for same-signature rollback installs`() {
+    fun `fdroid version code matches synchronized release`() {
         val appBuild = projectFile("app/build.gradle").readText()
 
-        assertTrue(appBuild.contains("def appVersionCode = 12"))
-        assertTrue(appBuild.contains("Do not increment this value for routine releases."))
+        assertTrue(appBuild.contains("versionCode 17"))
+        assertTrue(appBuild.contains("versionName \"1.0.310\""))
     }
 
     private fun projectFile(relativePath: String): File {

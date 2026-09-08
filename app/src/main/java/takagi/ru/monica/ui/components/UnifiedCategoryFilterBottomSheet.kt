@@ -187,6 +187,7 @@ fun UnifiedCategoryFilterBottomSheet(
     onRenameBitwardenFolder: ((vaultId: Long, folderId: String, newName: String) -> Unit)? = null,
     onDeleteBitwardenFolder: ((vaultId: Long, folderId: String) -> Unit)? = null,
     onVerifyMasterPassword: ((String) -> Boolean)? = null,
+    skipIdentityVerification: Boolean = false,
     onRenameCategory: ((Category) -> Unit)? = null,
     onDeleteCategory: ((Category) -> Unit)? = null,
     onRequestBiometricVerify: BiometricVerifyRequester? = null,
@@ -1131,7 +1132,7 @@ fun UnifiedCategoryFilterBottomSheet(
             deletePasswordInput = ""
             deletePasswordError = false
         }
-        val biometricAction = onRequestBiometricVerify?.let { request ->
+        val biometricAction = if (skipIdentityVerification) null else onRequestBiometricVerify?.let { request ->
             {
                 request(
                     {
@@ -1162,7 +1163,7 @@ fun UnifiedCategoryFilterBottomSheet(
             },
             onConfirm = {
                 val verifier = onVerifyMasterPassword
-                val verified = verifier?.invoke(deletePasswordInput) ?: true
+                val verified = skipIdentityVerification || (verifier?.invoke(deletePasswordInput) ?: true)
                 if (!verified) {
                     deletePasswordError = true
                     return@M3IdentityVerifyDialog
@@ -1171,6 +1172,7 @@ fun UnifiedCategoryFilterBottomSheet(
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
+            requireIdentityVerification = !skipIdentityVerification,
             isPasswordError = deletePasswordError,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             showBiometricSlot = true,

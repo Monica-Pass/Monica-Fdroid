@@ -109,6 +109,34 @@ private fun VersionLinkButton(
 
 private val LocalSettingsSectionContent = compositionLocalOf { false }
 
+internal data class SettingsSectionCornerRadii(
+    val top: Int,
+    val bottom: Int
+)
+
+internal fun settingsSectionCornerRadii(
+    index: Int,
+    totalItems: Int
+): SettingsSectionCornerRadii = when {
+    totalItems <= 1 -> SettingsSectionCornerRadii(top = 24, bottom = 24)
+    index == 0 -> SettingsSectionCornerRadii(top = 24, bottom = 4)
+    index == totalItems - 1 -> SettingsSectionCornerRadii(top = 4, bottom = 24)
+    else -> SettingsSectionCornerRadii(top = 4, bottom = 4)
+}
+
+private fun settingsSectionItemShape(index: Int, totalItems: Int): RoundedCornerShape {
+    val radii = settingsSectionCornerRadii(index, totalItems)
+    return RoundedCornerShape(
+        topStart = radii.top.dp,
+        topEnd = radii.top.dp,
+        bottomStart = radii.bottom.dp,
+        bottomEnd = radii.bottom.dp
+    )
+}
+
+private fun visibleSettingsIndex(vararg precedingItems: Boolean): Int =
+    precedingItems.count { it }
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun SettingsScreen(
@@ -790,6 +818,28 @@ fun SettingsScreen(
         showPreviewFeaturesItem,
         showDeveloperSettingsItem
     ).any { it }
+    val securityItemCount = listOf(
+        showMasterPasswordLockingItem,
+        showScreenshotProtectionItem,
+        showPermissionManagementItem
+    ).count { it }
+    val dataManagementItemCount = listOf(
+        showSyncBackupItem,
+        showAutofillItem,
+        showTrashItem,
+        showClearDataItem
+    ).count { it }
+    val appearanceItemCount = listOf(
+        showThemeItem,
+        showColorSchemeItem,
+        showInterfaceScaleItem,
+        showLanguageItem,
+        showBottomNavItem,
+        showExtensionsItem,
+        showPageCustomizationItem
+    ).count { it }
+    val aboutItemCount = listOf(showVersionItem, showUpdateCheckItem).count { it }
+    val developerItemCount = listOf(showPreviewFeaturesItem, showDeveloperSettingsItem).count { it }
     
     Scaffold(
         contentWindowInsets = if (showTopBar) {
@@ -893,7 +943,8 @@ fun SettingsScreen(
                             title = masterPasswordLockingTitle,
                             subtitle = masterPasswordLockingDescription,
                             onClick = onNavigateToMasterPasswordLocking,
-                            modifier = getSharedModifier("master_password_locking_card")
+                            modifier = getSharedModifier("master_password_locking_card"),
+                            sectionShape = settingsSectionItemShape(0, securityItemCount)
                         )
                     }
 
@@ -904,7 +955,11 @@ fun SettingsScreen(
                             subtitle = screenshotProtectionSubtitle,
                             onClick = {
                                 viewModel.updateScreenshotProtectionEnabled(!settings.screenshotProtectionEnabled)
-                            }
+                            },
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showMasterPasswordLockingItem),
+                                securityItemCount
+                            )
                         )
                     }
 
@@ -914,7 +969,14 @@ fun SettingsScreen(
                             title = context.getString(R.string.permission_management_title),
                             subtitle = context.getString(R.string.permission_management_subtitle),
                             onClick = onNavigateToPermissionManagement,
-                            modifier = getSharedModifier("permission_settings_card")
+                            modifier = getSharedModifier("permission_settings_card"),
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(
+                                    showMasterPasswordLockingItem,
+                                    showScreenshotProtectionItem
+                                ),
+                                securityItemCount
+                            )
                         )
                     }
                 }
@@ -928,7 +990,8 @@ fun SettingsScreen(
                             title = context.getString(R.string.sync_backup_title),
                             subtitle = context.getString(R.string.sync_backup_description),
                             onClick = onNavigateToSyncBackup,
-                            modifier = getSharedModifier("sync_settings_card")
+                            modifier = getSharedModifier("sync_settings_card"),
+                            sectionShape = settingsSectionItemShape(0, dataManagementItemCount)
                         )
                     }
 
@@ -938,7 +1001,11 @@ fun SettingsScreen(
                             title = context.getString(R.string.autofill),
                             subtitle = context.getString(R.string.autofill_subtitle),
                             onClick = onNavigateToAutofill,
-                            modifier = getSharedModifier("autofill_settings_card")
+                            modifier = getSharedModifier("autofill_settings_card"),
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showSyncBackupItem),
+                                dataManagementItemCount
+                            )
                         )
                     }
 
@@ -951,7 +1018,11 @@ fun SettingsScreen(
                             },
                             onAutoDeleteDaysChange = { days ->
                                 viewModel.updateTrashAutoDeleteDays(days)
-                            }
+                            },
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showSyncBackupItem, showAutofillItem),
+                                dataManagementItemCount
+                            )
                         )
                     }
 
@@ -961,7 +1032,15 @@ fun SettingsScreen(
                             title = context.getString(R.string.clear_all_data),
                             subtitle = context.getString(R.string.clear_all_data_subtitle),
                             onClick = { showClearDataDialog = true },
-                            iconTint = MaterialTheme.colorScheme.error
+                            iconTint = MaterialTheme.colorScheme.error,
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(
+                                    showSyncBackupItem,
+                                    showAutofillItem,
+                                    showTrashItem
+                                ),
+                                dataManagementItemCount
+                            )
                         )
                     }
                 }
@@ -974,7 +1053,8 @@ fun SettingsScreen(
                             icon = Icons.Default.Palette,
                             title = context.getString(R.string.theme),
                             subtitle = themeSubtitle,
-                            onClick = { showThemeDialog = true }
+                            onClick = { showThemeDialog = true },
+                            sectionShape = settingsSectionItemShape(0, appearanceItemCount)
                         )
                     }
 
@@ -984,14 +1064,22 @@ fun SettingsScreen(
                             title = context.getString(R.string.color_scheme),
                             subtitle = colorSchemeSubtitle,
                             onClick = { onNavigateToColorScheme() },
-                            modifier = getSharedModifier("color_scheme_card")
+                            modifier = getSharedModifier("color_scheme_card"),
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showThemeItem),
+                                appearanceItemCount
+                            )
                         )
                     }
 
                     if (showInterfaceScaleItem) {
                         InterfaceScaleSettingsItem(
                             scalePercent = settings.interfaceScalePercent,
-                            onClick = { showInterfaceScaleSheet = true }
+                            onClick = { showInterfaceScaleSheet = true },
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showThemeItem, showColorSchemeItem),
+                                appearanceItemCount
+                            )
                         )
                     }
 
@@ -1000,7 +1088,15 @@ fun SettingsScreen(
                             icon = Icons.Default.Language,
                             title = context.getString(R.string.language),
                             subtitle = languageSubtitle,
-                            onClick = { showLanguageDialog = true }
+                            onClick = { showLanguageDialog = true },
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(
+                                    showThemeItem,
+                                    showColorSchemeItem,
+                                    showInterfaceScaleItem
+                                ),
+                                appearanceItemCount
+                            )
                         )
                     }
 
@@ -1010,7 +1106,16 @@ fun SettingsScreen(
                             title = context.getString(R.string.bottom_nav_settings),
                             subtitle = context.getString(R.string.bottom_nav_settings_entry_subtitle),
                             onClick = onNavigateToBottomNavSettings,
-                            modifier = getSharedModifier("bottom_nav_settings_card")
+                            modifier = getSharedModifier("bottom_nav_settings_card"),
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(
+                                    showThemeItem,
+                                    showColorSchemeItem,
+                                    showInterfaceScaleItem,
+                                    showLanguageItem
+                                ),
+                                appearanceItemCount
+                            )
                         )
                     }
 
@@ -1020,7 +1125,17 @@ fun SettingsScreen(
                             title = context.getString(R.string.extensions_title),
                             subtitle = context.getString(R.string.extensions_description),
                             onClick = onNavigateToExtensions,
-                            modifier = getSharedModifier("extensions_settings_card")
+                            modifier = getSharedModifier("extensions_settings_card"),
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(
+                                    showThemeItem,
+                                    showColorSchemeItem,
+                                    showInterfaceScaleItem,
+                                    showLanguageItem,
+                                    showBottomNavItem
+                                ),
+                                appearanceItemCount
+                            )
                         )
                     }
 
@@ -1029,7 +1144,18 @@ fun SettingsScreen(
                             icon = Icons.Default.Tune,
                             title = context.getString(R.string.page_adjust_custom_title),
                             subtitle = context.getString(R.string.page_adjust_custom_subtitle),
-                            onClick = onNavigateToPageCustomization
+                            onClick = onNavigateToPageCustomization,
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(
+                                    showThemeItem,
+                                    showColorSchemeItem,
+                                    showInterfaceScaleItem,
+                                    showLanguageItem,
+                                    showBottomNavItem,
+                                    showExtensionsItem
+                                ),
+                                appearanceItemCount
+                            )
                         )
                     }
                 }
@@ -1042,7 +1168,8 @@ fun SettingsScreen(
                             icon = Icons.Default.Info,
                             title = context.getString(R.string.version),
                             subtitle = installedVersion,
-                            onClick = { showVersionInfoDialog = true }
+                            onClick = { showVersionInfoDialog = true },
+                            sectionShape = settingsSectionItemShape(0, aboutItemCount)
                         )
                     }
 
@@ -1069,7 +1196,11 @@ fun SettingsScreen(
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                            }
+                            },
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showVersionItem),
+                                aboutItemCount
+                            )
                         )
                     }
                 }
@@ -1082,7 +1213,8 @@ fun SettingsScreen(
                             icon = Icons.Default.Science,
                             title = stringResource(R.string.preview_features_title),
                             subtitle = stringResource(R.string.preview_features_description),
-                            onClick = { previewFeaturesExpanded = true }
+                            onClick = { previewFeaturesExpanded = true },
+                            sectionShape = settingsSectionItemShape(0, developerItemCount)
                         )
                     }
 
@@ -1092,6 +1224,10 @@ fun SettingsScreen(
                             title = stringResource(R.string.developer_settings),
                             subtitle = stringResource(R.string.developer_settings_subtitle),
                             modifier = getSharedModifier("developer_settings_card"),
+                            sectionShape = settingsSectionItemShape(
+                                visibleSettingsIndex(showPreviewFeaturesItem),
+                                developerItemCount
+                            ),
                             onClick = {
                                 val hasActivity = activity != null
                                 val biometricEnabled = settings.biometricEnabled
@@ -1106,6 +1242,9 @@ fun SettingsScreen(
                                 showDeveloperVerifyDialog = false
 
                                 when {
+                                    settings.disablePasswordVerification -> {
+                                        onNavigateToDeveloperSettings()
+                                    }
                                     !hasActivity -> {
                                         android.util.Log.w(
                                             "SettingsScreen",
@@ -1935,18 +2074,19 @@ fun SettingsScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Password Validation
-                OutlinedTextField(
-                    value = clearDataPasswordInput,
-                    onValueChange = { clearDataPasswordInput = it },
-                    label = { Text(context.getString(R.string.enter_master_password_to_confirm)) },
-                    singleLine = true,
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
+                if (!settings.disablePasswordVerification) {
+                    OutlinedTextField(
+                        value = clearDataPasswordInput,
+                        onValueChange = { clearDataPasswordInput = it },
+                        label = { Text(context.getString(R.string.enter_master_password_to_confirm)) },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
                 
                 // Action Buttons
                 Row(
@@ -1969,7 +2109,9 @@ fun SettingsScreen(
                         onClick = {
                             coroutineScope.launch {
                                 val securityManager = takagi.ru.monica.security.SecurityManager(context)
-                                if (securityManager.verifyMasterPassword(clearDataPasswordInput)) {
+                                if (settings.disablePasswordVerification ||
+                                    securityManager.verifyMasterPassword(clearDataPasswordInput)
+                                ) {
                                     dismissClearDataSheet {
                                         onClearAllData(
                                             clearPasswords,
@@ -1989,7 +2131,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
-                        enabled = clearDataPasswordInput.isNotEmpty(),
+                        enabled = settings.disablePasswordVerification || clearDataPasswordInput.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error,
                             contentColor = MaterialTheme.colorScheme.onError
@@ -2161,9 +2303,8 @@ fun SettingsSection(
         CompositionLocalProvider(LocalSettingsSectionContent provides true) {
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 content()
             }
@@ -2181,21 +2322,21 @@ fun SettingsItem(
     onClick: () -> Unit,
     iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
     trailingContent: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sectionShape: androidx.compose.ui.graphics.Shape? = null
 ) {
     val isInSection = LocalSettingsSectionContent.current
     Card(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = if (isInSection) 0.dp else 16.dp, vertical = if (isInSection) 1.dp else 4.dp),
-        shape = if (isInSection) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp),
+            .padding(horizontal = if (isInSection) 0.dp else 16.dp, vertical = if (isInSection) 0.dp else 4.dp),
+        shape = sectionShape
+            ?: if (isInSection) RoundedCornerShape(10.dp) else RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isInSection) {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            }
+                MaterialTheme.colorScheme.surfaceContainer
+            } else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         )
     ) {
         Row(
@@ -2255,10 +2396,12 @@ fun SettingsItemWithSwitch(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = if (isInSection) 0.dp else 16.dp, vertical = if (isInSection) 1.dp else 4.dp),
-        shape = if (isInSection) RoundedCornerShape(0.dp) else RoundedCornerShape(16.dp),
+            .padding(horizontal = if (isInSection) 0.dp else 16.dp, vertical = if (isInSection) 0.dp else 4.dp),
+        shape = if (isInSection) RoundedCornerShape(10.dp) else RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (enabled) {
+            containerColor = if (enabled && isInSection) {
+                MaterialTheme.colorScheme.surfaceContainer
+            } else if (enabled) {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             } else {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
@@ -3059,7 +3202,8 @@ private fun SettingsItemWithTrashConfig(
     trashEnabled: Boolean,
     trashAutoDeleteDays: Int,
     onTrashEnabledChange: (Boolean) -> Unit,
-    onAutoDeleteDaysChange: (Int) -> Unit
+    onAutoDeleteDaysChange: (Int) -> Unit,
+    sectionShape: androidx.compose.ui.graphics.Shape? = null
 ) {
     var showTrashSettingsSheet by remember { mutableStateOf(false) }
     
@@ -3077,7 +3221,8 @@ private fun SettingsItemWithTrashConfig(
         icon = Icons.Default.Delete,
         title = stringResource(R.string.trash_bin),
         subtitle = subtitleText,
-        onClick = { showTrashSettingsSheet = true }
+        onClick = { showTrashSettingsSheet = true },
+        sectionShape = sectionShape
     )
 
     if (showTrashSettingsSheet) {

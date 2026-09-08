@@ -102,7 +102,6 @@ pub fn default_attachment_batch_limits() -> MdbxAttachmentBatchLimits {
 }
 
 use std::io::{self, Cursor, Write};
-use std::sync::Mutex;
 
 use mdbx_core::model::attachment::StorageMode;
 use mdbx_core::model::Attachment;
@@ -113,6 +112,7 @@ use mdbx_storage::repo::{
     AttachmentPlaintextPurpose, AttachmentRepo, AttachmentWriteOptions, CommitChange,
     CommitContext, CommitOperation, OperationExecution,
 };
+use mdbx_storage::runtime::VaultRuntime;
 use mdbx_storage::tiga_policy::TigaAuthorizationContext;
 use sha2::{Digest, Sha256};
 
@@ -127,23 +127,11 @@ pub(crate) struct AttachmentContentOperation<'a> {
 }
 
 pub(crate) fn vault_blob_store(conn: &VaultConnection) -> StorageResult<FileSystemBlobStore> {
-    let mut statement = conn.inner().prepare("PRAGMA database_list")?;
-    let rows = statement.query_map([], |row| {
-        Ok((row.get::<_, String>(1)?, row.get::<_, String>(2)?))
-    })?;
-    for row in rows {
-        let (name, path) = row?;
-        if name == "main" && !path.is_empty() {
-            return Ok(FileSystemBlobStore::new(format!("{path}.blobs")));
-        }
-    }
-    Err(StorageError::Validation(
-        "external attachment storage requires a file-backed vault".to_string(),
-    ))
+    conn.external_blob_store()
 }
 
 pub(crate) fn execute_attachment_content_operation<F>(
-    conn: &Mutex<VaultConnection>,
+    runtime: &VaultRuntime,
     device_id: &str,
     spec: AttachmentContentOperation<'_>,
     action: F,
@@ -172,7 +160,7 @@ where
         }],
     )
     .with_intent_hash(intent_hash);
-    let conn = conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+    let conn = runtime.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
     let ctx = CommitContext::new(device_id.to_string());
     let execution = ctx.run_operation(&conn, operation, |scoped| action(&conn, scoped))?;
     let (attachment, commit_id, already_committed) = match execution {
@@ -472,7 +460,7 @@ pub(crate) fn hash_attachment_batch_intent(
 }
 
 pub(crate) fn execute_attachment_batch_operation(
-    conn: &Mutex<VaultConnection>,
+    runtime: &VaultRuntime,
     device_id: &str,
     operation_id: String,
     commands: Vec<MdbxAttachmentBatchCommand>,
@@ -489,7 +477,7 @@ pub(crate) fn execute_attachment_batch_operation(
         attachment_batch_changes(&commands),
     )
     .with_intent_hash(intent_hash);
-    let conn = conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+    let conn = runtime.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
     let ctx = CommitContext::new(device_id.to_string());
     let ids_for_action = attachment_ids.clone();
     let execution = ctx.run_operation(&conn, operation, |scoped| {

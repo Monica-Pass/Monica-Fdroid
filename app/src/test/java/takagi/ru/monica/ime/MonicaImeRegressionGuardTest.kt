@@ -64,6 +64,49 @@ class MonicaImeRegressionGuardTest {
     }
 
     @Test
+    fun imePasswordRowsResolvePasswordsOnlyWhenTheUserFills() {
+        val source = projectFile(
+            "app/src/main/java/takagi/ru/monica/ime/MonicaInputMethodService.kt"
+        ).readText()
+        val projectionBlock = source
+            .substringAfter("private fun PasswordEntry.toImeEntryOrNull(")
+            .substringBefore("private fun resolveSourceLabel(")
+        val smartFillBlock = source
+            .substringAfter("private fun handleSmartFillPassword(")
+            .substringBefore("private fun handleSmartFillCardWallet(")
+
+        assertFalse(
+            "Building the keyboard list must not decrypt every stored password.",
+            projectionBlock.contains("resolveFillableField(password)")
+        )
+        assertTrue(
+            "The keyboard row must retain the stored value for on-demand fill resolution.",
+            projectionBlock.contains("password = password")
+        )
+        assertTrue(
+            "Smart fill must resolve the stored password immediately before committing it.",
+            smartFillBlock.contains("val password = resolveFillableField(entry.password).orEmpty()")
+        )
+    }
+
+    @Test
+    fun imeSearchAndPanelRefreshReuseTheUnlockedVaultSnapshot() {
+        val source = projectFile(
+            "app/src/main/java/takagi/ru/monica/ime/MonicaInputMethodService.kt"
+        ).readText()
+
+        assertTrue(source.contains("private var vaultSourceCache: ImeVaultSourceCache? = null"))
+        assertTrue(source.contains("val sources = vaultSourceCache ?: loadImeVaultSources("))
+        assertTrue(source.contains("if (force) invalidateVaultSourceCache()"))
+        assertTrue(source.contains("private var totpSourceCache: List<SecureItem>? = null"))
+        assertTrue(source.contains("private var cardWalletSourceCache: List<SecureItem>? = null"))
+        assertTrue(
+            "Typing a query should filter the cached projection instead of forcing another Room snapshot.",
+            source.contains("requestRefreshVaultEntries(debounceMillis = ImeSearchRefreshDebounceMs)")
+        )
+    }
+
+    @Test
     fun imeDatabaseScopesTrackMdbxAsItsOwnSource() {
         val serviceSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ime/MonicaInputMethodService.kt"
@@ -133,6 +176,61 @@ class MonicaImeRegressionGuardTest {
             "Cancelling a stale IME refresh is normal and must not be surfaced as an error like 'Q0 was cancelled'.",
             serviceSource.contains("catch (e: CancellationException)") &&
                 serviceSource.indexOf("catch (e: CancellationException)") < serviceSource.indexOf("catch (e: Exception)")
+        )
+    }
+
+    @Test
+    fun imeAuthenticatorAndCardPanelsShowLoadingBeforeEmptyState() {
+        val serviceSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ime/MonicaInputMethodService.kt"
+        ).readText()
+        val uiSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ime/MonicaInputMethodUi.kt"
+        ).readText()
+        val authenticatorPane = uiSource
+            .substringAfter("private fun AuthenticatorPane(")
+            .substringBefore("@Composable\nprivate fun CardWalletPane")
+        val cardWalletPane = uiSource
+            .substringAfter("private fun CardWalletPane(")
+            .substringBefore("@Composable\nprivate fun DatabaseScopeFilterRow")
+
+        assertTrue(
+            "Authenticator loading must win over an empty-state card during the initial refresh.",
+            authenticatorPane.indexOf("if (uiState.isAutofillLoading)") >= 0 &&
+                authenticatorPane.indexOf("AutofillLoadingState()") <
+                    authenticatorPane.indexOf("ime_empty_authenticator_title")
+        )
+        assertTrue(
+            "Card-wallet loading must win over an empty-state card during the initial refresh.",
+            cardWalletPane.indexOf("if (uiState.isAutofillLoading)") >= 0 &&
+                cardWalletPane.indexOf("AutofillLoadingState()") <
+                    cardWalletPane.indexOf("ime_empty_card_wallet_title")
+        )
+        assertTrue(
+            "Unlocking directly into a secondary vault panel must not render its empty state before data arrives.",
+            serviceSource.contains("isAutofillLoading = targetPanel.requiresInitialVaultLoading()")
+        )
+        assertTrue(
+            "Restoring the IME with an authenticator or card panel open must retain the loading state during refresh.",
+            serviceSource.contains("previousState.activePanel.requiresInitialVaultLoading()")
+        )
+        assertTrue(
+            "The refresh entry point must protect every content panel, including observer-driven refreshes.",
+            serviceSource.contains("currentState.activePanel.requiresInitialVaultLoading()")
+        )
+        assertTrue(
+            "Switching back to an already loaded keyboard panel must retain its content instead of showing a spinner again.",
+            serviceSource.contains("private val loadedVaultPanels = mutableSetOf<MonicaImePanel>()") &&
+                serviceSource.contains("this !in loadedVaultPanels") &&
+                serviceSource.contains("loadedVaultPanels += currentState.activePanel")
+        )
+        assertTrue(
+            "Already loaded authenticator and card panels should not recompute their list merely because the user switches tabs.",
+            serviceSource.contains("if (requiresInitialLoad || needsPasswordPresentationRefresh)")
+        )
+        assertTrue(
+            "A vault data change must clear panel readiness so the next result is never stale.",
+            serviceSource.contains("loadedVaultPanels.clear()")
         )
     }
 

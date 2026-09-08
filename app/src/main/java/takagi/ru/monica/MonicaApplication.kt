@@ -1,25 +1,27 @@
 package takagi.ru.monica
 
 import android.app.Application
+import android.content.Context
+import android.os.PowerManager
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.koin.android.ext.koin.androidContext
-import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.startKoin
-import org.koin.core.logger.Level
+import kotlinx.coroutines.withContext
 import takagi.ru.monica.attachments.AttachmentContainer
 import takagi.ru.monica.data.AppLauncherIcon
 import takagi.ru.monica.data.AppLauncherLabel
-import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.mdbx.MdbxDiagLogger
 import takagi.ru.monica.perf.MainThreadStallMonitor
 import takagi.ru.monica.security.AppUpdateSecurityGuard
+import takagi.ru.monica.security.SessionManager
 import takagi.ru.monica.sync.AndroidSyncNetworkGate
 import takagi.ru.monica.sync.SyncTaskRunner
 import takagi.ru.monica.utils.AppLauncherIconManager
-import takagi.ru.monica.security.SessionManager
+import takagi.ru.monica.utils.ChangeTriggeredBackupScheduler
 import takagi.ru.monica.utils.SettingsManager
 import takagi.ru.monica.webdav.WebDavBackoffState
 import takagi.ru.monica.webdav.WebDavCertificateTrustStore
@@ -28,52 +30,74 @@ import takagi.ru.monica.workers.KeePassRemoteUploadWorker
 
 /**
  * Monica 应用程序入口
- * 
- * 负责初始化全局依赖注入容器（Koin）
- * 
- * 安全设计考量:
- * - Koin 在进程级别初始化，生命周期与应用一致
- * - 敏感依赖使用 single 作用域，避免多实例
- * - 模块化设计便于测试时替换 mock 实现
+ *
+ * 安全关键的锁状态检查仍然在首帧前同步完成；与首帧无关的恢复、清理和诊断则延迟到启动安静期执行。
  */
 class MonicaApplication : Application() {
-    
+
     companion object {
         private const val TAG = "MonicaApplication"
+        private const val POST_LAUNCH_DELAY_MS = 1_200L
+        private const val HOUSEKEEPING_DELAY_MS = 2_500L
     }
-    
+
+    private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     override fun onCreate() {
         super.onCreate()
 
         SessionManager.attachAppContext(this)
 
+        // Security invariant: an app update must invalidate the previous runtime
+        // session before any activity is allowed to restore it. Keep this sync.
         AppUpdateSecurityGuard.enforceLockIfAppUpdated(
             context = this,
             reason = "application_on_create"
         )
-        
-        initKoin()
+
         SyncTaskRunner.installNetworkGate(AndroidSyncNetworkGate(this))
-        MainThreadStallMonitor.start()
+
+        // Logger initialization no longer performs file writes on this thread.
         MdbxDiagLogger.initialize(this)
-        syncLauncherEntryPointsWithSettings()
         WebDavBackoffState.attachPersistence(this)
         WebDavCertificateTrustStore.attach(this)
+        // F-Droid cleartext protection reads the current opt-in setting for every request.
         WebDavGateway.attach(this)
-        scheduleKeePassRemoteUploadRecovery()
-        scheduleAttachmentHousekeeping()
+
+        schedulePostLaunchMaintenance()
     }
-    
+
     /**
-     * 初始化 Koin 依赖注入框架
+     * Work that is important for eventual consistency or diagnostics but is not
+     * required to draw or authenticate the first screen. Delaying it avoids
+     * competing with class loading, Compose startup and database initialization.
      */
-    private fun initKoin() {
-        startKoin {
-            // 关闭日志以提高性能和安全性
-            androidLogger(Level.NONE)
-            
-            // 提供 Android Context
-            androidContext(this@MonicaApplication)
+    private fun schedulePostLaunchMaintenance() {
+        startupScope.launch {
+            delay(POST_LAUNCH_DELAY_MS)
+            MainThreadStallMonitor.start()
+            scheduleKeePassRemoteUploadRecovery()
+            syncLauncherEntryPointsWithSettings()
+            startChangeTriggeredBackupObserver()
+        }
+
+        startupScope.launch(Dispatchers.IO) {
+            delay(HOUSEKEEPING_DELAY_MS)
+            runAttachmentHousekeeping()
+        }
+    }
+
+    /**
+     * 注册「改动后自动同步」的表失效监听。
+     *
+     * 放在启动安静期而不是 [onCreate]：注册会触碰数据库实例，且首帧不依赖它。
+     * 观察者常驻，开关状态在回调里读取，用户改设置后无需重启。
+     */
+    private fun startChangeTriggeredBackupObserver() {
+        runCatching {
+            ChangeTriggeredBackupScheduler(this).start()
+        }.onFailure { error ->
+            Log.w(TAG, "Failed to start change-triggered backup observer", error)
         }
     }
 
@@ -86,45 +110,39 @@ class MonicaApplication : Application() {
     }
 
     /**
-     * 附件子系统的启动级维护：
-     * - 扫描并删除 Room 已不再引用的密文孤儿文件
-     *
-     * 在独立协程里跑，失败不影响应用启动。
+     * 附件子系统维护：扫描并删除 Room 已不再引用的密文孤儿文件。
      */
-    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-    private fun scheduleAttachmentHousekeeping() {
-        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching {
-                val facade = AttachmentContainer.facade(this@MonicaApplication)
-                facade.purgeOrphanedLocalBlobs()
-            }.onFailure { Log.w(TAG, "Attachment housekeeping failed", it) }
+    private suspend fun runAttachmentHousekeeping() = withContext(Dispatchers.IO) {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (powerManager.isPowerSaveMode) {
+            Log.d(TAG, "Attachment housekeeping deferred while battery saver is active")
+            return@withContext
         }
+        runCatching {
+            val facade = AttachmentContainer.facade(this@MonicaApplication)
+            facade.purgeOrphanedLocalBlobs()
+        }.onFailure { Log.w(TAG, "Attachment housekeeping failed", it) }
     }
 
-    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-    private fun syncLauncherEntryPointsWithSettings() {
-        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+    private suspend fun syncLauncherEntryPointsWithSettings() = withContext(Dispatchers.IO) {
+        runCatching {
+            val settings = SettingsManager(this@MonicaApplication).settingsFlow.first()
+            AppLauncherIconManager.repairLaunchEntryPointsAfterUpgrade(
+                this@MonicaApplication,
+                settings.appLauncherIcon,
+                settings.appLauncherLabel
+            )
+        }.onFailure { error ->
+            Log.w(TAG, "Failed to sync launcher entry points with settings", error)
             runCatching {
-                val settings = SettingsManager(this@MonicaApplication).settingsFlow.first()
                 AppLauncherIconManager.repairLaunchEntryPointsAfterUpgrade(
                     this@MonicaApplication,
-                    settings.appLauncherIcon,
-                    settings.appLauncherLabel
+                    AppLauncherIcon.MODERN,
+                    AppLauncherLabel.MONICA_PASS
                 )
-            }.onFailure { error ->
-                Log.w(TAG, "Failed to sync launcher entry points with settings", error)
-                runCatching {
-                    AppLauncherIconManager.repairLaunchEntryPointsAfterUpgrade(
-                        this@MonicaApplication,
-                        AppLauncherIcon.MODERN,
-                        AppLauncherLabel.MONICA_PASS
-                    )
-                }.onFailure { fallbackError ->
-                    Log.w(TAG, "Failed to apply fallback launcher entry points", fallbackError)
-                }
+            }.onFailure { fallbackError ->
+                Log.w(TAG, "Failed to apply fallback launcher entry points", fallbackError)
             }
         }
     }
-
 }
-

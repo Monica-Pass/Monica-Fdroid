@@ -27,7 +27,9 @@ fun DeleteConfirmDialog(
     itemTitle: String,
     itemType: String = "Item",
     biometricEnabled: Boolean,
+    skipIdentityVerification: Boolean = false,
     onDismiss: () -> Unit,
+    onConfirmWithoutVerification: () -> Unit = {},
     onConfirmWithPassword: (String) -> Unit,
     onConfirmWithBiometric: () -> Unit
 ) {
@@ -39,7 +41,7 @@ fun DeleteConfirmDialog(
         biometricEnabled && biometricHelper.isBiometricAvailable()
     }
 
-    val biometricAction = if (isBiometricAvailable && activity != null) {
+    val biometricAction = if (!skipIdentityVerification && isBiometricAvailable && activity != null) {
         {
             biometricHelper.authenticate(
                 activity = activity,
@@ -65,12 +67,15 @@ fun DeleteConfirmDialog(
         onPasswordChange = { passwordInput = it },
         onDismiss = onDismiss,
         onConfirm = {
-            if (passwordInput.isNotEmpty()) {
+            if (skipIdentityVerification) {
+                onConfirmWithoutVerification()
+            } else if (passwordInput.isNotEmpty()) {
                 onConfirmWithPassword(passwordInput)
             }
         },
         confirmText = stringResource(R.string.delete),
         destructiveConfirm = true,
+        requireIdentityVerification = !skipIdentityVerification,
         onBiometricClick = biometricAction,
         biometricHintText = if (biometricAction == null) {
             context.getString(R.string.biometric_not_available)

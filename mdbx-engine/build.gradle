@@ -30,14 +30,14 @@ android {
     }
 }
 
-// ==== F-Droid: build libmdbx_ffi.so from Rust source ====
+// ==== F-Droid: build the verified MDBX3-compatible runtime from Rust source ====
 // Source: https://github.com/Monica-Pass/Mdbx (MIT)
-// Pinned commit: 974c517465e7b6cac0947d2d59875aa4211fa16b ("build: standardize MDBX2 Android release assets")
+// Pinned commit: d1d3cc4fdff4e33fcb70099b3e7df36eeae43ba4 (MDBX3 preview runtime)
 // Resolve order: -PmdbxRustSrc=<path> > MDBX_RUST_SRC env > <rootDir>/Mdbx-ffi
 def mdbxRustSourceDir = (project.findProperty('mdbxRustSrc')
         ?: System.getenv('MDBX_RUST_SRC')
         ?: new File(rootDir, 'Mdbx-ffi').absolutePath) as String
-def mdbxRustCommit = '974c517465e7b6cac0947d2d59875aa4211fa16b'
+def mdbxRustCommit = 'd1d3cc4fdff4e33fcb70099b3e7df36eeae43ba4'
 
 tasks.register('buildMdbxFfiFromSource') {
     group = 'build'
@@ -59,12 +59,14 @@ tasks.register('buildMdbxFfiFromSource') {
         def command = ['cargo', 'ndk',
                        '-t', 'arm64-v8a', '-t', 'armeabi-v7a', '-t', 'x86_64',
                        '-o', outputDir.absolutePath,
-                       'build', '--release', '-p', 'mdbx-ffi']
+                       'build', '--profile', 'mdbx3-release', '-p', 'mdbx-ffi']
         println "Building libmdbx_ffi.so from ${sourceDir} (cargo ndk)"
         def proc = new ProcessBuilder(command)
                 .directory(sourceDir)
                 .redirectErrorStream(true)
-                .start()
+        def rustFlags = proc.environment().get('RUSTFLAGS')?.trim()
+        proc.environment().put('RUSTFLAGS', rustFlags ? "${rustFlags} -C link-arg=-Wl,--build-id=sha1" : '-C link-arg=-Wl,--build-id=sha1')
+        proc = proc.start()
         proc.inputStream.eachLine { line -> println line }
         def exitCode = proc.waitFor()
         if (exitCode != 0) {

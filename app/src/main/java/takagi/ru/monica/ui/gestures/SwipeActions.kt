@@ -18,13 +18,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.haptic.rememberHapticFeedback
 import kotlin.math.abs
 
 /**
@@ -57,6 +58,7 @@ fun SwipeActions(
     modifier: Modifier = Modifier,
     allowSwipeLeft: Boolean = true,
     allowSwipeRight: Boolean = true,
+    cardShape: Shape = RoundedCornerShape(16.dp),
     content: @Composable () -> Unit
 ) {
     // 使用非动画状态记录实时拖动偏移，避免高频创建协程
@@ -87,19 +89,8 @@ fun SwipeActions(
     }
 
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    
-    // Vibrator
-    val vibrator = remember {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        }
-    }
-    
+    val swipeHaptic = rememberHapticFeedback()
+
     // 震动状态
     var hasVibratedLeft by remember { mutableStateOf(false) }
     var hasVibratedRight by remember { mutableStateOf(false) }
@@ -108,8 +99,9 @@ fun SwipeActions(
     var cardWidth by remember { mutableFloatStateOf(0f) }
     val maxSwipeDistance = 300f
     
-    // 统一圆角形状
-    val componentShape = remember { RoundedCornerShape(16.dp) }
+    // The caller can supply the foreground card's exact shape so the swipe
+    // background and clipping never expose a second corner treatment.
+    val componentShape = cardShape
     
     // 弹性物理模型
     val springSpec = spring<Float>(
@@ -287,20 +279,10 @@ fun SwipeActions(
                                     val dynamicThreshold = cardWidth * 0.2f
                                     if (allowSwipeRight && dragOffset > dynamicThreshold && !hasVibratedRight) {
                                         hasVibratedRight = true
-                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                            vibrator?.vibrate(android.os.VibrationEffect.createWaveform(takagi.ru.monica.util.VibrationPatterns.TICK, -1))
-                                        } else {
-                                            @Suppress("DEPRECATION")
-                                            vibrator?.vibrate(20)
-                                        }
+                                        swipeHaptic.performPullThreshold()
                                     } else if (allowSwipeLeft && dragOffset < -dynamicThreshold && !hasVibratedLeft) {
                                         hasVibratedLeft = true
-                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                            vibrator?.vibrate(android.os.VibrationEffect.createWaveform(takagi.ru.monica.util.VibrationPatterns.TICK, -1))
-                                        } else {
-                                            @Suppress("DEPRECATION")
-                                            vibrator?.vibrate(20)
-                                        }
+                                        swipeHaptic.performPullThreshold()
                                     } else if (abs(dragOffset) < dynamicThreshold) {
                                         hasVibratedRight = false
                                         hasVibratedLeft = false

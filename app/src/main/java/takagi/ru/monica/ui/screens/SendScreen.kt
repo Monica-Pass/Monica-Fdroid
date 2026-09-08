@@ -140,7 +140,7 @@ import takagi.ru.monica.data.bitwarden.BitwardenSend
 import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.ui.components.ExpressiveTopBar
 import takagi.ru.monica.ui.common.pull.calculateDampedPullOffset
-import takagi.ru.monica.util.VibrationPatterns
+import takagi.ru.monica.ui.haptic.rememberHapticFeedback
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -193,15 +193,7 @@ fun SendScreen(
     val triggerDistance = with(LocalDensity.current) { 72.dp.toPx() }
     var hasVibrated by remember { mutableStateOf(false) }
     var canTriggerPullToSearch by remember { mutableStateOf(false) }
-    val vibrator = remember {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        }
-    }
+    val pullHaptic = rememberHapticFeedback()
 
     val filteredSends = remember(sends, searchQuery, vaultLookup) {
         val query = searchQuery.trim()
@@ -420,12 +412,7 @@ fun SendScreen(
 
                                             if (oldOffset < triggerDistance && newOffset >= triggerDistance && !hasVibrated) {
                                                 hasVibrated = true
-                                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                                    vibrator?.vibrate(android.os.VibrationEffect.createWaveform(VibrationPatterns.TICK, -1))
-                                                } else {
-                                                    @Suppress("DEPRECATION")
-                                                    vibrator?.vibrate(20)
-                                                }
+                                                pullHaptic.performPullThreshold()
                                             } else if (newOffset < triggerDistance) {
                                                 hasVibrated = false
                                             }

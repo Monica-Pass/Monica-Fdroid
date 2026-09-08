@@ -1,0 +1,6 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"确定 Android 跨 ABI 边界",DONE,"文档明确单 ELF 不能跨 ARM32、ARM64、x86_64","git diff --check",2026-08-31T00:00:00+08:00,0,"采用统一发布契约与单 ABI 安装"
+2,"实现 ABI 薄包与发布索引",DONE,"生成三薄包、三独立 SO、全量 ZIP 和 JSON index","powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-mdbx3-android-abi-splits.ps1",2026-08-31T00:00:00+08:00,0,"正式 release gate 是打包前置条件"
+3,"实现薄包发布门禁",DONE,"校验 ZIP 成员、ELF machine、report、hash 与 ABI 状态","python -B scripts/verify-mdbx3-android-abi-splits.py --root target/mdbx3-android-abi-splits",2026-08-31T00:00:00+08:00,0,"status=ready"
+4,"接入 MDBX3 Android 构建",DONE,"完整 Android 构建默认生成薄包且保留诊断跳过开关","git diff --check",2026-08-31T00:00:00+08:00,0,"新增 AbiSplitOutputRoot 与 SkipAbiSplitPackaging"
+5,"提交并推送 ABI 分发模块",DONE,"独立提交同步到 origin/master","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"提交 fa5e8b6 已推送"

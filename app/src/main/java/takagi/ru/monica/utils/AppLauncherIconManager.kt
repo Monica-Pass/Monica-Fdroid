@@ -8,6 +8,8 @@ import takagi.ru.monica.MainActivity
 import takagi.ru.monica.R
 import takagi.ru.monica.data.AppLauncherIcon
 import takagi.ru.monica.data.AppLauncherLabel
+import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 
 object AppLauncherIconManager {
     private const val COMPAT_MODERN_ALIAS = "takagi.ru.monica.ModernLauncherAlias"
@@ -18,6 +20,14 @@ object AppLauncherIconManager {
     private const val VISIBLE_CLASSIC_PASS_ALIAS = "takagi.ru.monica.ClassicVisibleLauncherAlias"
     private const val VISIBLE_MODERN_MONICA_ALIAS = "takagi.ru.monica.ModernVisibleLauncherAliasMonica"
     private const val VISIBLE_CLASSIC_MONICA_ALIAS = "takagi.ru.monica.ClassicVisibleLauncherAliasMonica"
+
+    private data class BiometricPromptBrandingMethods(
+        val logoRes: Method?,
+        val logoDescription: Method?
+    )
+
+    private val biometricPromptBrandingMethods =
+        ConcurrentHashMap<Class<*>, BiometricPromptBrandingMethods>()
 
     fun apply(context: Context, icon: AppLauncherIcon, label: AppLauncherLabel) {
         repairCompatibilityLaunchTargets(context)
@@ -47,22 +57,26 @@ object AppLauncherIconManager {
 
     fun applyBiometricPromptBranding(context: Context, promptInfoBuilder: Any) {
         val builderClass = promptInfoBuilder.javaClass
-        val iconRes = resolveBrandingIconRes(context)
-
-        runCatching {
-            builderClass.methods.firstOrNull { method ->
-                method.name == "setLogoRes" &&
-                    method.parameterTypes.size == 1 &&
-                    method.parameterTypes[0] == Int::class.javaPrimitiveType
-            }?.invoke(promptInfoBuilder, iconRes)
+        val methods = biometricPromptBrandingMethods.computeIfAbsent(builderClass) { clazz ->
+            BiometricPromptBrandingMethods(
+                logoRes = clazz.methods.firstOrNull { method ->
+                    method.name == "setLogoRes" &&
+                        method.parameterTypes.size == 1 &&
+                        method.parameterTypes[0] == Int::class.javaPrimitiveType
+                },
+                logoDescription = clazz.methods.firstOrNull { method ->
+                    method.name == "setLogoDescription" &&
+                        method.parameterTypes.size == 1 &&
+                        CharSequence::class.java.isAssignableFrom(method.parameterTypes[0])
+                }
+            )
         }
 
-        runCatching {
-            builderClass.methods.firstOrNull { method ->
-                method.name == "setLogoDescription" &&
-                    method.parameterTypes.size == 1 &&
-                    CharSequence::class.java.isAssignableFrom(method.parameterTypes[0])
-            }?.invoke(promptInfoBuilder, context.getString(R.string.app_name))
+        methods.logoRes?.let { method ->
+            runCatching { method.invoke(promptInfoBuilder, resolveBrandingIconRes(context)) }
+        }
+        methods.logoDescription?.let { method ->
+            runCatching { method.invoke(promptInfoBuilder, context.getString(R.string.app_name)) }
         }
     }
 

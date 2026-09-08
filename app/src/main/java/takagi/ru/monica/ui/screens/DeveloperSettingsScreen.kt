@@ -89,6 +89,7 @@ import takagi.ru.monica.mdbx.MdbxDiagLogger
 import takagi.ru.monica.passkey.PasskeyValidationDiagnostics
 import takagi.ru.monica.security.SecurityDiagLogger
 import takagi.ru.monica.security.SessionManager
+import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.steam.diagnostics.SteamDiagLogger
 import takagi.ru.monica.viewmodel.SettingsViewModel
 
@@ -104,6 +105,7 @@ fun DeveloperSettingsScreen(
     onNavigateToMdbx: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val securityManager = remember(context) { SecurityManager(context.applicationContext) }
     val settings by viewModel.settings.collectAsState()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -278,13 +280,23 @@ fun DeveloperSettingsScreen(
                     checked = disablePasswordVerification,
                     onCheckedChange = { enabled ->
                         android.util.Log.d("DeveloperSettings", "Toggling password verification: $enabled")
-                        disablePasswordVerification = enabled
                         scope.launch {
-                            viewModel.updateDisablePasswordVerification(enabled)
-                            android.util.Log.d(
-                                "DeveloperSettings",
-                                "Password verification setting updated to: $enabled"
-                            )
+                            val configured = securityManager.configureDeveloperVerificationBypass(enabled)
+                            if (configured) {
+                                disablePasswordVerification = enabled
+                                viewModel.updateDisablePasswordVerification(enabled)
+                                android.util.Log.d(
+                                    "DeveloperSettings",
+                                    "Password verification setting updated to: $enabled"
+                                )
+                            } else {
+                                disablePasswordVerification = settings.disablePasswordVerification
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.developer_disable_password_verification_failed),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
                     }
                 )

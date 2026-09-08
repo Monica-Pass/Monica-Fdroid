@@ -94,6 +94,7 @@ class BitwardenSyncWorker(
                 .setRequiredNetworkType(
                     if (requiresWifi) NetworkType.UNMETERED else NetworkType.CONNECTED
                 )
+                .setRequiresBatteryNotLow(true)
                 .build()
             
             val data = workDataOf(

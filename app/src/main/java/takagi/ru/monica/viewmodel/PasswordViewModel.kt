@@ -53,6 +53,7 @@ import takagi.ru.monica.repository.asMdbxBatchMove
 import takagi.ru.monica.repository.findMdbxReplicaTargetConflictIds
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.security.SessionManager
+import takagi.ru.monica.rustcore.RustPasswordListCore
 import takagi.ru.monica.data.model.TotpData
 import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.utils.KeePassCustomFieldData
@@ -500,17 +501,6 @@ class PasswordViewModel(
     init {
         restoreLastCategoryFilter()
         observeInvalidCustomCategoryFilter()
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
-                repairLegacyDetachedKeePassEntries()
-                repairLegacyOwnershipConflicts()
-            }.onFailure { error ->
-                Log.w("PasswordViewModel", "Password startup maintenance failed", error)
-            }
-        }
-        viewModelScope.launch(Dispatchers.Default) {
-            warmupBitwardenOfflineSecretCache()
-        }
     }
     
     fun getBitwardenFolders(vaultId: Long): Flow<List<BitwardenFolder>> {
@@ -624,7 +614,9 @@ class PasswordViewModel(
                 (filter as? CategoryFilter.Custom)?.categoryId?.let(::setOf).orEmpty()
             val baseFlow: Flow<List<PasswordEntry>> = if (query.isNotBlank()) {
                 // Extended search: query + custom fields, then apply current category filter in-memory.
-                val searchFlow = repository.searchPasswordEntries(query).map { baseResults ->
+                val searchFlow = rawAllPasswordsSource.map { allEntries ->
+                    val baseResults = RustPasswordListCore.filterEntries(allEntries, query)
+                        ?: allEntries.filter { matchesSearchQuery(it, query) }
                     val customFieldMatchIds = try {
                         customFieldRepository?.searchEntryIdsByFieldContent(query) ?: emptyList()
                     } catch (e: Exception) {
@@ -779,13 +771,12 @@ class PasswordViewModel(
                 } else {
                     dedupeExactEntries(filtered)
                 }
-                val decrypted = exactDeduped.map { entry ->
-                    entry.copy(password = inspectSecretState(entry).plainValueOrEmpty())
-                }
+                // Keep the stored ciphertext intact for explicit copy/move operations, but
+                // do not decrypt every row merely to render the password list.
                 if (shouldKeepRawDisplay) {
-                    decrypted
+                    exactDeduped
                 } else {
-                    filterGhostEntriesForDisplay(decrypted)
+                    filterGhostEntriesForDisplay(exactDeduped)
                 }
             }
         }
@@ -865,6 +856,41 @@ class PasswordViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    // Startup repair and offline-secret warming are important, but neither is required
+    // to produce the first password-list frame. Defer them until the primary list
+    // metadata and categories have emitted once, then give the UI a short settling
+    // window before starting CPU/I/O-heavy maintenance.
+    init {
+        viewModelScope.launch {
+            combine(
+                passwordEntriesReady,
+                allPasswordsForUiReady,
+                categoriesReady,
+            ) { entriesReady, lookupReady, categoryListReady ->
+                entriesReady && lookupReady && categoryListReady
+            }
+                .filter { it }
+                .first()
+
+            kotlinx.coroutines.delay(1500L)
+
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching {
+                    repairLegacyDetachedKeePassEntries()
+                    repairLegacyOwnershipConflicts()
+                }.onFailure { error ->
+                    Log.w("PasswordViewModel", "Deferred password maintenance failed", error)
+                }
+            }
+            viewModelScope.launch(Dispatchers.Default) {
+                runCatching { warmupBitwardenOfflineSecretCache() }
+                    .onFailure { error ->
+                        Log.w("PasswordViewModel", "Deferred Bitwarden cache warmup failed", error)
+                    }
+            }
+        }
+    }
 
     // Lightweight archive stream for Vault V2. Password contents stay out of list state.
     private val archivedPasswordsForUiSource: Flow<List<PasswordEntry>> = rawArchivedPasswordsSource
@@ -1012,24 +1038,18 @@ class PasswordViewModel(
     }
 
     private fun filterGhostEntriesForDisplay(entries: List<PasswordEntry>): List<PasswordEntry> {
-        if (entries.size <= 1) return entries
-
-        val groups = entries.groupBy { buildGhostGroupKey(it) }
-        val ghostIds = mutableSetOf<Long>()
-
-        groups.values.forEach { group ->
-            if (group.size <= 1) return@forEach
-            if (!group.any { it.password.isNotBlank() }) return@forEach
-
-            group.forEach { entry ->
-                val isPasswordMode = entry.loginType.equals("PASSWORD", ignoreCase = true)
-                val shouldFilterGhost = !entry.isLocalOnlyEntry() || entry.hasOwnershipConflict()
-                if (isPasswordMode && entry.password.isBlank() && shouldFilterGhost) {
-                    ghostIds += entry.id
-                }
-            }
-        }
-
+        val ghostIds = findGhostDisplayIds(
+            entries = entries,
+            idOf = PasswordEntry::id,
+            groupKeyOf = ::buildGhostGroupKey,
+            isPasswordMode = { entry ->
+                entry.loginType.equals("PASSWORD", ignoreCase = true)
+            },
+            shouldFilterGhost = { entry ->
+                !entry.isLocalOnlyEntry() || entry.hasOwnershipConflict()
+            },
+            resolveSecret = { entry -> inspectSecretState(entry).plainValueOrEmpty() },
+        )
         if (ghostIds.isEmpty()) return entries
         return entries.filterNot { it.id in ghostIds }
     }

@@ -48,6 +48,12 @@ pub enum StorageError {
 
     #[error("crypto error: {0}")]
     Crypto(#[from] CryptoError),
+
+    #[error("vault runtime lock is poisoned")]
+    RuntimeLockPoisoned,
+
+    #[error("reader generation is stale: expected {expected}, actual {actual}")]
+    StaleReaderGeneration { expected: u64, actual: u64 },
 }
 
 pub type StorageResult<T> = Result<T, StorageError>;

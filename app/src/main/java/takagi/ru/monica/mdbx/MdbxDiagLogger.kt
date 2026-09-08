@@ -28,33 +28,44 @@ object MdbxDiagLogger {
     @Volatile
     private var persistentLogFile: File? = null
 
+    /**
+     * Prepare the logger without doing directory creation or file writes on the
+     * application's startup thread. The header task is queued before the file is
+     * published, preserving header-before-log ordering even under concurrent use.
+     */
     fun initialize(context: Context) {
         if (persistentLogFile != null) return
         synchronized(fileLock) {
             if (persistentLogFile != null) return
-            runCatching {
-                val logDir = File(context.applicationContext.filesDir, LOG_DIR_NAME)
-                if (!logDir.exists()) {
-                    logDir.mkdirs()
+            val appContext = context.applicationContext
+            val logDir = File(appContext.filesDir, LOG_DIR_NAME)
+            val file = File(logDir, LOG_FILE_NAME)
+
+            writeExecutor.execute {
+                synchronized(fileLock) {
+                    runCatching {
+                        if (!logDir.exists()) {
+                            logDir.mkdirs()
+                        }
+                        val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+                        val header = buildString {
+                            appendLine("=== Monica MDBX Diag Session ===")
+                            appendLine("session_start=$time")
+                            appendLine("app_version=${BuildConfig.FULL_VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+                            appendLine("app_display_version=${BuildConfig.VERSION_NAME}")
+                            appendLine("build_time=${BuildConfig.BUILD_TIME}")
+                            appendLine("git_sha=${BuildConfig.GIT_SHA}")
+                            appendLine("android_api=${Build.VERSION.SDK_INT}")
+                            appendLine("device=${Build.MANUFACTURER} ${Build.MODEL}")
+                            appendLine("===")
+                        }
+                        file.appendText(header)
+                    }.onFailure {
+                        Log.e(TAG, "Failed to initialize MDBX diag logger", it)
+                    }
                 }
-                val file = File(logDir, LOG_FILE_NAME)
-                persistentLogFile = file
-                val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-                val header = buildString {
-                    appendLine("=== Monica MDBX Diag Session ===")
-                    appendLine("session_start=$time")
-                    appendLine("app_version=${BuildConfig.FULL_VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-                    appendLine("app_display_version=${BuildConfig.VERSION_NAME}")
-                    appendLine("build_time=${BuildConfig.BUILD_TIME}")
-                    appendLine("git_sha=${BuildConfig.GIT_SHA}")
-                    appendLine("android_api=${Build.VERSION.SDK_INT}")
-                    appendLine("device=${Build.MANUFACTURER} ${Build.MODEL}")
-                    appendLine("===")
-                }
-                file.appendText(header)
-            }.onFailure {
-                Log.e(TAG, "Failed to initialize MDBX diag logger", it)
             }
+            persistentLogFile = file
         }
     }
 
