@@ -234,3 +234,15 @@ For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
 
 For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
 
+
+## About this repository
+
+This is the F-Droid build repository for Monica. It contains the F-Droid-specific build configuration and source packaging used to build the app independently.
+
+The main Monica source repository is:
+https://github.com/Monica-Pass/Monica
+
+Please report app issues, feature requests, and user feedback in the main repository:
+https://github.com/Monica-Pass/Monica/issues
+
+For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
