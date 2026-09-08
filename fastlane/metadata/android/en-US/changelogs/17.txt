@@ -1,7 +1,5 @@
-Updated the F-Droid build to the local Android 1.0.310 feature set.
+Synced the F-Droid build with Monica 1.0.310.
 
-Added custom artwork and manual image cropping for bank cards, documents, and billing addresses; improved authenticator and card-wallet first-load performance; added note tile layouts and change-triggered WebDAV backup; and included recent security, autofill, and interface fixes.
+Added custom card artwork and image cropping, note tile layouts, and change-triggered WebDAV backup. Improved authenticator and card-wallet loading and fixed category selection when adding a password from autofill.
 
-Fixed missing local category folders when adding a password from the autofill account list.
-
-QR scanning continues to use ZXing. Google and Microsoft proprietary authentication SDKs remain excluded. MDBX3 and Monica performance libraries are built from vendored Rust source.
+QR scanning uses ZXing; proprietary Google and Microsoft authentication SDKs remain excluded. Native MDBX and Monica libraries are built from Rust source.
