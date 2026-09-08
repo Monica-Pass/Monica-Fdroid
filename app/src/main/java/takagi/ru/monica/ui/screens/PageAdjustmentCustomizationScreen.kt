@@ -2176,6 +2176,33 @@ fun AuthenticatorCardAdjustmentScreen(
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
 
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                    )
+
+                    ListItem(
+                        headlineContent = {
+                            Text(text = stringResource(R.string.haptic_feedback))
+                        },
+                        supportingContent = {
+                            Text(text = stringResource(R.string.haptic_feedback_description))
+                        },
+                        leadingContent = {
+                            Icon(imageVector = Icons.Default.Vibration, contentDescription = null)
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.hapticFeedbackEnabled,
+                                onCheckedChange = viewModel::updateHapticFeedbackEnabled
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            viewModel.updateHapticFeedbackEnabled(!settings.hapticFeedbackEnabled)
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+
                     if (settings.isPlusActivated) {
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -2195,10 +2222,13 @@ fun AuthenticatorCardAdjustmentScreen(
                             trailingContent = {
                                 Switch(
                                     checked = settings.validatorVibrationEnabled,
-                                    onCheckedChange = viewModel::updateValidatorVibrationEnabled
+                                    onCheckedChange = viewModel::updateValidatorVibrationEnabled,
+                                    enabled = settings.hapticFeedbackEnabled
                                 )
                             },
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.clickable(
+                                enabled = settings.hapticFeedbackEnabled
+                            ) {
                                 viewModel.updateValidatorVibrationEnabled(!settings.validatorVibrationEnabled)
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)

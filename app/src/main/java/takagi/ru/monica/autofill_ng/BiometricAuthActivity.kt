@@ -20,6 +20,8 @@ import takagi.ru.monica.R
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
 import takagi.ru.monica.repository.PasswordRepository
+import takagi.ru.monica.security.DeveloperVerificationPolicy
+import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.utils.BiometricHelper
 import takagi.ru.monica.utils.SettingsManager
 
@@ -51,7 +53,13 @@ class BiometricAuthActivity : AppCompatActivity() {
         val settingsManager = SettingsManager(this)
 
         lifecycleScope.launch {
-            val biometricEnabled = settingsManager.settingsFlow.first().biometricEnabled
+            val settings = settingsManager.settingsFlow.first()
+            if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
+                SecurityManager(applicationContext).unlockVaultForDeveloperBypass(settings.autoLockMinutes)
+                handleAuthenticationSuccess()
+                return@launch
+            }
+            val biometricEnabled = settings.biometricEnabled
             if (!biometricEnabled || !biometricHelper.isBiometricAvailable()) {
                 Toast.makeText(
                     this@BiometricAuthActivity,

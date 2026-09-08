@@ -1141,7 +1141,9 @@ fun PasswordDetailScreen(
 
     if (showMasterPasswordDialog) {
         val activity = context as? FragmentActivity
+        val skipIdentityVerification = settings.disablePasswordVerification
         val retryBiometricAction = if (
+            !skipIdentityVerification &&
             activity != null &&
             biometricEnabled &&
             biometricHelper.isBiometricAvailable()
@@ -1180,7 +1182,7 @@ fun PasswordDetailScreen(
                 passwordVerificationError = false
             },
             onConfirm = {
-                if (viewModel.verifyMasterPassword(masterPasswordInput)) {
+                if (skipIdentityVerification || viewModel.verifyMasterPassword(masterPasswordInput)) {
                     showMasterPasswordDialog = false
                     masterPasswordInput = ""
                     passwordVerificationError = false
@@ -1191,6 +1193,7 @@ fun PasswordDetailScreen(
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
+            requireIdentityVerification = !skipIdentityVerification,
             isPasswordError = passwordVerificationError,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             onBiometricClick = retryBiometricAction,

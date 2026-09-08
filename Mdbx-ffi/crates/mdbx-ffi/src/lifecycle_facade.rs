@@ -392,7 +392,6 @@ use std::path::Path;
 
 use mdbx_core::model::Tombstone;
 use mdbx_storage::backup::{BackupService, VaultBackupInfo};
-use mdbx_storage::error::StorageError;
 use mdbx_storage::health_repair::{
     HealthRepairApplyResult, HealthRepairBlocker, HealthRepairChoice, HealthRepairDecision,
     HealthRepairItem, HealthRepairItemKind, HealthRepairPlan, HealthRepairService,
@@ -451,69 +450,23 @@ impl MdbxVault {
 
     pub fn diagnostics_summary(&self) -> Result<MdbxVaultDiagnosticsSummary, MdbxFfiError> {
         let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
-        let values = conn
-            .inner()
-            .query_row(
-                "SELECT
-                    (SELECT COUNT(*) FROM commits),
-                    (SELECT COUNT(*) FROM tombstones),
-                    (SELECT COUNT(*) FROM branches),
-                    (SELECT COUNT(*) FROM device_heads),
-                    (SELECT COUNT(*) FROM snapshots),
-                    (SELECT COUNT(*) FROM conflicts WHERE resolution = 'unresolved'),
-                    (SELECT COUNT(*) FROM projects WHERE deleted = 0),
-                    (SELECT COUNT(*) FROM projects WHERE deleted <> 0),
-                    (SELECT COUNT(*) FROM entries WHERE deleted = 0),
-                    (SELECT COUNT(*) FROM entries WHERE deleted <> 0),
-                    (SELECT COUNT(*) FROM attachments WHERE deleted = 0),
-                    (SELECT COUNT(*) FROM attachments WHERE deleted <> 0),
-                    (SELECT COUNT(*) FROM attachments
-                        WHERE deleted = 0 AND storage_mode = 'external-hash-ref'),
-                    (SELECT COALESCE(SUM(original_size), 0) FROM attachments WHERE deleted = 0),
-                    (SELECT COALESCE(SUM(stored_size), 0) FROM attachments WHERE deleted = 0)",
-                [],
-                |row| {
-                    Ok([
-                        row.get::<_, i64>(0)?,
-                        row.get::<_, i64>(1)?,
-                        row.get::<_, i64>(2)?,
-                        row.get::<_, i64>(3)?,
-                        row.get::<_, i64>(4)?,
-                        row.get::<_, i64>(5)?,
-                        row.get::<_, i64>(6)?,
-                        row.get::<_, i64>(7)?,
-                        row.get::<_, i64>(8)?,
-                        row.get::<_, i64>(9)?,
-                        row.get::<_, i64>(10)?,
-                        row.get::<_, i64>(11)?,
-                        row.get::<_, i64>(12)?,
-                        row.get::<_, i64>(13)?,
-                        row.get::<_, i64>(14)?,
-                    ])
-                },
-            )
-            .map_err(StorageError::from)?;
-        let values = values
-            .into_iter()
-            .enumerate()
-            .map(|(index, value)| nonnegative_diagnostic_value(index, value))
-            .collect::<Result<Vec<_>, _>>()?;
+        let values = conn.diagnostics_summary()?;
         Ok(MdbxVaultDiagnosticsSummary {
-            commit_count: values[0],
-            tombstone_count: values[1],
-            branch_count: values[2],
-            device_count: values[3],
-            snapshot_count: values[4],
-            unresolved_conflict_count: values[5],
-            project_count: values[6],
-            deleted_project_count: values[7],
-            entry_count: values[8],
-            deleted_entry_count: values[9],
-            attachment_count: values[10],
-            deleted_attachment_count: values[11],
-            external_attachment_count: values[12],
-            original_attachment_bytes: values[13],
-            stored_attachment_bytes: values[14],
+            commit_count: values.commit_count,
+            tombstone_count: values.tombstone_count,
+            branch_count: values.branch_count,
+            device_count: values.device_count,
+            snapshot_count: values.snapshot_count,
+            unresolved_conflict_count: values.unresolved_conflict_count,
+            project_count: values.project_count,
+            deleted_project_count: values.deleted_project_count,
+            entry_count: values.entry_count,
+            deleted_entry_count: values.deleted_entry_count,
+            attachment_count: values.attachment_count,
+            deleted_attachment_count: values.deleted_attachment_count,
+            external_attachment_count: values.external_attachment_count,
+            original_attachment_bytes: values.original_attachment_bytes,
+            stored_attachment_bytes: values.stored_attachment_bytes,
         })
     }
 
@@ -601,10 +554,4 @@ impl MdbxVault {
         )?;
         Ok(receipt.into())
     }
-}
-
-fn nonnegative_diagnostic_value(index: usize, value: i64) -> Result<u64, MdbxFfiError> {
-    u64::try_from(value).map_err(|_| MdbxFfiError::Storage {
-        message: format!("negative diagnostics value at column {index}"),
-    })
 }

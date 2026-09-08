@@ -8,6 +8,10 @@ MDBX is Monica's local-first advanced encrypted database core. It provides durab
 
 The current format generation is **MDBX2**, stored as `MDBX-2`. MDBX2 automatically and transactionally upgrades `MDBX-1` and `MDBX-1-DRAFT` vaults. See `docs/09-mdbx2-compatibility.md` for the compatibility contract.
 
+MDBX3 Runtime implementation has started with the `3.0.0-alpha.1` pre-release identity. It continues to write `MDBX-2` and preserves the `mdbx_ffi` namespace and Android `libmdbx_ffi.so` filename. The additive `mdbx_runtime_manifest` function reports runtime, schema, and ABI identity without changing existing bindings or the build capability interface.
+
+A single Android ELF shared object cannot run across ARM32, ARM64, and x86_64. MDBX3 release builds therefore produce three ABI-specific thin packages plus a compatibility universal package. F-Droid and direct APK distribution should use per-ABI APK variants so each device installs only one shared object. See `mdbx3-runtime-design/07-android-abi-distribution.zh-CN.md` for the package contract.
+
 For the normative format documents, see `docs/`.
 
 The MDBX rule is **4ever And 4ever**: old vaults must remain readable, compatibility paths must be preserved whenever possible, and data safety comes before convenience.

@@ -29,6 +29,7 @@ import takagi.ru.monica.autofill_ng.core.AutofillLogger
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.ui.components.MonicaPasswordDialogAuthScreen
 import takagi.ru.monica.utils.BiometricAuthHelper
 import takagi.ru.monica.utils.SettingsManager
@@ -117,7 +118,13 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
 
     private fun startAuthentication() {
         lifecycleScope.launch {
-            val biometricEnabled = settingsManager.settingsFlow.first().biometricEnabled
+            val settings = settingsManager.settingsFlow.first()
+            if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
+                securityManager.unlockVaultForDeveloperBypass(settings.autoLockMinutes)
+                completeCipherAutofill()
+                return@launch
+            }
+            val biometricEnabled = settings.biometricEnabled
             val biometricAvailable = biometricAuthHelper.isBiometricAvailable()
             AutofillLogger.i(
                 "CALLBACK",

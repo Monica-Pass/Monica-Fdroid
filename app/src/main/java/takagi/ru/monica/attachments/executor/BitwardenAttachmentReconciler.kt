@@ -64,22 +64,33 @@ internal fun planBitwardenAttachmentMetadataUpdate(
 /**
  * Bitwarden 附件元数据对齐器。
  *
- * 每次拉完 cipher 同步后调用一次 [reconcile]：
- * - 服务端 `attachments == null` → 保持本地不变；
- * - 服务端 `attachments == []` → 视作远端清空，删除该密码下所有 `source = BITWARDEN` 的记录；
- * - 否则按 `bitwardenAttachmentId` 做差异合并：
- *   - 新增：`PENDING` 写入，`downloadState = PENDING`；
- *   - 移除：删除本地记录与缓存；
- *   - 更新：文件名或附件密钥变化时清理缓存；仅下载地址变化时保留缓存。
- *   - 服务端 `size` 是密文大小，本地 `sizeBytes` 是明文大小，两者不参与变更判断。
- *
- * 本类不做任何网络调用，也不下载字节。字节下载走 [BitwardenAttachmentExecutor.download]。
- * 对应 requirements.md Requirement 5.1 / 5.2 / 9.3 / 9.4。
+ * Repository/storage can be supplied lazily so constructing BitwardenSyncService
+ * does not open the attachment Room path before a real sync happens.
  */
-class BitwardenAttachmentReconciler(
-    private val repository: AttachmentRepository,
-    private val storage: AttachmentStorage
+class BitwardenAttachmentReconciler private constructor(
+    private val repositoryProvider: () -> AttachmentRepository,
+    private val storageProvider: () -> AttachmentStorage
 ) {
+
+    constructor(
+        repository: AttachmentRepository,
+        storage: AttachmentStorage
+    ) : this(
+        repositoryProvider = { repository },
+        storageProvider = { storage }
+    )
+
+    companion object {
+        private const val DEFAULT_FILE_NAME = "attachment"
+
+        fun lazy(
+            repositoryProvider: () -> AttachmentRepository,
+            storageProvider: () -> AttachmentStorage
+        ): BitwardenAttachmentReconciler = BitwardenAttachmentReconciler(
+            repositoryProvider = repositoryProvider,
+            storageProvider = storageProvider
+        )
+    }
 
     data class Report(
         val inserted: Int = 0,
@@ -98,6 +109,12 @@ class BitwardenAttachmentReconciler(
         remoteAttachments: List<CipherAttachmentApiData>?
     ): Report {
         if (remoteAttachments == null) return Report(skipped = 1)
+
+        // Resolve heavy storage/database dependencies only for an actual
+        // reconciliation. The providers are backed by AttachmentContainer's
+        // process-level caches, so this remains a one-time initialization.
+        val repository = repositoryProvider()
+        val storage = storageProvider()
         val remoteById = remoteAttachments.associateBy { it.id }
         val local = repository.listByOwnerAndSource(owner, AttachmentSource.BITWARDEN)
         val localById = local.mapNotNull { attach ->
@@ -109,7 +126,6 @@ class BitwardenAttachmentReconciler(
         var removed = 0
         var updated = 0
 
-        // 1. 本地存在但远端缺失 → 删除
         for ((attachmentId, localAttach) in localById) {
             if (attachmentId !in remoteById) {
                 localAttach.localPath?.let { storage.delete(it) }
@@ -118,7 +134,6 @@ class BitwardenAttachmentReconciler(
             }
         }
 
-        // 2. 远端存在
         val now = System.currentTimeMillis()
         for ((attachmentId, remote) in remoteById) {
             val localAttach = localById[attachmentId]
@@ -158,10 +173,6 @@ class BitwardenAttachmentReconciler(
 
     private fun guessMimeType(fileName: String?): String {
         return guessBitwardenAttachmentMimeType(fileName)
-    }
-
-    companion object {
-        private const val DEFAULT_FILE_NAME = "attachment"
     }
 }
 

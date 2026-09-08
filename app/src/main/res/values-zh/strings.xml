@@ -1614,6 +1614,10 @@
     <string name="keepass_dx_like_mutation_title">KeePass DX 类引擎</string>
     <string name="keepass_dx_like_mutation_description">实验功能：KeePass 操作使用内存变更 + 异步落盘（默认关闭）</string>
     
+    <!-- 触觉反馈 -->
+    <string name="haptic_feedback">触觉反馈</string>
+    <string name="haptic_feedback_description">下拉手势、长按等交互时震动</string>
+
     <!-- 验证器震动 -->
     <string name="validator_vibration">验证器震动</string>
     <string name="validator_vibration_description">倒计时快结束时震动提醒</string>
@@ -1673,6 +1677,18 @@
     <!-- WebDAV Auto Backup -->
     <string name="webdav_auto_backup">自动备份</string>
     <string name="webdav_auto_backup_description">每天首次打开或每12小时自动备份</string>
+    <string name="webdav_sync_settings">同步设置</string>
+    <string name="webdav_change_triggered_title">改动后自动同步</string>
+    <string name="webdav_change_triggered_description">停止编辑后就上传，不必等 12 小时的周期</string>
+    <string name="webdav_change_triggered_quiet">静默时长</string>
+    <string name="webdav_change_triggered_quiet_value">%d 分钟</string>
+    <string name="webdav_change_triggered_quiet_hint">最后一次改动后等待这么久再上传</string>
+    <string name="webdav_change_triggered_min_interval">最小上传间隔</string>
+    <string name="webdav_change_triggered_min_interval_value">%d 分钟</string>
+    <string name="webdav_change_triggered_min_interval_off">不限制</string>
+    <string name="webdav_change_triggered_min_interval_hint">每次备份都会重新上传完整压缩包，间隔越小流量越大。</string>
+    <string name="webdav_change_triggered_requires_auto_backup">请先开启自动备份</string>
+    <string name="webdav_sync_settings_saved">同步设置已保存</string>
     <string name="webdav_auto_backup_enabled">已启用自动备份</string>
     <string name="webdav_auto_backup_disabled">已禁用自动备份</string>
     <string name="webdav_last_backup">上次备份</string>
@@ -2101,7 +2117,8 @@
     <string name="developer_share_logs_desc">导出并分享最近的日志</string>
     <string name="developer_functions">开发者功能</string>
     <string name="developer_disable_password_verification">关闭密码验证</string>
-    <string name="developer_disable_password_verification_desc">跳过应用启动时的密码验证（仅用于开发测试）</string>
+    <string name="developer_disable_password_verification_desc">在应用、自动填充、Monica 键盘和危险操作中跳过身份验证。仍保留二次确认，导出加密密码仍必须设置。</string>
+    <string name="developer_disable_password_verification_failed">无法开启全场景免验证。请先正常解锁 Monica 一次，然后重试。</string>
     <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS 兼容</string>
     <string name="developer_passkey_hyperos_biometric_bypass_desc">在 HyperOS 设备上跳过通行密钥生物识别，并回退到主密码。除非该设备生物识别弹窗异常，否则保持关闭。</string>
     <string name="developer_launcher_name_use_pass">主应用名称显示 Monica Pass</string>
@@ -4413,4 +4430,38 @@
 <string name="keepass_native_folder_drag_target">正在移动“%1$s”，点击目标文件夹。</string>
 <string name="keepass_native_folder_drag_drop">放入此处</string>
 <string name="keepass_native_folder_drag_count">已选择 %1$d 个文件夹</string>
+    <string name="card_face_customize">自定义卡面</string>
+    <string name="card_face_customize_description">使用个人图片，并选择卡片上显示哪些信息。</string>
+    <string name="card_face_choose_image">选择图片</string>
+    <string name="card_face_replace_image">更换图片</string>
+    <string name="card_face_remove">移除自定义卡面</string>
+    <string name="card_face_display_title">卡面信息显示</string>
+    <string name="card_face_display_all">显示全部卡片信息</string>
+    <string name="card_face_display_number">仅显示卡号</string>
+    <string name="card_face_display_hidden">隐藏全部卡片信息</string>
+    <string name="card_face_display_all_description">显示标题、主要信息、姓名及有效期等已有内容。</string>
+    <string name="card_face_display_number_description">仅在卡面中部偏下显示脱敏卡号。</string>
+    <string name="card_face_display_hidden_description">只保留图片，不显示文字或卡组织图标。</string>
+    <string name="card_face_image_invalid">图片无法解码，请尝试重新导出为 JPEG、PNG 或 WebP 后再选择。</string>
+    <string name="card_face_save_failed">卡片或卡面图片未能完成保存，请重试。</string>
+    <string name="card_face_bitwarden_premium_required">此 Bitwarden 账号不支持附件，因此无法同步自定义卡面图片。</string>
+    <string name="card_face_preview_hint">点击卡面预览即可自定义</string>
+    <string name="card_face_identifier_bank">卡号</string>
+    <string name="card_face_identifier_document">证件号</string>
+    <string name="card_face_identifier_address">地址</string>
+    <string name="card_face_display_identifier">仅显示%1$s</string>
+    <string name="card_face_display_identifier_description">在卡面中间偏下的位置显示%1$s。</string>
+    <string name="card_face_show_brand">显示卡组织图标</string>
+    <string name="card_face_brand_description">显示 Visa、Mastercard 等卡组织标识。</string>
+    <string name="card_face_brand_hidden_description">隐藏全部信息时，卡组织图标也会隐藏。</string>
+    <string name="card_face_empty_preview">选择图片，预览你的卡面</string>
+    <string name="card_face_crop_hint">拖动图片调整位置，双指缩放，选框位置固定</string>
+    <string name="card_face_image_hint">JPEG、PNG 或 WebP · 最大 25 MB · 手动裁剪</string>
+    <string name="card_face_processing">正在处理图片…</string>
+    <string name="card_face_edit_description">更换图片或调整显示信息</string>
+    <string name="card_face_image_unreadable">无法读取所选图片，请先将图片保存到设备，然后重新选择。</string>
+    <string name="card_face_image_too_large">所选图片超过 25 MB，请选择更小的图片。</string>
+    <string name="card_face_image_unsupported">请选择 JPEG、PNG 或 WebP 图片。</string>
+    <string name="card_face_crop_title">裁剪卡面</string>
+    <string name="card_face_crop_reset">重置</string>
 </resources>

@@ -19,56 +19,49 @@ import takagi.ru.monica.data.timelineSnapshotCutoff
 import takagi.ru.monica.security.SecurityManager
 
 /**
- * 操作日志记录工具类
- * 用于在 Repository 操作中自动记录变更日志
+ * 操作日志记录工具类。
+ *
+ * Startup rule: [init] must remain cheap. Room access, Android ID reads,
+ * SecurityManager construction, redaction and JSON serialization are deferred to
+ * the existing IO logger scope and therefore never compete with the first frame.
  */
 object OperationLogger {
-    
+
+    @Volatile
+    private var appContext: Context? = null
+    @Volatile
     private var database: PasswordDatabase? = null
-    private var deviceId: String = ""
-    private var deviceName: String = ""
+    @Volatile
     private var securityManager: SecurityManager? = null
+    @Volatile
+    private var deviceId: String? = null
+    private val deviceName: String = "${Build.MANUFACTURER} ${Build.MODEL}"
     @Volatile
     private var lastSnapshotCleanupAt: Long = 0L
     private val scope = CoroutineScope(Dispatchers.IO)
-    
-    private val json = Json { 
+
+    private val json = Json {
         prettyPrint = false
-        ignoreUnknownKeys = true 
+        ignoreUnknownKeys = true
     }
-    
+
     /**
-     * 初始化日志记录器
+     * Only publish the application context. Expensive dependencies are created
+     * lazily on the logger's IO dispatcher when the first operation is emitted.
      */
     fun init(context: Context) {
-        database = PasswordDatabase.getDatabase(context)
-        securityManager = SecurityManager(context.applicationContext)
-        deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown"
-        deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
+        appContext = context.applicationContext
     }
-    
-    /**
-     * 记录创建操作
-     * @param details 可选的初始字段详情列表，用于记录创建时的关键信息
-     */
+
     fun logCreate(
         itemType: OperationLogItemType,
         itemId: Long,
         itemTitle: String,
         details: List<FieldChange> = emptyList()
     ) {
-        log(
-            itemType = itemType,
-            itemId = itemId,
-            itemTitle = itemTitle,
-            operationType = OperationType.CREATE,
-            changes = details
-        )
+        log(itemType, itemId, itemTitle, OperationType.CREATE, details)
     }
-    
-    /**
-     * 记录更新操作
-     */
+
     fun logUpdate(
         itemType: OperationLogItemType,
         itemId: Long,
@@ -76,8 +69,7 @@ object OperationLogger {
         changes: List<FieldChange>,
         snapshotChanges: List<FieldChange> = changes
     ) {
-        if (changes.isEmpty()) return // 没有实际变更则不记录
-        
+        if (changes.isEmpty()) return
         log(
             itemType = itemType,
             itemId = itemId,
@@ -87,11 +79,7 @@ object OperationLogger {
             snapshotChanges = snapshotChanges
         )
     }
-    
-    /**
-     * 记录删除操作
-     * @param detail 可选的详情描述（如"移入回收站"）
-     */
+
     fun logDelete(
         itemType: OperationLogItemType,
         itemId: Long,
@@ -106,13 +94,7 @@ object OperationLogger {
             changes = emptyList()
         )
     }
-    
-    /**
-     * 记录 WebDAV 上传操作
-     * @param isAutomatic 是否自动上传
-     * @param isPermanent 是否永久备份
-     * @param details 上传详情（如备份了多少项目）
-     */
+
     fun logWebDavUpload(
         isAutomatic: Boolean,
         isPermanent: Boolean,
@@ -120,53 +102,34 @@ object OperationLogger {
     ) {
         val triggerType = if (isAutomatic) "自动" else "手动"
         val backupType = if (isPermanent) "永久" else "临时"
-        val title = "${triggerType}上传 · $backupType"
-        
         log(
             itemType = OperationLogItemType.WEBDAV_UPLOAD,
             itemId = System.currentTimeMillis(),
-            itemTitle = title,
+            itemTitle = "${triggerType}上传 · $backupType",
             operationType = OperationType.SYNC,
             changes = details
         )
     }
-    
-    /**
-     * 记录 WebDAV 下载/同步操作
-     * @param addedItems 新增的项目列表
-     */
-    fun logWebDavDownload(
-        addedItems: List<FieldChange> = emptyList()
-    ) {
-        val title = "同步下载"
-        
+
+    fun logWebDavDownload(addedItems: List<FieldChange> = emptyList()) {
         log(
             itemType = OperationLogItemType.WEBDAV_DOWNLOAD,
             itemId = System.currentTimeMillis(),
-            itemTitle = title,
+            itemTitle = "同步下载",
             operationType = OperationType.SYNC,
             changes = addedItems
         )
     }
 
-    /**
-     * 记录通用同步操作
-     */
     fun logSync(
         itemType: OperationLogItemType,
         itemId: Long,
         itemTitle: String,
         details: List<FieldChange> = emptyList()
     ) {
-        log(
-            itemType = itemType,
-            itemId = itemId,
-            itemTitle = itemTitle,
-            operationType = OperationType.SYNC,
-            changes = details
-        )
+        log(itemType, itemId, itemTitle, OperationType.SYNC, details)
     }
-    
+
     private fun log(
         itemType: OperationLogItemType,
         itemId: Long,
@@ -175,36 +138,35 @@ object OperationLogger {
         changes: List<FieldChange>,
         snapshotChanges: List<FieldChange> = changes
     ) {
-        val db = database
-        if (db == null) {
-            android.util.Log.e("OperationLogger", "Database is null! init() was not called")
-            return
-        }
-        
-        android.util.Log.d("OperationLogger", "Logging $operationType for $itemType")
-        
-        val sanitizedChanges = sanitizeChanges(itemType, changes)
-        val changesJson = if (sanitizedChanges.isNotEmpty()) {
-            json.encodeToString(sanitizedChanges)
-        } else {
-            ""
-        }
-        val sanitizedTitle = sanitizeItemTitle(itemType, itemTitle, itemId)
-        
-        val operationLog = OperationLog(
-            itemType = itemType.name,
-            itemId = itemId,
-            itemTitle = sanitizedTitle,
-            operationType = operationType.name,
-            changesJson = changesJson,
-            deviceId = deviceId,
-            deviceName = deviceName,
-            timestamp = System.currentTimeMillis()
-        )
-        
+        val immutableChanges = changes.toList()
         val immutableSnapshotChanges = snapshotChanges.toList()
+
         scope.launch {
+            val db = databaseOrNull()
+            if (db == null) {
+                android.util.Log.e("OperationLogger", "Logger context is unavailable; init() was not called")
+                return@launch
+            }
+
             try {
+                android.util.Log.d("OperationLogger", "Logging $operationType for $itemType")
+                val sanitizedChanges = sanitizeChanges(itemType, immutableChanges)
+                val changesJson = if (sanitizedChanges.isNotEmpty()) {
+                    json.encodeToString(sanitizedChanges)
+                } else {
+                    ""
+                }
+                val operationLog = OperationLog(
+                    itemType = itemType.name,
+                    itemId = itemId,
+                    itemTitle = sanitizeItemTitle(itemType, itemTitle, itemId),
+                    operationType = operationType.name,
+                    changesJson = changesJson,
+                    deviceId = deviceId(),
+                    deviceName = deviceName,
+                    timestamp = System.currentTimeMillis()
+                )
+
                 db.withTransaction {
                     val operationLogId = db.operationLogDao().insert(operationLog)
                     persistEncryptedVersionSnapshot(
@@ -219,6 +181,33 @@ object OperationLogger {
                 android.util.Log.e("OperationLogger", "Failed to log operation", e)
             }
         }
+    }
+
+    private fun databaseOrNull(): PasswordDatabase? {
+        database?.let { return it }
+        val context = appContext ?: return null
+        return synchronized(this) {
+            database ?: PasswordDatabase.getDatabase(context).also { database = it }
+        }
+    }
+
+    private fun securityManagerOrNull(): SecurityManager? {
+        securityManager?.let { return it }
+        val context = appContext ?: return null
+        return synchronized(this) {
+            securityManager ?: SecurityManager(context).also { securityManager = it }
+        }
+    }
+
+    private fun deviceId(): String {
+        deviceId?.let { return it }
+        val context = appContext ?: return "unknown"
+        val resolved = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID
+        ) ?: "unknown"
+        deviceId = resolved
+        return resolved
     }
 
     private suspend fun persistEncryptedVersionSnapshot(
@@ -252,7 +241,7 @@ object OperationLogger {
             return
         }
 
-        val manager = securityManager ?: return
+        val manager = securityManagerOrNull() ?: return
         val encrypted = runCatching {
             manager.encryptTimelineSnapshot(json.encodeToString(snapshotChanges))
         }.getOrElse {
@@ -295,12 +284,10 @@ object OperationLogger {
         itemType: OperationLogItemType,
         itemTitle: String,
         itemId: Long
-    ): String {
-        return if (itemType.requiresSensitiveLogRedaction()) {
-            "${itemType.name}#$itemId"
-        } else {
-            itemTitle
-        }
+    ): String = if (itemType.requiresSensitiveLogRedaction()) {
+        "${itemType.name}#$itemId"
+    } else {
+        itemTitle
     }
 
     private fun sanitizeChanges(
@@ -320,18 +307,16 @@ object OperationLogger {
         }
     }
 
-    private fun OperationLogItemType.requiresSensitiveLogRedaction(): Boolean {
-        return this in setOf(
-            OperationLogItemType.PASSWORD,
-            OperationLogItemType.TOTP,
-            OperationLogItemType.PASSKEY,
-            OperationLogItemType.BANK_CARD,
-            OperationLogItemType.DOCUMENT,
-            OperationLogItemType.BILLING_ADDRESS,
-            OperationLogItemType.PAYMENT_ACCOUNT,
-            OperationLogItemType.NOTE
-        )
-    }
+    private fun OperationLogItemType.requiresSensitiveLogRedaction(): Boolean = this in setOf(
+        OperationLogItemType.PASSWORD,
+        OperationLogItemType.TOTP,
+        OperationLogItemType.PASSKEY,
+        OperationLogItemType.BANK_CARD,
+        OperationLogItemType.DOCUMENT,
+        OperationLogItemType.BILLING_ADDRESS,
+        OperationLogItemType.PAYMENT_ACCOUNT,
+        OperationLogItemType.NOTE
+    )
 
     private fun String.isSensitiveFieldName(): Boolean {
         val normalized = trim().lowercase()
@@ -353,20 +338,14 @@ object OperationLogger {
         ).any { normalized.contains(it.lowercase()) }
     }
 
-    private fun redactedValue(value: String): String {
-        return if (value.isBlank()) "" else "<redacted>"
-    }
-    
-    /**
-     * 比较两个对象并生成变更列表
-     */
+    private fun redactedValue(value: String): String = if (value.isBlank()) "" else "<redacted>"
+
     fun <T> compareAndGetChanges(
         old: T?,
         new: T,
         fields: List<Pair<String, (T) -> String?>>
     ): List<FieldChange> {
         if (old == null) return emptyList()
-        
         return fields.mapNotNull { (fieldName, getter) ->
             val oldValue = getter(old) ?: ""
             val newValue = getter(new) ?: ""
@@ -379,9 +358,6 @@ object OperationLogger {
     }
 }
 
-/**
- * 字段变更记录
- */
 @Serializable
 data class FieldChange(
     val fieldName: String,

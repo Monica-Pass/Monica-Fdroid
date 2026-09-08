@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,10 +22,14 @@ import takagi.ru.monica.data.model.BankCardData
 import takagi.ru.monica.data.model.CardBrandDetector
 import takagi.ru.monica.data.model.CardWalletDataCodec
 import takagi.ru.monica.data.model.CardType
+import takagi.ru.monica.data.model.CardFaceDisplayMode
 import takagi.ru.monica.data.model.formatForDisplay
 import takagi.ru.monica.data.model.isEmpty
 import takagi.ru.monica.bitwarden.sync.SyncStatus
+import takagi.ru.monica.ui.cardwallet.bankCardFacePreviewData
 import takagi.ru.monica.ui.cardwallet.CardBrandIcon
+import takagi.ru.monica.ui.cardwallet.CardFaceImageProcessor
+import takagi.ru.monica.ui.cardwallet.rememberCardFaceBitmap
 
 /**
  * 银行卡卡片组件
@@ -69,11 +75,10 @@ fun BankCardCard(
         )
     }
     
-    // 获取对应容器的文字颜色
-    val contentColor = when (resolvedCardData.cardType) {
-        CardType.CREDIT -> MaterialTheme.colorScheme.onPrimaryContainer
-        CardType.DEBIT -> MaterialTheme.colorScheme.onSecondaryContainer
-        CardType.PREPAID -> MaterialTheme.colorScheme.onTertiaryContainer
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
     }
     
     val cardInteractionModifier = if (isSelectionMode) {
@@ -89,25 +94,29 @@ fun BankCardCard(
             )
     }
 
-    Card(
+    resolvedCardData.cardFace?.let { cardFace ->
+        CustomCardFaceCard(
+            item = item,
+            previewData = bankCardFacePreviewData(item.title, resolvedCardData),
+            imageAttachmentName = cardFace.imageAttachmentName,
+            displayMode = cardFace.displayMode,
+            showBrandIcon = cardFace.showBrandIcon,
+            modifier = cardInteractionModifier,
+            isSelectionMode = isSelectionMode,
+            isSelected = isSelected,
+            onClick = onClick,
+            onDelete = onDelete,
+            onToggleFavorite = onToggleFavorite,
+            onMoveUp = onMoveUp,
+            onMoveDown = onMoveDown
+        )
+        return
+    }
+
+    MonicaItemCard(
+        shape = BankCardShape,
         modifier = cardInteractionModifier,
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        ),
-        colors = if (isSelected) {
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        } else {
-            CardDefaults.cardColors(
-                containerColor = when (resolvedCardData.cardType) {
-                    CardType.CREDIT -> MaterialTheme.colorScheme.primaryContainer
-                    CardType.DEBIT -> MaterialTheme.colorScheme.secondaryContainer
-                    CardType.PREPAID -> MaterialTheme.colorScheme.tertiaryContainer
-                }
-            )
-        }
+        isSelected = isSelected
     ) {
         Column(
             modifier = Modifier

@@ -1,0 +1,5 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"审计 Android 产物命名、架构和冻结 ABI",DONE,"三 ABI staging、basename、manifest、ABI report 和 size report 均可定位","python -B scripts/verify-mdbx3-release.py --root target/mdbx3-android",2026-08-31T00:00:00+08:00,0,"现有 staging 已验证"
+2,"实现可重复的 MDBX3 replacement gate",DONE,"校验 runtime manifest、ELF machine、SHA-256、535/237/30 和体积不回退","python -B scripts/verify-mdbx3-release.py",2026-08-31T00:00:00+08:00,0,"新增 scripts/verify-mdbx3-release.py 并接入 Android 构建脚本"
+3,"完成发布脚本语法与 gate 回归",DONE,"PowerShell 构建脚本语法正确，gate 对现有产物返回 ready","python -B scripts/verify-mdbx3-release.py --root target/mdbx3-android",2026-08-31T00:00:00+08:00,0,"gate 输出 status=ready"
+4,"提交并推送发布 gate",DONE,"更新父任务状态并推送独立提交","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"release gate 脚本和构建脚本接入已完成"

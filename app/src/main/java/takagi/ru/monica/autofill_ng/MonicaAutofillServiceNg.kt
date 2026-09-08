@@ -43,6 +43,7 @@ import takagi.ru.monica.autofill_ng.BitwardenLikeAutofillMatcherNg
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
 import takagi.ru.monica.repository.PasswordRepository
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.service.BrowserAutofillContextStore
 import takagi.ru.monica.utils.DeviceUtils
 import takagi.ru.monica.utils.SettingsManager
@@ -645,7 +646,9 @@ class MonicaAutofillServiceNg : AutofillService() {
         } else {
             null
         }
-        val autofillAuthRequired = settingsManager.settingsFlow.first().autofillAuthRequired
+        val currentSettings = settingsManager.settingsFlow.first()
+        val autofillAuthRequired = currentSettings.autofillAuthRequired &&
+            DeveloperVerificationPolicy.requiresIdentityVerification(currentSettings)
         val grantContext = AutofillGrantContext(
             packageName = packageName,
             webDomain = webDomain,

@@ -464,16 +464,6 @@ fun PasskeyListScreen(
     var syncFeedbackIsSuccess by remember { mutableStateOf(false) }
     val collapseAnimatable = remember { androidx.compose.animation.core.Animatable(0f) }
     
-    // 震动服务
-    val vibrator = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        }
-    }
 
     suspend fun resolveSyncableVaultId(): Long? {
         val activeVault = bitwardenRepository.getActiveVault() ?: run {
@@ -486,18 +476,7 @@ fun PasskeyListScreen(
     }
 
     fun vibratePullThreshold(isSyncStage: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (isSyncStage && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                vibrator?.vibrate(
-                    android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_DOUBLE_CLICK)
-                )
-            } else {
-                vibrator?.vibrate(android.os.VibrationEffect.createWaveform(takagi.ru.monica.util.VibrationPatterns.TICK, -1))
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(if (isSyncStage) 36 else 20)
-        }
+        haptic.performPullThreshold(isSyncStage)
     }
 
     fun updatePullThresholdHaptics(oldOffset: Float, newOffset: Float) {
@@ -1395,7 +1374,8 @@ fun PasskeyListScreen(
             combinedPasskeys.filter { selectedPasskeys.contains(it.managementKey()) }
         }
 
-        val biometricAction = if (activity != null && canUseBiometric) {
+        val skipIdentityVerification = appSettings.disablePasswordVerification
+        val biometricAction = if (!skipIdentityVerification && activity != null && canUseBiometric) {
             {
                 biometricHelper.authenticate(
                     activity = activity,
@@ -1444,7 +1424,7 @@ fun PasskeyListScreen(
                 deletePasswordError = false
             },
             onConfirm = {
-                if (takagi.ru.monica.security.SecurityManager(context).verifyMasterPassword(deletePasswordInput)) {
+                if (skipIdentityVerification || takagi.ru.monica.security.SecurityManager(context).verifyMasterPassword(deletePasswordInput)) {
                     performDeleteTargets(deleteTargets)
                 } else {
                     deletePasswordError = true
@@ -1452,6 +1432,7 @@ fun PasskeyListScreen(
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
+            requireIdentityVerification = !skipIdentityVerification,
             isPasswordError = deletePasswordError,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             onBiometricClick = biometricAction,

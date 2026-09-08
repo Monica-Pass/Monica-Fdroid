@@ -1,0 +1,7 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"固化 Vault Runtime 边界与并发基线",DONE,"现状、公共行为、锁与查询所有权形成可恢复事实","cargo test -p mdbx-ffi --lib",2026-08-19T19:43:43+08:00,0,"FFI 57 项基线通过；生产锁点 142；raw SQL 6"
+2,"以失败测试定义 reader generation 行为",DONE,"公共接口测试先失败并覆盖写后 generation 变化与旧 reader 失效","cargo test -p mdbx-storage runtime",2026-08-19T19:43:43+08:00,0,"读保持 generation；写后旧 lease 返回 StaleReaderGeneration"
+3,"实现 storage-owned VaultRuntime 与 single writer",DONE,"storage 拥有 runtime；写入串行；读接口不暴露锁","cargo test -p mdbx-storage runtime",2026-08-19T19:50:53+08:00,1,"3 个 runtime 测试通过；clippy 首次发现 needless lifetime 后修复；core 681+4 项通过"
+4,"将兼容 FFI 迁移到 Runtime 且冻结 ABI",DONE,"MdbxVault 不直接持有 Connection；旧 FFI 测试与 ABI 全通过","cargo test -p mdbx-ffi",2026-08-31T00:00:00+08:00,0,"MdbxVault 改为 storage-owned VaultRuntime；raw SQL 查询下沉；57 项 FFI 回归与 535/237/contract30 ABI 验证通过"
+5,"补齐并发、安全失效与回归测试",DONE,"并发读、写互斥、generation 和安全状态回归通过","cargo test -p mdbx-storage --no-default-features --features core",2026-08-31T00:00:00+08:00,0,"runtime 5 项测试通过：并发写互斥、读 generation 稳定、写后旧 lease 失效、清 session 失效、FFI 共享 runtime gate"
+6,"全量验证更新事实文件并提交推送",DONE,"全 workspace、clippy、ABI 通过且远端包含模块提交","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"cargo fmt、diff check、workspace clippy、workspace tests、MDBX3 release build 与 ABI verifier 全部通过"

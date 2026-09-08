@@ -64,6 +64,7 @@ import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.ThemeMode
 import takagi.ru.monica.ui.components.MonicaPasswordDialogAuthScreen
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.ui.theme.MonicaTheme
 import takagi.ru.monica.utils.AppLauncherIconManager
 import takagi.ru.monica.utils.BiometricAuthHelper
@@ -123,8 +124,11 @@ class AutofillAuthenticationActivity : AppCompatActivity() {
         Log.d(TAG, "Field types: $fieldTypes")
 
         lifecycleScope.launch {
-            val biometricEnabled = settingsManager.settingsFlow.first().biometricEnabled
-            if (biometricEnabled && biometricAuthHelper.isBiometricAvailable()) {
+            val settings = settingsManager.settingsFlow.first()
+            if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
+                securityManager.unlockVaultForDeveloperBypass(settings.autoLockMinutes)
+                onAuthenticationSuccess()
+            } else if (settings.biometricEnabled && biometricAuthHelper.isBiometricAvailable()) {
                 showBiometricAuthentication()
             } else {
                 // 降级到密码验证

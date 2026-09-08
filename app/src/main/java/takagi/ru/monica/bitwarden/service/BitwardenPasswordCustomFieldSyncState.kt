@@ -1,6 +1,7 @@
 package takagi.ru.monica.bitwarden.service
 
 import android.content.Context
+import android.content.SharedPreferences
 
 /**
  * Records whether a cipher has completed one adapter-aware custom-field synchronization.
@@ -8,10 +9,13 @@ import android.content.Context
  * as deliberate local deletions.
  */
 internal class BitwardenPasswordCustomFieldSyncState(context: Context) {
-    private val preferences = context.applicationContext.getSharedPreferences(
-        PREFERENCES_NAME,
-        Context.MODE_PRIVATE
-    )
+    private val appContext = context.applicationContext
+
+    // BitwardenSyncService is part of the repository's eager object graph, but
+    // this preference file is only needed while processing a real sync.
+    private val preferences: SharedPreferences by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    }
 
     fun isInitialized(vaultId: Long, cipherId: String): Boolean {
         return preferences.getBoolean(key(vaultId, cipherId), false)

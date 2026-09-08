@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import takagi.ru.monica.ui.LocalHapticFeedbackEnabled
 import takagi.ru.monica.util.VibrationPatterns
 
 /**
@@ -50,9 +51,10 @@ import takagi.ru.monica.util.VibrationPatterns
  */
 class HapticFeedbackHelper(
     private val context: Context,
-    private val view: View? = null
+    private val view: View? = null,
+    private val enabled: Boolean = true
 ) {
-    
+
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
@@ -64,10 +66,21 @@ class HapticFeedbackHelper(
     }
     
     /**
-     * 检查设备是否支持触觉反馈
+     * 检查触觉反馈当前是否可用：设备支持且用户未在设置中关闭。
      */
     val isAvailable: Boolean
-        get() = vibrator?.hasVibrator() == true
+        get() = enabled && vibrator?.hasVibrator() == true
+
+    /**
+     * View 层触觉反馈出口。与振动出口共用同一开关，
+     * 否则 API 30+ 的 performHapticFeedback 路径会绕过设置继续触发。
+     */
+    private fun performViewHaptic(constant: Int): Boolean {
+        if (!enabled) return true
+        val target = view ?: return false
+        target.performHapticFeedback(constant)
+        return true
+    }
     
     // ==================== 标准触觉反馈 ====================
     
@@ -82,7 +95,7 @@ class HapticFeedbackHelper(
      */
     fun performLightClick() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view?.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            performViewHaptic(HapticFeedbackConstants.CLOCK_TICK)
         } else {
             performCustomVibration(10)  // 10ms 短震动
         }
@@ -94,17 +107,49 @@ class HapticFeedbackHelper(
      * 直接使用振动器，确保在不响应 View 层 CLOCK_TICK 的设备上，
      * Steam 下拉搜索仍与其他列表页面保持一致的触觉反馈。
      */
-    fun performPullThreshold() {
+    fun performPullThreshold(isSyncStage: Boolean = false) {
+        if (!isAvailable) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator?.vibrate(
-                VibrationEffect.createWaveform(VibrationPatterns.TICK, -1)
-            )
+            if (isSyncStage && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                vibrator?.vibrate(
+                    VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK)
+                )
+            } else {
+                vibrator?.vibrate(
+                    VibrationEffect.createWaveform(VibrationPatterns.TICK, -1)
+                )
+            }
         } else {
             @Suppress("DEPRECATION")
-            vibrator?.vibrate(20)
+            vibrator?.vibrate(if (isSyncStage) 36 else 20)
         }
     }
-    
+
+    /**
+     * 验证器倒计时临近到期时的提示。
+     *
+     * 与下拉阈值一样直接走振动器：部分设备不响应 View 层 CLOCK_TICK，
+     * 而倒计时提示需要在列表无焦点时也能触发。
+     */
+    fun performCountdownTick() {
+        if (!isAvailable) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createWaveform(VibrationPatterns.TICK, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(VibrationPatterns.TICK, -1)
+        }
+    }
+
+    /**
+     * 中断正在进行的振动。
+     *
+     * 不经过 [isAvailable]：开关关闭后仍需要能停下已经开始的振动。
+     */
+    fun cancel() {
+        vibrator?.cancel()
+    }
+
     /**
      * 标准点击反馈
      * 
@@ -114,8 +159,9 @@ class HapticFeedbackHelper(
      * - Tab 切换
      */
     fun performClick() {
-        view?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-            ?: performCustomVibration(20)  // 20ms 震动
+        if (!performViewHaptic(HapticFeedbackConstants.KEYBOARD_TAP)) {
+            performCustomVibration(20)  // 20ms 震动
+        }
     }
     
     /**
@@ -127,8 +173,9 @@ class HapticFeedbackHelper(
      * - 上下文菜单打开
      */
     fun performLongPress() {
-        view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            ?: performCustomVibration(50)  // 50ms 震动
+        if (!performViewHaptic(HapticFeedbackConstants.LONG_PRESS)) {
+            performCustomVibration(50)  // 50ms 震动
+        }
     }
     
     // ==================== 状态反馈 ====================
@@ -144,6 +191,7 @@ class HapticFeedbackHelper(
      * 震动模式：短-停-短 (表示肯定)
      */
     fun performSuccess() {
+        if (!isAvailable) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
             vibrator?.vibrate(effect)
@@ -166,6 +214,7 @@ class HapticFeedbackHelper(
      * 震动模式：长震 (表示警告)
      */
     fun performWarning() {
+        if (!isAvailable) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
             vibrator?.vibrate(effect)
@@ -186,7 +235,7 @@ class HapticFeedbackHelper(
      */
     fun performError() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view?.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            performViewHaptic(HapticFeedbackConstants.REJECT)
         } else {
             performCustomVibration(
                 pattern = longArrayOf(0, 30, 30, 30, 30, 30),  // 短-短-短
@@ -205,7 +254,7 @@ class HapticFeedbackHelper(
      */
     fun performReject() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view?.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            performViewHaptic(HapticFeedbackConstants.REJECT)
         } else {
             performCustomVibration(100)  // 100ms 拒绝震动
         }
@@ -223,6 +272,7 @@ class HapticFeedbackHelper(
      * 震动模式：渐强震动
      */
     fun performBiometricSuccess() {
+        if (!isAvailable) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val effect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK)
@@ -263,7 +313,7 @@ class HapticFeedbackHelper(
      */
     fun performSwipe() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view?.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+            performViewHaptic(HapticFeedbackConstants.GESTURE_START)
         } else {
             performCustomVibration(15)  // 15ms 轻微震动
         }
@@ -278,7 +328,7 @@ class HapticFeedbackHelper(
      */
     fun performRefresh() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view?.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+            performViewHaptic(HapticFeedbackConstants.CONFIRM)
         } else {
             performCustomVibration(25)  // 25ms 震动
         }
@@ -346,8 +396,9 @@ class HapticFeedbackHelper(
 fun rememberHapticFeedback(): HapticFeedbackHelper {
     val context = LocalContext.current
     val view = LocalView.current
-    
-    return remember(context, view) {
-        HapticFeedbackHelper(context, view)
+    val enabled = LocalHapticFeedbackEnabled.current
+
+    return remember(context, view, enabled) {
+        HapticFeedbackHelper(context, view, enabled)
     }
 }

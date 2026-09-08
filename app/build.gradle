@@ -54,8 +54,8 @@ android {
         applicationId "takagi.ru.monica.fdroid"
         minSdk 26
         targetSdk 34
-        versionCode 14
-        versionName "1.0.307"
+        versionCode 17
+        versionName "1.0.310"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -65,17 +65,19 @@ android {
         // The F-Droid build produces one universal APK. Keep every native dependency
         // aligned with the ABIs built by mdbx-engine; otherwise transitive native
         // dependencies can package obsolete Android ABIs that are not supported.
-        ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        if (project.findProperty('fdroidUniversal') == 'true') {
+            ndk {
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            }
         }
 
         // F-Droid build: static values only. Dynamic git SHA / timestamps would make
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.307"'
-        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.307"'
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"14"'
+        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.310"'
+        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.310"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"17"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
@@ -143,12 +145,16 @@ android {
         variant.outputs.all { output ->
             // 目标格式: Monica-Android-[架构]-[版本号].APK
             def archTag = resolveArchTag(output)
-            def versionNameTag = sanitizeTag('1.0.307', '0.0.0')
+            def versionNameTag = sanitizeTag('1.0.310', '0.0.0')
             outputFileName = "Monica-Android-${archTag}-${versionNameTag}.apk"
         }
     }
 
     sourceSets {
+        main {
+            // F-Droid builds the Monica JNI acceleration library from vendored GPL source.
+            jniLibs.srcDir "${buildDir}/monicaRustJniLibs"
+        }
         test {
             java {
                 // Legacy autofill tests target removed APIs and currently block unit-test compilation.
@@ -193,6 +199,49 @@ android {
             excludes += '**/*.dylib'
         }
     }
+}
+
+// The Play build receives these libraries from CI artifacts. The F-Droid tree
+// vendors every Rust source file and compiles the JNI bridge during Gradle builds.
+def monicaRustSourceDir = new File(rootDir, 'rust-jni')
+tasks.register('buildMonicaRustJniFromSource') {
+    group = 'build'
+    description = 'Builds libmonica_rust_jni.so entirely from vendored GPL source'
+    def outputDir = new File(buildDir, 'monicaRustJniLibs')
+    inputs.files new File(rootDir, 'rust-core/Cargo.toml'),
+                 new File(rootDir, 'rust-crypto/Cargo.toml'),
+                 new File(monicaRustSourceDir, 'Cargo.toml'),
+                 new File(monicaRustSourceDir, 'Cargo.lock')
+    inputs.dir new File(rootDir, 'rust-core/src')
+    inputs.dir new File(rootDir, 'rust-crypto/src')
+    inputs.dir new File(monicaRustSourceDir, 'src')
+    outputs.dir outputDir
+    doLast {
+        def command = ['cargo', 'ndk',
+                       '-t', 'arm64-v8a', '-t', 'armeabi-v7a', '-t', 'x86_64',
+                       '-o', outputDir.absolutePath,
+                       'build', '--release', '--locked']
+        println "Building libmonica_rust_jni.so from ${monicaRustSourceDir} (cargo ndk)"
+        def proc = new ProcessBuilder(command)
+                .directory(monicaRustSourceDir)
+                .redirectErrorStream(true)
+                .start()
+        proc.inputStream.eachLine { line -> println line }
+        def exitCode = proc.waitFor()
+        if (exitCode != 0) {
+            throw new GradleException("Monica Rust JNI cargo ndk build failed with exit code ${exitCode}")
+        }
+        ['arm64-v8a', 'armeabi-v7a', 'x86_64'].each { abi ->
+            def so = new File(outputDir, "${abi}/libmonica_rust_jni.so")
+            if (!so.isFile()) {
+                throw new GradleException("cargo ndk did not produce ${so}")
+            }
+        }
+    }
+}
+
+tasks.named('preBuild') {
+    dependsOn 'buildMonicaRustJniFromSource'
 }
 
 configurations.configureEach {
@@ -307,11 +356,6 @@ dependencies {
 
     // Reorderable for drag-and-drop sorting
     implementation libs.reorderable
-
-    // Koin Dependency Injection (for autofill modularization)
-    implementation libs.koin.android
-    implementation libs.koin.androidx.compose
-    implementation libs.koin.core
 
     // Markdown rendering
     implementation libs.commonmark

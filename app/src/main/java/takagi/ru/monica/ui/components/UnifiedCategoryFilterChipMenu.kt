@@ -245,6 +245,7 @@ fun UnifiedCategoryFilterChipMenu(
     getKeePassGroups: ((Long) -> Flow<List<KeePassGroupInfo>>)? = null,
     categoryEditMode: Boolean = false,
     onRequestCategoryAction: ((Category) -> Unit)? = null,
+    typeQuickFilters: List<UnifiedTypeQuickFilter> = emptyList(),
     quickFilterContent: (@Composable ColumnScope.() -> Unit)? = null,
     trailingContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
@@ -320,8 +321,24 @@ fun UnifiedCategoryFilterChipMenu(
             mdbxFolders = mdbxFolders
         )
     }
-    val quickFilterItems = remember(selected, showLocalOnlyQuickFilter, isLocalOnlyQuickFilterSelected, onSelectLocalOnlyQuickFilter) {
+    val quickFilterItems = remember(
+        selected,
+        showLocalOnlyQuickFilter,
+        isLocalOnlyQuickFilterSelected,
+        onSelectLocalOnlyQuickFilter,
+        typeQuickFilters
+    ) {
         buildList {
+            typeQuickFilters.forEach { typeFilter ->
+                add(QuickFilterChipItem(
+                    selection = null,
+                    isSelected = typeFilter.isSelected,
+                    labelRes = typeFilter.labelRes,
+                    icon = typeFilter.icon,
+                    onClick = typeFilter.onSelect,
+                    clearsScopeWhenSelected = false
+                ))
+            }
             add(QuickFilterChipItem(
                 selection = selected.toStarredSelection(),
                 isSelected = selected.isStarredScope(),
@@ -518,7 +535,10 @@ fun UnifiedCategoryFilterChipMenu(
                         MonicaExpressiveFilterChip(
                             selected = item.isSelected,
                             onClick = {
-                                if (item.isSelected) {
+                                val customOnClick = item.onClick
+                                if (customOnClick != null) {
+                                    customOnClick()
+                                } else if (item.isSelected && item.clearsScopeWhenSelected) {
                                     // 再次点击已选中的快捷筛选 → 取消，回到基础 scope
                                     onSelect(selected.toBaseScope())
                                 } else if (item.selection != null) {
@@ -584,11 +604,23 @@ fun UnifiedCategoryFilterChipMenu(
     }
 }
 
+/**
+ * 页面自定义的类型快捷筛选项，与数据库/文件夹 scope 无关，仅切换页面内的条目类型。
+ */
+data class UnifiedTypeQuickFilter(
+    val labelRes: Int,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val isSelected: Boolean,
+    val onSelect: () -> Unit
+)
+
 private data class QuickFilterChipItem(
     val selection: UnifiedCategoryFilterSelection?,
     val isSelected: Boolean,
     val labelRes: Int,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val onClick: (() -> Unit)? = null,
+    val clearsScopeWhenSelected: Boolean = true
 )
 
 private data class FolderChipItem(

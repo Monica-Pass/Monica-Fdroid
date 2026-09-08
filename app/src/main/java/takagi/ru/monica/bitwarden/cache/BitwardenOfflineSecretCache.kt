@@ -13,10 +13,14 @@ class BitwardenOfflineSecretCache(
     context: Context,
     private val securityManager: SecurityManager
 ) {
-    private val prefs: SharedPreferences = context.getSharedPreferences(
-        PREF_NAME,
-        Context.MODE_PRIVATE
-    )
+    private val appContext = context.applicationContext
+
+    // PasswordViewModel creates this cache during screen setup. Do not touch the
+    // file-backed SharedPreferences implementation until an offline Bitwarden
+    // secret is actually read or written.
+    private val prefs: SharedPreferences by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    }
 
     @Volatile
     private var memoryCache: Map<Long, CachedSecret> = emptyMap()

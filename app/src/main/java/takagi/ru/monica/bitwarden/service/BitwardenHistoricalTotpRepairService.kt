@@ -43,10 +43,24 @@ class BitwardenHistoricalTotpRepairService(
         private const val TAG = "BwHistoricalTotpRepair"
     }
 
-    private val database = PasswordDatabase.getDatabase(context)
-    private val passwordEntryDao = database.passwordEntryDao()
-    private val secureItemDao = database.secureItemDao()
-    private val securityManager = SecurityManager(context.applicationContext)
+    private val appContext = context.applicationContext
+
+    // BitwardenRepository creates this service as part of its object graph even
+    // when no historical repair is requested. Keep Room and Android Keystore out
+    // of that construction path; both are needed only when repairHistoricalTotp()
+    // actually runs.
+    private val database: PasswordDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        PasswordDatabase.getDatabase(appContext)
+    }
+    private val passwordEntryDao by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        database.passwordEntryDao()
+    }
+    private val secureItemDao by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        database.secureItemDao()
+    }
+    private val securityManager: SecurityManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        SecurityManager(appContext)
+    }
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -137,9 +151,9 @@ class BitwardenHistoricalTotpRepairService(
 
         val updatedItem = BitwardenHistoricalRepairStateHelper.applyToSecureItem(
             candidate = item.copy(
-            itemData = normalizedItemData,
-            updatedAt = if (normalizedItemData != item.itemData || shouldQueueRemoteRewrite) now else item.updatedAt,
-            bitwardenRevisionDate = remote.revisionDate ?: item.bitwardenRevisionDate
+                itemData = normalizedItemData,
+                updatedAt = if (normalizedItemData != item.itemData || shouldQueueRemoteRewrite) now else item.updatedAt,
+                bitwardenRevisionDate = remote.revisionDate ?: item.bitwardenRevisionDate
             ),
             shouldQueueRemoteRewrite = shouldQueueRemoteRewrite
         )
@@ -176,9 +190,9 @@ class BitwardenHistoricalTotpRepairService(
 
         val updatedEntry = BitwardenHistoricalRepairStateHelper.applyToPasswordEntry(
             candidate = entry.copy(
-            authenticatorKey = normalizedPayload,
-            updatedAt = if (normalizedPayload != entry.authenticatorKey || shouldQueueRemoteRewrite) now else entry.updatedAt,
-            bitwardenRevisionDate = remote.revisionDate ?: entry.bitwardenRevisionDate
+                authenticatorKey = normalizedPayload,
+                updatedAt = if (normalizedPayload != entry.authenticatorKey || shouldQueueRemoteRewrite) now else entry.updatedAt,
+                bitwardenRevisionDate = remote.revisionDate ?: entry.bitwardenRevisionDate
             ),
             shouldQueueRemoteRewrite = shouldQueueRemoteRewrite
         )
@@ -212,8 +226,8 @@ class BitwardenHistoricalTotpRepairService(
 
         val updatedItem = BitwardenHistoricalRepairStateHelper.applyToSecureItem(
             candidate = item.copy(
-            itemData = normalizedItemData,
-            updatedAt = if (normalizedItemData != item.itemData || shouldQueueRemoteRewrite) now else item.updatedAt
+                itemData = normalizedItemData,
+                updatedAt = if (normalizedItemData != item.itemData || shouldQueueRemoteRewrite) now else item.updatedAt
             ),
             shouldQueueRemoteRewrite = shouldQueueRemoteRewrite
         )
@@ -251,8 +265,8 @@ class BitwardenHistoricalTotpRepairService(
 
         val updatedEntry = BitwardenHistoricalRepairStateHelper.applyToPasswordEntry(
             candidate = entry.copy(
-            authenticatorKey = normalizedPayload,
-            updatedAt = if (normalizedPayload != entry.authenticatorKey || shouldQueueRemoteRewrite) now else entry.updatedAt
+                authenticatorKey = normalizedPayload,
+                updatedAt = if (normalizedPayload != entry.authenticatorKey || shouldQueueRemoteRewrite) now else entry.updatedAt
             ),
             shouldQueueRemoteRewrite = shouldQueueRemoteRewrite
         )

@@ -21,39 +21,38 @@ private val Context.passwordHistoryDataStore: DataStore<Preferences> by preferen
  * 密码生成历史管理器
  * 使用 DataStore 存储密码生成历史记录
  */
-class PasswordHistoryManager(private val context: Context) {
-    
+class PasswordHistoryManager(context: Context) {
+
+    private val appContext = context.applicationContext
     private val json = Json { ignoreUnknownKeys = true }
-    private val securityManager = SecurityManager(context.applicationContext)
-    
+
+    // PasswordViewModel creates this manager during the initial password screen.
+    // Android Keystore is only needed once history is actually decoded/encoded,
+    // so keep SecurityManager out of the cold-start constructor path.
+    private val securityManager: SecurityManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        SecurityManager(appContext)
+    }
+
     companion object {
         private val HISTORY_KEY = stringPreferencesKey("password_generation_history")
-        private const val MAX_HISTORY_SIZE = 50 // 最多保存50条历史记录
+        private const val MAX_HISTORY_SIZE = 50
     }
-    
-    /**
-     * 获取所有历史记录
-     */
-    val historyFlow: Flow<List<PasswordGenerationHistory>> = context.passwordHistoryDataStore.data
+
+    val historyFlow: Flow<List<PasswordGenerationHistory>> = appContext.passwordHistoryDataStore.data
         .onStart { migrateLegacyHistoryIfNeeded() }
         .map { preferences ->
             decodeHistoryPayload(preferences[HISTORY_KEY])
         }
-    
-    /**
-     * 添加新的历史记录
-     */
+
     suspend fun addHistory(
-        password: String, 
-        packageName: String = "", 
+        password: String,
+        packageName: String = "",
         domain: String = "",
         username: String = "",
         type: String = "AUTOFILL"
     ) {
-        context.passwordHistoryDataStore.edit { preferences ->
+        appContext.passwordHistoryDataStore.edit { preferences ->
             val currentHistory = decodeHistoryPayload(preferences[HISTORY_KEY])
-            
-            // 创建新记录
             val newRecord = PasswordGenerationHistory(
                 password = password,
                 timestamp = System.currentTimeMillis(),
@@ -62,55 +61,38 @@ class PasswordHistoryManager(private val context: Context) {
                 username = username,
                 type = type
             )
-            
-            // 添加到列表头部，并限制数量
             val updatedHistory = (listOf(newRecord) + currentHistory).take(MAX_HISTORY_SIZE)
-            
-            // 保存
             preferences[HISTORY_KEY] = encodeHistoryPayload(updatedHistory)
         }
     }
-    
-    /**
-     * 清空所有历史记录
-     */
+
     suspend fun clearHistory() {
-        context.passwordHistoryDataStore.edit { preferences ->
+        appContext.passwordHistoryDataStore.edit { preferences ->
             preferences.remove(HISTORY_KEY)
         }
     }
 
-    /**
-     * 导出当前历史为 JSON 字符串
-     */
     suspend fun exportHistoryJson(): String {
         val current = historyFlow.first()
         return json.encodeToString(current)
     }
 
-    /**
-     * 将历史记录整体导入（替换当前历史）
-     */
     suspend fun importHistory(history: List<PasswordGenerationHistory>) {
-        context.passwordHistoryDataStore.edit { preferences ->
+        appContext.passwordHistoryDataStore.edit { preferences ->
             preferences[HISTORY_KEY] = encodeHistoryPayload(history.take(MAX_HISTORY_SIZE))
         }
     }
-    
-    /**
-     * 删除指定的历史记录
-     */
+
     suspend fun deleteHistory(timestamp: Long) {
-        context.passwordHistoryDataStore.edit { preferences ->
+        appContext.passwordHistoryDataStore.edit { preferences ->
             val currentHistory = decodeHistoryPayload(preferences[HISTORY_KEY])
-            
             val updatedHistory = currentHistory.filter { it.timestamp != timestamp }
             preferences[HISTORY_KEY] = encodeHistoryPayload(updatedHistory)
         }
     }
 
     private suspend fun migrateLegacyHistoryIfNeeded() {
-        context.passwordHistoryDataStore.edit { preferences ->
+        appContext.passwordHistoryDataStore.edit { preferences ->
             val raw = preferences[HISTORY_KEY] ?: return@edit
             if (raw.isBlank() || securityManager.looksLikeMonicaCiphertext(raw)) {
                 return@edit

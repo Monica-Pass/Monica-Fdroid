@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import takagi.ru.monica.R
 import takagi.ru.monica.utils.BiometricAuthHelper
 import takagi.ru.monica.utils.SettingsManager
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 
 class ImeBiometricAuthActivity : AppCompatActivity() {
 
@@ -32,6 +33,10 @@ class ImeBiometricAuthActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val settings = withContext(Dispatchers.IO) {
                 settingsManager.settingsFlow.first()
+            }
+            if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
+                publishResult(true, null)
+                return@launch
             }
             if (!settings.biometricEnabled || !biometricAuthHelper.isBiometricAvailable()) {
                 publishResult(false, getString(R.string.biometric_not_available))

@@ -37,18 +37,20 @@ object WebDavBackoffState {
     private val hosts = ConcurrentHashMap<String, HostState>()
 
     @Volatile
+    private var appContext: Context? = null
+
+    @Volatile
     private var prefs: SharedPreferences? = null
 
     /**
-     * 把 backoff 状态绑定到 SharedPreferences，保证进程重启后仍可恢复。
-     * 只需在应用启动阶段调用一次。
+     * Bind persistence without opening SharedPreferences during Application
+     * startup. The file-backed store is created on the first real WebDAV
+     * backoff operation instead.
      */
     @Synchronized
     fun attachPersistence(context: Context) {
-        if (prefs != null) return
-        val sharedPreferences = context.applicationContext
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs = sharedPreferences
+        if (appContext != null) return
+        appContext = context.applicationContext
     }
 
     /** 记录一次 429 / 503+Retry-After 事件，更新阻塞截止时间。 */
@@ -60,7 +62,6 @@ object WebDavBackoffState {
         if (host.isEmpty()) return
         val state = stateForHost(host)
         synchronized(state) {
-            // 维护 60 秒窗口
             pruneLocked(state, now)
             state.rateLimitTimestamps.addLast(now)
             val attempt = state.rateLimitTimestamps.size
@@ -122,7 +123,7 @@ object WebDavBackoffState {
     /** 仅测试用：清空所有内存状态。 */
     internal fun resetForTest() {
         hosts.clear()
-        prefs?.edit()?.clear()?.apply()
+        persistence()?.edit()?.clear()?.apply()
     }
 
     internal fun computeExponentialWait(attempt: Int): Long {
@@ -141,7 +142,7 @@ object WebDavBackoffState {
     }
 
     private fun persistLocked(host: String, state: HostState) {
-        val p = prefs ?: return
+        val p = persistence() ?: return
         val window = state.rateLimitTimestamps.joinToString(",")
         val key = storageKey(host)
         p.edit()
@@ -152,7 +153,7 @@ object WebDavBackoffState {
     }
 
     private fun clearLocked(host: String) {
-        val p = prefs ?: return
+        val p = persistence() ?: return
         val key = storageKey(host)
         val legacyKey = legacyStorageKey(host)
         p.edit()
@@ -172,7 +173,7 @@ object WebDavBackoffState {
     }
 
     private fun restoreHostFromPrefs(host: String): HostState? {
-        val p = prefs ?: return null
+        val p = persistence() ?: return null
         readState(p, storageKey(host))?.let { return it }
 
         val legacyKey = legacyStorageKey(host)
@@ -197,6 +198,17 @@ object WebDavBackoffState {
             .mapNotNull { it.trim().takeIf(String::isNotEmpty)?.toLongOrNull() }
             .forEach { state.rateLimitTimestamps.addLast(it) }
         return state
+    }
+
+    private fun persistence(): SharedPreferences? {
+        prefs?.let { return it }
+        val context = appContext ?: return null
+        synchronized(this) {
+            prefs?.let { return it }
+            return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).also {
+                prefs = it
+            }
+        }
     }
 
     private fun storageKey(host: String): String {

@@ -41,6 +41,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import takagi.ru.monica.steam.profile.SteamMiniProfileBackgroundRepository
 import takagi.ru.monica.steam.profile.SteamMiniProfilePreparedMedia
+import takagi.ru.monica.ui.theme.LocalPowerSavePolicy
 
 @Composable
 internal fun SteamMiniProfileBackgroundLayer(
@@ -70,7 +71,9 @@ internal fun SteamMiniProfileBackgroundLayer(
             withContext(Dispatchers.IO) { SteamMiniProfilePosterMemoryCache.load(file) }
         }
     }
-    val motionAllowed = rememberSteamMiniProfileMotionAllowed(allowMotion)
+    val motionAllowed = rememberSteamMiniProfileMotionAllowed(
+        allowMotion && LocalPowerSavePolicy.current.allowContinuousDecorativeMotion
+    )
     val mediaAvailable = media?.videoFile?.isFile == true
     LaunchedEffect(mediaAvailable) {
         onAvailabilityChanged(mediaAvailable)

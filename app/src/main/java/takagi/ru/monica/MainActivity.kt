@@ -96,6 +96,7 @@ import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.security.SensitiveFieldMigrationManager
 import takagi.ru.monica.security.lock.MainAppAccessState
 import takagi.ru.monica.security.lock.MainAppLockPolicy
+import takagi.ru.monica.perf.PowerSaveModeController
 import takagi.ru.monica.ui.SimpleMainScreen
 import takagi.ru.monica.ui.screens.AddEditBankCardScreen
 import takagi.ru.monica.ui.screens.AddEditBillingAddressScreen
@@ -583,7 +584,8 @@ fun MonicaApp(
     val billingAddressViewModel: BillingAddressViewModel = viewModel {
         BillingAddressViewModel(
             secureItemRepository,
-            securityManager
+            securityManager,
+            navController.context.applicationContext
         )
     }
     val passwordHistoryManager = remember { PasswordHistoryManager(navController.context) }
@@ -665,6 +667,9 @@ fun MonicaApp(
             }.getOrElse { AppSettings() }
             runCatching {
                 SessionManager.updateAutoLockTimeout(settingsSnapshot.autoLockMinutes)
+                if (settingsSnapshot.disablePasswordVerification) {
+                    securityManager.unlockVaultForDeveloperBypass(settingsSnapshot.autoLockMinutes)
+                }
                 MainAppLockPolicy.resolveAccessState(
                     securityManager,
                     context.applicationContext,
@@ -703,6 +708,11 @@ fun MonicaApp(
 
     val settings by settingsViewModel.settings.collectAsState()
     val isSystemInDarkTheme = isSystemInDarkTheme()
+    val powerSaveController = remember(context) { PowerSaveModeController(context) }
+    val powerSavePolicy by powerSaveController.policy.collectAsState()
+    DisposableEffect(powerSaveController) {
+        onDispose { powerSaveController.close() }
+    }
 
     val darkTheme = when (settings.themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme
@@ -721,6 +731,9 @@ fun MonicaApp(
             customNeutralColor = settings.customNeutralColor,
             customNeutralVariantColor = settings.customNeutralVariantColor
         ) {
+            androidx.compose.runtime.CompositionLocalProvider(
+                takagi.ru.monica.ui.theme.LocalPowerSavePolicy provides powerSavePolicy
+            ) {
             // 应用防截屏保护
             ScreenshotProtection(enabled = settings.screenshotProtectionEnabled)
 
@@ -767,6 +780,7 @@ fun MonicaApp(
                         }
                     )
                 }
+            }
             }
         }
     }
@@ -898,6 +912,7 @@ fun MonicaContent(
                             "ON_START allowed while unauthenticated via ${accessState.reason}"
                         )
                         if (accessState.bypassEnabled) {
+                            securityManager.unlockVaultForDeveloperBypass(currentSettings.autoLockMinutes)
                             viewModel.markAuthenticatedForBypass()
                         } else if (accessState.canRestoreSession) {
                             viewModel.restoreAuthenticatedUiState()
@@ -1038,7 +1053,8 @@ fun MonicaContent(
     @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
     androidx.compose.runtime.CompositionLocalProvider(
         takagi.ru.monica.ui.LocalSharedTransitionScope provides null,
-        takagi.ru.monica.ui.LocalReduceAnimations provides true
+        takagi.ru.monica.ui.LocalReduceAnimations provides true,
+        takagi.ru.monica.ui.LocalHapticFeedbackEnabled provides settings.hapticFeedbackEnabled
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
@@ -3522,6 +3538,10 @@ fun MonicaContent(
                     navController.navigate(Screen.QuickSetup.route)
                 },
                 isPlusActivated = settings.isPlusActivated,
+                hapticFeedbackEnabled = settings.hapticFeedbackEnabled,
+                onHapticFeedbackChange = { enabled ->
+                    settingsViewModel.updateHapticFeedbackEnabled(enabled)
+                },
                 validatorVibrationEnabled = settings.validatorVibrationEnabled,
                 onValidatorVibrationChange = { enabled ->
                     settingsViewModel.updateValidatorVibrationEnabled(enabled)

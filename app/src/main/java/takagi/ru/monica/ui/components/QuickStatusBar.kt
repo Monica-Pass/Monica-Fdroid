@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun QuickStatusBar(
     modifier: Modifier = Modifier,
+    itemSpacing: Dp = 10.dp,
     indicator: @Composable RowScope.() -> Unit,
     breadcrumb: @Composable RowScope.() -> Unit,
     actions: @Composable RowScope.() -> Unit = {}
@@ -21,7 +23,7 @@ fun QuickStatusBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
         verticalAlignment = Alignment.CenterVertically
     ) {
         indicator()

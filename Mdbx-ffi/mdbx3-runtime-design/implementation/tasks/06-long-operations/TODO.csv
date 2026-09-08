@@ -1,0 +1,5 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"审计长操作、取消恢复与结构化诊断入口",DONE,"确认 segment inspect/apply、manual restore、benchmark 和 diagnostics 的现有契约","cargo test -p mdbx-ffi --lib",2026-08-31T00:00:00+08:00,0,"现有 FFI 已有 durable segment、resume、tamper、diagnostics 回归"
+2,"将长操作按读写语义路由到 VaultRuntime",DONE,"导出/检查使用 read；apply/restore/benchmark 使用 write；ABI 不变","cargo clippy -p mdbx-ffi --all-targets -- -D warnings",2026-08-31T00:00:00+08:00,0,"显式 runtime boundary 已通过 clippy"
+3,"完成 FFI 回归与事实记录",DONE,"58 项 FFI 测试、workspace 测试与 ABI 兼容证据保留","cargo test -p mdbx-ffi --lib",2026-08-31T00:00:00+08:00,0,"58 passed；生产 ABI 535 symbols/237 checksums/contract 30"
+4,"提交并推送长操作模块",DONE,"事实文件和父任务状态更新后独立提交推送","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"实现提交 22d5a6f 已推送；FFI、workspace、ABI 和 release gate 回归通过"

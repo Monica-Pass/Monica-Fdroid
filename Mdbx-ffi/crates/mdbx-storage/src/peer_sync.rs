@@ -97,7 +97,16 @@ impl PeerSyncService {
     ) -> StorageResult<IncrementalSyncBundle> {
         ensure_unlocked(conn)?;
         validate_device_id(source_device_id)?;
-        validate_complete_checkpoint(base, "incremental export base")?;
+        validate_bootstrap_checkpoint(base, "incremental export base")?;
+        if resume.is_none() && base.commit_inventory.is_none() {
+            // A paired empty checkpoint is the explicit MDBX3 segmented
+            // bootstrap marker. It remains wire-compatible with MDBX2,
+            // whose peers negotiate complete-state fallback.
+        } else if resume.is_some() && base.commit_inventory.is_none() {
+            return Err(StorageError::Validation(
+                "incremental resume requires a completed bootstrap checkpoint pair".to_string(),
+            ));
+        }
         validate_resume(resume)?;
         let options = options.validate()?;
         let vault_id = vault_id(conn)?;
@@ -240,7 +249,12 @@ impl PeerSyncService {
     ) -> StorageResult<ApplyBatchResult> {
         ensure_unlocked(conn)?;
         validate_device_id(receiver_device_id)?;
-        validate_complete_checkpoint(expected_base, "incremental apply base")?;
+        validate_bootstrap_checkpoint(expected_base, "incremental apply base")?;
+        if expected_resume.is_some() && expected_base.commit_inventory.is_none() {
+            return Err(StorageError::Validation(
+                "incremental resume requires a completed bootstrap checkpoint pair".to_string(),
+            ));
+        }
         validate_resume(expected_resume)?;
         bundle.validate().map_err(map_sync_error)?;
         let local_vault_id = vault_id(conn)?;
@@ -331,13 +345,13 @@ fn validate_device_id(device_id: &str) -> StorageResult<()> {
     Ok(())
 }
 
-fn validate_complete_checkpoint(
+fn validate_bootstrap_checkpoint(
     checkpoint: &IncrementalBundleCheckpoint,
     label: &str,
 ) -> StorageResult<()> {
-    if checkpoint.commit_inventory.is_none() || checkpoint.delta_inventory.is_none() {
+    if checkpoint.commit_inventory.is_some() != checkpoint.delta_inventory.is_some() {
         return Err(StorageError::Validation(format!(
-            "{label} requires a completed bootstrap checkpoint pair"
+            "{label} must contain a paired checkpoint or a paired empty bootstrap marker"
         )));
     }
     Ok(())
@@ -876,5 +890,70 @@ mod tests {
         .unwrap_err();
         assert!(chain_error.to_string().contains("resume state"));
         assert!(!title_exists(&target_conn, "Protected"));
+    }
+
+    #[test]
+    fn empty_checkpoint_bootstraps_in_bounded_segments_and_then_resumes() {
+        let source = TestVault::new();
+        let target = TestVault::new();
+        let source_conn = create(&source.path, "source-device");
+        drop(source_conn);
+        copy(&source.path, &target.path);
+
+        let source_conn = open(&source.path);
+        for title in ["Bootstrap one", "Bootstrap two", "Bootstrap three"] {
+            ProjectRepo::create(
+                &source_conn,
+                &CommitContext::new("source-device".to_string()),
+                title,
+                None,
+                None,
+            )
+            .unwrap();
+        }
+        let empty = IncrementalBundleCheckpoint {
+            commit_inventory: None,
+            delta_inventory: None,
+        };
+        let first = PeerSyncService::export_incremental_segment(
+            &source_conn,
+            "source-device",
+            &empty,
+            None,
+            PeerSyncSegmentOptions { page_size: 2 },
+        )
+        .unwrap();
+        assert_eq!(first.manifest.segment_index, 0);
+        assert!(!first.manifest.is_last);
+        let resume = PeerSyncService::next_resume(&first).unwrap();
+
+        let mut target_conn = open(&target.path);
+        PeerSyncService::apply_incremental_segment(
+            &mut target_conn,
+            "target-device",
+            &first,
+            &empty,
+            None,
+        )
+        .unwrap();
+        let second = PeerSyncService::export_incremental_segment(
+            &source_conn,
+            "source-device",
+            &first.manifest.result,
+            resume.as_ref(),
+            PeerSyncSegmentOptions { page_size: 2 },
+        )
+        .unwrap();
+        PeerSyncService::apply_incremental_segment(
+            &mut target_conn,
+            "target-device",
+            &second,
+            &first.manifest.result,
+            resume.as_ref(),
+        )
+        .unwrap();
+        for title in ["Bootstrap one", "Bootstrap two", "Bootstrap three"] {
+            assert!(title_exists(&target_conn, title));
+        }
     }
 }

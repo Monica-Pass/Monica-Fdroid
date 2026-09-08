@@ -373,3 +373,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 [回到顶部](#-monica-password-manager)
 
 </div>
+
+## F-Droid contact
+
+For F-Droid metadata or packaging issues, contact: joyin8888@foxmail.com
+

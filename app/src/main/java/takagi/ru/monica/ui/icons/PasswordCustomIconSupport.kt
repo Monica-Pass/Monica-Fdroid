@@ -471,6 +471,21 @@ fun normalizeSimpleIconSlug(input: String): String {
     return input.trim().lowercase(Locale.ROOT).replace(" ", "")
 }
 
+private object UploadedPasswordIconMemoryCache {
+    private const val MAX_BYTES = 8 * 1024 * 1024
+    private val memory = object : LruCache<String, Bitmap>(MAX_BYTES) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount
+    }
+
+    fun load(context: Context, value: String): ImageBitmap? {
+        val file = PasswordCustomIconStore.resolveIconFile(context, value) ?: return null
+        val key = "${file.absolutePath}:${file.lastModified()}:${file.length()}"
+        val bitmap = memory.get(key) ?: BitmapFactory.decodeFile(file.absolutePath)
+            ?.also { decoded -> memory.put(key, decoded) }
+        return bitmap?.asImageBitmap()
+    }
+}
+
 @Composable
 fun rememberUploadedPasswordIcon(value: String?): ImageBitmap? {
     val context = LocalContext.current
@@ -481,8 +496,7 @@ fun rememberUploadedPasswordIcon(value: String?): ImageBitmap? {
             return@LaunchedEffect
         }
         icon = withContext(Dispatchers.IO) {
-            val file = PasswordCustomIconStore.resolveIconFile(context, value) ?: return@withContext null
-            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+            UploadedPasswordIconMemoryCache.load(context, value)
         }
     }
     return icon

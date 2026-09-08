@@ -715,6 +715,10 @@
     <string name="validator_settings_section">Cài đặt xác thực</string>
     <string name="experimental_features_section">Tính năng thử nghiệm</string>
     
+    <!-- Phản hồi xúc giác -->
+    <string name="haptic_feedback">Phản hồi xúc giác</string>
+    <string name="haptic_feedback_description">Rung khi kéo, nhấn giữ và các tương tác khác</string>
+
     <!-- Rung xác thực -->
     <string name="validator_vibration">Rung xác thực</string>
     <string name="validator_vibration_description">Rung khi đếm ngược sắp kết thúc</string>
@@ -1123,7 +1127,8 @@
     <string name="developer_share_logs_desc">Xuất và chia sẻ nhật ký gần đây</string>
     <string name="developer_functions">Chức năng nhà phát triển</string>
     <string name="developer_disable_password_verification">Tắt xác minh mật khẩu</string>
-    <string name="developer_disable_password_verification_desc">Bỏ qua xác minh mật khẩu khi khởi động ứng dụng (chỉ dành cho kiểm thử phát triển)</string>
+    <string name="developer_disable_password_verification_desc">Bỏ qua xác minh danh tính trong ứng dụng, Tự động điền, Bàn phím Monica và thao tác nguy hiểm. Hộp xác nhận và mật khẩu mã hóa xuất vẫn được giữ.</string>
+    <string name="developer_disable_password_verification_failed">Không thể bật bỏ qua xác minh toàn diện. Hãy mở khóa Monica bình thường một lần rồi thử lại.</string>
     <string name="developer_launcher_name_use_pass">Dùng Monica Pass làm tên ngoài màn hình chính</string>
     <string name="developer_launcher_name_use_pass_desc">Bật: Monica Pass. Tắt: Monica. Chỉ đổi tên lối vào chính trên launcher.</string>
     <string name="developer_bitwarden_forensics_toggle">Bật forensics đồng bộ Bitwarden</string>

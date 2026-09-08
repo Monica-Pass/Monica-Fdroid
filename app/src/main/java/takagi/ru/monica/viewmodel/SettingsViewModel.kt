@@ -227,6 +227,12 @@ class SettingsViewModel(
         }
     }
 
+    fun updateHapticFeedbackEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsManager.updateHapticFeedbackEnabled(enabled)
+        }
+    }
+
     fun updateHideFabOnScroll(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.updateHideFabOnScroll(enabled)

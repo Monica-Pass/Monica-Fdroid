@@ -1,0 +1,5 @@
+id,task,status,acceptance_criteria,validation_command,completed_at,retry_count,notes
+1,"审计现有增量 inventory、segment resume 与完整状态回退",DONE,"确认 MDBX2 peer 能力和现有因果校验边界","cargo test -p mdbx-sync --all-features",2026-08-31T00:00:00+08:00,0,"现有协议已有 paired checkpoint、segment digest、durable ack 与 fallback"
+2,"实现空 checkpoint 的有界 bootstrap 语义",DONE,"成对空 token 允许首段，单空 token 和带 resume 的空 checkpoint 拒绝","cargo test -p mdbx-storage peer_sync --no-default-features --features core",2026-08-31T00:00:00+08:00,0,"PeerSyncService export/apply validation 已支持 bootstrap marker"
+3,"保持 FFI DTO 与旧 ABI 兼容",DONE,"现有 String DTO 用双空字符串表达 bootstrap，535/237/contract30 不变","cargo test -p mdbx-ffi --lib ffi_incremental_segment_files_are_authenticated_atomic_and_idempotent",2026-08-31T00:00:00+08:00,0,"新增 FFI bootstrap segment 回归"
+4,"补齐事实文件并提交推送",DONE,"同步生命周期规范、测试和父任务状态已更新并推送","git rev-list --left-right --count origin/master...HEAD",2026-08-31T00:00:00+08:00,0,"mdbx-sync all-features 71 项测试通过；storage/FFI bootstrap 回归通过"

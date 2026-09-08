@@ -14,6 +14,7 @@ mod history_facade;
 mod integrity_root_facade;
 mod lifecycle_facade;
 mod object_facade;
+mod runtime_facade;
 mod security_facade;
 mod snapshot_lifecycle_facade;
 mod snapshot_management_facade;
@@ -34,6 +35,7 @@ pub use integrity_root_facade::*;
 pub use lifecycle_facade::*;
 pub use object_facade::*;
 pub(crate) use object_facade::{parse_object_type_id, parse_payload_json, parse_relation_kind};
+pub use runtime_facade::*;
 #[cfg(test)]
 pub(crate) use security_facade::scope_from_core;
 pub use security_facade::*;
@@ -51,14 +53,12 @@ pub(crate) use write_facade::{
     HARD_MAX_WRITE_COMMANDS,
 };
 
-use std::sync::Mutex;
-
 #[cfg(test)]
 use mdbx_core::model::RelationKindId;
 #[cfg(test)]
 use mdbx_core::tiga::{TigaMode, TigaScope};
-use mdbx_storage::connection::VaultConnection;
 use mdbx_storage::error::StorageError;
+use mdbx_storage::runtime::VaultRuntime;
 #[cfg(test)]
 use uuid::Uuid;
 
@@ -118,7 +118,7 @@ impl From<mdbx_sync::SyncError> for MdbxFfiError {
 
 #[derive(uniffi::Object)]
 pub struct MdbxVault {
-    conn: Mutex<VaultConnection>,
+    pub(crate) conn: VaultRuntime,
     device_id: String,
     vault_id: String,
 }

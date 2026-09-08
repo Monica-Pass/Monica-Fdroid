@@ -48,7 +48,8 @@ import takagi.ru.monica.data.InterfaceScale
 fun InterfaceScaleSettingsItem(
     scalePercent: Int,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sectionShape: androidx.compose.ui.graphics.Shape? = null
 ) {
     val baseDensityDpi = LocalConfiguration.current.densityDpi
     val normalizedPercent = InterfaceScale.normalizePercent(scalePercent)
@@ -66,7 +67,8 @@ fun InterfaceScaleSettingsItem(
             effectiveDpi
         ),
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
+        sectionShape = sectionShape
     )
 }
 

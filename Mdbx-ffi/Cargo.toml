@@ -30,3 +30,12 @@ hkdf = "0.12"
 rand = "0.8"
 unicode-normalization = "0.1"
 zeroize = "1.8"
+
+[profile.mdbx3-release]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+incremental = false
+panic = "unwind"

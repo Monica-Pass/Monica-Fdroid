@@ -148,6 +148,7 @@ import takagi.ru.monica.ui.components.UnifiedCategoryFilterBottomSheet
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuDropdown
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuOffset
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterSelection
+import takagi.ru.monica.ui.components.ExpressiveLazyListScrollbar
 import takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_NONE
 import takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_SIMPLE
 import takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_UPLOADED
@@ -1428,9 +1429,21 @@ internal fun buildVaultV2DisplayListState(
 	currentPasswordEntries: List<PasswordEntry>,
 	config: VaultV2VisibleListConfig,
 ): VaultV2DisplayListState {
-	val allItemsRaw = mergeVaultV2ImmediatePasswordItems(
+	return buildVaultV2DisplayListStateFromItems(
 		computedItems = computedItems,
 		currentPasswordItems = buildVaultV2PasswordItems(currentPasswordEntries),
+		config = config,
+	)
+}
+
+private fun buildVaultV2DisplayListStateFromItems(
+	computedItems: List<VaultV2Item>,
+	currentPasswordItems: List<VaultV2Item>,
+	config: VaultV2VisibleListConfig,
+): VaultV2DisplayListState {
+	val allItemsRaw = mergeVaultV2ImmediatePasswordItems(
+		computedItems = computedItems,
+		currentPasswordItems = currentPasswordItems,
 	)
 	return VaultV2DisplayListState(
 		allItemsRaw = allItemsRaw,
@@ -1456,6 +1469,25 @@ internal fun buildVaultV2InitialDisplayListState(
 	return buildVaultV2DisplayListState(
 		computedItems = retainedVisibleListState?.filteredItems.orEmpty(),
 		currentPasswordEntries = currentPasswordEntries,
+		config = config,
+	)
+}
+
+private fun buildVaultV2InitialDisplayListStateFromItems(
+	currentPasswordItems: Lazy<List<VaultV2Item>>,
+	config: VaultV2VisibleListConfig,
+	retainedComputedItems: List<VaultV2Item>?,
+	retainedVisibleListState: VaultV2VisibleListState?,
+): VaultV2DisplayListState {
+	if (retainedComputedItems != null && retainedVisibleListState != null) {
+		return VaultV2DisplayListState(
+			allItemsRaw = retainedComputedItems,
+			visibleListState = retainedVisibleListState,
+		)
+	}
+	return buildVaultV2DisplayListStateFromItems(
+		computedItems = retainedVisibleListState?.filteredItems.orEmpty(),
+		currentPasswordItems = currentPasswordItems.value,
 		config = config,
 	)
 }
@@ -2291,6 +2323,11 @@ fun VaultV2Pane(
 			passkeyItems = passkeyItems,
 		)
 	}
+	val currentPasswordItems = remember(visiblePasswordEntries) {
+		lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+			buildVaultV2PasswordItems(visiblePasswordEntries)
+		}
+	}
 	val computedSnapshotSeed = remember(computedSnapshotKey, computedSources) {
 		state.computedListSnapshots.seed(
 			key = computedSnapshotKey,
@@ -2303,7 +2340,6 @@ fun VaultV2Pane(
 		initialValue = computedSnapshotSeed.value,
 		initialHasComputed = computedSnapshotSeed.hasSnapshot,
 	) {
-		val passwordList = buildVaultV2PasswordItems(visiblePasswordEntries)
 		val visiblePasswordIds = visiblePasswordEntries.mapTo(hashSetOf()) { it.id }
 
 		val secondaryLists = coroutineScope {
@@ -2452,7 +2488,7 @@ fun VaultV2Pane(
 		}
 
 		val allItemsRaw = dedupeExactVaultItems(
-			passwordList +
+			currentPasswordItems.value +
 				secondaryLists.totp +
 				secondaryLists.notes +
 				secondaryLists.passkeys +
@@ -2683,10 +2719,10 @@ fun VaultV2Pane(
 		computedSnapshotSeed,
 		visibleSnapshotSeed,
 		visibleListConfig,
-		visiblePasswordEntries,
+		currentPasswordItems,
 	) {
-		buildVaultV2InitialDisplayListState(
-			currentPasswordEntries = visiblePasswordEntries,
+		buildVaultV2InitialDisplayListStateFromItems(
+			currentPasswordItems = currentPasswordItems,
 			config = visibleListConfig,
 			retainedComputedItems = computedSnapshotSeed.value.allItemsRaw
 				.takeIf { computedSnapshotSeed.hasSnapshot },
@@ -2697,15 +2733,15 @@ fun VaultV2Pane(
 	val displayListStateAsync = rememberVaultV2AsyncComputedValue(
 		computationKey = Triple(
 			computedListState.allItemsRaw,
-			visiblePasswordEntries,
+			currentPasswordItems,
 			visibleListConfig,
 		),
 		initialValue = displayListSeed,
 		initialHasComputed = computedSnapshotSeed.hasSnapshot && visibleSnapshotSeed.hasSnapshot,
 	) {
-		buildVaultV2DisplayListState(
+		buildVaultV2DisplayListStateFromItems(
 			computedItems = computedListState.allItemsRaw,
-			currentPasswordEntries = visiblePasswordEntries,
+			currentPasswordItems = currentPasswordItems.value,
 			config = visibleListConfig,
 		)
 	}
@@ -3425,6 +3461,12 @@ fun VaultV2Pane(
 					}
 				)
 
+			Box(
+				modifier = Modifier
+					.weight(1f)
+					.fillMaxWidth()
+					.then(listInteractionModifier),
+			) {
 			VaultV2List(
 				hasVisibleQuickFilters = showQuickFiltersInList,
 				hasVisibleCategoryQuickFilters = showCategoryQuickFiltersInList,
@@ -3478,10 +3520,7 @@ fun VaultV2Pane(
 					selectedKeys.add(item.key)
 					showDeleteConfirmDialog = true
 				},
-				modifier = Modifier
-					.weight(1f)
-					.fillMaxWidth()
-					.then(listInteractionModifier),
+				modifier = Modifier.fillMaxSize(),
 				onOpenItem = { item ->
 					when (item.type) {
 						VaultV2ItemType.PASSWORD -> item.passwordEntry?.id?.let(onOpenPassword)
@@ -3502,6 +3541,20 @@ fun VaultV2Pane(
 					}
 				},
 			)
+			ExpressiveLazyListScrollbar(
+				listState = listState,
+				modifier = Modifier
+					.align(Alignment.CenterEnd)
+					.padding(vertical = 8.dp),
+				labelForIndex = { lazyIndex ->
+					vaultV2SectionTitleForLazyIndex(
+						sectionLayouts = sectionLayouts,
+						lazyIndex = lazyIndex,
+					)?.trim()?.take(2)?.uppercase(Locale.ROOT)
+				},
+				onInteractionChange = state::updateFastScrollbarInteraction,
+			)
+		}
 		}
 
 		if (appSettings.categorySelectionUiMode != CategorySelectionUiMode.CHIP_MENU) {
@@ -3951,7 +4004,12 @@ fun VaultV2Pane(
 					itemTitle = stringResource(R.string.selected_items, selectedCount),
 					itemType = stringResource(R.string.vault_batch_delete_item_type),
 					biometricEnabled = biometricEnabled,
+					skipIdentityVerification = appSettings.disablePasswordVerification,
 					onDismiss = { showDeleteConfirmDialog = false },
+					onConfirmWithoutVerification = {
+						showDeleteConfirmDialog = false
+						doDelete()
+					},
 					onConfirmWithPassword = { password ->
 						if (securityManager.unlockVaultWithPassword(password)) {
 							showDeleteConfirmDialog = false
@@ -4224,7 +4282,7 @@ private fun VaultV2List(
 	LazyColumn(
 		state = listState,
 		modifier = modifier,
-		contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 96.dp),
+		contentPadding = PaddingValues(start = 12.dp, end = 28.dp, top = 8.dp, bottom = 96.dp),
 	verticalArrangement = Arrangement.spacedBy(6.dp),
 	) {
 		if (hasVisibleQuickFilters || hasVisibleCategoryQuickFilters) {
@@ -4400,6 +4458,7 @@ private fun VaultV2QuickStatusBar(
 		return
 	}
 	QuickStatusBar(
+		itemSpacing = 4.dp,
 		indicator = {
 			VaultV2QuickStatusIndicator(currentSectionLabel = currentSectionLabel)
 		},
@@ -4456,6 +4515,7 @@ private fun VaultV2BreadcrumbPath(
 			currentFilter = currentFilter,
 			onNavigate = onNavigateFilter,
 			modifier = modifier,
+			horizontalContentPadding = 6.dp,
 		)
 	} else {
 		Box(
@@ -4467,7 +4527,7 @@ private fun VaultV2BreadcrumbPath(
 			Row(
 				modifier = Modifier
 					.fillMaxSize()
-					.padding(horizontal = 8.dp, vertical = 6.dp),
+					.padding(horizontal = 6.dp, vertical = 6.dp),
 				verticalAlignment = Alignment.CenterVertically,
 			) {
 				Box(

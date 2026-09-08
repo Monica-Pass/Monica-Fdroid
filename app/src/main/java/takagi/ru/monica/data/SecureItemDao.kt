@@ -12,6 +12,10 @@ interface SecureItemDao {
     // 获取所有项目（排除已删除）
     @Query("SELECT * FROM secure_items WHERE isDeleted = 0 ORDER BY updatedAt DESC")
     fun getAllItems(): Flow<List<SecureItem>>
+
+    /** Lightweight invalidation key for cached authenticator and card projections. */
+    @Query("SELECT COUNT(*) || ':' || COALESCE(MAX(updatedAt), '') FROM secure_items WHERE isDeleted = 0")
+    fun observeActiveItemRevision(): Flow<String>
     
     // 根据类型获取项目（排除已删除）
     @Query("SELECT * FROM secure_items WHERE isDeleted = 0 AND itemType = :type ORDER BY isFavorite DESC, sortOrder ASC, updatedAt DESC")

@@ -54,41 +54,45 @@ fun PasswordVerificationContent(
     // 内部状态，用于处理首次设置密码的确认流程
     var internalIsConfirming by remember { mutableStateOf(isConfirmingPassword) }
     
-    // 生物识别帮助类
-    val biometricHelper = remember { BiometricAuthHelper(context) }
-    val securityManager = remember(context) { SecurityManager(context.applicationContext) }
-    val isBiometricAvailable = remember { biometricHelper.isBiometricAvailable() }
+    // 生物识别帮助类。SecurityManager 故意延迟到系统认证成功之后再初始化，
+    // 避免 AndroidX Security / Keystore 构造阻挡原生认证面板弹出。
+    val biometricHelper = remember(context) { BiometricAuthHelper(context.applicationContext) }
+    val securityManager = remember(context) {
+        lazy(LazyThreadSafetyMode.NONE) { SecurityManager(context.applicationContext) }
+    }
+    val isBiometricAvailable = remember(biometricHelper) { biometricHelper.isBiometricAvailable() }
     val canUseBiometric = !isFirstTime && isBiometricAvailable && biometricEnabled
     var autoBiometricTried by remember { mutableStateOf(false) }
 
     fun completeAuthentication() {
         if (persistVaultUnlockToSession) {
-            securityManager.markVaultAuthenticated()
+            securityManager.value.markVaultAuthenticated()
         }
         onSuccess()
     }
 
     fun canProceedAfterBiometricAuth(): PasswordVerificationBiometricAccessResult {
-        if (!securityManager.isMasterPasswordSet()) return PasswordVerificationBiometricAccessResult.PROCEED
+        val manager = securityManager.value
+        if (!manager.isMasterPasswordSet()) return PasswordVerificationBiometricAccessResult.PROCEED
         val directUnlock = runCatching {
-            securityManager.unlockVaultWithBiometric()
+            manager.unlockVaultWithBiometric()
         }.getOrDefault(false)
         if (directUnlock) {
             android.util.Log.d("PasswordVerification", "Biometric post-check: direct unlock succeeded")
             return PasswordVerificationBiometricAccessResult.PROCEED
         }
-        if (securityManager.canAccessVaultMaterialNow()) {
+        if (manager.canAccessVaultMaterialNow()) {
             android.util.Log.d("PasswordVerification", "Biometric post-check: vault material accessible after retry")
             return PasswordVerificationBiometricAccessResult.PROCEED
         }
-        val vaultState = securityManager.getVaultAccessState(context.applicationContext, autoLockMinutes)
+        val vaultState = manager.getVaultAccessState(context.applicationContext, autoLockMinutes)
         if (vaultState == SecurityManager.VaultAccessState.REQUIRES_PASSWORD_REENTRY) {
-            val rebuilt = securityManager.rebuildKeystoreWrapperFromRuntimeCacheIfNeeded()
+            val rebuilt = manager.rebuildKeystoreWrapperFromRuntimeCacheIfNeeded()
             if (rebuilt) {
                 android.util.Log.d("PasswordVerification", "Biometric post-check: wrapper rebuilt from runtime cache")
                 return PasswordVerificationBiometricAccessResult.PROCEED
             }
-            if (securityManager.isVaultRuntimeUnlocked()) {
+            if (manager.isVaultRuntimeUnlocked()) {
                 android.util.Log.w(
                     "PasswordVerification",
                     "Biometric post-check: wrapper rebuild failed but runtime MDK exists; allowing access to avoid lock loop"
@@ -126,6 +130,7 @@ fun PasswordVerificationContent(
     LaunchedEffect(isFirstTime, isBiometricAvailable, biometricEnabled, activity) {
         if (!autoBiometricTried && canUseBiometric && activity != null) {
             autoBiometricTried = true
+            biometricHelper.prepare(activity)
             biometricHelper.authenticate(
                 activity = activity,
                 onSuccess = {

@@ -1626,6 +1626,10 @@
     <string name="bitwarden_status_queued">동기화 대기 중</string>
     <string name="bitwarden_status_synced">동기화됨</string>
 
+    <!-- Haptic Feedback -->
+    <string name="haptic_feedback">햅틱 피드백</string>
+    <string name="haptic_feedback_description">당겨서 새로 고침, 길게 누르기 등 상호작용 시 진동</string>
+
     <!-- Validator Vibration -->
     <string name="validator_vibration">검증기 진동</string>
     <string name="validator_vibration_description">카운트다운이 끝나려고 할 때 진동</string>
@@ -2236,7 +2240,8 @@
     <string name="developer_share_logs_desc">최근 로그 내보내기 및 공유</string>
     <string name="developer_functions">개발자 기능</string>
     <string name="developer_disable_password_verification">비밀번호 확인 비활성화</string>
-    <string name="developer_disable_password_verification_desc">앱 시작 시 비밀번호 확인 건너뛰기(개발 테스트 전용)</string>
+    <string name="developer_disable_password_verification_desc">앱, 자동 완성, Monica 키보드 및 위험 작업에서 본인 확인을 건너뜁니다. 확인 창과 내보내기 암호는 계속 필요합니다.</string>
+    <string name="developer_disable_password_verification_failed">전체 확인 우회를 켤 수 없습니다. Monica를 한 번 정상적으로 잠금 해제한 뒤 다시 시도하세요.</string>
     <string name="developer_passkey_hyperos_biometric_bypass">패스키 HyperOS 호환성</string>
     <string name="developer_passkey_hyperos_biometric_bypass_desc">HyperOS 기기에서는 패스키 생체 인식 확인 건너뛰기 마스터 비밀번호로 돌아갑니다. 해당 기기에서 생체 인식 메시지가 실패하지 않는 한 이 기능을 꺼두세요.</string>
     <string name="developer_launcher_name_use_pass">Monica Pass를 실행기 이름으로 사용</string>

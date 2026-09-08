@@ -1,13 +1,18 @@
 use super::*;
 use std::io::Write;
+use std::sync::{Arc, Barrier};
+use std::thread;
+use std::time::Duration;
 
 use mdbx_core::model::{ConflictObjectType, EntryType, SnapshotKind};
+use mdbx_storage::connection::VaultConnection;
 use mdbx_storage::init::{initialize_vault, VaultInitParams};
 use mdbx_storage::repo::{
     AttachmentRepo, CommitContext, ConflictRepo, EntryRepo, ObjectLabelAssignmentRepo,
     ObjectLabelRepo, ObjectRelationCreateRequest, ObjectRelationRepo, ProjectRepo,
     SnapshotLifecycleRepo, SnapshotRepo, TombstoneRepo,
 };
+use mdbx_storage::runtime::VaultRuntime;
 use mdbx_storage::unlock::UnlockService;
 use sha2::{Digest, Sha256};
 
@@ -17,7 +22,7 @@ fn ffi_test_vault() -> MdbxVault {
     UnlockService::setup_password_with_mode(&mut conn, "attachment-password", TigaMode::Multi)
         .unwrap();
     MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-attachment-device".to_string(),
         vault_id: init.vault_id,
     }
@@ -45,6 +50,42 @@ fn ffi_test_count(vault: &MdbxVault, table: &str) -> i64 {
             row.get(0)
         })
         .unwrap()
+}
+
+#[test]
+fn shared_ffi_vault_uses_one_runtime_writer_gate() {
+    let vault = Arc::new(ffi_test_vault());
+    let start = Arc::new(Barrier::new(3));
+    let active = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let peak = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+    let workers = (0..2)
+        .map(|_| {
+            let vault = Arc::clone(&vault);
+            let start = Arc::clone(&start);
+            let active = Arc::clone(&active);
+            let peak = Arc::clone(&peak);
+            thread::spawn(move || {
+                start.wait();
+                vault
+                    .conn
+                    .with_write(|_| {
+                        let current = active.fetch_add(1, std::sync::atomic::Ordering::AcqRel) + 1;
+                        peak.fetch_max(current, std::sync::atomic::Ordering::AcqRel);
+                        thread::sleep(Duration::from_millis(10));
+                        active.fetch_sub(1, std::sync::atomic::Ordering::AcqRel);
+                        Ok(())
+                    })
+                    .unwrap();
+            })
+        })
+        .collect::<Vec<_>>();
+
+    start.wait();
+    for worker in workers {
+        worker.join().unwrap();
+    }
+    assert_eq!(peak.load(std::sync::atomic::Ordering::Acquire), 1);
 }
 
 #[test]
@@ -215,6 +256,39 @@ fn build_capability_manifest_is_available_without_a_vault() {
             .disabled_optional_sync_capability_ids
             .contains(&zstd)
     );
+}
+
+#[test]
+fn runtime_manifest_is_available_without_a_vault_and_preserves_mdbx2_storage() {
+    let manifest = mdbx_runtime_manifest();
+
+    assert_eq!(manifest.profile, "mdbx-runtime-manifest-v1");
+    assert_eq!(manifest.runtime_name, "MDBX3");
+    assert_eq!(manifest.runtime_version, "3.0.0-alpha.1");
+    assert_eq!(manifest.implementation_version, env!("CARGO_PKG_VERSION"));
+    assert_eq!(manifest.build_profile, "mdbx3-ffi-compatible-v1");
+    assert_eq!(manifest.storage_format, mdbx_storage::migration::FORMAT_V2);
+    assert_eq!(
+        manifest.current_schema_version,
+        mdbx_storage::schema::SCHEMA_VERSION
+    );
+    assert_eq!(
+        manifest.readable_storage_formats,
+        vec![
+            mdbx_storage::migration::FORMAT_V1,
+            mdbx_storage::migration::FORMAT_V1_DRAFT,
+            mdbx_storage::migration::FORMAT_V2,
+        ]
+    );
+    assert_eq!(
+        manifest.writable_storage_format,
+        mdbx_storage::migration::FORMAT_V2
+    );
+    assert_eq!(manifest.ffi_abi_profile, "mdbx-ffi-abi-v1");
+    assert_eq!(manifest.ffi_namespace, "mdbx_ffi");
+    assert_eq!(manifest.native_library_name, "mdbx_ffi");
+    assert_eq!(manifest.android_shared_object_name, "libmdbx_ffi.so");
+    assert_eq!(manifest.compatibility_profile, "mdbx3-mdbx2-drop-in-v1");
 }
 
 #[test]
@@ -757,6 +831,7 @@ fn ffi_incremental_segment_files_are_authenticated_atomic_and_idempotent() {
     let directory = tempfile::tempdir().unwrap();
     let source_path = directory.path().join("source.mdbx");
     let target_path = directory.path().join("target.mdbx");
+    let bootstrap_segment_path = directory.path().join("bootstrap-pending.mdbxsync");
     let segment_path = directory.path().join("pending.mdbxsync");
     let tampered_path = directory.path().join("tampered.mdbxsync");
     let source = create_vault(
@@ -771,6 +846,19 @@ fn ffi_incremental_segment_files_are_authenticated_atomic_and_idempotent() {
     source
         .create_project("Incremental project".to_string())
         .unwrap();
+    let bootstrap_segment = source
+        .export_incremental_sync_segment(
+            bootstrap_segment_path.to_string_lossy().into_owned(),
+            MdbxIncrementalSyncCheckpoint {
+                commit_inventory: String::new(),
+                delta_inventory: String::new(),
+            },
+            None,
+            128,
+        )
+        .unwrap();
+    assert_eq!(bootstrap_segment.segment_index, 0);
+    assert!(bootstrap_segment.is_last);
     let exported = source
         .export_incremental_sync_segment(
             segment_path.to_string_lossy().into_owned(),
@@ -816,8 +904,11 @@ fn ffi_incremental_segment_files_are_authenticated_atomic_and_idempotent() {
     .unwrap();
     let applied = target
         .apply_incremental_sync_segment(
-            segment_path.to_string_lossy().into_owned(),
-            bootstrap.checkpoint.clone(),
+            bootstrap_segment_path.to_string_lossy().into_owned(),
+            MdbxIncrementalSyncCheckpoint {
+                commit_inventory: String::new(),
+                delta_inventory: String::new(),
+            },
             None,
         )
         .unwrap();
@@ -1721,7 +1812,7 @@ fn collection_profile_facade_registers_capabilities_and_guards_object_types() {
     let conn = VaultConnection::open_in_memory().unwrap();
     initialize_vault(&conn, &VaultInitParams::default()).unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-profile-device".to_string(),
         vault_id: "ffi-profile-vault".to_string(),
     };
@@ -2767,7 +2858,7 @@ fn conflict_facade_lists_and_resolves_generic_metadata() {
     )
     .unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-conflict-device".to_string(),
         vault_id: "ffi-conflict-vault".to_string(),
     };
@@ -2836,7 +2927,7 @@ fn conflict_summary_facade_pages_filters_binds_cursors_and_exposes_limits() {
         .unwrap();
 
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-conflict-summary-device".to_string(),
         vault_id: "ffi-conflict-summary-vault".to_string(),
     };
@@ -2898,7 +2989,7 @@ fn conflict_summary_facade_fails_closed_for_oversized_and_malformed_fields() {
     )
     .unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-conflict-summary-limits-device".to_string(),
         vault_id: "ffi-conflict-summary-limits-vault".to_string(),
     };
@@ -2956,7 +3047,7 @@ fn snapshot_summary_facade_pages_without_loading_payload_and_preserves_legacy_re
         .unwrap();
 
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-snapshot-summary-device".to_string(),
         vault_id: "ffi-snapshot-summary-vault".to_string(),
     };
@@ -3156,7 +3247,7 @@ fn conflict_facade_applies_typed_project_and_attachment_custom_merges() {
     )
     .unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-custom-conflict-device".to_string(),
         vault_id: "ffi-custom-conflict-vault".to_string(),
     };
@@ -3231,7 +3322,7 @@ fn health_check_returns_structured_tombstone_issues() {
     let ctx = CommitContext::new("ffi-health-device".to_string());
     let project = ProjectRepo::create(&conn, &ctx, "Health", None, None).unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-health-device".to_string(),
         vault_id: "ffi-health-vault".to_string(),
     };
@@ -3342,7 +3433,7 @@ fn tombstone_purge_eligibility_is_available_to_native_clients() {
         .unwrap()
         .unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-purge-device".to_string(),
         vault_id: "ffi-purge-vault".to_string(),
     };
@@ -3411,7 +3502,7 @@ fn bounded_write_operation_rejects_without_database_side_effects() {
         )
         .unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-bounded-write-device".to_string(),
         vault_id: "ffi-bounded-write-vault".to_string(),
     };
@@ -3521,7 +3612,7 @@ fn write_operation_is_atomic_single_commit_and_idempotent_across_limit_apis() {
         .query_row("SELECT COUNT(*) FROM commits", [], |row| row.get(0))
         .unwrap();
     let vault = MdbxVault {
-        conn: Mutex::new(conn),
+        conn: VaultRuntime::from_connection(conn),
         device_id: "ffi-write-device".to_string(),
         vault_id: "ffi-write-vault".to_string(),
     };

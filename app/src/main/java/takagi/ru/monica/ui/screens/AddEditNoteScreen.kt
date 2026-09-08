@@ -1213,7 +1213,9 @@ fun AddEditNoteScreen(
 
     if (showPasswordDialog) {
         val fragmentActivity = context as? FragmentActivity
+        val skipIdentityVerification = appSettings.disablePasswordVerification
         val biometricAction = if (
+            !skipIdentityVerification &&
             fragmentActivity != null &&
             appSettings.biometricEnabled &&
             biometricHelper.isBiometricAvailable()
@@ -1251,7 +1253,7 @@ fun AddEditNoteScreen(
                 passwordError = false
             },
             onConfirm = {
-                if (securityManager.verifyMasterPassword(masterPassword)) {
+                if (skipIdentityVerification || securityManager.verifyMasterPassword(masterPassword)) {
                     performDelete()
                 } else {
                     passwordError = true
@@ -1259,6 +1261,7 @@ fun AddEditNoteScreen(
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
+            requireIdentityVerification = !skipIdentityVerification,
             isPasswordError = passwordError,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             onBiometricClick = biometricAction,

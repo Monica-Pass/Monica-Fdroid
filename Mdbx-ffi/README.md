@@ -8,6 +8,10 @@ MDBX 是 Monica 的本地优先高级加密数据库核心。它为经过认证�
 
 当前格式代际为 **MDBX2**，存储值为 `MDBX-2`。MDBX2 可自动、事务性地升级 `MDBX-1` 与 `MDBX-1-DRAFT` vault；兼容契约见 `docs/09-mdbx2-compatibility.zh-CN.md`。
 
+MDBX3 Runtime 的实施已经开始，当前预发布运行库身份为 `3.0.0-alpha.1`。它继续写入 `MDBX-2`，并保留 `mdbx_ffi` namespace 与 Android `libmdbx_ffi.so` 文件名。客户端可通过新增的 `mdbx_runtime_manifest` 查询运行库、schema 和 ABI 身份；原有 bindings 与 build capability 接口保持不变。
+
+Android 的单个 ELF SO 不能跨 ARM32、ARM64 和 x86_64 运行。MDBX3 正式构建会同时生成三个按 ABI 分发的薄包和一个兼容全量包；F-Droid/直接 APK 应使用多 APK variant，使每台设备只安装一个 SO。设计与资产结构见 `mdbx3-runtime-design/07-android-abi-distribution.zh-CN.md`。
+
 规范性文档在 `docs/`。
 
 MDBX 的准则是 **4ever And 4ever**：旧 vault 必须长期可读，新增能力必须尽量保留兼容路径，数据安全永远优先于一时方便。

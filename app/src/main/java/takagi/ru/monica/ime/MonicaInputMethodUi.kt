@@ -214,6 +214,12 @@ internal enum class MonicaImePanel {
     GENERATOR
 }
 
+internal fun MonicaImePanel.isVaultContentPanel(): Boolean {
+    return this == MonicaImePanel.PASSWORDS ||
+        this == MonicaImePanel.AUTHENTICATORS ||
+        this == MonicaImePanel.DOCUMENTS
+}
+
 internal sealed interface MonicaImeDatabaseScope {
     data object All : MonicaImeDatabaseScope
     data object Local : MonicaImeDatabaseScope
@@ -1383,7 +1389,9 @@ private fun AuthenticatorPane(
                 uiState = uiState,
                 onDatabaseScopeSelected = onDatabaseScopeSelected
             )
-            if (uiState.authenticatorEntries.isEmpty()) {
+            if (uiState.isAutofillLoading) {
+                AutofillLoadingState()
+            } else if (uiState.authenticatorEntries.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1466,7 +1474,9 @@ private fun CardWalletPane(
                 uiState = uiState,
                 onDatabaseScopeSelected = onDatabaseScopeSelected
             )
-            if (uiState.cardWalletEntries.isEmpty()) {
+            if (uiState.isAutofillLoading) {
+                AutofillLoadingState()
+            } else if (uiState.cardWalletEntries.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

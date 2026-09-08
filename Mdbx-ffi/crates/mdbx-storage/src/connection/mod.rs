@@ -21,12 +21,34 @@ use crate::schema;
 /// 解锁后可附加 Keyring 以启用字段级加密。
 pub struct VaultConnection {
     pub(crate) conn: Connection,
+    #[cfg(feature = "filesystem-blob-store")]
+    path: Option<PathBuf>,
     pub(crate) keyring: Option<Keyring>,
     pub(crate) active_key_epoch_id: Option<String>,
     pub(crate) epoch_keyrings: HashMap<String, Keyring>,
     pub(crate) active_session: Option<VaultSession>,
     pub(crate) extension_capabilities: BTreeSet<ExtensionCapabilityId>,
     pub(crate) extension_registry: ExtensionRegistry,
+}
+
+/// Payload-free counts used by diagnostics clients.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VaultDiagnosticsCounts {
+    pub commit_count: u64,
+    pub tombstone_count: u64,
+    pub branch_count: u64,
+    pub device_count: u64,
+    pub snapshot_count: u64,
+    pub unresolved_conflict_count: u64,
+    pub project_count: u64,
+    pub deleted_project_count: u64,
+    pub entry_count: u64,
+    pub deleted_entry_count: u64,
+    pub attachment_count: u64,
+    pub deleted_attachment_count: u64,
+    pub external_attachment_count: u64,
+    pub original_attachment_bytes: u64,
+    pub stored_attachment_bytes: u64,
 }
 
 /// A newly reserved vault file that is removed unless creation is committed.
@@ -89,6 +111,8 @@ impl VaultConnection {
         Self::cleanup_legacy_persistent_fts(&conn)?;
         Ok(Self {
             conn,
+            #[cfg(feature = "filesystem-blob-store")]
+            path: Some(path.to_path_buf()),
             keyring: None,
             active_key_epoch_id: None,
             epoch_keyrings: HashMap::new(),
@@ -114,6 +138,8 @@ impl VaultConnection {
             Self::cleanup_legacy_persistent_fts(&conn)?;
             Ok(Self {
                 conn,
+                #[cfg(feature = "filesystem-blob-store")]
+                path: Some(path.to_path_buf()),
                 keyring: None,
                 active_key_epoch_id: None,
                 epoch_keyrings: HashMap::new(),
@@ -137,6 +163,8 @@ impl VaultConnection {
         Self::cleanup_legacy_persistent_fts(&conn)?;
         Ok(Self {
             conn,
+            #[cfg(feature = "filesystem-blob-store")]
+            path: None,
             keyring: None,
             active_key_epoch_id: None,
             epoch_keyrings: HashMap::new(),
@@ -170,6 +198,99 @@ impl VaultConnection {
     /// 获取内部 rusqlite 连接的引用。
     pub fn inner(&self) -> &Connection {
         &self.conn
+    }
+
+    /// Return the stable vault identity owned by the storage layer.
+    pub fn vault_id(&self) -> StorageResult<String> {
+        self.conn
+            .query_row("SELECT vault_id FROM vault_meta LIMIT 1", [], |row| {
+                row.get::<_, String>(0)
+            })
+            .map_err(StorageError::Database)
+    }
+
+    /// Resolve the external encrypted Blob store without exposing SQLite
+    /// `PRAGMA database_list` to a facade.
+    #[cfg(feature = "filesystem-blob-store")]
+    pub fn external_blob_store(&self) -> StorageResult<crate::blob_store::FileSystemBlobStore> {
+        let path = self.path.as_ref().ok_or_else(|| {
+            StorageError::Validation(
+                "external attachment storage requires a file-backed vault".to_string(),
+            )
+        })?;
+        Ok(crate::blob_store::FileSystemBlobStore::new(format!(
+            "{}.blobs",
+            path.display()
+        )))
+    }
+
+    /// Read payload-free aggregate counts through the storage-owned query
+    /// boundary. No ciphertext or attachment body is selected.
+    pub fn diagnostics_summary(&self) -> StorageResult<VaultDiagnosticsCounts> {
+        let values = self
+            .conn
+            .query_row(
+                "SELECT
+                    (SELECT COUNT(*) FROM commits),
+                    (SELECT COUNT(*) FROM tombstones),
+                    (SELECT COUNT(*) FROM branches),
+                    (SELECT COUNT(*) FROM device_heads),
+                    (SELECT COUNT(*) FROM snapshots),
+                    (SELECT COUNT(*) FROM conflicts WHERE resolution = 'unresolved'),
+                    (SELECT COUNT(*) FROM projects WHERE deleted = 0),
+                    (SELECT COUNT(*) FROM projects WHERE deleted <> 0),
+                    (SELECT COUNT(*) FROM entries WHERE deleted = 0),
+                    (SELECT COUNT(*) FROM entries WHERE deleted <> 0),
+                    (SELECT COUNT(*) FROM attachments WHERE deleted = 0),
+                    (SELECT COUNT(*) FROM attachments WHERE deleted <> 0),
+                    (SELECT COUNT(*) FROM attachments
+                        WHERE deleted = 0 AND storage_mode = 'external-hash-ref'),
+                    (SELECT COALESCE(SUM(original_size), 0) FROM attachments WHERE deleted = 0),
+                    (SELECT COALESCE(SUM(stored_size), 0) FROM attachments WHERE deleted = 0)",
+                [],
+                |row| {
+                    Ok([
+                        row.get::<_, i64>(0)?,
+                        row.get::<_, i64>(1)?,
+                        row.get::<_, i64>(2)?,
+                        row.get::<_, i64>(3)?,
+                        row.get::<_, i64>(4)?,
+                        row.get::<_, i64>(5)?,
+                        row.get::<_, i64>(6)?,
+                        row.get::<_, i64>(7)?,
+                        row.get::<_, i64>(8)?,
+                        row.get::<_, i64>(9)?,
+                        row.get::<_, i64>(10)?,
+                        row.get::<_, i64>(11)?,
+                        row.get::<_, i64>(12)?,
+                        row.get::<_, i64>(13)?,
+                        row.get::<_, i64>(14)?,
+                    ])
+                },
+            )
+            .map_err(StorageError::Database)?;
+        let mut values = values.into_iter().map(|value| {
+            u64::try_from(value).map_err(|_| {
+                StorageError::Validation("diagnostic count cannot be negative".to_string())
+            })
+        });
+        Ok(VaultDiagnosticsCounts {
+            commit_count: values.next().unwrap()?,
+            tombstone_count: values.next().unwrap()?,
+            branch_count: values.next().unwrap()?,
+            device_count: values.next().unwrap()?,
+            snapshot_count: values.next().unwrap()?,
+            unresolved_conflict_count: values.next().unwrap()?,
+            project_count: values.next().unwrap()?,
+            deleted_project_count: values.next().unwrap()?,
+            entry_count: values.next().unwrap()?,
+            deleted_entry_count: values.next().unwrap()?,
+            attachment_count: values.next().unwrap()?,
+            deleted_attachment_count: values.next().unwrap()?,
+            external_attachment_count: values.next().unwrap()?,
+            original_attachment_bytes: values.next().unwrap()?,
+            stored_attachment_bytes: values.next().unwrap()?,
+        })
     }
 
     /// Run a storage mutation atomically.

@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import takagi.ru.monica.R
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.sync.syncForUserVisibleRequest
-import takagi.ru.monica.util.VibrationPatterns
+import takagi.ru.monica.ui.haptic.rememberHapticFeedback
 
 @Stable
 data class PullActionStateHandle(
@@ -68,15 +68,7 @@ fun rememberPullActionState(
     var syncFeedbackIsSuccess by remember { mutableStateOf(false) }
     val collapseAnimatable = remember { Animatable(0f) }
 
-    val vibrator = remember {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        }
-    }
+    val haptic = rememberHapticFeedback()
 
     suspend fun resolveSyncableVaultId(): Long? {
         val activeVault = bitwardenRepository.getActiveVault() ?: run {
@@ -89,20 +81,7 @@ fun rememberPullActionState(
     }
 
     fun vibratePullThreshold(isSyncStage: Boolean) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            if (isSyncStage && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                vibrator?.vibrate(
-                    android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_DOUBLE_CLICK)
-                )
-            } else {
-                vibrator?.vibrate(
-                    android.os.VibrationEffect.createWaveform(VibrationPatterns.TICK, -1)
-                )
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(if (isSyncStage) 36 else 20)
-        }
+        haptic.performPullThreshold(isSyncStage)
     }
 
     fun updatePullThresholdHaptics(oldOffset: Float, newOffset: Float) {

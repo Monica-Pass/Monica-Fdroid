@@ -21,6 +21,7 @@ import takagi.ru.monica.autofill_ng.core.AutofillLogger
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.ui.components.MonicaPasswordDialogAuthScreen
 import takagi.ru.monica.utils.BiometricAuthHelper
 import takagi.ru.monica.utils.SettingsManager
@@ -60,7 +61,10 @@ class AutofillUnlockActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val settings = settingsManager.settingsFlow.first()
-            if (!settings.autofillAuthRequired) {
+            if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
+                securityManager.unlockVaultForDeveloperBypass(settings.autoLockMinutes)
+                completeUnlock(authenticationVerified = false)
+            } else if (!settings.autofillAuthRequired) {
                 completeUnlock(authenticationVerified = false)
             } else if (settings.biometricEnabled && biometricAuthHelper.isBiometricAvailable()) {
                 showBiometricPrompt()

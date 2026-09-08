@@ -1,2 +1,10 @@
 /target/
 /target-cli-sync/
+__pycache__/
+*.pyc
+
+# Android loader smoke build output
+/mdbx3-runtime-design/android-smoke/.gradle/
+/mdbx3-runtime-design/android-smoke/build/
+/mdbx3-runtime-design/android-smoke/app/.cxx/
+/mdbx3-runtime-design/android-smoke/app/build/

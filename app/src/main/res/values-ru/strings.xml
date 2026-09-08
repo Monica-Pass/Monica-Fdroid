@@ -1137,6 +1137,10 @@
     <string name="bitwarden_status_queued">Синхронизация в очереди</string>
     <string name="bitwarden_status_synced">Синхронизировано</string>
 
+    <!-- Haptic Feedback -->
+    <string name="haptic_feedback">Тактильная отдача</string>
+    <string name="haptic_feedback_description">Вибрация при жестах потягивания, долгом нажатии и других действиях</string>
+
     <!-- Validator Vibration -->
     <string name="validator_vibration">Вибрация аутентификатора</string>
     <string name="validator_vibration_description">Вибрировать перед окончанием обратного отсчёта</string>
@@ -1721,7 +1725,8 @@
     <string name="developer_share_logs_desc">Экспорт и отправка последних логов</string>
     <string name="developer_functions">Функции разработчика</string>
     <string name="developer_disable_password_verification">Отключить проверку пароля</string>
-    <string name="developer_disable_password_verification_desc">Пропускать проверку пароля при запуске (только для разработки)</string>
+    <string name="developer_disable_password_verification_desc">Пропускать проверку личности в приложении, автозаполнении, клавиатуре Monica и опасных действиях. Подтверждения и пароли экспорта сохраняются.</string>
+    <string name="developer_disable_password_verification_failed">Не удалось включить полный обход проверки. Один раз разблокируйте Monica обычным способом и повторите попытку.</string>
     <string name="developer_launcher_name_use_pass">Использовать Monica Pass как имя</string>
     <string name="developer_launcher_name_use_pass_desc">Вкл: Monica Pass. Выкл: Monica. Меняет только имя в лаунчере.</string>
     <string name="developer_bitwarden_forensics_toggle">Криминалистика синхронизации Bitwarden</string>

@@ -1219,7 +1219,7 @@ private fun CreateKeePassDatabaseBottomSheet(
                         VisualTransformation.None 
                     else 
                         PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    keyboardOptions = keepassCredentialKeyboardOptions(),
                     leadingIcon = { Icon(Icons.Default.Password, contentDescription = null) },
                     trailingIcon = {
                         IconButton(onClick = { showPassword = !showPassword }) {
@@ -1243,7 +1243,7 @@ private fun CreateKeePassDatabaseBottomSheet(
                         VisualTransformation.None 
                     else 
                         PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    keyboardOptions = keepassCredentialKeyboardOptions(),
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     isError = confirmPassword.isNotBlank() && password != confirmPassword,
                     supportingText = if (confirmPassword.isNotBlank() && password != confirmPassword) {
@@ -1871,7 +1871,7 @@ private fun ImportExternalDatabaseDialog(
                         VisualTransformation.None 
                     else 
                         PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    keyboardOptions = keepassCredentialKeyboardOptions(),
                     trailingIcon = {
                         IconButton(onClick = { showPassword = !showPassword }) {
                             Icon(
@@ -2713,7 +2713,7 @@ private fun DatabaseDetailBottomSheet(
                         label = { Text(stringResource(R.string.database_password)) },
                         singleLine = true,
                         visualTransformation = if (showVerifyPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        keyboardOptions = keepassCredentialKeyboardOptions(),
                         trailingIcon = {
                             IconButton(onClick = { showVerifyPassword = !showVerifyPassword }) {
                                 Icon(

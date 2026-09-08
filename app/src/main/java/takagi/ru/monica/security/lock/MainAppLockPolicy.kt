@@ -10,8 +10,7 @@ import takagi.ru.monica.security.SecurityManager
  * - MainActivity cold-start bootstrap
  * - MainActivity foreground restoration
  *
- * The developer setting `disablePasswordVerification` is intentionally scoped
- * to app startup because the setting text describes startup verification only.
+ * Main-app projection of the shared developer verification policy.
  */
 object MainAppLockPolicy {
 

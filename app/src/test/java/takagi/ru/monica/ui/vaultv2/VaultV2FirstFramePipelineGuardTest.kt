@@ -20,8 +20,10 @@ class VaultV2FirstFramePipelineGuardTest {
             .substringAfter("val displayListStateAsync =")
             .substringBefore("val displayedListState")
 
-        assertTrue(displayBlock.contains("buildVaultV2DisplayListState("))
-        assertTrue(pane.contains("buildVaultV2InitialDisplayListState("))
+        assertTrue(displayBlock.contains("buildVaultV2DisplayListStateFromItems("))
+        assertTrue(pane.contains("buildVaultV2InitialDisplayListStateFromItems("))
+        assertTrue(pane.contains("lazy(LazyThreadSafetyMode.SYNCHRONIZED)"))
+        assertTrue(pane.contains("currentPasswordItems = currentPasswordItems.value"))
         assertFalse(pane.contains("val visibleListState = remember("))
     }
 

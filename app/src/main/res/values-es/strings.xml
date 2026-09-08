@@ -1626,6 +1626,10 @@
     <string name="bitwarden_status_queued">Sincronización en cola</string>
     <string name="bitwarden_status_synced">Sincronizada</string>
 
+    <!-- Haptic Feedback -->
+    <string name="haptic_feedback">Respuesta háptica</string>
+    <string name="haptic_feedback_description">Vibrar al deslizar, pulsar de forma prolongada y en otras interacciones</string>
+
     <!-- Validator Vibration -->
     <string name="validator_vibration">Vibración del validador</string>
     <string name="validator_vibration_description">Vibrar cuando la cuenta atrás esté a punto de finalizar</string>
@@ -2236,7 +2240,8 @@
     <string name="developer_share_logs_desc">Exportar y compartir registros recientes</string>
     <string name="developer_functions">Funciones de desarrollador</string>
     <string name="developer_disable_password_verification">Desactivar verificación de contraseña</string>
-    <string name="developer_disable_password_verification_desc">Omitir verificación de contraseña al iniciar la aplicación (solo para pruebas de desarrollo)</string>
+    <string name="developer_disable_password_verification_desc">Omite la verificación de identidad en la aplicación, Autocompletar, el teclado Monica y las acciones peligrosas. Se mantienen las confirmaciones y las contraseñas de exportación.</string>
+    <string name="developer_disable_password_verification_failed">No se pudo activar la omisión completa. Desbloquea Monica normalmente una vez e inténtalo de nuevo.</string>
     <string name="developer_passkey_hyperos_biometric_bypass">llave de acceso HyperOS Compatibilidad</string>
     <string name="developer_passkey_hyperos_biometric_bypass_desc">Activado Dispositivos HyperOS, omita la verificación biométrica llave de acceso y recurra a la contraseña maestra. Mantén esta opción desactivada a menos que las indicaciones biométricas fallen en ese dispositivo.</string>
     <string name="developer_launcher_name_use_pass">Utilice Monica Pass como nombre del iniciador</string>

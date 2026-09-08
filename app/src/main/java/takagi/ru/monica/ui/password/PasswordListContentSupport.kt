@@ -812,8 +812,10 @@ internal fun rememberPasswordListLazyListState(
     allowScrollPositionPersistence: Boolean,
     onBackToTopVisibilityChange: (Boolean) -> Unit
 ): LazyListState {
-    val savedScrollIndex by viewModel.passwordListScrollIndex.collectAsState()
-    val savedScrollOffset by viewModel.passwordListScrollOffset.collectAsState()
+    // These values seed a new list only. Collecting their every-frame persistence
+    // updates would recompose the complete password page during a fling.
+    val savedScrollIndex = remember(viewModel) { viewModel.passwordListScrollIndex.value }
+    val savedScrollOffset = remember(viewModel) { viewModel.passwordListScrollOffset.value }
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = savedScrollIndex,
         initialFirstVisibleItemScrollOffset = savedScrollOffset

@@ -52,6 +52,7 @@ import takagi.ru.monica.autofill_ng.AutofillPreferences
 import takagi.ru.monica.autofill_ng.AutofillSecretResolver
 import takagi.ru.monica.autofill_ng.AutofillPickerActivityV2
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.security.SessionManager
 import takagi.ru.monica.util.TotpDataResolver
 import takagi.ru.monica.util.TotpGenerator
@@ -78,6 +79,10 @@ class MonicaInputMethodService : InputMethodService() {
     private var refreshJob: Job? = null
     private var databaseObserverJob: Job? = null
     private var authenticatorTickerJob: Job? = null
+    private var vaultSourceCache: ImeVaultSourceCache? = null
+    private var totpSourceCache: List<SecureItem>? = null
+    private var cardWalletSourceCache: List<SecureItem>? = null
+    private val loadedVaultPanels = mutableSetOf<MonicaImePanel>()
     private var pendingUnlockPanel: MonicaImePanel? = null
     private var pendingClearedInputText: String? = null
     private var unlockFlowInProgress = false
@@ -104,7 +109,7 @@ class MonicaInputMethodService : InputMethodService() {
                     unlocked = true,
                     activePanel = targetPanel,
                     isAutofillPanelVisible = targetPanel != MonicaImePanel.KEYBOARD,
-                    isAutofillLoading = targetPanel == MonicaImePanel.PASSWORDS,
+                    isAutofillLoading = targetPanel.requiresInitialVaultLoading(),
                     errorMessage = null
                 )
             }
@@ -175,10 +180,14 @@ class MonicaInputMethodService : InputMethodService() {
                         uiState = state,
                         onDatabaseScopeSelected = { scope ->
                             uiState.update { it.copy(selectedDatabaseScope = scope) }
-                            requestRefreshVaultEntries(force = true)
+                            requestRefreshVaultEntries()
                         },
-                        onInsertPassword = { commitExternalText(it.password) },
-                        onInsertUsername = { commitExternalText(it.username) },
+                        onInsertPassword = { entry ->
+                            resolveFillableField(entry.password)?.let(::commitExternalText)
+                        },
+                        onInsertUsername = { entry ->
+                            resolveFillableField(entry.username)?.let(::commitExternalText)
+                        },
                         onSmartFillPassword = ::handleSmartFillPassword,
                         onInsertAuthenticatorCode = { commitExternalText(it.code) },
                         onInsertCardWalletValue = { commitExternalText(it.value) },
@@ -237,7 +246,7 @@ class MonicaInputMethodService : InputMethodService() {
                 activePanel = if (preserveAutofillPanel) previousState.activePanel else MonicaImePanel.KEYBOARD,
                 isAutofillPanelVisible = preserveAutofillPanel,
                 isAutofillLoading = preserveAutofillPanel &&
-                    previousState.activePanel == MonicaImePanel.PASSWORDS &&
+                    previousState.activePanel.requiresInitialVaultLoading() &&
                     shouldRefreshForCurrentView,
                 isSearchEditing = false,
                 query = if (preserveAutofillPanel) previousState.query else "",
@@ -273,6 +282,7 @@ class MonicaInputMethodService : InputMethodService() {
         authenticatorTickerJob?.cancel()
         databaseObserverJob?.cancel()
         refreshJob?.cancel()
+        invalidateVaultSourceCache()
         unregisterReceiver(imeUnlockResultReceiver)
         composeView?.disposeComposition()
         composeView = null
@@ -355,7 +365,7 @@ class MonicaInputMethodService : InputMethodService() {
         val currentState = uiState.value
         if (
             currentState.unlocked &&
-            currentState.activePanel == MonicaImePanel.PASSWORDS &&
+            currentState.activePanel.requiresInitialVaultLoading() &&
             currentState.isAutofillPanelVisible
         ) {
             uiState.update { it.copy(isAutofillLoading = true) }
@@ -384,25 +394,35 @@ class MonicaInputMethodService : InputMethodService() {
         databaseObserverJob?.cancel()
         databaseObserverJob = serviceScope.launch {
             combine(
-                database.localKeePassDatabaseDao().getAllDatabases()
+                combine(
+                    database.localKeePassDatabaseDao().getAllDatabases()
                     .map { databases ->
                         databases.map { database ->
                             Triple(database.id, database.name, database.filePath)
                         }
                     }
                     .distinctUntilChanged(),
-                database.bitwardenVaultDao().getAllVaultsFlow()
+                    database.bitwardenVaultDao().getAllVaultsFlow()
                     .map { vaults ->
                         vaults.map { vault ->
                             Triple(vault.id, vault.email, vault.displayName.orEmpty())
                         }
                     }
                     .distinctUntilChanged()
-            ) { keepassSignatures, bitwardenSignatures ->
-                keepassSignatures to bitwardenSignatures
+                ) { keepassSignatures, bitwardenSignatures ->
+                    keepassSignatures to bitwardenSignatures
+                },
+                database.passwordEntryDao().observeActivePasswordRevision(),
+                database.secureItemDao().observeActiveItemRevision()
+            ) { sourceSignatures, passwordRevision, secureItemRevision ->
+                Triple(sourceSignatures, passwordRevision, secureItemRevision)
             }.collect {
+                invalidateVaultSourceCache()
                 val currentState = uiState.value
-                if (currentState.activePanel != MonicaImePanel.KEYBOARD || currentState.unlocked) {
+                if (
+                    currentState.activePanel != MonicaImePanel.KEYBOARD &&
+                    currentState.isAutofillPanelVisible
+                ) {
                     requestRefreshVaultEntries(force = true)
                 }
             }
@@ -463,7 +483,7 @@ class MonicaInputMethodService : InputMethodService() {
 
         serviceScope.launch {
             val settings = settingsManager.settingsFlow.first()
-            val unlockedNow = updateUnlockState(settings.autoLockMinutes)
+            val unlockedNow = updateUnlockState(settings)
             if (!unlockedNow) {
                 pendingUnlockPanel = panel
                 suppressAutoUnlockUntilNextAttempt = false
@@ -488,13 +508,21 @@ class MonicaInputMethodService : InputMethodService() {
                 return@launch
             }
 
+            val previousState = uiState.value
             val preservePasswordQuery =
-                panel == MonicaImePanel.PASSWORDS && uiState.value.activePanel == MonicaImePanel.PASSWORDS
+                panel == MonicaImePanel.PASSWORDS &&
+                    previousState.activePanel == MonicaImePanel.PASSWORDS
+            val requiresInitialLoad = panel.requiresInitialVaultLoading()
+            val needsPasswordPresentationRefresh =
+                panel == MonicaImePanel.PASSWORDS &&
+                    !preservePasswordQuery &&
+                    (previousState.query.isNotBlank() ||
+                        previousState.passwordSortMode != MonicaImePasswordSortMode.ALPHABETICAL)
             uiState.update {
                 it.copy(
                     activePanel = panel,
                     isAutofillPanelVisible = true,
-                    isAutofillLoading = panel == MonicaImePanel.PASSWORDS,
+                    isAutofillLoading = panel.requiresInitialVaultLoading(),
                     isSearchEditing = false,
                     errorMessage = null,
                     query = if (preservePasswordQuery) it.query else "",
@@ -506,13 +534,15 @@ class MonicaInputMethodService : InputMethodService() {
                     selectedDatabaseScope = it.selectedDatabaseScope
                 )
             }
-            requestRefreshVaultEntries(force = true)
+            if (requiresInitialLoad || needsPasswordPresentationRefresh) {
+                requestRefreshVaultEntries()
+            }
         }
     }
 
     private suspend fun refreshVaultEntries(force: Boolean = false) {
         val settings = settingsManager.settingsFlow.first()
-        val isUnlocked = updateUnlockState(settings.autoLockMinutes)
+        val isUnlocked = updateUnlockState(settings)
         if (!isUnlocked) {
             val currentState = uiState.value
             uiState.update {
@@ -528,6 +558,20 @@ class MonicaInputMethodService : InputMethodService() {
         }
 
         val currentState = uiState.value
+        if (
+            currentState.activePanel == MonicaImePanel.KEYBOARD ||
+            currentState.activePanel == MonicaImePanel.GENERATOR ||
+            !currentState.isAutofillPanelVisible
+        ) {
+            uiState.update {
+                it.copy(
+                    autoLockMinutes = settings.autoLockMinutes,
+                    isAutofillLoading = false,
+                    errorMessage = null
+                )
+            }
+            return
+        }
         val activePackage = currentState.activePackageName
         val query = currentState.query.trim()
         val localLabel = getString(takagi.ru.monica.R.string.filter_monica)
@@ -536,6 +580,109 @@ class MonicaInputMethodService : InputMethodService() {
         val bitwardenLabel = getString(takagi.ru.monica.R.string.filter_bitwarden)
         val allDatabasesLabel = getString(takagi.ru.monica.R.string.password_picker_all_databases)
         val snapshot = withContext(Dispatchers.IO) {
+            if (force) invalidateVaultSourceCache()
+            val sources = vaultSourceCache ?: loadImeVaultSources(
+                    localLabel = localLabel,
+                    keepassLabel = keepassLabel,
+                    mdbxLabel = mdbxLabel,
+                    bitwardenLabel = bitwardenLabel,
+                    allDatabasesLabel = allDatabasesLabel
+                ).also { vaultSourceCache = it }
+            val selectedScope = currentState.selectedDatabaseScope
+                .takeIf { scope -> sources.databaseOptions.any { it.scope == scope } }
+                ?: MonicaImeDatabaseScope.All
+
+            val results = if (currentState.activePanel == MonicaImePanel.PASSWORDS) {
+                sortImePasswordEntries(
+                    entries = sources.passwordResults
+                        .asSequence()
+                        .map(ImeRefreshResult::value)
+                        .filter { entryMatchesScope(it, selectedScope) }
+                        .filter { imePasswordEntryMatchesQuery(it, query) }
+                        .toList(),
+                    sortMode = currentState.passwordSortMode,
+                    activePackageName = activePackage
+                ).map(::ImeRefreshResult)
+            } else {
+                currentState.entries.map(::ImeRefreshResult)
+            }
+
+            val authenticatorResults = if (currentState.activePanel == MonicaImePanel.AUTHENTICATORS) {
+                val totpItems = totpSourceCache ?: database.secureItemDao()
+                    .getActiveItemsByTypeSync(ItemType.TOTP)
+                    .also { totpSourceCache = it }
+                buildAuthenticatorEntries(
+                    secureItems = totpItems,
+                    passwordEntries = sources.passwordEntries,
+                    keepassLookup = sources.keepassLookup,
+                    mdbxLookup = sources.mdbxLookup,
+                    bitwardenLookup = sources.bitwardenLookup,
+                    localLabel = localLabel,
+                    keepassLabel = keepassLabel,
+                    mdbxLabel = mdbxLabel,
+                    bitwardenLabel = bitwardenLabel,
+                    query = query,
+                    selectedScope = selectedScope
+                )
+            } else {
+                currentState.authenticatorEntries
+            }
+
+            val cardWalletResults = if (currentState.activePanel == MonicaImePanel.DOCUMENTS) {
+                val cardWalletItems = cardWalletSourceCache ?: (
+                    database.secureItemDao().getActiveItemsByTypeSync(ItemType.BANK_CARD) +
+                        database.secureItemDao().getActiveItemsByTypeSync(ItemType.DOCUMENT)
+                    ).also { cardWalletSourceCache = it }
+                buildCardWalletEntries(
+                    secureItems = cardWalletItems,
+                    keepassLookup = sources.keepassLookup,
+                    mdbxLookup = sources.mdbxLookup,
+                    bitwardenLookup = sources.bitwardenLookup,
+                    localLabel = localLabel,
+                    keepassLabel = keepassLabel,
+                    mdbxLabel = mdbxLabel,
+                    bitwardenLabel = bitwardenLabel,
+                    query = query,
+                    selectedScope = selectedScope
+                )
+            } else {
+                currentState.cardWalletEntries
+            }
+
+            ImeRefreshSnapshot(
+                results = results,
+                authenticatorResults = authenticatorResults,
+                cardWalletResults = cardWalletResults,
+                databaseOptions = sources.databaseOptions,
+                selectedScope = selectedScope
+            )
+        }
+
+        val entries = snapshot.results.map { it.value }
+
+        loadedVaultPanels += currentState.activePanel
+        uiState.update {
+            it.copy(
+                unlocked = true,
+                entries = entries,
+                authenticatorEntries = snapshot.authenticatorResults,
+                cardWalletEntries = snapshot.cardWalletResults,
+                databaseOptions = snapshot.databaseOptions,
+                selectedDatabaseScope = snapshot.selectedScope,
+                autoLockMinutes = settings.autoLockMinutes,
+                isAutofillLoading = false,
+                errorMessage = null
+            )
+        }
+    }
+
+    private suspend fun loadImeVaultSources(
+        localLabel: String,
+        keepassLabel: String,
+        mdbxLabel: String,
+        bitwardenLabel: String,
+        allDatabasesLabel: String
+    ): ImeVaultSourceCache {
             val keepassDatabases = database.localKeePassDatabaseDao().getAllDatabasesSync()
             val mdbxDatabases = database.localMdbxDatabaseDao().getAllDatabasesSnapshot()
             val bitwardenVaults = database.bitwardenVaultDao().getAllVaults()
@@ -552,13 +699,9 @@ class MonicaInputMethodService : InputMethodService() {
                 mdbxDatabases = mdbxDatabases,
                 bitwardenVaults = bitwardenVaults
             )
-            val selectedScope = currentState.selectedDatabaseScope
-                .takeIf { scope -> databaseOptions.any { it.scope == scope } }
-                ?: MonicaImeDatabaseScope.All
-
             val passwordEntries = database.passwordEntryDao()
                 .getAllPasswordEntriesSync()
-            val filteredEntries = passwordEntries
+            val passwordResults = passwordEntries
                 .mapNotNull { entry ->
                     entry.toImeEntryOrNull(
                         keepassLookup = keepassLookup,
@@ -570,77 +713,26 @@ class MonicaInputMethodService : InputMethodService() {
                         bitwardenLabel = bitwardenLabel
                     )
                 }
-                .filter { result ->
-                    val entry = result.value
-                    entryMatchesScope(entry, selectedScope) &&
-                        imePasswordEntryMatchesQuery(entry, query)
-                }
-                .map { it.value }
-            val results = sortImePasswordEntries(
-                entries = filteredEntries,
-                sortMode = currentState.passwordSortMode,
-                activePackageName = activePackage
-            ).map(::ImeRefreshResult)
-
-            val authenticatorResults = buildAuthenticatorEntries(
-                secureItems = database.secureItemDao().getActiveItemsByTypeSync(ItemType.TOTP),
-                passwordEntries = passwordEntries,
-                keepassLookup = keepassLookup,
-                mdbxLookup = mdbxLookup,
-                bitwardenLookup = bitwardenLookup,
-                localLabel = localLabel,
-                keepassLabel = keepassLabel,
-                mdbxLabel = mdbxLabel,
-                bitwardenLabel = bitwardenLabel,
-                query = query,
-                selectedScope = selectedScope
-            )
-
-            val cardWalletResults = buildCardWalletEntries(
-                secureItems = database.secureItemDao().getActiveItemsByTypeSync(ItemType.BANK_CARD) +
-                    database.secureItemDao().getActiveItemsByTypeSync(ItemType.DOCUMENT),
-                keepassLookup = keepassLookup,
-                mdbxLookup = mdbxLookup,
-                bitwardenLookup = bitwardenLookup,
-                localLabel = localLabel,
-                keepassLabel = keepassLabel,
-                mdbxLabel = mdbxLabel,
-                bitwardenLabel = bitwardenLabel,
-                query = query,
-                selectedScope = selectedScope
-            )
-
-            ImeRefreshSnapshot(
-                results = results,
-                authenticatorResults = authenticatorResults,
-                cardWalletResults = cardWalletResults,
-                databaseOptions = databaseOptions,
-                selectedScope = selectedScope
-            )
-        }
-
-        val entries = snapshot.results.map { it.value }
-
-        uiState.update {
-            it.copy(
-                unlocked = true,
-                entries = entries,
-                authenticatorEntries = snapshot.authenticatorResults,
-                cardWalletEntries = snapshot.cardWalletResults,
-                databaseOptions = snapshot.databaseOptions,
-                selectedDatabaseScope = snapshot.selectedScope,
-                autoLockMinutes = settings.autoLockMinutes,
-                isAutofillLoading = false,
-                errorMessage = null
-            )
-        }
+        return ImeVaultSourceCache(
+            passwordEntries = passwordEntries,
+            passwordResults = passwordResults,
+            keepassLookup = keepassLookup,
+            mdbxLookup = mdbxLookup,
+            bitwardenLookup = bitwardenLookup,
+            databaseOptions = databaseOptions,
+        )
     }
 
-    private fun updateUnlockState(autoLockMinutes: Int): Boolean {
-        val unlocked = securityManager.canAccessVaultNowStrict(this, autoLockMinutes)
+    private fun updateUnlockState(settings: AppSettings): Boolean {
+        val unlocked = if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
+            securityManager.unlockVaultForDeveloperBypass(settings.autoLockMinutes)
+        } else {
+            securityManager.canAccessVaultNowStrict(this, settings.autoLockMinutes)
+        }
         if (unlocked) {
             uiState.update { it.copy(unlocked = true, errorMessage = null) }
         } else {
+            invalidateVaultSourceCache()
             uiState.update {
                 val panelStillVisible = it.activePanel != MonicaImePanel.KEYBOARD && it.isAutofillPanelVisible
                 it.copy(
@@ -1098,14 +1190,12 @@ class MonicaInputMethodService : InputMethodService() {
         bitwardenLabel: String
     ): ImeRefreshResult? {
         val decryptedUsername = resolveFillableField(username)
-        val decryptedPassword = resolveFillableField(password)
-
-        if (decryptedUsername.isNullOrBlank() && decryptedPassword.isNullOrBlank()) {
+        if (decryptedUsername.isNullOrBlank() && password.isBlank()) {
             return null
         }
 
         // 如果密码条目绑定了验证器密钥，生成当前 TOTP 码
-        val totpCode = runCatching {
+        val totpCode = if (authenticatorKey.isBlank()) "" else runCatching {
             val parsed = TotpDataResolver.fromAuthenticatorKey(
                 rawKey = decryptStoredSensitiveValue(authenticatorKey),
                 fallbackIssuer = title,
@@ -1122,7 +1212,7 @@ class MonicaInputMethodService : InputMethodService() {
                 username = decryptedUsername.orEmpty(),
                 website = website,
                 packageName = appPackageName,
-                password = decryptedPassword.orEmpty(),
+                password = password,
                 isFavorite = isFavorite,
                 totpCode = totpCode,
                 sourceLabel = resolveSourceLabel(
@@ -1206,6 +1296,17 @@ class MonicaInputMethodService : InputMethodService() {
             encryptedOrPlain = value,
             logTag = "MonicaIme"
         )
+    }
+
+    private fun invalidateVaultSourceCache() {
+        vaultSourceCache = null
+        totpSourceCache = null
+        cardWalletSourceCache = null
+        loadedVaultPanels.clear()
+    }
+
+    private fun MonicaImePanel.requiresInitialVaultLoading(): Boolean {
+        return isVaultContentPanel() && this !in loadedVaultPanels
     }
 
     private fun resolveFillableField(value: String): String? {
@@ -1346,14 +1447,14 @@ class MonicaInputMethodService : InputMethodService() {
     private fun finishImeSearchEditing() {
         if (!uiState.value.isSearchEditing) return
         uiState.update { it.copy(isSearchEditing = false) }
-        requestRefreshVaultEntries(force = true)
+        requestRefreshVaultEntries()
     }
 
     private fun clearImeSearchQuery() {
         val currentState = uiState.value
         if (currentState.query.isEmpty()) return
         uiState.update { it.copy(query = "") }
-        requestRefreshVaultEntries(force = true)
+        requestRefreshVaultEntries()
     }
 
     private fun changeImePasswordSortMode(sortMode: MonicaImePasswordSortMode) {
@@ -1365,7 +1466,7 @@ class MonicaInputMethodService : InputMethodService() {
             return
         }
         uiState.update { it.copy(passwordSortMode = sortMode) }
-        requestRefreshVaultEntries(force = true)
+        requestRefreshVaultEntries()
     }
 
     private fun updateImeSearchQuery(nextQuery: String) {
@@ -1392,10 +1493,12 @@ class MonicaInputMethodService : InputMethodService() {
 
     private fun handleSmartFillPassword(entry: MonicaImePasswordEntry) {
         clearPendingDeleteUndo()
+        val username = resolveFillableField(entry.username).orEmpty()
+        val password = resolveFillableField(entry.password).orEmpty()
         val values = if (isCurrentFieldLikelyPassword()) {
-            listOf(entry.password)
+            listOf(password)
         } else {
-            listOf(entry.username, entry.password)
+            listOf(username, password)
         }.filter { it.isNotBlank() }
         performSequentialImeFill(values)
     }
@@ -1609,4 +1712,13 @@ private data class ImeRefreshSnapshot(
     val cardWalletResults: List<MonicaImeCardWalletEntry>,
     val databaseOptions: List<MonicaImeDatabaseOption>,
     val selectedScope: MonicaImeDatabaseScope
+)
+
+private data class ImeVaultSourceCache(
+    val passwordEntries: List<PasswordEntry>,
+    val passwordResults: List<ImeRefreshResult>,
+    val keepassLookup: Map<Long, LocalKeePassDatabase>,
+    val mdbxLookup: Map<Long, LocalMdbxDatabase>,
+    val bitwardenLookup: Map<Long, BitwardenVault>,
+    val databaseOptions: List<MonicaImeDatabaseOption>,
 )

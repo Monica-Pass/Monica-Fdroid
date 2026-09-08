@@ -62,6 +62,19 @@ sync. It describes compiled code only: it does not register a Collection
 Adapter, accept a vault critical extension, grant key access, or negotiate a
 peer session.
 
+The top-level `mdbx_runtime_manifest` function also works without opening a
+vault. Its independent `MdbxRuntimeManifest` reports the MDBX3 Runtime version,
+the `MDBX-2` write format, current schema, readable legacy formats,
+`mdbx-ffi-abi-v1`, the `mdbx_ffi` namespace, and the Android
+`libmdbx_ffi.so` filename. This is an additive interface; existing MDBX2
+bindings and `MdbxBuildCapabilityManifest` remain unchanged.
+
+`abi/mdbx2-uniffi-bindings-v1.json` freezes every native symbol, the UniFFI
+contract version, and 237 API checksums declared by the MDBX2 Kotlin bindings.
+`scripts/verify-mdbx3-ffi-abi.py` dynamically loads the current DLL, SO, or
+dylib and verifies each item. New interfaces may be added, but a missing legacy
+symbol or changed checksum fails the build.
+
 `MdbxExtensionProfile` is the canonical process-local descriptor for one
 loaded Adapter. It declares the Adapter's namespaced Collection types, custom
 Object types, relation kinds, write-gating capabilities, optional indexes,

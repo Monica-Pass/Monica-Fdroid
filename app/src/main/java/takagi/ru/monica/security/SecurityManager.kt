@@ -246,6 +246,50 @@ class SecurityManager(private val context: Context) {
         hasLoggedMdkFallbackEncryption = false
     }
 
+    /**
+     * Makes the vault key available to secondary entry points without an identity prompt.
+     * This is intentionally limited to the explicit developer bypass setting.
+     */
+    fun unlockVaultForDeveloperBypass(autoLockMinutes: Int): Boolean {
+        if (!isMasterPasswordSet()) return true
+        val mdk = runCatching {
+            mdkAuthUnavailableUntilMillis = 0L
+            getMdkForCrypto()?.takeIf { it.isNotEmpty() }
+        }.getOrNull()
+        val accessible = mdk != null
+        if (accessible) {
+            val currentWrapper = sharedPreferences.getString(MDK_KEYSTORE_BLOB_KEY, null)
+            if (currentWrapper?.startsWith(WRAPPER_PREFIX_COMPAT) != true) {
+                persistCompatKeystoreWrappedMdk(mdk!!)
+            }
+            markVaultAuthenticated()
+            markSecondaryVaultAuthenticated(autoLockMinutes)
+        }
+        return accessible
+    }
+
+    /**
+     * Enables a device-local, non-authenticated wrapper for the MDK. Disabling removes that
+     * wrapper; the next normal password unlock recreates the authenticated wrapper.
+     */
+    fun configureDeveloperVerificationBypass(enabled: Boolean): Boolean {
+        if (!isMasterPasswordSet()) return true
+        if (!enabled) {
+            val storedWrapper = sharedPreferences.getString(MDK_KEYSTORE_BLOB_KEY, null)
+            if (storedWrapper?.startsWith(WRAPPER_PREFIX_COMPAT) == true) {
+                sharedPreferences.edit().remove(MDK_KEYSTORE_BLOB_KEY).apply()
+            }
+            return true
+        }
+
+        val mdk = runCatching { getMdkForCrypto() }
+            .getOrNull()
+            ?.takeIf { it.isNotEmpty() }
+            ?: processCachedMdk?.takeIf { it.isNotEmpty() }
+            ?: return false
+        return persistCompatKeystoreWrappedMdk(mdk)
+    }
+
     fun forceVaultReauthentication(reason: String) {
         android.util.Log.w(logTag, "forceVaultReauthentication: $reason")
         SecurityDiagLogger.append("W/$logTag forceVaultReauthentication: $reason")

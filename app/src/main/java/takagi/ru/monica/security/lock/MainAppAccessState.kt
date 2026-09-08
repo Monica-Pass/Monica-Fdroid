@@ -5,8 +5,7 @@ package takagi.ru.monica.security.lock
  *
  * Scope:
  * - Used only by main-process startup and foreground restoration.
- * - `disablePasswordVerification` may affect this state only for app startup.
- * - Secondary verification points must use their own explicit password or biometric checks.
+ * - Secondary entry points apply the same developer bypass through DeveloperVerificationPolicy.
  */
 data class MainAppAccessState(
     val isFirstTime: Boolean,

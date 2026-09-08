@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,6 +22,7 @@ import takagi.ru.monica.data.model.DocumentType
 import takagi.ru.monica.data.model.displayFullName
 import takagi.ru.monica.bitwarden.sync.SyncStatus
 import takagi.ru.monica.ui.cardwallet.DocumentTypeIcon
+import takagi.ru.monica.ui.cardwallet.documentCardFacePreviewData
 
 /**
  * 证件卡片组件
@@ -47,8 +47,11 @@ fun DocumentCard(
         CardWalletDataCodec.parseDocumentData(item.itemData) ?: emptyDocumentData()
     }
     
-    // 获取对应容器的文字颜色
-    val contentColor = getDocumentCardContentColor(resolvedDocumentData.documentType, isSelected)
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     
     val cardInteractionModifier = if (isSelectionMode) {
         modifier
@@ -63,27 +66,27 @@ fun DocumentCard(
             )
     }
 
-    Card(
+    resolvedDocumentData.cardFace?.let { face ->
+        CustomCardFaceCard(
+            item = item,
+            previewData = documentCardFacePreviewData(item.title, resolvedDocumentData),
+            imageAttachmentName = face.imageAttachmentName,
+            displayMode = face.displayMode,
+            modifier = cardInteractionModifier,
+            isSelectionMode = isSelectionMode,
+            isSelected = isSelected,
+            onClick = onClick,
+            onDelete = onDelete,
+            onToggleFavorite = onToggleFavorite,
+            onMoveUp = onMoveUp,
+            onMoveDown = onMoveDown
+        )
+        return
+    }
+
+    MonicaItemCard(
         modifier = cardInteractionModifier,
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        ),
-        colors = if (isSelected) {
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        } else {
-            CardDefaults.cardColors(
-                containerColor = when (resolvedDocumentData.documentType) {
-                    DocumentType.ID_CARD -> MaterialTheme.colorScheme.primaryContainer
-                    DocumentType.PASSPORT -> MaterialTheme.colorScheme.secondaryContainer
-                    DocumentType.DRIVER_LICENSE -> MaterialTheme.colorScheme.tertiaryContainer
-                    DocumentType.SOCIAL_SECURITY -> MaterialTheme.colorScheme.surfaceVariant
-                    DocumentType.OTHER -> MaterialTheme.colorScheme.surfaceVariant
-                }
-            )
-        }
+        isSelected = isSelected
     ) {
         Column(
             modifier = Modifier
@@ -324,24 +327,5 @@ private fun getDocumentTypeName(type: DocumentType): String {
         DocumentType.DRIVER_LICENSE -> stringResource(R.string.document_type_driver_license)
         DocumentType.SOCIAL_SECURITY -> stringResource(R.string.document_type_social_security)
         DocumentType.OTHER -> stringResource(R.string.document_type_other)
-    }
-}
-
-/**
- * 获取证件卡片的内容颜色
- * 根据证件类型和选择状态返回对应的onXxxContainer颜色
- */
-@Composable
-private fun getDocumentCardContentColor(type: DocumentType, isSelected: Boolean): androidx.compose.ui.graphics.Color {
-    return if (isSelected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        when (type) {
-            DocumentType.ID_CARD -> MaterialTheme.colorScheme.onPrimaryContainer
-            DocumentType.PASSPORT -> MaterialTheme.colorScheme.onSecondaryContainer
-            DocumentType.DRIVER_LICENSE -> MaterialTheme.colorScheme.onTertiaryContainer
-            DocumentType.SOCIAL_SECURITY -> MaterialTheme.colorScheme.onSurfaceVariant
-            DocumentType.OTHER -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
     }
 }

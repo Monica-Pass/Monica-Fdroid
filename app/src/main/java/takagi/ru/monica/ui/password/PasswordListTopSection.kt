@@ -714,7 +714,8 @@ internal fun PasswordListTopSection(
                 reunlockPassword = ""
                 reunlockPasswordError = false
             }
-            val biometricAction = if (activity != null && canUseBiometric) {
+            val skipIdentityVerification = appSettings.disablePasswordVerification
+            val biometricAction = if (!skipIdentityVerification && activity != null && canUseBiometric) {
                 {
                     biometricHelper.authenticate(
                         activity = activity,
@@ -761,7 +762,11 @@ internal fun PasswordListTopSection(
                 },
                 onDismiss = dismissReunlockDialog,
                 onConfirm = {
-                    val unlocked = securityManager.unlockVaultWithPassword(reunlockPassword)
+                    val unlocked = if (skipIdentityVerification) {
+                        securityManager.unlockVaultForDeveloperBypass(appSettings.autoLockMinutes)
+                    } else {
+                        securityManager.unlockVaultWithPassword(reunlockPassword)
+                    }
                     if (unlocked) {
                         securityManager.markVaultAuthenticated()
                         viewModel.restoreAuthenticatedUiState()
@@ -777,6 +782,7 @@ internal fun PasswordListTopSection(
                 },
                 confirmText = stringResource(R.string.unlock),
                 destructiveConfirm = false,
+                requireIdentityVerification = !skipIdentityVerification,
                 isPasswordError = reunlockPasswordError,
                 passwordErrorText = stringResource(R.string.current_password_incorrect),
                 onBiometricClick = biometricAction,

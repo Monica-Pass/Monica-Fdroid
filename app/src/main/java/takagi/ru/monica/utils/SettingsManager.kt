@@ -121,6 +121,7 @@ data class PageAdjustmentSettingsSnapshot(
     val validatorUnifiedProgressBar: String = UnifiedProgressBarMode.ENABLED.name,
     val validatorSmoothProgress: Boolean = true,
     val validatorVibrationEnabled: Boolean = true,
+    val hapticFeedbackEnabled: Boolean = true,
     val copyNextCodeWhenExpiring: Boolean = false,
     val securityAnalysisAutoEnabled: Boolean = false,
     val passwordDetailSecurityAnalysisEnabled: Boolean = true,
@@ -197,6 +198,7 @@ class SettingsManager(private val context: Context) {
         private val VALIDATOR_UNIFIED_PROGRESS_BAR_KEY = stringPreferencesKey("validator_unified_progress_bar")
         private val VALIDATOR_SMOOTH_PROGRESS_KEY = booleanPreferencesKey("validator_smooth_progress")
         private val VALIDATOR_VIBRATION_ENABLED_KEY = booleanPreferencesKey("validator_vibration_enabled")
+        private val HAPTIC_FEEDBACK_ENABLED_KEY = booleanPreferencesKey("haptic_feedback_enabled")
         private val BITWARDEN_BOTTOM_STATUS_BAR_ENABLED_KEY = booleanPreferencesKey("bitwarden_bottom_status_bar_enabled")
         private val COPY_NEXT_CODE_WHEN_EXPIRING_KEY = booleanPreferencesKey("copy_next_code_when_expiring")
         private val NOTIFICATION_VALIDATOR_ENABLED_KEY = booleanPreferencesKey("notification_validator_enabled")
@@ -570,6 +572,7 @@ class SettingsManager(private val context: Context) {
             }.getOrDefault(takagi.ru.monica.data.UnifiedProgressBarMode.ENABLED),
             validatorSmoothProgress = preferences[VALIDATOR_SMOOTH_PROGRESS_KEY] ?: true,
             validatorVibrationEnabled = preferences[VALIDATOR_VIBRATION_ENABLED_KEY] ?: true,
+            hapticFeedbackEnabled = preferences[HAPTIC_FEEDBACK_ENABLED_KEY] ?: true,
             hideFabOnScroll = preferences[HIDE_FAB_ON_SCROLL_KEY] ?: false,
             securityAnalysisAutoEnabled = preferences[SECURITY_ANALYSIS_AUTO_ENABLED_KEY] ?: false,
             passwordDetailSecurityAnalysisEnabled =
@@ -898,6 +901,12 @@ class SettingsManager(private val context: Context) {
     suspend fun updateValidatorVibrationEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[VALIDATOR_VIBRATION_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun updateHapticFeedbackEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[HAPTIC_FEEDBACK_ENABLED_KEY] = enabled
         }
     }
 
@@ -1311,6 +1320,7 @@ class SettingsManager(private val context: Context) {
             validatorUnifiedProgressBar = settings.validatorUnifiedProgressBar.name,
             validatorSmoothProgress = settings.validatorSmoothProgress,
             validatorVibrationEnabled = settings.validatorVibrationEnabled,
+            hapticFeedbackEnabled = settings.hapticFeedbackEnabled,
             copyNextCodeWhenExpiring = settings.copyNextCodeWhenExpiring,
             securityAnalysisAutoEnabled = settings.securityAnalysisAutoEnabled,
             passwordDetailSecurityAnalysisEnabled = settings.passwordDetailSecurityAnalysisEnabled,
@@ -1492,6 +1502,7 @@ class SettingsManager(private val context: Context) {
             preferences[VALIDATOR_UNIFIED_PROGRESS_BAR_KEY] = parsedValidatorUnifiedProgressBar.name
             preferences[VALIDATOR_SMOOTH_PROGRESS_KEY] = snapshot.validatorSmoothProgress
             preferences[VALIDATOR_VIBRATION_ENABLED_KEY] = snapshot.validatorVibrationEnabled
+            preferences[HAPTIC_FEEDBACK_ENABLED_KEY] = snapshot.hapticFeedbackEnabled
             preferences[COPY_NEXT_CODE_WHEN_EXPIRING_KEY] = snapshot.copyNextCodeWhenExpiring
             preferences[SECURITY_ANALYSIS_AUTO_ENABLED_KEY] = snapshot.securityAnalysisAutoEnabled
             preferences[PASSWORD_DETAIL_SECURITY_ANALYSIS_ENABLED_KEY] =

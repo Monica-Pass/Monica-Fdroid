@@ -1,0 +1,14 @@
+[package]
+name = "monica-password-list-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+publish = false
+license = "GPL-3.0-only"
+description = "Secret-free password-list projection core for Monica"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[dependencies]
