@@ -1,3 +1,5 @@
+
+Kho lưu trữ này chỉ dành cho việc xây dựng **F-Droid**. Kho chính: [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # Kho Mat Khau Cuc Bo Monica
 
 <div align="center">

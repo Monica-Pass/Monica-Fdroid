@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建喵，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android) 喵
 <h1 align="center">Monica ～猫猫的本地秘密保险箱喵</h1>
 
 <div align="center">

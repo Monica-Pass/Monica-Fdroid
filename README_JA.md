@@ -1,3 +1,5 @@
+
+このリポジトリは **F-Droid** ビルド専用です。メインリポジトリ: [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # Monica ローカルパスワード保管庫
 
 <div align="center">

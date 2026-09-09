@@ -1,3 +1,5 @@
+
+Этот репозиторий предназначен только для сборки **F-Droid**. Основной репозиторий: [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # Monica Локальное хранилище паролей
 
 <div align="center">

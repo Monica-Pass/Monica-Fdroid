@@ -1,3 +1,5 @@
+
+This repository is only for **F-Droid** builds. Main repository: [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # Monica Local Password Vault
 
 <div align="center">
