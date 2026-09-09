@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX Spec Index
 
 This folder contains the canonical specification set for the MDBX project.
@@ -157,3 +159,5 @@ When adding more spec files to this folder:
 This folder defines the spec and implementation guidance.
 It does not contain production code.
 Production code must follow this folder, not redefine it.
+---
+

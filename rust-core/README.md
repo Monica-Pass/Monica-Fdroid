@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # Monica Password List Rust Core
 
 这是 Monica Android 性能重构中的 Rust 运行时边界：**密码列表的无明文元数据筛选、投影与保守去重**。
@@ -47,3 +49,5 @@ cargo test --all-targets --all-features
 cargo fmt --manifest-path ../rust-jni/Cargo.toml --all -- --check
 cargo clippy --manifest-path ../rust-jni/Cargo.toml --all-targets --all-features -- -D warnings
 ```
+---
+

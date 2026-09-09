@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX
 
 语言：[简体中文](README.md) | [English](README.en.md)
@@ -210,3 +212,5 @@ Monica for Android 的当前接入样板见 `docs/android/README.zh-CN.md`。
 - 能检测并展示冲突。
 - 能创建快照，回滚快照需要二次确认。
 - 诊断页能显示同步、健康、历史、tombstone、附件、dangling head 状态。
+---
+

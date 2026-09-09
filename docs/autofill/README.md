@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # AutofillPicker UI 改进文档
 
 ## 📚 文档索引
@@ -126,3 +128,5 @@ docs/autofill/
 ## 🎉 开始吧!
 
 选择一个文档开始阅读,5分钟后你就能看到新的UI了!
+---
+

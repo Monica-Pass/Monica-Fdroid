@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX Android Integration
 
 Language: [简体中文](README.zh-CN.md) | [English](README.md)
@@ -193,3 +195,5 @@ Recommended path:
 4. Add Rust FFI smoke tests and Android guard tests for every new FFI method.
 5. Keep Room indexes as Android UI cache, not as the MDBX format source of truth.
 6. Continue opening `MDBX-1-DRAFT` and Android-created `MDBX-1.0` vaults during migration.
+---
+

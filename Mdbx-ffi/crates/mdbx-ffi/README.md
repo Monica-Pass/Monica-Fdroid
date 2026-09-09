@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX FFI
 
 Language: [简体中文](README.zh-CN.md) | [English](README.md)
@@ -361,3 +363,5 @@ cargo test -p mdbx-ffi
 ```
 
 The smoke tests verify vault create/open, entry round trips, update/delete/restore/move flows, security-key-material unlock, master-password reset, full Tiga2 policy and authorization mapping, exact exceptions, and Power combined-factor remediation.
+---
+

@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX3 Runtime 设计目录
 
 MDBX3 定义为第三代运行库，继续使用 `MDBX-2` 文件格式。Android、Linux 和其他原生平台的新产物继续采用 `libmdbx_ffi.so` 运行时文件名，使采用现有 UniFFI bindings 的客户端可以原位替换 MDBX2 SO。
@@ -34,3 +36,5 @@ MDBX3 定义为第三代运行库，继续使用 `MDBX-2` 文件格式。Android
 ## 规范优先级
 
 本目录同时保留设计决策和实施证据。发生冲突时，当前 MDBX2 安全规范与兼容规范继续约束现有实现；MDBX3 的实现状态以 `implementation/PROGRESS.md`、事实文件和发布报告为准。正式发布前仍需完成真实设备与产品客户端验收。
+---
+

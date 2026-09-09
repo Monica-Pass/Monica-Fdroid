@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # KDBX interoperability fixtures
 
 `kdbx3-demopass.kdbx.b64` is the Base64 representation of
@@ -9,3 +11,5 @@
 The encoded text is stored instead of a binary file so repository review and
 line-ending handling remain deterministic. Tests remove ASCII whitespace before
 decoding.
+---
+

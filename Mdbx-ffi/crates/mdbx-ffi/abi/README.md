@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX FFI ABI baselines
 
 `mdbx2-uniffi-bindings-v1.json` freezes the native contract used by Kotlin bindings generated from MDBX2 commit `1070dee739dbe564806654359b6c6caa68156de5` with UniFFI 0.31.1.
@@ -44,3 +46,5 @@ powershell -File scripts/build-mdbx2-android-baseline.ps1 `
 Both scripts apply `llvm-strip --strip-all`, record the Rust/Cargo/NDK/linker
 versions and Cargo.lock hash, validate ELF machine types, and write reports only
 under `target/`.
+---
+

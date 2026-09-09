@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # MDBX Crypto Test Vectors
 
 This directory contains stable crypto vectors for compatibility checks across
@@ -92,3 +94,5 @@ nonce || ciphertext
 
 Use the AEAD unit tests in `src/aead.rs` for envelope behavior, commitment
 tamper rejection, wrong-key rejection, and legacy ciphertext compatibility.
+---
+
