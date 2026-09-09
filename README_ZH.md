@@ -1,3 +1,5 @@
+
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
 # 🔐 Monica Password Manager
 
 **中文** | [English](README.md)
