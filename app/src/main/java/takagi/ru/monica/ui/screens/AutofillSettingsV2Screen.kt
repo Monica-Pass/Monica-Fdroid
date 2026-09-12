@@ -43,6 +43,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -89,6 +90,7 @@ import takagi.ru.monica.R
 import takagi.ru.monica.autofill_ng.AutofillPreferences
 import takagi.ru.monica.autofill_ng.DomainMatchStrategy
 import takagi.ru.monica.autofill_ng.core.AutofillServiceChecker
+import takagi.ru.monica.autofill_ng.protection.AutofillProtectionActivity
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.data.AppSettings
@@ -311,6 +313,19 @@ fun AutofillSettingsV2Screen(
                         Text(stringResource(R.string.autofill_v2_set_system_service))
                     }
                 }
+            }
+
+            SectionCard(
+                title = stringResource(R.string.autofill_protection_title),
+                icon = Icons.Outlined.Security,
+                iconTint = MaterialTheme.colorScheme.primary,
+            ) {
+                AutofillSettingItem(
+                    icon = Icons.Outlined.Security,
+                    title = stringResource(R.string.autofill_protection_entry_title),
+                    subtitle = stringResource(R.string.autofill_protection_entry_desc),
+                    onClick = { context.startActivity(Intent(context, AutofillProtectionActivity::class.java)) },
+                )
             }
 
             SectionCard(

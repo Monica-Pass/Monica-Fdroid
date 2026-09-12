@@ -15,6 +15,8 @@ internal data class VaultV2ManualStackMetadata(
 )
 
 internal class VaultV2RetainedState {
+    var overviewSnapshot: VaultOverviewSnapshot? = null
+    val overviewCardStack = VaultOverviewCardStackState()
     val folderNavigationHistory = mutableStateListOf<VaultV2FolderNavigationEntry>()
     val computedListSnapshots: VaultV2RetainedSourceSnapshotStore<
         VaultV2ComputedSnapshotKey,
@@ -41,6 +43,8 @@ internal class VaultV2RetainedState {
     }
 
     fun clear() {
+        overviewSnapshot = null
+        overviewCardStack.clear()
         folderNavigationHistory.clear()
         computedListSnapshots.clear()
         visibleListSnapshots.clear()

@@ -82,7 +82,7 @@ class MonicaInputMethodService : InputMethodService() {
     private var vaultSourceCache: ImeVaultSourceCache? = null
     private var totpSourceCache: List<SecureItem>? = null
     private var cardWalletSourceCache: List<SecureItem>? = null
-    private val loadedVaultPanels = mutableSetOf<MonicaImePanel>()
+    private val loadedVaultPanels = mutableMapOf<MonicaImePanel, ImeVaultPresentation>()
     private var pendingUnlockPanel: MonicaImePanel? = null
     private var pendingClearedInputText: String? = null
     private var unlockFlowInProgress = false
@@ -188,6 +188,9 @@ class MonicaInputMethodService : InputMethodService() {
                         onInsertUsername = { entry ->
                             resolveFillableField(entry.username)?.let(::commitExternalText)
                         },
+                        onInsertWebsite = { entry ->
+                            resolveFillableField(entry.website)?.let(::commitExternalText)
+                        },
                         onSmartFillPassword = ::handleSmartFillPassword,
                         onInsertAuthenticatorCode = { commitExternalText(it.code) },
                         onInsertCardWalletValue = { commitExternalText(it.value) },
@@ -209,7 +212,6 @@ class MonicaInputMethodService : InputMethodService() {
                         onSearchEditRequested = ::startImeSearchEditing,
                         onSearchEditFinished = ::finishImeSearchEditing,
                         onSearchCleared = ::clearImeSearchQuery,
-                        onPasswordSortModeChanged = ::changeImePasswordSortMode,
                         onSwitchInputMethod = ::switchToNextInputMethod,
                         onPanelSelected = ::handlePanelSelection,
                         onDismiss = { requestHideSelf(0) }
@@ -509,32 +511,11 @@ class MonicaInputMethodService : InputMethodService() {
             }
 
             val previousState = uiState.value
-            val preservePasswordQuery =
-                panel == MonicaImePanel.PASSWORDS &&
-                    previousState.activePanel == MonicaImePanel.PASSWORDS
             val requiresInitialLoad = panel.requiresInitialVaultLoading()
-            val needsPasswordPresentationRefresh =
-                panel == MonicaImePanel.PASSWORDS &&
-                    !preservePasswordQuery &&
-                    (previousState.query.isNotBlank() ||
-                        previousState.passwordSortMode != MonicaImePasswordSortMode.ALPHABETICAL)
-            uiState.update {
-                it.copy(
-                    activePanel = panel,
-                    isAutofillPanelVisible = true,
-                    isAutofillLoading = panel.requiresInitialVaultLoading(),
-                    isSearchEditing = false,
-                    errorMessage = null,
-                    query = if (preservePasswordQuery) it.query else "",
-                    passwordSortMode = if (preservePasswordQuery) {
-                        it.passwordSortMode
-                    } else {
-                        MonicaImePasswordSortMode.ALPHABETICAL
-                    },
-                    selectedDatabaseScope = it.selectedDatabaseScope
-                )
-            }
-            if (requiresInitialLoad || needsPasswordPresentationRefresh) {
+            val nextState = previousState.selectVaultPanel(panel, isLoading = requiresInitialLoad)
+            val needsPresentationRefresh = loadedVaultPanels[panel] != nextState.vaultPresentation()
+            uiState.value = nextState
+            if (requiresInitialLoad || needsPresentationRefresh) {
                 requestRefreshVaultEntries()
             }
         }
@@ -660,7 +641,9 @@ class MonicaInputMethodService : InputMethodService() {
 
         val entries = snapshot.results.map { it.value }
 
-        loadedVaultPanels += currentState.activePanel
+        loadedVaultPanels[currentState.activePanel] = currentState
+            .copy(selectedDatabaseScope = snapshot.selectedScope)
+            .vaultPresentation()
         uiState.update {
             it.copy(
                 unlocked = true,
@@ -1428,20 +1411,7 @@ class MonicaInputMethodService : InputMethodService() {
 
     private fun startImeSearchEditing() {
         clearPendingDeleteUndo()
-        val currentState = uiState.value
-        if (
-            !currentState.unlocked ||
-            currentState.activePanel != MonicaImePanel.PASSWORDS
-        ) {
-            return
-        }
-        uiState.update {
-            it.copy(
-                isSearchEditing = true,
-                keyboardMode = MonicaKeyboardMode.LETTERS,
-                isUppercase = false
-            )
-        }
+        uiState.update { it.startVaultSearch() }
     }
 
     private fun finishImeSearchEditing() {
@@ -1454,18 +1424,6 @@ class MonicaInputMethodService : InputMethodService() {
         val currentState = uiState.value
         if (currentState.query.isEmpty()) return
         uiState.update { it.copy(query = "") }
-        requestRefreshVaultEntries()
-    }
-
-    private fun changeImePasswordSortMode(sortMode: MonicaImePasswordSortMode) {
-        val currentState = uiState.value
-        if (
-            currentState.activePanel != MonicaImePanel.PASSWORDS ||
-            currentState.passwordSortMode == sortMode
-        ) {
-            return
-        }
-        uiState.update { it.copy(passwordSortMode = sortMode) }
         requestRefreshVaultEntries()
     }
 

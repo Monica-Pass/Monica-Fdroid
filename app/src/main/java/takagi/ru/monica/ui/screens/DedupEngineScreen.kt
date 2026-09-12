@@ -74,7 +74,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import takagi.ru.monica.data.ItemType
+import takagi.ru.monica.R
 import takagi.ru.monica.data.dedup.DedupConflictPolicy
 import takagi.ru.monica.data.dedup.DedupMergeExecutionResult
 import takagi.ru.monica.data.dedup.DedupMergePlan
@@ -84,6 +84,8 @@ import takagi.ru.monica.data.dedup.DedupMergeTarget
 import takagi.ru.monica.data.dedup.DedupMergeTargetOption
 import takagi.ru.monica.data.dedup.DedupResolvedPassword
 import takagi.ru.monica.data.dedup.DedupResolvedSecureItem
+import takagi.ru.monica.data.dedup.dedupLabel
+import takagi.ru.monica.utils.StringResolver
 import takagi.ru.monica.viewmodel.DedupEngineUiState
 
 private enum class DedupSheet {
@@ -117,6 +119,7 @@ fun DedupEngineScreen(
     onCancelMerge: () -> Unit,
     onConsumeMessage: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     val snackbarHostState = remember { SnackbarHostState() }
     var showMergeConfirmation by rememberSaveable { mutableStateOf(false) }
     var showCancelConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -196,18 +199,18 @@ fun DedupEngineScreen(
         AlertDialog(
             onDismissRequest = { showCancelConfirmation = false },
             icon = { Icon(Icons.Default.Warning, contentDescription = null) },
-            title = { Text("停止合并？") },
-            text = { Text("停止后不会继续写入。已经成功写入目标数据库的条目会保留，来源数据库不会改变。") },
+            title = { Text(strings.get(R.string.dedup_merge_stop_title)) },
+            text = { Text(strings.get(R.string.dedup_merge_stop_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showCancelConfirmation = false
                         onCancelMerge()
                     }
-                ) { Text("停止") }
+                ) { Text(strings.get(R.string.dedup_merge_stop_action)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCancelConfirmation = false }) { Text("继续合并") }
+                TextButton(onClick = { showCancelConfirmation = false }) { Text(strings.get(R.string.dedup_merge_continue_action)) }
             }
         )
     }
@@ -215,15 +218,15 @@ fun DedupEngineScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("合并数据库", fontWeight = FontWeight.SemiBold) },
+                title = { Text(strings.get(R.string.dedup_merge_title), fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = ::requestBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.get(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onRefresh, enabled = !busy) {
-                        Icon(Icons.Default.Refresh, contentDescription = "重新扫描数据库")
+                        Icon(Icons.Default.Refresh, contentDescription = strings.get(R.string.dedup_merge_refresh))
                     }
                 }
             )
@@ -275,8 +278,8 @@ fun DedupEngineScreen(
                 item(key = "warnings") {
                     CompactLinkPanel(
                         icon = Icons.Default.Warning,
-                        title = "合并说明",
-                        subtitle = "${uiState.mergePlan.warnings.size} 条需要留意的内容",
+                        title = strings.get(R.string.dedup_merge_warnings_title),
+                        subtitle = strings.get(R.string.dedup_merge_warning_count, uiState.mergePlan.warnings.size),
                         tint = MaterialTheme.colorScheme.tertiary,
                         onClick = { activeSheet = DedupSheet.WARNINGS }
                     )
@@ -311,8 +314,12 @@ fun DedupEngineScreen(
                 item(key = "preview") {
                     CompactLinkPanel(
                         icon = Icons.Default.Merge,
-                        title = "合并明细",
-                        subtitle = "${uiState.mergePlan.previewPasswords.size + uiState.mergePlan.previewSecureItems.size} 条 · ${uiState.mergePlan.conflictGroupsTotal} 个冲突组",
+                        title = strings.get(R.string.dedup_merge_preview_title),
+                        subtitle = strings.get(
+                            R.string.dedup_merge_preview_summary,
+                            uiState.mergePlan.previewPasswords.size + uiState.mergePlan.previewSecureItems.size,
+                            uiState.mergePlan.conflictGroupsTotal
+                        ),
                         tint = MaterialTheme.colorScheme.primary,
                         onClick = { activeSheet = DedupSheet.PREVIEW }
                     )
@@ -323,9 +330,9 @@ fun DedupEngineScreen(
                         icon = Icons.Default.Info,
                         tint = MaterialTheme.colorScheme.primary,
                         text = when {
-                            uiState.selectedMergeSourceKeys.size < 2 -> "选择至少两个来源数据库后生成预览"
-                            uiState.selectedMergeTarget == null -> "选择目标数据库后生成预览"
-                            else -> "当前选择没有可写入的新条目"
+                            uiState.selectedMergeSourceKeys.size < 2 -> strings.get(R.string.dedup_merge_preview_need_sources)
+                            uiState.selectedMergeTarget == null -> strings.get(R.string.dedup_merge_preview_need_target)
+                            else -> strings.get(R.string.dedup_merge_preview_empty)
                         }
                     )
                 }
@@ -343,11 +350,16 @@ private fun CompactSetupPanel(
     onOpenSources: () -> Unit,
     onOpenTarget: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     val selectedSources = sources.filter { it.key in selectedSourceKeys }
     val sourceSummary = when {
-        selectedSources.isEmpty() -> "未选择，至少需要两个数据库"
-        selectedSources.size <= 2 -> selectedSources.joinToString("、") { it.label }
-        else -> selectedSources.take(2).joinToString("、") { it.label } + " 等 ${selectedSources.size} 个"
+        selectedSources.isEmpty() -> strings.get(R.string.dedup_merge_source_empty)
+        selectedSources.size <= 2 -> selectedSources.joinToString(strings.get(R.string.dedup_merge_list_separator)) { it.label }
+        else -> strings.get(
+            R.string.dedup_merge_source_summary_more,
+            selectedSources.take(2).joinToString(strings.get(R.string.dedup_merge_list_separator)) { it.label },
+            selectedSources.size
+        )
     }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -357,7 +369,7 @@ private fun CompactSetupPanel(
         Column {
             CompactSelectionRow(
                 index = 1,
-                title = "来源数据库",
+                title = strings.get(R.string.dedup_merge_source_title),
                 subtitle = sourceSummary,
                 complete = selectedSources.size >= 2,
                 enabled = enabled,
@@ -366,8 +378,8 @@ private fun CompactSetupPanel(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             CompactSelectionRow(
                 index = 2,
-                title = "目标数据库",
-                subtitle = selectedTarget?.let { "${it.label} · ${it.countSummary()}" } ?: "未选择写入目标",
+                title = strings.get(R.string.dedup_merge_target_title),
+                subtitle = selectedTarget?.let { "${it.label} · ${it.countSummary(strings)}" } ?: strings.get(R.string.dedup_merge_target_empty),
                 complete = selectedTarget != null,
                 enabled = enabled,
                 onClick = onOpenTarget
@@ -385,6 +397,7 @@ private fun CompactSelectionRow(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     ListItem(
         modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -399,7 +412,7 @@ private fun CompactSelectionRow(
             ) {
                 Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
                     if (complete) {
-                        Icon(Icons.Default.Check, contentDescription = "已完成", modifier = Modifier.size(19.dp))
+                        Icon(Icons.Default.Check, contentDescription = strings.get(R.string.qs_completed), modifier = Modifier.size(19.dp))
                     } else {
                         Text(index.toString(), fontWeight = FontWeight.Bold)
                     }
@@ -448,6 +461,7 @@ private fun SourceSelectionSheet(
     onClearSources: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -455,17 +469,17 @@ private fun SourceSelectionSheet(
                 .fillMaxHeight(0.88f)
                 .navigationBarsPadding()
         ) {
-            SheetHeader("来源数据库", "已选择 ${selectedKeys.size} 个", onDismiss)
+            SheetHeader(strings.get(R.string.dedup_merge_source_title), strings.get(R.string.dedup_merge_selected_count, selectedKeys.size), onDismiss)
             Row(modifier = Modifier.padding(horizontal = 12.dp)) {
-                TextButton(onClick = onSelectAllSources) { Text("全选可用项") }
-                TextButton(onClick = onClearSources, enabled = selectedKeys.isNotEmpty()) { Text("清空") }
+                TextButton(onClick = onSelectAllSources) { Text(strings.get(R.string.dedup_merge_select_all)) }
+                TextButton(onClick = onClearSources, enabled = selectedKeys.isNotEmpty()) { Text(strings.get(R.string.clear)) }
             }
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 if (sources.isEmpty()) {
-                    item { SheetEmptyText("没有可读取的数据库") }
+                    item { SheetEmptyText(strings.get(R.string.dedup_merge_no_sources)) }
                 }
                 items(sources, key = { it.key }) { source ->
                     ListItem(
@@ -476,9 +490,9 @@ private fun SourceSelectionSheet(
                         supportingContent = {
                             Text(
                                 if (source.key == targetSourceKey) {
-                                    "当前目标数据库，选为来源会取消目标选择"
+                                    strings.get(R.string.dedup_merge_source_is_target)
                                 } else {
-                                    "${source.kind.label()} · ${source.countSummary()}"
+                                    "${source.kind.label()} · ${source.countSummary(strings)}"
                                 },
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
@@ -510,6 +524,7 @@ private fun TargetSelectionSheet(
     onCreateMdbxTarget: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -517,9 +532,9 @@ private fun TargetSelectionSheet(
                 .fillMaxHeight(0.8f)
                 .navigationBarsPadding()
         ) {
-            SheetHeader("目标数据库", "只向目标新增内容", onDismiss)
+            SheetHeader(strings.get(R.string.dedup_merge_target_title), strings.get(R.string.dedup_merge_target_add_only), onDismiss)
             Text(
-                "Monica 本地和 MDBX 支持写入；KeePass 与 Bitwarden 只作为来源。",
+                strings.get(R.string.dedup_merge_target_support),
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -534,9 +549,9 @@ private fun TargetSelectionSheet(
                         supportingContent = {
                             Text(
                                 if (target.sourceKey in selectedSourceKeys) {
-                                    "选择后会从来源中移除 · ${target.countSummary()}"
+                                    strings.get(R.string.dedup_merge_target_is_source, target.countSummary(strings))
                                 } else {
-                                    target.countSummary()
+                                    target.countSummary(strings)
                                 },
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
@@ -559,7 +574,7 @@ private fun TargetSelectionSheet(
             ) {
                 Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("新建 MDBX 目标数据库")
+                Text(strings.get(R.string.dedup_merge_create_target))
             }
         }
     }
@@ -573,6 +588,7 @@ private fun MergePreviewSheet(
     onFilterSelected: (DedupPreviewFilter) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     val passwords = plan.previewPasswords.filter { selectedFilter.matches(it.existsInTarget, it.conflictFields) }
     val secureItems = plan.previewSecureItems.filter { selectedFilter.matches(it.existsInTarget, it.conflictFields) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -583,8 +599,8 @@ private fun MergePreviewSheet(
                 .navigationBarsPadding()
         ) {
             SheetHeader(
-                title = "合并明细",
-                subtitle = "${plan.previewPasswords.size + plan.previewSecureItems.size} 条内容",
+                title = strings.get(R.string.dedup_merge_preview_title),
+                subtitle = strings.get(R.string.dedup_merge_items_count, plan.previewPasswords.size + plan.previewSecureItems.size),
                 onDismiss = onDismiss
             )
             FlowRow(
@@ -596,7 +612,7 @@ private fun MergePreviewSheet(
                     FilterChip(
                         selected = selectedFilter == filter,
                         onClick = { onFilterSelected(filter) },
-                        label = { Text(filter.label(plan)) }
+                        label = { Text(filter.label(plan, strings)) }
                     )
                 }
             }
@@ -606,7 +622,7 @@ private fun MergePreviewSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (passwords.isEmpty() && secureItems.isEmpty()) {
-                    item { SheetEmptyText("当前筛选没有条目") }
+                    item { SheetEmptyText(strings.get(R.string.dedup_merge_filter_empty)) }
                 }
                 items(passwords, key = { "password:${it.mergeKey}" }) { resolved ->
                     PasswordPreviewRow(resolved)
@@ -622,6 +638,7 @@ private fun MergePreviewSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WarningSheet(warnings: List<String>, onDismiss: () -> Unit) {
+    val strings = rememberScreenStrings()
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -629,7 +646,7 @@ private fun WarningSheet(warnings: List<String>, onDismiss: () -> Unit) {
                 .fillMaxHeight(0.72f)
                 .navigationBarsPadding()
         ) {
-            SheetHeader("合并说明", "${warnings.size} 条", onDismiss)
+            SheetHeader(strings.get(R.string.dedup_merge_warnings_title), strings.get(R.string.dedup_merge_record_count, warnings.size), onDismiss)
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -658,6 +675,7 @@ private fun WarningSheet(warnings: List<String>, onDismiss: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FailureSheet(result: DedupMergeExecutionResult, onDismiss: () -> Unit) {
+    val strings = rememberScreenStrings()
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -665,7 +683,7 @@ private fun FailureSheet(result: DedupMergeExecutionResult, onDismiss: () -> Uni
                 .fillMaxHeight(0.8f)
                 .navigationBarsPadding()
         ) {
-            SheetHeader("失败记录", "${result.failures.size} 条", onDismiss)
+            SheetHeader(strings.get(R.string.dedup_merge_failures_title), strings.get(R.string.dedup_merge_record_count, result.failures.size), onDismiss)
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -689,6 +707,7 @@ private fun FailureSheet(result: DedupMergeExecutionResult, onDismiss: () -> Uni
 
 @Composable
 private fun SheetHeader(title: String, subtitle: String, onDismiss: () -> Unit) {
+    val strings = rememberScreenStrings()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -700,7 +719,7 @@ private fun SheetHeader(title: String, subtitle: String, onDismiss: () -> Unit) 
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        TextButton(onClick = onDismiss) { Text("完成") }
+        TextButton(onClick = onDismiss) { Text(strings.get(R.string.dedup_merge_done)) }
     }
 }
 
@@ -723,11 +742,11 @@ private fun DedupPreviewFilter.matches(existsInTarget: Boolean, conflictFields: 
     DedupPreviewFilter.SKIP -> existsInTarget
 }
 
-private fun DedupPreviewFilter.label(plan: DedupMergePlan): String = when (this) {
-    DedupPreviewFilter.ALL -> "全部 ${plan.previewPasswords.size + plan.previewSecureItems.size}"
-    DedupPreviewFilter.WRITE -> "写入 ${plan.writableItems}"
-    DedupPreviewFilter.CONFLICT -> "冲突 ${plan.conflictGroupsTotal}"
-    DedupPreviewFilter.SKIP -> "跳过 ${plan.targetExistingDuplicates + plan.targetExistingSecureItems}"
+private fun DedupPreviewFilter.label(plan: DedupMergePlan, strings: StringResolver): String = when (this) {
+    DedupPreviewFilter.ALL -> strings.get(R.string.dedup_merge_filter_all, plan.previewPasswords.size + plan.previewSecureItems.size)
+    DedupPreviewFilter.WRITE -> strings.get(R.string.dedup_merge_filter_write, plan.writableItems)
+    DedupPreviewFilter.CONFLICT -> strings.get(R.string.dedup_merge_filter_conflict, plan.conflictGroupsTotal)
+    DedupPreviewFilter.SKIP -> strings.get(R.string.dedup_merge_filter_skip, plan.targetExistingDuplicates + plan.targetExistingSecureItems)
 }
 
 @Composable
@@ -736,14 +755,15 @@ private fun ConflictPolicyPanel(
     enabled: Boolean,
     onSelected: (DedupConflictPolicy) -> Unit
 ) {
+    val strings = rememberScreenStrings()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("冲突时优先保留", style = MaterialTheme.typography.labelLarge)
+        Text(strings.get(R.string.dedup_merge_policy_title), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = selected == DedupConflictPolicy.MOST_COMPLETE,
                 onClick = { onSelected(DedupConflictPolicy.MOST_COMPLETE) },
                 enabled = enabled,
-                label = { Text("内容更完整") },
+                label = { Text(strings.get(R.string.dedup_merge_policy_complete)) },
                 leadingIcon = if (selected == DedupConflictPolicy.MOST_COMPLETE) {
                     { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 } else null
@@ -752,14 +772,14 @@ private fun ConflictPolicyPanel(
                 selected = selected == DedupConflictPolicy.NEWEST,
                 onClick = { onSelected(DedupConflictPolicy.NEWEST) },
                 enabled = enabled,
-                label = { Text("最近更新") },
+                label = { Text(strings.get(R.string.dedup_merge_policy_newest)) },
                 leadingIcon = if (selected == DedupConflictPolicy.NEWEST) {
                     { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
                 } else null
             )
         }
         Text(
-            "仅决定同一条目字段冲突时的基础版本；空字段仍会从其他副本补全。",
+            strings.get(R.string.dedup_merge_policy_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -768,6 +788,7 @@ private fun ConflictPolicyPanel(
 
 @Composable
 private fun MergeSummaryPanel(uiState: DedupEngineUiState) {
+    val strings = rememberScreenStrings()
     val plan = uiState.mergePlan
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -781,12 +802,12 @@ private fun MergeSummaryPanel(uiState: DedupEngineUiState) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("合并预览", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(strings.get(R.string.dedup_merge_summary_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(
                         when {
-                            uiState.isExecutingMerge -> "正在写入目标数据库"
-                            uiState.isAnalyzing -> "正在重新分析"
-                            else -> uiState.selectedTargetOption?.label ?: "尚未选择目标数据库"
+                            uiState.isExecutingMerge -> strings.get(R.string.dedup_merge_writing_target)
+                            uiState.isAnalyzing -> strings.get(R.string.dedup_merge_analyzing)
+                            else -> uiState.selectedTargetOption?.label ?: strings.get(R.string.dedup_merge_target_empty)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -799,12 +820,12 @@ private fun MergeSummaryPanel(uiState: DedupEngineUiState) {
                 }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryPill("来源", plan.totalSourceItems)
-                SummaryPill("将写入", plan.writableItems)
-                SummaryPill("目标已有", plan.targetExistingDuplicates + plan.targetExistingSecureItems)
-                SummaryPill("重复组", plan.duplicateGroupsTotal)
-                SummaryPill("冲突组", plan.conflictGroupsTotal)
-                if (plan.unsupportedSourcePasskeys > 0) SummaryPill("不支持", plan.unsupportedSourcePasskeys)
+                SummaryPill(strings.get(R.string.dedup_merge_summary_sources), plan.totalSourceItems)
+                SummaryPill(strings.get(R.string.dedup_merge_summary_write), plan.writableItems)
+                SummaryPill(strings.get(R.string.dedup_merge_summary_existing), plan.targetExistingDuplicates + plan.targetExistingSecureItems)
+                SummaryPill(strings.get(R.string.dedup_merge_summary_duplicates), plan.duplicateGroupsTotal)
+                SummaryPill(strings.get(R.string.dedup_merge_summary_conflicts), plan.conflictGroupsTotal)
+                if (plan.unsupportedSourcePasskeys > 0) SummaryPill(strings.get(R.string.dedup_merge_summary_unsupported), plan.unsupportedSourcePasskeys)
             }
         }
     }
@@ -812,12 +833,13 @@ private fun MergeSummaryPanel(uiState: DedupEngineUiState) {
 
 @Composable
 private fun SummaryPill(label: String, value: Int) {
+    val strings = rememberScreenStrings()
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
     ) {
         Text(
-            "$label $value",
+            strings.get(R.string.dedup_merge_label_count, label, value),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelMedium
         )
@@ -826,12 +848,14 @@ private fun SummaryPill(label: String, value: Int) {
 
 @Composable
 private fun MergeBottomBar(uiState: DedupEngineUiState, onReviewAndMerge: () -> Unit) {
+    val strings = rememberScreenStrings()
     val validation = uiState.validation
     Surface(shadowElevation = 4.dp, color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Button(
@@ -843,16 +867,16 @@ private fun MergeBottomBar(uiState: DedupEngineUiState, onReviewAndMerge: () -> 
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     when {
-                        uiState.isExecutingMerge -> "正在合并"
-                        uiState.selectedMergeSourceKeys.size < 2 -> "请选择至少两个来源数据库"
-                        uiState.selectedMergeTarget == null -> "请选择目标数据库"
-                        uiState.mergePlan.writableItems <= 0 -> "没有需要写入的条目"
-                        else -> "确认并写入 ${uiState.mergePlan.writableItems} 条"
+                        uiState.isExecutingMerge -> strings.get(R.string.dedup_merge_merging)
+                        uiState.selectedMergeSourceKeys.size < 2 -> strings.get(R.string.dedup_merge_need_sources)
+                        uiState.selectedMergeTarget == null -> strings.get(R.string.dedup_merge_need_target)
+                        uiState.mergePlan.writableItems <= 0 -> strings.get(R.string.dedup_merge_nothing_to_write)
+                        else -> strings.get(R.string.dedup_merge_confirm_write, uiState.mergePlan.writableItems)
                     }
                 )
             }
             Text(
-                "执行前会再次扫描目标数据库，避免写入刚刚新增的重复项。",
+                strings.get(R.string.dedup_merge_rescan_hint),
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -867,28 +891,29 @@ private fun MergeConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     val plan = uiState.mergePlan
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Merge, contentDescription = null) },
-        title = { Text("确认合并到 ${uiState.selectedTargetOption?.label.orEmpty()}") },
+        title = { Text(strings.get(R.string.dedup_merge_confirm_title, uiState.selectedTargetOption?.label.orEmpty())) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("${plan.selectedSources.size} 个来源数据库将合并出 ${plan.writableItems} 条新内容。")
+                Text(strings.get(R.string.dedup_merge_confirm_summary, plan.selectedSources.size, plan.writableItems))
                 if (plan.conflictGroupsTotal > 0) {
                     Text(
-                        "${plan.conflictGroupsTotal} 个冲突组将优先保留${uiState.conflictPolicy.label()}的版本。",
+                        strings.get(R.string.dedup_merge_confirm_conflicts, plan.conflictGroupsTotal, uiState.conflictPolicy.label(strings)),
                         color = MaterialTheme.colorScheme.tertiary
                     )
                 }
                 if (plan.skippedItems > 0) {
-                    Text("${plan.skippedItems} 条目标已有或不支持的内容不会写入。")
+                    Text(strings.get(R.string.dedup_merge_confirm_skipped, plan.skippedItems))
                 }
-                Text("来源数据库不会被修改。此操作只向目标数据库新增条目。", fontWeight = FontWeight.SemiBold)
+                Text(strings.get(R.string.dedup_merge_confirm_source_unchanged), fontWeight = FontWeight.SemiBold)
             }
         },
-        confirmButton = { Button(onClick = onConfirm) { Text("开始合并") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+        confirmButton = { Button(onClick = onConfirm) { Text(strings.get(R.string.dedup_merge_start)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(strings.get(R.string.cancel)) } }
     )
 }
 
@@ -900,12 +925,13 @@ private fun ExecutionProgressPanel(
     fraction: Float,
     onCancel: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("正在合并 $completed / $total", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(strings.get(R.string.dedup_merge_progress, completed, total), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
             Text(
                 currentLabel,
@@ -913,7 +939,7 @@ private fun ExecutionProgressPanel(
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodySmall
             )
-            TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.End)) { Text("停止") }
+            TextButton(onClick = onCancel, modifier = Modifier.align(Alignment.End)) { Text(strings.get(R.string.dedup_merge_stop_action)) }
         }
     }
 }
@@ -923,6 +949,7 @@ private fun ExecutionResultPanel(
     result: DedupMergeExecutionResult,
     onViewFailures: () -> Unit
 ) {
+    val strings = rememberScreenStrings()
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
@@ -941,16 +968,16 @@ private fun ExecutionResultPanel(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        if (result.failedItems > 0) "合并完成，但有失败项" else "合并完成",
+                        if (result.failedItems > 0) strings.get(R.string.dedup_merge_result_partial) else strings.get(R.string.dedup_merge_result_complete),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Text("${result.targetLabel} · 写入 ${result.insertedItems} 条 · 跳过 ${result.skippedExistingItems} 条")
+                    Text(strings.get(R.string.dedup_merge_result_summary, result.targetLabel, result.insertedItems, result.skippedExistingItems))
                 }
             }
             if (result.failures.isNotEmpty()) {
                 TextButton(onClick = onViewFailures, modifier = Modifier.align(Alignment.End)) {
-                    Text("查看 ${result.failures.size} 条失败记录")
+                    Text(strings.get(R.string.dedup_merge_view_failures, result.failures.size))
                     Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
                 }
             }
@@ -977,8 +1004,9 @@ private fun MessagePanel(icon: ImageVector, tint: Color, text: String) {
 
 @Composable
 private fun PasswordPreviewRow(resolved: DedupResolvedPassword) {
+    val strings = rememberScreenStrings()
     PreviewRow(
-        title = resolved.entry.title.ifBlank { "未命名密码" },
+        title = resolved.entry.title.ifBlank { strings.get(R.string.dedup_merge_untitled_password) },
         subtitle = listOf(resolved.entry.username, resolved.entry.website).filter { it.isNotBlank() }.joinToString(" · "),
         sourceLabels = resolved.sourceLabels,
         copyCount = resolved.sourceEntryIds.size,
@@ -989,9 +1017,10 @@ private fun PasswordPreviewRow(resolved: DedupResolvedPassword) {
 
 @Composable
 private fun SecureItemPreviewRow(resolved: DedupResolvedSecureItem) {
+    val strings = rememberScreenStrings()
     PreviewRow(
-        title = resolved.item.title.ifBlank { resolved.item.itemType.label() },
-        subtitle = resolved.item.itemType.label(),
+        title = resolved.item.title.ifBlank { resolved.item.itemType.dedupLabel(strings) },
+        subtitle = resolved.item.itemType.dedupLabel(strings),
         sourceLabels = resolved.sourceLabels,
         copyCount = resolved.sourceItemIds.size,
         conflictFields = resolved.conflictFields,
@@ -1008,6 +1037,7 @@ private fun PreviewRow(
     conflictFields: Set<String>,
     existsInTarget: Boolean
 ) {
+    val strings = rememberScreenStrings()
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -1036,7 +1066,7 @@ private fun PreviewRow(
                     color = if (existsInTarget) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        if (existsInTarget) "跳过" else "写入",
+                        if (existsInTarget) strings.get(R.string.dedup_merge_skip) else strings.get(R.string.dedup_merge_write),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium
                     )
@@ -1044,15 +1074,15 @@ private fun PreviewRow(
             }
             Text(
                 buildList {
-                    add(sourceLabels.joinToString("、"))
-                    if (copyCount > 1) add("$copyCount 个副本")
+                    add(sourceLabels.joinToString(strings.get(R.string.dedup_merge_list_separator)))
+                    if (copyCount > 1) add(strings.get(R.string.dedup_merge_copies_count, copyCount))
                 }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (conflictFields.isNotEmpty()) {
                 Text(
-                    "冲突字段：${conflictFields.joinToString("、")}",
+                    strings.get(R.string.dedup_merge_conflict_fields, conflictFields.joinToString(strings.get(R.string.dedup_merge_list_separator))),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary
                 )
@@ -1076,27 +1106,24 @@ private fun DedupMergeSourceKind.label(): String = when (this) {
     DedupMergeSourceKind.BITWARDEN -> "Bitwarden"
 }
 
-private fun DedupConflictPolicy.label(): String = when (this) {
-    DedupConflictPolicy.MOST_COMPLETE -> "内容更完整"
-    DedupConflictPolicy.NEWEST -> "最近更新"
+private fun DedupConflictPolicy.label(strings: StringResolver): String = when (this) {
+    DedupConflictPolicy.MOST_COMPLETE -> strings.get(R.string.dedup_merge_policy_complete)
+    DedupConflictPolicy.NEWEST -> strings.get(R.string.dedup_merge_policy_newest)
 }
 
-private fun DedupMergeSourceOption.countSummary(): String = itemCountParts(passwordCount, secureItemCount, passkeyCount)
+private fun DedupMergeSourceOption.countSummary(strings: StringResolver): String =
+    itemCountParts(strings, passwordCount, secureItemCount, passkeyCount)
 
-private fun DedupMergeTargetOption.countSummary(): String = itemCountParts(passwordCount, secureItemCount, passkeyCount)
+private fun DedupMergeTargetOption.countSummary(strings: StringResolver): String =
+    itemCountParts(strings, passwordCount, secureItemCount, passkeyCount)
 
-private fun itemCountParts(passwordCount: Int, secureItemCount: Int, passkeyCount: Int): String = buildList {
-    add("$passwordCount 条密码")
-    if (secureItemCount > 0) add("$secureItemCount 个安全项")
-    if (passkeyCount > 0) add("$passkeyCount 个通行密钥")
+private fun itemCountParts(
+    strings: StringResolver,
+    passwordCount: Int,
+    secureItemCount: Int,
+    passkeyCount: Int
+): String = buildList {
+    add(strings.get(R.string.dedup_merge_password_count, passwordCount))
+    if (secureItemCount > 0) add(strings.get(R.string.dedup_merge_secure_item_count, secureItemCount))
+    if (passkeyCount > 0) add(strings.get(R.string.dedup_merge_passkey_count, passkeyCount))
 }.joinToString(" · ")
-
-private fun ItemType.label(): String = when (this) {
-    ItemType.PASSWORD -> "密码"
-    ItemType.TOTP -> "验证器"
-    ItemType.BANK_CARD -> "银行卡"
-    ItemType.DOCUMENT -> "证件"
-    ItemType.BILLING_ADDRESS -> "账单地址"
-    ItemType.PAYMENT_ACCOUNT -> "支付方式"
-    ItemType.NOTE -> "笔记"
-}

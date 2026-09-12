@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.components
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -37,6 +38,7 @@ fun MasterPasswordTextField(
     leadingIcon: (@Composable (() -> Unit))? = null,
     focusRequester: FocusRequester? = null,
     imeAction: ImeAction = ImeAction.Done,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     showVisibilityToggle: Boolean = true,
     onUnsupportedCharacterAttempt: (() -> Unit)? = null
 ) {
@@ -90,6 +92,7 @@ fun MasterPasswordTextField(
             capitalization = KeyboardCapitalization.None,
             autoCorrectEnabled = false,
             imeAction = imeAction
-        )
+        ),
+        keyboardActions = keyboardActions
     )
 }

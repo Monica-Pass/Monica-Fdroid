@@ -71,11 +71,62 @@ class QrScanHealthPolicyTest {
     }
 
     @Test
-    fun pausedPreviewNeverTriggersRecovery() {
+    fun backgroundedCameraNeverTriggersRecovery() {
         val policy = QrScanHealthPolicy()
         policy.onSessionStarted(nowMs = 0L)
         policy.onFrameStarted(nowMs = 100L)
 
-        assertEquals(QrScanHealthAction.None, policy.nextAction(10_000L, previewActive = false))
+        assertEquals(
+            QrScanHealthAction.None,
+            policy.nextAction(10_000L, previewActive = false, lifecycleActive = false)
+        )
+    }
+
+    @Test
+    fun foregroundCameraThatNeverStartsRecoversAfterStartupGrace() {
+        val policy = QrScanHealthPolicy()
+        policy.onSessionStarted(0L)
+        assertEquals(QrScanHealthAction.None, policy.nextAction(7_999L, previewActive = false))
+        assertEquals(
+            QrScanHealthAction.Restart(QrScanRestartReason.FrameStreamStopped),
+            policy.nextAction(8_000L, previewActive = false)
+        )
+        assertEquals(QrScanHealthAction.None, policy.nextAction(9_000L, previewActive = false))
+    }
+
+    @Test
+    fun losingBothPreviewAndFramesStillRequestsRecovery() {
+        val policy = QrScanHealthPolicy()
+        policy.onSessionStarted(0L)
+        policy.onFrameStarted(100L)
+        policy.onFrameCompleted(120L, succeeded = true)
+        assertEquals(
+            QrScanHealthAction.Restart(QrScanRestartReason.FrameStreamStopped),
+            policy.nextAction(3_000L, previewActive = false)
+        )
+    }
+
+    @Test
+    fun aStreamingPreviewWithoutAnalysisFramesAlsoNeedsRecovery() {
+        val policy = QrScanHealthPolicy()
+        policy.onSessionStarted(0L)
+        assertEquals(
+            QrScanHealthAction.Restart(QrScanRestartReason.FrameStreamStopped),
+            policy.nextAction(8_000L, previewActive = true)
+        )
+    }
+
+    @Test
+    fun resumeGivesTheCameraTimeToStartAgain() {
+        val policy = QrScanHealthPolicy()
+        policy.onSessionStarted(0L)
+        policy.onFrameStarted(100L)
+        policy.onFrameCompleted(120L, succeeded = true)
+        assertEquals(QrScanHealthAction.None, policy.nextAction(30_000L, false, lifecycleActive = false))
+        policy.onSessionStarted(30_100L)
+        assertEquals(QrScanHealthAction.None, policy.nextAction(31_000L, false))
+        policy.onFrameStarted(31_100L)
+        policy.onFrameCompleted(31_120L, succeeded = true)
+        assertEquals(QrScanHealthAction.None, policy.nextAction(31_500L, true))
     }
 }

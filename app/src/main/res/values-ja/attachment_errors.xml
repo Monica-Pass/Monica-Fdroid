@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">Bitwarden の保管庫がロックされているか、セッションの有効期限が切れています。ロックを解除するか、再度ログインしてください。</string>
+    <string name="attachment_error_remote_data">サーバーから返された添付ファイル情報が不完全です。保管庫を同期してから再試行してください。</string>
+    <string name="attachment_error_unsupported_encryption">この添付ファイルの暗号化形式（タイプ %1$d）は未対応です。公式クライアントでエクスポートし、再度アップロードしてください。</string>
+    <string name="attachment_error_unknown">添付ファイルの操作に失敗しました。再試行してください。</string>
+    <string name="attachment_error_decryption_failed">添付ファイルの復号または整合性の検証に失敗しました。保管庫を同期してから再試行してください。</string>
+    <string name="password_batch_attachment_failure">%1$d 件の項目の添付ファイルを転送できませんでした。%2$s</string>
+</resources>

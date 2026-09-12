@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -16,6 +18,7 @@ import takagi.ru.monica.attachments.model.AttachmentDownloadState
 import takagi.ru.monica.attachments.model.AttachmentError
 import takagi.ru.monica.attachments.model.AttachmentOwner
 import takagi.ru.monica.attachments.model.AttachmentSource
+import takagi.ru.monica.attachments.model.normalizeAttachmentFailure
 import takagi.ru.monica.attachments.repository.AttachmentRepository
 import takagi.ru.monica.attachments.storage.AttachmentKeyVault
 import takagi.ru.monica.attachments.storage.AttachmentPreviewCache
@@ -111,7 +114,9 @@ class AttachmentFacade(
         val cipherId: String,
         /** 用于包裹/解包附件密钥的 cipher 或 user key。 */
         val wrappingKey: SymmetricCryptoKey,
-        val isOnline: Boolean
+        val isOnline: Boolean,
+        /** Returns an owned current cipher key; evaluated off the UI thread when bytes are needed. */
+        val wrappingKeyProvider: (suspend () -> SymmetricCryptoKey)? = null
     )
 
     data class KeePassContext(
@@ -227,7 +232,8 @@ class AttachmentFacade(
                                 httpClient = bw.httpClient,
                                 accessToken = bw.accessToken,
                                 cipherId = bw.cipherId,
-                                wrappingKey = bw.wrappingKey
+                                wrappingKey = bw.wrappingKey,
+                                wrappingKeyProvider = bw.wrappingKeyProvider
                             )
                         )
                     }
@@ -331,7 +337,8 @@ class AttachmentFacade(
                                 httpClient = bw.httpClient,
                                 accessToken = bw.accessToken,
                                 cipherId = bw.cipherId,
-                                wrappingKey = bw.wrappingKey
+                                wrappingKey = bw.wrappingKey,
+                                wrappingKeyProvider = bw.wrappingKeyProvider
                             )
                         )
                     }
@@ -431,7 +438,8 @@ class AttachmentFacade(
                             httpClient = targetContext.httpClient,
                             accessToken = targetContext.accessToken,
                             cipherId = targetContext.cipherId,
-                            wrappingKey = targetContext.wrappingKey
+                            wrappingKey = targetContext.wrappingKey,
+                            wrappingKeyProvider = targetContext.wrappingKeyProvider
                         )
                     )
                 }
@@ -498,7 +506,7 @@ class AttachmentFacade(
                     downloadState = AttachmentDownloadState.DOWNLOADED.name
                 )
                 AttachmentSource.BITWARDEN -> {
-                    val bw = bitwardenContext ?: throw AttachmentError.IoError
+                    val bw = bitwardenContext ?: throw AttachmentError.BitwardenLocked
                     if (!bw.isOnline) throw AttachmentError.Offline
                     val remote = CipherAttachmentApiData(
                         id = existing.bitwardenAttachmentId ?: throw AttachmentError.CryptoError,
@@ -515,7 +523,8 @@ class AttachmentFacade(
                         httpClient = bw.httpClient,
                         accessToken = bw.accessToken,
                         cipherId = bw.cipherId,
-                        wrappingKey = bw.wrappingKey
+                        wrappingKey = bw.wrappingKey,
+                        wrappingKeyProvider = bw.wrappingKeyProvider
                     )
                 }
                 AttachmentSource.KEEPASS -> {
@@ -527,9 +536,23 @@ class AttachmentFacade(
                     )
                 }
             }
-        } catch (e: Throwable) {
-            repository.markDownloadState(attachmentId, AttachmentDownloadState.FAILED)
+        } catch (e: CancellationException) {
+            withContext(NonCancellable) {
+                repository.markDownloadState(attachmentId, AttachmentDownloadState.PENDING)
+            }
             throw e
+        } catch (e: Exception) {
+            repository.markDownloadState(attachmentId, AttachmentDownloadState.FAILED)
+            val failure = normalizeAttachmentFailure(e)
+            AttachmentLogger.logFailure(
+                event = AttachmentLogger.Event.DOWNLOAD,
+                attachmentId = attachmentId,
+                source = existing.sourceEnum,
+                error = failure,
+                httpStatus = (failure as? AttachmentError.NetworkError)?.httpStatus,
+                extras = mapOf("causeClass" to e.javaClass.simpleName)
+            )
+            throw failure
         }
         repository.update(refreshed)
         refreshed.copy(id = attachmentId)
@@ -921,7 +944,8 @@ class AttachmentFacade(
                             httpClient = targetContext.httpClient,
                             accessToken = targetContext.accessToken,
                             cipherId = targetContext.cipherId,
-                            wrappingKey = targetContext.wrappingKey
+                            wrappingKey = targetContext.wrappingKey,
+                            wrappingKeyProvider = targetContext.wrappingKeyProvider
                         )
                     )
                 }
@@ -1241,7 +1265,7 @@ class AttachmentFacade(
             AttachmentSource.LOCAL -> throw AttachmentError.IoError
             AttachmentSource.BITWARDEN -> ensureDownloaded(
                 attachmentId = attachment.id,
-                bitwardenContext = sourceBitwardenContext ?: throw AttachmentError.IoError
+                bitwardenContext = sourceBitwardenContext ?: throw AttachmentError.BitwardenLocked
             )
             AttachmentSource.KEEPASS -> ensureDownloaded(
                 attachmentId = attachment.id,

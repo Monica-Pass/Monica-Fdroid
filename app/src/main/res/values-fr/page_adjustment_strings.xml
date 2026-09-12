@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="page_adjustment_preview_games">Jeux</string>
+  <string name="page_adjustment_preview_folder">Dossier 1</string>
+  <string name="page_adjustment_preview_subfolder">Sous-dossier</string>
+</resources>

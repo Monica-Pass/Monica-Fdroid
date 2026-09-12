@@ -31,6 +31,12 @@ import takagi.ru.monica.data.model.StorageTarget
 import takagi.ru.monica.data.model.toStorageTarget
 import takagi.ru.monica.notes.domain.DecodedNoteContent
 import takagi.ru.monica.notes.domain.NoteContentCodec
+import takagi.ru.monica.notes.ui.model.NoteListItemUiModel
+import takagi.ru.monica.notes.ui.model.NoteListProjection
+import takagi.ru.monica.notes.ui.model.NoteListProjector
+import takagi.ru.monica.notes.ui.model.NoteListQuery
+import takagi.ru.monica.notes.ui.model.NoteSnapshotCache
+import takagi.ru.monica.notes.ui.model.toNoteListItemUiModel
 import takagi.ru.monica.repository.KeePassCompatibilityBridge
 import takagi.ru.monica.repository.KeePassWorkspaceRepository
 import takagi.ru.monica.repository.PasswordRepository
@@ -63,6 +69,7 @@ data class NoteDraftStorageTarget(
 data class ParsedNoteItem(
     val item: SecureItem,
     val content: DecodedNoteContent,
+    val uiModel: NoteListItemUiModel = item.toNoteListItemUiModel(content),
 )
 
 class NoteViewModel(
@@ -283,15 +290,13 @@ class NoteViewModel(
             initialValue = emptyList()
         )
 
+    private val noteSnapshotCache = NoteSnapshotCache()
+    private val noteListProjector = NoteListProjector()
+    private val noteListQuery = MutableStateFlow(NoteListQuery())
     private val parsedNotesStateSource: Flow<LoadedListState<ParsedNoteItem>> = allNotesSource
         .map { items ->
             LoadedListState(
-                items = items.map { item ->
-                    ParsedNoteItem(
-                        item = item,
-                        content = NoteContentCodec.decodeFromItem(item),
-                    )
-                },
+                items = noteSnapshotCache.prepare(items),
                 isReady = true,
             )
         }
@@ -311,6 +316,17 @@ class NoteViewModel(
             started = noteListSharingStarted,
             initialValue = false,
         )
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    internal val noteListProjectionState: StateFlow<NoteListProjection> =
+        combine(parsedNotesState, noteListQuery) { notes, query -> notes to query }
+            .mapLatest { (notes, query) -> noteListProjector.project(notes, query) }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, noteListSharingStarted, NoteListProjection())
+
+    internal fun updateNoteListQuery(query: NoteListQuery) {
+        noteListQuery.value = query
+    }
 
     val isLoading: StateFlow<Boolean> = parsedNotesReady
         .map { ready -> !ready }

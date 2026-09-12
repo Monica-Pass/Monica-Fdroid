@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -86,7 +87,7 @@ internal fun BoxScope.MainScreenFabOverlay(
     onFabExpandedChange: (Boolean) -> Unit,
     fastScrollStripVisible: Boolean,
     onFastScrollStripVisibleChange: (Boolean) -> Unit,
-    fastScrollStripProgress: Float,
+    fastScrollStripProgress: () -> Float,
     onFastScrollProgressChange: (Float) -> Unit,
     fastScrollIndicatorLabel: String?,
     vaultV2FastScrollbarInteracting: Boolean,
@@ -109,10 +110,10 @@ internal fun BoxScope.MainScreenFabOverlay(
     allowVaultFolderCreation: Boolean,
     passwordPageAggregateEnabled: Boolean,
     passwordNewItemDefaults: NewItemStorageDefaults,
-    onPreparePasswordAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
-    onPrepareTotpAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
-    onPrepareNoteAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
-    onPrepareWalletAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
+    onPreparePasswordAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
+    onPrepareTotpAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
+    onPrepareNoteAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
+    onPrepareWalletAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
     onNoteAddOpen: () -> Unit,
     onSendAddOpen: () -> Unit,
     onGeneratorRefresh: () -> Unit,
@@ -443,7 +444,7 @@ internal fun BoxScope.MainScreenFabOverlay(
 
             FastScrollPanel(
                 visible = fastScrollStripVisible,
-                progress = fastScrollStripProgress,
+                progress = if (fastScrollStripVisible) fastScrollStripProgress() else 0f,
                 indicatorLabel = fastScrollIndicatorLabel,
                 onProgressChange = onFastScrollProgressChange,
                 onDismiss = { onFastScrollStripVisibleChange(false) },
@@ -691,10 +692,10 @@ internal fun MainScreenAddFab(
     allowVaultFolderCreation: Boolean,
     passwordPageAggregateEnabled: Boolean,
     passwordNewItemDefaults: NewItemStorageDefaults,
-    onPreparePasswordAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
-    onPrepareTotpAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
-    onPrepareNoteAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
-    onPrepareWalletAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?) -> Unit,
+    onPreparePasswordAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
+    onPrepareTotpAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
+    onPrepareNoteAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
+    onPrepareWalletAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit,
     onNoteAddOpen: () -> Unit,
     onSendAddOpen: () -> Unit,
     onGeneratorRefresh: () -> Unit,
@@ -786,7 +787,8 @@ internal fun MainScreenAddFab(
                                                 aggregateStorageDefaults.mdbxDatabaseId,
                                                 aggregateStorageDefaults.mdbxFolderId,
                                                 aggregateStorageDefaults.bitwardenVaultId,
-                                                aggregateStorageDefaults.bitwardenFolderId
+                                                aggregateStorageDefaults.bitwardenFolderId,
+                                                aggregateStorageDefaults.explicit
                                             )
                                         }
                                         onPasswordAddOpen()
@@ -807,7 +809,8 @@ internal fun MainScreenAddFab(
                                                 aggregateStorageDefaults.mdbxDatabaseId,
                                                 aggregateStorageDefaults.mdbxFolderId,
                                                 aggregateStorageDefaults.bitwardenVaultId,
-                                                aggregateStorageDefaults.bitwardenFolderId
+                                                aggregateStorageDefaults.bitwardenFolderId,
+                                                aggregateStorageDefaults.explicit
                                             )
                                         }
                                         onNoteAddOpen()
@@ -828,7 +831,8 @@ internal fun MainScreenAddFab(
                                                 aggregateStorageDefaults.mdbxDatabaseId,
                                                 aggregateStorageDefaults.mdbxFolderId,
                                                 aggregateStorageDefaults.bitwardenVaultId,
-                                                aggregateStorageDefaults.bitwardenFolderId
+                                                aggregateStorageDefaults.bitwardenFolderId,
+                                                aggregateStorageDefaults.explicit
                                             )
                                         }
                                         onTotpAddOpen()
@@ -849,7 +853,8 @@ internal fun MainScreenAddFab(
                                                 aggregateStorageDefaults.mdbxDatabaseId,
                                                 aggregateStorageDefaults.mdbxFolderId,
                                                 aggregateStorageDefaults.bitwardenVaultId,
-                                                aggregateStorageDefaults.bitwardenFolderId
+                                                aggregateStorageDefaults.bitwardenFolderId,
+                                                aggregateStorageDefaults.explicit
                                             )
                                         }
                                         onNavigateToWalletAdd(compactWalletAddType)
@@ -891,7 +896,8 @@ internal fun MainScreenAddFab(
                                 aggregateStorageDefaults.mdbxDatabaseId,
                                 aggregateStorageDefaults.mdbxFolderId,
                                 aggregateStorageDefaults.bitwardenVaultId,
-                                aggregateStorageDefaults.bitwardenFolderId
+                                aggregateStorageDefaults.bitwardenFolderId,
+                                aggregateStorageDefaults.explicit
                             )
                         }
                         onPasswordAddOpen()
@@ -1066,7 +1072,7 @@ internal fun VaultV2FabMenu(
             }
 
             Surface(
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(56.dp).testTag("vault_add_fab"),
                 shape = RoundedCornerShape(animatedCornerRadius),
                 color = fabContainerColor,
                 contentColor = fabIconTint,

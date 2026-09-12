@@ -192,7 +192,7 @@ class MonicaImeRegressionGuardTest {
             .substringBefore("@Composable\nprivate fun CardWalletPane")
         val cardWalletPane = uiSource
             .substringAfter("private fun CardWalletPane(")
-            .substringBefore("@Composable\nprivate fun DatabaseScopeFilterRow")
+            .substringBefore("@Composable\nprivate fun ImeEmptyState")
 
         assertTrue(
             "Authenticator loading must win over an empty-state card during the initial refresh.",
@@ -220,13 +220,14 @@ class MonicaImeRegressionGuardTest {
         )
         assertTrue(
             "Switching back to an already loaded keyboard panel must retain its content instead of showing a spinner again.",
-            serviceSource.contains("private val loadedVaultPanels = mutableSetOf<MonicaImePanel>()") &&
+            serviceSource.contains("private val loadedVaultPanels = mutableMapOf<MonicaImePanel, ImeVaultPresentation>()") &&
                 serviceSource.contains("this !in loadedVaultPanels") &&
-                serviceSource.contains("loadedVaultPanels += currentState.activePanel")
+                serviceSource.contains("loadedVaultPanels[currentState.activePanel] = currentState")
         )
         assertTrue(
-            "Already loaded authenticator and card panels should not recompute their list merely because the user switches tabs.",
-            serviceSource.contains("if (requiresInitialLoad || needsPasswordPresentationRefresh)")
+            "Already loaded panels should refresh only when their query, source, or ordering changed.",
+            serviceSource.contains("if (requiresInitialLoad || needsPresentationRefresh)") &&
+                serviceSource.contains("loadedVaultPanels[panel] != nextState.vaultPresentation()")
         )
         assertTrue(
             "A vault data change must clear panel readiness so the next result is never stale.",
@@ -254,7 +255,7 @@ class MonicaImeRegressionGuardTest {
         )
         assertTrue(
             "Password panel needs a visible search control and a dedicated editing toolbar.",
-            uiSource.contains("ImePasswordControls(") &&
+            uiSource.contains("ImeVaultControls(") &&
                 uiSource.contains("ImeSearchToolbar(")
         )
         assertFalse(
@@ -275,20 +276,22 @@ class MonicaImeRegressionGuardTest {
             .substringBefore("@Composable\nprivate fun CardWalletPane")
         val cardWalletPane = uiSource
             .substringAfter("private fun CardWalletPane(")
-            .substringBefore("@Composable\nprivate fun DatabaseScopeFilterRow")
+            .substringBefore("@Composable\nprivate fun ImeEmptyState")
+        val sharedList = uiSource
+            .substringAfter("private fun <T> ImeVaultList(")
+            .substringBefore("@Composable\nprivate fun UnlockedVaultPane")
 
         assertTrue(
             "Authenticator IME list should keep the same right-side navigation bar behavior as the password list.",
-            authenticatorPane.contains("val lazyListState = rememberLazyListState()") &&
-                authenticatorPane.contains("buildImeLetterIndex(itemCount = uiState.authenticatorEntries.size)") &&
-                authenticatorPane.contains("VelocityScrollBar(")
+            authenticatorPane.contains("ImeVaultList(") &&
+                authenticatorPane.contains("title = ::imeAuthenticatorAlphabeticalLabel")
         )
         assertTrue(
             "Card wallet IME list should keep the same right-side navigation bar behavior as the password list.",
-            cardWalletPane.contains("val lazyListState = rememberLazyListState()") &&
-                cardWalletPane.contains("buildImeLetterIndex(itemCount = uiState.cardWalletEntries.size)") &&
-                cardWalletPane.contains("VelocityScrollBar(")
+            cardWalletPane.contains("ImeVaultList(") &&
+                cardWalletPane.contains("title = ::imeCardWalletAlphabeticalLabel")
         )
+        assertTrue(sharedList.contains("rememberLazyListState()") && sharedList.contains("VelocityScrollBar("))
     }
 
     @Test

@@ -818,6 +818,9 @@ class LocalKeePassViewModel(
             .onStart { refreshGroups(databaseId) }
     }
 
+    /** Overview can observe known folders without opening every database. */
+    fun observeCachedGroups(): StateFlow<Map<Long, List<KeePassGroupInfo>>> = _groupsByDatabase.asStateFlow()
+
     fun getRemoteSyncState(databaseId: Long): Flow<KeepassRemoteSyncState?> {
         return appDatabase.keepassRemoteSyncStateDao().getStateFlow(databaseId)
     }

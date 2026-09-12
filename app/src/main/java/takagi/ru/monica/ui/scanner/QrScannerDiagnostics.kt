@@ -24,16 +24,16 @@ internal class QrScannerDiagnostics(
     private val firstEmptyLogged = AtomicBoolean(false)
     private val firstInvalidLogged = AtomicBoolean(false)
 
-    fun logScannerStarted(requestedFormats: Int, decoderFormats: Int) {
-        log("scanner_started", "requested_formats=$requestedFormats decoder_formats=$decoderFormats")
+    fun logScannerStarted(requestedFormats: Int) {
+        log("scanner_started", "requested_formats=$requestedFormats")
     }
 
     fun logSessionStarted(generation: Int) {
         log("session_started", "generation=$generation")
     }
 
-    fun logCameraControllerRequested() {
-        log("camera_controller_requested")
+    fun logCameraControllerRequested(activeFormats: Int) {
+        log("camera_controller_requested", "formats=$activeFormats")
     }
 
     fun logCameraProviderFailed(error: Throwable) {
@@ -117,6 +117,10 @@ internal class QrScannerDiagnostics(
 
     fun logResultAccepted() {
         log("result_accepted", snapshot(processing = false))
+    }
+
+    fun logResultDeliveryFailed(error: Throwable) {
+        log("result_delivery_failed", "error=${error.safeErrorName()}")
     }
 
     fun logGalleryStart() {

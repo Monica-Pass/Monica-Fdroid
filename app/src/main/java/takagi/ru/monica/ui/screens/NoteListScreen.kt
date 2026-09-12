@@ -1,18 +1,14 @@
 package takagi.ru.monica.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -60,12 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
@@ -80,6 +71,7 @@ import takagi.ru.monica.data.resolveOwnership
 import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.ui.BitwardenAutoSyncEffect
+import takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel
 import takagi.ru.monica.data.KeePassStorageLocation
 import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.repository.KeePassCompatibilityBridge
@@ -115,12 +107,12 @@ import takagi.ru.monica.ui.components.PullActionVisualState
 import takagi.ru.monica.ui.components.PullGestureIndicator
 import takagi.ru.monica.bitwarden.sync.SyncStatus
 import takagi.ru.monica.notes.domain.NoteContentCodec
-import takagi.ru.monica.notes.ui.model.NoteListItemUiModel
+import takagi.ru.monica.notes.domain.NoteCategoryFilter
+import takagi.ru.monica.notes.ui.model.NoteListQuery
+import takagi.ru.monica.notes.ui.model.isReadyFor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import takagi.ru.monica.util.VibrationPatterns
-import takagi.ru.monica.utils.SavedCategoryFilterState
-import androidx.lifecycle.viewmodel.compose.viewModel
 import java.util.Locale
 import takagi.ru.monica.ui.password.PasswordTopActionsDropdownMenu
 
@@ -133,13 +125,15 @@ fun NoteListScreen(
     onNavigateToSearchedNote: (Long, String) -> Unit = { noteId, _ -> onNavigateToAddNote(noteId) },
     securityManager: SecurityManager,
     passwordViewModel: takagi.ru.monica.viewmodel.PasswordViewModel,
+    bitwardenViewModel: BitwardenViewModel,
     onSelectionModeChange: (Boolean) -> Unit = {},
+    onBitwardenScopeChanged: (Long?) -> Unit = {},
     showStandaloneSettingsEntry: Boolean = false,
     onOpenStandaloneSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var selectedTag by remember { mutableStateOf<String?>(null) }
+    var selectedTag by rememberSaveable { mutableStateOf<String?>(null) }
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
     val settings by settingsViewModel.settings.collectAsState()
     val isGridLayout = settings.noteGridLayout
@@ -166,9 +160,12 @@ fun NoteListScreen(
         searchQuery = ""
     }
 
-    BackHandler(enabled = isSearchExpanded) {
-        collapseSearch()
+    val exitSelection = {
+        isSelectionMode = false
+        selectedNoteIds = emptySet()
     }
+
+    BackHandler(enabled = isSelectionMode, onBack = exitSelection)
 
     LaunchedEffect(isSelectionMode) {
         onSelectionModeChange(isSelectionMode)
@@ -177,6 +174,7 @@ fun NoteListScreen(
     DisposableEffect(Unit) {
         onDispose {
             onSelectionModeChange(false)
+            onBitwardenScopeChanged(null)
         }
     }
     
@@ -217,30 +215,31 @@ fun NoteListScreen(
     }
     val biometricHelper = remember { BiometricHelper(context) }
     val canUseBiometric = activity != null && settings.biometricEnabled && biometricHelper.isBiometricAvailable()
-    val parsedNotesState by viewModel.parsedNotesState.collectAsState()
-    val parsedNotes = parsedNotesState.items
-    val notes = remember(parsedNotes) { parsedNotes.map { it.item } }
-    val parsedNoteById = remember(parsedNotes) { parsedNotes.associateBy { it.item.id } }
-    var selectedCategoryFilter by remember { mutableStateOf<NoteCategoryFilter>(NoteCategoryFilter.All) }
-    val savedCategoryFilterState by settingsManager
-        .categoryFilterStateFlow(SettingsManager.CategoryFilterScope.NOTE)
-        .collectAsState(initial = SavedCategoryFilterState())
-    var hasRestoredCategoryFilter by remember { mutableStateOf(false) }
+    val noteListProjection by viewModel.noteListProjectionState.collectAsState()
+    val notes = noteListProjection.allNotes
+    // Restore the scope with the tab, before the cached notes can render an All snapshot.
+    var selectedCategoryFilter by rememberSaveable(stateSaver = NoteCategoryFilterSaver) {
+        mutableStateOf<NoteCategoryFilter>(NoteCategoryFilter.All)
+    }
+    val savedCategoryFilterState by remember(settingsManager) {
+        settingsManager.categoryFilterStateFlow(SettingsManager.CategoryFilterScope.NOTE)
+    }.collectAsState(initial = null)
+    var hasRestoredCategoryFilter by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(savedCategoryFilterState, hasRestoredCategoryFilter) {
         if (hasRestoredCategoryFilter) return@LaunchedEffect
-        selectedCategoryFilter = decodeNoteCategoryFilter(savedCategoryFilterState)
+        val persisted = savedCategoryFilterState ?: return@LaunchedEffect
+        selectedCategoryFilter = decodeNoteCategoryFilter(persisted)
         hasRestoredCategoryFilter = true
     }
 
-    LaunchedEffect(selectedCategoryFilter) {
+    LaunchedEffect(selectedCategoryFilter, hasRestoredCategoryFilter) {
+        if (!hasRestoredCategoryFilter) return@LaunchedEffect
         viewModel.setDraftStorageTarget(selectedCategoryFilter.toDraftStorageTarget())
-        if (hasRestoredCategoryFilter) {
-            settingsManager.updateCategoryFilterState(
-                scope = SettingsManager.CategoryFilterScope.NOTE,
-                state = encodeNoteCategoryFilter(selectedCategoryFilter)
-            )
-        }
+        settingsManager.updateCategoryFilterState(
+            scope = SettingsManager.CategoryFilterScope.NOTE,
+            state = encodeNoteCategoryFilter(selectedCategoryFilter)
+        )
     }
 
     val resolvedPasswordViewModel = passwordViewModel
@@ -269,6 +268,7 @@ fun NoteListScreen(
         is NoteCategoryFilter.MdbxDatabase -> UnifiedCategoryFilterSelection.MdbxDatabaseFilter(filter.databaseId)
     }
     val handleCategorySelection: (UnifiedCategoryFilterSelection) -> Unit = { selection ->
+        hasRestoredCategoryFilter = true
         selectedCategoryFilter = when (selection) {
             is UnifiedCategoryFilterSelection.All -> NoteCategoryFilter.All
             is UnifiedCategoryFilterSelection.Local -> NoteCategoryFilter.Local
@@ -326,13 +326,8 @@ fun NoteListScreen(
         is NoteCategoryFilter.BitwardenVaultUncategorized -> true
         else -> false
     }
-    val selectedBitwardenVaultId = when (val filter = selectedCategoryFilter) {
-        is NoteCategoryFilter.BitwardenVault -> filter.vaultId
-        is NoteCategoryFilter.BitwardenFolderFilter -> filter.vaultId
-        is NoteCategoryFilter.BitwardenVaultStarred -> filter.vaultId
-        is NoteCategoryFilter.BitwardenVaultUncategorized -> filter.vaultId
-        else -> null
-    }
+    val selectedBitwardenVaultId = selectedCategoryFilter.bitwardenVaultIdForSync()
+        .takeIf { hasRestoredCategoryFilter }
     val selectedKeePassDatabaseId = when (val filter = selectedCategoryFilter) {
         is NoteCategoryFilter.KeePassDatabase -> filter.databaseId
         is NoteCategoryFilter.KeePassGroupFilter -> filter.databaseId
@@ -340,8 +335,10 @@ fun NoteListScreen(
         is NoteCategoryFilter.KeePassDatabaseUncategorized -> filter.databaseId
         else -> null
     }
-    val bitwardenViewModel: takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel = viewModel()
     val bitwardenSyncStatusByVault by bitwardenViewModel.syncStatusByVault.collectAsState()
+    LaunchedEffect(selectedBitwardenVaultId) {
+        onBitwardenScopeChanged(selectedBitwardenVaultId)
+    }
     BitwardenAutoSyncEffect(
         viewModel = bitwardenViewModel,
         selectedVaultId = selectedBitwardenVaultId,
@@ -355,50 +352,20 @@ fun NoteListScreen(
         bitwardenSyncStatusByVault[vaultId].isUserVisibleSyncInProgress()
     } == true
     
-    // 过滤笔记
-    val filteredNotes = remember(notes, searchQuery, selectedCategoryFilter, selectedTag) {
-        val categoryFiltered = filterNotesByCategory(notes, selectedCategoryFilter)
-        val searchFiltered = if (searchQuery.isBlank()) {
-            categoryFiltered
-        } else {
-            categoryFiltered.filter { item ->
-                val decoded = parsedNoteById.getValue(item.id).content
-                item.title.contains(searchQuery, ignoreCase = true) ||
-                    decoded.content.contains(searchQuery, ignoreCase = true) ||
-                    decoded.tags.any { tag -> tag.contains(searchQuery, ignoreCase = true) }
-            }
-        }
-        if (selectedTag.isNullOrBlank()) {
-            searchFiltered
-        } else {
-            searchFiltered.filter { item ->
-                val decoded = parsedNoteById.getValue(item.id).content
-                decoded.tags.any { tag -> tag.equals(selectedTag, ignoreCase = true) }
-            }
+    LaunchedEffect(selectedCategoryFilter, searchQuery, selectedTag, hasRestoredCategoryFilter) {
+        if (hasRestoredCategoryFilter) {
+            viewModel.updateNoteListQuery(NoteListQuery(selectedCategoryFilter, searchQuery, selectedTag))
         }
     }
-    val availableTags = remember(notes, parsedNoteById, selectedCategoryFilter) {
-        val categoryFiltered = filterNotesByCategory(notes, selectedCategoryFilter)
-        categoryFiltered
-            .flatMap { parsedNoteById.getValue(it.id).content.tags }
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sortedBy { it.lowercase(Locale.getDefault()) }
-    }
-    LaunchedEffect(availableTags, selectedTag) {
-        if (selectedTag != null && selectedTag !in availableTags) {
+    // Retain search results while a new query runs, but never show another storage scope.
+    val isProjectionReady = hasRestoredCategoryFilter && noteListProjection.isReadyFor(selectedCategoryFilter)
+    val filteredNotes = if (isProjectionReady) noteListProjection.notes else emptyList()
+    val filteredNoteUiItems = if (isProjectionReady) noteListProjection.items else emptyList()
+    val allNoteUiItems = noteListProjection.allItems
+    val availableTags = if (isProjectionReady) noteListProjection.availableTags else emptyList()
+    LaunchedEffect(isProjectionReady, availableTags, selectedTag) {
+        if (isProjectionReady && selectedTag != null && selectedTag !in availableTags) {
             selectedTag = null
-        }
-    }
-    val filteredNoteUiItems = remember(filteredNotes, parsedNoteById) {
-        filteredNotes.map { item ->
-            item.toNoteListItemUiModel(parsedNoteById.getValue(item.id).content)
-        }
-    }
-    val allNoteUiItems = remember(notes, parsedNoteById) {
-        notes.map { item ->
-            item.toNoteListItemUiModel(parsedNoteById.getValue(item.id).content)
         }
     }
 
@@ -759,10 +726,7 @@ fun NoteListScreen(
                     NoteSelectionActionBar(
                         modifier = Modifier.wrapContentWidth(),
                         selectedCount = selectedNoteIds.size,
-                        onExit = {
-                            isSelectionMode = false
-                            selectedNoteIds = emptySet()
-                        },
+                        onExit = exitSelection,
                         onSelectAll = {
                             selectedNoteIds = if (selectedNoteIds.size == filteredNotes.size) {
                                 emptySet()
@@ -950,7 +914,7 @@ fun NoteListScreen(
         NoteListContent(
             notes = filteredNoteUiItems,
             allNotes = allNoteUiItems,
-            isInitialLoading = !parsedNotesState.isReady,
+            isInitialLoading = !isProjectionReady,
             isGridLayout = isGridLayout,
             isSearchExpanded = isSearchExpanded,
             onRequestExpandSearch = { isSearchExpanded = true },
@@ -1007,58 +971,4 @@ fun NoteListScreen(
         keepassBridge = keepassBridge,
         scope = scope
     )
-}
-
-private fun filterNotesByCategory(
-    notes: List<SecureItem>,
-    filter: NoteCategoryFilter
-): List<SecureItem> {
-    return when (filter) {
-        NoteCategoryFilter.All -> notes
-        NoteCategoryFilter.Local -> notes.filter { it.isLocalOnlyItem() }
-        NoteCategoryFilter.Starred -> notes.filter { it.isFavorite }
-        NoteCategoryFilter.Uncategorized -> notes.filter { it.categoryId == null }
-        NoteCategoryFilter.LocalStarred -> notes.filter { it.isLocalOnlyItem() && it.isFavorite }
-        NoteCategoryFilter.LocalUncategorized -> notes.filter { it.isLocalOnlyItem() && it.categoryId == null }
-        is NoteCategoryFilter.Custom -> notes.filter { it.categoryId == filter.categoryId && it.isLocalOnlyItem() }
-        is NoteCategoryFilter.BitwardenVault -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.Bitwarden)?.vaultId == filter.vaultId
-        }
-        is NoteCategoryFilter.BitwardenFolderFilter -> notes.filter {
-            val ownership = it.resolveOwnership() as? SecureItemOwnership.Bitwarden
-            ownership?.vaultId == filter.vaultId && it.bitwardenFolderId == filter.folderId
-        }
-        is NoteCategoryFilter.BitwardenVaultStarred -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.Bitwarden)?.vaultId == filter.vaultId && it.isFavorite
-        }
-        is NoteCategoryFilter.BitwardenVaultUncategorized -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.Bitwarden)?.vaultId == filter.vaultId &&
-                it.bitwardenFolderId == null
-        }
-        is NoteCategoryFilter.KeePassDatabase -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.KeePass)?.databaseId == filter.databaseId
-        }
-        is NoteCategoryFilter.KeePassGroupFilter -> notes.filter {
-            takagi.ru.monica.ui.KeePassGroupFilterIdentity(
-                filter.databaseId,
-                filter.groupPath,
-                filter.groupUuid
-            ).matches(
-                itemDatabaseId = (it.resolveOwnership() as? SecureItemOwnership.KeePass)?.databaseId,
-                itemGroupPath = it.keepassGroupPath,
-                itemGroupUuid = it.keepassGroupUuid
-            )
-        }
-        is NoteCategoryFilter.KeePassDatabaseStarred -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.KeePass)?.databaseId == filter.databaseId &&
-                it.isFavorite
-        }
-        is NoteCategoryFilter.KeePassDatabaseUncategorized -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.KeePass)?.databaseId == filter.databaseId &&
-                it.keepassGroupPath.isNullOrBlank()
-        }
-        is NoteCategoryFilter.MdbxDatabase -> notes.filter {
-            (it.resolveOwnership() as? SecureItemOwnership.Mdbx)?.databaseId == filter.databaseId
-        }
-    }
 }

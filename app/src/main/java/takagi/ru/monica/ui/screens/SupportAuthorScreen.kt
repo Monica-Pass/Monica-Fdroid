@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -18,23 +19,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.graphics.BitmapFactory
-import android.graphics.Bitmap
-import android.content.ContentValues
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.OpenInNew
-import android.Manifest
 import android.content.Intent
 import android.net.Uri
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-import java.io.OutputStream
 import takagi.ru.monica.R
 import takagi.ru.monica.utils.ScreenshotProtection
+import takagi.ru.monica.ui.components.ImageDialog
+import takagi.ru.monica.ui.components.rememberDonationQrBitmap
+import takagi.ru.monica.ui.components.rememberDonationQrSaver
 
 /**
  * 支持作者页面
@@ -46,40 +40,14 @@ fun SupportAuthorScreen(
     onRequestPermission: (String, (Boolean) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
-    var imageBitmap by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
-    var originalBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    
-    val storagePermission = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-        }
-    }
-    var hasStoragePermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, storagePermission) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-
-    fun requestStoragePermission(onGranted: () -> Unit) {
-        onRequestPermission(storagePermission) { granted ->
-            hasStoragePermission = granted
-            if (granted) {
-                onGranted()
-            } else {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.storage_permission_needed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
+    val originalBitmap = rememberDonationQrBitmap(R.drawable.support_author_qr)
+    val imageBitmap = remember(originalBitmap) { originalBitmap?.asImageBitmap() }
+    var showQrPreview by remember { mutableStateOf(false) }
+    val saveBitmap = rememberDonationQrSaver(onRequestPermission)
 
     fun saveQrImage() {
         originalBitmap?.let { bitmap ->
-            saveImageToGallery(context, bitmap)
+            saveBitmap(bitmap)
         }
     }
     
@@ -92,16 +60,6 @@ fun SupportAuthorScreen(
         }
     }
 
-    // 只保留一份二维码资源，避免 assets 与 drawable 重复打包。
-    LaunchedEffect(Unit) {
-        hasStoragePermission = ContextCompat.checkSelfPermission(context, storagePermission) == PackageManager.PERMISSION_GRANTED
-        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.support_author_qr)
-        if (bitmap != null) {
-            originalBitmap = bitmap
-            imageBitmap = bitmap.asImageBitmap()
-        }
-    }
-    
     // 在支持作者页面禁用防截屏保护
     ScreenshotProtection(enabled = false)
     
@@ -226,19 +184,14 @@ fun SupportAuthorScreen(
                             contentDescription = stringResource(R.string.qr_code_description),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(1f),
+                                .aspectRatio(1f)
+                                .clickable { showQrPreview = true },
                             contentScale = ContentScale.Fit
                         )
                         
                         // 保存图片按钮
                         Button(
-                            onClick = {
-                                if (hasStoragePermission) {
-                                    saveQrImage()
-                                } else {
-                                    requestStoragePermission { saveQrImage() }
-                                }
-                            },
+                            onClick = { saveQrImage() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
@@ -257,6 +210,16 @@ fun SupportAuthorScreen(
                             textAlign = TextAlign.Center
                         )
                     }
+                }
+            }
+
+            if (showQrPreview) {
+                originalBitmap?.let { bitmap ->
+                    ImageDialog(
+                        bitmap = bitmap,
+                        onDismiss = { showQrPreview = false },
+                        onDownload = { saveQrImage() }
+                    )
                 }
             }
 
@@ -338,35 +301,5 @@ fun SupportAuthorScreen(
             // 底部间距
             Spacer(modifier = Modifier.height(16.dp))
         }
-    }
-}
-
-/**
- * 保存图片到相册
- */
-private fun saveImageToGallery(context: android.content.Context, bitmap: Bitmap) {
-    try {
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "Monica_support_author_${System.currentTimeMillis()}.jpg")
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Monica")
-            }
-        }
-        
-        val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-        
-        uri?.let { imageUri ->
-            val outputStream: OutputStream? = resolver.openOutputStream(imageUri)
-            outputStream?.use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-                Toast.makeText(context, context.getString(R.string.qr_code_saved), Toast.LENGTH_SHORT).show()
-            }
-        } ?: run {
-            Toast.makeText(context, context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
-        }
-    } catch (e: Exception) {
-        Toast.makeText(context, context.getString(R.string.save_failed_with_error, e.message), Toast.LENGTH_SHORT).show()
     }
 }

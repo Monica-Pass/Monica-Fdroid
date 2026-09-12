@@ -66,17 +66,23 @@ class CardWalletSyncScopeTest {
 
     @Test
     fun cardWalletEditorsDoNotCreateBitwardenViewModelForSyncNotification() {
-        val bankCardEditor = projectFile("src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt").readText()
-        val documentEditor = projectFile("src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt").readText()
-
-        listOf(bankCardEditor, documentEditor).forEach { source ->
+        val editors = listOf(
+            Triple("AddEditBankCardScreen", "BankCardViewModel", "saveCardAcrossTargets"),
+            Triple("AddEditDocumentScreen", "DocumentViewModel", "saveDocumentAcrossTargets")
+        )
+        editors.forEach { (screenName, viewModelName, saveMethod) ->
+            val source = projectFile("src/main/java/takagi/ru/monica/ui/screens/$screenName.kt").readText()
+            val viewModelSource = projectFile("src/main/java/takagi/ru/monica/viewmodel/$viewModelName.kt").readText()
             assertFalse(
-                "Wallet editors should notify Bitwarden mutations through BitwardenRepository; creating BitwardenViewModel here triggers startup sync even for local/MDBX/KeePass edits.",
+                "Wallet editors must let the owning save pipeline notify mutations without creating a separate BitwardenViewModel.",
                 source.contains("bitwardenSyncViewModel")
             )
             assertFalse(source.contains("BitwardenViewModel = viewModel()"))
-            assertTrue(source.contains("val bitwardenRepository = remember { BitwardenRepository.getInstance(context) }"))
-            assertTrue(source.contains("syncVaultIds.forEach(bitwardenRepository::requestLocalMutationSync)"))
+            assertTrue(source.contains("viewModel.$saveMethod("))
+            val saveBody = viewModelSource.substringAfter("fun $saveMethod(")
+            assertTrue(saveBody.contains("bitwardenVaultId = (target as? StorageTarget.Bitwarden)?.vaultId"))
+            assertTrue(viewModelSource.contains("requestBitwardenMutationSync(bitwardenVaultId)"))
+            assertTrue(viewModelSource.contains("vaultId?.let { bitwardenRepository?.requestLocalMutationSync(it) }"))
         }
     }
 
@@ -124,29 +130,24 @@ class CardWalletSyncScopeTest {
             "Creating BitwardenViewModel from non-Bitwarden pages must not enqueue Bitwarden auto sync.",
             initBody.contains("triggerStartupAutoSync = true")
         )
-        assertTrue(
-            "Startup auto sync must be an explicit API so MainActivity can trigger it after auth.",
+        assertFalse(
+            "Authentication must not sync a globally active vault independently of the visible page.",
             viewModelSource.contains("fun requestStartupAutoSync(")
         )
         assertTrue(
-            "Startup auto sync must choose one preferred or active vault; multi-vault work belongs to ALL-view sessions.",
-            viewModelSource.contains("BitwardenAutoSyncTargetPlanner.startupTarget(") &&
-                viewModelSource.contains("BitwardenAllVaultAutoSyncScheduler(") &&
+            "Single-vault and multi-vault page sync must share cancellable sessions.",
+            viewModelSource.contains("fun beginPageEnterAutoSync(") &&
+                viewModelSource.contains("BitwardenPageAutoSyncScheduler(") &&
                 viewModelSource.contains("fun beginAllViewAutoSync()")
         )
     }
 
     @Test
-    fun mainActivityTriggersStartupAutoSyncAfterAuthentication() {
+    fun mainActivityLeavesAutoSyncToTheVisiblePage() {
         val mainActivitySource = projectFile("src/main/java/takagi/ru/monica/MainActivity.kt").readText()
-        assertTrue(
-            "Authenticated main entry must request Bitwarden startup auto sync.",
-            mainActivitySource.contains("bitwardenViewModel.requestStartupAutoSync()")
-        )
-        assertTrue(
-            "Startup auto sync should wait for a short stable authenticated window.",
-            mainActivitySource.contains("delay(1_200L)") &&
-                mainActivitySource.contains("requestStartupAutoSync()")
+        assertFalse(
+            "Authentication alone must not schedule Bitwarden sync while viewing unrelated databases.",
+            mainActivitySource.contains("requestStartupAutoSync(")
         )
     }
 

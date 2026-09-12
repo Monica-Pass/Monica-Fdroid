@@ -135,7 +135,7 @@ class NoteEditorViewModelTest {
     }
 
     @Test
-    fun applyInitialStorageIfNeeded_prefersInitialThenDraftThenRemembered() {
+    fun applyInitialStorageIfNeeded_usesTheInitialTargetWithoutMergingOtherDatabases() {
         val vm = NoteEditorViewModel()
         vm.applyInitialStorageIfNeeded(
             isEditing = false,
@@ -160,9 +160,32 @@ class NoteEditorViewModelTest {
 
         val state = vm.uiState.value
         assertEquals(1L, state.selectedCategoryId)
-        assertEquals(3L, state.keepassDatabaseId)
-        assertEquals(6L, state.bitwardenVaultId)
-        assertEquals("f-1", state.bitwardenFolderId)
+        assertEquals(null, state.keepassDatabaseId)
+        assertEquals(null, state.bitwardenVaultId)
+        assertEquals(null, state.bitwardenFolderId)
+        assertTrue(state.hasAppliedInitialStorage)
+    }
+
+    @Test
+    fun explicitLocalStorageOverridesRememberedAndDraftExternalTargets() {
+        val vm = NoteEditorViewModel()
+        vm.applyInitialStorageIfNeeded(
+            isEditing = false,
+            initialCategoryId = null,
+            initialKeePassDatabaseId = null,
+            initialKeePassGroupPath = null,
+            initialMdbxDatabaseId = null,
+            initialBitwardenVaultId = null,
+            initialBitwardenFolderId = null,
+            draftStorageTarget = NoteDraftStorageTarget(keepassDatabaseId = 3L),
+            rememberedStorageTarget = RememberedStorageTarget(bitwardenVaultId = 6L, bitwardenFolderId = "work"),
+            initialStorageExplicit = true,
+        )
+        val state = vm.uiState.value
+        assertEquals(listOf(takagi.ru.monica.data.model.StorageTarget.MonicaLocal(null)), state.selectedStorageTargets)
+        assertEquals(null, state.keepassDatabaseId)
+        assertEquals(null, state.bitwardenVaultId)
+        assertEquals(null, state.bitwardenFolderId)
         assertTrue(state.hasAppliedInitialStorage)
     }
 

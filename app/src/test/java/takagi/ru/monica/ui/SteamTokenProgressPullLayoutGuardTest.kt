@@ -40,7 +40,7 @@ class SteamTokenProgressPullLayoutGuardTest {
 
         assertTrue(pullContent.contains("if (localAccounts.isEmpty())"))
         assertTrue(pullContent.contains("pullToSearch.onVerticalDrag(dragAmount)"))
-        assertTrue(pullContent.contains(".nestedScroll(pullToSearch.nestedScrollConnection)"))
+        assertTrue(pullContent.contains(".then(pullToSearch.gestureModifier)"))
     }
 
     private fun projectFile(relativePath: String): File {

@@ -8,31 +8,32 @@ import org.junit.Test
 class BitwardenAutoSyncScopeGuardTest {
 
     @Test
-    fun startupAutoSyncTargetsOnePreferredOrActiveVault() {
+    fun authenticationDoesNotStartAnUnscopedBitwardenSync() {
         val source = projectFile(
             "src/main/java/takagi/ru/monica/bitwarden/viewmodel/BitwardenViewModel.kt"
         ).readText()
-        val body = source
-            .substringAfter("fun requestStartupAutoSync(")
-            .substringBefore("fun requestLocalMutationSync(")
-
-        assertTrue(body.contains("BitwardenAutoSyncTargetPlanner.startupTarget("))
-        assertTrue(body.contains("SyncTriggerReason.APP_RESUME"))
-        assertFalse(body.contains("forEachIndexed"))
-        assertFalse(body.contains("SyncTriggerReason.PERIODIC"))
+        val mainActivity = projectFile("src/main/java/takagi/ru/monica/MainActivity.kt").readText()
+        assertFalse(mainActivity.contains("requestStartupAutoSync("))
+        assertFalse(source.contains("fun requestStartupAutoSync("))
     }
 
     @Test
-    fun selectedVaultEntryCancelsPendingAllViewBatchBeforeSync() {
+    fun selectedVaultEntryUsesACancellablePageSessionWithoutAnActiveVaultFallback() {
         val source = projectFile(
             "src/main/java/takagi/ru/monica/bitwarden/viewmodel/BitwardenViewModel.kt"
         ).readText()
         val body = source
-            .substringAfter("fun requestPageEnterAutoSync(")
+            .substringAfter("fun beginPageEnterAutoSync(")
             .substringBefore("fun beginAllViewAutoSync(")
 
-        assertTrue(body.contains("allVaultAutoSyncScheduler.cancelPending()"))
-        assertTrue(body.indexOf("allVaultAutoSyncScheduler.cancelPending()") < body.indexOf("requestAutoSyncWithStartupGrace"))
+        assertTrue(body.contains("pageAutoSyncScheduler.begin("))
+        assertTrue(body.contains("initialDelayMs = pageAutoSyncDelayMs()"))
+        assertTrue(body.contains("SyncTriggerReason.PAGE_ENTER"))
+        assertFalse(body.contains("_activeVault"))
+        assertFalse(body.contains("requestAutoSyncWithStartupGrace"))
+        val effect = projectFile("src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenAutoSyncEffect.kt").readText()
+        assertTrue(effect.contains("viewModel?.beginPageEnterAutoSync(selectedVaultId)"))
+        assertTrue(effect.contains("viewModel?.endPageAutoSync(sessionId)"))
     }
 
     @Test
@@ -41,8 +42,8 @@ class BitwardenAutoSyncScopeGuardTest {
             "src/main/java/takagi/ru/monica/bitwarden/viewmodel/BitwardenViewModel.kt"
         ).readText()
         val schedulerBody = source
-            .substringAfter("private val allVaultAutoSyncScheduler")
-            .substringBefore("val syncStatusByVault")
+            .substringAfter("fun beginAllViewAutoSync(")
+            .substringBefore("fun endPageAutoSync(")
 
         assertTrue(schedulerBody.contains("SyncTriggerReason.PERIODIC"))
         assertFalse(schedulerBody.contains("SyncTriggerReason.MANUAL"))

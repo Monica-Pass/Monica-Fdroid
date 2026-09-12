@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -49,7 +50,10 @@ fun CardFaceCropper(source: Bitmap, busy: Boolean, error: Int?, onCancel: () -> 
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         } }
     ) { padding ->
-        Canvas(Modifier.fillMaxSize().padding(padding).testTag("card_face_crop_canvas").onSizeChanged { viewport = it }
+        Canvas(Modifier.fillMaxSize().padding(padding)
+            // Clip after the Scaffold insets so transformed images cannot cover the bars.
+            .clipToBounds()
+            .testTag("card_face_crop_canvas").onSizeChanged { viewport = it }
             .pointerInput(source, frameWidth, busy) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     if (!busy && frameWidth > 0f) {

@@ -3,6 +3,7 @@ package takagi.ru.monica.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.rememberUpdatedState
@@ -10,7 +11,6 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
@@ -35,21 +35,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.unit.Velocity
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.animation.core.Animatable
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -96,15 +87,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
 import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
@@ -181,6 +169,8 @@ import takagi.ru.monica.ui.common.layout.DetailPane
 import takagi.ru.monica.ui.common.layout.InspectorRow
 import takagi.ru.monica.ui.common.layout.ListPane
 import takagi.ru.monica.ui.common.pull.rememberPullActionState
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 import takagi.ru.monica.ui.common.state.rememberSaveableLazyListState
 import takagi.ru.monica.ui.common.selection.CategoryListItem
 import takagi.ru.monica.ui.common.selection.SelectionActionBar
@@ -288,7 +278,6 @@ fun TotpListContent(
     val passwords by viewModel.passwordTitles.collectAsState(initial = emptyList())
     val passwordMap = remember(passwords) { passwords.associateBy { it.id } }
     val haptic = rememberHapticFeedback()
-    val focusManager = LocalFocusManager.current
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
     var showTopActionsMenu by remember { mutableStateOf(false) }
 
@@ -348,12 +337,6 @@ fun TotpListContent(
         }
     }
 
-    // 如果搜索框展开，按返回键关闭搜索框
-    BackHandler(enabled = isSearchExpanded) {
-        isSearchExpanded = false
-        viewModel.updateSearchQuery("")
-        focusManager.clearFocus()
-    }
 
     // Pull-to-search state
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -392,7 +375,7 @@ fun TotpListContent(
     // Verifier page uses plain pull-to-search only; disable pull-to-sync UX here.
     val enableBitwardenPullSync = false
     val searchTriggerDistance = remember(density) {
-        with(density) { 72.dp.toPx() }
+        with(density) { PullSearchDefaults.TriggerDistance.toPx() }
     }
     val syncTriggerDistance = remember(density) { with(density) { 72.dp.toPx() } }
     val maxDragDistance = remember(density) { with(density) { 100.dp.toPx() } }
@@ -536,6 +519,8 @@ fun TotpListContent(
         isSelectionMode = false
         selectedItems = setOf()
     }
+
+    BackHandler(enabled = isSelectionMode, onBack = exitSelection)
     
     val selectAll = {
         selectedItems = if (selectedItems.size == filteredTotpItems.size) {
@@ -1004,304 +989,307 @@ fun TotpListContent(
 
         val contentPullOffset = if (enableBitwardenPullSync) 0 else pullAction.currentOffset.toInt()
 
-        // TOTP列表
-        if (!parsedTotpState.isReady) {
-            takagi.ru.monica.ui.components.LoadingIndicator()
-        } else if (filteredTotpItems.isEmpty()) {
-            // Empty is shown only after the first parsed database snapshot.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
-                    .nestedScroll(pullAction.nestedScrollConnection)
-                    .pointerInput(isSearchExpanded) {
-                        detectVerticalDragGestures(
-                            onVerticalDrag = { _, dragAmount ->
-                                if (!isSearchExpanded) pullAction.onVerticalDrag(dragAmount)
-                            },
-                            onDragEnd = {
-                                pullAction.onDragEnd()
-                            },
-                            onDragCancel = {
-                                pullAction.onDragCancel()
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            PullSearchHint(currentOffset = pullAction.currentOffset, triggerDistance = searchTriggerDistance)
+            // TOTP列表
+            if (!parsedTotpState.isReady) {
+                takagi.ru.monica.ui.components.LoadingIndicator()
+            } else if (filteredTotpItems.isEmpty()) {
+                // Empty is shown only after the first parsed database snapshot.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
+                        .then(pullAction.gestureModifier)
+                        .pointerInput(isSearchExpanded) {
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { _, dragAmount ->
+                                    if (!isSearchExpanded) pullAction.onVerticalDrag(dragAmount)
+                                },
+                                onDragEnd = {
+                                    pullAction.onDragEnd()
+                                },
+                                onDragCancel = {
+                                    pullAction.onDragCancel()
+                                }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Security,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.no_authenticators_title),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.no_authenticators_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Security,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.no_authenticators_title),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.no_authenticators_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
-        } else {
-            // 可拖动排序的列表状态
-            // 用于拖动排序的本地列表状态
-            var localTotpItems by remember(filteredTotpItems) { 
-                mutableStateOf(filteredTotpItems) 
-            }
-            
-            // 当筛选后的列表变化时同步
-            LaunchedEffect(filteredTotpItems) {
-                localTotpItems = filteredTotpItems
-            }
+            } else {
+                // 可拖动排序的列表状态
+                // 用于拖动排序的本地列表状态
+                var localTotpItems by remember(filteredTotpItems) {
+                    mutableStateOf(filteredTotpItems)
+                }
 
-            if (appSettings.authenticatorLayoutMode == AuthenticatorLayoutMode.TILE) {
-                val lazyGridState = rememberLazyGridState()
-                val reorderableLazyGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
+                // 当筛选后的列表变化时同步
+                LaunchedEffect(filteredTotpItems) {
+                    localTotpItems = filteredTotpItems
+                }
+
+                if (appSettings.authenticatorLayoutMode == AuthenticatorLayoutMode.TILE) {
+                    val lazyGridState = rememberLazyGridState()
+                    val reorderableLazyGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
+                        if (isSelectionMode) {
+                            localTotpItems = localTotpItems.toMutableList().apply {
+                                add(to.index, removeAt(from.index))
+                            }
+                        }
+                    }
+                    var gridWasDragging by remember { mutableStateOf(false) }
+                    LaunchedEffect(reorderableLazyGridState.isAnyItemDragging) {
+                        if (reorderableLazyGridState.isAnyItemDragging) {
+                            gridWasDragging = true
+                        } else if (gridWasDragging && isSelectionMode) {
+                            gridWasDragging = false
+                            val newOrders = localTotpItems.mapIndexed { index, item -> item.id to index }
+                            if (newOrders.isNotEmpty()) viewModel.updateSortOrders(newOrders)
+                        }
+                    }
+
+                    MonicaTileGrid(
+                        state = lazyGridState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
+                            .then(pullAction.gestureModifier)
+                    ) {
+                        items(
+                            items = localTotpItems,
+                            key = { it.id }
+                        ) { item ->
+                            ReorderableItem(
+                                reorderableLazyGridState,
+                                key = item.id,
+                                enabled = isSelectionMode
+                            ) { isDragging ->
+                                val elevation by animateDpAsState(
+                                    if (isDragging) 8.dp else 0.dp,
+                                    label = "tile_drag_elevation"
+                                )
+                                val dragModifier = if (isSelectionMode) {
+                                    Modifier.longPressDraggableHandle(
+                                        onDragStarted = { haptic.performLongPress() },
+                                        onDragStopped = { haptic.performSuccess() }
+                                    )
+                                } else {
+                                    Modifier
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .graphicsLayer { shadowElevation = elevation.toPx() }
+                                        .then(dragModifier)
+                                ) {
+                                    TotpItemCard(
+                                        item = item,
+                                        onEdit = { onTotpClick(item.id) },
+                                        onToggleSelect = {
+                                            selectedItems = if (selectedItems.contains(item.id)) {
+                                                selectedItems - item.id
+                                            } else {
+                                                selectedItems + item.id
+                                            }
+                                        },
+                                        onDelete = {
+                                            haptic.performWarning()
+                                            requestDeleteItem(item)
+                                        },
+                                        onToggleFavorite = { id, isFavorite ->
+                                            viewModel.toggleFavorite(id, isFavorite)
+                                        },
+                                        onGenerateNext = { id -> viewModel.incrementHotpCounter(id) },
+                                        onShowQrCode = { itemToShowQr = item },
+                                        onLongClick = {
+                                            haptic.performLongPress()
+                                            if (!isSelectionMode) {
+                                                isSelectionMode = true
+                                                selectedItems = setOf(item.id)
+                                            }
+                                        },
+                                        isSelectionMode = isSelectionMode,
+                                        isSelected = selectedItems.contains(item.id),
+                                        sharedTickSeconds = sharedTickSeconds,
+                                        appSettings = totpCardSettings,
+                                        parsedTotpData = totpDataById[item.id],
+                                        compactTile = true
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                // Standard authenticator layout
+                val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                    // 只在多选模式下允许排序
                     if (isSelectionMode) {
                         localTotpItems = localTotpItems.toMutableList().apply {
                             add(to.index, removeAt(from.index))
                         }
                     }
                 }
-                var gridWasDragging by remember { mutableStateOf(false) }
-                LaunchedEffect(reorderableLazyGridState.isAnyItemDragging) {
-                    if (reorderableLazyGridState.isAnyItemDragging) {
-                        gridWasDragging = true
-                    } else if (gridWasDragging && isSelectionMode) {
-                        gridWasDragging = false
-                        val newOrders = localTotpItems.mapIndexed { index, item -> item.id to index }
-                        if (newOrders.isNotEmpty()) viewModel.updateSortOrders(newOrders)
+
+                // 当拖动结束时保存新顺序
+                LaunchedEffect(reorderableLazyListState.isAnyItemDragging) {
+                    if (!reorderableLazyListState.isAnyItemDragging && isSelectionMode) {
+                        // 拖动结束，保存新顺序到数据库
+                        val newOrders = localTotpItems.mapIndexed { index, item ->
+                            item.id to index
+                        }
+                        if (newOrders.isNotEmpty()) {
+                            viewModel.updateSortOrders(newOrders)
+                        }
                     }
                 }
 
-                MonicaTileGrid(
-                    state = lazyGridState,
+                LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier
                         .fillMaxSize()
                         .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
-                        .nestedScroll(pullAction.nestedScrollConnection)
+                        .then(pullAction.gestureModifier),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(
                         items = localTotpItems,
                         key = { it.id }
                     ) { item ->
                         ReorderableItem(
-                            reorderableLazyGridState,
+                            reorderableLazyListState,
                             key = item.id,
                             enabled = isSelectionMode
                         ) { isDragging ->
                             val elevation by animateDpAsState(
                                 if (isDragging) 8.dp else 0.dp,
-                                label = "tile_drag_elevation"
+                                label = "drag_elevation"
                             )
+
+                            // 在多选模式下使用拖动手柄
                             val dragModifier = if (isSelectionMode) {
                                 Modifier.longPressDraggableHandle(
-                                    onDragStarted = { haptic.performLongPress() },
-                                    onDragStopped = { haptic.performSuccess() }
+                                    onDragStarted = {
+                                        haptic.performLongPress()
+                                    },
+                                    onDragStopped = {
+                                        haptic.performSuccess()
+                                    }
                                 )
                             } else {
                                 Modifier
                             }
 
-                            Box(
-                                modifier = Modifier
-                                    .graphicsLayer { shadowElevation = elevation.toPx() }
-                                    .then(dragModifier)
-                            ) {
-                                TotpItemCard(
-                                    item = item,
-                                    onEdit = { onTotpClick(item.id) },
-                                    onToggleSelect = {
-                                        selectedItems = if (selectedItems.contains(item.id)) {
-                                            selectedItems - item.id
-                                        } else {
-                                            selectedItems + item.id
-                                        }
-                                    },
-                                    onDelete = {
-                                        haptic.performWarning()
-                                        requestDeleteItem(item)
-                                    },
-                                    onToggleFavorite = { id, isFavorite ->
-                                        viewModel.toggleFavorite(id, isFavorite)
-                                    },
-                                    onGenerateNext = { id -> viewModel.incrementHotpCounter(id) },
-                                    onShowQrCode = { itemToShowQr = item },
-                                    onLongClick = {
-                                        haptic.performLongPress()
-                                        if (!isSelectionMode) {
-                                            isSelectionMode = true
-                                            selectedItems = setOf(item.id)
-                                        }
-                                    },
-                                    isSelectionMode = isSelectionMode,
-                                    isSelected = selectedItems.contains(item.id),
-                                    sharedTickSeconds = sharedTickSeconds,
-                                    appSettings = totpCardSettings,
-                                    parsedTotpData = totpDataById[item.id],
-                                    compactTile = true
-                                )
-                            }
-                        }
-                    }
-                }
-            } else {
-            // Standard authenticator layout
-            val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                // 只在多选模式下允许排序
-                if (isSelectionMode) {
-                    localTotpItems = localTotpItems.toMutableList().apply {
-                        add(to.index, removeAt(from.index))
-                    }
-                }
-            }
-
-            // 当拖动结束时保存新顺序
-            LaunchedEffect(reorderableLazyListState.isAnyItemDragging) {
-                if (!reorderableLazyListState.isAnyItemDragging && isSelectionMode) {
-                    // 拖动结束，保存新顺序到数据库
-                    val newOrders = localTotpItems.mapIndexed { index, item ->
-                        item.id to index
-                    }
-                    if (newOrders.isNotEmpty()) {
-                        viewModel.updateSortOrders(newOrders)
-                    }
-                }
-            }
-
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
-                    .nestedScroll(pullAction.nestedScrollConnection),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(
-                    items = localTotpItems,
-                    key = { it.id }
-                ) { item ->
-                    ReorderableItem(
-                        reorderableLazyListState,
-                        key = item.id,
-                        enabled = isSelectionMode
-                    ) { isDragging ->
-                        val elevation by animateDpAsState(
-                            if (isDragging) 8.dp else 0.dp,
-                            label = "drag_elevation"
-                        )
-
-                        // 在多选模式下使用拖动手柄
-                        val dragModifier = if (isSelectionMode) {
-                            Modifier.longPressDraggableHandle(
-                                onDragStarted = {
-                                    haptic.performLongPress()
+                            // Keep right-swipe selection available in selection mode; only disable delete swipe there.
+                            takagi.ru.monica.ui.gestures.SwipeActions(
+                                onSwipeLeft = {
+                                    // 左滑删除
+                                    haptic.performWarning()
+                                    requestDeleteItem(item)
                                 },
-                                onDragStopped = {
+                                onSwipeRight = {
+                                    // 右滑选择
                                     haptic.performSuccess()
-                                }
-                            )
-                        } else {
-                            Modifier
-                        }
-
-                        // Keep right-swipe selection available in selection mode; only disable delete swipe there.
-                        takagi.ru.monica.ui.gestures.SwipeActions(
-                            onSwipeLeft = {
-                                // 左滑删除
-                                haptic.performWarning()
-                                requestDeleteItem(item)
-                            },
-                            onSwipeRight = {
-                                // 右滑选择
-                                haptic.performSuccess()
-                                if (!isSelectionMode) {
-                                    isSelectionMode = true
-                                }
-                                selectedItems = if (selectedItems.contains(item.id)) {
-                                    selectedItems - item.id
-                                } else {
-                                    selectedItems + item.id
-                                }
-                            },
-                            isSwiped = itemToDelete?.id == item.id,
-                            enabled = !isDragging,
-                            allowSwipeLeft = !isSelectionMode,
-                            allowSwipeRight = true,
-                            cardShape = MonicaItemCardShape
-                        ) {
-                            // 包装卡片以支持拖动
-                            Box(
-                                modifier = Modifier
-                                    .graphicsLayer {
-                                        shadowElevation = elevation.toPx()
+                                    if (!isSelectionMode) {
+                                        isSelectionMode = true
                                     }
-                                    .then(dragModifier)
+                                    selectedItems = if (selectedItems.contains(item.id)) {
+                                        selectedItems - item.id
+                                    } else {
+                                        selectedItems + item.id
+                                    }
+                                },
+                                isSwiped = itemToDelete?.id == item.id,
+                                enabled = !isDragging,
+                                allowSwipeLeft = !isSelectionMode,
+                                allowSwipeRight = true,
+                                cardShape = MonicaItemCardShape
                             ) {
-                                TotpItemCard(
-                                    item = item,
-                                    onEdit = { onTotpClick(item.id) },
-                                    onToggleSelect = {
-                                        selectedItems = if (selectedItems.contains(item.id)) {
-                                            selectedItems - item.id
-                                        } else {
-                                            selectedItems + item.id
+                                // 包装卡片以支持拖动
+                                Box(
+                                    modifier = Modifier
+                                        .graphicsLayer {
+                                            shadowElevation = elevation.toPx()
                                         }
-                                    },
-                                    onDelete = {
-                                        haptic.performWarning()
-                                        requestDeleteItem(item)
-                                    },
-                                    onToggleFavorite = { id, isFavorite ->
-                                        viewModel.toggleFavorite(id, isFavorite)
-                                    },
-                                    onGenerateNext = { id ->
-                                        viewModel.incrementHotpCounter(id)
-                                    },
-                                    onMoveUp = null, // 使用拖动排序替代
-                                    onMoveDown = null, // 使用拖动排序替代
-                                    onShowQrCode = {
-                                        itemToShowQr = item
-                                    },
-                                    onLongClick = {
-                                        // 长按进入多选模式
-                                        haptic.performLongPress()
-                                        if (!isSelectionMode) {
-                                            isSelectionMode = true
-                                            selectedItems = setOf(item.id)
-                                        }
-                                    },
-                                    isSelectionMode = isSelectionMode,
-                                    isSelected = selectedItems.contains(item.id),
-                                    sharedTickSeconds = sharedTickSeconds,
-                                    appSettings = totpCardSettings,
-                                    parsedTotpData = totpDataById[item.id]
-                                )
+                                        .then(dragModifier)
+                                ) {
+                                    TotpItemCard(
+                                        item = item,
+                                        onEdit = { onTotpClick(item.id) },
+                                        onToggleSelect = {
+                                            selectedItems = if (selectedItems.contains(item.id)) {
+                                                selectedItems - item.id
+                                            } else {
+                                                selectedItems + item.id
+                                            }
+                                        },
+                                        onDelete = {
+                                            haptic.performWarning()
+                                            requestDeleteItem(item)
+                                        },
+                                        onToggleFavorite = { id, isFavorite ->
+                                            viewModel.toggleFavorite(id, isFavorite)
+                                        },
+                                        onGenerateNext = { id ->
+                                            viewModel.incrementHotpCounter(id)
+                                        },
+                                        onMoveUp = null, // 使用拖动排序替代
+                                        onMoveDown = null, // 使用拖动排序替代
+                                        onShowQrCode = {
+                                            itemToShowQr = item
+                                        },
+                                        onLongClick = {
+                                            // 长按进入多选模式
+                                            haptic.performLongPress()
+                                            if (!isSelectionMode) {
+                                                isSelectionMode = true
+                                                selectedItems = setOf(item.id)
+                                            }
+                                        },
+                                        isSelectionMode = isSelectionMode,
+                                        isSelected = selectedItems.contains(item.id),
+                                        sharedTickSeconds = sharedTickSeconds,
+                                        appSettings = totpCardSettings,
+                                        parsedTotpData = totpDataById[item.id]
+                                    )
+                                }
                             }
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
                 }
-            }
+                }
             }
         }
     }
-    
+
     // QR码对话框
     itemToShowQr?.let { item ->
         QrCodeDialog(

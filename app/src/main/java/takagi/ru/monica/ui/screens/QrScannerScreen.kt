@@ -2,6 +2,8 @@ package takagi.ru.monica.ui.screens
 
 import android.Manifest
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.SystemClock
 import android.widget.Toast
@@ -32,14 +34,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.zxing.BarcodeFormat
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import takagi.ru.monica.R
 import takagi.ru.monica.ui.scanner.QrCameraScanSession
 import takagi.ru.monica.ui.scanner.QrScanRestartReason
@@ -182,6 +187,7 @@ private fun QrCodeScanner(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val galleryDecoder = remember(allowedFormats) { ZxingBarcodeDecoder(allowedFormats) }
+    val scope = rememberCoroutineScope()
     val scanConsumed = remember { AtomicBoolean(false) }
     val diagnostics = remember(diagnosticLabel, onDiagnostic) {
         if (diagnosticLabel != null && onDiagnostic != null) {
@@ -195,7 +201,9 @@ private fun QrCodeScanner(
     val currentInvalidResultMessage = rememberUpdatedState(invalidResultMessage)
     var scanGeneration by remember { mutableIntStateOf(0) }
     var pendingRestartReason by remember { mutableStateOf<QrScanRestartReason?>(null) }
-    val previewView = remember(context, scanGeneration) {
+    // AndroidView keeps its factory result. Recovery must rebind the visible view,
+    // rather than create a new PreviewView that never gets attached to the window.
+    val previewView = remember(context) {
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
@@ -203,11 +211,19 @@ private fun QrCodeScanner(
     }
     var showOverlay by remember { mutableStateOf(false) }
 
-    val acceptResult: (String?) -> Unit = acceptResult@{ raw ->
-        val value = raw?.trim()?.takeIf { it.isNotBlank() } ?: return@acceptResult
-        if (currentValidator.value(value) && scanConsumed.compareAndSet(false, true)) {
-            diagnostics?.logResultAccepted()
+    val acceptResult: (String?) -> Boolean = acceptResult@{ raw ->
+        val value = raw?.trim()?.takeIf { it.isNotBlank() } ?: return@acceptResult false
+        if (!currentValidator.value(value) || !scanConsumed.compareAndSet(false, true)) {
+            return@acceptResult false
+        }
+        try {
             currentOnQrCodeScanned.value(value)
+            diagnostics?.logResultAccepted()
+            true
+        } catch (error: Exception) {
+            scanConsumed.set(false)
+            diagnostics?.logResultDeliveryFailed(error)
+            false
         }
     }
 
@@ -223,13 +239,14 @@ private fun QrCodeScanner(
             context = context,
             lifecycleOwner = lifecycleOwner,
             previewView = previewView,
-            formats = allowedFormats,
+            allowedFormats = allowedFormats,
             generation = scanGeneration,
             diagnostics = diagnostics,
             onCandidates = { candidates, _, _ ->
                 val value = candidates.firstOrNull(currentValidator.value)
-                value?.let(acceptResult)
-                value != null
+                // The camera session dispatches validation and acceptance together
+                // on the main thread, after releasing the frame and checking liveness.
+                value != null && acceptResult(value)
             },
             onRestartRequested = { reason ->
                 if (!scanConsumed.get() && pendingRestartReason == null) {
@@ -240,50 +257,33 @@ private fun QrCodeScanner(
     }
     val currentCameraSession = rememberUpdatedState(cameraSession)
 
-    // 图片选择器 - OpenDocument(SAF) 比 GetContent 更可靠：
-    // 部分 OEM 相册（vivo 等）的 GetContent 会返回自家 provider 的受限 URI
-    //（云端未下载原图/权限懒授予），读流时 SecurityException/空流被误报为"未发现二维码"。
+    // 图片选择器 - 使用 GetContent 以兼容所有设备
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
             diagnostics?.logGalleryStart()
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+            scope.launch {
+                processImageWithZxing(
+                    context = context,
+                    uri = uri,
+                    decoder = galleryDecoder,
+                    diagnostics = diagnostics,
+                    resultValidator = currentValidator.value,
+                    onResult = { acceptResult(it) },
+                    onInvalid = {
+                        Toast.makeText(
+                            context,
+                            currentInvalidResultMessage.value ?: context.getString(R.string.qr_not_found),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onNotFound = {
+                        Toast.makeText(context, context.getString(R.string.qr_not_found), Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
-            processImageWithZxing(
-                context = context,
-                uri = uri,
-                decoder = galleryDecoder,
-                diagnostics = diagnostics,
-                resultValidator = currentValidator.value,
-                onResult = acceptResult,
-                onInvalid = {
-                    Toast.makeText(
-                        context,
-                        currentInvalidResultMessage.value ?: context.getString(R.string.qr_not_found),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                onNotFound = {
-                    Toast.makeText(context, context.getString(R.string.qr_not_found), Toast.LENGTH_SHORT).show()
-                },
-                onReadFailed = {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.qr_image_read_failed),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            )
         }
-    }
-
-    DisposableEffect(galleryDecoder) {
-        onDispose { runCatching { galleryDecoder.close() } }
     }
 
     DisposableEffect(cameraSession) {
@@ -308,8 +308,7 @@ private fun QrCodeScanner(
     LaunchedEffect(diagnostics) {
         val activeDiagnostics = diagnostics ?: return@LaunchedEffect
         activeDiagnostics.logScannerStarted(
-            requestedFormats = allowedFormats.size,
-            decoderFormats = allowedFormats.size
+            requestedFormats = allowedFormats.size
         )
         while (!scanConsumed.get()) {
             delay(QR_SCAN_DIAG_HEARTBEAT_MS)
@@ -420,7 +419,7 @@ private fun QrCodeScanner(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    bottomContent { photoPickerLauncher.launch(arrayOf("image/*")) }
+                    bottomContent { photoPickerLauncher.launch("image/*") }
                 }
             }
         }
@@ -558,7 +557,7 @@ private fun ScannerCorner(
     }
 }
 
-private fun processImageWithZxing(
+private suspend fun processImageWithZxing(
     context: Context,
     uri: Uri,
     decoder: ZxingBarcodeDecoder,
@@ -566,48 +565,85 @@ private fun processImageWithZxing(
     resultValidator: (String) -> Boolean,
     onResult: (String) -> Unit,
     onInvalid: () -> Unit,
-    onNotFound: () -> Unit,
-    onReadFailed: () -> Unit = onNotFound
+    onNotFound: () -> Unit
 ) {
-    val mainExecutor = ContextCompat.getMainExecutor(context)
-    Thread {
-        val startedAt = SystemClock.elapsedRealtime()
-        val candidates = runCatching { decoder.decodeUri(context, uri) }
-            .onFailure { error ->
-                android.util.Log.w("QrGallery", "decode failed: ${error.javaClass.simpleName}: ${error.message}")
-                diagnostics?.logGalleryDecodeFailed(error)
-                mainExecutor.execute { onReadFailed() }
-                return@Thread
-            }
-            .getOrDefault(emptyList())
-        android.util.Log.d("QrGallery", "decode done in ${SystemClock.elapsedRealtime() - startedAt}ms, candidates=${candidates.size}")
-        val durationMs = SystemClock.elapsedRealtime() - startedAt
-        when (val value = candidates.firstOrNull(resultValidator)) {
-            null -> {
-                val invalid = candidates.isNotEmpty()
+    val startedAt = SystemClock.elapsedRealtime()
+    val bitmap = withContext(Dispatchers.IO) { loadDownsampledBitmap(context, uri) }
+    if (bitmap == null) {
+        diagnostics?.logGalleryDecodeFailed(IllegalStateException("bitmap_decode_failed"))
+        onNotFound()
+        return
+    }
+
+    val candidates = try {
+        withContext(Dispatchers.Default) { decoder.decodeBitmap(bitmap) }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        diagnostics?.logGalleryScanFailed(error)
+        onNotFound()
+        return
+    } finally {
+        bitmap.recycle()
+    }
+
+    when (val value = candidates.firstOrNull(resultValidator)) {
+        null -> {
+            if (candidates.isEmpty()) {
                 diagnostics?.logGalleryResult(
-                    durationMs = durationMs,
+                    durationMs = SystemClock.elapsedRealtime() - startedAt,
                     barcodeCount = candidates.size,
                     candidateCount = candidates.size,
                     matched = false,
-                    invalid = invalid
-                )
-                mainExecutor.execute { if (invalid) onInvalid() else onNotFound() }
-            }
-            else -> {
-                diagnostics?.logGalleryResult(
-                    durationMs = durationMs,
-                    barcodeCount = candidates.size,
-                    candidateCount = candidates.size,
-                    matched = true,
                     invalid = false
                 )
-                mainExecutor.execute { onResult(value) }
+                onNotFound()
+            } else {
+                diagnostics?.logGalleryResult(
+                    durationMs = SystemClock.elapsedRealtime() - startedAt,
+                    barcodeCount = candidates.size,
+                    candidateCount = candidates.size,
+                    matched = false,
+                    invalid = true
+                )
+                onInvalid()
             }
         }
-    }.start()
+        else -> {
+            diagnostics?.logGalleryResult(
+                durationMs = SystemClock.elapsedRealtime() - startedAt,
+                barcodeCount = candidates.size,
+                candidateCount = candidates.size,
+                matched = true,
+                invalid = false
+            )
+            onResult(value)
+        }
+    }
+}
+
+private fun loadDownsampledBitmap(context: Context, uri: Uri): Bitmap? {
+    return runCatching {
+        val resolver = context.contentResolver
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        resolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, bounds)
+        }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            return null
+        }
+        var sampleSize = 1
+        while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize > GALLERY_MAX_DIMENSION) {
+            sampleSize *= 2
+        }
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        resolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, options)
+        }
+    }.getOrNull()
 }
 
 private const val QR_SCAN_DIAG_HEARTBEAT_MS = 30_000L
 private const val QR_SCAN_HEALTH_TICK_MS = 500L
 private const val QR_SCAN_SESSION_RESTART_DELAY_MS = 450L
+private const val GALLERY_MAX_DIMENSION = 2048

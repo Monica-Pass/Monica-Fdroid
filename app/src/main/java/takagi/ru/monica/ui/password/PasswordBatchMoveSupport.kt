@@ -26,6 +26,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.Date
 import takagi.ru.monica.R
+import takagi.ru.monica.attachments.ui.attachmentErrorMessage
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.data.Category
 import takagi.ru.monica.data.LocalKeePassDatabase
@@ -1767,7 +1768,13 @@ internal fun PasswordBatchMoveSheet(
                     } else {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.webdav_operation_failed, e.message ?: ""),
+                            if (e is PasswordBatchAttachmentTransferException) {
+                                context.getString(
+                                    R.string.password_batch_attachment_failure,
+                                    e.failedPasswordCount,
+                                    attachmentErrorMessage(context, e.cause ?: e)
+                                )
+                            } else context.getString(R.string.webdav_operation_failed, e.message ?: ""),
                             Toast.LENGTH_SHORT
                         ).show()
                     }

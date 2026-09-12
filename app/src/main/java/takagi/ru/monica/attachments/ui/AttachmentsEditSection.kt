@@ -413,24 +413,5 @@ private fun humanReadableSize(bytes: Long): String {
 }
 
 private fun resolveErrorMessage(context: android.content.Context, e: Throwable): String {
-    val resId = when (e) {
-        is AttachmentError.TooLarge -> R.string.attachment_error_too_large
-        AttachmentError.QuotaExceeded -> R.string.attachment_error_quota_exceeded
-        AttachmentError.PremiumRequired -> R.string.attachment_error_premium_required
-        AttachmentError.Offline -> R.string.attachment_error_offline
-        is AttachmentError.NetworkError -> R.string.attachment_error_network
-        AttachmentError.CryptoError -> R.string.attachment_error_crypto
-        AttachmentError.IoError -> R.string.attachment_error_io
-        AttachmentError.KdbxLocked -> R.string.attachment_error_kdbx_locked
-        AttachmentError.KdbxCapacityExceeded -> R.string.attachment_error_kdbx_capacity
-        else -> R.string.attachment_error_io
-    }
-    return when (e) {
-        is AttachmentError.TooLarge -> {
-            val mb = e.limitBytes / (1024 * 1024)
-            context.getString(resId, "${mb} MB")
-        }
-        is AttachmentError.NetworkError -> context.getString(resId, e.httpStatus?.toString() ?: "-")
-        else -> context.getString(resId)
-    }
+    return attachmentErrorMessage(context, e)
 }

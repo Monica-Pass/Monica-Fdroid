@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.UnfoldMore
@@ -36,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -50,95 +50,17 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-internal fun expressiveScrollbarMaxFirstIndex(totalItems: Int, visibleItems: Int): Int =
-    (totalItems - visibleItems.coerceAtLeast(1)).coerceAtLeast(1)
-
-internal fun expressiveScrollbarTargetIndex(
-    progress: Float,
-    totalItems: Int,
-    visibleItems: Int,
-): Int = (progress.coerceIn(0f, 1f) * expressiveScrollbarMaxFirstIndex(totalItems, visibleItems))
-    .roundToInt()
-    .coerceIn(0, (totalItems - 1).coerceAtLeast(0))
-
 private data class ExpressiveScrollbarMetrics(
     val progress: Float,
-    val totalItems: Int,
-    val maxScrollIndex: Int,
     val travelPx: Float,
 )
-
-/**
- * Measured item-stride tracker for variable-height cards.
- *
- * Observations accumulate per index instead of folding into a running average. [observe] runs
- * inside the metrics snapshot producer, so it has to be idempotent: a history-dependent estimate
- * makes the same layout yield different progress values and the handle jitters during a fling.
- */
-internal class ExpressiveScrollbarAxisTracker {
-    private var trackedTotalItems = -1
-    private var trackedSpacingPx = Int.MIN_VALUE
-    private val observedStrides = mutableMapOf<Int, Float>()
-    private val observedItemSizes = mutableMapOf<Int, Float>()
-    private var strideSum = 0f
-    private var itemSizeSum = 0f
-
-    fun resetIfNeeded(totalItems: Int, spacingPx: Int) {
-        if (trackedTotalItems == totalItems && trackedSpacingPx == spacingPx) return
-        trackedTotalItems = totalItems
-        trackedSpacingPx = spacingPx
-        observedStrides.clear()
-        observedItemSizes.clear()
-        strideSum = 0f
-        itemSizeSum = 0f
-    }
-
-    fun observe(layout: LazyListLayoutInfo) {
-        resetIfNeeded(layout.totalItemsCount, layout.mainAxisItemSpacing)
-        val visible = layout.visibleItemsInfo
-        if (visible.isEmpty()) return
-        visible.forEach { item ->
-            val size = item.size.toFloat()
-            itemSizeSum += size - (observedItemSizes.put(item.index, size) ?: 0f)
-        }
-        visible.zipWithNext().forEach { (current, next) ->
-            if (next.index != current.index + 1) return@forEach
-            val stride = (next.offset - current.offset).toFloat()
-            if (stride <= 0f) return@forEach
-            strideSum += stride - (observedStrides.put(current.index, stride) ?: 0f)
-        }
-    }
-
-    private fun averageStride(): Float = if (observedStrides.isEmpty()) {
-        averageItemSize()
-    } else {
-        (strideSum / observedStrides.size).coerceAtLeast(1f)
-    }
-
-    private fun averageItemSize(): Float = if (observedItemSizes.isEmpty()) {
-        1f
-    } else {
-        (itemSizeSum / observedItemSizes.size).coerceAtLeast(1f)
-    }
-
-    /** Measured strides where known, mean elsewhere; monotonically increasing in [index]. */
-    fun distanceBefore(index: Int): Float {
-        if (index <= 0) return 0f
-        val average = averageStride()
-        val correction = observedStrides.entries.sumOf { (observedIndex, stride) ->
-            if (observedIndex < index) (stride - average).toDouble() else 0.0
-        }.toFloat()
-        return (index * average + correction).coerceAtLeast(0f)
-    }
-
-    fun itemSize(index: Int): Float = observedItemSizes[index] ?: averageItemSize()
-    fun stride(): Float = averageStride()
-}
 
 private fun expressiveScrollbarMetrics(
     listState: LazyListState,
@@ -150,8 +72,8 @@ private fun expressiveScrollbarMetrics(
     val visible = layout.visibleItemsInfo
     val totalItems = layout.totalItemsCount
     val travelPx = (availableHeightPx - handleHeightPx).coerceAtLeast(1f)
-    if (visible.isEmpty() || totalItems <= 1) {
-        return ExpressiveScrollbarMetrics(0f, totalItems, 1, travelPx)
+    if (visible.isEmpty() || totalItems == 0) {
+        return ExpressiveScrollbarMetrics(0f, travelPx)
     }
     tracker.observe(layout)
     val viewportPx = (layout.viewportEndOffset - layout.viewportStartOffset).toFloat().coerceAtLeast(1f)
@@ -161,14 +83,12 @@ private fun expressiveScrollbarMetrics(
         layout.beforeContentPadding + layout.afterContentPadding +
             tracker.distanceBefore(lastIndex) + tracker.itemSize(lastIndex) - viewportPx
         ).coerceAtLeast(1f)
-    val estimatedVisibleItems = (viewportPx / tracker.stride()).coerceAtLeast(1f)
-    val maxScrollIndex = (totalItems - estimatedVisibleItems).toInt().coerceAtLeast(1)
     val progress = when {
         !listState.canScrollBackward -> 0f
         !listState.canScrollForward -> 1f
         else -> (currentScrollPx / totalScrollPx).coerceIn(0f, 1f)
     }
-    return ExpressiveScrollbarMetrics(progress, totalItems, maxScrollIndex, travelPx)
+    return ExpressiveScrollbarMetrics(progress, travelPx)
 }
 
 @Composable
@@ -192,7 +112,8 @@ fun ExpressiveLazyListScrollbar(
     var isPressed by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
     var dragProgress by remember { mutableFloatStateOf(0f) }
-    var pendingTargetIndex by remember { mutableIntStateOf(-1) }
+    var dragTargetIndex by remember { mutableIntStateOf(-1) }
+    var pendingTarget by remember(listState) { mutableStateOf<ExpressiveScrollbarTarget?>(null) }
     var retainedLabel by remember { mutableStateOf<String?>(null) }
     val metricsTracker = remember(listState) { ExpressiveScrollbarAxisTracker() }
     val displayedProgress = remember(listState) { Animatable(0f) }
@@ -217,8 +138,8 @@ fun ExpressiveLazyListScrollbar(
         animationSpec = tween(durationMillis = 160),
         label = "vaultScrollbarIcon",
     )
-    val activeLabel = if (isDragging && pendingTargetIndex >= 0) {
-        labelForIndex(pendingTargetIndex)
+    val activeLabel = if (isDragging && dragTargetIndex >= 0) {
+        labelForIndex(dragTargetIndex)
     } else {
         null
     }
@@ -237,10 +158,14 @@ fun ExpressiveLazyListScrollbar(
     )
 
     LaunchedEffect(listState) {
-        snapshotFlow { pendingTargetIndex }
-            .distinctUntilChanged()
-            .collectLatest { targetIndex ->
-                if (targetIndex >= 0) listState.scrollToItem(targetIndex)
+        snapshotFlow { pendingTarget }
+            .filterNotNull()
+            .collect {
+                // Coalesce pointer events into one position request per frame.
+                withFrameNanos { }
+                val target = pendingTarget ?: return@collect
+                pendingTarget = null
+                listState.requestScrollToItem(target.index, target.offset)
             }
     }
 
@@ -281,13 +206,13 @@ fun ExpressiveLazyListScrollbar(
             }
         }
 
-        fun updateFromTouch(touchY: Float, grabOffset: Float) {
+        fun updateFromTouch(touchY: Float, grabOffset: Float, axis: ExpressiveScrollbarDragAxis) {
             val nextProgress = ((touchY - grabOffset) / travelPx).coerceIn(0f, 1f)
             dragProgress = nextProgress
-            val metrics = expressiveScrollbarMetrics(listState, metricsTracker, heightPx, handleHeightPx)
-            pendingTargetIndex = (nextProgress * metrics.maxScrollIndex)
-                .toInt()
-                .coerceIn(0, (metrics.totalItems - 1).coerceAtLeast(0))
+            metricsTracker.observe(listState.layoutInfo)
+            val target = axis.target(nextProgress, metricsTracker)
+            dragTargetIndex = target.index
+            pendingTarget = target
         }
 
         Box(
@@ -305,8 +230,9 @@ fun ExpressiveLazyListScrollbar(
                         },
                     )
                 }
-                .pointerInput(listState) {
+                .pointerInput(listState, heightPx, handleHeightPx) {
                     var grabOffset = handleHeightPx / 2f
+                    var dragAxis: ExpressiveScrollbarDragAxis? = null
                     detectDragGestures(
                         onDragStart = { position ->
                             isDragging = true
@@ -317,19 +243,25 @@ fun ExpressiveLazyListScrollbar(
                             } else {
                                 handleHeightPx / 2f
                             }
-                            updateFromTouch(position.y, grabOffset)
+                            val axis = metricsTracker.dragAxis(listState.layoutInfo)
+                            dragAxis = axis
+                            updateFromTouch(position.y, grabOffset, axis)
                         },
                         onDrag = { change, _ ->
                             change.consume()
-                            updateFromTouch(change.position.y, grabOffset)
+                            val axis = dragAxis?.takeIf { it.itemCount == listState.layoutInfo.totalItemsCount }
+                                ?: metricsTracker.dragAxis(listState.layoutInfo).also { dragAxis = it }
+                            updateFromTouch(change.position.y, grabOffset, axis)
                         },
                         onDragEnd = {
                             isDragging = false
-                            pendingTargetIndex = -1
+                            dragAxis = null
+                            // The final pointer event may still be waiting for its frame.
                         },
                         onDragCancel = {
                             isDragging = false
-                            pendingTargetIndex = -1
+                            dragAxis = null
+                            pendingTarget = null
                         },
                     )
                 },
@@ -341,7 +273,7 @@ fun ExpressiveLazyListScrollbar(
                 val endPaddingPx = endPadding.toPx()
                 val collapsedWidthPx = collapsedWidth.toPx()
                 val indicatorWidthPx = displayedWidth.toPx()
-                val handleTop = displayedProgress.value * travelPx
+                val handleTop = (if (isDragging) dragProgress else displayedProgress.value) * travelPx
                 val anchorX = size.width - endPaddingPx
                 val trackX = anchorX - collapsedWidthPx / 2f
                 val gapPx = 7.dp.toPx()
@@ -395,7 +327,7 @@ fun ExpressiveLazyListScrollbar(
                             IntOffset(
                                 x = -with(density) { endPadding.toPx() }.roundToInt() -
                                     ((widthPx - with(density) { 24.dp.toPx() }) / 2f).roundToInt(),
-                                y = (displayedProgress.value * travelPx +
+                                y = ((if (isDragging) dragProgress else displayedProgress.value) * travelPx +
                                     (handleHeightPx - with(density) { 24.dp.toPx() }) / 2f).roundToInt(),
                             )
                         }
@@ -416,7 +348,7 @@ fun ExpressiveLazyListScrollbar(
                         .offset {
                             IntOffset(
                                 x = -with(density) { (interactionWidth + 10.dp).toPx() }.roundToInt(),
-                                y = (displayedProgress.value * travelPx +
+                                y = ((if (isDragging) dragProgress else displayedProgress.value) * travelPx +
                                     (handleHeightPx - with(density) { 44.dp.toPx() }) / 2f).roundToInt(),
                             )
                         }

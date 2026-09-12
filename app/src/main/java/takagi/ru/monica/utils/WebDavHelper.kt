@@ -8,6 +8,7 @@ import android.widget.Toast
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -331,6 +332,7 @@ private data class WebDavConnectionBackupEntry(
     val enableEncryption: Boolean = false,
     val encryptedEncryptionPassword: String = "",
     val autoBackupEnabled: Boolean = false,
+    val backupRetentionConfig: BackupRetentionConfig? = null,
 )
 
 @Serializable
@@ -427,6 +429,8 @@ private data class PageAdjustmentSettingsBackupEntry(
     val authenticatorCardHideCodeByDefault: Boolean = false,
     val authenticatorLayoutMode: String = takagi.ru.monica.data.AuthenticatorLayoutMode.STANDARD.name,
     val vaultV2LayoutMode: String = takagi.ru.monica.data.VaultV2LayoutMode.CLASSIC.name,
+    val vaultOverviewEnabled: Boolean = true,
+    val vaultOverviewConfig: String = "{}",
     val validatorProgressBarStyle: String = "LINEAR",
     val validatorUnifiedProgressBar: String = "ENABLED",
     val validatorSmoothProgress: Boolean = true,
@@ -636,6 +640,8 @@ class WebDavHelper(
         private const val KEY_CHANGE_TRIGGERED_ENABLED = "change_triggered_backup_enabled"
         private const val KEY_CHANGE_QUIET_MINUTES = "change_triggered_quiet_minutes"
         private const val KEY_CHANGE_MIN_INTERVAL_MINUTES = "change_triggered_min_interval_minutes"
+        private const val KEY_BACKUP_RETENTION_ENABLED = "backup_retention_enabled"
+        private const val KEY_BACKUP_RETENTION_MAX_BACKUPS = "backup_retention_max_backups"
 
         /** 静默时长默认值：连续录入多条时合并为一次上传。 */
         const val DEFAULT_QUIET_MINUTES = 2
@@ -763,6 +769,8 @@ class WebDavHelper(
             authenticatorCardHideCodeByDefault = authenticatorCardHideCodeByDefault,
             authenticatorLayoutMode = authenticatorLayoutMode,
             vaultV2LayoutMode = vaultV2LayoutMode,
+            vaultOverviewEnabled = vaultOverviewEnabled,
+            vaultOverviewConfig = vaultOverviewConfig,
             validatorProgressBarStyle = validatorProgressBarStyle,
             validatorUnifiedProgressBar = validatorUnifiedProgressBar,
             validatorSmoothProgress = validatorSmoothProgress,
@@ -954,6 +962,7 @@ class WebDavHelper(
                         enableEncryption = enableEncryption,
                         encryptedEncryptionPassword = encryptedEncPassword,
                         autoBackupEnabled = isAutoBackupEnabled(),
+                        backupRetentionConfig = getBackupRetentionConfig(),
                     ),
                 ),
                 Charsets.UTF_8,
@@ -1230,6 +1239,8 @@ class WebDavHelper(
             .remove(KEY_ENABLE_ENCRYPTION)
             .remove(KEY_AUTO_BACKUP_ENABLED)
             .remove(KEY_LAST_BACKUP_TIME)
+            .remove(KEY_BACKUP_RETENTION_ENABLED)
+            .remove(KEY_BACKUP_RETENTION_MAX_BACKUPS)
             .remove(KEY_BACKUP_INCLUDE_PASSWORDS)
             .remove(KEY_BACKUP_INCLUDE_AUTHENTICATORS)
             .remove(KEY_BACKUP_INCLUDE_DOCUMENTS)
@@ -1428,6 +1439,27 @@ class WebDavHelper(
             .putInt(
                 KEY_CHANGE_MIN_INTERVAL_MINUTES,
                 config.minIntervalMinutes.coerceIn(MIN_INTERVAL_MINUTES_RANGE)
+            )
+            .apply()
+    }
+
+    fun getBackupRetentionConfig(): BackupRetentionConfig {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return BackupRetentionConfig(
+            enabled = prefs.getBoolean(KEY_BACKUP_RETENTION_ENABLED, false),
+            maxBackups = prefs.getInt(
+                KEY_BACKUP_RETENTION_MAX_BACKUPS,
+                BackupRetentionConfig.DEFAULT_MAX_BACKUPS
+            ).coerceIn(BackupRetentionConfig.MAX_BACKUPS_RANGE)
+        )
+    }
+
+    fun setBackupRetentionConfig(config: BackupRetentionConfig) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_BACKUP_RETENTION_ENABLED, config.enabled)
+            .putInt(
+                KEY_BACKUP_RETENTION_MAX_BACKUPS,
+                config.maxBackups.coerceIn(BackupRetentionConfig.MAX_BACKUPS_RANGE)
             )
             .apply()
     }
@@ -2835,8 +2867,11 @@ class WebDavHelper(
                 if (uploadResult.isSuccess) {
                     updateLastBackupTime()
 
-                    // Trigger cleanup after successful upload
-                    cleanupBackups()
+                    // Cleanup must not run until a complete replacement has been uploaded.
+                    val cleanupResult = cleanupBackups(protectedBackupName = uploadResult.getOrThrow())
+                    cleanupResult.onFailure { error ->
+                        android.util.Log.w("WebDavHelper", "Backup uploaded, but retention cleanup failed", error)
+                    }
                     
                     // 记录 WebDAV 上传操作到时间线
                     val uploadDetails = mutableListOf<FieldChange>()
@@ -2868,8 +2903,14 @@ class WebDavHelper(
                         details = uploadDetails
                     )
 
-                    // 更新报告状态为 true (如果之前没有失败项)
-                    val finalReport = report.copy(success = report.success)
+                    // A cleanup failure is a warning; the new backup is already safely uploaded.
+                    val finalReport = report.copy(
+                        warnings = if (cleanupResult.isFailure) {
+                            report.warnings + context.getString(R.string.webdav_cleanup_failed)
+                        } else {
+                            report.warnings
+                        }
+                    )
                     Result.success(finalReport)
                 } else {
                     Result.failure(uploadResult.exceptionOrNull() ?: Exception("上传失败"))
@@ -3969,6 +4010,8 @@ class WebDavHelper(
                                                     pageAdjustmentBackup.authenticatorLayoutMode,
                                                 vaultV2LayoutMode =
                                                     pageAdjustmentBackup.vaultV2LayoutMode,
+                                                vaultOverviewEnabled = pageAdjustmentBackup.vaultOverviewEnabled,
+                                                vaultOverviewConfig = pageAdjustmentBackup.vaultOverviewConfig,
                                                 validatorProgressBarStyle =
                                                     pageAdjustmentBackup.validatorProgressBarStyle,
                                                 validatorUnifiedProgressBar =
@@ -4199,6 +4242,7 @@ class WebDavHelper(
 
                                                         // 配置自动备份
                                                         configureAutoBackup(webDavConfigBackup.autoBackupEnabled)
+                                                        webDavConfigBackup.backupRetentionConfig?.let(::setBackupRetentionConfig)
 
                                                         android.util.Log.d("WebDavHelper", "Restored WebDAV config")
                                                         warnings.add("✓ WebDAV配置已恢复: ${webDavConfigBackup.serverUrl}")
@@ -5699,7 +5743,7 @@ class WebDavHelper(
                         name = resource.name,
                         path = resource.href.toString(),
                         size = resource.contentLength ?: 0,
-                        modified = resource.modified ?: Date()
+                        modified = resource.modified ?: Date(0L)
                     )
                 }
                 .sortedByDescending { it.modified }
@@ -5735,9 +5779,10 @@ class WebDavHelper(
     }
     
     /**
-     * Delete backups older than 60 days (only temporary ones)
+     * Apply the configured count limit, or the existing age policy when it is disabled.
+     * Permanent backups are never automatically deleted.
      */
-    suspend fun cleanupBackups(): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun cleanupBackups(protectedBackupName: String? = null): Result<Int> = withContext(Dispatchers.IO) {
         try {
             if (sardine == null) {
                 return@withContext Result.failure(Exception("WebDAV not configured"))
@@ -5751,7 +5796,11 @@ class WebDavHelper(
             val backups = result.getOrNull() ?: emptyList()
             var deletedCount = 0
 
-            val expiredBackups = BackupRetentionPolicy.expiredTemporaryBackupsToDelete(backups)
+            val expiredBackups = BackupRetentionPolicy.backupsToDelete(
+                backups = backups,
+                config = getBackupRetentionConfig(),
+                protectedBackupName = protectedBackupName
+            )
             android.util.Log.i(
                 "WebDavHelper",
                 "Cleanup scan: total=${backups.size}, " +
@@ -5759,16 +5808,14 @@ class WebDavHelper(
             )
 
             expiredBackups.forEach { backup ->
-                android.util.Log.d("WebDavHelper", "Deleting expired backup: ${backup.name}")
-                try {
-                    deleteBackup(backup)
-                    deletedCount++
-                } catch (e: Exception) {
-                    android.util.Log.w("WebDavHelper", "Failed to delete expired backup ${backup.name}: ${e.message}")
-                }
+                android.util.Log.d("WebDavHelper", "Deleting old backup: ${backup.name}")
+                check(deleteBackup(backup).getOrThrow()) { "Failed to delete old backup" }
+                deletedCount++
             }
 
             Result.success(deletedCount)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -6086,7 +6133,7 @@ data class BackupFile(
             if (isPermanent) return false
             // Expiring if older than 50 days (10 days left until 60 days limit)
             val fiftyDaysAgo = System.currentTimeMillis() - (50L * 24 * 60 * 60 * 1000)
-            return modified.time < fiftyDaysAgo
+            return modified.time > 0L && modified.time < fiftyDaysAgo
         }
 
     /**

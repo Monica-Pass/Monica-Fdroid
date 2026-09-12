@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">証明書の有効期限が切れています。端末の日時を確認し、サーバー管理者に証明書の更新を依頼してください。</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">証明書はまだ有効ではありません。端末の日時と証明書の有効期間を確認してください。</string>
+    <string name="bitwarden_error_certificate_hostname">サーバー証明書が入力したドメインと一致しません。セルフホストのアドレスと、リバースプロキシが返す証明書を確認してください。</string>
+    <string name="bitwarden_error_certificate_untrusted">サーバー証明書を検証できませんでした。サーバーの証明書チェーン、端末が信頼する CA、プロキシによる HTTPS 証明書の置き換えを確認してください。自己署名サーバーの場合は、証明書設定で対応する CA を設定してください。</string>
+    <string name="bitwarden_error_tls_handshake">安全な TLS 接続を確立できませんでした。サーバーまたはリバースプロキシの TLS 設定とプロトコルのバージョン、mTLS を有効にしている場合はクライアント証明書を確認してください。</string>
+    <string name="bitwarden_error_dns">サーバーのドメイン名を解決できませんでした。セルフホストのアドレス、DNS、VPN、プロキシの設定を確認してください。</string>
+    <string name="bitwarden_error_timeout">サーバーへの接続がタイムアウトしました。サーバーがオンラインであることを確認し、ポート、ネットワーク、VPN、プロキシの設定を確認してください。</string>
+    <string name="bitwarden_error_connection">サーバーに接続できませんでした。アドレスとポート、サービスの起動状態、ファイアウォールとプロキシの設定を確認してください。</string>
+    <string name="bitwarden_error_proxy">プロキシが接続を拒否したか、認証を要求しています。プロキシのアドレス、ポート、アカウント設定を確認してください。</string>
+    <string name="bitwarden_error_cleartext">サーバーのアドレスは HTTP を使用していますが、現在のセキュリティポリシーでは許可されていません。HTTPS アドレスを使用し、リバースプロキシの HTTPS 設定を確認してください。</string>
+    <string name="bitwarden_error_network_io">ネットワークエラーによりサーバーとの通信が中断されました。ネットワーク、VPN、プロキシの設定を確認して再試行してください。</string>
+</resources>

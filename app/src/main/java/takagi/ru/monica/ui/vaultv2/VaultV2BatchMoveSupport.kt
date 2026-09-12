@@ -30,6 +30,9 @@ internal fun buildVaultV2BatchMovePlan(
         documents = selectedItems.mapNotNull { item ->
             item.secureItem.takeIf { item.type == VaultV2ItemType.DOCUMENT }
         },
+        billingAddresses = selectedItems.mapNotNull { item ->
+            item.secureItem.takeIf { item.type == VaultV2ItemType.BILLING_ADDRESS }
+        },
         notes = selectedItems.mapNotNull { item ->
             item.secureItem.takeIf { item.type == VaultV2ItemType.NOTE }
         },

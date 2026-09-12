@@ -26,7 +26,7 @@ import takagi.ru.monica.bitwarden.cache.BitwardenOfflineSecretCache
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.service.LoginResult
 import takagi.ru.monica.bitwarden.sync.BitwardenCoordinatedSyncResult
-import takagi.ru.monica.bitwarden.sync.BitwardenAllVaultAutoSyncScheduler
+import takagi.ru.monica.bitwarden.sync.BitwardenPageAutoSyncScheduler
 import takagi.ru.monica.bitwarden.sync.BitwardenAutoSyncTargetPlanner
 import takagi.ru.monica.bitwarden.sync.BitwardenMutationSyncBridge
 import takagi.ru.monica.bitwarden.sync.BitwardenSyncOrchestrator
@@ -178,13 +178,13 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
         isVaultUnlocked = { vaultId -> repository.isVaultUnlocked(vaultId) },
         executeSync = { vaultId, silent -> runSync(vaultId = vaultId, silent = silent) }
     )
-    private val allVaultAutoSyncScheduler = BitwardenAllVaultAutoSyncScheduler(
+    private val pageAutoSyncScheduler = BitwardenPageAutoSyncScheduler(
         scope = viewModelScope,
         delayBetweenVaultsMs = MULTI_VAULT_AUTO_SYNC_STAGGER_MS,
-        requestSync = { vaultId ->
+        requestSync = { vaultId, reason ->
             syncOrchestrator.requestSync(
                 vaultId = vaultId,
-                reason = SyncTriggerReason.PERIODIC
+                reason = reason
             )
         }
     )
@@ -219,7 +219,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     override fun onCleared() {
-        allVaultAutoSyncScheduler.cancelPending()
+        pageAutoSyncScheduler.cancelPending()
         BitwardenMutationSyncBridge.unregister(this)
         super.onCleared()
     }
@@ -453,7 +453,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _events.emit(BitwardenEvent.ShowSuccess("邮箱验证码已发送，请检查收件箱和垃圾邮件"))
                 },
                 onFailure = { error ->
-                    _events.emit(BitwardenEvent.ShowError("发送邮箱验证码失败：${error.message ?: "未知错误"}"))
+                    _events.emit(BitwardenEvent.ShowError("发送邮箱验证码失败：${repository.describeLoginError(error)}"))
                 }
             )
         }
@@ -646,25 +646,29 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * 页面进入时触发自动同步（节流+门控由 Orchestrator 负责）。
+     * 页面持有整个等待期，离开页面时取消尚未发出的同步请求。
+     * 只接受页面明确选中的 Vault，不回退到全局活跃账号。
      */
-    fun requestPageEnterAutoSync(vaultId: Long? = null) {
-        allVaultAutoSyncScheduler.cancelPending()
-        val targetVaultId = vaultId ?: _activeVault.value?.id ?: return
-        requestAutoSyncWithStartupGrace(targetVaultId, SyncTriggerReason.PAGE_ENTER)
+    fun beginPageEnterAutoSync(vaultId: Long): Long {
+        return pageAutoSyncScheduler.begin(
+            initialDelayMs = pageAutoSyncDelayMs(),
+            reason = SyncTriggerReason.PAGE_ENTER
+        ) {
+            if (_isAutoSyncEnabled.value) listOf(vaultId) else emptyList()
+        }
     }
 
     /**
      * ALL 视图持有的后台同步会话。
      *
      * 调用方必须在离开对应 ALL 视图时使用返回的 sessionId 调用
-     * [endAllViewAutoSync]。旧页面的 sessionId 无法取消新页面建立的会话。
+     * [endPageAutoSync]。旧页面的 sessionId 无法取消新页面建立的会话。
      */
     fun beginAllViewAutoSync(): Long {
-        val elapsed = System.currentTimeMillis() - processStartMs
-        val coldStartRemaining = (COLD_START_AUTO_SYNC_GRACE_MS - elapsed).coerceAtLeast(0L)
-        val initialDelayMs = maxOf(1_200L, coldStartRemaining)
-        return allVaultAutoSyncScheduler.begin(initialDelayMs = initialDelayMs) {
+        return pageAutoSyncScheduler.begin(
+            initialDelayMs = pageAutoSyncDelayMs(),
+            reason = SyncTriggerReason.PERIODIC
+        ) {
             if (!_isAutoSyncEnabled.value) {
                 emptyList()
             } else {
@@ -676,45 +680,14 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun endAllViewAutoSync(sessionId: Long) {
-        allVaultAutoSyncScheduler.end(sessionId)
+    fun endPageAutoSync(sessionId: Long) {
+        pageAutoSyncScheduler.end(sessionId)
     }
 
-    /**
-     * App 启动/主界面认证通过后触发自动同步。
-     *
-     * 不在 ViewModel init 中调用：非 Bitwarden 页面也会创建本 ViewModel，
-     * init 自动同步会造成无关页面误触发。
-     *
-     * 启动阶段只同步 preferred/active vault。全部账号的自动同步由明确的
-     * ALL 视图会话负责，避免普通页面启动时排队拉取所有账号。
-     */
-    fun requestStartupAutoSync(preferredVaultId: Long? = null) {
-        if (!_isAutoSyncEnabled.value) {
-            Log.d(TAG, "Startup auto sync skipped: auto sync disabled")
-            return
-        }
-        viewModelScope.launch {
-            // init loadVaults() is async; give never-lock restore a brief chance
-            // to republish unlocked vaults before deciding there is nothing to sync.
-            val unlockedVaultIds = awaitUnlockedVaultIds()
-            if (unlockedVaultIds.isEmpty()) {
-                Log.d(TAG, "Startup auto sync skipped: no unlocked vaults")
-                return@launch
-            }
-
-            val targetVaultId = BitwardenAutoSyncTargetPlanner.startupTarget(
-                unlockedVaultIds = unlockedVaultIds,
-                preferredVaultId = preferredVaultId,
-                activeVaultId = _activeVault.value?.id
-            ) ?: return@launch
-
-            Log.d(TAG, "Startup auto sync scheduled for vault=$targetVaultId")
-            requestSyncWithStartupGrace(
-                vaultId = targetVaultId,
-                reason = SyncTriggerReason.APP_RESUME
-            )
-        }
+    private fun pageAutoSyncDelayMs(): Long {
+        val elapsed = System.currentTimeMillis() - processStartMs
+        val coldStartRemaining = (COLD_START_AUTO_SYNC_GRACE_MS - elapsed).coerceAtLeast(0L)
+        return maxOf(BitwardenPageAutoSyncScheduler.PAGE_ENTER_AUTO_SYNC_DELAY_MS, coldStartRemaining)
     }
 
     /**

@@ -49,11 +49,12 @@ internal data class NewItemStorageDefaults(
     val mdbxDatabaseId: Long? = null,
     val mdbxFolderId: String? = null,
     val bitwardenVaultId: Long? = null,
-    val bitwardenFolderId: String? = null
+    val bitwardenFolderId: String? = null,
+    val explicit: Boolean = false,
 )
 
 internal fun NewItemStorageDefaults.hasAnyValue(): Boolean {
-    return categoryId != null ||
+    return explicit || categoryId != null ||
         keepassDatabaseId != null ||
         !keepassGroupPath.isNullOrBlank() ||
         mdbxDatabaseId != null ||

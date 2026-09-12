@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_selection_stack_title">Стопка · %1$s</string>
+    <string name="wallet_selection_unstacked">Отдельные карточки</string>
+    <string name="wallet_selection_group_count">Выбрано %1$d из %2$d</string>
+    <string name="wallet_selection_visible_group_count">Выбрано %1$d из %2$d видимых карточек</string>
+</resources>

@@ -1,46 +1,28 @@
 package takagi.ru.monica.sync
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 import takagi.ru.monica.bitwarden.sync.BitwardenAutoSyncTargetPlanner
 
 class BitwardenAutoSyncTargetPlannerTest {
 
     @Test
-    fun startupSelectsOnlyPreferredUnlockedVault() {
+    fun allViewKeepsUnlockedOrderWhenActiveVaultIsUnavailable() {
         assertEquals(
-            7L,
-            BitwardenAutoSyncTargetPlanner.startupTarget(
-                unlockedVaultIds = listOf(3L, 7L, 9L),
-                preferredVaultId = 7L,
-                activeVaultId = 3L
+            listOf(3L, 7L, 9L),
+            BitwardenAutoSyncTargetPlanner.allViewTargets(
+                unlockedVaultIds = listOf(3L, 7L, 7L, 9L),
+                activeVaultId = 99L
             )
         )
     }
 
     @Test
-    fun startupFallsBackToActiveThenFirstUnlockedVault() {
+    fun allViewDoesNotSyncAnActiveVaultThatIsLocked() {
         assertEquals(
-            3L,
-            BitwardenAutoSyncTargetPlanner.startupTarget(
-                unlockedVaultIds = listOf(3L, 7L),
-                preferredVaultId = 99L,
-                activeVaultId = 3L
-            )
-        )
-        assertEquals(
-            7L,
-            BitwardenAutoSyncTargetPlanner.startupTarget(
-                unlockedVaultIds = listOf(7L, 9L),
-                preferredVaultId = 99L,
-                activeVaultId = 88L
-            )
-        )
-        assertNull(
-            BitwardenAutoSyncTargetPlanner.startupTarget(
+            emptyList<Long>(),
+            BitwardenAutoSyncTargetPlanner.allViewTargets(
                 unlockedVaultIds = emptyList(),
-                preferredVaultId = 7L,
                 activeVaultId = 3L
             )
         )

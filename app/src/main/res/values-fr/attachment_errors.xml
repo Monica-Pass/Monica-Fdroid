@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="attachment_error_bitwarden_locked">Le coffre Bitwarden est verrouillé ou la session a expiré. Déverrouillez-le ou reconnectez-vous.</string>
+  <string name="attachment_error_remote_data">Le serveur a renvoyé des informations de pièce jointe incomplètes. Synchronisez le coffre et réessayez.</string>
+  <string name="attachment_error_unsupported_encryption">Cette pièce jointe utilise un format de chiffrement non pris en charge (type %1$d). Exportez-la avec le client officiel, puis importez-la à nouveau.</string>
+  <string name="attachment_error_unknown">L’opération de pièce jointe a échoué. Veuillez réessayer.</string>
+  <string name="attachment_error_decryption_failed">Le déchiffrement de la pièce jointe ou la vérification de l’intégrité a échoué. Synchronisez le coffre et réessayez.</string>
+  <string name="password_batch_attachment_failure">Les pièces jointes n\'ont pas pu être transférées pour les éléments %1$d. %2$s</string>
+</resources>

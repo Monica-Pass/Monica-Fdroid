@@ -21,48 +21,6 @@ class GeneratorViewModel(
 ) : ViewModel() {
     private val defaultSymbols = PasswordGenerator.getDefaultSymbols()
 
-    init {
-        preferencesManager?.let { manager ->
-            viewModelScope.launch(Dispatchers.IO) {
-                val saved = manager.load()
-                _selectedGenerator.value = runCatching {
-                    GeneratorType.valueOf(saved.selectedGenerator)
-                }.getOrDefault(GeneratorType.SYMBOL)
-                _symbolLength.value = saved.symbolLength
-                _includeUppercase.value = saved.includeUppercase
-                _includeLowercase.value = saved.includeLowercase
-                _includeNumbers.value = saved.includeNumbers
-                _includeSymbols.value = saved.includeSymbols
-                _useSymbolExclusionMode.value = saved.useSymbolExclusionMode
-                _excludedSymbols.value = saved.excludedSymbols
-                _customSymbols.value = saved.customSymbols
-                _excludeSimilar.value = saved.excludeSimilar
-                _excludeAmbiguous.value = saved.excludeAmbiguous
-                _analyzeCommonPasswords.value = saved.analyzeCommonPasswords
-                _analyzeWeight.value = saved.analyzeWeight
-                _uppercaseMin.value = saved.uppercaseMin
-                _lowercaseMin.value = saved.lowercaseMin
-                _numbersMin.value = saved.numbersMin
-                _symbolsMin.value = saved.symbolsMin
-                _passphraseWordCount.value = saved.passphraseWordCount
-                _passphraseDelimiter.value = saved.passphraseDelimiter
-                _passphraseCapitalize.value = saved.passphraseCapitalize
-                _passphraseIncludeNumber.value = saved.passphraseIncludeNumber
-                _passphraseCustomWord.value = saved.passphraseCustomWord
-                _passphraseCustomWords.value = saved.passphraseCustomWords
-                _pinLength.value = saved.pinLength
-                _passwordLength.value = saved.passwordLength
-                _firstLetterUppercase.value = saved.firstLetterUppercase
-                _includeNumbersInPassword.value = saved.includeNumbersInPassword
-                _customSeparator.value = saved.customSeparator
-                _separatorCountsTowardsLength.value = saved.separatorCountsTowardsLength
-                _segmentLength.value = saved.segmentLength
-                _sshKeyAlgorithm.value = saved.sshKeyAlgorithm
-                _sshKeyRsaSize.value = saved.sshKeyRsaSize
-            }
-        }
-    }
-
     private fun scheduleSave() {
         preferencesManager?.let { manager ->
             viewModelScope.launch(Dispatchers.IO) {
@@ -232,6 +190,50 @@ class GeneratorViewModel(
 
     private val _sshKeyResult = MutableStateFlow<SshKeyData?>(null)
     val sshKeyResult: StateFlow<SshKeyData?> = _sshKeyResult.asStateFlow()
+
+    // Cached preferences can load immediately, so initialize every state holder
+    // before launching restoration on the IO dispatcher.
+    init {
+        preferencesManager?.let { manager ->
+            viewModelScope.launch(Dispatchers.IO) {
+                val saved = manager.load()
+                _selectedGenerator.value = runCatching {
+                    GeneratorType.valueOf(saved.selectedGenerator)
+                }.getOrDefault(GeneratorType.SYMBOL)
+                _symbolLength.value = saved.symbolLength
+                _includeUppercase.value = saved.includeUppercase
+                _includeLowercase.value = saved.includeLowercase
+                _includeNumbers.value = saved.includeNumbers
+                _includeSymbols.value = saved.includeSymbols
+                _useSymbolExclusionMode.value = saved.useSymbolExclusionMode
+                _excludedSymbols.value = saved.excludedSymbols
+                _customSymbols.value = saved.customSymbols
+                _excludeSimilar.value = saved.excludeSimilar
+                _excludeAmbiguous.value = saved.excludeAmbiguous
+                _analyzeCommonPasswords.value = saved.analyzeCommonPasswords
+                _analyzeWeight.value = saved.analyzeWeight
+                _uppercaseMin.value = saved.uppercaseMin
+                _lowercaseMin.value = saved.lowercaseMin
+                _numbersMin.value = saved.numbersMin
+                _symbolsMin.value = saved.symbolsMin
+                _passphraseWordCount.value = saved.passphraseWordCount
+                _passphraseDelimiter.value = saved.passphraseDelimiter
+                _passphraseCapitalize.value = saved.passphraseCapitalize
+                _passphraseIncludeNumber.value = saved.passphraseIncludeNumber
+                _passphraseCustomWord.value = saved.passphraseCustomWord
+                _passphraseCustomWords.value = saved.passphraseCustomWords
+                _pinLength.value = saved.pinLength
+                _passwordLength.value = saved.passwordLength
+                _firstLetterUppercase.value = saved.firstLetterUppercase
+                _includeNumbersInPassword.value = saved.includeNumbersInPassword
+                _customSeparator.value = saved.customSeparator
+                _separatorCountsTowardsLength.value = saved.separatorCountsTowardsLength
+                _segmentLength.value = saved.segmentLength
+                _sshKeyAlgorithm.value = saved.sshKeyAlgorithm
+                _sshKeyRsaSize.value = saved.sshKeyRsaSize
+            }
+        }
+    }
     
     // 更新生成器类型
     fun updateSelectedGenerator(generatorType: GeneratorType) {

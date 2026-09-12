@@ -1,8 +1,47 @@
 package takagi.ru.monica.utils
 
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class BackupRetentionConfig(
+    val enabled: Boolean = false,
+    val maxBackups: Int = DEFAULT_MAX_BACKUPS
+) {
+    companion object {
+        const val DEFAULT_MAX_BACKUPS = 10
+        val MAX_BACKUPS_RANGE = 1..1000
+    }
+}
+
 object BackupRetentionPolicy {
     const val DEFAULT_RETENTION_DAYS: Long = 60L
     const val DEFAULT_MIN_TEMPORARY_BACKUPS_TO_KEEP: Int = 10
+
+    fun backupsToDelete(
+        backups: List<BackupFile>,
+        config: BackupRetentionConfig,
+        nowMillis: Long = System.currentTimeMillis(),
+        protectedBackupName: String? = null
+    ): List<BackupFile> {
+        if (!config.enabled) {
+            return expiredTemporaryBackupsToDelete(backups, nowMillis)
+                .filterNot { it.name == protectedBackupName }
+        }
+
+        // Permanent and undated backups are retained outside the count limit.
+        // Always retain the upload that triggered cleanup, even if the server clock is wrong.
+        return backups
+            .filterNot(BackupFile::isPermanent)
+            .filter { it.modified.time > 0L || it.name == protectedBackupName }
+            .sortedWith(
+                compareByDescending<BackupFile> { it.name == protectedBackupName }
+                    .thenByDescending { it.modified.time }
+                    .thenByDescending { it.name }
+            )
+            .distinctBy(BackupFile::name)
+            .drop(config.maxBackups.coerceIn(BackupRetentionConfig.MAX_BACKUPS_RANGE))
+            .asReversed()
+    }
 
     fun expiredTemporaryBackupsToDelete(
         backups: List<BackupFile>,

@@ -106,6 +106,7 @@ fun AddEditTotpScreen(
     initialTitle: String,
     initialNotes: String,
     initialCategoryId: Long? = null,
+    initialStorageExplicit: Boolean = false,
     initialKeePassDatabaseId: Long? = null,
     initialKeePassGroupPath: String? = null,
     initialMdbxDatabaseId: Long? = null,
@@ -378,6 +379,7 @@ fun AddEditTotpScreen(
         isEditing,
         hasAppliedInitialStorage,
         initialCategoryId,
+        initialStorageExplicit,
         initialKeePassDatabaseId,
         initialKeePassGroupPath,
         initialMdbxDatabaseId,
@@ -389,7 +391,7 @@ fun AddEditTotpScreen(
         val remembered = rememberedStorageTarget
         val explicitGroupPath = initialKeePassGroupPath?.takeIf { it.isNotBlank() }
         val explicitFolderId = initialBitwardenFolderId?.takeIf { it.isNotBlank() }
-        val hasExplicitInitialStorage = initialCategoryId != null ||
+        val hasExplicitInitialStorage = initialStorageExplicit || initialCategoryId != null ||
             initialKeePassDatabaseId != null ||
             explicitGroupPath != null ||
             initialMdbxDatabaseId != null ||

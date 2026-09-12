@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,18 +42,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -61,26 +62,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Velocity
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -88,13 +84,26 @@ import takagi.ru.monica.R
 import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.sync.VaultSyncStatus
-import takagi.ru.monica.bitwarden.sync.syncForUserVisibleRequest
 import takagi.ru.monica.bitwarden.ui.BitwardenAutoSyncEffect
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.Category
 import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.SecureItem
+import takagi.ru.monica.data.WalletStack
+import takagi.ru.monica.repository.WalletStackRepository
+import takagi.ru.monica.ui.cardwallet.WalletStackBrowser
+import takagi.ru.monica.ui.cardwallet.WalletStackCard
+import takagi.ru.monica.ui.cardwallet.WalletStackCreateDialog
+import takagi.ru.monica.ui.cardwallet.WalletStackManageDialog
+import takagi.ru.monica.ui.cardwallet.WalletStackListEntry
+import takagi.ru.monica.ui.cardwallet.WalletSelectionCardFrame
+import takagi.ru.monica.ui.cardwallet.WalletSelectionSectionHeader
+import takagi.ru.monica.ui.cardwallet.rememberWalletSelectionScrollAnchor
+import takagi.ru.monica.ui.cardwallet.rememberWalletStackEntries
+import takagi.ru.monica.ui.cardwallet.rememberWalletStackPreview
+import takagi.ru.monica.ui.cardwallet.reorderWalletSingleCards
+import takagi.ru.monica.ui.cardwallet.toggleWalletSelectionGroup
 import takagi.ru.monica.data.isKeePassOwned
 import takagi.ru.monica.data.isLocalOnlyItem
 import takagi.ru.monica.data.bitwarden.BitwardenVault
@@ -128,7 +137,6 @@ import takagi.ru.monica.ui.category.CategoryManagementTrailingContent
 import takagi.ru.monica.ui.category.CategoryManagementCreateDialog
 import takagi.ru.monica.ui.category.rememberCategoryManagementState
 import takagi.ru.monica.ui.components.PullActionVisualState
-import takagi.ru.monica.ui.common.pull.calculateDampedPullOffset
 import takagi.ru.monica.ui.common.state.InitialListRenderState
 import takagi.ru.monica.ui.common.state.resolveMergedListRenderState
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenu
@@ -163,6 +171,9 @@ import takagi.ru.monica.viewmodel.DocumentViewModel
 import takagi.ru.monica.viewmodel.PasswordViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import takagi.ru.monica.ui.common.pull.rememberPullActionState
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 
 enum class CardWalletTab {
     ALL,
@@ -221,6 +232,8 @@ fun CardWalletScreen(
     onTabSelected: (CardWalletTab) -> Unit,
     onSelectionModeChange: (Boolean, Int, () -> Unit, () -> Unit, () -> Unit, () -> Unit) -> Unit,
     onBankCardSelectionModeChange: (Boolean, Int, () -> Unit, () -> Unit, () -> Unit, () -> Unit, () -> Unit) -> Unit,
+    onStackActionChange: ((() -> Unit)?) -> Unit = {},
+    isWalletDetailVisible: Boolean = false,
     showStandaloneSettingsEntry: Boolean = false,
     onOpenStandaloneSettings: () -> Unit = {},
     onBitwardenScopeChanged: (Long?) -> Unit = {},
@@ -300,6 +313,35 @@ fun CardWalletScreen(
     var hasRestoredCategoryFilter by rememberSaveable { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var isSelectionMode by remember { mutableStateOf(false) }
+    val walletStackRepository = remember { WalletStackRepository.get(context) }
+    val walletStacks by produceState<List<WalletStack>?>(null) {
+        walletStackRepository.stacks.collect { value = it }
+    }
+    var showCreateStackDialog by rememberSaveable { mutableStateOf(false) }
+    var managedStackId by rememberSaveable { mutableStateOf<String?>(null) }
+    var expandedStackId by rememberSaveable { mutableStateOf<String?>(null) }
+    var focusedStackCardId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var animateStackEntrance by rememberSaveable { mutableStateOf(true) }
+    var hasOpenedStackDetail by rememberSaveable { mutableStateOf(false) }
+    var stackCoverRevealed by remember { mutableStateOf(false) }
+    var isSavingStack by remember { mutableStateOf(false) }
+    val stackCoverBounds = remember { mutableStateMapOf<String, Rect>() }
+    val stackCoverOverrides = remember { mutableStateMapOf<String, Long>() }
+    LaunchedEffect(isWalletDetailVisible) {
+        if (!isWalletDetailVisible) hasOpenedStackDetail = false
+    }
+    LaunchedEffect(walletStacks) {
+        walletStacks?.let { stacks ->
+            val byId = stacks.associateBy(WalletStack::id)
+            stackCoverOverrides.keys.toList().forEach { id ->
+                val stack = byId[id]
+                // The list projection is prepared asynchronously. Keep the optimistic cover
+                // until it is invalidated, even after storage confirms it, to avoid one old frame.
+                if (stack == null || stackCoverOverrides[id] !in stack.memberIds) stackCoverOverrides.remove(id)
+            }
+            stackCoverBounds.keys.toList().filterNot(byId::containsKey).forEach(stackCoverBounds::remove)
+        }
+    }
     var itemToDelete by remember { mutableStateOf<SecureItem?>(null) }
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
     var showVerifyDialog by remember { mutableStateOf(false) }
@@ -319,33 +361,23 @@ fun CardWalletScreen(
     val isTopBarSyncing = selectedBitwardenVaultId?.let { vaultId ->
         bitwardenSyncStatusByVault[vaultId].isUserVisibleSyncInProgress()
     } == true
-    var currentOffset by remember { mutableStateOf(0f) }
     val searchTriggerDistance = remember(density, isBitwardenDatabaseView) {
-        with(density) { (if (isBitwardenDatabaseView) 40.dp else 72.dp).toPx() }
+        with(density) { (if (isBitwardenDatabaseView) 40.dp else PullSearchDefaults.TriggerDistance).toPx() }
     }
     val syncTriggerDistance = remember(density) { with(density) { 72.dp.toPx() } }
     val maxDragDistance = remember(density) { with(density) { 100.dp.toPx() } }
-    val syncHoldMillis = 500L
-    var isSettlingBack by remember { mutableStateOf(false) }
-    var hasVibrated by remember { mutableStateOf(false) }
-    var hasSyncStageVibrated by remember { mutableStateOf(false) }
-    var syncHintArmed by remember { mutableStateOf(false) }
-    var isBitwardenSyncing by remember { mutableStateOf(false) }
-    var lockPullUntilSyncFinished by remember { mutableStateOf(false) }
-    var canRunBitwardenSync by remember { mutableStateOf(false) }
-    var showSyncFeedback by remember { mutableStateOf(false) }
-    var syncFeedbackMessage by remember { mutableStateOf("") }
-    var syncFeedbackIsSuccess by remember { mutableStateOf(false) }
-    val collapseAnimatable = remember { Animatable(0f) }
-    val vibrator = remember {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        }
-    }
+    val pullAction = rememberPullActionState(
+        isBitwardenDatabaseView = isBitwardenDatabaseView,
+        isSearchExpanded = isSearchExpanded,
+        searchTriggerDistance = searchTriggerDistance,
+        syncTriggerDistance = syncTriggerDistance,
+        maxDragDistance = maxDragDistance,
+        bitwardenRepository = bitwardenRepository,
+        bitwardenVaultId = selectedBitwardenVaultId,
+        onSearchTriggered = { isSearchExpanded = true },
+    )
+    val currentOffset = pullAction.currentOffset
+
     // Keep compatibility scans off the critical first-render path. The parsed
     // streams are already collected above; wait until all three have emitted
     // before scheduling the background refresh.
@@ -403,271 +435,12 @@ fun CardWalletScreen(
     DisposableEffect(Unit) {
         onDispose {
             onBitwardenScopeChanged(null)
-        }
-    }
-
-    suspend fun resolveSyncableVaultId(): Long? {
-        val vaultId = selectedBitwardenVaultId ?: run {
-            canRunBitwardenSync = false
-            return null
-        }
-        val unlocked = bitwardenRepository.isVaultUnlocked(vaultId)
-        canRunBitwardenSync = unlocked
-        return if (unlocked) vaultId else null
-    }
-
-    fun vibratePullThreshold(isSyncStage: Boolean) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            if (isSyncStage && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                vibrator?.vibrate(
-                    android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_DOUBLE_CLICK)
-                )
-            } else {
-                vibrator?.vibrate(android.os.VibrationEffect.createWaveform(takagi.ru.monica.util.VibrationPatterns.TICK, -1))
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator?.vibrate(if (isSyncStage) 36 else 20)
-        }
-    }
-
-    fun updatePullThresholdHaptics(oldOffset: Float, newOffset: Float) {
-        if (oldOffset < searchTriggerDistance && newOffset >= searchTriggerDistance && !hasVibrated) {
-            hasVibrated = true
-            vibratePullThreshold(isSyncStage = false)
-        } else if (newOffset < searchTriggerDistance) {
-            hasVibrated = false
-        }
-
-        if (!isBitwardenDatabaseView) {
-            hasSyncStageVibrated = false
-            return
-        }
-
-        if (oldOffset < syncTriggerDistance && newOffset >= syncTriggerDistance && !hasSyncStageVibrated) {
-            hasSyncStageVibrated = true
-            vibratePullThreshold(isSyncStage = true)
-        } else if (newOffset < syncTriggerDistance) {
-            hasSyncStageVibrated = false
-        }
-    }
-
-    fun interruptCollapseAnimation() {
-        if (!collapseAnimatable.isRunning && !isSettlingBack) return
-        isSettlingBack = false
-        scope.launch {
-            collapseAnimatable.stop()
-            collapseAnimatable.snapTo(currentOffset)
-        }
-    }
-
-    suspend fun collapsePullOffsetSmoothly() {
-        if (currentOffset <= 0.5f) {
-            currentOffset = 0f
-            isSettlingBack = false
-            return
-        }
-        if (collapseAnimatable.isRunning) return
-        isSettlingBack = true
-        collapseAnimatable.snapTo(currentOffset)
-        try {
-            collapseAnimatable.animateTo(
-                targetValue = 0f,
-                animationSpec = tween(
-                    durationMillis = 140,
-                    easing = androidx.compose.animation.core.FastOutLinearInEasing
-                )
-            ) {
-                currentOffset = value
-            }
-        } finally {
-            currentOffset = 0f
-            collapseAnimatable.snapTo(0f)
-            isSettlingBack = false
-        }
-    }
-
-    fun onPullRelease(): Boolean {
-        if (isBitwardenDatabaseView && syncHintArmed && !isBitwardenSyncing) {
-            syncHintArmed = false
-            isBitwardenSyncing = true
-            lockPullUntilSyncFinished = true
-            currentOffset = syncTriggerDistance
-            scope.launch {
-                val vaultId = resolveSyncableVaultId()
-                if (vaultId == null) {
-                    android.widget.Toast.makeText(
-                        context,
-                        context.getString(R.string.pull_sync_requires_bitwarden_login),
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                    isBitwardenSyncing = false
-                    lockPullUntilSyncFinished = false
-                    hasVibrated = false
-                    hasSyncStageVibrated = false
-                    collapsePullOffsetSmoothly()
-                    return@launch
-                }
-
-                val syncResult = bitwardenRepository.syncForUserVisibleRequest(
-                    vaultId = vaultId,
-                    requestIdPrefix = "bw-card-wallet-vault"
-                )
-                when (syncResult) {
-                    is BitwardenRepository.SyncResult.Success -> {
-                        syncFeedbackIsSuccess = true
-                        syncFeedbackMessage = context.getString(R.string.pull_sync_success)
-                        showSyncFeedback = true
-                        android.widget.Toast.makeText(
-                            context,
-                            context.getString(R.string.pull_sync_success),
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    is BitwardenRepository.SyncResult.Error -> {
-                        syncFeedbackIsSuccess = false
-                        syncFeedbackMessage = context.getString(R.string.sync_status_failed_full)
-                        showSyncFeedback = true
-                        android.widget.Toast.makeText(
-                            context,
-                            context.getString(R.string.sync_status_failed_full) + ": " + syncResult.message,
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    is BitwardenRepository.SyncResult.EmptyVaultBlocked -> {
-                        syncFeedbackIsSuccess = false
-                        syncFeedbackMessage = context.getString(R.string.sync_status_failed_full)
-                        showSyncFeedback = true
-                        android.widget.Toast.makeText(
-                            context,
-                            context.getString(R.string.sync_status_failed_full) + ": " + syncResult.reason,
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-                isBitwardenSyncing = false
-                lockPullUntilSyncFinished = false
-                hasVibrated = false
-                hasSyncStageVibrated = false
-                collapsePullOffsetSmoothly()
-                kotlinx.coroutines.delay(1400)
-                showSyncFeedback = false
-            }
-            return true
-        }
-
-        if (currentOffset >= searchTriggerDistance) {
-            isSearchExpanded = true
-            hasVibrated = false
-        }
-        return false
-    }
-
-    LaunchedEffect(isBitwardenDatabaseView) {
-        if (isBitwardenDatabaseView) {
-            resolveSyncableVaultId()
-        } else {
-            interruptCollapseAnimation()
-            canRunBitwardenSync = false
-            syncHintArmed = false
-            isBitwardenSyncing = false
-            lockPullUntilSyncFinished = false
-            showSyncFeedback = false
-            currentOffset = 0f
-            hasVibrated = false
-            hasSyncStageVibrated = false
-        }
-    }
-
-    LaunchedEffect(currentOffset >= syncTriggerDistance, isBitwardenDatabaseView, isBitwardenSyncing) {
-        if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && !isBitwardenSyncing) {
-            resolveSyncableVaultId()
-        }
-    }
-
-    LaunchedEffect(currentOffset, isBitwardenDatabaseView, canRunBitwardenSync, isBitwardenSyncing) {
-        if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
-            kotlinx.coroutines.delay(syncHoldMillis)
-            if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
-                syncHintArmed = true
-            }
-        } else {
-            syncHintArmed = false
-        }
-    }
-
-    LaunchedEffect(isSearchExpanded) {
-        if (isSearchExpanded) {
-            if (!lockPullUntilSyncFinished && currentOffset > 0.5f) {
-                collapsePullOffsetSmoothly()
-            } else {
-                interruptCollapseAnimation()
-                currentOffset = 0f
-                isSettlingBack = false
-            }
-            hasVibrated = false
-            hasSyncStageVibrated = false
-            syncHintArmed = false
+            onStackActionChange(null)
         }
     }
 
     val allItems by rememberWalletActionItems(cards, documents, billingAddresses)
     val allWalletItems = preparedWalletState.items
-
-    val nestedScrollConnection = remember(isBitwardenDatabaseView) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (lockPullUntilSyncFinished) {
-                    return available
-                }
-                if (currentOffset > 0 && available.y < 0) {
-                    interruptCollapseAnimation()
-                    val newOffset = (currentOffset + available.y).coerceAtLeast(0f)
-                    val consumed = currentOffset - newOffset
-                    currentOffset = newOffset
-                    return Offset(0f, -consumed)
-                }
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if (lockPullUntilSyncFinished) {
-                    return available
-                }
-                if (available.y > 0 && source == NestedScrollSource.UserInput) {
-                    interruptCollapseAnimation()
-                    val newOffset = calculateDampedPullOffset(
-                        currentOffset = currentOffset,
-                        dragDelta = available.y,
-                        maxDragDistance = maxDragDistance
-                    )
-                    val oldOffset = currentOffset
-                    currentOffset = newOffset
-                    updatePullThresholdHaptics(oldOffset = oldOffset, newOffset = newOffset)
-                    return available
-                }
-                return Offset.Zero
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                val syncStarted = onPullRelease()
-                if (!syncStarted && !lockPullUntilSyncFinished) {
-                    collapsePullOffsetSmoothly()
-                }
-                return Velocity.Zero
-            }
-
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                if (!lockPullUntilSyncFinished && currentOffset > 0f) {
-                    val syncStarted = onPullRelease()
-                    if (!syncStarted && !lockPullUntilSyncFinished) {
-                        collapsePullOffsetSmoothly()
-                    }
-                }
-                return Velocity.Zero
-            }
-        }
-    }
 
     val performDelete: (Set<Long>) -> Unit = { ids ->
         val itemsToDelete = allItems.filter { it.id in ids }
@@ -911,7 +684,7 @@ fun CardWalletScreen(
     )
     val filteredItems = filteredState.items
     val initialRenderState = resolveMergedListRenderState(
-        isReady = filteredState.isReady,
+        isReady = filteredState.isReady && walletStacks != null,
         itemCount = filteredItems.size,
     )
 
@@ -928,6 +701,42 @@ fun CardWalletScreen(
     val exitSelection = {
         isSelectionMode = false
         selectedIds = emptySet()
+    }
+
+    BackHandler(enabled = isSelectionMode, onBack = exitSelection)
+
+    fun saveWalletStack(action: suspend () -> Unit, onSuccess: () -> Unit = {}) {
+        if (isSavingStack) return
+        isSavingStack = true
+        scope.launch {
+            try {
+                action()
+                onSuccess()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(context, R.string.wallet_stack_save_error, android.widget.Toast.LENGTH_SHORT).show()
+            } finally {
+                isSavingStack = false
+            }
+        }
+    }
+    val currentExpandedStack = remember(expandedStackId, walletStacks, filteredItems) {
+        walletStacks?.firstOrNull { it.id == expandedStackId }?.let { stack ->
+            val cardsById = filteredItems.associateBy(WalletListItem::id)
+            val members = stack.memberIds.mapNotNull(cardsById::get)
+            if (members.size >= 2) WalletStackListEntry.Stack(stack, members) else null
+        }
+    }
+    val expandedStackPreview = rememberWalletStackPreview(
+        stackId = expandedStackId,
+        entry = currentExpandedStack,
+        originBounds = expandedStackId?.let { stackCoverBounds[it] },
+        isReady = filteredState.isReady && walletStacks != null
+    )
+    val expandedStack = expandedStackPreview?.entry
+    LaunchedEffect(expandedStackId, expandedStack, filteredState.isReady, walletStacks != null) {
+        if (filteredState.isReady && walletStacks != null && expandedStack == null) expandedStackId = null
     }
     val selectAll = {
         selectedIds = if (selectedIds.size == filteredItems.size) {
@@ -962,7 +771,24 @@ fun CardWalletScreen(
         }
     }
 
-    LaunchedEffect(isSelectionMode, selectedIds, filteredItems) {
+    LaunchedEffect(isSelectionMode, selectedIds, filteredItems, walletStacks?.isNotEmpty()) {
+        if (!isSelectionMode) showCreateStackDialog = false
+        onStackActionChange(
+            if (isSelectionMode && (selectedIds.size >= 2 ||
+                    selectedIds.isNotEmpty() && !walletStacks.isNullOrEmpty())) {
+                {
+                    if (walletStacks.isNullOrEmpty()) {
+                        val members = allWalletItems.filter { it.id in selectedIds }.map(WalletListItem::id)
+                        saveWalletStack(
+                            action = { walletStackRepository.create(members) },
+                            onSuccess = { exitSelection() }
+                        )
+                    } else {
+                        showCreateStackDialog = true
+                    }
+                }
+            } else null
+        )
         onBankCardSelectionModeChange(
             isSelectionMode,
             selectedIds.size,
@@ -1230,14 +1056,21 @@ fun CardWalletScreen(
             }
         )
 
-        val contentPullOffset = if (isBitwardenDatabaseView) {
-            (currentOffset * 0.28f).toInt()
-        } else {
-            currentOffset.toInt()
-        }
+        val contentPullOffset = currentOffset.toInt()
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize()) {
+                PullSearchHint(
+                    currentOffset = currentOffset,
+                    triggerDistance = searchTriggerDistance,
+                    text = stringResource(
+                        when {
+                            pullAction.isBitwardenSyncing -> R.string.pull_syncing_bitwarden
+                            pullAction.syncHintArmed -> R.string.pull_release_to_sync_bitwarden
+                            else -> R.string.pull_release_to_search
+                        }
+                    ),
+                )
                 when {
                     initialRenderState == InitialListRenderState.Loading -> LoadingIndicator()
                     initialRenderState == InitialListRenderState.Empty -> {
@@ -1247,29 +1080,9 @@ fun CardWalletScreen(
                                 .offset { IntOffset(0, contentPullOffset) }
                                 .pointerInput(isSearchExpanded) {
                                     detectVerticalDragGestures(
-                                        onVerticalDrag = { _, dragAmount ->
-                                            if (dragAmount > 0f) {
-                                                val newOffset = calculateDampedPullOffset(
-                                                    currentOffset = currentOffset,
-                                                    dragDelta = dragAmount,
-                                                    maxDragDistance = maxDragDistance
-                                                )
-                                                val oldOffset = currentOffset
-                                                currentOffset = newOffset
-                                                updatePullThresholdHaptics(oldOffset = oldOffset, newOffset = newOffset)
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            val syncStarted = onPullRelease()
-                                            if (!syncStarted && !lockPullUntilSyncFinished) {
-                                                scope.launch { collapsePullOffsetSmoothly() }
-                                            }
-                                        },
-                                        onDragCancel = {
-                                            if (!lockPullUntilSyncFinished) {
-                                                scope.launch { collapsePullOffsetSmoothly() }
-                                            }
-                                        }
+                                        onVerticalDrag = { _, dragAmount -> pullAction.onVerticalDrag(dragAmount) },
+                                        onDragEnd = pullAction.onDragEnd,
+                                        onDragCancel = pullAction.onDragCancel,
                                     )
                                 },
                             contentAlignment = Alignment.Center
@@ -1319,6 +1132,15 @@ fun CardWalletScreen(
                         var walletIsDragging by remember { mutableStateOf(false) }
                         var walletDragBaseOrderIds by remember { mutableStateOf<List<Long>?>(null) }
                         var pendingWalletOrderIds by remember { mutableStateOf<List<Long>?>(null) }
+                        val stackProjection by rememberWalletStackEntries(
+                            localFilteredItems, walletStacks.orEmpty(),
+                            showIndividualCards = searchQuery.isNotBlank(),
+                            selectionMode = isSelectionMode
+                        )
+                        val displayItems = stackProjection.entries
+                        val captureSelectionScrollAnchor = rememberWalletSelectionScrollAnchor(
+                            listState, stackProjection, isSelectionMode
+                        )
                         // Lists are immutable snapshots. Use identity tokens as effect keys so
                         // scrolling does not repeatedly compare every wallet item by value.
                         val filteredItemsToken = System.identityHashCode(filteredItems)
@@ -1329,9 +1151,11 @@ fun CardWalletScreen(
 
                         val reorderableLazyListState = rememberReorderableLazyListState(listState) { from, to ->
                             if (isSelectionMode) {
-                                localFilteredItems = localFilteredItems.toMutableList().apply {
-                                    add(to.index, removeAt(from.index))
-                                }
+                                localFilteredItems = reorderWalletSingleCards(
+                                    localFilteredItems,
+                                    displayItems.getOrNull(from.index)?.takeIf { it.key == from.key },
+                                    displayItems.getOrNull(to.index)?.takeIf { it.key == to.key }
+                                )
                             }
                         }
 
@@ -1416,128 +1240,175 @@ fun CardWalletScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .offset { IntOffset(0, contentPullOffset) }
-                                .nestedScroll(nestedScrollConnection),
-                            userScrollEnabled = true,
+                                .then(pullAction.gestureModifier),
+                            userScrollEnabled = expandedStackId == null,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            items(localFilteredItems, key = { it.id }) { walletItem ->
-                                val item = walletItem.item
-                                ReorderableItem(
-                                    reorderableLazyListState,
-                                    key = walletItem.id,
-                                    enabled = isSelectionMode
-                                ) { isDragging ->
-                                    val isSelected = selectedIds.contains(walletItem.id)
-                                    val toggleSelection = {
-                                        val nextSelectedIds = if (isSelected) {
-                                            selectedIds - item.id
-                                        } else {
-                                            selectedIds + item.id
-                                        }
-                                        selectedIds = nextSelectedIds
-                                        isSelectionMode = nextSelectedIds.isNotEmpty()
+                            items(
+                                displayItems,
+                                key = { it.key },
+                                contentType = {
+                                    when (it) {
+                                        is WalletStackListEntry.Stack -> "stack"
+                                        is WalletStackListEntry.SelectionHeader -> "selection_header"
+                                        is WalletStackListEntry.Single -> it.card.type
                                     }
-                                    val elevation by animateDpAsState(
-                                        if (isDragging) 8.dp else 0.dp,
-                                        label = "wallet_drag_elevation"
+                                }
+                            ) { displayItem ->
+                                if (displayItem is WalletStackListEntry.SelectionHeader) {
+                                    val stack = displayItem.stack
+                                    val header = if (stack != null) {
+                                        displayItem.copy(stack = stack.copy(
+                                            coverId = stackCoverOverrides[stack.id] ?: stack.coverId
+                                        ))
+                                    } else displayItem
+                                    WalletSelectionSectionHeader(
+                                        entry = header,
+                                        selectedIds = selectedIds,
+                                        onToggleSelection = {
+                                            selectedIds = toggleWalletSelectionGroup(selectedIds, header)
+                                            isSelectionMode = true
+                                        },
+                                        onManageStack = { managedStackId = stack?.id }
                                     )
-                                    val dragModifier = if (isSelectionMode) {
-                                        Modifier.longPressDraggableHandle()
-                                    } else {
-                                        Modifier
-                                    }
-                                    val cardModifier = Modifier
-                                        .padding(bottom = 8.dp)
-                                        .graphicsLayer {
-                                            shadowElevation = elevation.toPx()
+                                    return@items
+                                }
+                                if (displayItem is WalletStackListEntry.Stack) {
+                                    val coverId = stackCoverOverrides[displayItem.stack.id] ?: displayItem.stack.coverId
+                                    val visibleStack = displayItem.copy(stack = displayItem.stack.copy(coverId = coverId))
+                                    WalletStackCard(
+                                        entry = visibleStack,
+                                        onClick = {
+                                            scope.launch {
+                                                listState.stopScroll()
+                                                focusedStackCardId = coverId
+                                                animateStackEntrance = true
+                                                hasOpenedStackDetail = false
+                                                stackCoverRevealed = false
+                                                expandedStackId = displayItem.stack.id
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (!isSelectionMode) {
+                                                captureSelectionScrollAnchor(displayItem.key, visibleStack.cover.id)
+                                            }
+                                            selectedIds = displayItem.cards.map(WalletListItem::id).toSet()
+                                            isSelectionMode = true
+                                        },
+                                        onManage = { managedStackId = displayItem.stack.id },
+                                        onCoverBounds = { stackCoverBounds[displayItem.stack.id] = it },
+                                        coverVisible = expandedStackId != displayItem.stack.id || stackCoverRevealed ||
+                                            (isWalletDetailVisible && hasOpenedStackDetail),
+                                        controlsVisible = expandedStackId != displayItem.stack.id ||
+                                            (isWalletDetailVisible && hasOpenedStackDetail),
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    return@items
+                                }
+                                val walletItem = (displayItem as WalletStackListEntry.Single).card
+                                val item = walletItem.item
+                                val canDrag = isSelectionMode && displayItem.selectionStackId == null
+                                WalletSelectionCardFrame(entry = displayItem) {
+                                    ReorderableItem(
+                                        reorderableLazyListState,
+                                        key = displayItem.key,
+                                        enabled = canDrag
+                                    ) { isDragging ->
+                                        val isSelected = selectedIds.contains(walletItem.id)
+                                        val toggleSelection = {
+                                            if (!isSelectionMode) {
+                                                captureSelectionScrollAnchor(displayItem.key, item.id)
+                                            }
+                                            val nextSelectedIds = when {
+                                                !isSelectionMode -> setOf(item.id)
+                                                isSelected -> selectedIds - item.id
+                                                else -> selectedIds + item.id
+                                            }
+                                            selectedIds = nextSelectedIds
+                                            isSelectionMode = true
                                         }
-                                        .then(dragModifier)
+                                        val elevation by animateDpAsState(
+                                            if (isDragging) 8.dp else 0.dp,
+                                            label = "wallet_drag_elevation"
+                                        )
+                                        val dragModifier = if (canDrag) {
+                                            Modifier.longPressDraggableHandle()
+                                        } else {
+                                            Modifier
+                                        }
+                                        val cardModifier = Modifier
+                                            .graphicsLayer {
+                                                shadowElevation = elevation.toPx()
+                                            }
+                                            .then(dragModifier)
 
-                                    SwipeActions(
-                                        onSwipeLeft = { itemToDelete = item },
-                                        onSwipeRight = toggleSelection,
-                                        isSwiped = isSelected,
-                                        enabled = !isDragging,
-                                        allowSwipeLeft = !isSelectionMode,
-                                        allowSwipeRight = true,
-                                        cardShape = if (walletItem.type == WalletListItemType.BANK_CARD) takagi.ru.monica.ui.components.BankCardShape else MonicaItemCardShape,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        when (walletItem.type) {
-                                            WalletListItemType.BANK_CARD -> BankCardCard(
-                                                item = item,
-                                                onClick = {
-                                                    if (isSelectionMode) {
-                                                        toggleSelection()
-                                                    } else {
-                                                        onCardClick(item.id)
-                                                    }
-                                                },
-                                                onDelete = { itemToDelete = item },
-                                                onToggleFavorite = { id, _ -> bankCardViewModel.toggleFavorite(id) },
-                                                isSelectionMode = isSelectionMode,
-                                                isSelected = isSelected,
-                                                onLongClick = {
-                                                    if (!isSelectionMode) {
-                                                        isSelectionMode = true
-                                                        selectedIds = setOf(item.id)
-                                                    } else {
-                                                        toggleSelection()
-                                                    }
-                                                },
-                                                modifier = cardModifier,
-                                                cardData = walletItem.bankCardData
-                                            )
+                                        // Keep row spacing outside the swipe surface so its background
+                                        // cannot show below the card face as an extra stacked layer.
+                                        SwipeActions(
+                                            onSwipeLeft = { itemToDelete = item },
+                                            onSwipeRight = toggleSelection,
+                                            isSwiped = isSelected,
+                                            enabled = !isDragging,
+                                            allowSwipeLeft = !isSelectionMode,
+                                            allowSwipeRight = true,
+                                            cardShape = if (walletItem.type == WalletListItemType.BANK_CARD) takagi.ru.monica.ui.components.BankCardShape else MonicaItemCardShape,
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                                        ) {
+                                            when (walletItem.type) {
+                                                WalletListItemType.BANK_CARD -> BankCardCard(
+                                                    item = item,
+                                                    onClick = {
+                                                        if (isSelectionMode) {
+                                                            toggleSelection()
+                                                        } else {
+                                                            onCardClick(item.id)
+                                                        }
+                                                    },
+                                                    onDelete = { itemToDelete = item },
+                                                    onToggleFavorite = { id, _ -> bankCardViewModel.toggleFavorite(id) },
+                                                    isSelectionMode = isSelectionMode,
+                                                    isSelected = isSelected,
+                                                    onLongClick = toggleSelection,
+                                                    modifier = cardModifier,
+                                                    cardData = walletItem.bankCardData
+                                                )
 
-                                            WalletListItemType.DOCUMENT -> DocumentCard(
-                                                item = item,
-                                                onClick = {
-                                                    if (isSelectionMode) {
-                                                        toggleSelection()
-                                                    } else {
-                                                        onDocumentClick(item.id)
-                                                    }
-                                                },
-                                                onDelete = { itemToDelete = item },
-                                                onToggleFavorite = { id, _ -> documentViewModel.toggleFavorite(id) },
-                                                isSelectionMode = isSelectionMode,
-                                                isSelected = isSelected,
-                                                onLongClick = {
-                                                    if (!isSelectionMode) {
-                                                        isSelectionMode = true
-                                                        selectedIds = setOf(item.id)
-                                                    } else {
-                                                        toggleSelection()
-                                                    }
-                                                },
-                                                modifier = cardModifier,
-                                                documentData = walletItem.documentData
-                                            )
+                                                WalletListItemType.DOCUMENT -> DocumentCard(
+                                                    item = item,
+                                                    onClick = {
+                                                        if (isSelectionMode) {
+                                                            toggleSelection()
+                                                        } else {
+                                                            onDocumentClick(item.id)
+                                                        }
+                                                    },
+                                                    onDelete = { itemToDelete = item },
+                                                    onToggleFavorite = { id, _ -> documentViewModel.toggleFavorite(id) },
+                                                    isSelectionMode = isSelectionMode,
+                                                    isSelected = isSelected,
+                                                    onLongClick = toggleSelection,
+                                                    modifier = cardModifier,
+                                                    documentData = walletItem.documentData
+                                                )
 
-                                            WalletListItemType.BILLING_ADDRESS -> BillingAddressCard(
-                                                item = item,
-                                                onClick = {
-                                                    if (isSelectionMode) {
-                                                        toggleSelection()
-                                                    } else {
-                                                        onBillingAddressClick(item.id)
-                                                    }
-                                                },
-                                                onDelete = { itemToDelete = item },
-                                                onToggleFavorite = { id, _ -> billingAddressViewModel.toggleFavorite(id) },
-                                                isSelectionMode = isSelectionMode,
-                                                isSelected = isSelected,
-                                                onLongClick = {
-                                                    if (!isSelectionMode) {
-                                                        isSelectionMode = true
-                                                        selectedIds = setOf(item.id)
-                                                    } else {
-                                                        toggleSelection()
-                                                    }
-                                                },
-                                                modifier = cardModifier,
-                                                addressData = walletItem.billingAddressData
-                                            )
+                                                WalletListItemType.BILLING_ADDRESS -> BillingAddressCard(
+                                                    item = item,
+                                                    onClick = {
+                                                        if (isSelectionMode) {
+                                                            toggleSelection()
+                                                        } else {
+                                                            onBillingAddressClick(item.id)
+                                                        }
+                                                    },
+                                                    onDelete = { itemToDelete = item },
+                                                    onToggleFavorite = { id, _ -> billingAddressViewModel.toggleFavorite(id) },
+                                                    isSelectionMode = isSelectionMode,
+                                                    isSelected = isSelected,
+                                                    onLongClick = toggleSelection,
+                                                    modifier = cardModifier,
+                                                    addressData = walletItem.billingAddressData
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -1548,6 +1419,88 @@ fun CardWalletScreen(
                 }
             }
         }
+    }
+
+    if (expandedStack != null && !(isWalletDetailVisible && hasOpenedStackDetail)) {
+        WalletStackBrowser(
+            entry = expandedStack,
+            originBounds = expandedStackPreview?.originBounds,
+            initialCardId = focusedStackCardId ?: expandedStack.cover.id,
+            animateEntrance = animateStackEntrance,
+            onOpened = { animateStackEntrance = false },
+            onFocusedCardChanged = { focusedStackCardId = it },
+            onCollapseStart = { cardId ->
+                val stackId = expandedStack.stack.id
+                stackCoverOverrides[stackId] = cardId
+                scope.launch {
+                    try {
+                        walletStackRepository.setCover(stackId, cardId)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Exception) {
+                        android.widget.Toast.makeText(context, R.string.wallet_stack_save_error, android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onRevealCover = { stackCoverRevealed = true },
+            onDismiss = { expandedStackId = null; stackCoverRevealed = false },
+            onOpenCard = { card ->
+                focusedStackCardId = card.id
+                hasOpenedStackDetail = true
+                when (card.type) {
+                    WalletListItemType.BANK_CARD -> onCardClick(card.id)
+                    WalletListItemType.DOCUMENT -> onDocumentClick(card.id)
+                    WalletListItemType.BILLING_ADDRESS -> onBillingAddressClick(card.id)
+                }
+            },
+            onManage = { managedStackId = expandedStack.stack.id }
+        )
+    }
+    if (showCreateStackDialog && isSelectionMode) {
+        val selectedWalletIds = allWalletItems.filter { it.id in selectedIds }.map(WalletListItem::id)
+        WalletStackCreateDialog(
+            selectedCount = selectedWalletIds.size,
+            stacks = walletStacks.orEmpty(),
+            cardsById = remember(allWalletItems) { allWalletItems.associateBy(WalletListItem::id) },
+            saving = isSavingStack,
+            onCreate = {
+                saveWalletStack(
+                    action = { walletStackRepository.create(selectedWalletIds) },
+                    onSuccess = { showCreateStackDialog = false; exitSelection() }
+                )
+            },
+            onAdd = { stackId ->
+                saveWalletStack(
+                    action = { walletStackRepository.addMembers(stackId, selectedWalletIds) },
+                    onSuccess = { showCreateStackDialog = false; exitSelection() }
+                )
+            },
+            onDismiss = { showCreateStackDialog = false }
+        )
+    }
+    walletStacks?.firstOrNull { it.id == managedStackId }?.let { stack ->
+        WalletStackManageDialog(
+            stack = stack,
+            cardsById = remember(allWalletItems) { allWalletItems.associateBy(WalletListItem::id) },
+            saving = isSavingStack,
+            onSave = { ids ->
+                saveWalletStack(
+                    action = { walletStackRepository.updateStack(stack.id, ids) },
+                    onSuccess = { managedStackId = null; stackCoverOverrides.remove(stack.id) }
+                )
+            },
+            onDissolve = {
+                saveWalletStack(
+                    action = { walletStackRepository.dissolve(stack.id) },
+                    onSuccess = {
+                        managedStackId = null
+                        if (expandedStackId == stack.id) expandedStackId = null
+                        stackCoverOverrides.remove(stack.id)
+                    }
+                )
+            },
+            onDismiss = { managedStackId = null }
+        )
     }
 
     itemToDelete?.let { item ->
@@ -1804,4 +1757,3 @@ private fun decodeCardWalletCategoryFilter(state: SavedCategoryFilterState): Uni
         else -> UnifiedCategoryFilterSelection.All
     }
 }
-

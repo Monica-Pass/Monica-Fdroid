@@ -35,6 +35,7 @@ import takagi.ru.monica.bitwarden.api.BitwardenTlsConfig
 import takagi.ru.monica.bitwarden.service.BitwardenAuthService
 import takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel
 import takagi.ru.monica.ui.components.OutlinedTextField
+import takagi.ru.monica.ui.components.rememberBringIntoViewOnFocusModifier
 import takagi.ru.monica.viewmodel.ParsedTotpItem
 import takagi.ru.monica.util.TotpGenerator
 
@@ -200,6 +201,8 @@ fun BitwardenLoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .consumeWindowInsets(paddingValues)
+                .imePadding()
         ) {
             Column(
                 modifier = Modifier
@@ -560,7 +563,7 @@ fun BitwardenLoginScreen(
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(64.dp))
             }
         }
     }
@@ -948,7 +951,9 @@ fun TwoFactorDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedButton(
                         onClick = onPickFromMonica,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(rememberBringIntoViewOnFocusModifier())
                     ) {
                         Icon(Icons.Outlined.Key, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))

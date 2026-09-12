@@ -3039,7 +3039,7 @@
     <string name="password_owner_conflict_inline">Dieser Eintrag gehört zu mehreren Tresoren. Korrigieren Sie die Eigentumsrechte vor der Bearbeitung.</string>
     <string name="password_owner_conflict_display">Speichereigentumskonflikte zwischen Monica, KeePass oder Bitwarden. Vor dem Bearbeiten reparieren.</string>
     <string name="password_owner_conflict_copy">Dieser Eintrag weist widersprüchliche Eigentumsrechte auf und sein Passwort kann nicht sicher kopiert werden.</string>
-    <string name="pull_release_to_search">Zur Suche ziehen</string>
+    <string name="pull_release_to_search">Zum Suchen nach unten ziehen</string>
     <string name="pull_release_to_sync_bitwarden">Zur Synchronisierung von Bitwarden freigeben</string>
     <string name="pull_syncing_bitwarden">Bitwarden wird synchronisiert...</string>
     <string name="pull_sync_requires_bitwarden_login">Bitte melden Sie sich an und entsperren Sie Bitwarden Erste</string>
@@ -3533,6 +3533,10 @@
     <string name="import_type_stratum_title">Stratum-Auth</string>
     <string name="import_type_stratum_desc">Stratum/AuthPro-Backup importieren (.stratum/.txt/.html)</string>
     <string name="import_type_stratum_file_hint">.stratum / .txt / auswählen .html-Datei</string>
+    <string name="import_csv_no_data_found">Es konnten keine Daten importiert werden. Bitte prüfe das Dateiformat.</string>
+    <string name="import_csv_file_unreadable">Die Datei konnte nicht gelesen werden. Prüfe, ob sie noch vorhanden ist.</string>
+    <string name="import_csv_file_empty">Die Datei ist leer.</string>
+    <string name="import_csv_invalid_format">Ungültiges Dateiformat</string>
     <string name="import_type_steam_title">Steam Guard</string>
     <string name="import_type_steam_desc">Steam-Token aus maFile importieren</string>
     <string name="import_type_steam_file_hint">.maFile-Datei auswählen</string>

@@ -408,6 +408,14 @@ class SettingsViewModel(
         }
     }
 
+    fun updateVaultOverviewEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.updateVaultOverviewEnabled(enabled) }
+    }
+
+    fun updateVaultOverviewConfig(transform: (takagi.ru.monica.data.VaultOverviewConfig) -> takagi.ru.monica.data.VaultOverviewConfig) {
+        viewModelScope.launch { settingsManager.updateVaultOverviewConfig(transform) }
+    }
+
     fun updatePasswordListQuickFiltersEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.updatePasswordListQuickFiltersEnabled(enabled)

@@ -147,29 +147,33 @@ class NoteEditorViewModel(
         initialBitwardenVaultId: Long?,
         initialBitwardenFolderId: String?,
         draftStorageTarget: NoteDraftStorageTarget,
-        rememberedStorageTarget: RememberedStorageTarget?
+        rememberedStorageTarget: RememberedStorageTarget?,
+        initialStorageExplicit: Boolean = false,
     ) {
         val current = _uiState.value
         if (isEditing || current.hasAppliedInitialStorage) return
         val normalizedInitialKeePassGroupPath = initialKeePassGroupPath?.takeIf { it.isNotBlank() }
         val normalizedInitialBitwardenFolderId = initialBitwardenFolderId?.takeIf { it.isNotBlank() }
-        val normalizedDraftKeePassGroupPath = draftStorageTarget.keepassGroupPath?.takeIf { it.isNotBlank() }
-        val normalizedDraftBitwardenFolderId = draftStorageTarget.bitwardenFolderId?.takeIf { it.isNotBlank() }
-        val normalizedRememberedKeePassGroupPath = rememberedStorageTarget?.keepassGroupPath?.takeIf { it.isNotBlank() }
-        val normalizedRememberedBitwardenFolderId = rememberedStorageTarget?.bitwardenFolderId?.takeIf { it.isNotBlank() }
-
-        val resolvedCategoryId =
-            initialCategoryId ?: draftStorageTarget.categoryId ?: rememberedStorageTarget?.categoryId
-        val resolvedKeepassDatabaseId =
-            initialKeePassDatabaseId ?: draftStorageTarget.keepassDatabaseId ?: rememberedStorageTarget?.keepassDatabaseId
-        val resolvedKeepassGroupPath =
-            normalizedInitialKeePassGroupPath ?: normalizedDraftKeePassGroupPath ?: normalizedRememberedKeePassGroupPath
-        val resolvedMdbxDatabaseId =
-            initialMdbxDatabaseId ?: draftStorageTarget.mdbxDatabaseId ?: rememberedStorageTarget?.mdbxDatabaseId
-        val resolvedBitwardenVaultId =
-            initialBitwardenVaultId ?: draftStorageTarget.bitwardenVaultId ?: rememberedStorageTarget?.bitwardenVaultId
-        val resolvedBitwardenFolderId =
-            normalizedInitialBitwardenFolderId ?: normalizedDraftBitwardenFolderId ?: normalizedRememberedBitwardenFolderId
+        val explicit = initialStorageExplicit || initialCategoryId != null || initialKeePassDatabaseId != null ||
+            initialMdbxDatabaseId != null || initialBitwardenVaultId != null ||
+            normalizedInitialKeePassGroupPath != null || normalizedInitialBitwardenFolderId != null
+        val hasDraftTarget = draftStorageTarget.categoryId != null || draftStorageTarget.keepassDatabaseId != null ||
+            draftStorageTarget.mdbxDatabaseId != null || draftStorageTarget.bitwardenVaultId != null
+        // A storage target is one choice. Never merge a previous Bitwarden account into a new KeePass/local choice.
+        val fallback = if (hasDraftTarget) RememberedStorageTarget(
+            categoryId = draftStorageTarget.categoryId,
+            keepassDatabaseId = draftStorageTarget.keepassDatabaseId,
+            keepassGroupPath = draftStorageTarget.keepassGroupPath,
+            mdbxDatabaseId = draftStorageTarget.mdbxDatabaseId,
+            bitwardenVaultId = draftStorageTarget.bitwardenVaultId,
+            bitwardenFolderId = draftStorageTarget.bitwardenFolderId,
+        ) else rememberedStorageTarget
+        val resolvedCategoryId = if (explicit) initialCategoryId else fallback?.categoryId
+        val resolvedKeepassDatabaseId = if (explicit) initialKeePassDatabaseId else fallback?.keepassDatabaseId
+        val resolvedKeepassGroupPath = if (explicit) normalizedInitialKeePassGroupPath else fallback?.keepassGroupPath?.takeIf(String::isNotBlank)
+        val resolvedMdbxDatabaseId = if (explicit) initialMdbxDatabaseId else fallback?.mdbxDatabaseId
+        val resolvedBitwardenVaultId = if (explicit) initialBitwardenVaultId else fallback?.bitwardenVaultId
+        val resolvedBitwardenFolderId = if (explicit) normalizedInitialBitwardenFolderId else fallback?.bitwardenFolderId?.takeIf(String::isNotBlank)
 
         val hasResolvedStorage = resolvedCategoryId != null ||
             resolvedKeepassDatabaseId != null ||

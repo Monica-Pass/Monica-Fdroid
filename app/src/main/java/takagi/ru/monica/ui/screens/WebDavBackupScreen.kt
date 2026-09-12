@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.BookmarkRemove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,6 +36,8 @@ import takagi.ru.monica.R
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.repository.SecureItemRepository
 import takagi.ru.monica.utils.BackupFile
+import takagi.ru.monica.utils.BackupRetentionConfig
+import takagi.ru.monica.utils.BackupRetentionPolicy
 import takagi.ru.monica.utils.BackupContent
 import takagi.ru.monica.utils.BackupContentScope
 import takagi.ru.monica.utils.BackupRestoreApplier
@@ -199,11 +202,12 @@ fun WebDavBackupScreen(
     var autoBackupEnabled by remember { mutableStateOf(false) }
     var lastBackupTime by remember { mutableStateOf(0L) }
 
-    // 同步设置弹窗（改动后自动同步）
+    // 同步设置弹窗
     var showSyncSettings by remember { mutableStateOf(false) }
     var changeTriggeredConfig by remember {
         mutableStateOf(WebDavHelper.ChangeTriggeredBackupConfig())
     }
+    var backupRetentionConfig by remember { mutableStateOf(BackupRetentionConfig()) }
     
     // 加密设置状态
     var encryptionEnabled by remember { mutableStateOf(false) }
@@ -248,6 +252,7 @@ fun WebDavBackupScreen(
         autoBackupEnabled = webDavHelper.isAutoBackupEnabled()
         lastBackupTime = webDavHelper.getLastBackupTime()
         changeTriggeredConfig = webDavHelper.getChangeTriggeredBackupConfig()
+        backupRetentionConfig = webDavHelper.getBackupRetentionConfig()
         
         // 加载加密配置
         val encryptionConfig = webDavHelper.getEncryptionConfig()
@@ -301,7 +306,11 @@ fun WebDavBackupScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showSyncSettings = true }) {
+                    IconButton(onClick = {
+                        changeTriggeredConfig = webDavHelper.getChangeTriggeredBackupConfig()
+                        backupRetentionConfig = webDavHelper.getBackupRetentionConfig()
+                        showSyncSettings = true
+                    }) {
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = stringResource(R.string.webdav_sync_settings)
@@ -1064,9 +1073,18 @@ fun WebDavBackupScreen(
                                 modifier = Modifier.padding(vertical = 16.dp)
                             )
                         } else {
+                            val pendingCleanupNames = remember(backupList, backupRetentionConfig) {
+                                BackupRetentionPolicy.backupsToDelete(backupList, backupRetentionConfig)
+                                    .mapTo(mutableSetOf()) { it.name }
+                            }
                             backupList.forEach { backup ->
                                 BackupItem(
                                     backup = backup,
+                                    isExpiring = if (backupRetentionConfig.enabled) {
+                                        backup.name in pendingCleanupNames
+                                    } else {
+                                        backup.isExpiring
+                                    },
                                     webDavHelper = webDavHelper,
                                     passwordRepository = passwordRepository,
                                     secureItemRepository = secureItemRepository,
@@ -1166,13 +1184,16 @@ fun WebDavBackupScreen(
     }
 
     if (showSyncSettings) {
-        SyncSettingsDialog(
+        WebDavSyncSettingsDialog(
             config = changeTriggeredConfig,
+            retentionConfig = backupRetentionConfig,
             autoBackupEnabled = autoBackupEnabled,
             onDismiss = { showSyncSettings = false },
-            onConfirm = { updated ->
+            onConfirm = { updated, updatedRetention ->
                 changeTriggeredConfig = updated
+                backupRetentionConfig = updatedRetention
                 webDavHelper.setChangeTriggeredBackupConfig(updated)
+                webDavHelper.setBackupRetentionConfig(updatedRetention)
                 if (!updated.enabled) {
                     ChangeTriggeredBackupScheduler.cancel(context)
                 }
@@ -1188,24 +1209,37 @@ fun WebDavBackupScreen(
 }
 
 /**
- * 「改动后自动同步」设置。
+ * 同步时机和备份数量设置。
  *
  * 编辑副本而不是直接写 SharedPreferences：用户取消时不应留下半套配置。
  */
 @Composable
-private fun SyncSettingsDialog(
+internal fun WebDavSyncSettingsDialog(
     config: WebDavHelper.ChangeTriggeredBackupConfig,
+    retentionConfig: BackupRetentionConfig,
     autoBackupEnabled: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (WebDavHelper.ChangeTriggeredBackupConfig) -> Unit
+    onConfirm: (WebDavHelper.ChangeTriggeredBackupConfig, BackupRetentionConfig) -> Unit
 ) {
     var draft by remember(config) { mutableStateOf(config) }
+    var retentionEnabled by rememberSaveable(retentionConfig.enabled) {
+        mutableStateOf(retentionConfig.enabled)
+    }
+    var retentionCount by rememberSaveable(retentionConfig.maxBackups) {
+        mutableStateOf(retentionConfig.maxBackups.toString())
+    }
+    val parsedRetentionCount = retentionCount.toIntOrNull()
+    val retentionCountValid = parsedRetentionCount != null &&
+        parsedRetentionCount in BackupRetentionConfig.MAX_BACKUPS_RANGE
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.webdav_sync_settings)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1304,10 +1338,84 @@ private fun SyncSettingsDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            text = stringResource(R.string.webdav_retention_title),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.webdav_retention_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = retentionEnabled,
+                        onCheckedChange = { retentionEnabled = it }
+                    )
+                }
+                if (retentionEnabled) {
+                    OutlinedTextField(
+                        value = retentionCount,
+                        onValueChange = { value ->
+                            if (value.length <= 4 && value.all { it in '0'..'9' }) {
+                                retentionCount = value
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        label = { Text(stringResource(R.string.webdav_retention_count)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        isError = !retentionCountValid,
+                        supportingText = {
+                            Text(stringResource(
+                                R.string.webdav_retention_count_hint,
+                                BackupRetentionConfig.MAX_BACKUPS_RANGE.first,
+                                BackupRetentionConfig.MAX_BACKUPS_RANGE.last
+                            ))
+                        }
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.webdav_retention_permanent_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (!retentionEnabled) {
+                    Text(
+                        text = stringResource(
+                            R.string.webdav_retention_disabled_hint,
+                            BackupRetentionPolicy.DEFAULT_RETENTION_DAYS,
+                            BackupRetentionPolicy.DEFAULT_MIN_TEMPORARY_BACKUPS_TO_KEEP
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(draft) }) {
+            TextButton(
+                enabled = !retentionEnabled || retentionCountValid,
+                onClick = {
+                    onConfirm(draft, BackupRetentionConfig(
+                        enabled = retentionEnabled,
+                        maxBackups = parsedRetentionCount
+                            ?.takeIf { it in BackupRetentionConfig.MAX_BACKUPS_RANGE }
+                            ?: retentionConfig.maxBackups
+                    ))
+                }
+            ) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -1323,6 +1431,7 @@ private fun SyncSettingsDialog(
 @Composable
 private fun BackupItem(
     backup: BackupFile,
+    isExpiring: Boolean,
     webDavHelper: WebDavHelper,
     passwordRepository: PasswordRepository,
     secureItemRepository: SecureItemRepository,
@@ -1333,6 +1442,11 @@ private fun BackupItem(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
+    val modifiedText = if (backup.modified.time > 0L) {
+        dateFormat.format(backup.modified)
+    } else {
+        stringResource(R.string.webdav_backup_unknown_date)
+    }
     
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf(false) }
@@ -1560,7 +1674,7 @@ private fun BackupItem(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "${dateFormat.format(backup.modified)} • ${webDavHelper.formatFileSize(backup.size)}",
+                    text = "$modifiedText • ${webDavHelper.formatFileSize(backup.size)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1583,7 +1697,7 @@ private fun BackupItem(
                             )
                         }
                     }
-                    if (backup.isExpiring) {
+                    if (isExpiring) {
                         Surface(
                             color = MaterialTheme.colorScheme.errorContainer,
                             shape = MaterialTheme.shapes.small
@@ -1760,7 +1874,7 @@ private fun BackupItem(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
-                                    text = "${dateFormat.format(backup.modified)} · ${webDavHelper.formatFileSize(backup.size)}",
+                                    text = "$modifiedText · ${webDavHelper.formatFileSize(backup.size)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

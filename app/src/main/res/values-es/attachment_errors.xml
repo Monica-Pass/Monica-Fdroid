@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">La bóveda de Bitwarden está bloqueada o la sesión ha caducado. Desbloquéela o inicie sesión de nuevo.</string>
+    <string name="attachment_error_remote_data">El servidor devolvió información incompleta del adjunto. Sincronice la bóveda e inténtelo de nuevo.</string>
+    <string name="attachment_error_unsupported_encryption">Este adjunto utiliza un formato de cifrado no compatible (tipo %1$d). Expórtelo con el cliente oficial y vuelva a subirlo.</string>
+    <string name="attachment_error_unknown">La operación del adjunto falló. Inténtelo de nuevo.</string>
+    <string name="attachment_error_decryption_failed">Falló el descifrado o la verificación de integridad del adjunto. Sincronice la bóveda e inténtelo de nuevo.</string>
+    <string name="password_batch_attachment_failure">No se pudieron transferir los adjuntos de %1$d elementos. %2$s</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">Bitwarden 보관함이 잠겨 있거나 세션이 만료되었습니다. 잠금을 해제하거나 다시 로그인하세요.</string>
+    <string name="attachment_error_remote_data">서버가 불완전한 첨부파일 정보를 반환했습니다. 보관함을 동기화한 후 다시 시도하세요.</string>
+    <string name="attachment_error_unsupported_encryption">이 첨부파일은 지원하지 않는 암호화 형식(유형 %1$d)을 사용합니다. 공식 클라이언트에서 내보낸 후 다시 업로드하세요.</string>
+    <string name="attachment_error_unknown">첨부파일 작업에 실패했습니다. 다시 시도하세요.</string>
+    <string name="attachment_error_decryption_failed">첨부파일 복호화 또는 무결성 검증에 실패했습니다. 보관함을 동기화한 후 다시 시도하세요.</string>
+    <string name="password_batch_attachment_failure">%1$d개 항목의 첨부파일을 전송하지 못했습니다. %2$s</string>
+</resources>

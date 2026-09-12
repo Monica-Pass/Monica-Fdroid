@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_overview_picker_search_cards">카드, 은행 또는 끝자리 검색</string>
+    <string name="vault_overview_picker_search_items">제목 또는 계정 검색</string>
+    <string name="vault_overview_picker_selected">%1$d개 선택됨</string>
+    <string name="vault_overview_picker_results">결과: %1$d</string>
+    <string name="vault_overview_picker_no_account">계정 미입력</string>
+    <string name="vault_overview_picker_empty_hint">다른 검색어나 데이터베이스를 선택해 보세요.</string>
+    <string name="vault_overview_picker_limit">최대 %1$d개 항목 고정 가능</string>
+</resources>

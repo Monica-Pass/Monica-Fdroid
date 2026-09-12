@@ -1,0 +1,5 @@
+Synced with Monica 1.0.311: vault overview and pinned items, card stacks, keyboard and autofill improvements, Bitwarden attachment fixes, and expanded translations.
+
+Updated ZXing scanning restores inverted, multiple and small codes, gallery import, and camera session recovery while reducing idle decode cost.
+
+Optional Shizuku recovery targets only this F-Droid edition. Google/Microsoft authentication SDKs remain excluded; native libraries are built from source.

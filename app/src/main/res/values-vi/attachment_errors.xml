@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">Kho Bitwarden đang bị khóa hoặc phiên đã hết hạn. Hãy mở khóa hoặc đăng nhập lại.</string>
+    <string name="attachment_error_remote_data">Máy chủ trả về thông tin tệp đính kèm không đầy đủ. Hãy đồng bộ kho và thử lại.</string>
+    <string name="attachment_error_unsupported_encryption">Tệp đính kèm này dùng định dạng mã hóa chưa được hỗ trợ (loại %1$d). Hãy xuất bằng ứng dụng chính thức rồi tải lên lại.</string>
+    <string name="attachment_error_unknown">Thao tác với tệp đính kèm thất bại. Vui lòng thử lại.</string>
+    <string name="attachment_error_decryption_failed">Giải mã hoặc kiểm tra tính toàn vẹn của tệp đính kèm thất bại. Hãy đồng bộ kho và thử lại.</string>
+    <string name="password_batch_attachment_failure">Không thể chuyển tệp đính kèm của %1$d mục. %2$s</string>
+</resources>

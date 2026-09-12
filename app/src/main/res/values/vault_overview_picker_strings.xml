@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_overview_picker_search_cards">Search cards, banks or last digits</string>
+    <string name="vault_overview_picker_search_items">Search titles or accounts</string>
+    <string name="vault_overview_picker_selected">%1$d selected</string>
+    <string name="vault_overview_picker_results">Results: %1$d</string>
+    <string name="vault_overview_picker_no_account">No account specified</string>
+    <string name="vault_overview_picker_empty_hint">Try another keyword or database.</string>
+    <string name="vault_overview_picker_limit">Up to %1$d pinned entries</string>
+</resources>

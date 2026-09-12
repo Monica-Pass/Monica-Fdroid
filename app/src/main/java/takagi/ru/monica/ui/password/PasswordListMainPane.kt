@@ -2,7 +2,6 @@ package takagi.ru.monica.ui
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Density
@@ -26,6 +23,7 @@ import takagi.ru.monica.data.PasswordListQuickFilterItem
 import takagi.ru.monica.data.PasswordListQuickFolderStyle
 import takagi.ru.monica.data.PasswordPageContentType
 import takagi.ru.monica.ui.common.pull.PullActionStateHandle
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 import takagi.ru.monica.ui.components.PullActionVisualState
 import takagi.ru.monica.ui.password.PasswordBatchDeleteGlobalProgressState
 import takagi.ru.monica.ui.password.PasswordBatchTransferGlobalProgressState
@@ -113,11 +111,7 @@ internal fun PasswordListMainPane(
                 onCollapseExpandedGroups()
             }
     ) {
-        val contentPullOffset = if (isBitwardenDatabaseView) {
-            (pullAction.currentOffset * 0.28f).toInt()
-        } else {
-            pullAction.currentOffset.toInt()
-        }
+        val contentPullOffset = pullAction.currentOffset.toInt()
 
         Column(modifier = Modifier.fillMaxSize()) {
             if (showPinnedQuickFolderPathBanner) {
@@ -135,103 +129,103 @@ internal fun PasswordListMainPane(
                 )
             }
 
-            if (shouldGateInitialPasswordFirstFrame && searchQuery.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .offset { IntOffset(0, contentPullOffset) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    PasswordListInitialLoadingIndicator()
-                }
-            } else if (showEmptyState && !hasScrollableHeaderContent) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .offset { IntOffset(0, contentPullOffset) }
-                        .pointerInput(isBitwardenDatabaseView) {
-                            detectDragGesturesAfterLongPress(
-                                onDrag = { _, _ -> }
-                            )
-                        }
-                        .pointerInput(isBitwardenDatabaseView) {
-                            detectVerticalDragGestures(
-                                onVerticalDrag = { _, dragAmount ->
-                                    pullAction.onVerticalDrag(dragAmount)
-                                },
-                                onDragEnd = { pullAction.onDragEnd() },
-                                onDragCancel = { pullAction.onDragCancel() }
-                            )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    PasswordListEmptyState(
-                        message = if (aggregateUiState.hasActiveContentTypeFilter) {
-                            PasswordListEmptyStateMessage(titleRes = R.string.no_results)
-                        } else {
-                            emptyStateMessage
-                        }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                PullSearchHint(currentOffset = pullAction.currentOffset, triggerDistance = triggerDistance)
+                if (shouldGateInitialPasswordFirstFrame && searchQuery.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset { IntOffset(0, contentPullOffset) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PasswordListInitialLoadingIndicator()
+                    }
+                } else if (showEmptyState && !hasScrollableHeaderContent) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset { IntOffset(0, contentPullOffset) }
+                            .pointerInput(isBitwardenDatabaseView) {
+                                detectDragGesturesAfterLongPress(
+                                    onDrag = { _, _ -> }
+                                )
+                            }
+                            .pointerInput(isBitwardenDatabaseView) {
+                                detectVerticalDragGestures(
+                                    onVerticalDrag = { _, dragAmount ->
+                                        pullAction.onVerticalDrag(dragAmount)
+                                    },
+                                    onDragEnd = { pullAction.onDragEnd() },
+                                    onDragCancel = { pullAction.onDragCancel() }
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PasswordListEmptyState(
+                            message = if (aggregateUiState.hasActiveContentTypeFilter) {
+                                PasswordListEmptyStateMessage(titleRes = R.string.no_results)
+                            } else {
+                                emptyStateMessage
+                            }
+                        )
+                    }
+                } else {
+                    PasswordListScrollableContent(
+                        listState = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset { IntOffset(0, contentPullOffset) }
+                            .then(pullAction.gestureModifier),
+                        isPasswordPageListModelReady = isPasswordPageListModelReady,
+                        hasVisibleQuickFilters = hasVisibleQuickFilters,
+                        hasVisibleCategoryQuickFilters = hasVisibleCategoryQuickFilters,
+                        appSettings = appSettings,
+                        configuredQuickFilterItems = configuredQuickFilterItems,
+                        aggregateUiState = aggregateUiState,
+                        quickFilterFavorite = quickFilterFavorite,
+                        onQuickFilterFavoriteChange = onQuickFilterFavoriteChange,
+                        quickFilter2fa = quickFilter2fa,
+                        onQuickFilter2faChange = onQuickFilter2faChange,
+                        quickFilterNotes = quickFilterNotes,
+                        onQuickFilterNotesChange = onQuickFilterNotesChange,
+                        quickFilterPasskey = quickFilterPasskey,
+                        onQuickFilterPasskeyChange = onQuickFilterPasskeyChange,
+                        quickFilterBoundNote = quickFilterBoundNote,
+                        onQuickFilterBoundNoteChange = onQuickFilterBoundNoteChange,
+                        quickFilterAttachments = quickFilterAttachments,
+                        onQuickFilterAttachmentsChange = onQuickFilterAttachmentsChange,
+                        quickFilterUncategorized = quickFilterUncategorized,
+                        onQuickFilterUncategorizedChange = onQuickFilterUncategorizedChange,
+                        quickFilterLocalOnly = quickFilterLocalOnly,
+                        onQuickFilterLocalOnlyChange = onQuickFilterLocalOnlyChange,
+                        quickFilterManualStackOnly = quickFilterManualStackOnly,
+                        onQuickFilterManualStackOnlyChange = onQuickFilterManualStackOnlyChange,
+                        quickFilterNeverStack = quickFilterNeverStack,
+                        onQuickFilterNeverStackChange = onQuickFilterNeverStackChange,
+                        quickFilterUnstacked = quickFilterUnstacked,
+                        onQuickFilterUnstackedChange = onQuickFilterUnstackedChange,
+                        quickFilterWifi = quickFilterWifi,
+                        onQuickFilterWifiChange = onQuickFilterWifiChange,
+                        wifiQuickFilterVisible = wifiQuickFilterVisible,
+                        quickFilterSshKey = quickFilterSshKey,
+                        onQuickFilterSshKeyChange = onQuickFilterSshKeyChange,
+                        sshKeyQuickFilterVisible = sshKeyQuickFilterVisible,
+                        quickFilterBarcode = quickFilterBarcode,
+                        onQuickFilterBarcodeChange = onQuickFilterBarcodeChange,
+                        barcodeQuickFilterVisible = barcodeQuickFilterVisible,
+                        onToggleAggregateType = onToggleAggregateType,
+                        categoryQuickFilterShortcuts = categoryQuickFilterShortcuts,
+                        quickFolderShortcuts = quickFolderShortcuts,
+                        quickFolderStyle = quickFolderStyle,
+                        currentFilter = currentFilter,
+                        onNavigateFilter = onNavigateFilter,
+                        hasVisibleListItems = hasVisibleListItems,
+                        showEmptyState = showEmptyState,
+                        searchQuery = searchQuery,
+                        emptyStateMessage = emptyStateMessage,
+                        renderPasswordRows = renderPasswordRows
                     )
                 }
-            } else {
-                PasswordListScrollableContent(
-                    listState = listState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .offset { IntOffset(0, contentPullOffset) }
-                        .nestedScroll(pullAction.nestedScrollConnection),
-                    isPasswordPageListModelReady = isPasswordPageListModelReady,
-                    hasVisibleQuickFilters = hasVisibleQuickFilters,
-                    hasVisibleCategoryQuickFilters = hasVisibleCategoryQuickFilters,
-                    appSettings = appSettings,
-                    configuredQuickFilterItems = configuredQuickFilterItems,
-                    aggregateUiState = aggregateUiState,
-                    quickFilterFavorite = quickFilterFavorite,
-                    onQuickFilterFavoriteChange = onQuickFilterFavoriteChange,
-                    quickFilter2fa = quickFilter2fa,
-                    onQuickFilter2faChange = onQuickFilter2faChange,
-                    quickFilterNotes = quickFilterNotes,
-                    onQuickFilterNotesChange = onQuickFilterNotesChange,
-                    quickFilterPasskey = quickFilterPasskey,
-                    onQuickFilterPasskeyChange = onQuickFilterPasskeyChange,
-                    quickFilterBoundNote = quickFilterBoundNote,
-                    onQuickFilterBoundNoteChange = onQuickFilterBoundNoteChange,
-                    quickFilterAttachments = quickFilterAttachments,
-                    onQuickFilterAttachmentsChange = onQuickFilterAttachmentsChange,
-                    quickFilterUncategorized = quickFilterUncategorized,
-                    onQuickFilterUncategorizedChange = onQuickFilterUncategorizedChange,
-                    quickFilterLocalOnly = quickFilterLocalOnly,
-                    onQuickFilterLocalOnlyChange = onQuickFilterLocalOnlyChange,
-                    quickFilterManualStackOnly = quickFilterManualStackOnly,
-                    onQuickFilterManualStackOnlyChange = onQuickFilterManualStackOnlyChange,
-                    quickFilterNeverStack = quickFilterNeverStack,
-                    onQuickFilterNeverStackChange = onQuickFilterNeverStackChange,
-                    quickFilterUnstacked = quickFilterUnstacked,
-                    onQuickFilterUnstackedChange = onQuickFilterUnstackedChange,
-                    quickFilterWifi = quickFilterWifi,
-                    onQuickFilterWifiChange = onQuickFilterWifiChange,
-                    wifiQuickFilterVisible = wifiQuickFilterVisible,
-                    quickFilterSshKey = quickFilterSshKey,
-                    onQuickFilterSshKeyChange = onQuickFilterSshKeyChange,
-                    sshKeyQuickFilterVisible = sshKeyQuickFilterVisible,
-                    quickFilterBarcode = quickFilterBarcode,
-                    onQuickFilterBarcodeChange = onQuickFilterBarcodeChange,
-                    barcodeQuickFilterVisible = barcodeQuickFilterVisible,
-                    onToggleAggregateType = onToggleAggregateType,
-                    categoryQuickFilterShortcuts = categoryQuickFilterShortcuts,
-                    quickFolderShortcuts = quickFolderShortcuts,
-                    quickFolderStyle = quickFolderStyle,
-                    currentFilter = currentFilter,
-                    onNavigateFilter = onNavigateFilter,
-                    hasVisibleListItems = hasVisibleListItems,
-                    showEmptyState = showEmptyState,
-                    searchQuery = searchQuery,
-                    emptyStateMessage = emptyStateMessage,
-                    renderPasswordRows = renderPasswordRows
-                )
             }
         }
     }

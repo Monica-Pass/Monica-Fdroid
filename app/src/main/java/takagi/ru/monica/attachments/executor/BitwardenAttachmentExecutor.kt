@@ -2,6 +2,8 @@ package takagi.ru.monica.attachments.executor
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -16,6 +18,7 @@ import takagi.ru.monica.attachments.model.AttachmentDownloadState
 import takagi.ru.monica.attachments.model.AttachmentError
 import takagi.ru.monica.attachments.model.AttachmentOwner
 import takagi.ru.monica.attachments.model.AttachmentSource
+import takagi.ru.monica.attachments.model.normalizeAttachmentFailure
 import takagi.ru.monica.attachments.storage.AttachmentKeyVault
 import takagi.ru.monica.attachments.storage.AttachmentStorage
 import takagi.ru.monica.bitwarden.api.AttachmentUploadRequest
@@ -74,7 +77,8 @@ class BitwardenAttachmentExecutor(
         val accessToken: String,
         val cipherId: String,
         /** 用于包裹/解包附件密钥的 cipher 或 user key。 */
-        val wrappingKey: SymmetricCryptoKey
+        val wrappingKey: SymmetricCryptoKey,
+        val wrappingKeyProvider: (suspend () -> SymmetricCryptoKey)? = null
     )
 
     /**
@@ -107,142 +111,144 @@ class BitwardenAttachmentExecutor(
         sizeBytes: Long,
         ctx: UploadContext
     ): Attachment = withContext(Dispatchers.IO) {
-        // 1. 生成附件独立密钥并用 cipherKey 包裹
-        val (attachmentKey, fileKeyEnc) =
-            BitwardenAttachmentCrypto.generateAndWrapAttachmentKey(ctx.wrappingKey)
-
-        val ciphertextTmp = File.createTempFile("bw_att_", ".bin", context.applicationContext.cacheDir)
-        val plainResult = try {
-            ciphertextTmp.outputStream().buffered().use { out ->
-                BitwardenAttachmentCrypto.encryptStream(source, out, attachmentKey)
-            }
-        } catch (e: Throwable) {
-            attachmentKey.clear()
-            ciphertextTmp.delete()
-            throw e
+        val wrappingKey = ctx.wrappingKeyProvider?.invoke()
+            ?: SymmetricCryptoKey(ctx.wrappingKey.encKey.copyOf(), ctx.wrappingKey.macKey.copyOf())
+        val (attachmentKey, fileKeyEnc, encryptedFileName) = try {
+            val name = BitwardenAttachmentCrypto.encryptStringForAttachment(fileName, wrappingKey)
+            val (key, wrapped) = BitwardenAttachmentCrypto.generateAndWrapAttachmentKey(wrappingKey)
+            Triple(key, wrapped, name)
+        } finally {
+            wrappingKey.clear()
         }
 
-        val encryptedFileName = BitwardenAttachmentCrypto.encryptStringForAttachment(fileName, ctx.wrappingKey)
-        val ciphertextSize = ciphertextTmp.length()
-
-        // 2. 请求上传 URL
-        val uploadResp = try {
-            ctx.vaultApi.createAttachmentUploadUrl(
-                authorization = bearer(ctx.accessToken),
-                cipherId = ctx.cipherId,
-                request = AttachmentUploadRequest(
-                    key = fileKeyEnc,
-                    fileName = encryptedFileName,
-                    fileSize = ciphertextSize.toString()
-                )
-            )
-        } catch (e: IOException) {
+        val ciphertextTmp = try {
+            File.createTempFile("bw_att_", ".bin", context.applicationContext.cacheDir)
+        } catch (error: Exception) {
             attachmentKey.clear()
-            ciphertextTmp.delete()
-            throw AttachmentError.NetworkError(null)
+            throw error
         }
-        if (!uploadResp.isSuccessful) {
-            attachmentKey.clear()
-            ciphertextTmp.delete()
-            throw AttachmentError.NetworkError(uploadResp.code())
-        }
-        val uploadMeta = uploadResp.body()
-            ?: run {
-                attachmentKey.clear()
-                ciphertextTmp.delete()
-                throw AttachmentError.NetworkError(uploadResp.code())
-            }
-        val attachmentId = resolveAttachmentId(uploadMeta)
-            ?: run {
-                attachmentKey.clear()
-                ciphertextTmp.delete()
-                throw AttachmentError.NetworkError(uploadResp.code())
-            }
-
-        // 3. 按 fileUploadType 分派上传方式
         try {
-            when (uploadMeta.fileUploadType) {
-                FILE_UPLOAD_TYPE_DIRECT -> uploadDirect(
-                    ctx = ctx,
+            val plainResult = try {
+                BitwardenAttachmentCrypto.encryptFile(source, ciphertextTmp, attachmentKey)
+            } catch (e: Throwable) {
+                attachmentKey.clear()
+                ciphertextTmp.delete()
+                throw e
+            }
+
+            val ciphertextSize = ciphertextTmp.length()
+
+            // 2. 请求上传 URL
+            val uploadResp = try {
+                ctx.vaultApi.createAttachmentUploadUrl(
+                    authorization = bearer(ctx.accessToken),
                     cipherId = ctx.cipherId,
-                    attachmentId = attachmentId,
-                    fileKeyEnc = fileKeyEnc,
-                    ciphertextFile = ciphertextTmp
+                    request = AttachmentUploadRequest(
+                        key = fileKeyEnc,
+                        fileName = encryptedFileName,
+                        fileSize = ciphertextSize.toString()
+                    )
                 )
-                else -> {
-                    val url = uploadMeta.url
-                        ?: throw AttachmentError.NetworkError(null)
-                    uploadAzure(
-                        httpClient = ctx.httpClient,
-                        url = url,
+            } catch (e: IOException) {
+                attachmentKey.clear()
+                ciphertextTmp.delete()
+                throw AttachmentError.NetworkError(null, e)
+            }
+            if (!uploadResp.isSuccessful) {
+                attachmentKey.clear()
+                ciphertextTmp.delete()
+                throw AttachmentError.NetworkError(uploadResp.code())
+            }
+            val uploadMeta = uploadResp.body()
+                ?: run {
+                    attachmentKey.clear()
+                    ciphertextTmp.delete()
+                    throw AttachmentError.NetworkError(uploadResp.code())
+                }
+            val attachmentId = resolveAttachmentId(uploadMeta)
+                ?: run {
+                    attachmentKey.clear()
+                    ciphertextTmp.delete()
+                    throw AttachmentError.NetworkError(uploadResp.code())
+                }
+
+            // 3. 按 fileUploadType 分派上传方式
+            try {
+                when (uploadMeta.fileUploadType) {
+                    FILE_UPLOAD_TYPE_DIRECT -> uploadDirect(
+                        ctx = ctx,
+                        cipherId = ctx.cipherId,
+                        attachmentId = attachmentId,
+                        fileKeyEnc = fileKeyEnc,
                         ciphertextFile = ciphertextTmp
                     )
+                    else -> {
+                        val url = uploadMeta.url
+                            ?: throw AttachmentError.NetworkError(null)
+                        uploadAzure(
+                            httpClient = ctx.httpClient,
+                            url = url,
+                            ciphertextFile = ciphertextTmp
+                        )
+                    }
                 }
+            } catch (e: AttachmentError) {
+                attachmentKey.clear()
+                ciphertextTmp.delete()
+                throw e
+            } catch (e: IOException) {
+                attachmentKey.clear()
+                ciphertextTmp.delete()
+                throw AttachmentError.NetworkError(null, e)
             }
-        } catch (e: AttachmentError) {
-            attachmentKey.clear()
-            ciphertextTmp.delete()
-            throw e
-        } catch (e: IOException) {
-            attachmentKey.clear()
-            ciphertextTmp.delete()
-            throw AttachmentError.NetworkError(null)
-        }
 
-        // 4. 用 Monica 的 Local_Encrypted_Store 保存一份本地缓存（便于 offline 预览）
-        val localBlob = try {
-            ciphertextTmp.inputStream().use { readBack ->
-                // 上面已经写的是 Bitwarden 格式，为了让本地缓存与 LocalAttachmentExecutor 一致，
-                // 这里重新用"明文 → Monica GCM 密文"路径。我们需要重新解密 Bitwarden 格式
-                // 并通过 AttachmentStorage 加密写入。
-                val plainPipe = File.createTempFile("bw_att_plain_", ".bin", context.applicationContext.cacheDir)
-                try {
-                    plainPipe.outputStream().buffered().use { plainOut ->
-                        BitwardenAttachmentCrypto.decryptStream(readBack, plainOut, attachmentKey)
-                    }
-                    plainPipe.inputStream().use { plainIn ->
-                        storage.writeEncrypted(plainIn)
-                    }
-                } finally {
-                    plainPipe.delete()
+            // 4. 用 Monica 的 Local_Encrypted_Store 保存一份本地缓存（便于 offline 预览）
+            val localBlob = try {
+                BitwardenAttachmentCrypto.openDecrypted(ciphertextTmp, attachmentKey).use { plainIn ->
+                    storage.writeEncrypted(plainIn)
                 }
+            } finally {
+                attachmentKey.clear()
+                ciphertextTmp.delete()
             }
+
+            val wrappedLocalCek = try {
+                keyVault.wrap(localBlob.cek)
+            } catch (e: Throwable) {
+                runCatching { storage.delete(localBlob.relativePath) }
+                throw AttachmentError.CryptoError
+            } finally {
+                localBlob.cek.fill(0)
+            }
+
+            val now = System.currentTimeMillis()
+            Attachment(
+                id = 0,
+                parentPasswordId = owner.passwordId,
+                parentSecureItemId = owner.secureItemId,
+                source = AttachmentSource.BITWARDEN.name,
+                fileName = fileName,
+                mimeType = mimeType,
+                sizeBytes = plainResult.plainSizeBytes,
+                sha256Hex = plainResult.plainSha256Hex,
+                wrappedCek = wrappedLocalCek,
+                localPath = localBlob.relativePath,
+                bitwardenAttachmentId = attachmentId,
+                bitwardenUrl = uploadMeta.cipherResponse
+                    ?.attachments
+                    ?.firstOrNull { it.id == attachmentId }
+                    ?.url,
+                bitwardenFileKeyEnc = fileKeyEnc,
+                downloadState = AttachmentDownloadState.DOWNLOADED.name,
+                createdAt = now,
+                updatedAt = now
+            )
+        } catch (error: Exception) {
+            throw normalizeAttachmentFailure(error)
         } finally {
             attachmentKey.clear()
             ciphertextTmp.delete()
         }
-
-        val wrappedLocalCek = try {
-            keyVault.wrap(localBlob.cek)
-        } catch (e: Throwable) {
-            runCatching { storage.delete(localBlob.relativePath) }
-            throw AttachmentError.CryptoError
-        } finally {
-            localBlob.cek.fill(0)
-        }
-
-        val now = System.currentTimeMillis()
-        Attachment(
-            id = 0,
-            parentPasswordId = owner.passwordId,
-            parentSecureItemId = owner.secureItemId,
-            source = AttachmentSource.BITWARDEN.name,
-            fileName = fileName,
-            mimeType = mimeType,
-            sizeBytes = plainResult.plainSizeBytes.takeIf { it > 0 } ?: sizeBytes,
-            sha256Hex = plainResult.plainSha256Hex,
-            wrappedCek = wrappedLocalCek,
-            localPath = localBlob.relativePath,
-            bitwardenAttachmentId = attachmentId,
-            bitwardenUrl = uploadMeta.cipherResponse
-                ?.attachments
-                ?.firstOrNull { it.id == attachmentId }
-                ?.url,
-            bitwardenFileKeyEnc = fileKeyEnc,
-            downloadState = AttachmentDownloadState.DOWNLOADED.name,
-            createdAt = now,
-            updatedAt = now
-        )
     }
 
     /**
@@ -256,65 +262,99 @@ class BitwardenAttachmentExecutor(
         httpClient: OkHttpClient,
         accessToken: String,
         cipherId: String,
-        wrappingKey: SymmetricCryptoKey
+        wrappingKey: SymmetricCryptoKey,
+        wrappingKeyProvider: (suspend () -> SymmetricCryptoKey)? = null
     ): Attachment = withContext(Dispatchers.IO) {
         // Bitwarden attachment URLs are short-lived. Always ask the cipher endpoint for fresh
         // download metadata first; the URL cached from /sync is only a compatibility fallback.
+        var metadataFailure: IOException? = null
         val freshInfoResponse = try {
             vaultApi.getAttachmentDownload(
                 authorization = bearer(accessToken),
                 cipherId = cipherId,
                 attachmentId = remote.id
             )
-        } catch (_: IOException) {
+        } catch (error: IOException) {
+            metadataFailure = error
             null
         }
         val freshInfo = freshInfoResponse
             ?.takeIf { it.isSuccessful }
             ?.body()
+        if (freshInfo != null && freshInfo.id.isNotBlank() && freshInfo.id != remote.id) {
+            throw AttachmentError.InvalidRemoteData
+        }
         val fileKeyEnc = resolveBitwardenAttachmentKey(
             freshKey = freshInfo?.key,
             remoteKey = remote.key,
             storedKey = existing.bitwardenFileKeyEnc
         )
-            ?: throw AttachmentError.CryptoError
         val downloadUrl = resolveBitwardenAttachmentDownloadUrl(
             freshUrl = freshInfo?.url,
             cachedUrl = remote.url
         )
-            ?: throw AttachmentError.NetworkError(freshInfoResponse?.code())
-        val attachmentKey = BitwardenAttachmentCrypto.unwrapAttachmentKey(fileKeyEnc, wrappingKey)
+            ?: throw AttachmentError.NetworkError(freshInfoResponse?.code(), metadataFailure)
+        val effectiveKey = wrappingKeyProvider?.invoke()
+            ?: SymmetricCryptoKey(wrappingKey.encKey.copyOf(), wrappingKey.macKey.copyOf())
+        val attachmentKey = try {
+            BitwardenAttachmentCrypto.unwrapAttachmentKey(fileKeyEnc, effectiveKey)
+        } catch (error: BitwardenAttachmentCrypto.UnsupportedFormatException) {
+            throw AttachmentError.UnsupportedEncryption(error.encryptionType)
+        } catch (error: Exception) {
+            throw AttachmentError.CryptoError
+        } finally {
+            effectiveKey.clear()
+        }
 
-        val ciphertextTmp = File.createTempFile("bw_dl_", ".bin", context.applicationContext.cacheDir)
+        val ciphertextTmp = try {
+            File.createTempFile("bw_dl_", ".bin", context.applicationContext.cacheDir)
+        } catch (error: Exception) {
+            attachmentKey.clear()
+            throw error
+        }
         try {
-            val request = Request.Builder().url(downloadUrl).get().build()
+            val request = try {
+                Request.Builder().url(downloadUrl).get().build()
+            } catch (_: IllegalArgumentException) {
+                throw AttachmentError.InvalidRemoteData
+            }
             val response = try {
                 httpClient.newCall(request).execute()
             } catch (e: IOException) {
-                throw AttachmentError.NetworkError(null)
+                throw AttachmentError.NetworkError(null, e)
             }
             response.use { resp ->
                 if (!resp.isSuccessful) throw AttachmentError.NetworkError(resp.code)
                 val body = resp.body ?: throw AttachmentError.NetworkError(resp.code)
+                if (body.contentLength() > BitwardenAttachmentCrypto.MAX_ENCRYPTED_BYTES) {
+                    throw AttachmentError.TooLarge(BitwardenAttachmentCrypto.MAX_ENCRYPTED_BYTES, body.contentLength())
+                }
                 body.byteStream().use { inStream ->
                     ciphertextTmp.outputStream().buffered().use { out ->
-                        inStream.copyTo(out)
+                        val buffer = ByteArray(16 * 1024)
+                        var received = 0L
+                        while (true) {
+                            currentCoroutineContext().ensureActive()
+                            val count = try {
+                                inStream.read(buffer)
+                            } catch (error: IOException) {
+                                throw AttachmentError.NetworkError(null, error)
+                            }
+                            if (count < 0) break
+                            if (count == 0) continue
+                            received += count
+                            if (received > BitwardenAttachmentCrypto.MAX_ENCRYPTED_BYTES) {
+                                throw AttachmentError.TooLarge(BitwardenAttachmentCrypto.MAX_ENCRYPTED_BYTES, received)
+                            }
+                            out.write(buffer, 0, count)
+                        }
                     }
                 }
             }
 
-            // 解密为明文后，按 Monica 格式重新加密存入本地密文库
-            val plainPipe = File.createTempFile("bw_dl_plain_", ".bin", context.applicationContext.cacheDir)
-            val (blob, hash) = try {
-                ciphertextTmp.inputStream().buffered().use { ctIn ->
-                    plainPipe.outputStream().buffered().use { plainOut ->
-                        BitwardenAttachmentCrypto.decryptStream(ctIn, plainOut, attachmentKey)
-                    }
-                }
-                val stored = plainPipe.inputStream().use { storage.writeEncrypted(it) }
-                stored to stored.sha256Hex
-            } finally {
-                plainPipe.delete()
+            // Authenticate first, then stream directly into the local encrypted store.
+            val blob = BitwardenAttachmentCrypto.openDecrypted(ciphertextTmp, attachmentKey).use { plainIn ->
+                storage.writeEncrypted(plainIn)
             }
 
             val wrappedLocalCek = try {
@@ -329,12 +369,15 @@ class BitwardenAttachmentExecutor(
             existing.copy(
                 localPath = blob.relativePath,
                 wrappedCek = wrappedLocalCek,
-                sha256Hex = hash,
-                sizeBytes = blob.sizeBytes.takeIf { it > 0 } ?: existing.sizeBytes,
+                sha256Hex = blob.sha256Hex,
+                sizeBytes = blob.sizeBytes,
+                bitwardenUrl = downloadUrl,
                 bitwardenFileKeyEnc = fileKeyEnc,
                 downloadState = AttachmentDownloadState.DOWNLOADED.name,
                 updatedAt = System.currentTimeMillis()
             )
+        } catch (error: Exception) {
+            throw normalizeAttachmentFailure(error)
         } finally {
             attachmentKey.clear()
             ciphertextTmp.delete()

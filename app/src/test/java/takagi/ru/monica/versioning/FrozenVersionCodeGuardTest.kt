@@ -10,8 +10,8 @@ class FrozenVersionCodeGuardTest {
     fun `fdroid version code matches synchronized release`() {
         val appBuild = projectFile("app/build.gradle").readText()
 
-        assertTrue(appBuild.contains("versionCode 17"))
-        assertTrue(appBuild.contains("versionName \"1.0.310\""))
+        assertTrue(appBuild.contains("versionCode 18"))
+        assertTrue(appBuild.contains("versionName \"1.0.311\""))
     }
 
     private fun projectFile(relativePath: String): File {

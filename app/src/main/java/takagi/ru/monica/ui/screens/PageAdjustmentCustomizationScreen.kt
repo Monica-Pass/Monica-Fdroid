@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -181,6 +183,13 @@ fun PageAdjustmentCustomizationScreen(
                         }
                     )
                 }
+            )
+
+            SwitchSettingsCard(
+                title = stringResource(R.string.vault_overview_enabled_title),
+                subtitle = stringResource(R.string.vault_overview_enabled_desc),
+                checked = settings.vaultOverviewEnabled,
+                onCheckedChange = viewModel::updateVaultOverviewEnabled
             )
 
             PageAdjustmentEntryCard(
@@ -403,7 +412,11 @@ fun AddButtonCustomizationScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        SingleChoiceSegmentedButtonRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min)
+                        ) {
                             listOf(
                                 AddButtonBehaviorMode.DIRECT_PASSWORD to stringResource(R.string.add_button_mode_direct),
                                 AddButtonBehaviorMode.EXPANDABLE_MENU to stringResource(R.string.add_button_mode_expand)
@@ -411,6 +424,7 @@ fun AddButtonCustomizationScreen(
                                 SegmentedButton(
                                     selected = settings.addButtonBehaviorMode == mode,
                                     onClick = { viewModel.updateAddButtonBehaviorMode(mode) },
+                                    modifier = Modifier.fillMaxHeight(),
                                     shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(
                                         index = index,
                                         count = 2
@@ -932,7 +946,7 @@ fun PasswordListCustomizationScreen(
                                 FilterChip(
                                     selected = false,
                                     onClick = {},
-                                    label = { Text(text = "游戏") },
+                                    label = { Text(text = stringResource(R.string.page_adjustment_preview_games)) },
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Default.Folder,
@@ -982,7 +996,7 @@ fun PasswordListCustomizationScreen(
                                             .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text(
-                                            text = "目录1",
+                                            text = stringResource(R.string.page_adjustment_preview_folder),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSecondaryContainer
                                         )
@@ -1000,7 +1014,7 @@ fun PasswordListCustomizationScreen(
                                             .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text(
-                                            text = "子目录",
+                                            text = stringResource(R.string.page_adjustment_preview_subfolder),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSecondaryContainer
                                         )
@@ -1408,12 +1422,10 @@ fun PasswordCardAdjustmentScreen(
         }
     }
 
-    val availableFields = remember {
-        listOf(
-            DisplayFieldOption(PasswordCardDisplayField.USERNAME, "用户名", Icons.Default.Person),
-            DisplayFieldOption(PasswordCardDisplayField.WEBSITE, "网站", Icons.Default.Language)
-        )
-    }
+    val availableFields = listOf(
+        DisplayFieldOption(PasswordCardDisplayField.USERNAME, stringResource(R.string.username), Icons.Default.Person),
+        DisplayFieldOption(PasswordCardDisplayField.WEBSITE, stringResource(R.string.website), Icons.Default.Language)
+    )
     var fieldOrder by remember(settings.passwordCardDisplayFields) {
         mutableStateOf(
             buildList {
@@ -1438,16 +1450,14 @@ fun PasswordCardAdjustmentScreen(
         )
     }
 
-    val groupOptions = remember {
-        listOf(
-            GroupModeOption("smart", "智能堆叠（备注>网站>应用>标题）", "优先备注，其次网站/应用，最后标题", Icons.Default.Apps),
-            GroupModeOption("note", "按备注堆叠", "取备注首个非空行", Icons.Default.Description),
-            GroupModeOption("website", "按网站堆叠", "网站优先", Icons.Default.Language),
-            GroupModeOption("app", "按应用堆叠", "应用名/包名优先", Icons.Default.Apps),
-            GroupModeOption("title", "按标题堆叠", "严格按完整标题分组", Icons.Default.Person),
-            GroupModeOption("folder", "按文件夹堆叠", "按数据库文件夹分别堆叠", Icons.Default.Folder)
-        )
-    }
+    val groupOptions = listOf(
+        GroupModeOption("smart", stringResource(R.string.group_mode_smart), stringResource(R.string.group_mode_smart_desc), Icons.Default.Apps),
+        GroupModeOption("note", stringResource(R.string.group_mode_note), stringResource(R.string.group_mode_note_desc), Icons.Default.Description),
+        GroupModeOption("website", stringResource(R.string.group_mode_website), stringResource(R.string.group_mode_website_desc), Icons.Default.Language),
+        GroupModeOption("app", stringResource(R.string.group_mode_app), stringResource(R.string.group_mode_app_desc), Icons.Default.Apps),
+        GroupModeOption("title", stringResource(R.string.group_mode_title), stringResource(R.string.group_mode_title_desc), Icons.Default.Person),
+        GroupModeOption("folder", stringResource(R.string.group_mode_folder), stringResource(R.string.group_mode_folder_desc), Icons.Default.Folder)
+    )
     val selectedGroupOption = remember(settings.passwordGroupMode, groupOptions) {
         groupOptions.firstOrNull { it.mode == settings.passwordGroupMode } ?: groupOptions.first()
     }
@@ -1602,7 +1612,11 @@ fun PasswordCardAdjustmentScreen(
                         text = stringResource(R.string.stack_mode_menu_title),
                         style = MaterialTheme.typography.titleMedium
                     )
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                    ) {
                         val selectedMode = runCatching {
                             StackCardMode.valueOf(settings.stackCardMode)
                         }.getOrDefault(StackCardMode.AUTO)
@@ -1615,6 +1629,7 @@ fun PasswordCardAdjustmentScreen(
                             SegmentedButton(
                                 selected = selectedMode == mode,
                                 onClick = { viewModel.updateStackCardMode(mode.name) },
+                                modifier = Modifier.fillMaxHeight(),
                                 shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(
                                     index = index,
                                     count = 2
@@ -1762,7 +1777,11 @@ fun PasswordCardAdjustmentScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                    ) {
                         listOf("strict", "relaxed").forEachIndexed { index, mode ->
                             val text = if (mode == "strict") {
                                 stringResource(R.string.website_stack_match_mode_strict)
@@ -1772,6 +1791,7 @@ fun PasswordCardAdjustmentScreen(
                             SegmentedButton(
                                 selected = websiteStackMatchMode == mode,
                                 onClick = { viewModel.updatePasswordWebsiteStackMatchMode(mode) },
+                                modifier = Modifier.fillMaxHeight(),
                                 shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(
                                     index = index,
                                     count = 2
@@ -1854,7 +1874,7 @@ fun PasswordCardAdjustmentScreen(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                         Text(
-                                            text = if (enabled) "${selectedIndex + 1}" else "隐藏",
+                                            text = if (enabled) "${selectedIndex + 1}" else stringResource(R.string.hidden),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -2035,6 +2055,7 @@ fun AuthenticatorCardAdjustmentScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .height(IntrinsicSize.Min)
                     ) {
                         listOf(
                             AuthenticatorLayoutMode.STANDARD to stringResource(R.string.authenticator_layout_standard),
@@ -2043,6 +2064,7 @@ fun AuthenticatorCardAdjustmentScreen(
                             SegmentedButton(
                                 selected = settings.authenticatorLayoutMode == mode,
                                 onClick = { viewModel.updateAuthenticatorLayoutMode(mode) },
+                                modifier = Modifier.fillMaxHeight(),
                                 shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(
                                     index = index,
                                     count = 2

@@ -39,9 +39,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
-import takagi.ru.monica.bitwarden.sync.SyncStatus
-import takagi.ru.monica.data.SecureItem
-import takagi.ru.monica.notes.domain.DecodedNoteContent
 import takagi.ru.monica.notes.domain.NoteContentCodec
 import takagi.ru.monica.notes.ui.model.NoteListItemUiModel
 import takagi.ru.monica.ui.components.MarkdownPreviewText
@@ -301,39 +298,5 @@ fun NoteCard(
         isGridMode = true,
         onClick = onClick,
         onLongClick = onLongClick
-    )
-}
-
-internal fun SecureItem.toNoteListItemUiModel(): NoteListItemUiModel {
-    return toNoteListItemUiModel(NoteContentCodec.decodeFromItem(this))
-}
-
-internal fun SecureItem.toNoteListItemUiModel(decoded: DecodedNoteContent): NoteListItemUiModel {
-    val resolvedSyncStatus = if (bitwardenVaultId != null) {
-        when (syncStatus) {
-            "PENDING" -> SyncStatus.PENDING
-            "SYNCING" -> SyncStatus.SYNCING
-            "SYNCED" -> SyncStatus.SYNCED
-            "FAILED" -> SyncStatus.FAILED
-            "CONFLICT" -> SyncStatus.CONFLICT
-            else -> if (bitwardenLocalModified) SyncStatus.PENDING else SyncStatus.SYNCED
-        }
-    } else {
-        null
-    }
-    return NoteListItemUiModel(
-        id = id,
-        title = title,
-        rawContent = decoded.content,
-        isMarkdown = decoded.isMarkdown,
-        inlineImageIds = (
-            NoteContentCodec.extractInlineImageIds(decoded.content) +
-                NoteContentCodec.decodeImagePaths(imagePaths)
-            ).distinct(),
-        previewText = NoteContentCodec.toPlainPreview(decoded.content, decoded.isMarkdown),
-        tags = decoded.tags,
-        updatedAt = updatedAt,
-        hasImageAttachment = NoteContentCodec.hasAnyImagePath(imagePaths),
-        syncStatus = resolvedSyncStatus
     )
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">Der Bitwarden-Tresor ist gesperrt oder die Sitzung ist abgelaufen. Entsperren Sie ihn oder melden Sie sich erneut an.</string>
+    <string name="attachment_error_remote_data">Der Server hat unvollständige Anhangsdaten zurückgegeben. Synchronisieren Sie den Tresor und versuchen Sie es erneut.</string>
+    <string name="attachment_error_unsupported_encryption">Dieser Anhang verwendet ein nicht unterstütztes Verschlüsselungsformat (Typ %1$d). Exportieren Sie ihn mit dem offiziellen Client und laden Sie ihn erneut hoch.</string>
+    <string name="attachment_error_unknown">Die Anhangsaktion ist fehlgeschlagen. Bitte versuchen Sie es erneut.</string>
+    <string name="attachment_error_decryption_failed">Entschlüsselung oder Integritätsprüfung des Anhangs fehlgeschlagen. Synchronisieren Sie den Tresor und versuchen Sie es erneut.</string>
+    <string name="password_batch_attachment_failure">Anhänge von %1$d Einträgen konnten nicht übertragen werden. %2$s</string>
+</resources>

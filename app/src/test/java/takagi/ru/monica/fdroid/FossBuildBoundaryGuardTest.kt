@@ -32,7 +32,7 @@ class FossBuildBoundaryGuardTest {
         forbidden.forEach { coordinate -> assertFalse(coordinate, gradle.contains(coordinate)) }
         assertFalse(manifest.contains("com.microsoft.identity.client.BrowserTabActivity"))
         assertTrue(source("app/src/main/java/takagi/ru/monica/ui/scanner/QrCameraScanSession.kt")
-            .contains("ZxingBarcodeDecoder(formats)"))
+            .contains("ZxingBarcodeDecoder(allowedFormats)"))
         assertTrue(source("app/src/main/java/takagi/ru/monica/utils/GoogleDriveAuthManager.kt")
             .contains("GoogleDriveNotSupportedException"))
         assertTrue(source("app/src/main/java/takagi/ru/monica/utils/OneDriveAuthManager.kt")

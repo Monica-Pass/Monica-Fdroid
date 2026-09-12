@@ -25,6 +25,62 @@ import takagi.ru.monica.ui.theme.MonicaTheme
 
 class CardFaceCropperTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun portraitImageStaysInsideViewportDuringZoomAndPan() {
+        val source = Bitmap.createBitmap(400, 2400, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.MAGENTA)
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        compose.setContent { MonicaTheme {
+            CardFaceCropper(source, false, null, {}, {})
+        } }
+
+        fun assertPreviewIsClipped(stage: String) {
+            val root = compose.onRoot()
+            val rootBounds = root.fetchSemanticsNode().boundsInRoot
+            val viewport = compose.onNodeWithTag("card_face_crop_canvas")
+                .fetchSemanticsNode().boundsInRoot
+            val top = viewport.top - rootBounds.top
+            val bottom = viewport.bottom - rootBounds.top
+            val screenshot = root.captureToImage().asAndroidBitmap()
+            File(context.getExternalFilesDir(null), "card-crop-portrait-$stage.png").outputStream().use {
+                screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            assertTrue("The screenshot must include both bars", top > 0f && bottom < screenshot.height)
+            assertEquals("The selected image must remain visible", Color.MAGENTA,
+                screenshot.getPixel(screenshot.width / 2, ((top + bottom) / 2).toInt()))
+
+            val pixels = IntArray(screenshot.width * screenshot.height)
+            screenshot.getPixels(pixels, 0, screenshot.width, 0, 0, screenshot.width, screenshot.height)
+            var leakedAbove = 0
+            var leakedBelow = 0
+            for (y in 0 until screenshot.height) {
+                if (y + .5f >= top && y + .5f < bottom) continue
+                for (x in 0 until screenshot.width) {
+                    if (pixels[y * screenshot.width + x] == Color.MAGENTA) {
+                        if (y + .5f < top) leakedAbove++ else leakedBelow++
+                    }
+                }
+            }
+            assertEquals("$stage: image must not leak into the footer", 0, leakedBelow)
+            assertEquals("$stage: image must not leak into the toolbar", 0, leakedAbove)
+        }
+
+        assertPreviewIsClipped("initial")
+        compose.onNodeWithTag("card_face_crop_canvas").performTouchInput {
+            pinch(center - Offset(40f, 0f), center + Offset(40f, 0f),
+                center - Offset(100f, 0f), center + Offset(100f, 0f))
+        }
+        compose.onNodeWithTag("card_face_crop_canvas").performTouchInput {
+            swipe(center, center + Offset(35f, 120f))
+        }
+        assertPreviewIsClipped("zoom-pan-down")
+        compose.onNodeWithTag("card_face_crop_canvas").performTouchInput {
+            swipe(center, center - Offset(35f, 180f))
+        }
+        assertPreviewIsClipped("pan-up")
+    }
+
     @Test fun cancelDoesNotApplyAndConfirmReturnsDisplayedRegion() {
         val source = Bitmap.createBitmap(1600, 1000, Bitmap.Config.ARGB_8888)
         Canvas(source).apply {

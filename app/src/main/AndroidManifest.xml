@@ -32,6 +32,8 @@
     
     <!-- Foreground Service permissions for Notification Validator -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
         android:minSdkVersion="34" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"
@@ -41,6 +43,7 @@
 
     <!-- Android 11+ 包可见性声明 - 用于应用列表功能 -->
     <queries>
+        <package android:name="moe.shizuku.privileged.api" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -282,6 +285,34 @@
         </service>
 
         <!-- Accessibility Service -->
+        <activity
+            android:name=".autofill_ng.protection.AutofillProtectionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Monica" />
+        <service
+            android:name=".autofill_ng.protection.AutofillProtectionService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled accessibility autofill availability monitoring with a persistent status notification and stop action" />
+        </service>
+        <receiver
+            android:name=".autofill_ng.protection.AutofillProtectionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
         <service
             android:name=".service.MonicaAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

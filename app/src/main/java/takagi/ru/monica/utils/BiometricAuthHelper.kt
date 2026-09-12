@@ -145,6 +145,12 @@ class BiometricAuthHelper(
         )
     }
 
+    /** Cancel a request whose owning screen has gone away, including its callbacks. */
+    fun cancelAuthentication() {
+        callbacks = null
+        prompt?.cancelAuthentication()
+    }
+
     private fun promptFor(activity: FragmentActivity): BiometricPrompt {
         val cached = prompt
         if (cached != null && promptActivity === activity) {

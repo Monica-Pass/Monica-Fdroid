@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">The Bitwarden vault is locked or the session has expired. Unlock it or sign in again.</string>
+    <string name="attachment_error_remote_data">The server returned incomplete attachment information. Sync the vault and try again.</string>
+    <string name="attachment_error_unsupported_encryption">This attachment uses an unsupported encryption format (type %1$d). Export it with the official client and upload it again.</string>
+    <string name="attachment_error_unknown">The attachment operation failed. Please try again.</string>
+    <string name="attachment_error_decryption_failed">Attachment decryption or integrity verification failed. Sync the vault and try again.</string>
+    <string name="password_batch_attachment_failure">Attachments could not be transferred for %1$d item(s). %2$s</string>
+</resources>

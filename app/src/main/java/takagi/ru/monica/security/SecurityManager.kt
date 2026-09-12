@@ -762,8 +762,10 @@ class SecurityManager(private val context: Context) {
     ): String? {
         return if (PredefinedSecurityQuestions.isCustomQuestion(id)) {
             customText
+        } else if (PredefinedSecurityQuestions.getQuestionById(id) == null) {
+            null
         } else {
-            PredefinedSecurityQuestions.getQuestionById(id, isZh)?.questionText
+            context.getString(PredefinedSecurityQuestions.textResIdFor(id))
         }
     }
     

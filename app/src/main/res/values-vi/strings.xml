@@ -1741,6 +1741,10 @@
     <string name="import_type_stratum_title">Stratum Auth</string>
     <string name="import_type_stratum_desc">Nhap ban sao luu Stratum/AuthPro (.stratum/.txt/.html)</string>
     <string name="import_type_stratum_file_hint">Chon tep .stratum / .txt / .html</string>
+    <string name="import_csv_no_data_found">Không thể nhập dữ liệu. Vui lòng kiểm tra định dạng tệp.</string>
+    <string name="import_csv_file_unreadable">Không thể đọc tệp. Hãy kiểm tra xem tệp còn tồn tại không.</string>
+    <string name="import_csv_file_empty">Tệp trống.</string>
+    <string name="import_csv_invalid_format">Định dạng tệp không hợp lệ</string>
     <string name="import_type_steam_title">Steam Guard</string>
     <string name="import_type_steam_desc">Nhap token Steam tu tep maFile</string>
     <string name="import_type_steam_file_hint">Chon tep .maFile</string>
@@ -2939,7 +2943,7 @@ Làm mới hoặc đồng bộ hóa cơ sở dữ liệu KeePass này, sau đó 
     <string name="password_owner_conflict_inline">Mục này thuộc về nhiều vault. Sửa quyền sở hữu trước khi chỉnh sửa.</string>
     <string name="password_owner_conflict_display">Xung đột quyền sở hữu bộ nhớ trên Monica, KeePass hoặc Bitwarden. Sửa chữa trước khi chỉnh sửa.</string>
     <string name="password_owner_conflict_copy">Mục này có quyền sở hữu xung đột và mật khẩu của nó không thể được sao chép một cách an toàn.</string>
-    <string name="pull_release_to_search">Kéo để tìm kiếm</string>
+    <string name="pull_release_to_search">Kéo xuống để tìm kiếm</string>
     <string name="pull_release_to_sync_bitwarden">Phát hành để đồng bộ Bitwarden</string>
     <string name="pull_syncing_bitwarden">Đang đồng bộ hóa Bitwarden...</string>
     <string name="pull_sync_requires_bitwarden_login">Vui lòng đăng nhập và mở khóa Bitwarden trước</string>

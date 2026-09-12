@@ -6,6 +6,7 @@ import java.util.Locale
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import takagi.ru.monica.R
 import takagi.ru.monica.data.CustomField
 import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.LocalKeePassDatabaseDao
@@ -30,8 +31,9 @@ import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.repository.SecureItemRepository
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.util.TotpDataResolver
+import takagi.ru.monica.utils.StringResolver
 
-class DedupMergeService(
+class DedupMergeService internal constructor(
     private val passwordRepository: PasswordRepository,
     private val secureItemRepository: SecureItemRepository,
     private val passkeyRepository: PasskeyRepository,
@@ -39,7 +41,8 @@ class DedupMergeService(
     private val localKeePassDatabaseDao: LocalKeePassDatabaseDao,
     private val localMdbxDatabaseDao: LocalMdbxDatabaseDao,
     private val bitwardenVaultDao: BitwardenVaultDao,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val strings: StringResolver
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val mergeExecutor = DedupMergeExecutor(
@@ -47,7 +50,8 @@ class DedupMergeService(
             passwordRepository = passwordRepository,
             secureItemRepository = secureItemRepository,
             customFieldRepository = customFieldRepository
-        )
+        ),
+        strings = strings
     )
 
     suspend fun getSourceOptions(): List<DedupMergeSourceOption> {
@@ -66,7 +70,7 @@ class DedupMergeService(
                 DedupMergeSourceOption(
                     key = SOURCE_MONICA,
                     kind = DedupMergeSourceKind.MONICA_LOCAL,
-                    label = "Monica 本地",
+                    label = strings.get(R.string.database_source_local),
                     passwordCount = passwordCounts[SOURCE_MONICA] ?: 0,
                     secureItemCount = secureItemCounts[SOURCE_MONICA] ?: 0,
                     passkeyCount = passkeyCounts[SOURCE_MONICA] ?: 0
@@ -124,7 +128,7 @@ class DedupMergeService(
                 DedupMergeTargetOption(
                     target = DedupMergeTarget.MonicaLocal,
                     sourceKey = SOURCE_MONICA,
-                    label = "Monica 本地",
+                    label = strings.get(R.string.database_source_local),
                     passwordCount = entries.count { it.isLocalOnlyEntry() },
                     secureItemCount = secureItems.count { it.isLocalOnlyItem() },
                     passkeyCount = passkeys.count { it.isLocalOnlyPasskey() }
@@ -240,23 +244,23 @@ class DedupMergeService(
 
         val warnings = buildList {
             if (selectedSourceKeys.size < DedupMergeSelection.MINIMUM_SOURCE_DATABASES) {
-                add("请至少选择两个源数据库")
+                add(strings.get(R.string.dedup_merge_need_sources))
             }
-            if (target == null) add("请选择一个目标数据库")
+            if (target == null) add(strings.get(R.string.dedup_merge_need_target))
             if (sourceEntries.isEmpty() && sourceSecureItems.isEmpty() && selectedSourceKeys.isNotEmpty()) {
-                add("选中的源数据库没有可写入的密码或安全项")
+                add(strings.get(R.string.dedup_merge_warning_empty_sources))
             }
             if (targetSourceKey != null && targetSourceKey in selectedSourceKeys) {
-                add("目标数据库也被选为源库；目标现有条目只用于判断跳过，不会被更新或覆盖")
+                add(strings.get(R.string.dedup_merge_warning_target_is_source))
             }
             if (resolvedPasswords.any { it.existsInTarget }) {
-                add("目标数据库已有的同类密码会跳过，不会覆盖现有条目")
+                add(strings.get(R.string.dedup_merge_warning_existing_passwords))
             }
             if (resolvedSecureItems.any { it.existsInTarget }) {
-                add("目标数据库已有的同类验证器、卡片、证件或笔记会跳过，不会覆盖")
+                add(strings.get(R.string.dedup_merge_warning_existing_secure_items))
             }
             if (sourcePasskeys.isNotEmpty()) {
-                add("通行密钥包含 Android Keystore 私钥，去重合并只统计 ${sourcePasskeys.size} 条，不会自动复制")
+                add(strings.get(R.string.dedup_merge_warning_passkeys, sourcePasskeys.size))
             }
         }
 
@@ -288,12 +292,12 @@ class DedupMergeService(
         plan: DedupMergePlan,
         onProgress: (DedupMergeExecutionProgress) -> Unit = {}
     ): DedupMergeExecutionResult {
-        val target = plan.target ?: error("No dedup merge target selected")
+        val target = plan.target ?: error(strings.get(R.string.dedup_merge_need_target))
         require(plan.selectedSources.size >= DedupMergeSelection.MINIMUM_SOURCE_DATABASES) {
-            "At least two source databases are required"
+            strings.get(R.string.dedup_merge_need_sources)
         }
         require(target.sourceKey() !in plan.selectedSources.map { it.key }.toSet()) {
-            "The target database cannot also be a source"
+            strings.get(R.string.dedup_merge_target_cannot_be_source)
         }
         val freshPlan = buildPlan(
             selectedSourceKeys = plan.selectedSources.map { it.key }.toSet(),
@@ -303,7 +307,7 @@ class DedupMergeService(
         val rowsToInsert = freshPlan.previewPasswords.filterNot { it.existsInTarget }
         val secureItemsToInsert = freshPlan.previewSecureItems.filterNot { it.existsInTarget }
         require(freshPlan.selectedSources.size >= DedupMergeSelection.MINIMUM_SOURCE_DATABASES) {
-            "One or more source databases are no longer available"
+            strings.get(R.string.dedup_merge_sources_unavailable)
         }
         if (rowsToInsert.isEmpty() && secureItemsToInsert.isEmpty()) {
             return DedupMergeExecutionResult(
@@ -454,13 +458,13 @@ class DedupMergeService(
     ): Set<String> {
         if (entries.size <= 1) return emptySet()
         return buildSet {
-            addIfDistinct(entries) { normalizeText(it.title) }?.let { add("标题") }
-            addIfDistinct(entries) { normalizeWebsite(it.website) }?.let { add("网址") }
-            addIfDistinct(entries) { normalizeText(it.username) }?.let { add("用户名") }
-            addIfDistinct(entries) { decryptComparablePassword(it.password) }?.let { add("密码") }
-            addIfDistinct(entries) { it.notes.trim() }?.let { add("备注") }
-            addIfDistinct(entries) { normalizeSecret(it.authenticatorKey) }?.let { add("验证器") }
-            addIfDistinct(entries) { it.loginType.uppercase(Locale.ROOT) }?.let { add("类型") }
+            addIfDistinct(entries) { normalizeText(it.title) }?.let { add(strings.get(R.string.title)) }
+            addIfDistinct(entries) { normalizeWebsite(it.website) }?.let { add(strings.get(R.string.website)) }
+            addIfDistinct(entries) { normalizeText(it.username) }?.let { add(strings.get(R.string.username)) }
+            addIfDistinct(entries) { decryptComparablePassword(it.password) }?.let { add(strings.get(R.string.password)) }
+            addIfDistinct(entries) { it.notes.trim() }?.let { add(strings.get(R.string.notes)) }
+            addIfDistinct(entries) { normalizeSecret(it.authenticatorKey) }?.let { add(strings.get(R.string.item_type_authenticator)) }
+            addIfDistinct(entries) { it.loginType.uppercase(Locale.ROOT) }?.let { add(strings.get(R.string.dedup_merge_field_type)) }
             val customFieldFingerprints = entries.map { entry ->
                 customFieldsByEntry[entry.id]
                     .orEmpty()
@@ -468,7 +472,7 @@ class DedupMergeService(
                     .sortedWith(compareBy({ it.title.lowercase(Locale.ROOT) }, { it.sortOrder }, { it.value }))
                     .joinToString("|") { "${it.title}:${it.value}:${it.isProtected}" }
             }.toSet()
-            if (customFieldFingerprints.size > 1) add("自定义字段")
+            if (customFieldFingerprints.size > 1) add(strings.get(R.string.custom_fields))
         }
     }
 
@@ -618,10 +622,10 @@ class DedupMergeService(
     private fun conflictFields(items: List<SecureItem>): Set<String> {
         if (items.size <= 1) return emptySet()
         return buildSet {
-            addIfDistinctSecure(items) { normalizeText(it.title) }?.let { add("标题") }
-            addIfDistinctSecure(items) { it.notes.trim() }?.let { add("备注") }
-            addIfDistinctSecure(items) { exactSecureItemDataFingerprint(it) }?.let { add("内容") }
-            addIfDistinctSecure(items) { it.imagePaths.trim() }?.let { add("附件") }
+            addIfDistinctSecure(items) { normalizeText(it.title) }?.let { add(strings.get(R.string.title)) }
+            addIfDistinctSecure(items) { it.notes.trim() }?.let { add(strings.get(R.string.notes)) }
+            addIfDistinctSecure(items) { exactSecureItemDataFingerprint(it) }?.let { add(strings.get(R.string.content)) }
+            addIfDistinctSecure(items) { it.imagePaths.trim() }?.let { add(strings.get(R.string.attachments)) }
         }
     }
 
@@ -935,7 +939,7 @@ class DedupMergeService(
             sourceKey.startsWith("mdbx:") -> "MDBX"
             sourceKey.startsWith("keepass:") -> "KeePass"
             sourceKey.startsWith("bitwarden:") -> "Bitwarden"
-            else -> "Monica 本地"
+            else -> strings.get(R.string.database_source_local)
         }
     }
 
@@ -957,7 +961,7 @@ class DedupMergeService(
 
     private fun DedupMergeTarget.label(): String {
         return when (this) {
-            DedupMergeTarget.MonicaLocal -> "Monica 本地"
+            DedupMergeTarget.MonicaLocal -> strings.get(R.string.database_source_local)
             is DedupMergeTarget.MdbxDatabase -> label
         }
     }

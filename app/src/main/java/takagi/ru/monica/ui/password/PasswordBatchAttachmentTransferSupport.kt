@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import takagi.ru.monica.attachments.AttachmentContainer
@@ -56,11 +57,17 @@ internal suspend fun preparePasswordBatchAttachments(
             }
             put(
                 entry.id,
-                facade.ensureAttachmentsReadyForTransfer(
-                    passwordId = entry.id,
-                    bitwardenContext = bitwardenContext,
-                    keepassContext = keepassContext
-                )
+                try {
+                    facade.ensureAttachmentsReadyForTransfer(
+                        passwordId = entry.id,
+                        bitwardenContext = bitwardenContext,
+                        keepassContext = keepassContext
+                    )
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    throw PasswordBatchAttachmentTransferException(1, error)
+                }
             )
         }
     }
@@ -132,6 +139,7 @@ internal suspend fun completePasswordBatchBitwardenAttachments(
     }
 
     var failedPasswordCount = 0
+    var firstFailure: Throwable? = null
     val successfulPairs = idPairs.toMutableList()
     val targetEntriesById = mutableMapOf<Long, PasswordEntry>()
     pairsRequiringTargetCipher.forEach { pair ->
@@ -142,6 +150,7 @@ internal suspend fun completePasswordBatchBitwardenAttachments(
             }
             successfulPairs.remove(pair)
             failedPasswordCount += 1
+            if (firstFailure == null) firstFailure = takagi.ru.monica.attachments.model.AttachmentError.InvalidRemoteData
         } else {
             targetEntriesById[pair.second] = targetEntry
         }
@@ -186,6 +195,8 @@ internal suspend fun completePasswordBatchBitwardenAttachments(
             }
         } catch (error: Throwable) {
             if (!isMove) runCatching { viewModel.rollbackPasswordTransferTargetAwait(targetId) }
+            if (error is CancellationException) throw error
+            if (firstFailure == null) firstFailure = error
             successfulPairs.remove(pair)
             failedPasswordCount += 1
         }
@@ -209,13 +220,14 @@ internal suspend fun completePasswordBatchBitwardenAttachments(
             if (queued.isSuccess) {
                 sourceVaultsNeedingDelete += sourceVaultId
             } else {
+                if (firstFailure == null) firstFailure = queued.exceptionOrNull()
                 failedPasswordCount += 1
             }
         }
         sourceVaultsNeedingDelete.forEach(bitwardenRepository::requestLocalMutationSync)
     }
     if (failedPasswordCount > 0) {
-        throw PasswordBatchAttachmentTransferException(failedPasswordCount)
+        throw PasswordBatchAttachmentTransferException(failedPasswordCount, firstFailure)
     }
     return copiedAttachmentCount
 }
@@ -244,6 +256,7 @@ internal suspend fun completePasswordBatchLocalOrKeePassAttachmentCopies(
     val facade = AttachmentContainer.facade(context)
     var copiedAttachmentCount = 0
     var failedPasswordCount = 0
+    var firstFailure: Throwable? = null
     idPairs.forEach { (sourceId, targetId) ->
         val expectedCount = preparedAttachments.countFor(sourceId)
         if (expectedCount <= 0) return@forEach
@@ -280,13 +293,15 @@ internal suspend fun completePasswordBatchLocalOrKeePassAttachmentCopies(
             count
         } catch (error: Throwable) {
             runCatching { viewModel.rollbackPasswordTransferTargetAwait(targetId) }
+            if (error is CancellationException) throw error
+            if (firstFailure == null) firstFailure = error
             failedPasswordCount += 1
             return@forEach
         }
         copiedAttachmentCount += copiedCount
     }
     if (failedPasswordCount > 0) {
-        throw PasswordBatchAttachmentTransferException(failedPasswordCount)
+        throw PasswordBatchAttachmentTransferException(failedPasswordCount, firstFailure)
     }
     return copiedAttachmentCount
 }

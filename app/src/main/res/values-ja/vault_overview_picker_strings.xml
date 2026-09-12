@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_overview_picker_search_cards">カード名・銀行名・末尾の番号で検索</string>
+    <string name="vault_overview_picker_search_items">タイトルまたはアカウントで検索</string>
+    <string name="vault_overview_picker_selected">%1$d 件選択中</string>
+    <string name="vault_overview_picker_results">検索結果：%1$d</string>
+    <string name="vault_overview_picker_no_account">アカウント未設定</string>
+    <string name="vault_overview_picker_empty_hint">別のキーワードやデータベースをお試しください。</string>
+    <string name="vault_overview_picker_limit">最大 %1$d 件まで固定できます</string>
+</resources>

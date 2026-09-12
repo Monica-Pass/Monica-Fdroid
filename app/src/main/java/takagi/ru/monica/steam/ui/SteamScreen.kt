@@ -113,7 +113,6 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -173,6 +172,8 @@ import takagi.ru.monica.ui.common.selection.SelectionActionBar
 import takagi.ru.monica.ui.common.state.rememberSaveableLazyListState
 import takagi.ru.monica.ui.common.pull.PullToSearchStateHandle
 import takagi.ru.monica.ui.common.pull.rememberPullToSearchState
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 import takagi.ru.monica.ui.components.ExpressiveTopBar
 import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
 import takagi.ru.monica.ui.components.MonicaItemCardShape
@@ -386,7 +387,7 @@ fun SteamScreen(
     }
     val steamLanguage = steamCommunityLanguage(ComposeLocale.current.language)
     val density = LocalDensity.current
-    val steamSearchTriggerDistance = remember(density) { with(density) { 40.dp.toPx() } }
+    val steamSearchTriggerDistance = remember(density) { with(density) { PullSearchDefaults.TriggerDistance.toPx() } }
     val steamSearchMaxDragDistance = remember(density) { with(density) { 100.dp.toPx() } }
     val pullToSearch = rememberPullToSearchState(
         isSearchExpanded = isSteamSearchExpanded,
@@ -1533,6 +1534,11 @@ fun SteamScreen(
                                     )
                                 }
                         ) {
+                            PullSearchHint(
+                                currentOffset = pullToSearch.currentOffset,
+                                modifier = Modifier.align(Alignment.TopCenter)
+                                    .offset { IntOffset(0, -pullToSearch.currentOffset.toInt()) },
+                            )
                             SteamEmptyAccountContent(
                                 onAddAccount = { showAddAccountDialog = true }
                             )
@@ -1667,6 +1673,11 @@ fun SteamScreen(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
+                            PullSearchHint(
+                                currentOffset = pullToSearch.currentOffset,
+                                modifier = Modifier.align(Alignment.TopCenter)
+                                    .offset { IntOffset(0, -pullToSearch.currentOffset.toInt()) },
+                            )
                             SteamEmptyAccountContent(
                                 onAddAccount = { showAddAccountDialog = true }
                             )
@@ -2412,6 +2423,10 @@ private fun SteamCodeContent(
                     .fillMaxWidth()
                     .offset { IntOffset(0, pullToSearch.currentOffset.toInt()) }
             ) {
+                PullSearchHint(
+                    currentOffset = pullToSearch.currentOffset,
+                    modifier = Modifier.offset { IntOffset(0, -pullToSearch.currentOffset.toInt()) },
+                )
                 if (localAccounts.isEmpty()) {
                     Box(
                         modifier = Modifier
@@ -2434,7 +2449,7 @@ private fun SteamCodeContent(
                         state = lazyListState,
                         modifier = Modifier
                             .fillMaxSize()
-                            .nestedScroll(pullToSearch.nestedScrollConnection),
+                            .then(pullToSearch.gestureModifier),
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             top = 16.dp,
@@ -3502,6 +3517,7 @@ private fun SteamConfirmationsContent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        PullSearchHint(currentOffset = pullToSearch.currentOffset)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -3541,7 +3557,7 @@ private fun SteamConfirmationsContent(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .nestedScroll(pullToSearch.nestedScrollConnection),
+                        .then(pullToSearch.gestureModifier),
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         top = 10.dp,

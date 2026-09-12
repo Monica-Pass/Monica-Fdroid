@@ -123,6 +123,7 @@ internal fun AuthenticatorDetailPaneContent(
             initialTitle = "",
             initialNotes = "",
             initialCategoryId = totpNewItemDefaults.categoryId,
+                    initialStorageExplicit = totpNewItemDefaults.explicit,
             initialKeePassDatabaseId = totpNewItemDefaults.keepassDatabaseId,
             initialKeePassGroupPath = totpNewItemDefaults.keepassGroupPath,
             initialBitwardenVaultId = totpNewItemDefaults.bitwardenVaultId,

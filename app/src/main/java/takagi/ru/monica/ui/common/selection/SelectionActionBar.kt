@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +42,8 @@ fun SelectionActionBar(
     onStack: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    onRemoveFromFrequent: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier,
@@ -96,6 +98,14 @@ fun SelectionActionBar(
                 ActionIcon(
                     icon = Icons.Default.Layers,
                     contentDescription = stringResource(id = R.string.batch_stack),
+                    onClick = it
+                )
+            }
+
+            onRemoveFromFrequent?.let {
+                ActionIcon(
+                    icon = Icons.Outlined.RemoveCircleOutline,
+                    contentDescription = stringResource(R.string.vault_overview_remove_frequent_items),
                     onClick = it
                 )
             }

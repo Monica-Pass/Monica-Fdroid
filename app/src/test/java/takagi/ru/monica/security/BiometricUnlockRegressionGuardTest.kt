@@ -576,8 +576,14 @@ class BiometricUnlockRegressionGuardTest {
         val bitwardenAutoSyncEffectSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenAutoSyncEffect.kt"
         ).readText()
+        val bitwardenPageAutoSyncSchedulerSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/bitwarden/sync/BitwardenPageAutoSyncScheduler.kt"
+        ).readText()
         val cardWalletScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/CardWalletScreen.kt"
+        ).readText()
+        val walletListPreparationSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ui/cardwallet/WalletListPreparation.kt"
         ).readText()
         val passkeyListScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/PasskeyListScreen.kt"
@@ -629,7 +635,7 @@ class BiometricUnlockRegressionGuardTest {
         ).readText()
         val addEditPasswordScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readText().replace("\r\n", "\n")
         val addEditBankCardScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt"
         ).readText()
@@ -671,15 +677,16 @@ class BiometricUnlockRegressionGuardTest {
         )
         assertTrue(
             "Page-visible auto sync triggers should wait for a short stable visibility window so fast bottom-tab switches cancel them.",
-                bitwardenAutoSyncEffectSource.contains("PAGE_ENTER_AUTO_SYNC_DELAY_MS = 1_200L") &&
-                bitwardenAutoSyncEffectSource.contains("targetViewModel.requestPageEnterAutoSync(targetVaultId)") &&
+                bitwardenPageAutoSyncSchedulerSource.contains("PAGE_ENTER_AUTO_SYNC_DELAY_MS = 1_200L") &&
+                bitwardenAutoSyncEffectSource.contains("viewModel?.beginPageEnterAutoSync(selectedVaultId)") &&
+                bitwardenAutoSyncEffectSource.contains("viewModel?.endPageAutoSync(sessionId)") &&
                 cardWalletScreenSource.contains("BitwardenAutoSyncEffect(") &&
                 cardWalletScreenSource.contains("SyncTaskRunner.request(") &&
                 passkeyListScreenSource.contains("delay(1_200L)") &&
                 passkeyListScreenSource.contains("viewModel.refreshKeePassPasskeys(trigger = \"PASSKEY_PAGE_ENTER\")") &&
                 passkeyListScreenSource.contains("BitwardenAutoSyncEffect(") &&
                 sendScreenSource.contains("delay(1_200L)") &&
-                sendScreenSource.contains("bitwardenViewModel.requestPageEnterAutoSync()") &&
+                sendScreenSource.contains("BitwardenAutoSyncEffect(") &&
                 passwordListContentSource.contains("BitwardenAutoSyncEffect(") &&
                 vaultV2PaneSource.contains("BitwardenAutoSyncEffect(") &&
                 totpListContentForSyncSource.contains("BitwardenAutoSyncEffect(")
@@ -687,11 +694,10 @@ class BiometricUnlockRegressionGuardTest {
         assertTrue(
             "Multi-account passive Bitwarden auto sync must be serialized to avoid startup jank.",
             bitwardenOrchestratorSource.contains("passiveAutoSyncMutex") &&
-                bitwardenViewModelSource.contains("fun requestStartupAutoSync(") &&
-                bitwardenViewModelSource.contains("BitwardenAutoSyncTargetPlanner.startupTarget(") &&
-                bitwardenViewModelSource.contains("BitwardenAllVaultAutoSyncScheduler(") &&
+                bitwardenViewModelSource.contains("fun beginPageEnterAutoSync(") &&
+                bitwardenViewModelSource.contains("BitwardenPageAutoSyncScheduler(") &&
                 bitwardenViewModelSource.contains("MULTI_VAULT_AUTO_SYNC_STAGGER_MS") &&
-                mainActivitySource.contains("bitwardenViewModel.requestStartupAutoSync()")
+                !mainActivitySource.contains("requestStartupAutoSync(")
         )
 
         assertTrue(
@@ -712,17 +718,20 @@ class BiometricUnlockRegressionGuardTest {
         assertTrue(
             "Authenticator and card-wallet hot cards must consume parsed UI data so recomposition does not decrypt or parse encrypted payloads.",
                 totpCodeCardSource.contains("parsedTotpData: TotpData? = null") &&
-                totpListContentSource.contains("val parsedTotpItems by viewModel.parsedTotpItems.collectAsState()") &&
+                totpListContentSource.contains("val parsedTotpState by viewModel.parsedTotpState.collectAsState()") &&
+                totpListContentSource.contains("val parsedTotpItems = parsedTotpState.items") &&
                 totpListContentSource.contains("parsedTotpData = totpDataById[item.id]") &&
                 authenticatorTabPaneSource.contains("val parsedTotpItems by totpViewModel.parsedTotpItems.collectAsState()") &&
                 authenticatorTabPaneSource.contains("parsedTotpItems.firstOrNull { it.item.id == selectedTotpId }?.totpData") &&
                 bankCardCardSource.contains("cardData: BankCardData? = null") &&
                 documentCardSource.contains("documentData: DocumentData? = null") &&
-                cardWalletScreenSource.contains("val parsedCards by bankCardViewModel.parsedCards.collectAsState") &&
-                cardWalletScreenSource.contains("val parsedDocuments by documentViewModel.parsedDocuments.collectAsState") &&
-                cardWalletScreenSource.contains("val parsedBillingAddresses by billingAddressViewModel.parsedBillingAddresses.collectAsState") &&
-                cardWalletScreenSource.contains("parsedCards.map { it.item.toBankCardWalletListItem(it.cardData) }") &&
-                cardWalletScreenSource.contains("parsedDocuments.map { it.item.toDocumentWalletListItem(it.documentData) }") &&
+                cardWalletScreenSource.contains("val parsedCardsState by bankCardViewModel.parsedCardsState.collectAsState") &&
+                cardWalletScreenSource.contains("val parsedDocumentsState by documentViewModel.parsedDocumentsState.collectAsState") &&
+                cardWalletScreenSource.contains("val parsedBillingAddressesState by billingAddressViewModel.parsedBillingAddressesState.collectAsState") &&
+                cardWalletScreenSource.contains("val preparedWalletState by rememberPreparedWallet(") &&
+                walletListPreparationSource.contains("withContext(Dispatchers.Default)") &&
+                walletListPreparationSource.contains("cards.items.map { it.item.toBankCardWalletListItem(it.cardData) }") &&
+                walletListPreparationSource.contains("documents.items.map { it.item.toDocumentWalletListItem(it.documentData) }") &&
                 cardWalletScreenSource.contains("cardData = walletItem.bankCardData") &&
                 cardWalletScreenSource.contains("documentData = walletItem.documentData")
         )
@@ -740,11 +749,14 @@ class BiometricUnlockRegressionGuardTest {
         assertTrue(
             "Card and authenticator ViewModels should prepare parsed models on a background dispatcher before UI rendering.",
             bankCardViewModelSource.contains("val parsedCards: StateFlow<List<ParsedBankCardItem>>") &&
-                bankCardViewModelSource.contains("withContext(Dispatchers.Default)") &&
+                bankCardViewModelSource.substringAfter("private val parsedCardsStateSource:")
+                    .substringBefore("val parsedCardsState:").contains(".flowOn(Dispatchers.Default)") &&
                 documentViewModelSource.contains("val parsedDocuments: StateFlow<List<ParsedDocumentItem>>") &&
-                documentViewModelSource.contains("withContext(Dispatchers.Default)") &&
+                documentViewModelSource.substringAfter("private val parsedDocumentsStateSource:")
+                    .substringBefore("val parsedDocumentsState:").contains(".flowOn(Dispatchers.Default)") &&
                 totpViewModelSource.contains("val parsedTotpItems: StateFlow<List<ParsedTotpItem>>") &&
-                totpViewModelSource.contains("withContext(Dispatchers.Default)")
+                totpViewModelSource.substringAfter("val parsedTotpState:")
+                    .substringBefore("val parsedTotpItems:").contains(".flowOn(Dispatchers.Default)")
         )
         assertTrue(
             "Password detail must render the base entry before attachment reconcile, sibling grouping, password decrypt, and custom field loading finish.",
@@ -819,7 +831,7 @@ class BiometricUnlockRegressionGuardTest {
             "Wide card-wallet detail pane should animate add/edit/detail changes instead of hard switching after heavy composition work.",
             cardWalletDetailPaneContentSource.contains("AnimatedContent(") &&
                 cardWalletDetailPaneContentSource.contains("targetState = detailContent") &&
-                cardWalletDetailPaneContentSource.contains("scaleIn(initialScale = 0.94f") &&
+                cardWalletDetailPaneContentSource.contains("transitionSpec = AnimationUtils.pageTransitionSpec()") &&
                 cardWalletDetailPaneContentSource.contains("CardWalletDetailContent.BankCardAdd") &&
                 cardWalletDetailPaneContentSource.contains("CardWalletDetailContent.DocumentAdd")
         )

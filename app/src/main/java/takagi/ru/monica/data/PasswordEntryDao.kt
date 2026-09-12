@@ -8,6 +8,17 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface PasswordEntryDao {
+    @Query("""
+        SELECT bitwarden_vault_id AS bitwardenVaultId, keepass_database_id AS keepassDatabaseId,
+               mdbx_database_id AS mdbxDatabaseId, COUNT(*) AS count
+        FROM (
+            SELECT bitwarden_vault_id, keepassDatabaseId AS keepass_database_id, mdbx_database_id FROM password_entries WHERE isDeleted = 1
+            UNION ALL
+            SELECT bitwarden_vault_id, keepass_database_id, mdbx_database_id FROM secure_items WHERE isDeleted = 1
+        ) GROUP BY bitwarden_vault_id, keepass_database_id, mdbx_database_id
+    """)
+    fun observeVaultOverviewTrashCounts(): Flow<List<VaultOverviewTrashCount>>
+
     
     @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND isArchived = 0 ORDER BY isFavorite DESC, sortOrder ASC, updatedAt DESC")
     fun getAllPasswordEntries(): Flow<List<PasswordEntry>>

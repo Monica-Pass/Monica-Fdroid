@@ -4,9 +4,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import takagi.ru.monica.R
 import takagi.ru.monica.repository.CustomFieldRepository
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.repository.SecureItemRepository
+import takagi.ru.monica.utils.StringResolver
 import kotlin.coroutines.coroutineContext
 
 internal interface DedupMergeWriter {
@@ -49,7 +51,8 @@ internal class RepositoryDedupMergeWriter(
 }
 
 internal class DedupMergeExecutor(
-    private val writer: DedupMergeWriter
+    private val writer: DedupMergeWriter,
+    private val strings: StringResolver
 ) {
     suspend fun execute(
         passwords: List<DedupResolvedPassword>,
@@ -68,7 +71,7 @@ internal class DedupMergeExecutor(
 
         passwords.forEach { resolved ->
             coroutineContext.ensureActive()
-            val label = resolved.entry.title.ifBlank { resolved.entry.username.ifBlank { "未命名密码" } }
+            val label = resolved.entry.title.ifBlank { resolved.entry.username.ifBlank { strings.get(R.string.dedup_merge_untitled_password) } }
             try {
                 writer.writePassword(resolved)
                 insertedPasswords++
@@ -87,7 +90,7 @@ internal class DedupMergeExecutor(
 
         secureItems.forEach { resolved ->
             coroutineContext.ensureActive()
-            val label = resolved.item.title.ifBlank { resolved.item.itemType.name }
+            val label = resolved.item.title.ifBlank { resolved.item.itemType.dedupLabel(strings) }
             try {
                 writer.writeSecureItem(resolved)
                 insertedSecureItems++
@@ -121,6 +124,6 @@ internal class DedupMergeExecutor(
         val primary = throwable.message?.takeIf { it.isNotBlank() } ?: throwable::class.java.simpleName
         val rollback = throwable.suppressed.firstOrNull() ?: return primary
         val rollbackText = rollback.message?.takeIf { it.isNotBlank() } ?: rollback::class.java.simpleName
-        return "$primary；回滚失败：$rollbackText"
+        return strings.get(R.string.dedup_merge_rollback_failed, primary, rollbackText)
     }
 }

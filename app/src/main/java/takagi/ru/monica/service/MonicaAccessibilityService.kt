@@ -5,6 +5,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,9 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import takagi.ru.monica.autofill_ng.protection.AutofillProtection
 import takagi.ru.monica.autofill_ng.ActiveFillPromptThrottle
 import takagi.ru.monica.autofill_ng.AutofillPreferences
 import takagi.ru.monica.data.PasswordDatabase
@@ -56,6 +60,7 @@ class MonicaAccessibilityService : AccessibilityService() {
     private val activeFillPromptThrottle = ActiveFillPromptThrottle(ACTIVE_FILL_THROTTLE_MS)
     @Volatile
     private var activeFillNotificationEnabled = false
+    private var settingsCollectionJob: Job? = null
     private val clipboardHandler = Handler(Looper.getMainLooper())
     private val temporaryClipboardLock = Any()
     private var temporaryClipboardRestoreRunnable: Runnable? = null
@@ -82,6 +87,8 @@ class MonicaAccessibilityService : AccessibilityService() {
 
         @Volatile
         private var activeInstance: MonicaAccessibilityService? = null
+        private val mutableConnectionState = MutableStateFlow(false)
+        val connectionState = mutableConnectionState.asStateFlow()
 
         private data class BrowserSpec(
             val packageName: String,
@@ -196,7 +203,10 @@ class MonicaAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         activeInstance = this
-        serviceScope.launch {
+        mutableConnectionState.value = true
+        AutofillProtection.restoreIfEnabled(this)
+        settingsCollectionJob?.cancel()
+        settingsCollectionJob = serviceScope.launch {
             autofillPreferences.isActiveFillNotificationEnabled.collectLatest { enabled ->
                 activeFillNotificationEnabled = enabled
                 if (enabled) {
@@ -250,11 +260,22 @@ class MonicaAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         if (activeInstance === this) {
             activeInstance = null
+            mutableConnectionState.value = false
         }
         ActiveFillNotificationHelper.dismissNotification(this)
         restoreTemporaryClipboardImmediately()
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        if (activeInstance === this) {
+            activeInstance = null
+            mutableConnectionState.value = false
+        }
+        settingsCollectionJob?.cancel()
+        ActiveFillNotificationHelper.dismissNotification(this)
+        return super.onUnbind(intent)
     }
 
     private fun fillCredentialsInActiveWindow(

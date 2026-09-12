@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="vault_overview_picker_search_cards">Nom, banque, fin du n°</string>
+  <string name="vault_overview_picker_search_items">Titre ou identifiant</string>
+  <string name="vault_overview_picker_selected">Sélection : %1$d</string>
+  <string name="vault_overview_picker_results">Résultats : %1$d</string>
+  <string name="vault_overview_picker_no_account">Sans identifiant</string>
+  <string name="vault_overview_picker_empty_hint">Essayez un autre terme ou une autre base.</string>
+  <string name="vault_overview_picker_limit">%1$d éléments épinglés maximum</string>
+</resources>

@@ -57,7 +57,6 @@ import takagi.ru.monica.R
 import takagi.ru.monica.data.PredefinedSecurityQuestions
 import takagi.ru.monica.data.SecurityQuestion
 import takagi.ru.monica.security.SecurityManager
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -68,8 +67,10 @@ fun SecurityQuestionsSetupScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    val isZh = Locale.getDefault().language == "zh"
-    val questions = PredefinedSecurityQuestions.getQuestions(isZh)
+    val questionIds = remember { PredefinedSecurityQuestions.questions.map { it.id } }
+    val questions = questionIds.map { id ->
+        SecurityQuestion(id, stringResource(PredefinedSecurityQuestions.textResIdFor(id)))
+    }
     val isExistingSetup = securityManager.areSecurityQuestionsSet()
 
     var selectedQuestion1 by remember { mutableStateOf<SecurityQuestion?>(null) }
@@ -87,13 +88,13 @@ fun SecurityQuestionsSetupScreen(
         if (isExistingSetup) {
             val question1Id = securityManager.getSecurityQuestion1Id()
             val question2Id = securityManager.getSecurityQuestion2Id()
-            selectedQuestion1 = PredefinedSecurityQuestions.getQuestionById(question1Id, isZh)
-            selectedQuestion2 = PredefinedSecurityQuestions.getQuestionById(question2Id, isZh)
+            selectedQuestion1 = questions.find { it.id == question1Id }
+            selectedQuestion2 = questions.find { it.id == question2Id }
             if (PredefinedSecurityQuestions.isCustomQuestion(question1Id)) {
-                customQuestion1Text = securityManager.getSecurityQuestion1Text(isZh).orEmpty()
+                customQuestion1Text = securityManager.getSecurityQuestion1Text().orEmpty()
             }
             if (PredefinedSecurityQuestions.isCustomQuestion(question2Id)) {
-                customQuestion2Text = securityManager.getSecurityQuestion2Text(isZh).orEmpty()
+                customQuestion2Text = securityManager.getSecurityQuestion2Text().orEmpty()
             }
         }
     }

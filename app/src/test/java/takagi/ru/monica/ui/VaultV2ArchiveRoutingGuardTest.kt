@@ -37,7 +37,7 @@ class VaultV2ArchiveRoutingGuardTest {
 
         assertTrue(state.contains("var isArchiveView"))
         assertTrue(state.contains("fun openArchiveView()"))
-        assertTrue(state.contains("fun closeArchiveView()"))
+        assertTrue(state.contains("fun closeArchiveView(scrollToTop: Boolean = true)"))
         assertTrue(viewModel.contains("val archivedPasswordsForUi"))
         assertTrue(pane.contains("passwordViewModel.archivedPasswordsForUi.collectAsState()"))
         assertTrue(pane.contains("state.isArchiveView"))
@@ -49,7 +49,8 @@ class VaultV2ArchiveRoutingGuardTest {
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
         ).readText()
 
-        assertTrue(pane.contains("BackHandler(enabled = state.isArchiveView"))
+        assertTrue(Regex("BackHandler\\(\\s*enabled\\s*=([^{}]+?)\\)\\s*\\{")
+            .findAll(pane).any { it.groupValues[1].contains("state.isArchiveView") })
         assertTrue(pane.contains("R.string.archive_page_title"))
         assertTrue(pane.contains("R.string.archive_empty_hint"))
         assertTrue(pane.contains("state.closeArchiveView()"))

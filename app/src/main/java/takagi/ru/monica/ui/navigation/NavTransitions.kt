@@ -24,9 +24,9 @@ import androidx.compose.animation.slideOutHorizontally
 
 private const val DURATION_FORWARD = 300
 private const val DURATION_BACK = 280
-private const val EASY_NOTES_FADE_DURATION = 300
-private const val EASY_NOTES_SCALE_DURATION = 400
-private const val EASY_NOTES_INITIAL_SCALE = 0.9f
+internal const val EASY_NOTES_FADE_DURATION = 300
+internal const val EASY_NOTES_SCALE_DURATION = 400
+internal const val EASY_NOTES_INITIAL_SCALE = 0.9f
 
 private val navEasing = CubicBezierEasing(0.6f, 0.0f, 0.4f, 1.0f)
 

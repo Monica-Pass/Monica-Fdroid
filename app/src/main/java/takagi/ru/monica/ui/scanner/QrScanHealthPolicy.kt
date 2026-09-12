@@ -17,18 +17,20 @@ internal sealed interface QrScanHealthAction {
  *
  * Long periods without a barcode are healthy as long as camera frames continue to complete.
  * The policy periodically refreshes focus/metering, and only rebuilds the session when the
- * frame stream stalls or ML Kit repeatedly fails to process frames.
+ * frame stream stalls or the decoder repeatedly fails to process frames.
  */
 internal class QrScanHealthPolicy(
     private val refocusIntervalMs: Long = DEFAULT_REFOCUS_INTERVAL_MS,
     private val frameStallTimeoutMs: Long = DEFAULT_FRAME_STALL_TIMEOUT_MS,
     private val frameStreamTimeoutMs: Long = DEFAULT_FRAME_STREAM_TIMEOUT_MS,
-    private val decoderFailureThreshold: Int = DEFAULT_DECODER_FAILURE_THRESHOLD
+    private val decoderFailureThreshold: Int = DEFAULT_DECODER_FAILURE_THRESHOLD,
+    private val startupTimeoutMs: Long = DEFAULT_STARTUP_TIMEOUT_MS
 ) {
     private var sessionStartedAtMs: Long = 0L
     private var activeFrameStartedAtMs: Long? = null
     private var lastFrameCompletedAtMs: Long? = null
     private var lastRefocusAtMs: Long = 0L
+    private var lastPreviewActiveAtMs: Long = 0L
     private var consecutiveDecoderFailures: Int = 0
     private var pendingRestartReason: QrScanRestartReason? = null
 
@@ -39,6 +41,7 @@ internal class QrScanHealthPolicy(
     fun onSessionStarted(nowMs: Long) {
         sessionStartedAtMs = nowMs
         lastRefocusAtMs = nowMs
+        lastPreviewActiveAtMs = nowMs
         activeFrameStartedAtMs = null
         lastFrameCompletedAtMs = null
         consecutiveDecoderFailures = 0
@@ -71,8 +74,9 @@ internal class QrScanHealthPolicy(
     }
 
     @Synchronized
-    fun nextAction(nowMs: Long, previewActive: Boolean): QrScanHealthAction {
-        if (!previewActive || restartRequested) return QrScanHealthAction.None
+    fun nextAction(nowMs: Long, previewActive: Boolean, lifecycleActive: Boolean = true): QrScanHealthAction {
+        if (!lifecycleActive || restartRequested) return QrScanHealthAction.None
+        if (previewActive) lastPreviewActiveAtMs = nowMs
 
         pendingRestartReason?.let { reason ->
             restartRequested = true
@@ -93,7 +97,14 @@ internal class QrScanHealthPolicy(
             }
         }
 
-        if (nowMs - lastRefocusAtMs >= refocusIntervalMs) {
+        val waitingForFirstFrame = activeFrameStartedAtMs == null && lastFrameCompletedAtMs == null
+        if ((waitingForFirstFrame && nowMs - sessionStartedAtMs >= startupTimeoutMs) ||
+            (!previewActive && nowMs - lastPreviewActiveAtMs >= startupTimeoutMs)) {
+            restartRequested = true
+            return QrScanHealthAction.Restart(QrScanRestartReason.FrameStreamStopped)
+        }
+
+        if (previewActive && nowMs - lastRefocusAtMs >= refocusIntervalMs) {
             return QrScanHealthAction.Refocus
         }
 
@@ -105,5 +116,6 @@ internal class QrScanHealthPolicy(
         const val DEFAULT_FRAME_STALL_TIMEOUT_MS = 2_500L
         const val DEFAULT_FRAME_STREAM_TIMEOUT_MS = 2_500L
         const val DEFAULT_DECODER_FAILURE_THRESHOLD = 3
+        const val DEFAULT_STARTUP_TIMEOUT_MS = 8_000L
     }
 }

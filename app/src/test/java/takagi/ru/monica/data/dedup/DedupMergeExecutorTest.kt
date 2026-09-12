@@ -5,11 +5,22 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import takagi.ru.monica.R
 import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.PasswordEntry
 import takagi.ru.monica.data.SecureItem
+import takagi.ru.monica.utils.StringResolver
 
 class DedupMergeExecutorTest {
+    private val strings = StringResolver { id, arguments ->
+        when (id) {
+            R.string.dedup_merge_untitled_password -> "Unbenanntes Passwort"
+            R.string.dedup_merge_type_note -> "Notiz"
+            R.string.dedup_merge_rollback_failed -> "${arguments[0]}; Rückgängig machen fehlgeschlagen: ${arguments[1]}"
+            else -> error("Unexpected string resource: $id")
+        }
+    }
+
     @Test
     fun executionContinuesAfterIndependentFailuresAndReportsEveryItem() = runBlocking {
         val writer = FakeWriter(
@@ -18,7 +29,7 @@ class DedupMergeExecutorTest {
         )
         val progress = mutableListOf<DedupMergeExecutionProgress>()
 
-        val result = DedupMergeExecutor(writer).execute(
+        val result = DedupMergeExecutor(writer, strings).execute(
             passwords = listOf(password("Broken password"), password("Working password")),
             secureItems = listOf(note("Broken note")),
             skippedExistingPasswords = 2,
@@ -45,7 +56,7 @@ class DedupMergeExecutorTest {
 
         try {
             runBlocking {
-                DedupMergeExecutor(writer).execute(
+                DedupMergeExecutor(writer, strings).execute(
                     passwords = listOf(password("Stop"), password("Never written")),
                     secureItems = emptyList(),
                     skippedExistingPasswords = 0,
@@ -60,6 +71,39 @@ class DedupMergeExecutorTest {
 
         assertTrue(cancelled)
         assertEquals(listOf("Stop"), writer.passwordAttempts)
+    }
+
+    @Test
+    fun localizedFallbackLabelsPreserveWriteAndRollbackErrorDetails() = runBlocking {
+        val writer = object : DedupMergeWriter {
+            override suspend fun writePassword(resolved: DedupResolvedPassword) {
+                throw IllegalStateException("write failed").apply {
+                    addSuppressed(IllegalStateException("rollback failed"))
+                }
+            }
+
+            override suspend fun writeSecureItem(resolved: DedupResolvedSecureItem) = Unit
+        }
+        val progress = mutableListOf<DedupMergeExecutionProgress>()
+
+        val result = DedupMergeExecutor(writer, strings).execute(
+            passwords = listOf(password("")),
+            secureItems = listOf(note("")),
+            skippedExistingPasswords = 0,
+            skippedExistingSecureItems = 0,
+            skippedUnsupportedPasskeys = 0,
+            targetLabel = "My database",
+            onProgress = progress::add
+        )
+
+        assertEquals("Unbenanntes Passwort", result.failures.single().label)
+        assertEquals(
+            "write failed; Rückgängig machen fehlgeschlagen: rollback failed",
+            result.failures.single().reason
+        )
+        assertEquals(listOf("Unbenanntes Passwort", "Notiz"), progress.map { it.currentLabel })
+        assertEquals("My database", result.targetLabel)
+        assertEquals(1, result.insertedSecureItems)
     }
 
     private fun password(title: String) = DedupResolvedPassword(

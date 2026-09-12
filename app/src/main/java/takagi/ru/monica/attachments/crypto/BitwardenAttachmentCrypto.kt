@@ -1,301 +1,237 @@
 package takagi.ru.monica.attachments.crypto
 
-import takagi.ru.monica.bitwarden.crypto.BitwardenCrypto
-import takagi.ru.monica.bitwarden.crypto.BitwardenCrypto.SymmetricCryptoKey
+import java.io.EOFException
+import java.io.File
+import java.io.FilterInputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.RandomAccessFile
+import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
+import javax.crypto.CipherInputStream
 import javax.crypto.Mac
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import takagi.ru.monica.attachments.model.AttachmentError
+import takagi.ru.monica.bitwarden.crypto.BitwardenCrypto
+import takagi.ru.monica.bitwarden.crypto.BitwardenCrypto.SymmetricCryptoKey
 
 /**
- * Bitwarden 附件专用加解密。
+ * Bitwarden EncString binary format: type(2) || IV(16) || HMAC(32) || AES-CBC ciphertext.
+ * HMAC-SHA256 authenticates IV || ciphertext. Older Monica uploads instead used
+ * IV || ciphertext || HMAC; those remain readable after authenticating the whole file.
  *
- * 和 [BitwardenCrypto] 的 string-in/string-out 模式不同，这里采用"流式 + HMAC-trailer"的
- * 格式，可以承载最多 100MB 的附件字节，不会一次性把密文/明文加载进内存。
- *
- * # 附件文件字节布局（Bitwarden 官方格式）
- *
- * ```
- *  offset 0   +16                    ...          EOF-32   EOF
- *  +----------+-----------------------+-------------+
- *  | 16B IV   | AES-CBC-PKCS7 密文     | 32B HMAC    |
- *  +----------+-----------------------+-------------+
- * ```
- *
- * - `AES key` 与 `MAC key` 都来自 [SymmetricCryptoKey]，各 32B；
- * - HMAC-SHA256 的输入是 `IV || ciphertext`（不含 MAC 尾缀本身）。
- *
- * # 附件密钥（attachment key）
- *
- * 服务器返回的 `bitwardenFileKeyEnc` 是一个 EncString（type=0 或 type=2），
- * 用上层 cipher key（如果 cipher 有独立 key）或 user key 解包后得到 64B 的
- * `encKey || macKey`，也即本附件的 [SymmetricCryptoKey]。
- *
- * 对应 requirements.md Requirement 5.3 / 5.4。
+ * Files allow a bounded-memory authentication pass before releasing any plaintext and let the
+ * writer fill in the leading MAC without buffering an entire attachment in memory.
  */
 object BitwardenAttachmentCrypto {
-
+    private const val TYPE_AES_CBC_HMAC = 2
     private const val IV_SIZE = 16
     private const val MAC_SIZE = 32
-    private const val KEY_MATERIAL_SIZE = 64
+    private const val HEADER_SIZE = 1 + IV_SIZE + MAC_SIZE
     private const val BUFFER_SIZE = 16 * 1024
+    const val MAX_PLAINTEXT_BYTES = 100L * 1024 * 1024
+    const val MAX_ENCRYPTED_BYTES = MAX_PLAINTEXT_BYTES + HEADER_SIZE + IV_SIZE
 
     private val rng: SecureRandom by lazy { SecureRandom() }
 
-    // ---------------------------------------------------------------- 附件密钥
+    class UnsupportedFormatException(val encryptionType: Int) :
+        GeneralSecurityException("Unsupported Bitwarden attachment encryption type: $encryptionType")
 
-    /**
-     * 用 cipher key（或 user key）解出附件独立密钥。
-     *
-     * [fileKeyEnc] 是 EncString 格式（`type.iv|data|mac`），[wrappingKey] 可以是：
-     * - cipher 自带 key（当 cipher 被 per-item key 保护时），或
-     * - user symmetric key（默认情况）。
-     *
-     * 返回的 [SymmetricCryptoKey] 长度固定 64B，调用方用完应 [SymmetricCryptoKey.clear]。
-     */
-    fun unwrapAttachmentKey(
-        fileKeyEnc: String,
-        wrappingKey: SymmetricCryptoKey
-    ): SymmetricCryptoKey {
-        val raw = BitwardenCrypto.decrypt(fileKeyEnc, wrappingKey)
-        require(raw.size == KEY_MATERIAL_SIZE) {
-            "Attachment key must be 64 bytes, got ${raw.size}"
-        }
+    /** An absent key is legitimate for old attachments encrypted directly with the cipher key. */
+    fun unwrapAttachmentKey(fileKeyEnc: String?, wrappingKey: SymmetricCryptoKey): SymmetricCryptoKey {
+        if (fileKeyEnc.isNullOrBlank()) return wrappingKey.copyOwned()
+        val parsed = BitwardenCrypto.parseCipherString(fileKeyEnc)
+        // A 64-byte wrapping key includes a MAC key. Do not accept a stripped-MAC downgrade.
+        if (parsed.type != TYPE_AES_CBC_HMAC) throw UnsupportedFormatException(parsed.type)
+        val raw = BitwardenCrypto.decrypt(parsed, wrappingKey)
         return try {
-            SymmetricCryptoKey(
-                encKey = raw.copyOfRange(0, 32),
-                macKey = raw.copyOfRange(32, 64)
-            )
+            if (raw.size != 64) throw GeneralSecurityException("Invalid Bitwarden attachment key length")
+            SymmetricCryptoKey(raw.copyOfRange(0, 32), raw.copyOfRange(32, 64))
         } finally {
             raw.fill(0)
         }
     }
 
-    /**
-     * 生成一个新的附件密钥并用 [wrappingKey] 包裹，返回 `(attachmentKey, fileKeyEnc)`。
-     *
-     * 调用方应在上传完成后 `attachmentKey.clear()`。
-     */
     fun generateAndWrapAttachmentKey(wrappingKey: SymmetricCryptoKey): Pair<SymmetricCryptoKey, String> {
-        val raw = ByteArray(KEY_MATERIAL_SIZE).also(rng::nextBytes)
+        val raw = ByteArray(64).also(rng::nextBytes)
         return try {
-            val attachmentKey = SymmetricCryptoKey(
-                encKey = raw.copyOfRange(0, 32),
-                macKey = raw.copyOfRange(32, 64)
-            )
-            val fileKeyEnc = BitwardenCrypto.encrypt(raw, wrappingKey)
-            attachmentKey to fileKeyEnc
+            // Wrap before allocating the returned key, so a failed wrap leaves no extra key copy.
+            val encrypted = BitwardenCrypto.encrypt(raw, wrappingKey)
+            SymmetricCryptoKey(raw.copyOfRange(0, 32), raw.copyOfRange(32, 64)) to encrypted
         } finally {
             raw.fill(0)
         }
     }
 
-    // ---------------------------------------------------------------- 文件字节 · 加密
-
-    /**
-     * 把 [source] 的明文字节以 Bitwarden 附件格式流式加密到 [sink]，中途不会产生超过
-     * [BUFFER_SIZE] + 一个块的内存占用。
-     *
-     * @return 明文字节数 + SHA-256（调用方需要时可以用于元数据校验）。
-     */
-    fun encryptStream(
-        source: InputStream,
-        sink: OutputStream,
-        attachmentKey: SymmetricCryptoKey
-    ): StreamResult {
+    fun encryptFile(source: InputStream, target: File, attachmentKey: SymmetricCryptoKey): StreamResult {
         val iv = ByteArray(IV_SIZE).also(rng::nextBytes)
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").apply {
-            init(Cipher.ENCRYPT_MODE, SecretKeySpec(attachmentKey.encKey, "AES"), IvParameterSpec(iv))
-        }
-        val mac = Mac.getInstance("HmacSHA256").apply {
-            init(SecretKeySpec(attachmentKey.macKey, "HmacSHA256"))
-        }
-        val plainDigest = MessageDigest.getInstance("SHA-256")
-
-        // 写 IV 明文前缀 + 纳入 MAC
-        sink.write(iv)
-        mac.update(iv)
-
-        var plainSize = 0L
-        val buf = ByteArray(BUFFER_SIZE)
-        while (true) {
-            val read = source.read(buf)
-            if (read <= 0) break
-            plainDigest.update(buf, 0, read)
-            plainSize += read
-            val ct = cipher.update(buf, 0, read)
-            if (ct != null && ct.isNotEmpty()) {
-                sink.write(ct)
-                mac.update(ct)
-            }
-        }
-        val tail = cipher.doFinal()
-        if (tail.isNotEmpty()) {
-            sink.write(tail)
-            mac.update(tail)
-        }
-        val macBytes = mac.doFinal()
-        sink.write(macBytes)
-        sink.flush()
-
-        return StreamResult(
-            plainSizeBytes = plainSize,
-            plainSha256Hex = plainDigest.digest().joinToString("") { "%02x".format(it) }
-        )
-    }
-
-    // ---------------------------------------------------------------- 文件字节 · 解密
-
-    /**
-     * 把 [source] 的 Bitwarden 附件密文流式解密到 [sink]。
-     *
-     * 解密期间会同步计算 HMAC。`sink` 上会先收到部分明文字节（属于 AES-CBC `update` 的
-     * 输出），最终 `doFinal` 的字节在 MAC 校验通过后才会被写入；若 MAC 校验失败将抛出
-     * [SecurityException]，此时 [sink] 里已有的字节必须被调用方丢弃。
-     */
-    fun decryptStream(
-        source: InputStream,
-        sink: OutputStream,
-        attachmentKey: SymmetricCryptoKey
-    ): StreamResult {
-        // 读取 IV 前缀
-        val iv = ByteArray(IV_SIZE)
-        if (readFully(source, iv) != IV_SIZE) {
-            throw IllegalArgumentException("Attachment header truncated")
-        }
-
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").apply {
-            init(Cipher.DECRYPT_MODE, SecretKeySpec(attachmentKey.encKey, "AES"), IvParameterSpec(iv))
-        }
-        val mac = Mac.getInstance("HmacSHA256").apply {
-            init(SecretKeySpec(attachmentKey.macKey, "HmacSHA256"))
-            update(iv)
-        }
-        val plainDigest = MessageDigest.getInstance("SHA-256")
-
-        // 滑动尾缀缓冲：始终保留"可能是 MAC"的最后 32 字节不立刻喂给 cipher/mac。
-        val trailer = TailBuffer(MAC_SIZE)
-        val buf = ByteArray(BUFFER_SIZE)
-        var plainSize = 0L
-
-        while (true) {
-            val read = source.read(buf)
-            if (read <= 0) break
-            val released = trailer.push(buf, 0, read)
-            if (released.isNotEmpty()) {
-                mac.update(released)
-                val pt = cipher.update(released)
-                if (pt != null && pt.isNotEmpty()) {
-                    sink.write(pt)
-                    plainDigest.update(pt)
-                    plainSize += pt.size
-                }
-            }
-        }
-
-        val macTrailer = trailer.snapshotFull()
-            ?: throw SecurityException("Attachment truncated before MAC")
-
-        val expectedMac = mac.doFinal()
-        if (!MessageDigest.isEqual(expectedMac, macTrailer)) {
-            throw SecurityException("Attachment MAC verification failed")
-        }
-
-        // MAC 校验通过，再写 cipher.doFinal 的最后明文
-        val finalBlock = cipher.doFinal()
-        if (finalBlock.isNotEmpty()) {
-            sink.write(finalBlock)
-            plainDigest.update(finalBlock)
-            plainSize += finalBlock.size
-        }
-        sink.flush()
-
-        return StreamResult(
-            plainSizeBytes = plainSize,
-            plainSha256Hex = plainDigest.digest().joinToString("") { "%02x".format(it) }
-        )
-    }
-
-    data class StreamResult(
-        val plainSizeBytes: Long,
-        val plainSha256Hex: String
-    )
-
-    // ---------------------------------------------------------------- 辅助
-
-    private fun readFully(source: InputStream, target: ByteArray): Int {
-        var off = 0
-        while (off < target.size) {
-            val n = source.read(target, off, target.size - off)
-            if (n <= 0) break
-            off += n
-        }
-        return off
-    }
-
-    /**
-     * 固定容量尾缀缓冲区：通过 [push] 不断塞入新字节，返回"已经不再可能是尾缀"的那部分字节。
-     * 在流末尾调用 [snapshotFull] 即可拿到真正的尾缀（MAC）。
-     */
-    private class TailBuffer(private val capacity: Int) {
-        private val buf = ByteArray(capacity)
-        private var size = 0
-
-        fun push(src: ByteArray, off: Int, len: Int): ByteArray {
-            if (len <= 0) return EMPTY
-            val total = size + len
-            return when {
-                total <= capacity -> {
-                    System.arraycopy(src, off, buf, size, len)
-                    size = total
-                    EMPTY
-                }
-                else -> {
-                    val overflow = total - capacity
-                    val released = ByteArray(overflow)
-                    // 先释放旧尾缀里被挤出的前 overflow 字节（尽量少拷贝）
-                    if (overflow <= size) {
-                        System.arraycopy(buf, 0, released, 0, overflow)
-                        System.arraycopy(buf, overflow, buf, 0, size - overflow)
-                        size -= overflow
-                        // 再把新输入追加到尾缀末尾
-                        System.arraycopy(src, off, buf, size, len)
-                        size += len
-                    } else {
-                        // 旧尾缀全部被挤出，且新输入也有部分要被释放
-                        System.arraycopy(buf, 0, released, 0, size)
-                        val srcReleasedLen = overflow - size
-                        System.arraycopy(src, off, released, size, srcReleasedLen)
-                        // 新输入剩余部分全放入 buf
-                        val remaining = len - srcReleasedLen
-                        System.arraycopy(src, off + srcReleasedLen, buf, 0, remaining)
-                        size = remaining
+        val cipher = cipher(Cipher.ENCRYPT_MODE, attachmentKey, iv)
+        val mac = mac(attachmentKey).apply { update(iv) }
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(BUFFER_SIZE)
+        var size = 0L
+        try {
+            RandomAccessFile(target, "rw").use { out ->
+                out.setLength(0)
+                out.write(TYPE_AES_CBC_HMAC)
+                out.write(iv)
+                out.write(ByteArray(MAC_SIZE))
+                while (true) {
+                    val count = source.read(buffer)
+                    if (count < 0) break
+                    if (count == 0) continue
+                    size += count
+                    if (size > MAX_PLAINTEXT_BYTES) throw AttachmentError.TooLarge(MAX_PLAINTEXT_BYTES, size)
+                    digest.update(buffer, 0, count)
+                    cipher.update(buffer, 0, count)?.let { encrypted ->
+                        out.write(encrypted)
+                        mac.update(encrypted)
                     }
-                    released
                 }
+                val tail = cipher.doFinal()
+                out.write(tail)
+                mac.update(tail)
+                out.seek((1 + IV_SIZE).toLong())
+                out.write(mac.doFinal())
             }
-        }
-
-        fun snapshotFull(): ByteArray? {
-            if (size != capacity) return null
-            return buf.copyOf(capacity)
-        }
-
-        companion object {
-            private val EMPTY = ByteArray(0)
+            return StreamResult(size, digest.digest().toHex())
+        } catch (error: Exception) {
+            target.delete()
+            throw error
+        } finally {
+            buffer.fill(0)
         }
     }
 
-    // ---------------------------------------------------------------- 方便 UTF-8 版本
+    /** Verifies the entire encrypted file before returning a stream containing any plaintext. */
+    fun openDecrypted(source: File, attachmentKey: SymmetricCryptoKey): InputStream {
+        val layout = readAndAuthenticate(source, attachmentKey)
+        val input = source.inputStream().buffered(BUFFER_SIZE)
+        return try {
+            var remaining = layout.ciphertextOffset
+            while (remaining > 0) {
+                val skipped = input.skip(remaining)
+                if (skipped <= 0) throw EOFException("Bitwarden attachment header truncated")
+                remaining -= skipped
+            }
+            CipherInputStream(
+                LimitedInputStream(input, layout.ciphertextSize),
+                cipher(Cipher.DECRYPT_MODE, attachmentKey, layout.iv)
+            )
+        } catch (error: Exception) {
+            input.close()
+            throw error
+        }
+    }
 
-    /**
-     * 把短字符串加密为 Bitwarden EncString，便于 attachments 请求里需要传
-     * `fileName`（加密形式）的场景复用。
-     */
+    fun decryptFile(source: File, sink: OutputStream, attachmentKey: SymmetricCryptoKey): StreamResult {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(BUFFER_SIZE)
+        var size = 0L
+        try {
+            openDecrypted(source, attachmentKey).use { input ->
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    if (count == 0) continue
+                    size += count
+                    if (size > MAX_PLAINTEXT_BYTES) throw AttachmentError.TooLarge(MAX_PLAINTEXT_BYTES, size)
+                    sink.write(buffer, 0, count)
+                    digest.update(buffer, 0, count)
+                }
+            }
+            sink.flush()
+            return StreamResult(size, digest.digest().toHex())
+        } finally {
+            buffer.fill(0)
+        }
+    }
+
+    private data class Layout(val iv: ByteArray, val ciphertextOffset: Long, val ciphertextSize: Long)
+
+    private fun readAndAuthenticate(source: File, key: SymmetricCryptoKey): Layout {
+        RandomAccessFile(source, "r").use { input ->
+            val size = input.length()
+            if (size > MAX_ENCRYPTED_BYTES) throw AttachmentError.TooLarge(MAX_ENCRYPTED_BYTES, size)
+            if (size < IV_SIZE * 4L) throw GeneralSecurityException("Bitwarden attachment truncated")
+            val iv = ByteArray(IV_SIZE)
+            val expectedMac = ByteArray(MAC_SIZE)
+            val layout = when {
+                size % IV_SIZE == 1L -> {
+                    val type = input.readUnsignedByte()
+                    if (type != TYPE_AES_CBC_HMAC) throw UnsupportedFormatException(type)
+                    input.readFully(iv)
+                    input.readFully(expectedMac)
+                    Layout(iv, HEADER_SIZE.toLong(), size - HEADER_SIZE)
+                }
+                size % IV_SIZE == 0L -> {
+                    // Identify the old authenticated Monica layout by length, not IV[0], which
+                    // may itself be 0, 2, or another encryption type. Never retry without a MAC.
+                    input.readFully(iv)
+                    input.seek(size - MAC_SIZE)
+                    input.readFully(expectedMac)
+                    Layout(iv, IV_SIZE.toLong(), size - IV_SIZE - MAC_SIZE)
+                }
+                else -> throw GeneralSecurityException("Invalid Bitwarden attachment length")
+            }
+            val mac = mac(key).apply { update(iv) }
+            val buffer = ByteArray(BUFFER_SIZE)
+            input.seek(layout.ciphertextOffset)
+            var remaining = layout.ciphertextSize
+            while (remaining > 0) {
+                val count = input.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt())
+                if (count < 0) throw GeneralSecurityException("Bitwarden attachment truncated")
+                mac.update(buffer, 0, count)
+                remaining -= count
+            }
+            val actualMac = mac.doFinal()
+            try {
+                if (!MessageDigest.isEqual(actualMac, expectedMac)) {
+                    throw GeneralSecurityException("Bitwarden attachment MAC verification failed")
+                }
+            } finally {
+                actualMac.fill(0)
+            }
+            return layout
+        }
+    }
+
+    private class LimitedInputStream(input: InputStream, private var remaining: Long) : FilterInputStream(input) {
+        override fun read(): Int {
+            if (remaining == 0L) return -1
+            val value = super.read()
+            if (value < 0) throw EOFException("Bitwarden attachment ciphertext truncated")
+            remaining--
+            return value
+        }
+
+        override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+            if (length == 0) return 0
+            if (remaining == 0L) return -1
+            val count = `in`.read(buffer, offset, minOf(length.toLong(), remaining).toInt())
+            if (count < 0) throw EOFException("Bitwarden attachment ciphertext truncated")
+            remaining -= count
+            return count
+        }
+    }
+
+    private fun cipher(mode: Int, key: SymmetricCryptoKey, iv: ByteArray): Cipher =
+        Cipher.getInstance("AES/CBC/PKCS5Padding").apply {
+            init(mode, SecretKeySpec(key.encKey, "AES"), IvParameterSpec(iv))
+        }
+
+    private fun mac(key: SymmetricCryptoKey): Mac = Mac.getInstance("HmacSHA256").apply {
+        init(SecretKeySpec(key.macKey, "HmacSHA256"))
+    }
+
+    private fun SymmetricCryptoKey.copyOwned() = SymmetricCryptoKey(encKey.copyOf(), macKey.copyOf())
+    private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
+
+    data class StreamResult(val plainSizeBytes: Long, val plainSha256Hex: String)
+
     fun encryptStringForAttachment(plaintext: String, wrappingKey: SymmetricCryptoKey): String =
         BitwardenCrypto.encryptString(plaintext, wrappingKey)
 }

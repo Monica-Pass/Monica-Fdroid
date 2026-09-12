@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">Хранилище Bitwarden заблокировано или срок действия сеанса истёк. Разблокируйте его или войдите снова.</string>
+    <string name="attachment_error_remote_data">Сервер вернул неполные сведения о вложении. Синхронизируйте хранилище и повторите попытку.</string>
+    <string name="attachment_error_unsupported_encryption">Это вложение использует неподдерживаемый формат шифрования (тип %1$d). Экспортируйте его через официальный клиент и загрузите снова.</string>
+    <string name="attachment_error_unknown">Не удалось выполнить операцию с вложением. Повторите попытку.</string>
+    <string name="attachment_error_decryption_failed">Не удалось расшифровать вложение или проверить его целостность. Синхронизируйте хранилище и повторите попытку.</string>
+    <string name="password_batch_attachment_failure">Не удалось перенести вложения для %1$d элементов. %2$s</string>
+</resources>

@@ -54,8 +54,8 @@ android {
         applicationId "takagi.ru.monica.fdroid"
         minSdk 26
         targetSdk 34
-        versionCode 17
-        versionName "1.0.310"
+        versionCode 18
+        versionName "1.0.311"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,9 +75,9 @@ android {
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.310"'
-        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.310"'
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"17"'
+        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.311"'
+        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.311"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"18"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
@@ -139,13 +139,14 @@ android {
     buildFeatures {
         compose true
         buildConfig true
+        aidl true
     }
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             // 目标格式: Monica-Android-[架构]-[版本号].APK
             def archTag = resolveArchTag(output)
-            def versionNameTag = sanitizeTag('1.0.310', '0.0.0')
+            def versionNameTag = sanitizeTag('1.0.311', '0.0.0')
             outputFileName = "Monica-Android-${archTag}-${versionNameTag}.apk"
         }
     }
@@ -272,6 +273,9 @@ dependencies {
     implementation libs.androidx.lifecycle.runtime.ktx
     implementation "androidx.lifecycle:lifecycle-process:2.8.7"
     implementation libs.androidx.activity.compose
+    // Shizuku API/provider (MIT); optional user-enabled accessibility recovery.
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
     // Pin profileinstaller to the latest stable patch and avoid older transitive copies.
     implementation "androidx.profileinstaller:profileinstaller:1.4.1"
     
@@ -401,6 +405,7 @@ dependencies {
     testImplementation libs.kotlin.coroutines.test
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
     androidTestImplementation libs.androidx.junit
+    androidTestImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
     androidTestImplementation libs.androidx.espresso.core
     androidTestImplementation platform(libs.androidx.compose.bom)
     androidTestImplementation libs.androidx.ui.test.junit4

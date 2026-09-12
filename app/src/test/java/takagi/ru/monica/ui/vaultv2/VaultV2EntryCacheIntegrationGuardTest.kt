@@ -19,7 +19,8 @@ class VaultV2EntryCacheIntegrationGuardTest {
         assertTrue(pane.contains("computationKey = computedSnapshotKey to computedSources"))
         assertTrue(pane.contains("state.visibleListSnapshots.seed("))
         assertTrue(pane.contains("state.visibleListSnapshots.update("))
-        assertTrue(pane.contains("initialHasComputed = computedSnapshotSeed.hasSnapshot && visibleSnapshotSeed.hasSnapshot"))
+        assertTrue(pane.contains("initialHasComputed = !showOverview && computedSnapshotSeed.hasSnapshot && visibleSnapshotSeed.hasSnapshot"))
+        assertTrue(pane.contains("enabled = !showOverview"))
         assertTrue(pane.contains("visibleSnapshotSeed.value"))
         assertTrue(
             pane.contains(

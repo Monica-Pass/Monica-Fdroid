@@ -16,6 +16,8 @@ internal data class CardWalletContentState(
     val onBillingAddressClick: (Long) -> Unit,
     val onDocumentSelectionModeChange: (Boolean, Int, () -> Unit, () -> Unit, () -> Unit, () -> Unit) -> Unit,
     val onBankCardSelectionModeChange: (Boolean, Int, () -> Unit, () -> Unit, () -> Unit, () -> Unit, () -> Unit) -> Unit,
+    val onStackActionChange: ((() -> Unit)?) -> Unit = {},
+    val isDetailVisible: Boolean = false,
     val onBitwardenScopeChanged: (Long?) -> Unit = {}
 )
 
@@ -45,6 +47,8 @@ internal fun CardWalletContent(
             onBillingAddressClick = state.onBillingAddressClick,
             onSelectionModeChange = state.onDocumentSelectionModeChange,
             onBankCardSelectionModeChange = state.onBankCardSelectionModeChange,
+            onStackActionChange = state.onStackActionChange,
+            isWalletDetailVisible = state.isDetailVisible,
             showStandaloneSettingsEntry = showStandaloneSettingsEntry,
             onOpenStandaloneSettings = onOpenStandaloneSettings,
             onBitwardenScopeChanged = state.onBitwardenScopeChanged

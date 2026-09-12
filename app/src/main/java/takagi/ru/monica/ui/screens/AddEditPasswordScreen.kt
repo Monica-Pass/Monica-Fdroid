@@ -256,6 +256,7 @@ fun AddEditPasswordScreen(
     initialDraft: AddEditPasswordInitialDraft? = null,
     forceShowAppBinding: Boolean = false,
     initialCategoryId: Long? = null,
+    initialStorageExplicit: Boolean = false,
     initialKeePassDatabaseId: Long? = null,
     initialKeePassGroupPath: String? = null,
     initialMdbxDatabaseId: Long? = null,
@@ -465,7 +466,7 @@ fun AddEditPasswordScreen(
     var bitwardenFolderId by rememberSaveable { mutableStateOf<String?>(null) }
     val bitwardenRepository = remember { BitwardenRepository.getInstance(context) }
     val bitwardenVaults by bitwardenRepository.getAllVaultsFlow().collectAsState(initial = emptyList())
-    val hasExplicitInitialStorage = initialCategoryId != null ||
+    val hasExplicitInitialStorage = initialStorageExplicit || initialCategoryId != null ||
         initialKeePassDatabaseId != null ||
         initialKeePassGroupPath != null ||
         initialMdbxDatabaseId != null ||
@@ -2550,6 +2551,7 @@ fun AddEditPasswordScreen(
         currentFilter,
         hasExplicitInitialStorage,
         initialCategoryId,
+        initialStorageExplicit,
         initialKeePassDatabaseId,
         initialKeePassGroupPath,
         initialMdbxDatabaseId,

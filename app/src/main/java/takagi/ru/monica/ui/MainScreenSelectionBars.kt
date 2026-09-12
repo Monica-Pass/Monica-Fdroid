@@ -30,6 +30,7 @@ internal fun MainScreenSelectionBars(
     onExitBankCardSelection: () -> Unit,
     onSelectAllBankCards: () -> Unit,
     onFavoriteBankCards: () -> Unit,
+    onStackWalletCards: (() -> Unit)?,
     onMoveToCategoryBankCards: () -> Unit,
     onDeleteSelectedBankCards: () -> Unit,
     isDocumentSelectionMode: Boolean,
@@ -63,8 +64,7 @@ internal fun MainScreenSelectionBars(
             )
         }
         currentTab == BottomNavItem.CardWallet &&
-            (cardWalletSubTab == CardWalletTab.BANK_CARDS ||
-                cardWalletSubTab == CardWalletTab.ALL) &&
+            cardWalletSubTab != CardWalletTab.DOCUMENTS &&
             isBankCardSelectionMode -> {
             SelectionActionBar(
                 modifier = modifier,
@@ -72,6 +72,7 @@ internal fun MainScreenSelectionBars(
                 onExit = onExitBankCardSelection,
                 onSelectAll = onSelectAllBankCards,
                 onFavorite = onFavoriteBankCards,
+                onStack = onStackWalletCards,
                 onMoveToCategory = onMoveToCategoryBankCards,
                 onDelete = onDeleteSelectedBankCards
             )
@@ -85,6 +86,7 @@ internal fun MainScreenSelectionBars(
                 onExit = onExitDocumentSelection,
                 onSelectAll = onSelectAllDocuments,
                 onMoveToCategory = onMoveToCategoryDocuments,
+                onStack = onStackWalletCards,
                 onDelete = onDeleteSelectedDocuments
             )
         }

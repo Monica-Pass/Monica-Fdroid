@@ -19,6 +19,7 @@ object LocaleHelper {
             Language.KOREAN -> Locale.KOREA
             Language.GERMAN -> Locale.GERMANY
             Language.SPANISH -> Locale("es", "ES")
+            Language.FRENCH -> Locale.FRENCH
         }
 
         return updateResources(context, locale)
@@ -79,6 +80,7 @@ object LocaleHelper {
             "ko" -> Language.KOREAN
             "de" -> Language.GERMAN
             "es" -> Language.SPANISH
+            "fr" -> Language.FRENCH
             else -> Language.SYSTEM
         }
     }

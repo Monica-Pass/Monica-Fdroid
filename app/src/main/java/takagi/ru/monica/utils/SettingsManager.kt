@@ -39,6 +39,7 @@ import takagi.ru.monica.data.UnifiedProgressBarMode
 import takagi.ru.monica.data.AutofillSource
 import takagi.ru.monica.data.AuthenticatorLayoutMode
 import takagi.ru.monica.data.VaultV2LayoutMode
+import takagi.ru.monica.data.VaultOverviewConfig
 
 private val Context.dataStore by preferencesDataStore("settings")
 
@@ -117,6 +118,8 @@ data class PageAdjustmentSettingsSnapshot(
     val authenticatorCardHideCodeByDefault: Boolean = false,
     val authenticatorLayoutMode: String = AuthenticatorLayoutMode.STANDARD.name,
     val vaultV2LayoutMode: String = VaultV2LayoutMode.CLASSIC.name,
+    val vaultOverviewEnabled: Boolean = true,
+    val vaultOverviewConfig: String = "{}",
     val validatorProgressBarStyle: String = ProgressBarStyle.LINEAR.name,
     val validatorUnifiedProgressBar: String = UnifiedProgressBarMode.ENABLED.name,
     val validatorSmoothProgress: Boolean = true,
@@ -227,6 +230,8 @@ class SettingsManager(private val context: Context) {
         private val AUTHENTICATOR_CARD_HIDE_CODE_BY_DEFAULT_KEY = booleanPreferencesKey("authenticator_card_hide_code_by_default") // 验证器卡片默认隐藏验证码
         private val AUTHENTICATOR_LAYOUT_MODE_KEY = stringPreferencesKey("authenticator_layout_mode")
         private val VAULT_V2_LAYOUT_MODE_KEY = stringPreferencesKey("vault_v2_layout_mode")
+        private val VAULT_OVERVIEW_ENABLED_KEY = booleanPreferencesKey("vault_overview_enabled")
+        private val VAULT_OVERVIEW_CONFIG_KEY = stringPreferencesKey("vault_overview_config")
         private val PASSWORD_LIST_QUICK_FILTERS_ENABLED_KEY = booleanPreferencesKey("password_list_quick_filters_enabled") // 密码列表快捷筛选开关
         private val PASSWORD_LIST_QUICK_FILTER_ITEMS_KEY = stringPreferencesKey("password_list_quick_filter_items") // 密码列表快捷筛选显示内容
         private val PASSWORD_LIST_CATEGORY_QUICK_FILTERS_ENABLED_KEY = booleanPreferencesKey("password_list_category_quick_filters_enabled") // 密码列表分类快捷筛选开关
@@ -641,6 +646,8 @@ class SettingsManager(private val context: Context) {
             vaultV2LayoutMode = VaultV2LayoutMode.fromStoredValue(
                 preferences[VAULT_V2_LAYOUT_MODE_KEY]
             ),
+            vaultOverviewEnabled = preferences[VAULT_OVERVIEW_ENABLED_KEY] ?: true,
+            vaultOverviewConfig = VaultOverviewConfig.decode(preferences[VAULT_OVERVIEW_CONFIG_KEY]),
             passwordListQuickFiltersEnabled = preferences[PASSWORD_LIST_QUICK_FILTERS_ENABLED_KEY] ?: false,
             passwordListQuickFilterItems = parsedQuickFilterItems,
             passwordListCategoryQuickFiltersEnabled =
@@ -1120,6 +1127,17 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun updateVaultOverviewEnabled(enabled: Boolean) {
+        dataStore.edit { it[VAULT_OVERVIEW_ENABLED_KEY] = enabled }
+    }
+
+    suspend fun updateVaultOverviewConfig(transform: (VaultOverviewConfig) -> VaultOverviewConfig) {
+        dataStore.edit { preferences ->
+            preferences[VAULT_OVERVIEW_CONFIG_KEY] =
+                transform(VaultOverviewConfig.decode(preferences[VAULT_OVERVIEW_CONFIG_KEY])).encode()
+        }
+    }
+
     suspend fun updatePasswordListQuickFiltersEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PASSWORD_LIST_QUICK_FILTERS_ENABLED_KEY] = enabled
@@ -1316,6 +1334,8 @@ class SettingsManager(private val context: Context) {
             authenticatorCardHideCodeByDefault = settings.authenticatorCardHideCodeByDefault,
             authenticatorLayoutMode = settings.authenticatorLayoutMode.name,
             vaultV2LayoutMode = settings.vaultV2LayoutMode.name,
+            vaultOverviewEnabled = settings.vaultOverviewEnabled,
+            vaultOverviewConfig = settings.vaultOverviewConfig.encode(),
             validatorProgressBarStyle = settings.validatorProgressBarStyle.name,
             validatorUnifiedProgressBar = settings.validatorUnifiedProgressBar.name,
             validatorSmoothProgress = settings.validatorSmoothProgress,
@@ -1498,6 +1518,8 @@ class SettingsManager(private val context: Context) {
                 AuthenticatorLayoutMode.fromStoredValue(snapshot.authenticatorLayoutMode).name
             preferences[VAULT_V2_LAYOUT_MODE_KEY] =
                 VaultV2LayoutMode.fromStoredValue(snapshot.vaultV2LayoutMode).name
+            preferences[VAULT_OVERVIEW_ENABLED_KEY] = snapshot.vaultOverviewEnabled
+            preferences[VAULT_OVERVIEW_CONFIG_KEY] = VaultOverviewConfig.decode(snapshot.vaultOverviewConfig).encode()
             preferences[VALIDATOR_PROGRESS_BAR_STYLE_KEY] = parsedValidatorProgressBarStyle.name
             preferences[VALIDATOR_UNIFIED_PROGRESS_BAR_KEY] = parsedValidatorUnifiedProgressBar.name
             preferences[VALIDATOR_SMOOTH_PROGRESS_KEY] = snapshot.validatorSmoothProgress

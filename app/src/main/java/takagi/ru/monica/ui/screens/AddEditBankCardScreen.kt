@@ -107,6 +107,7 @@ fun AddEditBankCardScreen(
     cardId: Long? = null,
     onNavigateBack: () -> Unit,
     initialCategoryId: Long? = null,
+    initialStorageExplicit: Boolean = false,
     initialKeePassDatabaseId: Long? = null,
     initialKeePassGroupPath: String? = null,
     initialMdbxDatabaseId: Long? = null,
@@ -324,6 +325,7 @@ fun AddEditBankCardScreen(
         cardId,
         hasAppliedInitialStorage,
         initialCategoryId,
+        initialStorageExplicit,
         initialKeePassDatabaseId,
         initialKeePassGroupPath,
         initialMdbxDatabaseId,
@@ -335,7 +337,7 @@ fun AddEditBankCardScreen(
         val explicitGroupPath = initialKeePassGroupPath?.takeIf { it.isNotBlank() }
         val explicitMdbxFolderId = initialMdbxFolderId?.takeIf { it.isNotBlank() }
         val explicitFolderId = initialBitwardenFolderId?.takeIf { it.isNotBlank() }
-        val hasExplicitInitialStorage = initialCategoryId != null ||
+        val hasExplicitInitialStorage = initialStorageExplicit || initialCategoryId != null ||
             initialKeePassDatabaseId != null ||
             explicitGroupPath != null ||
             initialMdbxDatabaseId != null ||

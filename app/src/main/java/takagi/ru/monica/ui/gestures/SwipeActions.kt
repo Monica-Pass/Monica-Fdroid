@@ -19,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -59,6 +61,10 @@ fun SwipeActions(
     allowSwipeLeft: Boolean = true,
     allowSwipeRight: Boolean = true,
     cardShape: Shape = RoundedCornerShape(16.dp),
+    leftActionLabel: String = stringResource(R.string.swipe_action_delete),
+    leftActionIcon: ImageVector = Icons.Default.Delete,
+    leftActionColor: Color = MaterialTheme.colorScheme.errorContainer,
+    leftActionContentColor: Color = MaterialTheme.colorScheme.onErrorContainer,
     content: @Composable () -> Unit
 ) {
     // 使用非动画状态记录实时拖动偏移，避免高频创建协程
@@ -167,7 +173,7 @@ fun SwipeActions(
         if (allowSwipeLeft && totalOffset < 0) {
             Surface(
                 modifier = Modifier.fillMaxWidth().matchParentSize(),
-                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = backgroundAlpha),
+                color = leftActionColor.copy(alpha = backgroundAlpha),
                 shape = componentShape
             ) {
                 Box(contentAlignment = Alignment.CenterEnd) {
@@ -179,9 +185,9 @@ fun SwipeActions(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.onErrorContainer,
+                        Icon(leftActionIcon, null, tint = leftActionContentColor,
                             modifier = Modifier.size(24.dp).graphicsLayer { scaleX = iconScale; scaleY = iconScale })
-                        Text(stringResource(R.string.swipe_action_delete), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(leftActionLabel, style = MaterialTheme.typography.labelLarge, color = leftActionContentColor)
                     }
                 }
             }

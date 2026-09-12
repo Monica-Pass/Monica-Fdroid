@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.room.withTransaction
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
@@ -54,11 +55,14 @@ import takagi.ru.monica.bitwarden.service.BitwardenAttachmentMetadataDecoder
 import takagi.ru.monica.bitwarden.service.BitwardenCipherKeyResolver
 import takagi.ru.monica.bitwarden.service.BitwardenSyncService
 import takagi.ru.monica.bitwarden.service.LoginResult
+import takagi.ru.monica.bitwarden.service.classifyBitwardenLoginError
 import takagi.ru.monica.bitwarden.service.SyncResult as ServiceSyncResult
 import takagi.ru.monica.bitwarden.sync.BitwardenMutationSyncBridge
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
 import takagi.ru.monica.data.bitwarden.*
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 
 /**
  * Bitwarden 统一数据仓库
@@ -143,12 +147,6 @@ class BitwardenRepository(private val context: Context) {
                 rawError.contains("locked", ignoreCase = true) ||
                 rawError.contains("too many attempts", ignoreCase = true) ->
                     "登录尝试次数过多，账户已暂时锁定，请稍后重试"
-                
-                // 网络错误
-                rawError.contains("timeout", ignoreCase = true) ||
-                rawError.contains("connect", ignoreCase = true) ||
-                rawError.contains("network", ignoreCase = true) ->
-                    "网络连接失败，请检查网络后重试"
                 
                 // 服务器错误
                 rawError.contains("500") || rawError.contains("502") || 
@@ -299,7 +297,16 @@ class BitwardenRepository(private val context: Context) {
                 encKey = wrappingKey.encKey.copyOf(),
                 macKey = wrappingKey.macKey.copyOf()
             ),
-            isOnline = isOnline
+            isOnline = isOnline,
+            wrappingKeyProvider = {
+                withContext(Dispatchers.IO) {
+                    val currentToken = accessTokenCache[vault.id] ?: throw takagi.ru.monica.attachments.model.AttachmentError.BitwardenLocked
+                    val currentKey = symmetricKeyCache[vault.id] ?: throw takagi.ru.monica.attachments.model.AttachmentError.BitwardenLocked
+                    takagi.ru.monica.bitwarden.service.BitwardenAttachmentKeyResolver.resolve(
+                        vaultApi, currentToken, cipherId, currentKey
+                    )
+                }
+            }
         )
     }
 
@@ -324,11 +331,7 @@ class BitwardenRepository(private val context: Context) {
         }.getOrNull() ?: return@withContext null
         if (!response.isSuccessful) return@withContext null
         val cipher = response.body() ?: return@withContext null
-        val effectiveKey = BitwardenCipherKeyResolver.resolveCipherKey(
-            cipher = cipher,
-            vaultKey = vaultKey,
-            logTag = TAG
-        )
+        val effectiveKey = takagi.ru.monica.bitwarden.service.BitwardenAttachmentKeyResolver.resolve(cipher, vaultKey)
         try {
             AttachmentCipherSnapshot(
                 context = takagi.ru.monica.attachments.facade.AttachmentFacade.BitwardenContext(
@@ -406,15 +409,15 @@ class BitwardenRepository(private val context: Context) {
                 },
                 onFailure = { error ->
                     Log.e(TAG, "登录失败", error)
-                    RepositoryLoginResult.Error(parseErrorMessage(error.message))
+                    RepositoryLoginResult.Error(describeLoginError(error))
                 }
             )
         } catch (e: BitwardenKdfMemoryException) {
             Log.e(TAG, "登录 KDF 内存不足", e)
-            RepositoryLoginResult.Error(parseErrorMessage(e.message))
+            RepositoryLoginResult.Error(describeLoginError(e))
         } catch (e: Exception) {
             Log.e(TAG, "登录异常", e)
-            RepositoryLoginResult.Error(parseErrorMessage(e.message))
+            RepositoryLoginResult.Error(describeLoginError(e))
         }
     }
     
@@ -469,16 +472,25 @@ class BitwardenRepository(private val context: Context) {
                 },
                 onFailure = { error ->
                     Log.e(TAG, "两步验证登录失败", error)
-                    RepositoryLoginResult.Error(parseErrorMessage(error.message))
+                    RepositoryLoginResult.Error(describeLoginError(error))
                 }
             )
         } catch (e: BitwardenKdfMemoryException) {
             Log.e(TAG, "两步验证 KDF 内存不足", e)
-            RepositoryLoginResult.Error(parseErrorMessage(e.message))
+            RepositoryLoginResult.Error(describeLoginError(e))
         } catch (e: Exception) {
             Log.e(TAG, "两步验证异常", e)
-            RepositoryLoginResult.Error(parseErrorMessage(e.message))
+            RepositoryLoginResult.Error(describeLoginError(e))
         }
+    }
+
+    internal fun describeLoginError(error: Throwable): String {
+        if (error is CancellationException) throw error
+        val kind = classifyBitwardenLoginError(error) ?: return parseErrorMessage(error.message)
+        // Use the same current-language cache as activities. The shared settings flow can
+        // replay the previous language immediately after an update, unlike this cache.
+        val localizedContext = LocaleHelper.setLocale(context, StartupLanguageCache.read(context))
+        return localizedContext.getString(kind.messageRes)
     }
 
     suspend fun sendTwoFactorEmailLogin(

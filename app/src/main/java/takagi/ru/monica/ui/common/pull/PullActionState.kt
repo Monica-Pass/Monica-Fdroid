@@ -24,6 +24,8 @@ import takagi.ru.monica.R
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.sync.syncForUserVisibleRequest
 import takagi.ru.monica.ui.haptic.rememberHapticFeedback
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @Stable
 data class PullActionStateHandle(
@@ -35,6 +37,7 @@ data class PullActionStateHandle(
     val syncFeedbackMessage: String,
     val syncFeedbackIsSuccess: Boolean,
     val nestedScrollConnection: NestedScrollConnection,
+    val gestureModifier: Modifier,
     val onVerticalDrag: (Float) -> Unit,
     val onDragEnd: () -> Unit,
     val onDragCancel: () -> Unit
@@ -48,16 +51,40 @@ fun rememberPullActionState(
     syncTriggerDistance: Float,
     maxDragDistance: Float,
     bitwardenRepository: BitwardenRepository,
+    bitwardenVaultId: Long? = null,
     onSearchTriggered: () -> Unit
 ): PullActionStateHandle {
+    if (!isBitwardenDatabaseView) {
+        val search = rememberPullToSearchState(
+            isSearchExpanded = isSearchExpanded,
+            searchTriggerDistance = searchTriggerDistance,
+            maxDragDistance = maxDragDistance,
+            onSearchTriggered = onSearchTriggered,
+        )
+        return PullActionStateHandle(
+            currentOffset = search.currentOffset,
+            isSettlingBack = false,
+            syncHintArmed = false,
+            isBitwardenSyncing = false,
+            showSyncFeedback = false,
+            syncFeedbackMessage = "",
+            syncFeedbackIsSuccess = false,
+            nestedScrollConnection = search.nestedScrollConnection,
+            gestureModifier = search.gestureModifier,
+            onVerticalDrag = search.onVerticalDrag,
+            onDragEnd = search.onDragEnd,
+            onDragCancel = search.onDragCancel,
+        )
+    }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val onSearchTriggeredState by rememberUpdatedState(onSearchTriggered)
     val syncHoldMillis = 500L
 
     var currentOffset by remember { mutableFloatStateOf(0f) }
+    val searchExpandedState by rememberUpdatedState(isSearchExpanded)
+    val selectedVaultId by rememberUpdatedState(bitwardenVaultId)
     var isSettlingBack by remember { mutableStateOf(false) }
-    var hasVibrated by remember { mutableStateOf(false) }
     var hasSyncStageVibrated by remember { mutableStateOf(false) }
     var syncHintArmed by remember { mutableStateOf(false) }
     var isBitwardenSyncing by remember { mutableStateOf(false) }
@@ -69,15 +96,26 @@ fun rememberPullActionState(
     val collapseAnimatable = remember { Animatable(0f) }
 
     val haptic = rememberHapticFeedback()
+    val gesture = remember {
+        PullSearchGestureState(
+            canTriggerSearch = { !searchExpandedState && !lockPullUntilSyncFinished },
+            onSearchThresholdReached = { haptic.performPullThreshold() },
+            onSearchTriggered = { onSearchTriggeredState() },
+        )
+    }
+
+    fun updateSearchThreshold() {
+        gesture.updatePull(currentOffset >= searchTriggerDistance)
+    }
 
     suspend fun resolveSyncableVaultId(): Long? {
-        val activeVault = bitwardenRepository.getActiveVault() ?: run {
+        val vaultId = selectedVaultId ?: bitwardenRepository.getActiveVault()?.id ?: run {
             canRunBitwardenSync = false
             return null
         }
-        val unlocked = bitwardenRepository.isVaultUnlocked(activeVault.id)
+        val unlocked = bitwardenRepository.isVaultUnlocked(vaultId)
         canRunBitwardenSync = unlocked
-        return if (unlocked) activeVault.id else null
+        return if (unlocked) vaultId else null
     }
 
     fun vibratePullThreshold(isSyncStage: Boolean) {
@@ -85,12 +123,7 @@ fun rememberPullActionState(
     }
 
     fun updatePullThresholdHaptics(oldOffset: Float, newOffset: Float) {
-        if (oldOffset < searchTriggerDistance && newOffset >= searchTriggerDistance && !hasVibrated) {
-            hasVibrated = true
-            vibratePullThreshold(isSyncStage = false)
-        } else if (newOffset < searchTriggerDistance) {
-            hasVibrated = false
-        }
+        updateSearchThreshold()
 
         if (!isBitwardenDatabaseView) {
             hasSyncStageVibrated = false
@@ -141,7 +174,11 @@ fun rememberPullActionState(
     }
 
     fun onPullRelease(): Boolean {
-        if (isBitwardenDatabaseView && syncHintArmed && !isBitwardenSyncing) {
+        // Search opens on release so pulling farther can still arm Bitwarden sync.
+        if (gesture.canRelease && !searchExpandedState &&
+            currentOffset >= syncTriggerDistance && syncHintArmed && !isBitwardenSyncing
+        ) {
+            gesture.cancelGesture()
             syncHintArmed = false
             isBitwardenSyncing = true
             lockPullUntilSyncFinished = true
@@ -156,7 +193,7 @@ fun rememberPullActionState(
                     ).show()
                     isBitwardenSyncing = false
                     lockPullUntilSyncFinished = false
-                    hasVibrated = false
+
                     hasSyncStageVibrated = false
                     collapsePullOffsetSmoothly()
                     return@launch
@@ -200,7 +237,7 @@ fun rememberPullActionState(
                 }
                 isBitwardenSyncing = false
                 lockPullUntilSyncFinished = false
-                hasVibrated = false
+
                 hasSyncStageVibrated = false
                 collapsePullOffsetSmoothly()
                 delay(1400)
@@ -209,17 +246,21 @@ fun rememberPullActionState(
             return true
         }
 
-        if (currentOffset >= searchTriggerDistance) {
-            onSearchTriggeredState()
-            hasVibrated = false
-        }
+        gesture.releaseSearch()
         return false
     }
 
     fun onVerticalDrag(dragAmount: Float) {
-        if (lockPullUntilSyncFinished || dragAmount <= 0f) return
+        if (lockPullUntilSyncFinished || searchExpandedState) return
+        if (!gesture.isGestureActive) gesture.beginGesture()
+        if (!gesture.canPull) return
+        if (dragAmount < 0f) {
+            currentOffset = (currentOffset + dragAmount).coerceAtLeast(0f)
+            updateSearchThreshold()
+            return
+        }
         interruptCollapseAnimation()
-        val newOffset = calculateDampedPullOffset(
+        val newOffset = calculateSearchPullOffset(
             currentOffset = currentOffset,
             dragDelta = dragAmount,
             maxDragDistance = maxDragDistance
@@ -230,8 +271,8 @@ fun rememberPullActionState(
     }
 
     val onDragEnd: () -> Unit = {
+        val syncStarted = onPullRelease()
         scope.launch {
-            val syncStarted = onPullRelease()
             if (!syncStarted && !lockPullUntilSyncFinished) {
                 collapsePullOffsetSmoothly()
             }
@@ -239,6 +280,8 @@ fun rememberPullActionState(
     }
 
     val onDragCancel: () -> Unit = {
+        gesture.cancelGesture()
+        syncHintArmed = false
         if (!lockPullUntilSyncFinished) {
             scope.launch { collapsePullOffsetSmoothly() }
         }
@@ -255,7 +298,7 @@ fun rememberPullActionState(
             lockPullUntilSyncFinished = false
             showSyncFeedback = false
             currentOffset = 0f
-            hasVibrated = false
+
             hasSyncStageVibrated = false
         }
     }
@@ -267,9 +310,9 @@ fun rememberPullActionState(
     }
 
     LaunchedEffect(currentOffset, isBitwardenDatabaseView, canRunBitwardenSync, isBitwardenSyncing) {
-        if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
+        if (gesture.canPull && !isSearchExpanded && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
             delay(syncHoldMillis)
-            if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
+            if (gesture.canPull && !searchExpandedState && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
                 syncHintArmed = true
             }
         } else {
@@ -279,7 +322,8 @@ fun rememberPullActionState(
 
     LaunchedEffect(isSearchExpanded) {
         if (isSearchExpanded) {
-            hasVibrated = false
+            gesture.cancelGesture()
+
             hasSyncStageVibrated = false
             syncHintArmed = false
             if (!lockPullUntilSyncFinished && currentOffset > 0.5f) {
@@ -292,7 +336,7 @@ fun rememberPullActionState(
         }
     }
 
-    val nestedScrollConnection = remember(isBitwardenDatabaseView, maxDragDistance) {
+    val nestedScrollConnection = remember(searchTriggerDistance, syncTriggerDistance, maxDragDistance) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (lockPullUntilSyncFinished) {
@@ -303,6 +347,7 @@ fun rememberPullActionState(
                     val newOffset = (currentOffset + available.y).coerceAtLeast(0f)
                     val consumed = currentOffset - newOffset
                     currentOffset = newOffset
+                    updateSearchThreshold()
                     return Offset(0f, -consumed)
                 }
                 return Offset.Zero
@@ -312,9 +357,11 @@ fun rememberPullActionState(
                 if (lockPullUntilSyncFinished) {
                     return available
                 }
-                if (available.y > 0 && source == NestedScrollSource.UserInput) {
+                if (source != NestedScrollSource.UserInput || searchExpandedState) return Offset.Zero
+                gesture.onScroll(contentConsumed = consumed.y != 0f)
+                if (available.y > 0 && gesture.canPull) {
                     interruptCollapseAnimation()
-                    val newOffset = calculateDampedPullOffset(
+                    val newOffset = calculateSearchPullOffset(
                         currentOffset = currentOffset,
                         dragDelta = available.y,
                         maxDragDistance = maxDragDistance
@@ -336,7 +383,7 @@ fun rememberPullActionState(
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                if (!lockPullUntilSyncFinished && currentOffset > 0f) {
+                if (!gesture.isGestureActive && !lockPullUntilSyncFinished && currentOffset > 0f) {
                     val syncStarted = onPullRelease()
                     if (!syncStarted && !lockPullUntilSyncFinished) {
                         collapsePullOffsetSmoothly()
@@ -356,6 +403,7 @@ fun rememberPullActionState(
         syncFeedbackMessage = syncFeedbackMessage,
         syncFeedbackIsSuccess = syncFeedbackIsSuccess,
         nestedScrollConnection = nestedScrollConnection,
+        gestureModifier = Modifier.observePullSearchGesture(gesture).nestedScroll(nestedScrollConnection),
         onVerticalDrag = { dragAmount -> onVerticalDrag(dragAmount) },
         onDragEnd = onDragEnd,
         onDragCancel = onDragCancel

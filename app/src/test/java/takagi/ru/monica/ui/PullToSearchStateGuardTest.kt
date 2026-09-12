@@ -17,7 +17,7 @@ class PullToSearchStateGuardTest {
 
         assertTrue(source.contains("currentOffset >= searchTriggerDistance"))
         assertTrue(source.contains("performPullThreshold()"))
-        assertTrue(hapticHelper.contains("fun performPullThreshold()"))
+        assertTrue(hapticHelper.contains("fun performPullThreshold("))
         assertTrue(hapticHelper.contains("VibrationPatterns.TICK"))
         assertTrue(source.contains("nestedScrollConnection"))
         assertTrue(source.contains("onVerticalDrag"))

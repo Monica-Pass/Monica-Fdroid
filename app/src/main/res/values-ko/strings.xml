@@ -3039,7 +3039,7 @@
     <string name="password_owner_conflict_inline">이 항목은 여러 저장소에 속합니다. 편집하기 전에 소유권을 수정하세요.</string>
     <string name="password_owner_conflict_display">Monica, KeePass 또는 Bitwarden에서 스토리지 소유권이 충돌합니다. 편집하기 전에 복구하십시오.</string>
     <string name="password_owner_conflict_copy">이 항목에는 소유권이 충돌하므로 비밀번호를 안전하게 복사할 수 없습니다.</string>
-    <string name="pull_release_to_search">검색하려면 당겨</string>
+    <string name="pull_release_to_search">아래로 당겨 검색</string>
     <string name="pull_release_to_sync_bitwarden">Bitwarden 동기화를 해제하세요</string>
     <string name="pull_syncing_bitwarden">Bitwarden 동기화 중...</string>
     <string name="pull_sync_requires_bitwarden_login">로그인하고 Bitwarden를 잠금 해제하세요. 먼저</string>
@@ -3533,6 +3533,10 @@
     <string name="import_type_stratum_title">Stratum 인증</string>
     <string name="import_type_stratum_desc">Stratum/AuthPro 백업 가져오기(.stratum/.txt/.html)</string>
     <string name="import_type_stratum_file_hint">.stratum / .txt / 선택 .html 파일</string>
+    <string name="import_csv_no_data_found">데이터를 가져오지 못했습니다. 파일 형식을 확인하세요.</string>
+    <string name="import_csv_file_unreadable">파일을 읽지 못했습니다. 파일이 아직 있는지 확인하세요.</string>
+    <string name="import_csv_file_empty">파일이 비어 있습니다.</string>
+    <string name="import_csv_invalid_format">잘못된 파일 형식</string>
     <string name="import_type_steam_title">Steam Guard</string>
     <string name="import_type_steam_desc">maFile에서 Steam 토큰 가져오기</string>
     <string name="import_type_steam_file_hint">.maFile 파일 선택</string>

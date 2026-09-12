@@ -1722,6 +1722,10 @@
     <string name="import_type_stratum_title">Stratum Auth</string>
     <string name="import_type_stratum_desc">Stratum/AuthPro バックアップ（.stratum/.txt/.html）をインポート</string>
     <string name="import_type_stratum_file_hint">.stratum / .txt / .html ファイルを選択</string>
+    <string name="import_csv_no_data_found">データをインポートできませんでした。ファイル形式を確認してください。</string>
+    <string name="import_csv_file_unreadable">ファイルを読み取れませんでした。ファイルが存在するか確認してください。</string>
+    <string name="import_csv_file_empty">ファイルが空です。</string>
+    <string name="import_csv_invalid_format">ファイル形式が正しくありません</string>
     <string name="import_type_steam_title">Steam Guard</string>
     <string name="import_type_steam_desc">maFile から Steam トークンをインポート</string>
     <string name="import_type_steam_file_hint">.maFile ファイルを選択</string>
@@ -2926,7 +2930,7 @@
     <string name="password_owner_conflict_inline">このエントリは複数のボールトに属しています。編集する前に所有権を修正してください。</string>
     <string name="password_owner_conflict_display">ストレージの所有権が Monica、KeePass、または Bitwarden 全体で競合します。編集する前に修復してください。</string>
     <string name="password_owner_conflict_copy">このエントリには所有権が競合しているため、パスワードを安全にコピーできません。</string>
-    <string name="pull_release_to_search">引いて検索</string>
+    <string name="pull_release_to_search">下に引いて検索</string>
     <string name="pull_release_to_sync_bitwarden">放すとBitwardenが同期されます</string>
     <string name="pull_syncing_bitwarden">Bitwarden を同期中...</string>
     <string name="pull_sync_requires_bitwarden_login">まずログインしてBitwardenのロックを解除してください</string>

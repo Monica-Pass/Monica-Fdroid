@@ -1,5 +1,7 @@
 package takagi.ru.monica.data
 
+import takagi.ru.monica.R
+
 /**
  * Security questions for password recovery
  */
@@ -62,4 +64,24 @@ object PredefinedSecurityQuestions {
     }
 
     fun isCustomQuestion(id: Int): Boolean = id == CUSTOM_QUESTION_ID
+
+    /**
+     * Maps a preset question id to its localized string resource, so callers can
+     * resolve the question text via the app's normal resource/locale system
+     * instead of the hardcoded English/Chinese-only [questions]/[questionsZh] lists.
+     */
+    fun textResIdFor(id: Int): Int = when (id) {
+        ULTRAMAN_QUESTION_ID -> R.string.security_question_ultraman
+        1 -> R.string.security_question_preset_2
+        2 -> R.string.security_question_preset_1
+        3 -> R.string.security_question_born_city
+        4 -> R.string.security_question_preset_5
+        5 -> R.string.security_question_preset_10
+        6 -> R.string.security_question_first_car
+        7 -> R.string.security_question_preset_8
+        8 -> R.string.security_question_childhood_food
+        9 -> R.string.security_question_grew_up_street
+        10 -> R.string.security_question_hs_mascot
+        else -> R.string.security_question_custom
+    }
 }

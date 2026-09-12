@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">Das Zertifikat ist abgelaufen. Prüfe Datum und Uhrzeit deines Geräts und bitte den Serveradministrator, das Zertifikat zu erneuern.</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">Das Zertifikat ist noch nicht gültig. Prüfe Datum und Uhrzeit deines Geräts sowie den Gültigkeitszeitraum des Zertifikats.</string>
+    <string name="bitwarden_error_certificate_hostname">Das Serverzertifikat passt nicht zur eingegebenen Domain. Prüfe die Adresse des selbst gehosteten Servers und das vom Reverse-Proxy gelieferte Zertifikat.</string>
+    <string name="bitwarden_error_certificate_untrusted">Das Serverzertifikat konnte nicht überprüft werden. Prüfe die vollständige Zertifikatskette, die vertrauenswürdigen CAs des Geräts und ob ein Proxy HTTPS-Zertifikate ersetzt. Hinterlege bei einem selbst signierten Server die passende CA in den Zertifikatseinstellungen.</string>
+    <string name="bitwarden_error_tls_handshake">Es konnte keine sichere TLS-Verbindung hergestellt werden. Prüfe die TLS-Konfiguration und Protokollversionen des Servers oder Reverse-Proxys sowie bei aktiviertem mTLS das Clientzertifikat.</string>
+    <string name="bitwarden_error_dns">Die Serverdomain konnte nicht aufgelöst werden. Prüfe die Serveradresse sowie DNS-, VPN- und Proxy-Einstellungen.</string>
+    <string name="bitwarden_error_timeout">Zeitüberschreitung beim Verbinden mit dem Server. Prüfe, ob der Server online ist, sowie Port, Netzwerk, VPN und Proxy.</string>
+    <string name="bitwarden_error_connection">Verbindung zum Server fehlgeschlagen. Prüfe Adresse und Port, ob der Dienst läuft sowie Firewall- und Proxy-Einstellungen.</string>
+    <string name="bitwarden_error_proxy">Der Proxy hat die Verbindung abgelehnt oder verlangt eine Anmeldung. Prüfe Proxy-Adresse, Port und Zugangsdaten.</string>
+    <string name="bitwarden_error_cleartext">Die Serveradresse verwendet HTTP, was die aktuelle Sicherheitsrichtlinie nicht erlaubt. Verwende eine HTTPS-Adresse und prüfe die HTTPS-Konfiguration des Reverse-Proxys.</string>
+    <string name="bitwarden_error_network_io">Ein Netzwerkfehler hat die Kommunikation mit dem Server unterbrochen. Prüfe Netzwerk, VPN und Proxy und versuche es erneut.</string>
+</resources>

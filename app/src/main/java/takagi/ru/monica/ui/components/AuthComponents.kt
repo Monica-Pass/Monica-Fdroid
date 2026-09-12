@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.*
@@ -8,8 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -44,12 +48,15 @@ fun PasswordVerificationContent(
 ) {
     val context = LocalContext.current
     val activity = context as? FragmentActivity
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     
     var masterPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var authenticationCompleted by remember { mutableStateOf(false) }
     
     // 内部状态，用于处理首次设置密码的确认流程
     var internalIsConfirming by remember { mutableStateOf(isConfirmingPassword) }
@@ -65,10 +72,56 @@ fun PasswordVerificationContent(
     var autoBiometricTried by remember { mutableStateOf(false) }
 
     fun completeAuthentication() {
+        if (authenticationCompleted) return
         if (persistVaultUnlockToSession) {
             securityManager.value.markVaultAuthenticated()
         }
+        authenticationCompleted = true
+        keyboardController?.hide()
+        focusManager.clearFocus()
         onSuccess()
+    }
+
+    fun canSubmitPassword(): Boolean = !authenticationCompleted &&
+        (disablePasswordVerification ||
+            (if (internalIsConfirming) confirmPassword else masterPassword).isNotEmpty())
+
+    // The button and IME must use the same validation, including empty-input guards.
+    fun submitPassword() {
+        if (!canSubmitPassword()) return
+
+        // 如果已存在主密码且关闭了密码验证,直接通过
+        if (!isFirstTime && disablePasswordVerification) {
+            completeAuthentication()
+            return
+        }
+
+        if (isFirstTime) {
+            if (!internalIsConfirming) {
+                internalIsConfirming = true
+            } else {
+                if (!MasterPasswordPolicy.meetsMinLength(masterPassword)) {
+                    errorMessage = context.getString(R.string.password_too_short)
+                    confirmPassword = ""
+                    internalIsConfirming = false
+                    return
+                }
+                if (masterPassword != confirmPassword) {
+                    errorMessage = context.getString(R.string.error_passwords_not_match)
+                    confirmPassword = ""
+                    internalIsConfirming = false
+                    return
+                }
+                onSetPassword(masterPassword)
+                completeAuthentication()
+            }
+        } else {
+            if (onVerifyPassword(masterPassword)) {
+                completeAuthentication()
+            } else {
+                errorMessage = context.getString(R.string.error_invalid_password)
+            }
+        }
     }
 
     fun canProceedAfterBiometricAuth(): PasswordVerificationBiometricAccessResult {
@@ -230,6 +283,11 @@ fun PasswordVerificationContent(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            imeAction = if (isFirstTime && !internalIsConfirming) ImeAction.Next else ImeAction.Done,
+            keyboardActions = KeyboardActions(
+                onNext = { submitPassword() },
+                onDone = { submitPassword() }
+            ),
         )
         
         // Error Message
@@ -246,47 +304,9 @@ fun PasswordVerificationContent(
         
         // Login/Setup Button
         Button(
-            onClick = {
-                // 如果已存在主密码且关闭了密码验证,直接通过
-                if (!isFirstTime && disablePasswordVerification) {
-                    completeAuthentication()
-                    return@Button
-                }
-                
-                if (isFirstTime) {
-                    // 首次设置密码
-                    if (!internalIsConfirming) {
-                        // 第一次输入，要求确认
-                        internalIsConfirming = true
-                    } else {
-                        // 确认密码
-                        if (!MasterPasswordPolicy.meetsMinLength(masterPassword)) {
-                            errorMessage = context.getString(R.string.password_too_short)
-                            confirmPassword = ""
-                            internalIsConfirming = false
-                            return@Button
-                        }
-                        if (masterPassword != confirmPassword) {
-                            errorMessage = context.getString(R.string.error_passwords_not_match)
-                            confirmPassword = ""
-                            internalIsConfirming = false
-                            return@Button
-                        }
-                        onSetPassword(masterPassword)
-                        completeAuthentication()
-                    }
-                } else {
-                    // 验证密码
-                    if (onVerifyPassword(masterPassword)) {
-                        completeAuthentication()
-                    } else {
-                        errorMessage = context.getString(R.string.error_invalid_password)
-                    }
-                }
-            },
+            onClick = { submitPassword() },
             modifier = Modifier.fillMaxWidth(),
-            enabled = disablePasswordVerification ||
-                (if (internalIsConfirming) confirmPassword else masterPassword).isNotEmpty()
+            enabled = canSubmitPassword()
         ) {
             Text(
                 text = when {

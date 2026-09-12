@@ -284,6 +284,7 @@ internal fun PasswordDetailPaneContent(
                     localKeePassViewModel = localKeePassViewModel,
                     passwordId = editorId,
                     initialCategoryId = passwordNewItemDefaults.categoryId,
+                    initialStorageExplicit = passwordNewItemDefaults.explicit,
                     initialKeePassDatabaseId = passwordNewItemDefaults.keepassDatabaseId,
                     initialKeePassGroupPath = passwordNewItemDefaults.keepassGroupPath,
                     initialBitwardenVaultId = passwordNewItemDefaults.bitwardenVaultId,

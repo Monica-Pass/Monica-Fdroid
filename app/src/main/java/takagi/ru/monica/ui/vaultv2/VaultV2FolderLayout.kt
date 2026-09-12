@@ -27,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -438,6 +441,7 @@ internal fun VaultV2FolderRow(
     onLongClick: () -> Unit = {},
     selected: Boolean = false,
     modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(16.dp),
 ) {
     val isSource = row.kind != VaultV2FolderRowKind.FOLDER
     val icon = row.kind.icon()
@@ -464,8 +468,10 @@ internal fun VaultV2FolderRow(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 68.dp)
+            .testTag("vault_folder_${row.key}")
+            .clip(shape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = if (isSource) 1.dp else 0.dp,
         shadowElevation = if (isSource) 1.dp else 0.dp,

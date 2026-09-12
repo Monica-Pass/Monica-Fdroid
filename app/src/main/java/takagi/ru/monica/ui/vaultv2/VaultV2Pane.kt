@@ -8,7 +8,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -30,7 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -75,11 +74,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,6 +113,7 @@ import takagi.ru.monica.bitwarden.ui.UnlockVaultDialog
 import takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.CategorySelectionUiMode
+import takagi.ru.monica.data.VaultOverviewModule
 import takagi.ru.monica.data.Category
 import takagi.ru.monica.data.LocalKeePassDatabase
 import takagi.ru.monica.data.LocalMdbxDatabase
@@ -136,7 +137,6 @@ import takagi.ru.monica.security.maskDocumentNumberForPreview
 import takagi.ru.monica.data.model.TotpData
 import takagi.ru.monica.data.model.OtpType
 import takagi.ru.monica.data.model.PasskeyBindingCodec
-import takagi.ru.monica.data.UnmatchedIconHandlingStrategy
 import takagi.ru.monica.data.VaultV2LayoutMode
 import takagi.ru.monica.notes.domain.NoteContentCodec
 import takagi.ru.monica.repository.MdbxStoredFolderEntry
@@ -149,15 +149,12 @@ import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuDropdown
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuOffset
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterSelection
 import takagi.ru.monica.ui.components.ExpressiveLazyListScrollbar
+import takagi.ru.monica.ui.components.GroupedItemDefaults
 import takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_NONE
-import takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_SIMPLE
-import takagi.ru.monica.ui.icons.PASSWORD_ICON_TYPE_UPLOADED
-import takagi.ru.monica.ui.icons.UnmatchedIconFallback
+import takagi.ru.monica.ui.icons.VaultItemIcon
 import takagi.ru.monica.ui.common.pull.rememberPullActionState
-import takagi.ru.monica.ui.icons.rememberAutoMatchedSimpleIcon
-import takagi.ru.monica.ui.icons.rememberSimpleIconBitmap
-import takagi.ru.monica.ui.icons.rememberUploadedPasswordIcon
-import takagi.ru.monica.ui.icons.shouldShowFallbackSlot
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 import takagi.ru.monica.ui.PasswordQuickFolderBreadcrumb
 import takagi.ru.monica.ui.PasswordQuickFolderBreadcrumbPath
 import takagi.ru.monica.ui.PasswordQuickFolderBreadcrumbBanner
@@ -247,6 +244,7 @@ internal enum class VaultV2ItemType {
 	PASSKEY,
 	BANK_CARD,
 	DOCUMENT,
+	BILLING_ADDRESS,
 }
 
 internal data class VaultV2Item(
@@ -392,6 +390,7 @@ internal data class VaultV2ComputedSources(
 	val documentItems: List<SecureItem>,
 	val noteItems: List<SecureItem>,
 	val passkeyItems: List<PasskeyEntry>,
+	val billingAddressItems: List<SecureItem> = emptyList(),
 )
 
 internal data class VaultV2VisibleSnapshotKey(
@@ -405,6 +404,7 @@ internal data class VaultV2VisibleSnapshotKey(
 	val noStackEntryIds: Set<Long>,
 	val normalizedQuery: String,
 	val isArchiveView: Boolean,
+	val overviewItemType: VaultV2ItemType? = null,
 )
 
 private data class VaultV2SecondaryLists(
@@ -413,6 +413,7 @@ private data class VaultV2SecondaryLists(
 	val passkeys: List<VaultV2Item>,
 	val bankCards: List<VaultV2Item>,
 	val documents: List<VaultV2Item>,
+	val billingAddresses: List<VaultV2Item>,
 )
 
 internal data class VaultV2VisibleListConfig(
@@ -436,6 +437,7 @@ internal data class VaultV2VisibleListConfig(
 	val noStackEntryIds: Set<Long>,
 	val normalizedQuery: String,
 	val isArchiveView: Boolean,
+	val overviewItemType: VaultV2ItemType? = null,
 )
 
 private const val VAULT_V2_FAST_SCROLL_LOG_TAG = "VaultV2FastScroll"
@@ -479,7 +481,7 @@ private fun PasswordPageContentType.toVaultV2ItemTypes(): Set<VaultV2ItemType> =
 	PasswordPageContentType.AUTHENTICATOR -> setOf(VaultV2ItemType.AUTHENTICATOR)
 	PasswordPageContentType.NOTE -> setOf(VaultV2ItemType.NOTE)
 	PasswordPageContentType.PASSKEY -> setOf(VaultV2ItemType.PASSKEY)
-	PasswordPageContentType.CARD_WALLET -> setOf(VaultV2ItemType.BANK_CARD, VaultV2ItemType.DOCUMENT)
+	PasswordPageContentType.CARD_WALLET -> setOf(VaultV2ItemType.BANK_CARD, VaultV2ItemType.DOCUMENT, VaultV2ItemType.BILLING_ADDRESS)
 }
 
 private fun VaultV2Item.toPasswordPageContentType(): PasswordPageContentType = when (type) {
@@ -488,10 +490,11 @@ private fun VaultV2Item.toPasswordPageContentType(): PasswordPageContentType = w
 	VaultV2ItemType.NOTE -> PasswordPageContentType.NOTE
 	VaultV2ItemType.PASSKEY -> PasswordPageContentType.PASSKEY
 	VaultV2ItemType.BANK_CARD,
-	VaultV2ItemType.DOCUMENT -> PasswordPageContentType.CARD_WALLET
+	VaultV2ItemType.DOCUMENT,
+	VaultV2ItemType.BILLING_ADDRESS -> PasswordPageContentType.CARD_WALLET
 }
 
-private fun VaultV2PaneState.toUnifiedCategoryFilterSelection(): UnifiedCategoryFilterSelection {
+internal fun VaultV2PaneState.toUnifiedCategoryFilterSelection(): UnifiedCategoryFilterSelection {
 	return when (storageFilterType) {
 		VAULT_V2_STORAGE_FILTER_ALL -> UnifiedCategoryFilterSelection.All
 		VAULT_V2_STORAGE_FILTER_LOCAL -> UnifiedCategoryFilterSelection.Local
@@ -657,7 +660,7 @@ private fun VaultV2PaneState.updateStorageFilter(selection: UnifiedCategoryFilte
 	}
 }
 
-private fun UnifiedCategoryFilterSelection.toCategoryFilterOrNull(): CategoryFilter? {
+internal fun UnifiedCategoryFilterSelection.toCategoryFilterOrNull(): CategoryFilter? {
 	return when (this) {
 		UnifiedCategoryFilterSelection.All -> CategoryFilter.All
 		UnifiedCategoryFilterSelection.Local -> CategoryFilter.Local
@@ -947,6 +950,7 @@ private fun <T> rememberVaultV2AsyncComputedValue(
 	computationKey: Any?,
 	initialValue: T,
 	initialHasComputed: Boolean = false,
+	enabled: Boolean = true,
 	compute: suspend () -> T,
 ): VaultV2AsyncComputedValue<T> {
 	val notComputed = remember { Any() }
@@ -957,7 +961,11 @@ private fun <T> rememberVaultV2AsyncComputedValue(
 	}
 	val latestCompute by rememberUpdatedState(compute)
 
-	LaunchedEffect(computationKey) {
+	LaunchedEffect(computationKey, enabled) {
+		if (!enabled) {
+			isComputing = false
+			return@LaunchedEffect
+		}
 		if (computedKey == computationKey) {
 			isComputing = false
 			return@LaunchedEffect
@@ -981,8 +989,8 @@ private fun <T> rememberVaultV2AsyncComputedValue(
 
 	return VaultV2AsyncComputedValue(
 		value = value,
-		isComputing = isComputing,
-		hasComputed = computedKey == computationKey,
+		isComputing = enabled && isComputing,
+		hasComputed = enabled && computedKey == computationKey,
 	)
 }
 
@@ -1058,7 +1066,7 @@ private fun BitwardenVault.displayLabel(): String {
 	return displayName?.takeIf { it.isNotBlank() } ?: email
 }
 
-private fun VaultV2Item.matchesStorageFilter(
+internal fun VaultV2Item.matchesStorageFilter(
 	selection: UnifiedCategoryFilterSelection,
 	localCategoryIdsInScope: Set<Long>,
 ): Boolean {
@@ -1120,7 +1128,8 @@ internal fun VaultV2Item.isLocalOnly(): Boolean {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.isVaultV2LocalOnly() == true
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.isVaultV2LocalOnly() == true
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.isVaultV2LocalOnly() == true
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.isVaultV2LocalOnly() == true
 	}
 }
@@ -1131,7 +1140,8 @@ internal fun VaultV2Item.categoryId(): Long? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.categoryId
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.categoryId
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.categoryId
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.categoryId
 	}
 }
@@ -1142,7 +1152,8 @@ internal fun VaultV2Item.keepassDatabaseId(): Long? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.keepassDatabaseId
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.keepassDatabaseId
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.keepassDatabaseId
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.keepassDatabaseId
 	}
 }
@@ -1153,7 +1164,8 @@ internal fun VaultV2Item.keepassGroupPath(): String? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.keepassGroupPath
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.keepassGroupPath
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.keepassGroupPath
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.keepassGroupPath
 	}
 }
@@ -1164,7 +1176,8 @@ internal fun VaultV2Item.keepassGroupUuid(): String? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.keepassGroupUuid
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.keepassGroupUuid
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.keepassGroupUuid
 		VaultV2ItemType.PASSKEY -> null
 	}
 }
@@ -1175,7 +1188,8 @@ internal fun VaultV2Item.bitwardenVaultId(): Long? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.bitwardenVaultId
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.bitwardenVaultId
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.bitwardenVaultId
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.bitwardenVaultId
 	}
 }
@@ -1186,7 +1200,8 @@ internal fun VaultV2Item.bitwardenFolderId(): String? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.bitwardenFolderId
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.bitwardenFolderId
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.bitwardenFolderId
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.bitwardenFolderId
 	}
 }
@@ -1197,7 +1212,8 @@ internal fun VaultV2Item.mdbxDatabaseId(): Long? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.mdbxDatabaseId
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.mdbxDatabaseId
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.mdbxDatabaseId
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.mdbxDatabaseId
 	}
 }
@@ -1208,7 +1224,8 @@ internal fun VaultV2Item.mdbxFolderId(): String? {
 		VaultV2ItemType.AUTHENTICATOR -> totpItem?.mdbxFolderId
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> secureItem?.mdbxFolderId
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> secureItem?.mdbxFolderId
 		VaultV2ItemType.PASSKEY -> passkeyEntry?.mdbxFolderId
 	}
 }
@@ -1368,12 +1385,13 @@ internal fun buildVaultV2VisibleListState(
 	config: VaultV2VisibleListConfig,
 ): VaultV2VisibleListState {
 	val filteredItems = allItems.asSequence().filter { item ->
-		config.isArchiveView || item.matchesStorageFilter(
+		item.matchesStorageFilter(
 			selection = config.storageSelection,
 			localCategoryIdsInScope = config.localCategoryIdsInScope,
 		)
 	}.filter { item ->
 		if (!item.matchesDisplayedTypes(config.displayedContentTypes)) return@filter false
+		if (!config.isArchiveView && config.overviewItemType != null && item.type != config.overviewItemType) return@filter false
 		if (
 			!config.isArchiveView &&
 			!item.matchesPasswordQuickFilters(
@@ -1502,6 +1520,7 @@ fun VaultV2Pane(
 	totpViewModel: TotpViewModel,
 	bankCardViewModel: BankCardViewModel,
 	documentViewModel: DocumentViewModel,
+	billingAddressViewModel: takagi.ru.monica.viewmodel.BillingAddressViewModel,
 	noteViewModel: NoteViewModel,
 	passkeyViewModel: PasskeyViewModel,
 	keepassDatabases: List<LocalKeePassDatabase>,
@@ -1515,11 +1534,13 @@ fun VaultV2Pane(
 	onOpenTotp: (Long) -> Unit,
 	onOpenBankCard: (Long) -> Unit,
 	onOpenDocument: (Long) -> Unit,
+	onOpenBillingAddress: (Long) -> Unit,
 	onOpenNote: (Long) -> Unit,
 	onOpenPasskey: (Long) -> Unit,
 	onOpenMdbxCommitHistory: (Long) -> Unit,
 	onOpenHistory: () -> Unit,
 	onOpenTrashPage: () -> Unit,
+	onOpenScopedTrashPage: ((String) -> Unit)? = null,
 	onOpenArchivePage: () -> Unit,
 	onOpenCommonAccountTemplates: () -> Unit,
 	onScanFidoQr: () -> Unit = {},
@@ -1527,6 +1548,7 @@ fun VaultV2Pane(
 	showStandaloneSettingsEntry: Boolean = false,
 	useEmbeddedHistoryPages: Boolean = true,
 	showOnlyLocalData: Boolean = false,
+	isDetailVisible: Boolean = false,
 	appSettings: AppSettings = AppSettings(),
 	securityManager: SecurityManager,
 	biometricEnabled: Boolean,
@@ -1534,7 +1556,10 @@ fun VaultV2Pane(
 ) {
 	// 内嵌历史/回收站页面状态（不切换底部 tab）
 	// 0 = 无, 1 = 时间线, 2 = 回收站
+	val showOverview = appSettings.vaultOverviewEnabled && !state.overviewListOpen && !state.isArchiveView
+	val overviewListState = rememberLazyListState(state.overviewScrollIndex, state.overviewScrollOffset)
 	var vaultHistoryPageMode by rememberSaveable { mutableStateOf(0) }
+	var vaultHistoryTrashScope by rememberSaveable { mutableStateOf<String?>(null) }
 	val timelineViewModel: takagi.ru.monica.viewmodel.TimelineViewModel = viewModel()
 	BackHandler(enabled = vaultHistoryPageMode != 0) {
 		vaultHistoryPageMode = 0
@@ -1551,7 +1576,7 @@ fun VaultV2Pane(
 			} else {
 				takagi.ru.monica.ui.screens.HistoryTab.TIMELINE
 			},
-			initialTrashScopeKey = null,
+			initialTrashScopeKey = vaultHistoryTrashScope,
 			enableTabSwitch = false,
 			showBackButton = true,
 			onNavigateBack = { vaultHistoryPageMode = 0 }
@@ -1566,9 +1591,12 @@ fun VaultV2Pane(
 		onOpenHistory
 	}
 	val handleOpenTrashPage: () -> Unit = if (useEmbeddedHistoryPages) {
-		{ vaultHistoryPageMode = 2 }
+		{
+			vaultHistoryTrashScope = state.toUnifiedCategoryFilterSelection().overviewScope().replace(':', '_')
+			vaultHistoryPageMode = 2
+		}
 	} else {
-		onOpenTrashPage
+		{ onOpenScopedTrashPage?.invoke(state.toUnifiedCategoryFilterSelection().overviewScope().replace(':', '_')) ?: onOpenTrashPage() }
 	}
 	val handleOpenArchivePage: () -> Unit = { state.openArchiveView() }
 
@@ -1578,7 +1606,7 @@ fun VaultV2Pane(
 	var isTopActionsMenuExpanded by rememberSaveable { mutableStateOf(false) }
 	var showBitwardenUnlockDialog by rememberSaveable { mutableStateOf(false) }
 	var showClearBitwardenCacheDialog by rememberSaveable { mutableStateOf(false) }
-	var quickFilterFavorite by rememberSaveable { mutableStateOf(false) }
+	var quickFilterFavorite by rememberSaveable { mutableStateOf(state.overviewFavorites) }
 	var quickFilter2fa by rememberSaveable { mutableStateOf(false) }
 	var quickFilterNotes by rememberSaveable { mutableStateOf(false) }
 	var quickFilterPasskey by rememberSaveable { mutableStateOf(false) }
@@ -1595,6 +1623,40 @@ fun VaultV2Pane(
 		mutableStateOf(emptySet())
 	}
 	val selectedKeys = remember { mutableStateListOf<String>() }
+	val overviewSelection = remember { VaultOverviewSelectionState(selectedKeys) }
+	LaunchedEffect(showOverview) { overviewSelection.clear() }
+	fun resetOverviewFilters() {
+		quickFilterFavorite = false
+		quickFilter2fa = false; quickFilterNotes = false; quickFilterPasskey = false
+		quickFilterBoundNote = false; quickFilterAttachments = false; quickFilterUncategorized = false
+		quickFilterLocalOnly = false; quickFilterManualStackOnly = false; quickFilterNeverStack = false; quickFilterUnstacked = false
+		selectedAggregateTypes = emptySet()
+		selectedKeys.clear()
+		searchQuery = ""; isSearchExpanded = false
+		state.overviewItemType = null; state.overviewFavorites = false
+	}
+	fun openOverviewList(selection: UnifiedCategoryFilterSelection = state.toUnifiedCategoryFilterSelection(),
+		type: VaultV2ItemType? = null, favorites: Boolean = false) {
+		resetOverviewFilters()
+		state.overviewListOpen = true
+		state.overviewItemType = type?.name
+		state.overviewFavorites = favorites
+		quickFilterFavorite = favorites
+		state.clearFolderNavigationHistory()
+		state.updateStorageFilter(selection)
+		state.requestScrollToTop()
+	}
+	fun closeOverviewList() {
+		if (state.isArchiveView) state.closeArchiveView(scrollToTop = false)
+		resetOverviewFilters()
+		state.overviewListOpen = false
+		state.clearFolderNavigationHistory()
+		state.updateStorageFilter(overviewScopeSelection(state.overviewScope ?: appSettings.vaultOverviewConfig.scope))
+	}
+	LaunchedEffect(overviewListState) {
+		snapshotFlow { overviewListState.firstVisibleItemIndex to overviewListState.firstVisibleItemScrollOffset }
+			.collect { (index, offset) -> state.overviewScrollIndex = index; state.overviewScrollOffset = offset }
+	}
 	var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 	var categoryFolderTransferRunning by remember { mutableStateOf(false) }
 	var categoryFolderTransferFailure by remember { mutableStateOf<Triple<Int, Int, String>?>(null) }
@@ -1604,7 +1666,10 @@ fun VaultV2Pane(
 	var observedLayoutModeName by rememberSaveable {
 		mutableStateOf(appSettings.vaultV2LayoutMode.name)
 	}
+	var observedArchiveView by remember { mutableStateOf(state.isArchiveView) }
 	LaunchedEffect(state.isArchiveView) {
+		if (observedArchiveView == state.isArchiveView) return@LaunchedEffect
+		observedArchiveView = state.isArchiveView
 		selectedKeys.clear()
 		state.clearFolderNavigationHistory()
 		pendingFolderScrollRestore = null
@@ -1633,7 +1698,7 @@ fun VaultV2Pane(
 		takagi.ru.monica.bitwarden.repository.BitwardenRepository.getInstance(context)
 	}
 	val bitwardenSyncStatusByVault by bitwardenViewModel.syncStatusByVault.collectAsState()
-	val pullSearchTriggerDistance = remember(density) { with(density) { 40.dp.toPx() } }
+	val pullSearchTriggerDistance = remember(density) { with(density) { PullSearchDefaults.TriggerDistance.toPx() } }
 	val pullSyncTriggerDistance = remember(density) { with(density) { 72.dp.toPx() } }
 	val pullMaxDragDistance = remember(density) { with(density) { 100.dp.toPx() } }
 	val pullAction = rememberPullActionState(
@@ -1669,6 +1734,7 @@ fun VaultV2Pane(
 	val totpItems by totpViewModel.allTotpItems.collectAsState()
 	val bankCardItems by bankCardViewModel.allCards.collectAsState()
 	val documentItems by documentViewModel.allDocuments.collectAsState()
+	val billingAddressItems by billingAddressViewModel.allBillingAddresses.collectAsState()
 	val noteItems by noteViewModel.allNotes.collectAsState()
 	val passkeyItems by passkeyViewModel.allPasskeys.collectAsState()
 
@@ -1714,6 +1780,7 @@ fun VaultV2Pane(
 						totpViewModel = totpViewModel,
 						bankCardViewModel = bankCardViewModel,
 						documentViewModel = documentViewModel,
+						billingAddressViewModel = billingAddressViewModel,
 						noteViewModel = noteViewModel,
 						passkeyViewModel = passkeyViewModel,
 					),
@@ -1768,14 +1835,28 @@ fun VaultV2Pane(
 	}
 	val savedCategoryFilterState by savedCategoryFilterFlow.collectAsState(initial = null)
 	val fastScrollRequestKey = state.fastScrollRequestKey
-	val fastScrollProgress = state.fastScrollProgress
 	LaunchedEffect(
 		state,
 		state.hasInitializedStorageFilter,
 		savedCategoryFilterState,
+		appSettings.vaultOverviewEnabled,
 	) {
-		if (state.hasInitializedStorageFilter) return@LaunchedEffect
+		if (appSettings.vaultOverviewEnabled) {
+			if (state.overviewScope == null) state.overviewScope = appSettings.vaultOverviewConfig.scope
+			if (!state.overviewListOpen && !state.isArchiveView) {
+				state.updateStorageFilter(overviewScopeSelection(state.overviewScope!!))
+			}
+			return@LaunchedEffect
+		}
+		if (state.hasInitializedStorageFilter && state.overviewScope == null) return@LaunchedEffect
 		val persistedFilter = savedCategoryFilterState ?: return@LaunchedEffect
+		if (state.overviewScope != null) {
+			if (state.isArchiveView) state.closeArchiveView(scrollToTop = false)
+			resetOverviewFilters()
+			state.overviewListOpen = false
+			state.overviewScope = null
+			state.clearFolderNavigationHistory()
+		}
 		val restoredFilter = persistedFilter.toVaultV2SavedStorageFilter()
 		state.updateStorageFilter(
 			type = restoredFilter.type,
@@ -1784,8 +1865,8 @@ fun VaultV2Pane(
 			identityKey = restoredFilter.identityKey,
 		)
 	}
-	LaunchedEffect(state.hasInitializedStorageFilter) {
-		if (!state.hasInitializedStorageFilter) return@LaunchedEffect
+	LaunchedEffect(state.hasInitializedStorageFilter, appSettings.vaultOverviewEnabled) {
+		if (!state.hasInitializedStorageFilter || appSettings.vaultOverviewEnabled) return@LaunchedEffect
 		snapshotFlow {
 			listOf(
 				state.storageFilterType,
@@ -1854,7 +1935,7 @@ fun VaultV2Pane(
 		viewModel = bitwardenViewModel,
 		selectedVaultId = selectedBitwardenVaultId,
 		isAllView = storageSelection is UnifiedCategoryFilterSelection.All,
-		enabled = state.hasInitializedStorageFilter,
+		enabled = state.hasInitializedStorageFilter && !showOverview,
 	)
 	DisposableEffect(Unit) {
 		onDispose {
@@ -1929,7 +2010,8 @@ fun VaultV2Pane(
 			null
 		}
 	}
-	LaunchedEffect(selectedMdbxDatabaseId, mdbxDatabases.map { it.id }) {
+	LaunchedEffect(selectedMdbxDatabaseId, mdbxDatabases.map { it.id }, showOverview) {
+		if (showOverview) return@LaunchedEffect
 		selectedMdbxDatabaseId?.let { databaseId ->
 			if (mdbxDatabases.any { it.id == databaseId }) {
 				mdbxViewModel?.activateMdbxDatabase(databaseId)
@@ -1938,7 +2020,8 @@ fun VaultV2Pane(
 			}
 		}
 	}
-	LaunchedEffect(selectedKeePassDatabaseId, keepassDatabases.map { it.id }) {
+	LaunchedEffect(selectedKeePassDatabaseId, keepassDatabases.map { it.id }, showOverview) {
+		if (showOverview) return@LaunchedEffect
 		val databaseId = selectedKeePassDatabaseId ?: return@LaunchedEffect
 		if (keepassDatabases.none { it.id == databaseId }) {
 			state.clearFolderNavigationHistory()
@@ -2046,6 +2129,9 @@ fun VaultV2Pane(
 	val visibleNoteItems = remember(noteItems, showOnlyLocalData, state.isArchiveView) {
 		if (state.isArchiveView) emptyList() else if (showOnlyLocalData) noteItems.filter { it.isVaultV2LocalOnly() } else noteItems
 	}
+	val visibleBillingAddressItems = remember(billingAddressItems, showOnlyLocalData, state.isArchiveView) {
+		if (state.isArchiveView) emptyList() else if (showOnlyLocalData) billingAddressItems.filter { it.isVaultV2LocalOnly() } else billingAddressItems
+	}
 	val visiblePasskeyItems = remember(passkeyItems, showOnlyLocalData, state.isArchiveView) {
 		if (state.isArchiveView) emptyList() else if (showOnlyLocalData) passkeyItems.filter { it.isVaultV2LocalOnly() } else passkeyItems
 	}
@@ -2061,8 +2147,9 @@ fun VaultV2Pane(
 			}
 		}
 	}
-	val selectedKeePassGroupsFlow = remember(localKeePassViewModel, selectedKeePassDatabaseId) {
-		selectedKeePassDatabaseId?.let(localKeePassViewModel::getGroups) ?: flowOf(emptyList())
+	val selectedKeePassGroupsFlow = remember(localKeePassViewModel, selectedKeePassDatabaseId, showOverview) {
+		if (showOverview) flowOf(emptyList())
+		else selectedKeePassDatabaseId?.let(localKeePassViewModel::getGroups) ?: flowOf(emptyList())
 	}
 	val selectedKeePassGroups by selectedKeePassGroupsFlow.collectAsState(initial = emptyList())
 	val quickFilterVisibleTypes = remember {
@@ -2120,8 +2207,8 @@ fun VaultV2Pane(
 			(quickFilterNeverStack && PasswordListQuickFilterItem.NEVER_STACK in configuredQuickFilterItems) ||
 			(quickFilterUnstacked && PasswordListQuickFilterItem.UNSTACKED in configuredQuickFilterItems)
 	}
-	val manualStackEntryRevisions = remember(visiblePasswordEntries) {
-		visiblePasswordEntries.map { entry ->
+	val manualStackEntryRevisions = remember(visiblePasswordEntries, shouldLoadManualStackMetadata) {
+		if (!shouldLoadManualStackMetadata) emptyList() else visiblePasswordEntries.map { entry ->
 			VaultV2PasswordRevision(
 				id = entry.id,
 				updatedAtMillis = entry.updatedAt?.time ?: Long.MIN_VALUE,
@@ -2267,13 +2354,13 @@ fun VaultV2Pane(
 	) {
 		buildCategoryMenuQuickFilterBindings(
 			quickFilterFavorite = quickFilterFavorite,
-			onQuickFilterFavoriteChange = { quickFilterFavorite = it },
+			onQuickFilterFavoriteChange = { quickFilterFavorite = it; state.overviewFavorites = it },
 			quickFilter2fa = quickFilter2fa,
 			onQuickFilter2faChange = { quickFilter2fa = it },
 			quickFilterNotes = quickFilterNotes,
-			onQuickFilterNotesChange = { quickFilterNotes = it },
+			onQuickFilterNotesChange = { quickFilterNotes = it; state.overviewItemType = null },
 			quickFilterPasskey = quickFilterPasskey,
-			onQuickFilterPasskeyChange = { quickFilterPasskey = it },
+			onQuickFilterPasskeyChange = { quickFilterPasskey = it; state.overviewItemType = null },
 			quickFilterBoundNote = quickFilterBoundNote,
 			onQuickFilterBoundNoteChange = { quickFilterBoundNote = it },
 			quickFilterAttachments = quickFilterAttachments,
@@ -2291,6 +2378,7 @@ fun VaultV2Pane(
 			aggregateSelectedTypes = selectedAggregateTypes,
 			aggregateVisibleTypes = quickFilterVisibleTypes,
 			onToggleAggregateType = { type ->
+                state.overviewItemType = null
 				selectedAggregateTypes = toggleVaultV2ContentType(
 					currentTypes = selectedAggregateTypes,
 					toggledType = type,
@@ -2311,6 +2399,7 @@ fun VaultV2Pane(
 		totpItems,
 		bankCardItems,
 		documentItems,
+		billingAddressItems,
 		noteItems,
 		passkeyItems,
 	) {
@@ -2319,6 +2408,7 @@ fun VaultV2Pane(
 			totpItems = totpItems,
 			bankCardItems = bankCardItems,
 			documentItems = documentItems,
+			billingAddressItems = billingAddressItems,
 			noteItems = noteItems,
 			passkeyItems = passkeyItems,
 		)
@@ -2484,6 +2574,16 @@ fun VaultV2Pane(
 				passkeys = passkeyDeferred.await(),
 				bankCards = bankCardDeferred.await(),
 				documents = documentDeferred.await(),
+				billingAddresses = visibleBillingAddressItems.map { item ->
+					val data = billingAddressViewModel.parseAddressData(item.itemData)
+					VaultV2Item(
+						key = "billing_address:${item.id}", type = VaultV2ItemType.BILLING_ADDRESS,
+						title = item.title, subtitle = data?.fullName.orEmpty(),
+						isFavorite = item.isFavorite, sortKey = normalizedVaultV2SortKey(item.title),
+						searchableValues = listOf(item.title, data?.fullName.orEmpty(), data?.city.orEmpty()),
+						secureItem = item,
+					)
+				},
 			)
 		}
 
@@ -2493,7 +2593,7 @@ fun VaultV2Pane(
 				secondaryLists.notes +
 				secondaryLists.passkeys +
 				secondaryLists.bankCards +
-				secondaryLists.documents
+				secondaryLists.documents + secondaryLists.billingAddresses
 		).sortedWith(
 				compareBy<VaultV2Item> { it.sortKey.lowercase(Locale.ROOT) }
 					.thenBy { it.type.ordinal }
@@ -2519,8 +2619,8 @@ fun VaultV2Pane(
 		}
 	}
 	val computedListState = computedListStateAsync.value
-	val passwordById = remember(visiblePasswordEntries) {
-		visiblePasswordEntries.associateBy { it.id }
+	val passwordById = remember(visiblePasswordEntries, showOverview) {
+		if (showOverview) emptyMap() else visiblePasswordEntries.associateBy { it.id }
 	}
 
 	var isAutoScrollingToTop by remember { mutableStateOf(false) }
@@ -2558,16 +2658,18 @@ fun VaultV2Pane(
 			selectedAggregateTypes.isNotEmpty()
 	}
 	val useHierarchicalLayout = remember(
+		showOverview,
 		appSettings.vaultV2LayoutMode,
 		normalizedQuery,
 		state.isArchiveView,
 		storageSelection,
 		hasHierarchyBreakingQuickFilter,
+		state.overviewItemType,
 	) {
-		appSettings.vaultV2LayoutMode == VaultV2LayoutMode.HIERARCHICAL &&
+		!showOverview && appSettings.vaultV2LayoutMode == VaultV2LayoutMode.HIERARCHICAL &&
 			normalizedQuery.isBlank() &&
 			!state.isArchiveView &&
-			!hasHierarchyBreakingQuickFilter &&
+			!hasHierarchyBreakingQuickFilter && state.overviewItemType == null &&
 			storageSelection.supportsVaultV2FolderHierarchy()
 	}
 
@@ -2585,7 +2687,7 @@ fun VaultV2Pane(
 	}
 
 	BackHandler(
-		enabled = selectedKeys.isNotEmpty() ||
+		enabled = state.overviewListOpen || selectedKeys.isNotEmpty() ||
 			state.isArchiveView ||
 			isSearchExpanded ||
 			(useHierarchicalLayout && state.hasFolderNavigationHistory)
@@ -2607,10 +2709,13 @@ fun VaultV2Pane(
 					)
 				}
 			}
+			state.overviewListOpen || appSettings.vaultOverviewEnabled -> closeOverviewList()
 			else -> state.closeArchiveView()
 		}
 	}
+	val overviewItemType = state.overviewItemType?.let { runCatching { VaultV2ItemType.valueOf(it) }.getOrNull() }
 	val visibleSnapshotKey = remember(
+		overviewItemType,
 		storageSelection,
 		localCategoryIdsInScope,
 		displayedContentTypes,
@@ -2633,6 +2738,7 @@ fun VaultV2Pane(
 		state.isArchiveView,
 	) {
 		VaultV2VisibleSnapshotKey(
+			overviewItemType = overviewItemType,
 			storageSelection = storageSelection,
 			localCategoryIdsInScope = localCategoryIdsInScope,
 			displayedContentTypes = displayedContentTypes,
@@ -2671,6 +2777,7 @@ fun VaultV2Pane(
 		}
 	}
 	val visibleListConfig = remember(
+		overviewItemType,
 		storageSelection,
 		localCategoryIdsInScope,
 		displayedContentTypes,
@@ -2693,6 +2800,7 @@ fun VaultV2Pane(
 		state.isArchiveView,
 	) {
 		VaultV2VisibleListConfig(
+			overviewItemType = overviewItemType,
 			storageSelection = storageSelection,
 			localCategoryIdsInScope = localCategoryIdsInScope,
 			displayedContentTypes = displayedContentTypes,
@@ -2716,12 +2824,18 @@ fun VaultV2Pane(
 		)
 	}
 	val displayListSeed = remember(
+		showOverview,
 		computedSnapshotSeed,
 		visibleSnapshotSeed,
 		visibleListConfig,
 		currentPasswordItems,
 	) {
-		buildVaultV2InitialDisplayListStateFromItems(
+		// The overview consumes the shared source snapshot directly. Do not sort,
+		// merge or group the hidden classic list during composition or scope changes.
+		if (showOverview) VaultV2DisplayListState(
+			allItemsRaw = computedSnapshotSeed.value.allItemsRaw,
+			visibleListState = VaultV2VisibleListState(),
+		) else buildVaultV2InitialDisplayListStateFromItems(
 			currentPasswordItems = currentPasswordItems,
 			config = visibleListConfig,
 			retainedComputedItems = computedSnapshotSeed.value.allItemsRaw
@@ -2731,13 +2845,14 @@ fun VaultV2Pane(
 		)
 	}
 	val displayListStateAsync = rememberVaultV2AsyncComputedValue(
+		enabled = !showOverview,
 		computationKey = Triple(
 			computedListState.allItemsRaw,
 			currentPasswordItems,
 			visibleListConfig,
 		),
 		initialValue = displayListSeed,
-		initialHasComputed = computedSnapshotSeed.hasSnapshot && visibleSnapshotSeed.hasSnapshot,
+		initialHasComputed = !showOverview && computedSnapshotSeed.hasSnapshot && visibleSnapshotSeed.hasSnapshot,
 	) {
 		buildVaultV2DisplayListStateFromItems(
 			computedItems = computedListState.allItemsRaw,
@@ -2766,7 +2881,7 @@ fun VaultV2Pane(
 			}
 		}
 	}
-	val allItems = displayedListState.allItemsRaw
+	val allItems = if (showOverview) computedListState.allItemsRaw else displayedListState.allItemsRaw
 	val visibleListState = displayedListState.visibleListState
 	LaunchedEffect(
 		visibleSnapshotKey,
@@ -2897,10 +3012,14 @@ fun VaultV2Pane(
 	val showVaultLoadingIndicator = !hasDisplayedContent && isVaultListLoading
 
 	val selectedCount by remember { derivedStateOf { selectedKeys.size } }
-	val selectedItems by remember(allItems) {
+	val selectionCandidates = if (showOverview) {
+		overviewSelection.searchResults
+			?: state.overviewSnapshot?.selectablePreview(overviewSelection.module, appSettings.vaultOverviewConfig).orEmpty()
+	} else allItems
+	val selectedItems by remember(selectionCandidates) {
 		derivedStateOf {
 			val keySet = selectedKeys.toSet()
-			allItems.filter { it.key in keySet }
+			selectionCandidates.filter { it.key in keySet }
 		}
 	}
 	val currentSectionIndicatorLabel by remember(
@@ -2930,10 +3049,13 @@ fun VaultV2Pane(
 
 	LaunchedEffect(selectedCount) {
 		state.updateSelectionCount(selectedCount)
+		if (selectedCount == 0) showDeleteConfirmDialog = false
 	}
 
-	LaunchedEffect(showBackToTop, selectedCount) {
-		state.showBackToTop = showBackToTop && selectedCount == 0
+	LaunchedEffect(showBackToTop, selectedCount, showOverview, overviewListState) {
+		if (showOverview) snapshotFlow { overviewListState.firstVisibleItemIndex > 3 }
+			.collect { state.showBackToTop = it && selectedCount == 0 }
+		else state.showBackToTop = showBackToTop && selectedCount == 0
 	}
 
 	DisposableEffect(Unit) {
@@ -2943,6 +3065,11 @@ fun VaultV2Pane(
 	}
 
 	LaunchedEffect(state.scrollToTopRequestKey) {
+		if (showOverview) {
+			if (state.scrollToTopRequestKey > lastHandledScrollToTopRequestKey) overviewListState.animateScrollToItem(0)
+			lastHandledScrollToTopRequestKey = state.scrollToTopRequestKey
+			return@LaunchedEffect
+		}
 		if (state.scrollToTopRequestKey > lastHandledScrollToTopRequestKey) {
 			isAutoScrollingToTop = true
 			try {
@@ -2985,7 +3112,7 @@ fun VaultV2Pane(
 		}
 	}
 
-	LaunchedEffect(fastScrollRequestKey, fastScrollProgress, sectionLayouts, filteredItems.size) {
+	LaunchedEffect(fastScrollRequestKey, sectionLayouts, filteredItems.size) {
 		if (fastScrollRequestKey <= lastHandledFastScrollRequestKey) {
 			return@LaunchedEffect
 		}
@@ -2996,7 +3123,7 @@ fun VaultV2Pane(
 		}
 
 		val targetItemIndex = (
-			fastScrollProgress.coerceIn(0f, 1f) * (filteredItems.size - 1)
+			state.fastScrollProgress.coerceIn(0f, 1f) * (filteredItems.size - 1)
 		).roundToInt().coerceIn(0, filteredItems.size - 1)
 		val targetLazyIndex = vaultV2LazyIndexForItemIndex(
 			sectionLayouts = sectionLayouts,
@@ -3066,20 +3193,88 @@ fun VaultV2Pane(
 		stringResource(R.string.no_results)
 	}
 
+	val pageMotion = rememberVaultOverviewPageMotion(
+		showOverview = showOverview,
+		enabled = appSettings.vaultOverviewEnabled && !appSettings.reduceAnimations,
+	)
 	Box(
 		modifier = modifier
 			.fillMaxSize()
+			.clipToBounds()
+			.then(pageMotion)
 	) {
+		if (showOverview) {
+			VaultOverviewContent(
+				itemsReady = computedListStateAsync.hasComputed && selectedPasswordEntriesReady,
+				allItems = allItems, archivedPasswords = archivedPasswordEntries, categories = categories,
+				keepassDatabases = keepassDatabases, mdbxDatabases = mdbxDatabases, bitwardenVaults = bitwardenVaults,
+				passwordViewModel = passwordViewModel, localKeePassViewModel = localKeePassViewModel,
+				settingsViewModel = settingsViewModel, appSettings = appSettings, securityManager = securityManager,
+				currentScope = state.overviewScope ?: appSettings.vaultOverviewConfig.scope,
+				listState = overviewListState,
+				selectedCardKey = state.overviewCardKey,
+				onSelectedCardChange = { state.overviewCardKey = it },
+				cardStackState = state.overviewCardStack,
+				isDetailVisible = isDetailVisible,
+				retainedSnapshot = state.overviewSnapshot,
+				onSnapshotReady = { state.overviewSnapshot = it },
+				onSelectScope = { selectedScope ->
+					overviewSelection.clear()
+					state.overviewScope = selectedScope
+					state.overviewCardKey = null
+					state.overviewCardStack.clear()
+					state.updateStorageFilter(overviewScopeSelection(selectedScope))
+					settingsViewModel.updateVaultOverviewConfig { it.copy(scope = selectedScope) }
+					scope.launch { overviewListState.scrollToItem(0) }
+				},
+				onOpenSource = { openOverviewList(overviewScopeSelection(it)) },
+				onOpenItem = { item -> when (item.type) {
+					VaultV2ItemType.PASSWORD -> item.passwordEntry?.id?.let(onOpenPassword)
+					VaultV2ItemType.AUTHENTICATOR -> item.totpItem?.id?.let(onOpenTotp)
+						?: item.boundPasswordId?.let(onOpenPassword)
+					VaultV2ItemType.NOTE -> item.secureItem?.id?.let(onOpenNote)
+					VaultV2ItemType.PASSKEY -> item.passkeyEntry?.id?.takeIf { it > 0 }?.let(onOpenPasskey)
+					VaultV2ItemType.BANK_CARD -> item.secureItem?.id?.let(onOpenBankCard)
+					VaultV2ItemType.DOCUMENT -> item.secureItem?.id?.let(onOpenDocument)
+					VaultV2ItemType.BILLING_ADDRESS -> item.secureItem?.id?.let(onOpenBillingAddress)
+				} },
+				onOpenType = { openOverviewList(type = it) },
+				onOpenFolder = { openOverviewList(selection = it.target) },
+				onFavorites = { openOverviewList(favorites = true) },
+				onArchive = { openOverviewList(); state.openArchiveView() },
+				onTrash = { overviewSelection.clear(); handleOpenTrashPage() },
+				onAllItems = { openOverviewList() },
+				onSearch = { overviewSelection.clear() },
+				onUnlock = {
+					if (selectedBitwardenVaultId != null) showBitwardenUnlockDialog = true
+					else selectedKeePassDatabaseId?.let(localKeePassViewModel::openNativeManager)
+				},
+				selection = overviewSelection,
+				onRequestDeleteItem = { item ->
+					if (overviewSelection.searchResults != null) overviewSelection.selectSearch(listOf(item.key))
+					else overviewSelection.selectAll(VaultOverviewModule.FAVORITES, listOf(item.key))
+					showDeleteConfirmDialog = true
+				},
+			)
+		} else {
 		Column(modifier = Modifier.fillMaxSize()) {
 			ExpressiveTopBar(
-				title = topBarTitle,
+				title = when {
+					state.isArchiveView -> topBarTitle
+					overviewItemType != null -> stringResource(overviewItemType.titleRes())
+					state.overviewFavorites -> stringResource(R.string.vault_overview_favorites)
+					else -> topBarTitle
+				},
 				searchQuery = searchQuery,
 				onSearchQueryChange = { searchQuery = it },
 				isSearchExpanded = isSearchExpanded,
-				onSearchExpandedChange = { isSearchExpanded = it },
+				searchBackEnabled = selectedCount == 0,
+				onSearchExpandedChange = {
+					isSearchExpanded = it
+				},
 				searchHint = stringResource(R.string.topbar_search_hint),
 				actions = {
-					if (state.isArchiveView) {
+					if (state.isArchiveView && !appSettings.vaultOverviewEnabled) {
 						IconButton(onClick = state::closeArchiveView) {
 							Icon(
 								imageVector = Icons.Default.Lock,
@@ -3109,13 +3304,13 @@ fun VaultV2Pane(
 									bitwardenVaults = bitwardenVaults,
 									configuredQuickFilterItems = configuredQuickFilterItems,
 									quickFilterFavorite = quickFilterFavorite,
-									onQuickFilterFavoriteChange = { quickFilterFavorite = it },
+									onQuickFilterFavoriteChange = { quickFilterFavorite = it; state.overviewFavorites = it },
 									quickFilter2fa = quickFilter2fa,
 									onQuickFilter2faChange = { quickFilter2fa = it },
 									quickFilterNotes = quickFilterNotes,
-									onQuickFilterNotesChange = { quickFilterNotes = it },
+									onQuickFilterNotesChange = { quickFilterNotes = it; state.overviewItemType = null },
 									quickFilterPasskey = quickFilterPasskey,
-									onQuickFilterPasskeyChange = { quickFilterPasskey = it },
+									onQuickFilterPasskeyChange = { quickFilterPasskey = it; state.overviewItemType = null },
 									quickFilterBoundNote = quickFilterBoundNote,
 									onQuickFilterBoundNoteChange = { quickFilterBoundNote = it },
 									quickFilterAttachments = quickFilterAttachments,
@@ -3133,6 +3328,7 @@ fun VaultV2Pane(
 									aggregateSelectedTypes = selectedAggregateTypes,
 									aggregateVisibleTypes = quickFilterVisibleTypes,
 									onToggleAggregateType = { type ->
+                state.overviewItemType = null
 										selectedAggregateTypes = toggleVaultV2ContentType(
 											currentTypes = selectedAggregateTypes,
 											toggledType = type,
@@ -3444,7 +3640,7 @@ fun VaultV2Pane(
 			val contentPullOffset = pullAction.currentOffset.toInt()
 			val listInteractionModifier = Modifier
 				.offset { IntOffset(x = 0, y = contentPullOffset) }
-				.nestedScroll(pullAction.nestedScrollConnection)
+				.then(pullAction.gestureModifier)
 				.then(
 					if (sectionedItems.isEmpty() && folderRows.isEmpty()) {
 						Modifier.pointerInput(Unit) {
@@ -3467,6 +3663,11 @@ fun VaultV2Pane(
 					.fillMaxWidth()
 					.then(listInteractionModifier),
 			) {
+			PullSearchHint(
+				currentOffset = pullAction.currentOffset,
+				triggerDistance = pullSearchTriggerDistance,
+				modifier = Modifier.offset { IntOffset(0, -contentPullOffset) },
+			)
 			VaultV2List(
 				hasVisibleQuickFilters = showQuickFiltersInList,
 				hasVisibleCategoryQuickFilters = showCategoryQuickFiltersInList,
@@ -3538,6 +3739,7 @@ fun VaultV2Pane(
 						}
 						VaultV2ItemType.BANK_CARD -> item.secureItem?.id?.let(onOpenBankCard)
 						VaultV2ItemType.DOCUMENT -> item.secureItem?.id?.let(onOpenDocument)
+						VaultV2ItemType.BILLING_ADDRESS -> item.secureItem?.id?.let(onOpenBillingAddress)
 					}
 				},
 			)
@@ -3545,6 +3747,7 @@ fun VaultV2Pane(
 				listState = listState,
 				modifier = Modifier
 					.align(Alignment.CenterEnd)
+					.testTag("vault_scrollbar")
 					.padding(vertical = 8.dp),
 				labelForIndex = { lazyIndex ->
 					vaultV2SectionTitleForLazyIndex(
@@ -3557,6 +3760,7 @@ fun VaultV2Pane(
 		}
 		}
 
+		}
 		if (appSettings.categorySelectionUiMode != CategorySelectionUiMode.CHIP_MENU) {
 			UnifiedCategoryFilterBottomSheet(
 				visible = isStorageFilterSheetVisible,
@@ -3904,8 +4108,15 @@ fun VaultV2Pane(
 				selectedCount = selectedCount,
 				onExit = { selectedKeys.clear() },
 				onSelectAll = {
-					selectedKeys.clear()
-					selectedKeys.addAll(filteredItems.map { it.key })
+					val overviewModule = overviewSelection.module
+					if (showOverview && overviewSelection.searchResults != null) {
+						overviewSelection.selectSearch(selectionCandidates.map { it.key })
+					} else if (showOverview && overviewModule != null) {
+						overviewSelection.selectAll(overviewModule, selectionCandidates.map { it.key })
+					} else {
+						selectedKeys.clear()
+						selectedKeys.addAll(filteredItems.map { it.key })
+					}
 				},
 				onMoveToCategory = { showVaultMoveSheet = true },
 				onFavorite = {
@@ -3957,16 +4168,24 @@ fun VaultV2Pane(
 								VaultV2ItemType.DOCUMENT -> {
 									item.secureItem?.id?.let(documentViewModel::toggleFavorite)
 								}
+								VaultV2ItemType.BILLING_ADDRESS -> {
+									item.secureItem?.id?.let(billingAddressViewModel::toggleFavorite)
+								}
 							}
 						}
 						// 必须在协程内、所有操作完成后再清空，否则 selectedItems 会提前变空
 						selectedKeys.clear()
 					}
 				},
-				onDelete = {
+				onRemoveFromFrequent = if (showOverview && overviewSelection.module == VaultOverviewModule.ITEMS) ({
+					val identities = selectedItems.map { it.overviewIdentity() }
+					settingsViewModel.updateVaultOverviewConfig { it.removeFrequentItems(identities) }
+					overviewSelection.clear()
+				}) else null,
+				onDelete = if (showOverview && overviewSelection.module == VaultOverviewModule.ITEMS) null else ({
 					// 先弹确认对话框，不直接删除
 					showDeleteConfirmDialog = true
-				},
+				}),
 			)
 
 			// 删除二次确认对话框（带指纹/密码验证）
@@ -3995,6 +4214,9 @@ fun VaultV2Pane(
 							}
 							VaultV2ItemType.DOCUMENT -> {
 								item.secureItem?.id?.let(documentViewModel::deleteDocument)
+							}
+							VaultV2ItemType.BILLING_ADDRESS -> {
+								item.secureItem?.id?.let(billingAddressViewModel::deleteAddress)
 							}
 						}
 					}
@@ -4074,6 +4296,7 @@ fun VaultV2Pane(
 							totpViewModel = totpViewModel,
 							bankCardViewModel = bankCardViewModel,
 							documentViewModel = documentViewModel,
+							billingAddressViewModel = billingAddressViewModel,
 							noteViewModel = noteViewModel,
 							passkeyViewModel = passkeyViewModel,
 						)
@@ -4283,14 +4506,14 @@ private fun VaultV2List(
 		state = listState,
 		modifier = modifier,
 		contentPadding = PaddingValues(start = 12.dp, end = 28.dp, top = 8.dp, bottom = 96.dp),
-	verticalArrangement = Arrangement.spacedBy(6.dp),
+		verticalArrangement = Arrangement.spacedBy(GroupedItemDefaults.Spacing),
 	) {
 		if (hasVisibleQuickFilters || hasVisibleCategoryQuickFilters) {
 			item(key = "filter_row", contentType = "filter_row") {
 				Column(
 					modifier = Modifier
 						.fillMaxWidth()
-						.padding(bottom = 4.dp),
+						.padding(bottom = 8.dp),
 					verticalArrangement = Arrangement.spacedBy(0.dp)
 				) {
 					if (hasVisibleQuickFilters) {
@@ -4315,16 +4538,17 @@ private fun VaultV2List(
 			}
 		}
 
-		items(
+		itemsIndexed(
 			items = folderRows,
-			key = VaultV2FolderRowModel::key,
-			contentType = { "folder_row" },
-		) { folderRow ->
+			key = { _, row -> row.key },
+			contentType = { _, _ -> "folder_row" },
+		) { index, folderRow ->
 			VaultV2FolderRow(
 				row = folderRow,
 				onClick = { onOpenFolder(folderRow.targetFilter) },
 				onLongClick = { onLongClickFolder(folderRow) },
 				selected = selectedFolderKey == folderRow.key,
+				shape = GroupedItemDefaults.shape(index, folderRows.size),
 			)
 		}
 
@@ -4336,7 +4560,7 @@ private fun VaultV2List(
 					color = MaterialTheme.colorScheme.onSurfaceVariant,
 					modifier = Modifier
 						.fillMaxWidth()
-						.padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
+						.padding(start = 12.dp, end = 12.dp, top = 14.dp, bottom = 6.dp),
 				)
 			}
 		}
@@ -4379,16 +4603,17 @@ private fun VaultV2List(
 					color = MaterialTheme.colorScheme.onSurfaceVariant,
 					modifier = Modifier
 						.fillMaxWidth()
-						.padding(horizontal = 12.dp, vertical = 4.dp),
+						.padding(horizontal = 12.dp, vertical = 8.dp),
 				)
 			}
 
-			items(
+			itemsIndexed(
 				items = itemsInSection,
-				key = { item -> item.key },
-				contentType = { item -> item.type },
-			) { item ->
+				key = { _, item -> item.key },
+				contentType = { _, item -> item.type },
+			) { index, item ->
 				val selected = item.key in selectedKeys
+				val cardShape = GroupedItemDefaults.shape(index, itemsInSection.size)
 				SwipeActions(
 					onSwipeLeft = { onRequestDeleteItem(item) },
 					onSwipeRight = {
@@ -4398,7 +4623,8 @@ private fun VaultV2List(
 							selectedKeys.add(item.key)
 						}
 					},
-					isSwiped = false
+					isSwiped = false,
+					cardShape = cardShape,
 				) {
 					VaultV2ItemCard(
 						item = item,
@@ -4410,6 +4636,7 @@ private fun VaultV2List(
 						appSettings = appSettings,
 						securityManager = securityManager,
 						selected = selected,
+						cardShape = cardShape,
 						onClick = {
 							if (selectedKeys.isNotEmpty()) {
 								if (selected) {
@@ -4555,6 +4782,7 @@ private fun VaultV2ItemCard(
 	appSettings: AppSettings,
 	securityManager: SecurityManager,
 	selected: Boolean,
+	cardShape: Shape,
 	onClick: () -> Unit,
 	onLongClick: () -> Unit,
 ) {
@@ -4564,10 +4792,9 @@ private fun VaultV2ItemCard(
 		VaultV2ItemType.NOTE -> Icons.Default.Description
 		VaultV2ItemType.PASSKEY -> Icons.Default.VpnKey
 		VaultV2ItemType.BANK_CARD -> Icons.Default.CreditCard
-		VaultV2ItemType.DOCUMENT -> Icons.Default.Badge
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> Icons.Default.Badge
 	}
-	val unmatchedIconStrategy = UnmatchedIconHandlingStrategy.DEFAULT_ICON
-
 	val passwordIconSource = item.passwordEntry ?: boundPassword
 	val totpData = remember(item.totpItem?.itemData, item.totpItem?.title, securityManager) {
 		item.totpItem?.let { totpItem ->
@@ -4605,43 +4832,6 @@ private fun VaultV2ItemCard(
 		passwordIconSource != null -> passwordIconSource.customIconValue
 		else -> totpData?.customIconValue
 	}
-	val simpleIcon = if (customIconType == PASSWORD_ICON_TYPE_SIMPLE) {
-		rememberSimpleIconBitmap(
-			slug = customIconValue,
-			tintColor = MaterialTheme.colorScheme.primary,
-			enabled = true
-		)
-	} else {
-		null
-	}
-	val uploadedIcon = if (customIconType == PASSWORD_ICON_TYPE_UPLOADED) {
-		rememberUploadedPasswordIcon(customIconValue)
-	} else {
-		null
-	}
-	val autoMatchedSimpleIcon = rememberAutoMatchedSimpleIcon(
-		website = iconWebsite,
-		title = iconTitle,
-		appPackageName = iconAppPackage.ifBlank { null },
-		tintColor = MaterialTheme.colorScheme.primary,
-		enabled = customIconType == PASSWORD_ICON_TYPE_NONE
-	)
-	val favicon = if (iconWebsite.isNotBlank()) {
-		takagi.ru.monica.autofill_ng.ui.rememberFavicon(
-			url = iconWebsite,
-			enabled = autoMatchedSimpleIcon.resolved && autoMatchedSimpleIcon.slug == null
-		)
-	} else {
-		null
-	}
-	val appIcon = if (
-		iconAppPackage.isNotBlank() &&
-		!takagi.ru.monica.autofill_ng.ui.isWebAddress(iconWebsite)
-	) {
-		takagi.ru.monica.autofill_ng.ui.rememberAppIcon(iconAppPackage)
-	} else {
-		null
-	}
 	val authenticatorState = when (item.type) {
 		VaultV2ItemType.PASSWORD -> {
 			val authenticatorKey = item.passwordEntry?.authenticatorKey.orEmpty()
@@ -4678,8 +4868,6 @@ private fun VaultV2ItemCard(
 		else -> null
 	}
 
-	val cardShape = RoundedCornerShape(14.dp)
-
 	Surface(
 		shape = cardShape,
 		color = if (selected) {
@@ -4689,6 +4877,7 @@ private fun VaultV2ItemCard(
 		},
 		modifier = Modifier
 			.fillMaxWidth()
+			.testTag("vault_item_${item.key}")
 			.clip(cardShape)
 			.combinedClickable(onClick = onClick, onLongClick = onLongClick),
 	) {
@@ -4699,57 +4888,14 @@ private fun VaultV2ItemCard(
 			verticalAlignment = Alignment.CenterVertically,
 			horizontalArrangement = Arrangement.spacedBy(10.dp),
 		) {
-			when {
-				simpleIcon != null -> {
-					Image(
-						bitmap = simpleIcon,
-						contentDescription = null,
-						contentScale = ContentScale.Fit,
-						modifier = Modifier.size(40.dp).padding(2.dp)
-					)
-				}
-				uploadedIcon != null -> {
-					Image(
-						bitmap = uploadedIcon,
-						contentDescription = null,
-						contentScale = ContentScale.Fit,
-						modifier = Modifier.size(40.dp).padding(2.dp)
-					)
-				}
-				autoMatchedSimpleIcon.bitmap != null -> {
-					Image(
-						bitmap = autoMatchedSimpleIcon.bitmap,
-						contentDescription = null,
-						contentScale = ContentScale.Fit,
-						modifier = Modifier.size(40.dp).padding(2.dp)
-					)
-				}
-				favicon != null -> {
-					Image(
-						bitmap = favicon,
-						contentDescription = null,
-						contentScale = ContentScale.Crop,
-						modifier = Modifier.size(40.dp).clip(CircleShape)
-					)
-				}
-				appIcon != null -> {
-					Image(
-						bitmap = appIcon,
-						contentDescription = null,
-						contentScale = ContentScale.Crop,
-						modifier = Modifier.size(40.dp).clip(CircleShape)
-					)
-				}
-				shouldShowFallbackSlot(unmatchedIconStrategy) -> {
-					UnmatchedIconFallback(
-						strategy = unmatchedIconStrategy,
-						primaryText = iconWebsite,
-						secondaryText = iconTitle,
-						defaultIcon = icon,
-						iconSize = 40.dp
-					)
-				}
-			}
+			VaultItemIcon(
+				website = iconWebsite,
+				title = iconTitle,
+				appPackageName = iconAppPackage,
+				customIconType = customIconType,
+				customIconValue = customIconValue,
+				defaultIcon = icon,
+			)
 			Spacer(modifier = Modifier.width(2.dp))
 
 			Column(
@@ -5066,7 +5212,8 @@ private fun buildVaultV2ExactDisplayKey(item: VaultV2Item): String {
 
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> {
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> {
 			val secureItem = item.secureItem
 			listOf(
 				item.type.name,
@@ -5151,7 +5298,8 @@ private fun vaultV2UpdatedAtMillis(item: VaultV2Item): Long {
 		VaultV2ItemType.AUTHENTICATOR -> item.totpItem?.updatedAt?.time ?: Long.MIN_VALUE
 		VaultV2ItemType.NOTE,
 		VaultV2ItemType.BANK_CARD,
-		VaultV2ItemType.DOCUMENT -> item.secureItem?.updatedAt?.time ?: Long.MIN_VALUE
+		VaultV2ItemType.DOCUMENT,
+		VaultV2ItemType.BILLING_ADDRESS -> item.secureItem?.updatedAt?.time ?: Long.MIN_VALUE
 		VaultV2ItemType.PASSKEY -> item.passkeyEntry?.lastUsedAt ?: Long.MIN_VALUE
 	}
 }

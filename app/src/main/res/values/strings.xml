@@ -1437,7 +1437,15 @@
     <string name="security_question_preset_8">What is the name of your best friend from childhood?</string>
     <string name="security_question_preset_9">What was your first job?</string>
     <string name="security_question_preset_10">What is your favorite movie?</string>
-    
+
+    <!-- Additional preset security questions used by SecurityQuestionsSetupScreen -->
+    <string name="security_question_born_city">In what city were you born?</string>
+    <string name="security_question_first_car">What was your first car model?</string>
+    <string name="security_question_childhood_food">What was your favorite food as a child?</string>
+    <string name="security_question_grew_up_street">What is the name of the street you grew up on?</string>
+    <string name="security_question_hs_mascot">What was your high school mascot?</string>
+    <string name="security_question_ultraman">Which Ultraman do you like the most?</string>
+
     <!-- Support Author Screen (legacy) -->
     <string name="support_author_description">Enjoying Monica? Your support helps keep it improving.</string>
     <string name="support_author_thanks">Thank You!</string>
@@ -1715,6 +1723,14 @@
     <string name="webdav_change_triggered_min_interval_hint">Each backup re-uploads the full archive. A lower limit means more traffic.</string>
     <string name="webdav_change_triggered_requires_auto_backup">Turn on Auto Backup first</string>
     <string name="webdav_sync_settings_saved">Sync settings saved</string>
+    <string name="webdav_retention_title">Limit backup count</string>
+    <string name="webdav_retention_description">After each successful upload, keep the newest regular backups and delete older ones</string>
+    <string name="webdav_retention_count">Backups to keep</string>
+    <string name="webdav_retention_count_hint">Enter a number from %1$d to %2$d</string>
+    <string name="webdav_retention_permanent_hint">Permanent backups do not count toward this limit and are never automatically deleted.</string>
+    <string name="webdav_retention_disabled_hint">With the limit off, only regular backups older than %1$d days are cleaned up, and at least the newest %2$d are kept.</string>
+    <string name="webdav_cleanup_failed">Backup uploaded, but old backups could not be cleaned up. Cleanup will be retried after the next successful backup.</string>
+    <string name="webdav_backup_unknown_date">Unknown date</string>
     <string name="webdav_auto_backup_enabled">Auto backup enabled</string>
     <string name="webdav_auto_backup_disabled">Auto backup disabled</string>
     <string name="webdav_last_backup">Last backup</string>
@@ -3072,7 +3088,7 @@
     <string name="password_owner_conflict_inline">This entry belongs to multiple vaults. Fix ownership before editing.</string>
     <string name="password_owner_conflict_display">Storage ownership conflicts across Monica, KeePass, or Bitwarden. Repair before editing.</string>
     <string name="password_owner_conflict_copy">This entry has conflicting ownership and its password cannot be copied safely.</string>
-    <string name="pull_release_to_search">Pull to search</string>
+    <string name="pull_release_to_search">Pull down to search</string>
     <string name="pull_release_to_sync_bitwarden">Release to sync Bitwarden</string>
     <string name="pull_syncing_bitwarden">Syncing Bitwarden...</string>
     <string name="pull_sync_requires_bitwarden_login">Please login and unlock Bitwarden first</string>
@@ -3580,6 +3596,10 @@
     <string name="import_type_stratum_title">Stratum Auth</string>
     <string name="import_type_stratum_desc">Import Stratum/AuthPro backup (.stratum/.txt/.html)</string>
     <string name="import_type_stratum_file_hint">Select .stratum / .txt / .html file</string>
+    <string name="import_csv_file_unreadable">Could not read the file. Check that it still exists.</string>
+    <string name="import_csv_file_empty">The file is empty.</string>
+    <string name="import_csv_invalid_format">Invalid file format</string>
+    <string name="import_csv_no_data_found">No data could be imported. Please check the file format.</string>
     <string name="import_type_steam_title">Steam Guard</string>
     <string name="import_type_steam_desc">Import Steam token from maFile</string>
     <string name="import_type_steam_file_hint">Select .maFile file</string>
@@ -4127,7 +4147,7 @@
     <string name="qs_completed">Completed</string>
     <string name="qs_go_setup">Go setup</string>
     <string name="qs_biometric">Biometric verification</string>
-    <string name="qs_biometric_desc">Enable to unlock faster with fingerprint or face</string>
+    <string name="qs_biometric_desc">Verify your identity to enable faster unlocking with fingerprint or face</string>
     <string name="qs_security_questions">Security questions</string>
     <string name="qs_security_questions_set">Already set, used to verify identity when you forget your master password</string>
     <string name="qs_security_questions_unset">Easier to recover if you forget your master password</string>
@@ -4630,4 +4650,26 @@
     <string name="card_face_image_unsupported">Choose a JPEG, PNG, or WebP image.</string>
     <string name="card_face_crop_title">Crop card image</string>
     <string name="card_face_crop_reset">Reset</string>
+
+    <!-- Wallet card stacks -->
+    <string name="wallet_stack_default_name">Card stack</string>
+    <string name="wallet_stack_count">%1$d cards</string>
+    <string name="wallet_stack_create">Create stack</string>
+    <string name="wallet_stack_selected_count">%1$d cards selected</string>
+    <string name="wallet_stack_add_to_existing">Add to an existing stack</string>
+    <string name="wallet_stack_manage">Manage stack</string>
+    <string name="wallet_stack_manage_hint">Reorder cards or remove them from this stack. Removed cards appear individually in your wallet.</string>
+    <string name="wallet_stack_unavailable_card">Unavailable card</string>
+    <string name="wallet_stack_remove_card">Remove from stack</string>
+    <string name="wallet_stack_single_hint">Saving fewer than two cards dissolves the stack.</string>
+    <string name="wallet_stack_dissolve">Dissolve stack</string>
+    <string name="wallet_stack_collapse">Collapse stack</string>
+    <string name="wallet_stack_browse_hint">Swipe up or down to browse</string>
+    <string name="wallet_stack_position">%1$d / %2$d</string>
+    <string name="wallet_stack_save_error">Could not save the card stack. Please try again.</string>
+    <string name="wallet_stack_next">Next card</string>
+    <string name="wallet_stack_previous">Previous card</string>
+    <string name="wallet_stack_open_card">Open card details</string>
+    <string name="language_french">Français</string>
+    <string name="qs_lang_french">Français</string>
 </resources>

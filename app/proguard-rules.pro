@@ -64,6 +64,9 @@
 # Rust JNI uses statically exported Java_* symbols, so R8 must not rename these facades.
 -keep class takagi.ru.monica.rustcore.RustPasswordListCore { *; }
 -keep class takagi.ru.monica.rustcore.RustListSortCore { *; }
+-keep class takagi.ru.monica.rustcore.RustWalletStackCore { *; }
+-keep class takagi.ru.monica.rustcore.RustVaultPickerCore { *; }
+-keep class takagi.ru.monica.rustcore.RustVaultOverviewCore { *; }
 
 # 移除日志 (Release构建)
 -assumenosideeffects class android.util.Log {

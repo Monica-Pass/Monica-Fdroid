@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">Chứng chỉ đã hết hạn. Hãy kiểm tra ngày giờ trên thiết bị và yêu cầu quản trị viên máy chủ gia hạn chứng chỉ.</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">Chứng chỉ chưa có hiệu lực. Hãy kiểm tra ngày giờ trên thiết bị và thời hạn hiệu lực của chứng chỉ.</string>
+    <string name="bitwarden_error_certificate_hostname">Chứng chỉ máy chủ không khớp với tên miền đã nhập. Hãy kiểm tra địa chỉ máy chủ tự lưu trữ và chứng chỉ do proxy ngược trả về.</string>
+    <string name="bitwarden_error_certificate_untrusted">Không thể xác minh chứng chỉ máy chủ. Hãy kiểm tra chuỗi chứng chỉ đầy đủ, các CA được thiết bị tin cậy và việc proxy thay thế chứng chỉ HTTPS. Với máy chủ dùng chứng chỉ tự ký, hãy cấu hình CA tương ứng trong phần cài đặt chứng chỉ.</string>
+    <string name="bitwarden_error_tls_handshake">Không thể thiết lập kết nối TLS an toàn. Hãy kiểm tra cấu hình và phiên bản TLS của máy chủ hoặc proxy ngược, cùng chứng chỉ máy khách nếu bật mTLS.</string>
+    <string name="bitwarden_error_dns">Không thể phân giải tên miền máy chủ. Hãy kiểm tra địa chỉ máy chủ tự lưu trữ và cài đặt DNS, VPN, proxy.</string>
+    <string name="bitwarden_error_timeout">Kết nối tới máy chủ đã hết thời gian chờ. Hãy xác nhận máy chủ đang trực tuyến và kiểm tra cổng, mạng, VPN, proxy.</string>
+    <string name="bitwarden_error_connection">Không thể kết nối tới máy chủ. Hãy kiểm tra địa chỉ và cổng, xác nhận dịch vụ đang chạy, đồng thời kiểm tra tường lửa và proxy.</string>
+    <string name="bitwarden_error_proxy">Proxy đã từ chối kết nối hoặc yêu cầu xác thực. Hãy kiểm tra địa chỉ, cổng và thông tin tài khoản proxy.</string>
+    <string name="bitwarden_error_cleartext">Địa chỉ máy chủ sử dụng HTTP, không được chính sách bảo mật hiện tại cho phép. Hãy dùng địa chỉ HTTPS và kiểm tra cấu hình HTTPS của proxy ngược.</string>
+    <string name="bitwarden_error_network_io">Lỗi mạng đã làm gián đoạn liên lạc với máy chủ. Hãy kiểm tra mạng, VPN và proxy rồi thử lại.</string>
+</resources>

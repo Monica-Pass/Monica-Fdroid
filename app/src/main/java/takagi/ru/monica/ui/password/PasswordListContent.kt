@@ -14,7 +14,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.AnimationVector2D
 import androidx.compose.animation.core.animateIntOffsetAsState
@@ -39,9 +38,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
@@ -49,13 +45,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.unit.Velocity
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.animation.core.Animatable
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -104,7 +94,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
@@ -244,6 +233,7 @@ import takagi.ru.monica.ui.common.layout.ListPane
 import takagi.ru.monica.ui.common.pull.PullActionVisualState
 import takagi.ru.monica.ui.common.pull.PullGestureIndicator
 import takagi.ru.monica.ui.common.pull.rememberPullActionState
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
 import takagi.ru.monica.ui.common.selection.CategoryListItem
 import takagi.ru.monica.ui.common.selection.SelectionActionBar
 import takagi.ru.monica.ui.common.selection.SelectionModeTopBar
@@ -803,13 +793,6 @@ fun PasswordListContent(
     // Search state hoisted for morphing animation
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
 
-    // 如果搜索框展开，按返回键关闭搜索框
-    val focusManager = LocalFocusManager.current
-    BackHandler(enabled = isSearchExpanded) {
-        isSearchExpanded = false
-        viewModel.updateSearchQuery("")
-        focusManager.clearFocus()
-    }
 
     // Handle back press for selection mode
     BackHandler(enabled = isSelectionMode) {
@@ -841,7 +824,7 @@ fun PasswordListContent(
     val density = androidx.compose.ui.platform.LocalDensity.current
     
     // Pull-to-search/sync state (shared implementation)
-    val triggerDistance = remember(density) { with(density) { 40.dp.toPx() } }
+    val triggerDistance = remember(density) { with(density) { PullSearchDefaults.TriggerDistance.toPx() } }
     val syncTriggerDistance = remember(density) { with(density) { 72.dp.toPx() } }
     val maxDragDistance = remember(density) { with(density) { 100.dp.toPx() } }
     val pullAction = rememberPullActionState(

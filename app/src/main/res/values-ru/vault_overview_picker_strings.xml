@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_overview_picker_search_cards">Поиск по карте, банку или последним цифрам</string>
+    <string name="vault_overview_picker_search_items">Поиск по названию или аккаунту</string>
+    <string name="vault_overview_picker_selected">Выбрано: %1$d</string>
+    <string name="vault_overview_picker_results">Результаты: %1$d</string>
+    <string name="vault_overview_picker_no_account">Аккаунт не указан</string>
+    <string name="vault_overview_picker_empty_hint">Попробуйте другое слово или базу данных.</string>
+    <string name="vault_overview_picker_limit">Можно закрепить до %1$d записей</string>
+</resources>

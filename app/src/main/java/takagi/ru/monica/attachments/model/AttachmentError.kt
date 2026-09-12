@@ -9,7 +9,7 @@ package takagi.ru.monica.attachments.model
  * 注意：该类型继承自 [Exception] 仅为方便在 Result/try-catch 中携带，
  * 不期望被用户态日志完整打印堆栈（日志脱敏见 Requirement 10.2）。
  */
-sealed class AttachmentError(message: String) : Exception(message) {
+sealed class AttachmentError(message: String, cause: Throwable? = null) : Exception(message, cause) {
     /** 单附件字节大小超出来源上限（本地/Bitwarden 100MB 或 KeePass 软上限）。 */
     data class TooLarge(val limitBytes: Long, val actualBytes: Long) :
         AttachmentError("Attachment size $actualBytes exceeds limit $limitBytes")
@@ -30,7 +30,23 @@ sealed class AttachmentError(message: String) : Exception(message) {
     }
 
     /** Bitwarden/HTTP 层错误。 */
-    data class NetworkError(val httpStatus: Int?) : AttachmentError("Network error status=$httpStatus")
+    data class NetworkError(val httpStatus: Int?, val networkCause: Throwable? = null) :
+        AttachmentError("Network error status=$httpStatus", networkCause)
+
+    data object BitwardenLocked : AttachmentError("Bitwarden attachment session unavailable") {
+        private fun readResolve(): Any = BitwardenLocked
+    }
+
+    data object InvalidRemoteData : AttachmentError("Bitwarden attachment metadata unavailable") {
+        private fun readResolve(): Any = InvalidRemoteData
+    }
+
+    data class UnsupportedEncryption(val encryptionType: Int) :
+        AttachmentError("Unsupported Bitwarden attachment encryption type: $encryptionType")
+
+    data object Unknown : AttachmentError("Attachment operation failed") {
+        private fun readResolve(): Any = Unknown
+    }
 
     /** AES-GCM 解密失败、CEK 包裹无效、Bitwarden MAC 校验失败等。 */
     data object CryptoError : AttachmentError("Attachment crypto error") {

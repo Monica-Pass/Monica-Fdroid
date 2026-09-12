@@ -48,7 +48,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
 import takagi.ru.monica.security.SecurityManager
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +58,6 @@ fun SecurityQuestionsVerificationScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    val isZh = Locale.getDefault().language == "zh"
 
     var answer1 by remember { mutableStateOf("") }
     var answer2 by remember { mutableStateOf("") }
@@ -67,8 +65,8 @@ fun SecurityQuestionsVerificationScreen(
     var isLoading by remember { mutableStateOf(false) }
     var attemptCount by remember { mutableStateOf(0) }
 
-    val question1Text = securityManager.getSecurityQuestion1Text(isZh).orEmpty()
-    val question2Text = securityManager.getSecurityQuestion2Text(isZh).orEmpty()
+    val question1Text = securityManager.getSecurityQuestion1Text().orEmpty()
+    val question2Text = securityManager.getSecurityQuestion2Text().orEmpty()
 
     Scaffold(
         topBar = {

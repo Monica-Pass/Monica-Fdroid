@@ -131,6 +131,7 @@ fun AddEditNoteScreen(
     noteId: Long,
     onNavigateBack: () -> Unit,
     initialCategoryId: Long? = null,
+    initialStorageExplicit: Boolean = false,
     initialKeePassDatabaseId: Long? = null,
     initialKeePassGroupPath: String? = null,
     initialMdbxDatabaseId: Long? = null,
@@ -512,6 +513,7 @@ fun AddEditNoteScreen(
     LaunchedEffect(
         isEditing,
         initialCategoryId,
+        initialStorageExplicit,
         initialKeePassDatabaseId,
         initialKeePassGroupPath,
         initialMdbxDatabaseId,
@@ -524,6 +526,7 @@ fun AddEditNoteScreen(
         editorViewModel.applyInitialStorageIfNeeded(
             isEditing = isEditing,
             initialCategoryId = initialCategoryId,
+            initialStorageExplicit = initialStorageExplicit,
             initialKeePassDatabaseId = initialKeePassDatabaseId,
             initialKeePassGroupPath = initialKeePassGroupPath,
             initialMdbxDatabaseId = initialMdbxDatabaseId,

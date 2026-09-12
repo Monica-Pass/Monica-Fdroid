@@ -3,6 +3,7 @@ package takagi.ru.monica.attachments.util
 import android.util.Log
 import takagi.ru.monica.attachments.model.AttachmentError
 import takagi.ru.monica.attachments.model.AttachmentSource
+import takagi.ru.monica.bitwarden.service.BitwardenDiagLogger
 
 /**
  * 附件子系统的结构化日志工具。
@@ -55,7 +56,9 @@ internal object AttachmentLogger {
             error::class.simpleName?.let { put("errorClass", it) }
             if (httpStatus != null) put("httpStatus", httpStatus)
         }
-        Log.w(TAG, buildLine("fail", event, attachmentId, source, merged))
+        val line = buildLine("fail", event, attachmentId, source, merged)
+        Log.w(TAG, line)
+        if (source == AttachmentSource.BITWARDEN) BitwardenDiagLogger.append("$TAG: $line")
     }
 
     // ---------------------------------------------------------------- 内部
@@ -111,6 +114,10 @@ internal object AttachmentLogger {
         AttachmentError.IoError -> "io_error"
         AttachmentError.KdbxLocked -> "kdbx_locked"
         AttachmentError.KdbxCapacityExceeded -> "kdbx_capacity_exceeded"
+        AttachmentError.BitwardenLocked -> "bitwarden_locked"
+        AttachmentError.InvalidRemoteData -> "invalid_remote_data"
+        is AttachmentError.UnsupportedEncryption -> "unsupported_encryption"
+        AttachmentError.Unknown -> "unknown"
         else -> "unknown"
     }
 }

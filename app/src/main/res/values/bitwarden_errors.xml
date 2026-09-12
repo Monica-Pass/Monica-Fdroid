@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">The certificate has expired. Check your device date and time, and ask the server administrator to renew the certificate.</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">The certificate is not valid yet. Check your device date and time and the certificate\'s validity period.</string>
+    <string name="bitwarden_error_certificate_hostname">The server certificate does not match the domain you entered. Check the self-hosted address and the certificate returned by the reverse proxy.</string>
+    <string name="bitwarden_error_certificate_untrusted">We could not verify the server certificate. Check the complete server certificate chain, the device\'s trusted CAs, and whether a proxy replaces HTTPS certificates. For a self-signed server, configure its CA in the certificate settings.</string>
+    <string name="bitwarden_error_tls_handshake">We could not establish a secure TLS connection. Check the server or reverse proxy\'s TLS configuration and protocol versions, and the client certificate if mTLS is enabled.</string>
+    <string name="bitwarden_error_dns">We could not resolve the server domain. Check the self-hosted address, DNS, VPN, and proxy settings.</string>
+    <string name="bitwarden_error_timeout">The connection to the server timed out. Check that the server is online and review the port, network, VPN, and proxy settings.</string>
+    <string name="bitwarden_error_connection">We could not connect to the server. Check the address and port, confirm that the service is running, and review firewall and proxy settings.</string>
+    <string name="bitwarden_error_proxy">The proxy refused the connection or requires authentication. Check the proxy address, port, and account settings.</string>
+    <string name="bitwarden_error_cleartext">The server address uses HTTP, which the current security policy does not allow. Use an HTTPS address and check the reverse proxy\'s HTTPS configuration.</string>
+    <string name="bitwarden_error_network_io">A network error interrupted communication with the server. Check your network, VPN, and proxy settings, then try again.</string>
+</resources>

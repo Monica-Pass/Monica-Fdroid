@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_overview_picker_search_cards">Tìm thẻ, ngân hàng hoặc số cuối</string>
+    <string name="vault_overview_picker_search_items">Tìm tiêu đề hoặc tài khoản</string>
+    <string name="vault_overview_picker_selected">Đã chọn: %1$d</string>
+    <string name="vault_overview_picker_results">Kết quả: %1$d</string>
+    <string name="vault_overview_picker_no_account">Chưa có tài khoản</string>
+    <string name="vault_overview_picker_empty_hint">Thử từ khóa hoặc cơ sở dữ liệu khác.</string>
+    <string name="vault_overview_picker_limit">Ghim tối đa %1$d mục</string>
+</resources>

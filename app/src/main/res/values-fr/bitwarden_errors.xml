@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="bitwarden_error_certificate_expired">Le certificat a expiré. Vérifiez la date et l\'heure de votre appareil et demandez à l\'administrateur du serveur de renouveler le certificat.</string>
+  <string name="bitwarden_error_certificate_not_yet_valid">Le certificat n\'est pas encore valide. Vérifiez la date et l\'heure de votre appareil ainsi que la période de validité du certificat.</string>
+  <string name="bitwarden_error_certificate_hostname">Le certificat du serveur ne correspond pas au domaine que vous avez saisi. Vérifiez l\'adresse auto-hébergée et le certificat renvoyé par le proxy inverse.</string>
+  <string name="bitwarden_error_certificate_untrusted">Nous n\'avons pas pu vérifier le certificat du serveur. Vérifiez la chaîne complète de certificats du serveur, les autorités de certification de confiance de l\'appareil et si un proxy remplace les certificats HTTPS. Pour un serveur auto-signé, configurez son autorité de certification dans les paramètres du certificat.</string>
+  <string name="bitwarden_error_tls_handshake">Nous n\'avons pas pu établir une connexion TLS sécurisée. Vérifiez la configuration TLS et les versions du protocole du serveur ou du proxy inverse, ainsi que le certificat client si mTLS est activé.</string>
+  <string name="bitwarden_error_dns">Nous n\'avons pas pu résoudre le domaine du serveur. Vérifiez l\'adresse auto-hébergée, les paramètres DNS, VPN et proxy.</string>
+  <string name="bitwarden_error_timeout">La connexion au serveur a expiré. Vérifiez que le serveur est en ligne et examinez les paramètres de port, de réseau, de VPN et de proxy.</string>
+  <string name="bitwarden_error_connection">Nous n\'avons pas pu nous connecter au serveur. Vérifiez l\'adresse et le port, confirmez que le service est en cours d\'exécution et vérifiez les paramètres du pare-feu et du proxy.</string>
+  <string name="bitwarden_error_proxy">Le proxy a refusé la connexion ou nécessite une authentification. Vérifiez l\'adresse proxy, le port et les paramètres du compte.</string>
+  <string name="bitwarden_error_cleartext">L\'adresse du serveur utilise HTTP, ce que la politique de sécurité actuelle ne permet pas. Utilisez une adresse HTTPS et vérifiez la configuration HTTPS du proxy inverse.</string>
+  <string name="bitwarden_error_network_io">Une erreur réseau a interrompu la communication avec le serveur. Vérifiez vos paramètres réseau, VPN et proxy, puis réessayez.</string>
+</resources>

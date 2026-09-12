@@ -2,14 +2,102 @@
 
 mod list_sort;
 mod search;
+mod vault_overview;
+mod vault_picker;
+mod wallet_stack;
 
 use jni::objects::{JByteArray, JClass, JIntArray, JLongArray, JString};
-use jni::sys::{jboolean, jbyteArray, jint, jintArray, jstring, JNI_FALSE, JNI_TRUE};
+use jni::sys::{jboolean, jbyteArray, jint, jintArray, jlong, jstring, JNI_FALSE, JNI_TRUE};
 use jni::JNIEnv;
 use monica_rust_crypto::{derive_argon2id, derive_pbkdf2_sha256};
 use search::{filter_metadata_batch, SearchQuery};
 
 const RUST_CORE_VERSION: &str = "monica-rust-jni/0.5.0-kdf";
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustVaultPickerCore_nativeOpen(
+    env: JNIEnv,
+    _class: JClass,
+    metadata: JByteArray,
+) -> jlong {
+    let result = (|| {
+        let len = usize::try_from(env.get_array_length(&metadata).ok()?).ok()?;
+        if !(8..=vault_picker::MAX_BYTES).contains(&len) {
+            return None;
+        }
+        vault_picker::open(&env.convert_byte_array(metadata).ok()?)
+    })();
+    result.unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustVaultPickerCore_nativeFilter(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    query: JString,
+    source: jint,
+) -> jintArray {
+    let result = (|| {
+        let query: String = env.get_string(&query).ok()?.into();
+        let indices = vault_picker::filter(handle, &query, source)?;
+        let output = env.new_int_array(i32::try_from(indices.len()).ok()?).ok()?;
+        env.set_int_array_region(&output, 0, &indices).ok()?;
+        Some(output.into_raw())
+    })();
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustVaultPickerCore_nativeClose(
+    _env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    vault_picker::close(handle);
+}
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustVaultOverviewCore_nativeProject(
+    env: JNIEnv,
+    _class: JClass,
+    metadata: JLongArray,
+) -> jintArray {
+    let result = (|| {
+        let len = usize::try_from(env.get_array_length(&metadata).ok()?).ok()?;
+        if !(vault_overview::HEADER..=vault_overview::MAX_BATCH_LEN).contains(&len) {
+            return None;
+        }
+        let mut batch = vec![0_i64; len];
+        env.get_long_array_region(&metadata, 0, &mut batch).ok()?;
+        let projection = vault_overview::project(&batch)?;
+        let output = env
+            .new_int_array(i32::try_from(projection.len()).ok()?)
+            .ok()?;
+        env.set_int_array_region(&output, 0, &projection).ok()?;
+        Some(output.into_raw())
+    })();
+    result.unwrap_or(std::ptr::null_mut())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustWalletStackCore_nativeProjectIndices(
+    env: JNIEnv,
+    _class: JClass,
+    metadata: JLongArray,
+    selection: jboolean,
+) -> jintArray {
+    let result = (|| {
+        let len = env.get_array_length(&metadata).ok()? as usize;
+        let mut batch = vec![0_i64; len];
+        env.get_long_array_region(&metadata, 0, &mut batch).ok()?;
+        let indices = wallet_stack::project_indices(&batch, selection != JNI_FALSE)?;
+        let output = env.new_int_array(indices.len() as i32).ok()?;
+        env.set_int_array_region(&output, 0, &indices).ok()?;
+        Some(output.into_raw())
+    })();
+    result.unwrap_or(std::ptr::null_mut())
+}
 
 #[no_mangle]
 pub extern "system" fn Java_takagi_ru_monica_rustcore_RustListSortCore_nativeSortIndices(

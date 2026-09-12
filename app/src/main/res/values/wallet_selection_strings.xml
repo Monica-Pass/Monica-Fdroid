@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_selection_stack_title">Stack · %1$s</string>
+    <string name="wallet_selection_unstacked">Individual cards</string>
+    <string name="wallet_selection_group_count">%1$d of %2$d selected</string>
+    <string name="wallet_selection_visible_group_count">%1$d of %2$d visible cards selected</string>
+</resources>

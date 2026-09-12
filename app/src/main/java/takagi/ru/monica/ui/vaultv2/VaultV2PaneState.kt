@@ -111,6 +111,18 @@ class VaultV2PaneState internal constructor(
 
     internal var archiveReturnStorageFilterIdentityKey by mutableStateOf(archiveReturnStorageFilterIdentityKey)
 
+    internal var overviewListOpen by mutableStateOf(false)
+    internal var overviewScope by mutableStateOf<String?>(null)
+    internal var overviewItemType by mutableStateOf<String?>(null)
+    internal var overviewFavorites by mutableStateOf(false)
+    internal var overviewScrollIndex: Int = 0
+    internal var overviewScrollOffset: Int = 0
+    internal var overviewCardKey by mutableStateOf<String?>(null)
+    internal val overviewCardStack get() = retainedListState.overviewCardStack
+    internal var overviewSnapshot: VaultOverviewSnapshot?
+        get() = retainedListState.overviewSnapshot
+        set(value) { retainedListState.overviewSnapshot = value }
+
     fun updateScrollPosition(index: Int, offset: Int) {
         val safeIndex = index.coerceAtLeast(0)
         val safeOffset = offset.coerceAtLeast(0)
@@ -230,7 +242,7 @@ class VaultV2PaneState internal constructor(
         requestScrollToTop()
     }
 
-    fun closeArchiveView() {
+    fun closeArchiveView(scrollToTop: Boolean = true) {
         archiveReturnStorageFilterType?.let { returnType ->
             updateStorageFilter(
                 type = returnType,
@@ -244,7 +256,7 @@ class VaultV2PaneState internal constructor(
         archiveReturnStorageFilterSecondaryKey = null
         archiveReturnStorageFilterIdentityKey = null
         isArchiveView = false
-        requestScrollToTop()
+        if (scrollToTop) requestScrollToTop()
     }
 
 }
@@ -270,6 +282,13 @@ internal fun vaultV2PaneStateSaver(
             it.archiveReturnStorageFilterSecondaryKey,
             it.storageFilterIdentityKey,
             it.archiveReturnStorageFilterIdentityKey,
+            it.overviewListOpen,
+            it.overviewScope,
+            it.overviewItemType,
+            it.overviewFavorites,
+            it.overviewScrollIndex,
+            it.overviewScrollOffset,
+            it.overviewCardKey,
         )
     },
     restore = { restored ->
@@ -291,7 +310,15 @@ internal fun vaultV2PaneStateSaver(
             storageFilterIdentityKey = restored.getOrNull(14) as? String,
             archiveReturnStorageFilterIdentityKey = restored.getOrNull(15) as? String,
             retainedState = retainedState,
-        )
+        ).apply {
+            overviewListOpen = restored.getOrNull(16) as? Boolean ?: false
+            overviewScope = restored.getOrNull(17) as? String
+            overviewItemType = restored.getOrNull(18) as? String
+            overviewFavorites = restored.getOrNull(19) as? Boolean ?: false
+            overviewScrollIndex = restored.getOrNull(20) as? Int ?: 0
+            overviewScrollOffset = restored.getOrNull(21) as? Int ?: 0
+            overviewCardKey = restored.getOrNull(22) as? String
+        }
     },
 )
 

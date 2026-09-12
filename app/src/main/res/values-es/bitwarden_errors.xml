@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">El certificado ha caducado. Comprueba la fecha y hora del dispositivo y pide al administrador del servidor que renueve el certificado.</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">El certificado aún no es válido. Comprueba la fecha y hora del dispositivo y el período de validez del certificado.</string>
+    <string name="bitwarden_error_certificate_hostname">El certificado del servidor no coincide con el dominio introducido. Comprueba la dirección del servidor propio y el certificado que devuelve el proxy inverso.</string>
+    <string name="bitwarden_error_certificate_untrusted">No se pudo verificar el certificado del servidor. Comprueba la cadena completa de certificados, las CA de confianza del dispositivo y si un proxy sustituye los certificados HTTPS. Si el servidor usa un certificado autofirmado, configura su CA en los ajustes de certificados.</string>
+    <string name="bitwarden_error_tls_handshake">No se pudo establecer una conexión TLS segura. Comprueba la configuración y las versiones de TLS del servidor o proxy inverso y el certificado del cliente si mTLS está activado.</string>
+    <string name="bitwarden_error_dns">No se pudo resolver el dominio del servidor. Comprueba la dirección del servidor propio y los ajustes de DNS, VPN y proxy.</string>
+    <string name="bitwarden_error_timeout">La conexión con el servidor agotó el tiempo de espera. Comprueba que el servidor esté en línea y revisa el puerto, la red, la VPN y el proxy.</string>
+    <string name="bitwarden_error_connection">No se pudo conectar con el servidor. Comprueba la dirección y el puerto, que el servicio esté activo y los ajustes del cortafuegos y del proxy.</string>
+    <string name="bitwarden_error_proxy">El proxy rechazó la conexión o requiere autenticación. Comprueba la dirección, el puerto y las credenciales del proxy.</string>
+    <string name="bitwarden_error_cleartext">La dirección del servidor usa HTTP, que no está permitido por la política de seguridad actual. Usa una dirección HTTPS y comprueba la configuración HTTPS del proxy inverso.</string>
+    <string name="bitwarden_error_network_io">Un error de red interrumpió la comunicación con el servidor. Comprueba la red, la VPN y el proxy e inténtalo de nuevo.</string>
+</resources>

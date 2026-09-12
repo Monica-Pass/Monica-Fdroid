@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.screens
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -18,15 +19,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -65,8 +68,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -78,6 +82,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -85,6 +90,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -94,9 +100,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import takagi.ru.monica.R
 import takagi.ru.monica.data.BottomNavContentTab
 import takagi.ru.monica.data.AppSettings
@@ -114,6 +125,7 @@ import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.ui.components.TotpCodeCard
 import takagi.ru.monica.ui.password.PasswordEntryCard as PasswordEntryCardV2
 import takagi.ru.monica.viewmodel.SettingsViewModel
+import takagi.ru.monica.utils.BiometricAuthHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -253,32 +265,30 @@ fun QuickSetupScreen(
                 .padding(horizontal = if (step == QuickSetupStep.WELCOME) 12.dp else 20.dp)
         ) {
             if (step != QuickSetupStep.WELCOME) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(step.titleRes),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(step.subtitleRes),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                    TextButton(
-                        onClick = ::completeWithoutDialog,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = ::completeWithoutDialog) {
                         Text(stringResource(R.string.qs_skip))
                     }
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(step.titleRes),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Text(
+                        text = stringResource(step.subtitleRes),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
                 Spacer(modifier = Modifier.height(18.dp))
             }
@@ -541,7 +551,7 @@ private fun WelcomeStep(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { languageExpanded = !languageExpanded },
+                .clickable { languageExpanded = true },
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -573,36 +583,42 @@ private fun WelcomeStep(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    AssistChip(
-                        onClick = { languageExpanded = !languageExpanded },
-                        label = { Text(stringResource(if (languageExpanded) R.string.qs_collapse else R.string.qs_change)) }
-                    )
-                }
-                if (languageExpanded) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Language.values().forEach { language ->
-                            FilterChip(
-                                selected = selectedLanguage == language,
-                                onClick = {
-                                    onLanguageSelected(language)
-                                    languageExpanded = false
-                                },
-                                label = { Text(stringResource(languageLabelRes(language))) },
-                                leadingIcon = if (selectedLanguage == language) {
-                                    {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
+                    Box {
+                        AssistChip(
+                            onClick = { languageExpanded = true },
+                            label = { Text(stringResource(R.string.qs_change)) }
+                        )
+                        DropdownMenu(
+                            expanded = languageExpanded,
+                            onDismissRequest = { languageExpanded = false },
+                            modifier = Modifier
+                                .widthIn(min = 200.dp)
+                                .heightIn(max = 360.dp)
+                        ) {
+                            Language.values().forEach { language ->
+                                val isSelected = selectedLanguage == language
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(languageLabelRes(language))) },
+                                    onClick = {
+                                        languageExpanded = false
+                                        if (!isSelected) {
+                                            onLanguageSelected(language)
+                                        }
+                                    },
+                                    modifier = Modifier.semantics { selected = isSelected },
+                                    trailingIcon = if (isSelected) {
+                                        {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    } else {
+                                        null
                                     }
-                                } else {
-                                    null
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
@@ -620,6 +636,31 @@ private fun SecurityStep(
     onOpenMasterPassword: () -> Unit,
     onOpenSecurityQuestions: () -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = context as? FragmentActivity
+    val biometricHelper = remember(context) { BiometricAuthHelper(context) }
+    val onBiometricChangeLatest by rememberUpdatedState(onBiometricChange)
+    var biometricAuthPending by remember { mutableStateOf(false) }
+    var biometricAvailable by remember(biometricHelper) {
+        mutableStateOf(biometricHelper.isBiometricAvailable())
+    }
+    var biometricStatusMessage by remember(biometricHelper) {
+        mutableStateOf(biometricHelper.getBiometricStatusMessage())
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        biometricAvailable = biometricHelper.isBiometricAvailable()
+        biometricStatusMessage = biometricHelper.getBiometricStatusMessage()
+    }
+    DisposableEffect(biometricHelper) {
+        onDispose {
+            if (biometricAuthPending) {
+                biometricAuthPending = false
+                biometricHelper.cancelAuthentication()
+            }
+        }
+    }
+
     SetupActionCard(
         icon = Icons.Default.Password,
         title = stringResource(R.string.qs_master_password),
@@ -630,9 +671,59 @@ private fun SecurityStep(
     SetupSwitchCard(
         icon = Icons.Default.Fingerprint,
         title = stringResource(R.string.qs_biometric),
-        description = stringResource(R.string.qs_biometric_desc),
+        description = if (biometricAvailable) {
+            stringResource(R.string.qs_biometric_desc)
+        } else {
+            biometricStatusMessage
+        },
         checked = biometricEnabled,
-        onCheckedChange = onBiometricChange
+        enabled = !biometricAuthPending &&
+            (biometricEnabled || (biometricAvailable && activity != null)),
+        onCheckedChange = biometricChange@{ enabled ->
+            if (biometricAuthPending) return@biometricChange
+            if (!enabled) {
+                onBiometricChangeLatest(false)
+                return@biometricChange
+            }
+            if (activity == null || !biometricHelper.isBiometricAvailable()) {
+                biometricAvailable = biometricHelper.isBiometricAvailable()
+                biometricStatusMessage = biometricHelper.getBiometricStatusMessage()
+                return@biometricChange
+            }
+
+            // Persist the opt-in only after Android confirms the user's identity.
+            biometricAuthPending = true
+            try {
+                biometricHelper.authenticate(
+                    activity = activity,
+                    title = context.getString(R.string.biometric_unlock),
+                    subtitle = context.getString(R.string.biometric_login_subtitle),
+                    description = context.getString(R.string.qs_biometric_desc),
+                    negativeButtonText = context.getString(R.string.cancel),
+                    onSuccess = {
+                        if (biometricAuthPending) {
+                            biometricAuthPending = false
+                            onBiometricChangeLatest(true)
+                        }
+                    },
+                    onError = { _, message ->
+                        if (biometricAuthPending) {
+                            biometricAuthPending = false
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.biometric_auth_error, message),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    onCancel = { biometricAuthPending = false }
+                )
+            } catch (_: Exception) {
+                biometricAuthPending = false
+                biometricHelper.cancelAuthentication()
+                Toast.makeText(context, R.string.biometric_cannot_enable, Toast.LENGTH_SHORT).show()
+            }
+        }
     )
     SetupActionCard(
         icon = Icons.Default.QuestionAnswer,
@@ -1236,7 +1327,9 @@ private fun QuickSetupBottomBar(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
@@ -1403,12 +1496,13 @@ private fun SetupSwitchCard(
     title: String,
     description: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) },
+            .clickable(enabled = enabled) { onCheckedChange(!checked) },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -1432,7 +1526,7 @@ private fun SetupSwitchCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
         }
     }
 }
@@ -1634,6 +1728,7 @@ private fun languageLabelRes(language: Language): Int = when (language) {
     Language.KOREAN -> R.string.qs_lang_korean
     Language.GERMAN -> R.string.qs_lang_german
     Language.SPANISH -> R.string.qs_lang_spanish
+    Language.FRENCH -> R.string.qs_lang_french
 }
 
 @StringRes

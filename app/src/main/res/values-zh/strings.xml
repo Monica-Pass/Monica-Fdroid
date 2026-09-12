@@ -1433,6 +1433,12 @@
     <string name="security_question_preset_8">您童年最好的朋友叫什么名字？</string>
     <string name="security_question_preset_9">您的第一份工作是什么？</string>
     <string name="security_question_preset_10">您最喜欢的电影是什么？</string>
+    <string name="security_question_born_city">您出生在哪个城市？</string>
+    <string name="security_question_first_car">您的第一辆汽车是什么型号？</string>
+    <string name="security_question_childhood_food">您小时候最喜欢的食物是什么？</string>
+    <string name="security_question_grew_up_street">您成长的街道名称是什么？</string>
+    <string name="security_question_hs_mascot">您高中的吉祥物是什么？</string>
+    <string name="security_question_ultraman">你喜欢什么奥特曼？</string>
     
     <!-- Support Author Screen (legacy) -->
     <string name="support_author_description">如果您觉得这个应用有帮助，请考虑支持作者。您的支持是我们持续改进的最大动力！</string>
@@ -1689,6 +1695,14 @@
     <string name="webdav_change_triggered_min_interval_hint">每次备份都会重新上传完整压缩包，间隔越小流量越大。</string>
     <string name="webdav_change_triggered_requires_auto_backup">请先开启自动备份</string>
     <string name="webdav_sync_settings_saved">同步设置已保存</string>
+    <string name="webdav_retention_title">限制备份数量</string>
+    <string name="webdav_retention_description">每次上传成功后保留最新的普通备份，自动清理超出数量的旧备份</string>
+    <string name="webdav_retention_count">保留备份份数</string>
+    <string name="webdav_retention_count_hint">请输入 %1$d 到 %2$d 之间的整数</string>
+    <string name="webdav_retention_permanent_hint">永久备份不占用数量额度，也不会被自动清理。</string>
+    <string name="webdav_retention_disabled_hint">关闭数量限制时，仅清理超过 %1$d 天的普通备份，且至少保留最新 %2$d 份。</string>
+    <string name="webdav_cleanup_failed">备份已上传，但旧备份清理失败，将在下次备份成功后重试。</string>
+    <string name="webdav_backup_unknown_date">日期未知</string>
     <string name="webdav_auto_backup_enabled">已启用自动备份</string>
     <string name="webdav_auto_backup_disabled">已禁用自动备份</string>
     <string name="webdav_last_backup">上次备份</string>
@@ -2913,7 +2927,7 @@
     <string name="password_owner_conflict_inline">这条数据同时绑定了多个密码库，修复归属冲突前已禁止编辑保存。</string>
     <string name="password_owner_conflict_display">这条数据当前存在存储归属冲突。需要先修复 Monica 本地、KeePass 与 Bitwarden 的所有权冲突，才能继续编辑。</string>
     <string name="password_owner_conflict_copy">这条数据存在归属冲突，当前不能安全复制密码。</string>
-    <string name="pull_release_to_search">下拉进行搜索</string>
+    <string name="pull_release_to_search">下拉以进行搜索</string>
     <string name="pull_release_to_sync_bitwarden">松手进行 Bitwarden 同步</string>
     <string name="pull_syncing_bitwarden">正在同步 Bitwarden...</string>
     <string name="pull_sync_requires_bitwarden_login">请先登录并解锁 Bitwarden</string>
@@ -3396,6 +3410,10 @@
     <string name="import_type_stratum_title">Stratum Auth</string>
     <string name="import_type_stratum_desc">导入 Stratum/AuthPro 备份（.stratum/.txt/.html）</string>
     <string name="import_type_stratum_file_hint">选择 .stratum / .txt / .html 文件</string>
+    <string name="import_csv_file_unreadable">无法读取文件，请检查文件是否存在</string>
+    <string name="import_csv_file_empty">文件为空</string>
+    <string name="import_csv_invalid_format">文件格式错误</string>
+    <string name="import_csv_no_data_found">未能导入任何数据，请检查文件格式</string>
     <string name="import_type_steam_title">Steam Guard</string>
     <string name="import_type_steam_desc">导入 Steam 令牌的 maFile 文件</string>
     <string name="import_type_steam_file_hint">选择 .maFile 文件</string>
@@ -3965,7 +3983,7 @@
     <string name="qs_completed">已完成</string>
     <string name="qs_go_setup">去设置</string>
     <string name="qs_biometric">生物验证</string>
-    <string name="qs_biometric_desc">开启后可以用指纹或面容更快解锁</string>
+    <string name="qs_biometric_desc">通过身份验证后开启，使用指纹或面容更快解锁</string>
     <string name="qs_security_questions">密保问题</string>
     <string name="qs_security_questions_set">已设置，用于忘记主密码时验证身份</string>
     <string name="qs_security_questions_unset">设置后忘记主密码时更容易找回</string>
@@ -4464,4 +4482,24 @@
     <string name="card_face_image_unsupported">请选择 JPEG、PNG 或 WebP 图片。</string>
     <string name="card_face_crop_title">裁剪卡面</string>
     <string name="card_face_crop_reset">重置</string>
+
+    <!-- Wallet card stacks -->
+    <string name="wallet_stack_default_name">卡叠</string>
+    <string name="wallet_stack_count">共 %1$d 张</string>
+    <string name="wallet_stack_create">创建卡叠</string>
+    <string name="wallet_stack_selected_count">已选择 %1$d 张卡片</string>
+    <string name="wallet_stack_add_to_existing">加入已有卡叠</string>
+    <string name="wallet_stack_manage">管理卡叠</string>
+    <string name="wallet_stack_manage_hint">调整卡片顺序，或将卡片移出卡叠。移出的卡片会在卡包中单独显示。</string>
+    <string name="wallet_stack_unavailable_card">暂不可用的卡片</string>
+    <string name="wallet_stack_remove_card">移出卡叠</string>
+    <string name="wallet_stack_single_hint">少于两张卡片时，保存后将自动解散卡叠。</string>
+    <string name="wallet_stack_dissolve">解散卡叠</string>
+    <string name="wallet_stack_collapse">收起卡叠</string>
+    <string name="wallet_stack_browse_hint">上下滑动浏览卡片</string>
+    <string name="wallet_stack_position">%1$d / %2$d</string>
+    <string name="wallet_stack_save_error">卡叠保存失败，请重试。</string>
+    <string name="wallet_stack_next">下一张卡片</string>
+    <string name="wallet_stack_previous">上一张卡片</string>
+    <string name="wallet_stack_open_card">查看卡片详情</string>
 </resources>

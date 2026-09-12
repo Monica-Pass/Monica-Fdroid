@@ -95,6 +95,7 @@ fun DraggableBottomNavScaffold(
     val indicatorSlotHeight = if (statusIndicatorVisible) 8.dp else 0.dp
     val actualPeekHeight = peekHeight + indicatorSlotHeight + navBarPadding + navBarExtraPadding
     val actualExpandedHeight = expandedHeight + indicatorSlotHeight + navBarPadding + navBarExtraPadding
+    val contentPadding = PaddingValues(top = statusBarPadding, bottom = actualPeekHeight)
     
     // 拖拽状态
     val maxOffset = with(density) { (actualExpandedHeight - actualPeekHeight).toPx() }
@@ -191,10 +192,9 @@ fun DraggableBottomNavScaffold(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    top = statusBarPadding,
-                    bottom = actualPeekHeight
-                )
+                .padding(contentPadding)
+                // Avoid adding this navigation space again when a child handles IME insets.
+                .consumeWindowInsets(contentPadding)
         ) {
             content(PaddingValues(0.dp))
         }

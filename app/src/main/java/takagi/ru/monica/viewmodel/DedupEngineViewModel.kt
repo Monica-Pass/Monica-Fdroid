@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import takagi.ru.monica.R
 import takagi.ru.monica.data.dedup.DedupMergeExecutionResult
 import takagi.ru.monica.data.dedup.DedupMergeExecutionProgress
 import takagi.ru.monica.data.dedup.DedupMergePlan
@@ -20,6 +21,7 @@ import takagi.ru.monica.data.dedup.DedupMergeSourceOption
 import takagi.ru.monica.data.dedup.DedupMergeTarget
 import takagi.ru.monica.data.dedup.DedupMergeTargetOption
 import takagi.ru.monica.data.dedup.DedupConflictPolicy
+import takagi.ru.monica.utils.StringResolver
 
 data class DedupEngineUiState(
     val isLoading: Boolean = true,
@@ -46,8 +48,9 @@ data class DedupEngineUiState(
         get() = selection.validate(mergePlan.writableItems)
 }
 
-class DedupEngineViewModel(
-    private val mergeService: DedupMergeService
+class DedupEngineViewModel internal constructor(
+    private val mergeService: DedupMergeService,
+    private val strings: StringResolver
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DedupEngineUiState())
     val uiState: StateFlow<DedupEngineUiState> = _uiState.asStateFlow()
@@ -91,7 +94,7 @@ class DedupEngineViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = throwable.message ?: "去重引擎加载失败"
+                        error = throwable.message ?: strings.get(R.string.dedup_merge_load_failed)
                     )
                 }
             }
@@ -174,7 +177,7 @@ class DedupEngineViewModel(
         val plan = state.mergePlan
         if (!state.validation.canExecute || state.isAnalyzing || state.isExecutingMerge) {
             _uiState.update {
-                it.copy(message = validationMessage(state))
+                it.copy(message = validationMessage(state, strings))
             }
             return
         }
@@ -184,7 +187,7 @@ class DedupEngineViewModel(
             _uiState.update {
                 it.copy(
                     isExecutingMerge = true,
-                    executionProgress = DedupMergeExecutionProgress(0, plan.writableItems, "准备写入"),
+                    executionProgress = DedupMergeExecutionProgress(0, plan.writableItems, strings.get(R.string.dedup_merge_preparing)),
                     executionResult = null,
                     error = null,
                     message = null
@@ -201,7 +204,7 @@ class DedupEngineViewModel(
                         isExecutingMerge = false,
                         executionProgress = null,
                         executionResult = result,
-                        message = result.toMessage(),
+                        message = result.toMessage(strings),
                         error = null
                     )
                 }
@@ -211,7 +214,7 @@ class DedupEngineViewModel(
                     it.copy(
                         isExecutingMerge = false,
                         executionProgress = null,
-                        message = "已停止后续写入，已经成功完成的条目保留在目标数据库中"
+                        message = strings.get(R.string.dedup_merge_cancelled)
                     )
                 }
             } catch (throwable: Throwable) {
@@ -219,7 +222,7 @@ class DedupEngineViewModel(
                     it.copy(
                         isExecutingMerge = false,
                         executionProgress = null,
-                        error = throwable.message ?: "合并写入失败"
+                        error = throwable.message ?: strings.get(R.string.dedup_merge_write_failed)
                     )
                 }
             }
@@ -231,7 +234,7 @@ class DedupEngineViewModel(
         executionJob?.cancel()
         _uiState.update {
             it.copy(
-                message = "正在停止；当前条目完成回滚后不会继续写入"
+                message = strings.get(R.string.dedup_merge_cancelling)
             )
         }
     }
@@ -264,7 +267,7 @@ class DedupEngineViewModel(
                 _uiState.update {
                     it.copy(
                         isAnalyzing = false,
-                        error = throwable.message ?: "合并计划生成失败"
+                        error = throwable.message ?: strings.get(R.string.dedup_merge_plan_failed)
                     )
                 }
             }
@@ -272,28 +275,28 @@ class DedupEngineViewModel(
     }
 }
 
-private fun DedupMergeExecutionResult.toMessage(): String {
+private fun DedupMergeExecutionResult.toMessage(strings: StringResolver): String {
     val details = buildList {
-        if (insertedPasswords > 0) add("密码 $insertedPasswords")
-        if (insertedSecureItems > 0) add("安全项 $insertedSecureItems")
-        if (failedPasswords > 0 || failedSecureItems > 0) add("失败 ${failedPasswords + failedSecureItems}")
-        if (skippedExistingItems > 0) add("跳过已有 $skippedExistingItems")
-        if (skippedUnsupportedPasskeys > 0) add("通行密钥未复制 $skippedUnsupportedPasskeys")
-    }.joinToString("，")
-    val prefix = when {
-        failedItems > 0 && insertedItems == 0 -> "未能向 $targetLabel 写入条目"
-        failedItems > 0 -> "已完成部分合并，向 $targetLabel 写入 $insertedItems 条"
-        else -> "已向 $targetLabel 写入 $insertedItems 条"
+        if (insertedPasswords > 0) add(strings.get(R.string.dedup_merge_password_count, insertedPasswords))
+        if (insertedSecureItems > 0) add(strings.get(R.string.dedup_merge_secure_item_count, insertedSecureItems))
+        if (failedItems > 0) add(strings.get(R.string.dedup_merge_failed_count, failedItems))
+        if (skippedExistingItems > 0) add(strings.get(R.string.dedup_merge_skipped_existing_count, skippedExistingItems))
+        if (skippedUnsupportedPasskeys > 0) add(strings.get(R.string.dedup_merge_skipped_passkey_count, skippedUnsupportedPasskeys))
+    }.joinToString(strings.get(R.string.dedup_merge_list_separator))
+    val summary = when {
+        failedItems > 0 && insertedItems == 0 -> strings.get(R.string.dedup_merge_message_failed, targetLabel)
+        failedItems > 0 -> strings.get(R.string.dedup_merge_message_partial, targetLabel, insertedItems)
+        else -> strings.get(R.string.dedup_merge_message_success, targetLabel, insertedItems)
     }
-    return prefix + details.takeIf { it.isNotBlank() }?.let { "（$it）" }.orEmpty()
+    return if (details.isBlank()) summary else strings.get(R.string.dedup_merge_message_details, summary, details)
 }
 
-private fun validationMessage(state: DedupEngineUiState): String {
-    return when {
-        state.selectedMergeSourceKeys.size < DedupMergeSelection.MINIMUM_SOURCE_DATABASES -> "请至少选择两个源数据库"
-        state.selectedMergeTarget == null -> "请选择一个目标数据库"
-        state.isAnalyzing -> "合并预览仍在生成"
-        state.mergePlan.writableItems <= 0 -> "目标数据库已经包含全部可合并条目"
-        else -> "当前合并计划无法执行"
+private fun validationMessage(state: DedupEngineUiState, strings: StringResolver): String = strings.get(
+    when {
+        state.selectedMergeSourceKeys.size < DedupMergeSelection.MINIMUM_SOURCE_DATABASES -> R.string.dedup_merge_need_sources
+        state.selectedMergeTarget == null -> R.string.dedup_merge_need_target
+        state.isAnalyzing -> R.string.dedup_merge_preview_pending
+        state.mergePlan.writableItems <= 0 -> R.string.dedup_merge_target_contains_all
+        else -> R.string.dedup_merge_plan_invalid
     }
-}
+)

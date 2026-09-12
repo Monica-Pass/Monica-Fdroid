@@ -5,10 +5,12 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
+import takagi.ru.monica.R
 import takagi.ru.monica.data.model.BankCardData
 import takagi.ru.monica.data.model.NoteData
 import takagi.ru.monica.data.model.SecureCustomField
 import takagi.ru.monica.data.model.SecureCustomFieldType
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.StringReader
@@ -31,6 +33,8 @@ import org.xml.sax.InputSource
  * 负责将所有数据导出为CSV文件，以及从CSV文件导入数据
  */
 class DataExportImportManager(private val context: Context) {
+
+    private val strings by lazy { AppLocaleStringResolver(context) }
 
     /**
      * 导出数据项
@@ -86,7 +90,7 @@ class DataExportImportManager(private val context: Context) {
             var headerIndexMap: Map<String, Int>? = null
             
             val inputStream = context.contentResolver.openInputStream(inputUri)
-                ?: return@withContext Result.failure(Exception("无法读取文件，请检查文件是否存在"))
+                ?: return@withContext Result.failure(Exception(strings.get(R.string.import_csv_file_unreadable)))
             
             inputStream.use { input ->
                 // 尝试UTF-8，如果失败则尝试GBK
@@ -100,7 +104,7 @@ class DataExportImportManager(private val context: Context) {
                 reader.use { 
                     var firstLine = readCsvRecord(reader)
                     if (firstLine == null) {
-                        return@withContext Result.failure(Exception("文件为空"))
+                        return@withContext Result.failure(Exception(strings.get(R.string.import_csv_file_empty)))
                     }
                     
                     // 跳过BOM标记（如果存在）
@@ -201,13 +205,20 @@ class DataExportImportManager(private val context: Context) {
             }
 
             if (items.isEmpty()) {
-                Result.failure(Exception("未能导入任何数据，请检查文件格式"))
+                Result.failure(Exception(strings.get(R.string.import_csv_no_data_found)))
             } else {
                 Result.success(items)
             }
         } catch (e: Exception) {
             android.util.Log.e("DataImport", "导入异常", e)
-            Result.failure(Exception("导入失败：${e.message ?: "文件格式错误"}"))
+            Result.failure(
+                Exception(
+                    strings.get(
+                        R.string.import_data_failed_with_reason,
+                        e.message ?: strings.get(R.string.import_csv_invalid_format)
+                    )
+                )
+            )
         }
     }
 

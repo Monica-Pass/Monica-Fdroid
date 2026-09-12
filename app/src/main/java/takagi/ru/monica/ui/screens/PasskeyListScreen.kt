@@ -9,15 +9,12 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,10 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -49,7 +42,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -62,7 +54,6 @@ import kotlinx.coroutines.withContext
 import takagi.ru.monica.R
 import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
-import takagi.ru.monica.bitwarden.sync.syncForUserVisibleRequest
 import takagi.ru.monica.bitwarden.ui.BitwardenAutoSyncEffect
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.Category
@@ -112,7 +103,6 @@ import kotlinx.coroutines.flow.flowOf
 import takagi.ru.monica.autofill_ng.ui.rememberAppIcon
 import takagi.ru.monica.autofill_ng.ui.rememberFavicon
 import takagi.ru.monica.ui.common.state.rememberSaveableLazyListState
-import takagi.ru.monica.ui.common.pull.calculateDampedPullOffset
 import takagi.ru.monica.ui.icons.UnmatchedIconFallback
 import takagi.ru.monica.ui.icons.rememberAutoMatchedSimpleIcon
 import takagi.ru.monica.ui.icons.shouldShowFallbackSlot
@@ -122,6 +112,9 @@ import takagi.ru.monica.passkey.PasskeyCredentialIdCodec
 import takagi.ru.monica.passkey.PasskeyPrivateKeyStore
 import takagi.ru.monica.passkey.managementKey
 import takagi.ru.monica.passkey.managementRecordIdOrNull
+import takagi.ru.monica.ui.common.pull.rememberPullActionState
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 
 /**
  * Passkey 列表屏幕
@@ -444,277 +437,23 @@ fun PasskeyListScreen(
         bitwardenSyncStatusByVault[vaultId].isUserVisibleSyncInProgress()
     } == true
 
-    // 下拉搜索相关
-    var currentOffset by remember { mutableFloatStateOf(0f) }
     val searchTriggerDistance = remember(density, isBitwardenDatabaseView) {
-        with(density) { (if (isBitwardenDatabaseView) 40.dp else 72.dp).toPx() }
+        with(density) { (if (isBitwardenDatabaseView) 40.dp else PullSearchDefaults.TriggerDistance).toPx() }
     }
     val syncTriggerDistance = remember(density) { with(density) { 72.dp.toPx() } }
     val maxDragDistance = remember(density) { with(density) { 100.dp.toPx() } }
-    val syncHoldMillis = 500L
-    var isSettlingBack by remember { mutableStateOf(false) }
-    var hasVibrated by remember { mutableStateOf(false) }
-    var hasSyncStageVibrated by remember { mutableStateOf(false) }
-    var syncHintArmed by remember { mutableStateOf(false) }
-    var isBitwardenSyncing by remember { mutableStateOf(false) }
-    var lockPullUntilSyncFinished by remember { mutableStateOf(false) }
-    var canRunBitwardenSync by remember { mutableStateOf(false) }
-    var showSyncFeedback by remember { mutableStateOf(false) }
-    var syncFeedbackMessage by remember { mutableStateOf("") }
-    var syncFeedbackIsSuccess by remember { mutableStateOf(false) }
-    val collapseAnimatable = remember { androidx.compose.animation.core.Animatable(0f) }
-    
+    val pullAction = rememberPullActionState(
+        isBitwardenDatabaseView = isBitwardenDatabaseView,
+        isSearchExpanded = isSearchExpanded,
+        searchTriggerDistance = searchTriggerDistance,
+        syncTriggerDistance = syncTriggerDistance,
+        maxDragDistance = maxDragDistance,
+        bitwardenRepository = bitwardenRepository,
+        bitwardenVaultId = selectedBitwardenVaultId,
+        onSearchTriggered = { isSearchExpanded = true },
+    )
+    val currentOffset = pullAction.currentOffset
 
-    suspend fun resolveSyncableVaultId(): Long? {
-        val activeVault = bitwardenRepository.getActiveVault() ?: run {
-            canRunBitwardenSync = false
-            return null
-        }
-        val unlocked = bitwardenRepository.isVaultUnlocked(activeVault.id)
-        canRunBitwardenSync = unlocked
-        return if (unlocked) activeVault.id else null
-    }
-
-    fun vibratePullThreshold(isSyncStage: Boolean) {
-        haptic.performPullThreshold(isSyncStage)
-    }
-
-    fun updatePullThresholdHaptics(oldOffset: Float, newOffset: Float) {
-        if (oldOffset < searchTriggerDistance && newOffset >= searchTriggerDistance && !hasVibrated) {
-            hasVibrated = true
-            vibratePullThreshold(isSyncStage = false)
-        } else if (newOffset < searchTriggerDistance) {
-            hasVibrated = false
-        }
-
-        if (!isBitwardenDatabaseView) {
-            hasSyncStageVibrated = false
-            return
-        }
-
-        if (oldOffset < syncTriggerDistance && newOffset >= syncTriggerDistance && !hasSyncStageVibrated) {
-            hasSyncStageVibrated = true
-            vibratePullThreshold(isSyncStage = true)
-        } else if (newOffset < syncTriggerDistance) {
-            hasSyncStageVibrated = false
-        }
-    }
-
-    fun interruptCollapseAnimation() {
-        if (!collapseAnimatable.isRunning && !isSettlingBack) return
-        isSettlingBack = false
-        scope.launch {
-            collapseAnimatable.stop()
-            collapseAnimatable.snapTo(currentOffset)
-        }
-    }
-
-    suspend fun collapsePullOffsetSmoothly() {
-        if (currentOffset <= 0.5f) {
-            currentOffset = 0f
-            isSettlingBack = false
-            return
-        }
-        if (collapseAnimatable.isRunning) return
-        isSettlingBack = true
-        collapseAnimatable.snapTo(currentOffset)
-        try {
-            collapseAnimatable.animateTo(
-                targetValue = 0f,
-                animationSpec = tween(
-                    durationMillis = 140,
-                    easing = androidx.compose.animation.core.FastOutLinearInEasing
-                )
-            ) {
-                currentOffset = value
-            }
-        } finally {
-            currentOffset = 0f
-            collapseAnimatable.snapTo(0f)
-            isSettlingBack = false
-        }
-    }
-
-    fun onPullRelease(): Boolean {
-        if (isBitwardenDatabaseView && syncHintArmed && !isBitwardenSyncing) {
-            syncHintArmed = false
-            isBitwardenSyncing = true
-            lockPullUntilSyncFinished = true
-            currentOffset = syncTriggerDistance
-            scope.launch {
-                val vaultId = resolveSyncableVaultId()
-                if (vaultId == null) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.pull_sync_requires_bitwarden_login),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    isBitwardenSyncing = false
-                    lockPullUntilSyncFinished = false
-                    hasVibrated = false
-                    hasSyncStageVibrated = false
-                    collapsePullOffsetSmoothly()
-                    return@launch
-                }
-
-                val syncResult = bitwardenRepository.syncForUserVisibleRequest(
-                    vaultId = vaultId,
-                    requestIdPrefix = "bw-passkey-list-vault"
-                )
-                when (syncResult) {
-                    is BitwardenRepository.SyncResult.Success -> {
-                        syncFeedbackIsSuccess = true
-                        syncFeedbackMessage = context.getString(R.string.pull_sync_success)
-                        showSyncFeedback = true
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.pull_sync_success),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    is BitwardenRepository.SyncResult.Error -> {
-                        syncFeedbackIsSuccess = false
-                        syncFeedbackMessage = context.getString(R.string.sync_status_failed_full)
-                        showSyncFeedback = true
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.sync_status_failed_full) + ": " + syncResult.message,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    is BitwardenRepository.SyncResult.EmptyVaultBlocked -> {
-                        syncFeedbackIsSuccess = false
-                        syncFeedbackMessage = context.getString(R.string.sync_status_failed_full)
-                        showSyncFeedback = true
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.sync_status_failed_full) + ": " + syncResult.reason,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-                isBitwardenSyncing = false
-                lockPullUntilSyncFinished = false
-                hasVibrated = false
-                hasSyncStageVibrated = false
-                collapsePullOffsetSmoothly()
-                kotlinx.coroutines.delay(1400)
-                showSyncFeedback = false
-            }
-            return true
-        }
-
-        if (currentOffset >= searchTriggerDistance) {
-            isSearchExpanded = true
-            hasVibrated = false
-        }
-        return false
-    }
-
-    LaunchedEffect(isBitwardenDatabaseView) {
-        if (isBitwardenDatabaseView) {
-            resolveSyncableVaultId()
-        } else {
-            interruptCollapseAnimation()
-            canRunBitwardenSync = false
-            syncHintArmed = false
-            isBitwardenSyncing = false
-            lockPullUntilSyncFinished = false
-            showSyncFeedback = false
-            currentOffset = 0f
-            hasVibrated = false
-            hasSyncStageVibrated = false
-        }
-    }
-
-    LaunchedEffect(currentOffset >= syncTriggerDistance, isBitwardenDatabaseView, isBitwardenSyncing) {
-        if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && !isBitwardenSyncing) {
-            resolveSyncableVaultId()
-        }
-    }
-
-    LaunchedEffect(currentOffset, isBitwardenDatabaseView, canRunBitwardenSync, isBitwardenSyncing) {
-        if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
-            kotlinx.coroutines.delay(syncHoldMillis)
-            if (isBitwardenDatabaseView && currentOffset >= syncTriggerDistance && canRunBitwardenSync && !isBitwardenSyncing) {
-                syncHintArmed = true
-            }
-        } else {
-            syncHintArmed = false
-        }
-    }
-
-    LaunchedEffect(isSearchExpanded) {
-        if (isSearchExpanded) {
-            if (!lockPullUntilSyncFinished && currentOffset > 0.5f) {
-                collapsePullOffsetSmoothly()
-            } else {
-                interruptCollapseAnimation()
-                currentOffset = 0f
-                isSettlingBack = false
-            }
-            hasVibrated = false
-            hasSyncStageVibrated = false
-            syncHintArmed = false
-        }
-    }
-    
-    // 嵌套滚动连接（下拉触发搜索）
-    val nestedScrollConnection = remember(isBitwardenDatabaseView) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (lockPullUntilSyncFinished) {
-                    return available
-                }
-                if (currentOffset > 0 && available.y < 0) {
-                    interruptCollapseAnimation()
-                    val newOffset = (currentOffset + available.y).coerceAtLeast(0f)
-                    val consumed = currentOffset - newOffset
-                    currentOffset = newOffset
-                    return Offset(0f, -consumed)
-                }
-                return Offset.Zero
-            }
-            
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if (lockPullUntilSyncFinished) {
-                    return available
-                }
-                if (available.y > 0 && source == NestedScrollSource.UserInput) {
-                    interruptCollapseAnimation()
-                    val newOffset = calculateDampedPullOffset(
-                        currentOffset = currentOffset,
-                        dragDelta = available.y,
-                        maxDragDistance = maxDragDistance
-                    )
-                    val oldOffset = currentOffset
-                    currentOffset = newOffset
-                    updatePullThresholdHaptics(oldOffset = oldOffset, newOffset = newOffset)
-                    return available
-                }
-                return Offset.Zero
-            }
-            
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                val syncStarted = onPullRelease()
-                if (!syncStarted && !lockPullUntilSyncFinished) {
-                    collapsePullOffsetSmoothly()
-                }
-                return Velocity.Zero
-            }
-
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                if (!lockPullUntilSyncFinished && currentOffset > 0f) {
-                    val syncStarted = onPullRelease()
-                    if (!syncStarted && !lockPullUntilSyncFinished) {
-                        collapsePullOffsetSmoothly()
-                    }
-                }
-                return Velocity.Zero
-            }
-        }
-    }
-    
     // 监听搜索查询变化
     LaunchedEffect(searchQuery) {
         if (searchQuery.isNotBlank()) {
@@ -722,10 +461,6 @@ fun PasskeyListScreen(
         }
     }
 
-    BackHandler(enabled = isSearchExpanded) {
-        isSearchExpanded = false
-        viewModel.updateSearchQuery("")
-    }
 
     BackHandler(enabled = selectionMode) {
         selectionMode = false
@@ -1147,11 +882,8 @@ fun PasskeyListScreen(
         
         // 主内容 + 左下角胶囊多选栏
         Box(modifier = Modifier.fillMaxSize()) {
-            val contentPullOffset = if (isBitwardenDatabaseView) {
-                (currentOffset * 0.28f).toInt()
-            } else {
-                currentOffset.toInt()
-            }
+            val contentPullOffset = currentOffset.toInt()
+            PullSearchHint(currentOffset = currentOffset, triggerDistance = searchTriggerDistance)
 
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -1168,29 +900,9 @@ fun PasskeyListScreen(
                                 .fillMaxSize()
                                 .pointerInput(isSearchExpanded) {
                                     detectVerticalDragGestures(
-                                        onVerticalDrag = { _, dragAmount ->
-                                            if (dragAmount > 0f) {
-                                                val newOffset = calculateDampedPullOffset(
-                                                    currentOffset = currentOffset,
-                                                    dragDelta = dragAmount,
-                                                    maxDragDistance = maxDragDistance
-                                                )
-                                                val oldOffset = currentOffset
-                                                currentOffset = newOffset
-                                                updatePullThresholdHaptics(oldOffset = oldOffset, newOffset = newOffset)
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            val syncStarted = onPullRelease()
-                                            if (!syncStarted && !lockPullUntilSyncFinished) {
-                                                scope.launch { collapsePullOffsetSmoothly() }
-                                            }
-                                        },
-                                        onDragCancel = {
-                                            if (!lockPullUntilSyncFinished) {
-                                                scope.launch { collapsePullOffsetSmoothly() }
-                                            }
-                                        }
+                                        onVerticalDrag = { _, dragAmount -> pullAction.onVerticalDrag(dragAmount) },
+                                        onDragEnd = pullAction.onDragEnd,
+                                        onDragCancel = pullAction.onDragCancel,
                                     )
                                 },
                             contentAlignment = Alignment.Center
@@ -1230,7 +942,7 @@ fun PasskeyListScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .offset { IntOffset(0, contentPullOffset) }
-                                .nestedScroll(nestedScrollConnection),
+                                .then(pullAction.gestureModifier),
                             state = listState,
                             contentPadding = PaddingValues(
                                 start = 16.dp,
@@ -2549,4 +2261,3 @@ private fun PasskeyEntry.passkeyReferenceDedupKey(): String {
         append(userDisplayName.trim().lowercase())
     }
 }
-

@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -25,8 +24,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -101,7 +98,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -110,23 +106,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import takagi.ru.monica.R
@@ -134,18 +125,20 @@ import takagi.ru.monica.attachments.facade.AttachmentUriMetadata
 import takagi.ru.monica.bitwarden.BitwardenVaultPremiumStore
 import takagi.ru.monica.bitwarden.api.BitwardenApiFactory
 import takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel
+import takagi.ru.monica.bitwarden.ui.BitwardenAutoSyncEffect
 import takagi.ru.monica.bitwarden.sync.buildHeadline
 import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
 import takagi.ru.monica.data.bitwarden.BitwardenSend
 import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.ui.components.ExpressiveTopBar
-import takagi.ru.monica.ui.common.pull.calculateDampedPullOffset
-import takagi.ru.monica.ui.haptic.rememberHapticFeedback
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import takagi.ru.monica.ui.common.pull.rememberPullToSearchState
+import takagi.ru.monica.ui.common.pull.PullSearchDefaults
+import takagi.ru.monica.ui.common.pull.PullSearchHint
 
 private enum class SendCreateType {
     Text,
@@ -189,11 +182,14 @@ fun SendScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchExpanded by remember { mutableStateOf(false) }
     var showTopActionsMenu by remember { mutableStateOf(false) }
-    var currentOffset by remember { mutableFloatStateOf(0f) }
-    val triggerDistance = with(LocalDensity.current) { 72.dp.toPx() }
-    var hasVibrated by remember { mutableStateOf(false) }
-    var canTriggerPullToSearch by remember { mutableStateOf(false) }
-    val pullHaptic = rememberHapticFeedback()
+    val triggerDistance = with(LocalDensity.current) { PullSearchDefaults.TriggerDistance.toPx() }
+    val pullSearch = rememberPullToSearchState(
+        isSearchExpanded = isSearchExpanded,
+        searchTriggerDistance = triggerDistance,
+        maxDragDistance = triggerDistance * 1.6f,
+        onSearchTriggered = { isSearchExpanded = true },
+    )
+    val currentOffset = pullSearch.currentOffset
 
     val filteredSends = remember(sends, searchQuery, vaultLookup) {
         val query = searchQuery.trim()
@@ -214,19 +210,18 @@ fun SendScreen(
         }
     }
 
-    BackHandler(enabled = isSearchExpanded) {
-        isSearchExpanded = false
-        searchQuery = ""
-    }
 
+    BitwardenAutoSyncEffect(
+        viewModel = bitwardenViewModel,
+        selectedVaultId = activeVault?.id,
+        isAllView = false,
+        enabled = canCreateSend
+    )
     LaunchedEffect(activeVault?.id, unlockState, anyVaultUnlocked) {
         if (anyVaultUnlocked) {
             // 至少有一个已解锁账号就允许刷新视图：当前活跃账号触发自动同步，
             // 其它账号通过 sendsAcrossVaults 直接复用本地缓存。
             delay(1_200L)
-            if (canCreateSend) {
-                bitwardenViewModel.requestPageEnterAutoSync()
-            }
             bitwardenViewModel.loadSends(forceRemoteSync = false)
         }
     }
@@ -350,137 +345,82 @@ fun SendScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                when {
-                    // 没有任何已连接 Vault：保留原"未连接"提示
-                    allVaults.isEmpty() -> {
-                        EmptyStateCard(
-                            title = stringResource(R.string.send_empty_no_connection_title),
-                            message = stringResource(R.string.send_empty_no_connection_message)
-                        )
-                    }
-                    // 有 Vault 但没有任何已解锁、并且本地也没有跨账号的 Send 缓存可用
-                    !anyVaultUnlocked && sends.isEmpty() -> {
-                        EmptyStateCard(
-                            title = stringResource(R.string.send_empty_vault_locked_title),
-                            message = stringResource(R.string.send_empty_vault_locked_message)
-                        )
-                    }
-                    sends.isEmpty() && sendState == BitwardenViewModel.SendState.Loading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    PullSearchHint(currentOffset = currentOffset, triggerDistance = triggerDistance)
+                    when {
+                        // 没有任何已连接 Vault：保留原"未连接"提示
+                        allVaults.isEmpty() -> {
+                            EmptyStateCard(
+                                title = stringResource(R.string.send_empty_no_connection_title),
+                                message = stringResource(R.string.send_empty_no_connection_message)
+                            )
                         }
-                    }
-                    sends.isEmpty() -> {
-                        EmptyStateCard(
-                            title = stringResource(R.string.send_empty_none_title),
-                            message = stringResource(R.string.send_empty_none_message)
-                        )
-                    }
-                    filteredSends.isEmpty() -> {
-                        EmptyStateCard(
-                            title = stringResource(R.string.send_empty_no_match_title),
-                            message = stringResource(R.string.send_empty_no_match_message)
-                        )
-                    }
-                    else -> {
-                        // NestedScrollConnection 处理下拉搜索手势
-                        val nestedScrollConnection = remember {
-                            object : NestedScrollConnection {
-                                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                                    if (currentOffset > 0 && available.y < 0) {
-                                        val newOffset = (currentOffset + available.y).coerceAtLeast(0f)
-                                        val consumed = currentOffset - newOffset
-                                        currentOffset = newOffset
-                                        return Offset(0f, -consumed)
-                                    }
-                                    return Offset.Zero
-                                }
-
-                                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                                    if (!isSearchExpanded && available.y > 0 && canTriggerPullToSearch) {
-                                        if (source == NestedScrollSource.UserInput) {
-                                            val newOffset = calculateDampedPullOffset(
-                                                currentOffset = currentOffset,
-                                                dragDelta = available.y,
-                                                maxDragDistance = triggerDistance * 1.6f
-                                            )
-                                            val oldOffset = currentOffset
-                                            currentOffset = newOffset
-
-                                            if (oldOffset < triggerDistance && newOffset >= triggerDistance && !hasVibrated) {
-                                                hasVibrated = true
-                                                pullHaptic.performPullThreshold()
-                                            } else if (newOffset < triggerDistance) {
-                                                hasVibrated = false
-                                            }
-                                            return available
-                                        }
-                                    }
-                                    return Offset.Zero
-                                }
-
-                                override suspend fun onPreFling(available: Velocity): Velocity {
-                                    if (currentOffset >= triggerDistance) {
-                                        isSearchExpanded = true
-                                        hasVibrated = false
-                                    }
-                                    Animatable(currentOffset).animateTo(0f) {
-                                        currentOffset = value
-                                    }
-                                    return super.onPreFling(available)
-                                }
+                        // 有 Vault 但没有任何已解锁、并且本地也没有跨账号的 Send 缓存可用
+                        !anyVaultUnlocked && sends.isEmpty() -> {
+                            EmptyStateCard(
+                                title = stringResource(R.string.send_empty_vault_locked_title),
+                                message = stringResource(R.string.send_empty_vault_locked_message)
+                            )
+                        }
+                        sends.isEmpty() && sendState == BitwardenViewModel.SendState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
                             }
                         }
-
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .offset { IntOffset(0, currentOffset.toInt()) }
-                                .nestedScroll(nestedScrollConnection)
-                                .pointerInput(Unit) {
-                                    awaitEachGesture {
-                                        awaitFirstDown(requireUnconsumed = false)
-                                        val isAtTop = listState.firstVisibleItemIndex == 0 &&
-                                            listState.firstVisibleItemScrollOffset == 0
-                                        canTriggerPullToSearch = isAtTop
-                                    }
-                                },
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(bottom = 96.dp)
-                        ) {
-                            items(
-                                items = filteredSends,
-                                // 跨账号视图下，单独的 sendId 不再唯一（不同 vault 间会重复），
-                                // 用 vaultId+sendId 复合键避免 LazyColumn key 冲突。
-                                key = { "${it.vaultId}:${it.bitwardenSendId}" }
-                            ) { send ->
-                                val vault = vaultLookup[send.vaultId]
-                                val vaultLabel = vault?.let {
-                                    it.displayName?.takeIf { name -> name.isNotBlank() } ?: it.email
-                                }.orEmpty()
-                                val vaultServer = vault?.serverUrl.orEmpty()
-                                SendItemCard(
-                                    send = send,
-                                    selected = selectedSendId == send.bitwardenSendId,
-                                    vaultLabel = vaultLabel,
-                                    vaultServerUrl = vaultServer,
-                                    onClick = { onSendClick(send) },
-                                    onCopyLink = {
-                                        clipboardManager.setText(AnnotatedString(send.shareUrl))
-                                    },
-                                    onOpenLink = {
-                                        runCatching {
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(send.shareUrl))
-                                            context.startActivity(intent)
-                                        }
-                                    },
-                                    onDelete = { deletingSend = send }
-                                )
+                        sends.isEmpty() -> {
+                            EmptyStateCard(
+                                title = stringResource(R.string.send_empty_none_title),
+                                message = stringResource(R.string.send_empty_none_message)
+                            )
+                        }
+                        filteredSends.isEmpty() -> {
+                            EmptyStateCard(
+                                title = stringResource(R.string.send_empty_no_match_title),
+                                message = stringResource(R.string.send_empty_no_match_message)
+                            )
+                        }
+                        else -> {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .offset { IntOffset(0, currentOffset.toInt()) }
+                                    .then(pullSearch.gestureModifier),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                contentPadding = PaddingValues(bottom = 96.dp)
+                            ) {
+                                items(
+                                    items = filteredSends,
+                                    // 跨账号视图下，单独的 sendId 不再唯一（不同 vault 间会重复），
+                                    // 用 vaultId+sendId 复合键避免 LazyColumn key 冲突。
+                                    key = { "${it.vaultId}:${it.bitwardenSendId}" }
+                                ) { send ->
+                                    val vault = vaultLookup[send.vaultId]
+                                    val vaultLabel = vault?.let {
+                                        it.displayName?.takeIf { name -> name.isNotBlank() } ?: it.email
+                                    }.orEmpty()
+                                    val vaultServer = vault?.serverUrl.orEmpty()
+                                    SendItemCard(
+                                        send = send,
+                                        selected = selectedSendId == send.bitwardenSendId,
+                                        vaultLabel = vaultLabel,
+                                        vaultServerUrl = vaultServer,
+                                        onClick = { onSendClick(send) },
+                                        onCopyLink = {
+                                            clipboardManager.setText(AnnotatedString(send.shareUrl))
+                                        },
+                                        onOpenLink = {
+                                            runCatching {
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(send.shareUrl))
+                                                context.startActivity(intent)
+                                            }
+                                        },
+                                        onDelete = { deletingSend = send }
+                                    )
+                                }
                             }
                         }
                     }

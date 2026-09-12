@@ -1054,19 +1054,19 @@ data class AttachmentUploadResponse(
  */
 @Serializable
 data class AttachmentDownloadInfo(
-    @JsonNames("id")
+    @JsonNames("Id")
     @SerialName("id")
     val id: String = "",
-    @JsonNames("url")
+    @JsonNames("Url")
     @SerialName("url")
     val url: String = "",
-    @JsonNames("fileName")
+    @JsonNames("FileName")
     @SerialName("fileName")
     val fileName: String? = null,
-    @JsonNames("size")
+    @JsonNames("Size")
     @SerialName("size")
     val size: String? = null,
-    @JsonNames("key")
+    @JsonNames("Key")
     @SerialName("key")
     val key: String? = null
 )
@@ -1078,22 +1078,22 @@ data class AttachmentDownloadInfo(
  */
 @Serializable
 data class CipherAttachmentApiData(
-    @JsonNames("id")
+    @JsonNames("Id")
     @SerialName("id")
     val id: String = "",
-    @JsonNames("fileName")
+    @JsonNames("FileName")
     @SerialName("fileName")
     val fileName: String? = null,
-    @JsonNames("size")
+    @JsonNames("Size")
     @SerialName("size")
     val size: String = "0",
-    @JsonNames("sizeName")
+    @JsonNames("SizeName")
     @SerialName("sizeName")
     val sizeName: String? = null,
-    @JsonNames("key")
+    @JsonNames("Key")
     @SerialName("key")
     val key: String? = null,
-    @JsonNames("url")
+    @JsonNames("Url")
     @SerialName("url")
     val url: String? = null
 )
