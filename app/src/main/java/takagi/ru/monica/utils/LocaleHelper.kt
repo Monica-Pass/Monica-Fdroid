@@ -13,7 +13,7 @@ object LocaleHelper {
         val locale = when (language) {
             Language.SYSTEM -> getSystemLocale()
             Language.ENGLISH -> Locale.ENGLISH
-            Language.CHINESE -> Locale.CHINA
+            Language.CHINESE -> Locale.forLanguageTag("zh-Hans-CN")
             Language.CLASSICAL_CHINESE -> Locale.forLanguageTag("lzh")
             Language.VIETNAMESE -> Locale("vi", "VN")
             Language.JAPANESE -> Locale.JAPAN
@@ -59,7 +59,9 @@ object LocaleHelper {
             @Suppress("DEPRECATION")
             context.resources.configuration.locale
         }
-        if (currentLocale.language == locale.language && currentLocale.country == locale.country &&
+        // Some devices report zh-Hant-CN. Matching only language and country
+        // would retain Hant when Chinese is selected, missing our Hans resources.
+        if (currentLocale == locale &&
             (classicalLocales == null || context.resources.configuration.locales == classicalLocales)
         ) {
             return context
