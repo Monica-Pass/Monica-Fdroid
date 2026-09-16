@@ -8,6 +8,7 @@
 - ZIP、CSV 导入和文件导出支持选择数据库，加入进度显示和后台导出。
 - 数据库、WebDAV 备份等页面统一采用 M3E 设计，加入平滑展开与可选卡叠循环。
 - KeePass 支持冲突合并，改进 MDBX 令牌读取、数据库筛选、同步状态和回收站体验。
+- 修复标记“非自动填充”后仍出现解锁提示的问题。
 
 ### 详细
 
@@ -24,6 +25,7 @@
 - **MDBX API 令牌**：支持自定义服务商、API 地址、多行备注、受保护字段与收藏，并可在原生 MDBX 库之间复制或移动。复用有效读取会话，减少每次查看令牌正文时的重复解锁等待，保留现有 CLI 数据与扩展字段。
 - **MDBX 读取与同步**：远端网络传输不再阻塞本地令牌读取。查看令牌产生的安全审计继续同步，但不再误报为条目未同步；真实新增、编辑及同步期间的修改仍保留待上传状态。
 - **回收站**：沿用进入前的数据库范围，统一多选、全选、恢复和永久删除操作；返回密码页或密码库的入口改为与其他页面位置一致的悬浮按钮。
+- **自动填充标记**：标记“非自动填充”后立即撤下当前输入框的系统提示；旧解锁入口与密码建议在启动时重新检查标记，避免开启自动填充验证时反复显示解锁卡片。
 - **稳定性修复**：修正 Bitwarden/Vaultwarden 的同步结果与回收站删除处理，保留失败原因和可重试状态；修复密码库概览跳转闪退，以及部分设备打开验证器时的类验证异常。
 - **F-Droid 版本说明**：保留 Monica 自有 Passkey 的创建、登录与支持的加密 ZIP 文件迁移。本版不包含依赖 Google Play 服务的系统凭据交换，Google Drive 和 OneDrive 登录继续禁用；扫码使用 CameraX 与 ZXing。
 
@@ -37,6 +39,7 @@
 - Add database selection for ZIP/CSV imports and file exports, progress indicators, and background exports.
 - Refresh database and WebDAV backup pages with M3E layouts, smooth expansion, and optional looping card stacks.
 - Add KeePass conflict merging and improve MDBX token loading, database filters, sync status, and the recycle bin.
+- Fix unlock prompts remaining after a field is marked as unsuitable for autofill.
 
 ### Details
 
@@ -53,6 +56,7 @@
 - **MDBX API tokens:** Add custom providers, API addresses, multiline notes, protected fields, favorites, and copying or moving between native MDBX databases. Reuse valid read sessions to reduce repeated unlock waits for token content while preserving existing CLI data and extension fields.
 - **MDBX reading and sync:** Remote network transfers no longer block local token reads. Viewing a token still produces synchronized security audit records without incorrectly marking entries as unsynced. Actual additions, edits, and changes made during sync retain their pending-upload status.
 - **Recycle bin:** Preserve the current database scope and use consistent selection, Select all, Restore, and permanent deletion controls. A floating button returns to passwords or the vault, matching the action placement on other pages.
+- **Autofill exclusions:** Marking a field as unsuitable for autofill dismisses its current system suggestions. Cached unlock entries and password suggestions recheck the exclusion before opening, preventing repeated unlock cards when autofill verification is enabled.
 - **Stability fixes:** Correct Bitwarden/Vaultwarden sync results and trash deletion while retaining failure details and retryable state. Fix vault overview navigation crashes and authenticator class verification errors on affected devices.
 - **F-Droid edition:** Existing Monica passkey creation, sign-in, and supported encrypted ZIP migration remain available. System Credential Exchange, which depends on Google Play Services, is omitted. Google Drive and OneDrive sign-in remain disabled. Scanning uses CameraX and ZXing.
 

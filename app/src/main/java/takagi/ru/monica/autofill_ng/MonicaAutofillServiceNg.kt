@@ -547,7 +547,7 @@ class MonicaAutofillServiceNg : AutofillService() {
                     "targetCount" to fillableTargets.size,
                 ),
             )
-            return null
+            return blockedAutofillResponse(fillableTargets.map { it.id })
         }
         val effectiveScheme = parsed.webScheme?.takeIf { it.isNotBlank() } ?: "https"
         val requestUri = webDomain?.let { "$effectiveScheme://$it" } ?: "androidapp://$packageName"

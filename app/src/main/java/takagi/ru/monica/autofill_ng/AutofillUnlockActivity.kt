@@ -20,6 +20,7 @@ import takagi.ru.monica.autofill_ng.auth.AutofillUnlockRequests
 import takagi.ru.monica.autofill_ng.builder.FillResponseBuilderNg
 import takagi.ru.monica.autofill_ng.builder.FilledDataBuilderNg
 import takagi.ru.monica.autofill_ng.core.AutofillLogger
+import takagi.ru.monica.autofill_ng.model.AutofillRequest
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.security.SecurityManager
@@ -56,16 +57,17 @@ class AutofillUnlockActivity : AppCompatActivity() {
         setContentView(R.layout.activity_transparent)
 
         requestToken = intent.getStringExtra(EXTRA_REQUEST_TOKEN)
-        securityManager = SecurityManager(applicationContext)
-        settingsManager = SettingsManager(applicationContext)
-        biometricAuthHelper = BiometricAuthHelper(this)
-
-        if (AutofillUnlockRequests.peek(requestToken) == null) {
+        val pendingRequest = AutofillUnlockRequests.peek(requestToken)
+        if (pendingRequest == null) {
             cancelAndFinish("missing_or_expired_request")
             return
         }
 
         lifecycleScope.launch {
+            if (rejectBlockedRequest(pendingRequest.request)) return@launch
+            securityManager = SecurityManager(applicationContext)
+            settingsManager = SettingsManager(applicationContext)
+            biometricAuthHelper = BiometricAuthHelper(this@AutofillUnlockActivity)
             val settings = settingsManager.settingsFlow.first()
             if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
                 securityManager.unlockVaultForDeveloperBypass(settings.autoLockMinutes)
@@ -146,6 +148,7 @@ class AutofillUnlockActivity : AppCompatActivity() {
             cancelAndFinish("missing_or_consumed_request")
             return
         }
+        if (rejectBlockedRequest(pendingRequest.request)) return
 
         val responseResult = runCatching {
             val passwordRepository = PasswordRepository(
@@ -180,6 +183,7 @@ class AutofillUnlockActivity : AppCompatActivity() {
             return
         }
         val (response, passwordCount) = responseResult
+        if (rejectBlockedRequest(pendingRequest.request)) return
 
         if (authenticationVerified) {
             AutofillSessionGrants.grant(pendingRequest.grantContext)
@@ -202,6 +206,17 @@ class AutofillUnlockActivity : AppCompatActivity() {
             )
         )
         finishWithoutAnimation()
+    }
+
+    private suspend fun rejectBlockedRequest(
+        request: AutofillRequest.Fillable,
+    ): Boolean {
+        if (!isAutofillRequestBlocked(applicationContext, request.fieldSignatureKey)) return false
+        AutofillUnlockRequests.discard(requestToken)
+        resultPublished = true
+        AutofillLogger.i("AUTH", "Discard blocked cached autofill request")
+        finishBlockedAutofillRequest(request.partition.views.map { it.data.autofillId } + request.ignoreAutofillIds)
+        return true
     }
 
     private fun cancelAndFinish(reason: String) {

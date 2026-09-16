@@ -401,6 +401,18 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             )
         }
         
+        lifecycleScope.launch {
+            if (!isManualMode && !args.isSaveMode &&
+                isAutofillRequestBlocked(applicationContext, args.fieldSignatureKey)
+            ) {
+                finishBlockedAutofillRequest(args.autofillIds.orEmpty())
+                return@launch
+            }
+            showPickerContent()
+        }
+    }
+
+    private fun showPickerContent() {
         val database = PasswordDatabase.getDatabase(applicationContext)
         val repository = PasswordRepository(
             passwordEntryDao = database.passwordEntryDao(),
@@ -513,7 +525,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             return
         }
         lifecycleScope.launch {
-            runCatching {
+            val marked = runCatching {
                 AutofillPreferences(applicationContext).markFieldSignatureBlocked(
                     signatureKey = signatureKey,
                     packageName = args.applicationId,
@@ -523,8 +535,12 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             }.onFailure { error ->
                 AutofillLogger.e("PICKER", "Failed to block field signature", error)
             }
-            setResult(Activity.RESULT_CANCELED)
-            finish()
+            if (marked.isSuccess) {
+                finishBlockedAutofillRequest(args.autofillIds.orEmpty())
+            } else {
+                setResult(Activity.RESULT_CANCELED)
+                finish()
+            }
         }
     }
 

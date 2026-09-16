@@ -93,9 +93,6 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
         overridePendingTransition(0, 0)
         setContentView(R.layout.activity_transparent)
         callbackArgs = resolveArgsFromIntent(intent)
-        securityManager = SecurityManager(applicationContext)
-        settingsManager = SettingsManager(applicationContext)
-        biometricAuthHelper = BiometricAuthHelper(this)
 
         val args = callbackArgs
         AutofillLogger.i(
@@ -107,10 +104,14 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
                 "passwordId" to (args?.passwordId ?: -1L),
             )
         )
-        if (args?.requireAuthentication == true) {
-            startAuthentication()
-        } else {
-            lifecycleScope.launch {
+        lifecycleScope.launch {
+            if (rejectBlockedRequest()) return@launch
+            securityManager = SecurityManager(applicationContext)
+            settingsManager = SettingsManager(applicationContext)
+            biometricAuthHelper = BiometricAuthHelper(this@AutofillCipherCallbackActivity)
+            if (args?.requireAuthentication == true) {
+                startAuthentication()
+            } else {
                 completeCipherAutofill()
             }
         }
@@ -214,7 +215,18 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun rejectBlockedRequest(): Boolean {
+        val args = callbackArgs ?: return false
+        if (!isAutofillRequestBlocked(applicationContext, args.fieldSignatureKey)) return false
+        resultPublished = true
+        callbackArgsToken?.let { pendingArgsByToken.remove(it) }
+        AutofillLogger.i("CALLBACK", "Discard blocked cached autofill dataset")
+        finishBlockedAutofillRequest(args.autofillIds.orEmpty())
+        return true
+    }
+
     private suspend fun completeCipherAutofill() {
+        if (resultPublished || rejectBlockedRequest()) return
         val callbackArgs = callbackArgs ?: run {
             cancelAndFinish("missing_args")
             return
@@ -229,6 +241,7 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
             return
         }
 
+        if (rejectBlockedRequest()) return
         val accountValue = AccountFillPolicy.resolveAccountIdentifier(passwordEntry, securityManager)
         val decryptedPassword = AutofillSecretResolver.decryptPasswordOrNull(
             securityManager = securityManager,
@@ -286,6 +299,7 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
             }
             rememberLearnedFieldSignature(callbackArgs.fieldSignatureKey)
         }
+        if (rejectBlockedRequest()) return
 
         AutofillLogger.i(
             "CALLBACK",
