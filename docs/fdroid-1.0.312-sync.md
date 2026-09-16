@@ -5,7 +5,7 @@ Upstream: [Monica 1.0.312, 90995f0b](https://github.com/Monica-Pass/Monica/commi
 ## Included updates
 
 - Classical Chinese (Huaxia), Polish, Nya with Chinese fallback, and the completed shared translations. F-Droid-specific HTTP, unsupported-provider and scanner messages are also localized.
-- Shared M3E database management, WebDAV backup, language selection, multiple-credential editing, and import/export screens; adaptive tiles, smooth expansion and optional looping card stacks.
+- Shared M3E database management, WebDAV backup, language selection, multiple-credential editing, and import/export screens; adaptive tiles, smooth expansion and optional looping card stacks. Database filter menus compose visible chips on demand while retaining their wrapping layout and status markers.
 - ZIP/CSV imports into a selected local, KeePass, MDBX or Bitwarden database, including supported portable passkeys. Database-scoped file exports, encrypted ZIP password prompts, progress reporting, background export and bounded Rust batch writes. ZIP attachment payloads are streamed and checked for integrity; errors identify the affected item and attachment, and failed-file cleanup reports when manual removal is needed.
 - KeePass conflict comparison and merging, MDBX API token fields/favorites and faster detail reads, accurate pending-sync status, database-scoped trash, and the upstream Bitwarden and navigation fixes.
 - Updated Rust JNI autofill and MDBX source implementations, with matching generated Kotlin bindings.
@@ -26,10 +26,12 @@ The initial source synchronization used static checks of resource XML, duplicate
 
 The attachment-export follow-up passed 17 focused JVM tests covering a generated 70 MiB payload, ZIP round-trip, integrity failures, cancellation, and legacy/chunked attachment decryption. Nine changed standard Android Kotlin files were compiled independently against cached dependencies and compile-only resource symbols. The 22 shared source, resource and test files match this edition byte for byte. No Gradle build, APK packaging, Rust build, emulator run or F-Droid runtime validation was performed.
 
+The database-filter menu follow-up passed two JVM row-packing tests and standalone Robolectric popup selection and multilingual layout checks. Four production Kotlin files and both test files compiled with the Compose compiler against cached dependencies. Seven shared files match the standard edition byte for byte; no APK was packaged and no emulator or F-Droid runtime test was run. See [measurements and verification scope](database-filter-menu-performance.md).
+
 The official fdroiddata build recipe and F-Droid publication are separate from this source update.
 
 ## References
 
 - [Android Credential Transfer](https://developer.android.com/identity/sign-in/credential-transfer)
 - [F-Droid inclusion policy](https://f-droid.org/docs/Inclusion_Policy/)
-- [Upstream release notes](https://github.com/Monica-Pass/Monica/blob/90995f0b537c3378d2d843ad8c0f76d876370789/Monica%20Android%E5%8F%91%E8%A1%8C%E8%AF%B4%E6%98%8E.md)
+- [Upstream release notes](https://github.com/Monica-Pass/Monica/blob/98e45ae55001c9c785df958b9e935cf4b0b89e79/Monica%20Android%E5%8F%91%E8%A1%8C%E8%AF%B4%E6%98%8E.md)

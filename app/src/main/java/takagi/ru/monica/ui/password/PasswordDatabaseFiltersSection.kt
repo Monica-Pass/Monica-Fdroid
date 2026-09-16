@@ -1,23 +1,14 @@
 package takagi.ru.monica.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Key
@@ -45,7 +36,8 @@ import takagi.ru.monica.data.LocalKeePassDatabase
 import takagi.ru.monica.data.LocalMdbxDatabase
 import takagi.ru.monica.data.writeOperationAvailability
 import takagi.ru.monica.data.bitwarden.BitwardenVault
-import takagi.ru.monica.ui.components.MonicaExpressiveFilterChip
+import takagi.ru.monica.ui.components.DatabaseFilterChipContent
+import takagi.ru.monica.ui.components.DatabaseFilterChipItem
 import takagi.ru.monica.viewmodel.CategoryFilter
 
 internal data class PasswordDatabaseFiltersSectionParams(
@@ -56,7 +48,6 @@ internal data class PasswordDatabaseFiltersSectionParams(
     val onSelectFilter: (CategoryFilter) -> Unit
 )
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PasswordDatabaseFiltersSection(
     params: PasswordDatabaseFiltersSectionParams,
@@ -95,115 +86,49 @@ internal fun PasswordDatabaseFiltersSection(
                 modifier = Modifier.graphicsLayer { rotationZ = arrowRotation }
             )
         }
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(animationSpec = tween(180)) + fadeIn(animationSpec = tween(120)),
-            exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(100))
-        ) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MonicaExpressiveFilterChip(
-                    selected = params.currentFilter is CategoryFilter.All,
-                    onClick = { params.onSelectFilter(CategoryFilter.All) },
-                    label = stringResource(R.string.category_all),
-                    leadingIcon = Icons.Default.List
-                )
-                MonicaExpressiveFilterChip(
-                    selected = params.currentFilter.isMonicaDatabaseFilter(),
-                    onClick = { params.onSelectFilter(CategoryFilter.Local) },
-                    label = stringResource(R.string.category_selection_menu_local_database),
-                    leadingIcon = Icons.Default.Smartphone
-                )
+        val allLabel = stringResource(R.string.category_all)
+        val localLabel = stringResource(R.string.category_selection_menu_local_database)
+        val items = remember(params.keepassDatabases, params.mdbxDatabases, params.bitwardenVaults, allLabel, localLabel) {
+            buildList<DatabaseFilterChipItem<CategoryFilter>> {
+                add(DatabaseFilterChipItem("all", allLabel, Icons.Default.List, CategoryFilter.All))
+                add(DatabaseFilterChipItem("local", localLabel, Icons.Default.Smartphone, CategoryFilter.Local))
                 params.keepassDatabases.forEach { database ->
-                    MonicaExpressiveFilterChip(
-                        selected = params.currentFilter.isKeePassDatabaseFilter(database.id),
-                        onClick = { params.onSelectFilter(CategoryFilter.KeePassDatabase(database.id)) },
-                        label = database.name,
-                        leadingIcon = Icons.Default.Key,
-                        statusDotColor = if (database.writeOperationAvailability().canOperate) {
-                            StorageHealthyGreen
-                        } else {
-                            null
-                        }
-                    )
+                    add(DatabaseFilterChipItem(
+                        "keepass:${database.id}", database.name, Icons.Default.Key,
+                        CategoryFilter.KeePassDatabase(database.id),
+                        if (database.writeOperationAvailability().canOperate) StorageHealthyGreen else null,
+                    ))
                 }
                 params.mdbxDatabases.forEach { database ->
-                    MonicaExpressiveFilterChip(
-                        selected = params.currentFilter.isMdbxDatabaseFilter(database.id),
-                        onClick = { params.onSelectFilter(CategoryFilter.MdbxDatabase(database.id)) },
-                        label = database.name,
-                        leadingIcon = Icons.Default.Storage
-                    )
+                    add(DatabaseFilterChipItem(
+                        "mdbx:${database.id}", database.name, Icons.Default.Storage,
+                        CategoryFilter.MdbxDatabase(database.id),
+                    ))
                 }
                 params.bitwardenVaults.forEach { vault ->
-                    MonicaExpressiveFilterChip(
-                        selected = params.currentFilter.isBitwardenVaultFilter(vault.id),
-                        onClick = { params.onSelectFilter(CategoryFilter.BitwardenVault(vault.id)) },
-                        label = vault.email.ifBlank { "Bitwarden" },
-                        leadingIcon = Icons.Default.CloudSync,
-                        statusDotColor = if (vault.hasHealthyConnection()) StorageHealthyGreen else null
-                    )
+                    add(DatabaseFilterChipItem(
+                        "bitwarden:${vault.id}", vault.email.ifBlank { "Bitwarden" }, Icons.Default.CloudSync,
+                        CategoryFilter.BitwardenVault(vault.id),
+                        if (vault.hasHealthyConnection()) StorageHealthyGreen else null,
+                    ))
                 }
             }
         }
-        AnimatedVisibility(
-            visible = !expanded,
-            enter = expandVertically(animationSpec = tween(180)) + fadeIn(animationSpec = tween(120)),
-            exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(animationSpec = tween(100))
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MonicaExpressiveFilterChip(
-                    selected = params.currentFilter is CategoryFilter.All,
-                    onClick = { params.onSelectFilter(CategoryFilter.All) },
-                    label = stringResource(R.string.category_all),
-                    leadingIcon = Icons.Default.List
-                )
-                MonicaExpressiveFilterChip(
-                    selected = params.currentFilter.isMonicaDatabaseFilter(),
-                    onClick = { params.onSelectFilter(CategoryFilter.Local) },
-                    label = stringResource(R.string.category_selection_menu_local_database),
-                    leadingIcon = Icons.Default.Smartphone
-                )
-                params.keepassDatabases.forEach { database ->
-                    MonicaExpressiveFilterChip(
-                        selected = params.currentFilter.isKeePassDatabaseFilter(database.id),
-                        onClick = { params.onSelectFilter(CategoryFilter.KeePassDatabase(database.id)) },
-                        label = database.name,
-                        leadingIcon = Icons.Default.Key,
-                        statusDotColor = if (database.writeOperationAvailability().canOperate) {
-                            StorageHealthyGreen
-                        } else {
-                            null
-                        }
-                    )
+        DatabaseFilterChipContent(
+            items = items,
+            expanded = expanded,
+            isSelected = { filter ->
+                when (filter) {
+                    CategoryFilter.All -> params.currentFilter is CategoryFilter.All
+                    CategoryFilter.Local -> params.currentFilter.isMonicaDatabaseFilter()
+                    is CategoryFilter.KeePassDatabase -> params.currentFilter.isKeePassDatabaseFilter(filter.databaseId)
+                    is CategoryFilter.MdbxDatabase -> params.currentFilter.isMdbxDatabaseFilter(filter.databaseId)
+                    is CategoryFilter.BitwardenVault -> params.currentFilter.isBitwardenVaultFilter(filter.vaultId)
+                    else -> false
                 }
-                params.mdbxDatabases.forEach { database ->
-                    MonicaExpressiveFilterChip(
-                        selected = params.currentFilter.isMdbxDatabaseFilter(database.id),
-                        onClick = { params.onSelectFilter(CategoryFilter.MdbxDatabase(database.id)) },
-                        label = database.name,
-                        leadingIcon = Icons.Default.Storage
-                    )
-                }
-                params.bitwardenVaults.forEach { vault ->
-                    MonicaExpressiveFilterChip(
-                        selected = params.currentFilter.isBitwardenVaultFilter(vault.id),
-                        onClick = { params.onSelectFilter(CategoryFilter.BitwardenVault(vault.id)) },
-                        label = vault.email.ifBlank { "Bitwarden" },
-                        leadingIcon = Icons.Default.CloudSync,
-                        statusDotColor = if (vault.hasHealthyConnection()) StorageHealthyGreen else null
-                    )
-                }
-            }
-        }
+            },
+            onSelect = params.onSelectFilter,
+        )
     }
 }
 
