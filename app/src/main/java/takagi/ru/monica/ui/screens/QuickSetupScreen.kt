@@ -1,6 +1,5 @@
 package takagi.ru.monica.ui.screens
 
-import android.app.Activity
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -86,7 +85,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -121,8 +119,6 @@ import takagi.ru.monica.ui.components.TotpCodeCard
 import takagi.ru.monica.ui.password.PasswordEntryCard as PasswordEntryCardV2
 import takagi.ru.monica.viewmodel.SettingsViewModel
 import takagi.ru.monica.utils.BiometricAuthHelper
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -193,8 +189,6 @@ fun QuickSetupScreen(
     var stepIndex by rememberSaveable { mutableIntStateOf(0) }
     var showFinishDialog by remember { mutableStateOf(false) }
     val step = steps[stepIndex]
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     fun completeWithoutDialog() {
         settingsViewModel.updateQuickSetupCompleted(true)
@@ -322,13 +316,7 @@ fun QuickSetupScreen(
                             selectedLanguage = settings.language,
                             onSkip = ::completeWithoutDialog,
                             onLanguageSelected = { language ->
-                                coroutineScope.launch {
-                                    settingsViewModel.updateLanguage(language)
-                                    delay(200)
-                                    if (context is Activity) {
-                                        context.recreate()
-                                    }
-                                }
+                                settingsViewModel.updateLanguage(language)
                             }
                         )
 

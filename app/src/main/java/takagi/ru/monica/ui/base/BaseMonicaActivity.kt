@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import takagi.ru.monica.data.AppSettings
+import takagi.ru.monica.data.Language
 import takagi.ru.monica.security.SessionManager
 import takagi.ru.monica.utils.LocaleHelper
 import takagi.ru.monica.utils.ScreenshotProtectionUtil
@@ -33,10 +34,12 @@ abstract class BaseMonicaActivity : FragmentActivity() {
 
     protected var cachedSettings: AppSettings? = null
 
+    private var appliedLanguage = Language.SYSTEM
+
     override fun attachBaseContext(newBase: Context?) {
         if (newBase != null) {
-            val language = StartupLanguageCache.read(newBase)
-            super.attachBaseContext(LocaleHelper.setLocale(newBase, language))
+            appliedLanguage = StartupLanguageCache.read(newBase)
+            super.attachBaseContext(LocaleHelper.setLocale(newBase, appliedLanguage))
         } else {
             super.attachBaseContext(newBase)
         }
@@ -58,6 +61,13 @@ abstract class BaseMonicaActivity : FragmentActivity() {
                     StartupLanguageCache.write(applicationContext, settings.language)
                     applyScreenshotProtection(settings.screenshotProtectionEnabled)
                     SessionManager.updateAutoLockTimeout(settings.autoLockMinutes)
+                    // DataStore is authoritative: the startup cache can fall back to
+                    // SYSTEM before migration finishes. Refresh only after the real
+                    // selection has also been mirrored for attachBaseContext().
+                    if (settings.language != appliedLanguage && !isFinishing) {
+                        appliedLanguage = settings.language
+                        recreate()
+                    }
                 }
             }
         }

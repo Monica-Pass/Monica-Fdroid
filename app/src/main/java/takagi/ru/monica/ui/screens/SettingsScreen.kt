@@ -1385,16 +1385,8 @@ fun SettingsScreen(
         LanguageSelectionDialog(
             currentLanguage = settings.language,
             onLanguageSelected = { language ->
-                coroutineScope.launch {
-                    viewModel.updateLanguage(language)
-                    showLanguageDialog = false
-                    // 等待DataStore保存完成
-                    delay(200)
-                    // Restart activity to apply language change
-                    if (context is Activity) {
-                        context.recreate()
-                    }
-                }
+                viewModel.updateLanguage(language)
+                showLanguageDialog = false
             },
             onDismiss = { showLanguageDialog = false }
         )
