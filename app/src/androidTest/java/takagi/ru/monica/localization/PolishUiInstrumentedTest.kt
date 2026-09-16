@@ -101,11 +101,14 @@ class PolishUiInstrumentedTest {
         show(dark = true, fontScale = 1.6f) {
             LanguageSelectionDialog(Language.POLISH, {}, { dismissed = true })
         }
+        compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag("language_chinese_primary"))
+        compose.onNodeWithTag("language_chinese_expand").performClick()
         Language.entries.forEach { language ->
             val tag = "language_option_${language.name}"
             compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag(tag))
             compose.onNodeWithTag(tag).assertIsDisplayed()
         }
+        compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag("language_option_POLISH"))
         compose.onNodeWithTag("language_option_POLISH").assertIsSelected()
         val layout = compose.onNodeWithText("Polski", useUnmergedTree = true).assertNoTextOverflow()
         assertEquals(1.6f, layout.layoutInput.density.fontScale, 0.001f)

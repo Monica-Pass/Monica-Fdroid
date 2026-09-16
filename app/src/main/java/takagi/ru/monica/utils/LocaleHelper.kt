@@ -14,6 +14,7 @@ object LocaleHelper {
             Language.SYSTEM -> getSystemLocale()
             Language.ENGLISH -> Locale.ENGLISH
             Language.CHINESE -> Locale.forLanguageTag("zh-Hans-CN")
+            Language.TRADITIONAL_CHINESE -> Locale.forLanguageTag("zh-Hant-HK")
             Language.CLASSICAL_CHINESE -> Locale.forLanguageTag("lzh")
             Language.VIETNAMESE -> Locale("vi", "VN")
             Language.JAPANESE -> Locale.JAPAN
@@ -42,10 +43,10 @@ object LocaleHelper {
     private fun updateResources(context: Context, locale: Locale): Context {
         Locale.setDefault(locale)
 
-        // lzh is a separate language, so Android does not infer a Chinese fallback.
-        // Keep platform/dependency resources readable when they have no lzh text.
-        val classicalLocales = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && locale.language == "lzh") {
-            LocaleList(locale, Locale.SIMPLIFIED_CHINESE, Locale.ENGLISH)
+        // Android does not infer a Hans fallback for lzh or Hant. Keep missing
+        // translations readable in Chinese before falling back to English.
+        val fallbackLocales = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            chineseFallbackLocales(locale)
         } else {
             null
         }
@@ -62,14 +63,14 @@ object LocaleHelper {
         // Some devices report zh-Hant-CN. Matching only language and country
         // would retain Hant when Chinese is selected, missing our Hans resources.
         if (currentLocale == locale &&
-            (classicalLocales == null || context.resources.configuration.locales == classicalLocales)
+            (fallbackLocales == null || context.resources.configuration.locales == fallbackLocales)
         ) {
             return context
         }
 
         val config = Configuration(context.resources.configuration)
-        if (classicalLocales != null) {
-            config.setLocales(classicalLocales)
+        if (fallbackLocales != null) {
+            config.setLocales(fallbackLocales)
         } else {
             config.setLocale(locale)
         }
@@ -83,6 +84,16 @@ object LocaleHelper {
         }
     }
 
+    internal fun chineseFallbackLocales(locale: Locale): LocaleList? = when {
+        locale.language == "lzh" -> LocaleList(locale, Locale.SIMPLIFIED_CHINESE, Locale.ENGLISH)
+        isTraditionalChinese(locale) -> LocaleList(locale, Locale.forLanguageTag("zh-Hans-CN"), Locale.ENGLISH)
+        else -> null
+    }
+
+    private fun isTraditionalChinese(locale: Locale): Boolean = locale.language == "zh" &&
+        (locale.script == "Hant" ||
+            (locale.script.isEmpty() && locale.country in listOf("TW", "HK", "MO")))
+
     fun getCurrentLanguage(context: Context): Language {
         val currentLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             context.resources.configuration.locales[0]
@@ -92,7 +103,11 @@ object LocaleHelper {
         }
 
         return when (currentLocale.language) {
-            "zh" -> if (currentLocale.country == "NY") Language.NYA else Language.CHINESE
+            "zh" -> when {
+                currentLocale.country == "NY" -> Language.NYA
+                isTraditionalChinese(currentLocale) -> Language.TRADITIONAL_CHINESE
+                else -> Language.CHINESE
+            }
             "lzh" -> Language.CLASSICAL_CHINESE
             "en" -> Language.ENGLISH
             "vi" -> Language.VIETNAMESE

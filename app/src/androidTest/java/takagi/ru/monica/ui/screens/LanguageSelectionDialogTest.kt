@@ -64,9 +64,11 @@ class LanguageSelectionDialogTest {
     fun closeKeepsTheCurrentLanguage() {
         show(Language.CHINESE)
         compose.onNodeWithText("语言").assertIsDisplayed()
-        compose.onNodeWithTag("language_option_CHINESE").assertIsSelected()
+        compose.onNodeWithTag("language_chinese_primary").assertIsSelected()
+        compose.onNodeWithText("简体中文").assertIsDisplayed()
+        compose.onNodeWithTag("language_option_CLASSICAL_CHINESE").assertDoesNotExist()
+        compose.onNodeWithTag("language_chinese_expand").performClick()
         compose.onNodeWithText("文言文（华夏）").assertIsDisplayed()
-        compose.onNodeWithText("Classical Chinese (Huaxia)").assertIsDisplayed()
         capture("language-dialog-m3e-light.png")
         compose.onNodeWithContentDescription(chineseCloseLabel()).performClick()
         compose.runOnIdle {
@@ -80,19 +82,26 @@ class LanguageSelectionDialogTest {
         show(Language.CLASSICAL_CHINESE, dark = true, fontScale = 1.5f)
         compose.onNodeWithText("语言").assertIsDisplayed()
         compose.onNodeWithTag("language_options")
-            .performScrollToNode(hasTestTag("language_option_CLASSICAL_CHINESE"))
-        compose.onNodeWithTag("language_option_CLASSICAL_CHINESE").assertIsSelected()
+            .performScrollToNode(hasTestTag("language_chinese_primary"))
+        compose.onNodeWithTag("language_chinese_primary").assertIsSelected()
         compose.onNodeWithText("文言文（华夏）").assertIsDisplayed()
-        compose.onNodeWithText("Classical Chinese (Huaxia)").assertIsDisplayed()
         assertEquals(
             1.5f,
-            compose.onNodeWithTag("language_option_CLASSICAL_CHINESE")
+            compose.onNodeWithTag("language_chinese_primary")
                 .fetchSemanticsNode().layoutInfo.density.fontScale,
             0.001f,
         )
         compose.onNodeWithContentDescription(chineseCloseLabel()).assertIsDisplayed()
         capture("language-dialog-m3e-dark-large-text.png")
-        Language.entries.forEach { language ->
+        compose.onNodeWithTag("language_chinese_expand").performClick()
+        chineseLanguageVariants.forEach { language ->
+            val tag = "language_option_${language.name}"
+            compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag(tag))
+            compose.onNodeWithTag(tag).assertIsDisplayed()
+        }
+        compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag("language_chinese_primary"))
+        compose.onNodeWithTag("language_chinese_expand").performClick()
+        Language.entries.filter { it !in chineseLanguageVariants }.forEach { language ->
             val tag = "language_option_${language.name}"
             compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag(tag))
             compose.onNodeWithTag(tag).assertIsDisplayed()

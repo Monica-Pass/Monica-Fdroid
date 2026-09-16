@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_chinese_expand">Afficher les variantes du chinois</string>
+    <string name="language_chinese_collapse">Masquer les variantes du chinois</string>
+</resources>

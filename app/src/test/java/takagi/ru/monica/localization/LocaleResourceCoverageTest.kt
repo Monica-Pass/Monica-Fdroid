@@ -19,6 +19,7 @@ class LocaleResourceCoverageTest {
 
     private val localeDirectories = mapOf(
         Language.CHINESE to "values-zh",
+        Language.TRADITIONAL_CHINESE to "values-b+zh+Hant",
         Language.CLASSICAL_CHINESE to "values-b+lzh",
         Language.VIETNAMESE to "values-vi",
         Language.JAPANESE to "values-ja",
@@ -140,7 +141,7 @@ class LocaleResourceCoverageTest {
     }
 
     private fun requiredQuantities(language: Language): Set<String> = when (language) {
-        Language.CHINESE, Language.CLASSICAL_CHINESE, Language.JAPANESE,
+        Language.CHINESE, Language.TRADITIONAL_CHINESE, Language.CLASSICAL_CHINESE, Language.JAPANESE,
         Language.KOREAN, Language.VIETNAMESE -> setOf("other")
         Language.RUSSIAN, Language.POLISH -> setOf("one", "few", "many", "other")
         else -> setOf("one", "other")

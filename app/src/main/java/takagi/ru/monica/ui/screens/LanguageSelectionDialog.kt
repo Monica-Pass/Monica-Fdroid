@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.SettingsSuggest
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -38,6 +39,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +59,18 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import takagi.ru.monica.R
 import takagi.ru.monica.data.Language
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
+
+internal val chineseLanguageVariants = listOf(
+    Language.CHINESE,
+    Language.TRADITIONAL_CHINESE,
+    Language.NYA,
+    Language.CLASSICAL_CHINESE,
+)
+
+private val topLevelLanguages = listOf(Language.SYSTEM, Language.CHINESE) +
+    Language.entries.filter { it != Language.SYSTEM && it !in chineseLanguageVariants }
 
 @Composable
 fun LanguageSelectionDialog(
@@ -66,8 +82,9 @@ fun LanguageSelectionDialog(
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val maxHeight = minOf(560.dp, configuration.screenHeightDp.dp * 0.82f)
+    val currentRow = if (currentLanguage in chineseLanguageVariants) Language.CHINESE else currentLanguage
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = (Language.entries.indexOf(currentLanguage) - 2).coerceAtLeast(0)
+        initialFirstVisibleItemIndex = (topLevelLanguages.indexOf(currentRow) - 2).coerceAtLeast(0)
     )
 
     Dialog(
@@ -83,7 +100,7 @@ fun LanguageSelectionDialog(
         ) {
             Surface(
                 modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
                     .widthIn(max = 420.dp)
                     .fillMaxWidth()
                     .heightIn(max = maxHeight)
@@ -128,17 +145,83 @@ fun LanguageSelectionDialog(
                             .testTag("language_options"),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        itemsIndexed(Language.entries, key = { _, language -> language.name }) { index, language ->
-                            LanguageOption(
-                                language = language,
-                                selected = language == currentLanguage,
-                                first = index == 1,
-                                last = index == Language.entries.lastIndex,
-                                onClick = { onLanguageSelected(language) },
-                                modifier = if (language == Language.SYSTEM) Modifier.padding(bottom = 8.dp) else Modifier,
-                            )
+                        itemsIndexed(topLevelLanguages, key = { _, language -> language.name }) { index, language ->
+                            if (language == Language.CHINESE) {
+                                ChineseLanguageOption(
+                                    currentLanguage = currentLanguage,
+                                    onLanguageSelected = onLanguageSelected,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                            } else {
+                                LanguageOption(
+                                    language = language,
+                                    selected = language == currentLanguage,
+                                    first = index == 2,
+                                    last = index == topLevelLanguages.lastIndex,
+                                    onClick = { onLanguageSelected(language) },
+                                    modifier = if (language == Language.SYSTEM) Modifier.padding(bottom = 8.dp) else Modifier,
+                                )
+                            }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChineseLanguageOption(
+    currentLanguage: Language,
+    onLanguageSelected: (Language) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isSelected = currentLanguage in chineseLanguageVariants
+    var displayedLanguage by rememberSaveable(currentLanguage) {
+        mutableStateOf(if (isSelected) currentLanguage else Language.CHINESE)
+    }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Column(modifier = modifier.fillMaxWidth()) {
+        LanguageOption(
+            language = displayedLanguage,
+            selected = isSelected,
+            first = true,
+            last = true,
+            onClick = { onLanguageSelected(displayedLanguage) },
+            testTag = "language_chinese_primary",
+            trailingContent = {
+                // The arrow consumes its own click, so expanding never applies a language.
+                IconButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.size(48.dp).clip(CircleShape).testTag("language_chinese_expand"),
+                ) {
+                    MonicaExpansionChevron(
+                        expanded = expanded,
+                        contentDescription = stringResource(
+                            if (expanded) R.string.language_chinese_collapse else R.string.language_chinese_expand
+                        ),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            },
+        )
+        MonicaExpandableContent(expanded = expanded) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                chineseLanguageVariants.forEachIndexed { index, language ->
+                    LanguageOption(
+                        language = language,
+                        selected = language == currentLanguage,
+                        first = index == 0,
+                        last = index == chineseLanguageVariants.lastIndex,
+                        onClick = {
+                            displayedLanguage = language
+                            expanded = false
+                            onLanguageSelected(language)
+                        },
+                    )
                 }
             }
         }
@@ -153,12 +236,14 @@ private fun LanguageOption(
     last: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    testTag: String = "language_option_${language.name}",
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
-    val standalone = selected || language == Language.SYSTEM
+    val standalone = language == Language.SYSTEM
     val topCorner by animateDpAsState(
         targetValue = if (pressed) 12.dp else if (standalone || first) 20.dp else 4.dp,
         animationSpec = spring(dampingRatio = 0.8f, stiffness = 600f),
@@ -193,9 +278,14 @@ private fun LanguageOption(
                 indication = androidx.compose.material3.ripple(),
                 onClick = onClick,
             )
-            .testTag("language_option_${language.name}")
+            .testTag(testTag)
             .heightIn(min = 56.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(
+                start = 16.dp,
+                end = if (trailingContent == null) 16.dp else 4.dp,
+                top = if (trailingContent == null) 12.dp else 4.dp,
+                bottom = if (trailingContent == null) 12.dp else 4.dp,
+            ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -221,13 +311,6 @@ private fun LanguageOption(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 color = contentColor,
             )
-            if (language == Language.CLASSICAL_CHINESE) {
-                Text(
-                    text = stringResource(R.string.language_classical_chinese_english),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                )
-            }
         }
         if (selected) {
             Box(
@@ -244,6 +327,7 @@ private fun LanguageOption(
         } else {
             Spacer(Modifier.size(24.dp))
         }
+        trailingContent?.invoke()
     }
 }
 
@@ -251,8 +335,9 @@ internal fun getLanguageDisplayName(language: Language, context: Context): Strin
     when (language) {
         Language.SYSTEM -> R.string.language_system
         Language.ENGLISH -> R.string.language_english
-        Language.CHINESE -> R.string.language_chinese
-        Language.CLASSICAL_CHINESE -> R.string.language_classical_chinese
+        Language.CHINESE -> R.string.language_chinese_simplified
+        Language.TRADITIONAL_CHINESE -> R.string.language_chinese_traditional
+        Language.CLASSICAL_CHINESE -> R.string.language_classical_chinese_native
         Language.VIETNAMESE -> R.string.language_vietnamese
         Language.JAPANESE -> R.string.language_japanese
         Language.RUSSIAN -> R.string.language_russian
