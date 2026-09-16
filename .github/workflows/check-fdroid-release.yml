@@ -1,0 +1,52 @@
+name: F-Droid release readiness
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - app/build.gradle
+      - 'Monica F-Droid发行说明.md'
+      - fastlane/metadata/android/**/changelogs/*.txt
+      - scripts/check-fdroid-release.py
+      - .github/workflows/check-fdroid-release.yml
+  pull_request:
+    paths:
+      - app/build.gradle
+      - 'Monica F-Droid发行说明.md'
+      - fastlane/metadata/android/**/changelogs/*.txt
+      - scripts/check-fdroid-release.py
+      - .github/workflows/check-fdroid-release.yml
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Proposed tag to check only (optional; example: v1.0.312)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fdroid-release-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          sparse-checkout: |
+            /app/build.gradle
+            /scripts/check-fdroid-release.py
+            /Monica F-Droid发行说明.md
+            /fastlane/metadata/android/*/changelogs/*.txt
+          sparse-checkout-cone-mode: false
+      - name: Check version, tag and F-Droid release notes
+        env:
+          EXPECTED_TAG: ${{ inputs.tag }}
+        run: python3 scripts/check-fdroid-release.py

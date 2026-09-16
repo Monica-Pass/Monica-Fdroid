@@ -1,5 +1,8 @@
 
 本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
+
+本版更新见 [F-Droid 发行说明](Monica%20F-Droid发行说明.md)，维护者发布步骤见 [标签自动更新指南](docs/fdroid-release.md)。
+
 <h1 align="center">Monica 本地密码库</h1>
 
 <div align="center">
