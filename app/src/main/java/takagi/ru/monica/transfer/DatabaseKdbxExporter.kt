@@ -118,7 +118,7 @@ internal class DatabaseKdbxExporter(context: Context) {
             for ((index, attachment) in snapshot.attachments.withIndex()) {
                 val uuid = owners[attachment.owner] ?: continue
                 progress.report(TransferProgress(TransferPhase.ATTACHMENTS, index.toLong(), snapshot.attachments.size.toLong()))
-                val bytes = attachment.read()
+                val bytes = withAttachmentExportError(attachment) { attachment.read() }
                 try { output = KeePassNativeManagement.addAttachment(output, uuid, attachment.fileName, bytes) }
                 finally { bytes.fill(0) }
             }

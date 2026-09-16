@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">This database contains unsupported item types. Save a native database copy instead.</string>
     <string name="transfer_zip_password_title">Unlock ZIP backup</string>
     <string name="transfer_zip_password_description">Enter the password used to create this ZIP backup.</string>
+    <string name="transfer_attachment_export_failed">Could not export attachment “%2$s” from “%1$s”. %3$s</string>
+    <string name="transfer_attachment_key_unavailable">The attachment key could not be decrypted. Unlock Monica and try opening the attachment in its item. If it still fails, re-import it from the original device or a readable backup.</string>
+    <string name="transfer_attachment_content_unreadable">The attachment failed its integrity check, so the export was stopped. Check the original file or restore the attachment from a readable backup.</string>
+    <string name="transfer_incomplete_export_file">The unfinished export file could not be removed automatically. Delete this empty or incomplete file manually; it is not a usable backup.</string>
 </resources>

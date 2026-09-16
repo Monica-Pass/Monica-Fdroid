@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">Esta base contiene tipos de elemento no compatibles. Guarda una copia en su formato original.</string>
     <string name="transfer_zip_password_title">Descifrar copia ZIP</string>
     <string name="transfer_zip_password_description">Introduce la contraseña usada para crear esta copia ZIP.</string>
+    <string name="transfer_attachment_export_failed">No se pudo exportar el adjunto «%2$s» de «%1$s». %3$s</string>
+    <string name="transfer_attachment_key_unavailable">No se pudo descifrar la clave del adjunto. Desbloquea Monica e intenta abrirlo desde la entrada. Si sigue fallando, vuelve a importarlo desde el dispositivo original o una copia de seguridad que puedas leer.</string>
+    <string name="transfer_attachment_content_unreadable">El adjunto no superó la comprobación de integridad y se detuvo la exportación. Revisa el archivo original o restaura el adjunto desde una copia de seguridad que puedas leer.</string>
+    <string name="transfer_incomplete_export_file">No se pudo eliminar automáticamente el archivo de exportación incompleto. Borra manualmente este archivo vacío o incompleto; no sirve como copia de seguridad.</string>
 </resources>

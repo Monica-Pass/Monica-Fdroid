@@ -137,18 +137,12 @@ internal class DatabaseArchiveExporter(context: Context) {
                         currentCoroutineContext().ensureActive()
                         progress.report(TransferProgress(TransferPhase.ATTACHMENTS, index.toLong(), attachments.size.toLong()))
                         val name = "${PortableAttachmentBackup.DIR_NAME}/attachment_$index.bin"
-                        val bytes = attachment.read()
-                        try {
-                            check(bytes.size.toLong() == attachment.sizeBytes || attachment.sizeBytes <= 0) {
-                                strings.get(R.string.export_message_incomplete, bytes.size.toLong(), attachment.sizeBytes)
-                            }
-                            zip.putNextEntry(ZipEntry(name)); zip.write(bytes); zip.closeEntry()
-                            manifest += PortableAttachmentBackup.Entry(attachment.owner.passwordId, attachment.owner.secureItemId,
-                                attachment.fileName, attachment.mimeType, bytes.size.toLong(),
-                                java.security.MessageDigest.getInstance("SHA-256").digest(bytes)
-                                    .joinToString("") { "%02x".format(it) },
-                                name, attachment.createdAt, attachment.createdAt)
-                        } finally { bytes.fill(0) }
+                        zip.putNextEntry(ZipEntry(name))
+                        val payload = withAttachmentExportError(attachment) { attachment.writeTo(zip) }
+                        zip.closeEntry()
+                        manifest += PortableAttachmentBackup.Entry(attachment.owner.passwordId, attachment.owner.secureItemId,
+                            attachment.fileName, attachment.mimeType, payload.sizeBytes, payload.sha256Hex,
+                            name, attachment.createdAt, attachment.createdAt)
                     }
                     if (manifest.isNotEmpty()) write(PortableAttachmentBackup.MANIFEST_ENTRY, PortableAttachmentBackup.encodeManifest(manifest))
                     // Legacy images and user icons are also restricted to included owners.

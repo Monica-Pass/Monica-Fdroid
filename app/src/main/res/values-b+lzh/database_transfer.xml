@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">此库有未能识之项，请另存原库副本。</string>
     <string name="transfer_zip_password_title">解 ZIP 存本</string>
     <string name="transfer_zip_password_description">请入封此 ZIP 存本时所设之钥。</string>
+    <string name="transfer_attachment_export_failed">「%1$s」之附件「%2$s」未能出。%3$s</string>
+    <string name="transfer_attachment_key_unavailable">附件之钥不可启。请解锁 Monica，于条目中试启此附件；若仍不可，须自原机或可读之备份复纳。</string>
+    <string name="transfer_attachment_content_unreadable">附件校验未过，已止导出。请察原档，或自可读之备份复之。</string>
+    <string name="transfer_incomplete_export_file">导出未成，遗档亦未能自动删去。请手删此空档或残档，不可据此复原。</string>
 </resources>

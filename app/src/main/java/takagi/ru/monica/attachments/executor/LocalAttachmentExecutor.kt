@@ -12,6 +12,7 @@ import takagi.ru.monica.attachments.model.AttachmentOwner
 import takagi.ru.monica.attachments.model.AttachmentSource
 import takagi.ru.monica.attachments.storage.AttachmentKeyVault
 import takagi.ru.monica.attachments.storage.AttachmentStorage
+import takagi.ru.monica.attachments.storage.readAttachmentKey
 import java.io.InputStream
 
 /**
@@ -127,12 +128,7 @@ class LocalAttachmentExecutor(
     /** 打开一个已 DOWNLOADED 的附件用于读取明文字节。 */
     suspend fun openDecrypted(attachment: Attachment): InputStream = withContext(Dispatchers.IO) {
         val path = attachment.localPath ?: throw AttachmentError.IoError
-        val wrapped = attachment.wrappedCek ?: throw AttachmentError.CryptoError
-        val cek = try {
-            keyVault.unwrap(wrapped)
-        } catch (e: Throwable) {
-            throw AttachmentError.CryptoError
-        }
+        val cek = readAttachmentKey(attachment.wrappedCek, keyVault::unwrap)
         try {
             storage.openDecryptedStream(path, cek)
         } finally {

@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">Baza zawiera nieobsługiwane typy wpisów. Zapisz kopię w oryginalnym formacie.</string>
     <string name="transfer_zip_password_title">Odszyfruj kopię ZIP</string>
     <string name="transfer_zip_password_description">Wpisz hasło ustawione przy tworzeniu tej kopii ZIP.</string>
+    <string name="transfer_attachment_export_failed">Nie udało się wyeksportować załącznika „%2$s” z wpisu „%1$s”. %3$s</string>
+    <string name="transfer_attachment_key_unavailable">Nie można odszyfrować klucza załącznika. Odblokuj aplikację Monica i spróbuj otworzyć załącznik we wpisie. Jeśli błąd się powtórzy, zaimportuj go ponownie z pierwotnego urządzenia lub czytelnej kopii zapasowej.</string>
+    <string name="transfer_attachment_content_unreadable">Załącznik nie przeszedł kontroli integralności. Eksport został przerwany. Sprawdź oryginalny plik lub przywróć załącznik z czytelnej kopii zapasowej.</string>
+    <string name="transfer_incomplete_export_file">Nie udało się automatycznie usunąć niedokończonego pliku eksportu. Usuń ten pusty lub niekompletny plik ręcznie — nie można z niego przywrócić danych.</string>
 </resources>

@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">此库包含暂不支持的项目类型，请另存原生数据库副本。</string>
     <string name="transfer_zip_password_title">解密 ZIP 备份</string>
     <string name="transfer_zip_password_description">请输入创建这份 ZIP 备份时设置的密码。</string>
+    <string name="transfer_attachment_export_failed">条目「%1$s」的附件「%2$s」导出失败。%3$s</string>
+    <string name="transfer_attachment_key_unavailable">无法解开此附件的密钥。请先解锁 Monica，并在条目详情中尝试打开；仍失败时需从原设备或可读取的备份重新导入该附件。</string>
+    <string name="transfer_attachment_content_unreadable">此附件未通过完整性校验，导出已停止。请检查原文件或从可读取的备份恢复。</string>
+    <string name="transfer_incomplete_export_file">未能自动删除导出失败留下的文件。请手动删除这个空文件或不完整文件，它不能用于恢复数据。</string>
 </resources>

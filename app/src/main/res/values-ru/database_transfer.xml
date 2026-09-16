@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">База содержит неподдерживаемые типы записей. Сохраните копию в исходном формате.</string>
     <string name="transfer_zip_password_title">Расшифровать копию ZIP</string>
     <string name="transfer_zip_password_description">Введите пароль, заданный при создании этой копии ZIP.</string>
+    <string name="transfer_attachment_export_failed">Не удалось экспортировать вложение «%2$s» из записи «%1$s». %3$s</string>
+    <string name="transfer_attachment_key_unavailable">Не удалось расшифровать ключ вложения. Разблокируйте Monica и попробуйте открыть вложение в записи. Если ошибка повторится, импортируйте его заново с исходного устройства или из доступной для чтения резервной копии.</string>
+    <string name="transfer_attachment_content_unreadable">Вложение не прошло проверку целостности, поэтому экспорт остановлен. Проверьте исходный файл или восстановите вложение из доступной для чтения резервной копии.</string>
+    <string name="transfer_incomplete_export_file">Не удалось автоматически удалить незавершённый файл экспорта. Удалите этот пустой или неполный файл вручную: восстановить данные из него нельзя.</string>
 </resources>

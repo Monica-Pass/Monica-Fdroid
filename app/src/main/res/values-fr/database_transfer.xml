@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">Cette base contient des types non pris en charge. Enregistrez une copie au format d’origine.</string>
     <string name="transfer_zip_password_title">Déchiffrer la sauvegarde ZIP</string>
     <string name="transfer_zip_password_description">Saisissez le mot de passe utilisé pour créer cette sauvegarde ZIP.</string>
+    <string name="transfer_attachment_export_failed">Impossible d’exporter la pièce jointe « %2$s » de « %1$s ». %3$s</string>
+    <string name="transfer_attachment_key_unavailable">La clé de cette pièce jointe ne peut pas être déchiffrée. Déverrouillez Monica et essayez de l’ouvrir depuis sa fiche. Si le problème persiste, réimportez-la depuis l’appareil d’origine ou une sauvegarde lisible.</string>
+    <string name="transfer_attachment_content_unreadable">La pièce jointe a échoué au contrôle d’intégrité. L’exportation a été interrompue. Vérifiez le fichier d’origine ou restaurez la pièce jointe depuis une sauvegarde lisible.</string>
+    <string name="transfer_incomplete_export_file">Le fichier d’exportation inachevé n’a pas pu être supprimé automatiquement. Supprimez ce fichier vide ou incomplet manuellement : il ne permet pas de restaurer vos données.</string>
 </resources>

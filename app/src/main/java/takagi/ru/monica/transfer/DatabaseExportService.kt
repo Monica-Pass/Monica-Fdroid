@@ -115,9 +115,12 @@ class DatabaseExportService : Service() {
                 message = strings.get(R.string.transfer_cancelled)
                 throw cancelled
             } catch (error: Exception) {
-                message = error.message ?: strings.get(R.string.export_data_error)
+                message = databaseExportErrorMessage(this@DatabaseExportService, error)
             } finally {
-                if (status != ExportJobStatus.SUCCEEDED) removeIncompleteDocument(request.uri)
+                if (status != ExportJobStatus.SUCCEEDED && !removeIncompleteDocument(request.uri)) {
+                    message = listOfNotNull(message, strings.get(R.string.transfer_incomplete_export_file))
+                        .joinToString("\n\n")
+                }
                 withContext(NonCancellable + Dispatchers.Main.immediate) {
                     runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
                     runCatching {
@@ -135,10 +138,15 @@ class DatabaseExportService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun removeIncompleteDocument(uri: Uri) {
-        if (android.provider.DocumentsContract.isDocumentUri(this, uri)) runCatching {
-            android.provider.DocumentsContract.deleteDocument(contentResolver, uri)
-        }
+    private fun removeIncompleteDocument(uri: Uri): Boolean {
+        val removed = try {
+            android.provider.DocumentsContract.isDocumentUri(this, uri) &&
+                android.provider.DocumentsContract.deleteDocument(contentResolver, uri)
+        } catch (_: Exception) { false }
+        if (removed) return true
+        // Some file pickers return a content URI or do not implement deleteDocument.
+        // Only touch the exact document created for this export, never its parent.
+        return try { contentResolver.delete(uri, null, null) > 0 } catch (_: Exception) { false }
     }
 
     private fun notification(progress: TransferProgress, running: Boolean, succeeded: Boolean = false): android.app.Notification {

@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">Diese Datenbank enthält nicht unterstützte Eintragstypen. Speichere eine Kopie im Originalformat.</string>
     <string name="transfer_zip_password_title">ZIP-Sicherung entsperren</string>
     <string name="transfer_zip_password_description">Gib das Passwort ein, mit dem diese ZIP-Sicherung erstellt wurde.</string>
+    <string name="transfer_attachment_export_failed">Der Anhang „%2$s“ im Eintrag „%1$s“ konnte nicht exportiert werden. %3$s</string>
+    <string name="transfer_attachment_key_unavailable">Der Schlüssel dieses Anhangs lässt sich nicht entschlüsseln. Entsperre Monica und öffne den Anhang im Eintrag. Falls das nicht hilft, importiere ihn erneut vom ursprünglichen Gerät oder aus einer lesbaren Sicherung.</string>
+    <string name="transfer_attachment_content_unreadable">Die Integritätsprüfung des Anhangs ist fehlgeschlagen. Der Export wurde abgebrochen. Prüfe die Originaldatei oder stelle den Anhang aus einer lesbaren Sicherung wieder her.</string>
+    <string name="transfer_incomplete_export_file">Die unvollständige Exportdatei konnte nicht automatisch entfernt werden. Lösche diese leere oder unvollständige Datei manuell. Sie ist keine verwendbare Sicherung.</string>
 </resources>

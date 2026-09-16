@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">未対応の項目が含まれています。元のデータベース形式でコピーを保存してください。</string>
     <string name="transfer_zip_password_title">ZIP バックアップを復号</string>
     <string name="transfer_zip_password_description">この ZIP バックアップを作成したときのパスワードを入力してください。</string>
+    <string name="transfer_attachment_export_failed">「%1$s」の添付ファイル「%2$s」をエクスポートできませんでした。%3$s</string>
+    <string name="transfer_attachment_key_unavailable">添付ファイルの鍵を復号できません。Monica のロックを解除し、項目の詳細から添付ファイルを開いてください。解決しない場合は、元の端末または読み取り可能なバックアップから再インポートしてください。</string>
+    <string name="transfer_attachment_content_unreadable">添付ファイルの整合性を確認できなかったため、エクスポートを中止しました。元のファイルを確認するか、読み取り可能なバックアップから復元してください。</string>
+    <string name="transfer_incomplete_export_file">エクスポートに失敗したファイルを自動削除できませんでした。空または不完全なファイルを手動で削除してください。このファイルからデータを復元することはできません。</string>
 </resources>

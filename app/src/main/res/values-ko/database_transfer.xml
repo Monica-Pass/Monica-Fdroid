@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">지원하지 않는 항목 유형이 있습니다. 원래 데이터베이스 형식으로 사본을 저장하세요.</string>
     <string name="transfer_zip_password_title">ZIP 백업 복호화</string>
     <string name="transfer_zip_password_description">이 ZIP 백업을 만들 때 설정한 비밀번호를 입력하세요.</string>
+    <string name="transfer_attachment_export_failed">“%1$s” 항목의 첨부파일 “%2$s”을(를) 내보내지 못했습니다. %3$s</string>
+    <string name="transfer_attachment_key_unavailable">첨부파일의 키를 복호화할 수 없습니다. Monica의 잠금을 해제하고 항목 상세 화면에서 첨부파일을 열어 보세요. 계속 실패하면 원래 기기나 읽을 수 있는 백업에서 다시 가져오세요.</string>
+    <string name="transfer_attachment_content_unreadable">첨부파일의 무결성 검사에 실패하여 내보내기를 중단했습니다. 원본 파일을 확인하거나 읽을 수 있는 백업에서 복원하세요.</string>
+    <string name="transfer_incomplete_export_file">내보내기에 실패한 파일을 자동으로 삭제하지 못했습니다. 이 빈 파일 또는 불완전한 파일을 직접 삭제하세요. 이 파일로는 데이터를 복원할 수 없습니다.</string>
 </resources>

@@ -9,6 +9,9 @@ import kotlinx.serialization.Serializable
 import org.json.JSONObject
 import takagi.ru.monica.R
 import takagi.ru.monica.attachments.AttachmentContainer
+import takagi.ru.monica.attachments.backup.copyAttachmentPayload
+import takagi.ru.monica.attachments.backup.writeVerifiedAttachmentPayload
+import takagi.ru.monica.attachments.storage.readAttachmentKey
 import takagi.ru.monica.attachments.model.AttachmentSource
 import takagi.ru.monica.attachments.model.AttachmentOwner
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
@@ -21,6 +24,8 @@ import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.steam.data.*
 import takagi.ru.monica.utils.*
 import java.util.Date
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 
 @Serializable
 data class NativeTokenBackup(
@@ -36,8 +41,21 @@ internal data class ExportAttachment(
     val mimeType: String,
     val sizeBytes: Long,
     val createdAt: Long,
-    val read: suspend () -> ByteArray,
-)
+    val sha256Hex: String? = null,
+    val ownerTitle: String = "",
+    val localAttachmentId: Long? = null,
+    val source: AttachmentSource? = null,
+    private val copyTo: suspend (OutputStream) -> Unit,
+) {
+    suspend fun writeTo(output: OutputStream) =
+        writeVerifiedAttachmentPayload(output, sizeBytes, sha256Hex, copyTo)
+
+    // Kotpass requires a byte array. ZIP export streams directly into the archive.
+    suspend fun read(): ByteArray = ByteArrayOutputStream().use { output ->
+        writeTo(output)
+        output.toByteArray()
+    }
+}
 
 /** A source is resolved once. Writers cannot broaden it by querying global tables. */
 internal data class DatabaseExportSnapshot(
@@ -126,7 +144,7 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                         for (ref in node.entry.binaries) {
                             val data = session.database.binaries[ref.hash] ?: error("Missing KDBX attachment")
                             attachments += ExportAttachment(owner, ref.name, "application/octet-stream",
-                                0L, 0L) { data.inputStream().use { it.readBytes() } }
+                                0L, 0L) { output -> data.inputStream().use { copyAttachmentPayload(it, output) } }
                         }
                     }
                 }
@@ -202,16 +220,18 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                     for (attachment in mdbx.readStoredAttachments(source.databaseId).filterNot { it.deleted }) {
                         val owner = ownerById[attachment.entryId] ?: continue
                         attachments += ExportAttachment(owner, attachment.fileName, attachment.mimeType,
-                            attachment.originalSize, attachment.createdAtMillis) {
+                            attachment.originalSize, attachment.createdAtMillis) { output ->
                             val storage = takagi.ru.monica.attachments.storage.AttachmentStorage(context)
                             val relative = "transfer-${java.util.UUID.randomUUID()}.enc"
                             val file = storage.absolutePathOf(relative)
                             try {
                                 file.parentFile?.mkdirs()
                                 file.writeBytes(attachment.blob)
-                                val wrapped = MdbxAttachmentCekPayload.toLocalWrappedCek(checkNotNull(attachment.wrappedCek), security::encryptData)
-                                val cek = takagi.ru.monica.attachments.storage.AttachmentKeyVault(security).unwrap(wrapped)
-                                try { storage.openDecryptedStream(relative, cek).use { it.readBytes() } }
+                                val cek = readAttachmentKey(attachment.wrappedCek) { stored ->
+                                    val wrapped = MdbxAttachmentCekPayload.toLocalWrappedCek(stored, security::encryptData)
+                                    takagi.ru.monica.attachments.storage.AttachmentKeyVault(security).unwrap(wrapped)
+                                }
+                                try { storage.openDecryptedStream(relative, cek).use { copyAttachmentPayload(it, output) } }
                                 finally { cek.fill(0) }
                             } finally { file.delete() }
                         }
@@ -227,17 +247,21 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
             val owners = passwords.map { AttachmentOwner.password(it.id) to it.bitwardenCipherId } +
                 items.map { AttachmentOwner.secureItem(it.id) to it.bitwardenCipherId }
             for ((owner, cipherId) in owners) for (attachment in facade.list(owner)) {
-                attachments += ExportAttachment(owner, attachment.fileName, attachment.mimeType, attachment.sizeBytes, attachment.createdAt) {
+                attachments += ExportAttachment(owner, attachment.fileName, attachment.mimeType, attachment.sizeBytes, attachment.createdAt,
+                    sha256Hex = attachment.sha256Hex, localAttachmentId = attachment.id, source = attachment.sourceEnum) { output ->
                     val bw = source.bitwardenId?.takeIf { attachment.sourceEnum == AttachmentSource.BITWARDEN }?.let { id ->
                         val vault = checkNotNull(db.bitwardenVaultDao().getVaultById(id))
                         BitwardenRepository.getInstance(context).getAttachmentBitwardenContext(vault, checkNotNull(cipherId))
                     }
-                    try { facade.readAttachmentBytes(attachment.id, 64 * 1024 * 1024, bitwardenContext = bw) }
+                    try { facade.copyAttachmentTo(attachment.id, output, bitwardenContext = bw) }
                     finally { bw?.wrappingKey?.encKey?.fill(0); bw?.wrappingKey?.macKey?.fill(0) }
                 }
             }
         }
-        DatabaseExportSnapshot(source, passwords, items, keys, fields, categories, steam, attachments, tokens)
+        val ownerTitles = passwords.associate { AttachmentOwner.password(it.id) to it.title } +
+            items.associate { AttachmentOwner.secureItem(it.id) to it.title }
+        DatabaseExportSnapshot(source, passwords, items, keys, fields, categories, steam,
+            attachments.map { it.copy(ownerTitle = ownerTitles[it.owner].orEmpty()) }, tokens)
     }
 
     suspend fun loadSteamAccounts(source: ImportDestination): List<SteamAccount> = withContext(Dispatchers.IO) {

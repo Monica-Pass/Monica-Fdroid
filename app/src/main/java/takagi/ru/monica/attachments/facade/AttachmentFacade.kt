@@ -559,6 +559,19 @@ class AttachmentFacade(
         refreshed.copy(id = attachmentId)
     }
 
+    /** Streams the complete attachment for backups; preview byte-array limits do not apply. */
+    suspend fun copyAttachmentTo(
+        attachmentId: Long,
+        output: OutputStream,
+        bitwardenContext: BitwardenContext? = null,
+        keepassContext: KeePassContext? = null,
+    ) = withContext(Dispatchers.IO) {
+        val ready = ensureDownloaded(attachmentId, bitwardenContext, keepassContext)
+        localExecutor.openDecrypted(ready).use { input ->
+            takagi.ru.monica.attachments.backup.copyAttachmentPayload(input, output)
+        }
+    }
+
     suspend fun readAttachmentBytes(
         attachmentId: Long,
         maxBytes: Int,

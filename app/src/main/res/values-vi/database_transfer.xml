@@ -34,4 +34,8 @@
     <string name="transfer_unsupported_records">Cơ sở dữ liệu có loại mục chưa được hỗ trợ. Hãy lưu bản sao ở định dạng gốc.</string>
     <string name="transfer_zip_password_title">Giải mã bản sao ZIP</string>
     <string name="transfer_zip_password_description">Nhập mật khẩu đã đặt khi tạo bản sao ZIP này.</string>
+    <string name="transfer_attachment_export_failed">Không thể xuất tệp đính kèm “%2$s” của mục “%1$s”. %3$s</string>
+    <string name="transfer_attachment_key_unavailable">Không thể giải mã khóa của tệp đính kèm. Hãy mở khóa Monica rồi thử mở tệp trong mục chứa nó. Nếu vẫn lỗi, hãy nhập lại từ thiết bị gốc hoặc bản sao lưu có thể đọc được.</string>
+    <string name="transfer_attachment_content_unreadable">Tệp đính kèm không vượt qua kiểm tra tính toàn vẹn nên quá trình xuất đã dừng. Hãy kiểm tra tệp gốc hoặc khôi phục từ bản sao lưu có thể đọc được.</string>
+    <string name="transfer_incomplete_export_file">Không thể tự động xóa tệp xuất chưa hoàn tất. Hãy xóa thủ công tệp trống hoặc không đầy đủ này; không thể dùng tệp để khôi phục dữ liệu.</string>
 </resources>
