@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Chẩn đoán danh sách ứng dụng Monica</string>
+    <string name="app_report_generated">Được tạo: %1$s</string>
+    <string name="app_report_brand">Hãng thiết bị: %1$s</string>
+    <string name="app_report_model">Mẫu thiết bị: %1$s</string>
+    <string name="app_report_android">Phiên bản Android: %1$s (API %2$d)</string>
+    <string name="app_report_summary">Tổng quan</string>
+    <string name="app_report_total">Tổng số ứng dụng: %1$d</string>
+    <string name="app_report_user_count">Ứng dụng người dùng: %1$d</string>
+    <string name="app_report_system_count">Ứng dụng hệ thống: %1$d (đã cập nhật: %2$d)</string>
+    <string name="app_report_visible_percent">Hiển thị: %1$d (%2$s%%)</string>
+    <string name="app_report_hidden_percent">Đã ẩn: %1$d (%2$s%%)</string>
+    <string name="app_report_filter_health">Kiểm tra bộ lọc: %1$s</string>
+    <string name="app_report_filter_loose">Bộ lọc có thể ẩn quá ít thành phần hệ thống</string>
+    <string name="app_report_filter_strict">Bộ lọc có thể ẩn các ứng dụng hữu ích</string>
+    <string name="app_report_filter_good">Bộ lọc có vẻ cân bằng</string>
+    <string name="app_report_visible_apps">Ứng dụng hiển thị: %1$d</string>
+    <string name="app_report_user_apps">Ứng dụng do người dùng cài: %1$d</string>
+    <string name="app_report_system_apps">Ứng dụng hệ thống: %1$d</string>
+    <string name="app_report_more_apps">Ứng dụng khác: %1$d</string>
+    <string name="app_report_hidden_components">Thành phần hệ thống bị ẩn: %1$d</string>
+    <string name="app_report_hidden_feedback">Nếu một ứng dụng hữu ích bị ẩn, hãy kèm tên gói của ứng dụng trong phản hồi.</string>
+    <string name="app_report_android_core">Lõi Android</string>
+    <string name="app_report_android_system">Hệ thống Android</string>
+    <string name="app_report_google_services">Dịch vụ Google</string>
+    <string name="app_report_chip_vendor">Thành phần của nhà sản xuất chip</string>
+    <string name="app_report_other">Thành phần khác</string>
+    <string name="app_report_more_components">Thành phần bổ sung: %1$d</string>
+    <string name="app_report_all_apps">Danh sách đầy đủ: %1$d ứng dụng</string>
+    <string name="app_report_format">Định dạng: [trạng thái] tên ứng dụng</string>
+    <string name="app_report_package_type">Tên gói · Loại</string>
+    <string name="app_report_unknown_app">Ứng dụng không xác định</string>
+    <string name="app_report_user_app">Ứng dụng người dùng</string>
+    <string name="app_report_system_app">Ứng dụng hệ thống</string>
+    <string name="app_report_updated_system_app">Ứng dụng hệ thống đã cập nhật</string>
+    <string name="app_report_filter_rules">Quy tắc lọc ứng dụng</string>
+    <string name="app_report_rule_count">Số quy tắc lọc: %1$d</string>
+    <string name="app_report_rules_feedback">Để đề xuất thay đổi bộ lọc, hãy truy cập:</string>
+    <string name="app_report_complete">Đã hoàn tất báo cáo</string>
+    <string name="app_report_hidden_count">Ứng dụng bị ẩn: %1$d</string>
+    <string name="app_report_path">Đường dẫn tệp:</string>
+</resources>

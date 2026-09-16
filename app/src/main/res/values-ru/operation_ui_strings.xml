@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Не удалось добавить удаление Bitwarden в очередь</string>
+    <string name="bitwarden_message_conflict_detail">Запись изменена и локально, и на сервере</string>
+    <string name="bitwarden_message_empty_vault">Сервер не вернул данные, но локально осталось записей: %1$d. Синхронизация приостановлена для защиты данных. Проверьте сервер и аккаунт перед продолжением.</string>
+    <string name="runtime_kdbx_decode_failed">Не удалось прочитать базу KDBX</string>
+</resources>

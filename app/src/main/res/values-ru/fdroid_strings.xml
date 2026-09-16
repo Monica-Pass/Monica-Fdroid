@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">Разрешить HTTP</string>
+    <string name="webdav_allow_insecure_http_description">По умолчанию выключено. Включайте только для доверенного HTTP-сервера, например локального NAS без HTTPS. Иначе HTTP-подключения WebDAV блокируются.</string>
+    <string name="fdroid_cloud_provider_unavailable">Версия F-Droid не поддерживает %1$s. Используйте WebDAV.</string>
+    <string name="qr_image_read_failed">Не удалось прочитать изображение. Выберите другое.</string>
+</resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden을 사용할 수 없습니다</string>
+    <string name="entry_message_unsupported_type">이 작업은 이 항목 유형을 지원하지 않습니다</string>
+    <string name="entry_message_ownership_conflict">이 항목을 Monica로 이동하기 전에 저장소 연결 충돌을 해결하세요</string>
+    <string name="entry_message_local_copy_failed">Monica에 로컬 사본을 만들 수 없습니다</string>
+    <string name="entry_message_attachments_incomplete">일부 첨부 파일을 복사하지 못했습니다</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Bitwarden 항목에 동기화 ID가 없습니다</string>
+    <string name="entry_message_keepass_source_delete_failed">원본 KeePass 항목을 삭제할 수 없습니다</string>
+    <string name="entry_message_source_delete_failed">원본 항목을 삭제할 수 없습니다</string>
+    <string name="entry_message_storage_save_failed">선택한 위치에 저장할 수 없습니다</string>
+    <string name="entry_message_from_password">원본 비밀번호: %1$s</string>
+    <string name="entry_message_passkey_android_required">패스키의 모든 기능을 사용하려면 Android 14 이상이 필요합니다. 이 기기: %1$s</string>
+    <string name="entry_message_passkey_save_failed">패스키를 저장할 수 없습니다: %1$s</string>
+    <string name="entry_message_passkey_missing">패스키를 찾을 수 없습니다</string>
+    <string name="entry_message_passkey_update_failed">패스키를 업데이트할 수 없습니다: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">MDBX 패스키 연결을 업데이트할 수 없습니다: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">연결을 업데이트할 수 없습니다: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">사용 기록을 업데이트할 수 없습니다: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">패스키를 삭제할 수 없습니다: %1$s</string>
+    <string name="entry_message_category_path_invalid">폴더 경로가 잘못되었습니다</string>
+    <string name="entry_message_category_move_into_self">폴더를 자기 자신 또는 하위 폴더로 이동할 수 없습니다</string>
+    <string name="entry_message_category_missing">폴더를 찾을 수 없습니다</string>
+    <string name="entry_message_category_exists">대상 위치에 같은 이름의 폴더가 이미 있습니다</string>
+    <string name="entry_message_category_move_conflict">이동하면 기존 폴더와 충돌합니다</string>
+    <string name="entry_message_category_name_required">폴더 이름을 입력하세요</string>
+    <string name="entry_message_category_name_separator">폴더 이름에는 /를 사용할 수 없습니다</string>
+    <string name="entry_message_category_rename_conflict">이름을 변경하면 기존 폴더와 충돌합니다</string>
+    <string name="entry_message_saved">저장됨</string>
+</resources>

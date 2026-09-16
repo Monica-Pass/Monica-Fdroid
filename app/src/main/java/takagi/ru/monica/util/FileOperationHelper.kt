@@ -32,6 +32,10 @@ object FileOperationHelper {
     fun setCallback(callback: FileOperationCallback) {
         currentCallback = callback
     }
+
+    fun clearCallback(callback: FileOperationCallback) {
+        if (currentCallback === callback) currentCallback = null
+    }
     
     /**
      * 导出数据到CSV文件

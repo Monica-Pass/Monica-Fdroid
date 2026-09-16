@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">所出备份文件为空</string>
+    <string name="export_message_empty_zip">ZIP 备份无所含</string>
+    <string name="export_message_open_failed">导出之目标文件不可启</string>
+    <string name="export_message_incomplete">所出文件未写全：%1$d/%2$d 字节</string>
+    <string name="export_message_invalid_encrypted">写毕之备份，其加密之式无效</string>
+    <string name="export_message_verify_failed">所出文件未能验</string>
+    <string name="export_message_backup_summary">备份已出：密钥 %1$d、图片 %2$d</string>
+    <string name="import_message_aegis_unencrypted">此纳法须用未加密之 Aegis JSON 文件</string>
+    <string name="import_message_aegis_missing">Aegis 文件无效：缺 %1$s</string>
+    <string name="import_message_aegis_empty_slots">Aegis 文件无效：slots 为空</string>
+    <string name="import_message_aegis_slot_type">不识 Aegis slot 之类：%1$s</string>
+    <string name="import_message_aegis_no_totp">Aegis 文件中未得有效 TOTP 之项</string>
+    <string name="import_message_aegis_failed">Aegis 文件未能纳：%1$s</string>
+    <string name="import_message_key_length">解得之钥，其长无效</string>
+    <string name="import_message_steam_missing">Steam Guard 之数无效：缺 %1$s</string>
+    <string name="import_message_steam_device_id">设备 ID 无效，其式当为 android:xxxx</string>
+    <string name="import_message_steam_secret">Steam shared_secret 之式无效</string>
+    <string name="import_message_steam_exists">此 Steam Guard 验器已存</string>
+    <string name="export_message_empty_mafile">所出 maFile 为空</string>
+    <string name="crypto_message_encrypt_failed">加密未成：%1$s</string>
+    <string name="crypto_message_decrypt_failed">解密未成：%1$s</string>
+    <string name="crypto_message_file_too_small">加密文件过小，或已损</string>
+    <string name="crypto_message_invalid_file">加密文件之式无效</string>
+    <string name="crypto_message_password_or_corrupt">密钥有误，或加密之数已损</string>
+    <string name="crypto_message_invalid_text">加密之文，其式无效</string>
+    <string name="photo_message_camera_failed">相机未能启：%1$s</string>
+    <string name="photo_message_gallery_missing">无图库应用可用</string>
+    <string name="photo_message_gallery_failed">图库未能启：%1$s</string>
+    <string name="photo_message_data_failed">所返图片未能读：%1$s</string>
+    <string name="photo_message_file_missing">照片文件为空，或未存</string>
+    <string name="photo_message_not_selected">尚未择图片</string>
+</resources>

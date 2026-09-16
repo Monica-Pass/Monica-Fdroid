@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_message_credentials_required">Введите имя аккаунта и пароль</string>
+    <string name="steam_message_rsa_failed">Не удалось получить ключ RSA Steam</string>
+    <string name="steam_message_rsa_incomplete">Steam вернул неполные данные RSA</string>
+    <string name="steam_message_password_encrypt">Не удалось зашифровать пароль Steam</string>
+    <string name="steam_message_login_request">Не удалось отправить запрос входа в Steam</string>
+    <string name="steam_message_login_failed">Ошибка входа в Steam</string>
+    <string name="steam_message_login_rejected">Steam отклонил вход (EResult=%1$s, interval=%2$s)</string>
+    <string name="steam_message_login_incomplete">Steam вернул неполный ответ на вход. Может потребоваться дополнительная проверка.</string>
+    <string name="steam_message_session_invalid">Недопустимый сеанс входа</string>
+    <string name="steam_message_code_required">Введите код подтверждения</string>
+    <string name="steam_message_session_expired">Сеанс входа истёк. Начните заново.</string>
+    <string name="steam_message_verification_failed">Ошибка проверки Steam</string>
+    <string name="steam_message_qr_create">Не удалось начать вход в Steam по QR-коду</string>
+    <string name="steam_message_qr_failed">Ошибка входа в Steam по QR-коду</string>
+    <string name="steam_message_code_submit">Не удалось отправить код подтверждения Steam</string>
+    <string name="steam_message_session_needs_code">Для этого сеанса входа нужен код подтверждения</string>
+    <string name="steam_message_qr_expired">Сеанс входа по QR-коду истёк. Начните заново.</string>
+    <string name="steam_message_not_qr">Этот сеанс не использует вход по QR-коду</string>
+    <string name="steam_message_poll_failed">Не удалось проверить состояние входа в Steam</string>
+    <string name="steam_message_steamid_missing">Вход в Steam выполнен, но SteamID отсутствует. Продолжить невозможно.</string>
+    <string name="steam_message_token_missing">Вход в Steam выполнен, но токен доступа не получен. Продолжить импорт невозможно.</string>
+    <string name="steam_message_login_timeout">Время ожидания входа в Steam истекло. Повторите попытку позже.</string>
+    <string name="steam_message_qr_parameters">Недопустимые данные сеанса входа по QR-коду. Начните заново.</string>
+    <string name="steam_message_replacement_code">У аккаунта уже есть аутентификатор. Введите код для его замены.</string>
+    <string name="steam_message_steamid_invalid">Недопустимый SteamID. Невозможно настроить Steam Guard.</string>
+    <string name="steam_message_account_restricted">Этот аккаунт Steam ограничен и не может добавить Steam Guard</string>
+    <string name="steam_message_rate_limited">Слишком много запросов к Steam. Повторите попытку позже.</string>
+    <string name="steam_message_add_failed">Не удалось добавить Steam Guard</string>
+    <string name="steam_message_phone_required">Привяжите номер телефона к аккаунту Steam перед добавлением Steam Guard</string>
+    <string name="steam_message_response_missing">Steam вернул неполные данные аутентификатора: отсутствует %1$s</string>
+    <string name="steam_message_activation_expired">Срок активации Steam Guard истёк. Войдите заново.</string>
+    <string name="steam_message_activation_data">Данные Steam Guard неполные. Невозможно создать код активации.</string>
+    <string name="steam_message_activation_failed">Ошибка активации Steam Guard</string>
+    <string name="steam_message_activation_code_invalid">Код активации Steam неверен или истёк</string>
+    <string name="steam_message_activation_status">Ошибка активации Steam Guard (status=%1$d)</string>
+    <string name="steam_message_sequential_codes">Ошибка активации Steam Guard: не удалось создать последовательные коды, требуемые Steam</string>
+    <string name="steam_message_replace_start">Не удалось начать замену аутентификатора</string>
+    <string name="steam_message_replace_sms">Введите код из SMS для замены текущего аутентификатора</string>
+    <string name="steam_message_replace_denied">Вход в Steam выполнен, но перенос аутентификатора отклонён (EResult=2). Возможно, у аккаунта нет подходящего номера телефона или перенос ограничен. Импортируйте maFile либо привяжите номер в Steam и повторите попытку.</string>
+    <string name="steam_message_replace_forbidden">Вход в Steam выполнен, но доступ к переносу аутентификатора запрещён (EResult=15). Импортируйте maFile или войдите заново позже и повторите попытку.</string>
+    <string name="steam_message_replace_limited">Вход в Steam выполнен, но перенос аутентификатора временно ограничен (EResult=84). Повторите попытку позже.</string>
+    <string name="steam_message_replace_result">Вход в Steam выполнен, но перенос аутентификатора не удался (EResult=%1$d)</string>
+    <string name="steam_message_replace_session">Недопустимый сеанс замены. Войдите заново для импорта.</string>
+    <string name="steam_message_replace_failed">Ошибка замены аутентификатора</string>
+    <string name="steam_message_session_state">Недопустимое состояние сеанса входа. Начните заново.</string>
+    <string name="steam_message_oauth_missing">Вход в Steam выполнен, но токен OAuth не получен. Продолжить импорт невозможно.</string>
+    <string name="steam_message_captcha_unsupported">Steam требует CAPTCHA, которую эта версия не поддерживает. Войдите один раз через клиент Steam, затем повторите попытку.</string>
+    <string name="steam_message_enter_token_code">Введите код Steam Guard</string>
+    <string name="steam_message_enter_email_code">Введите код из письма</string>
+    <string name="steam_message_invalid_parameters">Steam отклонил запрос: недопустимые параметры</string>
+    <string name="steam_message_access_denied">Steam отказал в доступе</string>
+    <string name="steam_message_already_bound">У аккаунта уже есть аутентификатор Steam. Используйте процедуру замены.</string>
+    <string name="steam_message_operation_disallowed">Steam не разрешает это действие в текущем состоянии</string>
+    <string name="steam_message_confirmation_required">Steam требует дополнительного подтверждения</string>
+    <string name="steam_message_code_invalid">Код подтверждения Steam неверен или истёк</string>
+    <string name="steam_message_request_status">Ошибка запроса Steam (status=%1$d)</string>
+    <string name="steam_message_bad_credentials">Неверное имя аккаунта или пароль Steam</string>
+    <string name="steam_message_duplicate_request">Steam сообщил о повторном запросе (EResult=29). Возможно, у аккаунта уже есть аутентификатор.</string>
+    <string name="steam_message_session_conflict">Конфликт сеансов входа Steam. Повторите попытку позже.</string>
+    <string name="steam_message_extra_verification">Steam требует дополнительной проверки входа (EResult=63)</string>
+    <string name="steam_message_login_result">Ошибка входа в Steam (EResult=%1$d)</string>
+    <string name="steam_message_token_code_invalid">Код Steam Guard неверен или истёк</string>
+    <string name="steam_message_sms_email_code_invalid">Код подтверждения из SMS или письма неверен или истёк</string>
+</resources>

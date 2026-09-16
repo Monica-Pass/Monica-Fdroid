@@ -56,14 +56,15 @@ fun PasswordEntryCard(
     smoothAuthenticatorProgress: Boolean = true,
     decryptAuthenticatorKey: ((String) -> String)? = null,
     leadingIconOverride: (@Composable () -> Unit)? = null,
-    enableSharedBounds: Boolean = true
+    enableSharedBounds: Boolean = true,
+    shape: androidx.compose.ui.graphics.Shape? = null,
 ) {
     val displayTitle = entry.title.ifBlank { stringResource(R.string.untitled) }
     val sharedTransitionScope = takagi.ru.monica.ui.LocalSharedTransitionScope.current
     val animatedVisibilityScope = takagi.ru.monica.ui.LocalAnimatedVisibilityScope.current
     val reduceAnimations = takagi.ru.monica.ui.LocalReduceAnimations.current
     var sharedModifier: Modifier = Modifier
-    val cardShape = if (isSingleCard) RoundedCornerShape(16.dp) else RoundedCornerShape(12.dp)
+    val cardShape = shape ?: if (isSingleCard) RoundedCornerShape(16.dp) else RoundedCornerShape(12.dp)
     if (enableSharedBounds && !reduceAnimations && sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             sharedModifier = Modifier.sharedBounds(
@@ -267,7 +268,7 @@ fun PasswordEntryCard(
                                     } else if (entry.isGroupCover) {
                                         Icon(
                                             Icons.Default.Star,
-                                            contentDescription = "Cover",
+                                            contentDescription = stringResource(R.string.legacy_ui_cover),
                                             tint = MaterialTheme.colorScheme.tertiary,
                                             modifier = Modifier.size(20.dp)
                                         )

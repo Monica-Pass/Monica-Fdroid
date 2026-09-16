@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -377,6 +378,7 @@ private fun SshPrivateKeyCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .animateMonicaContentSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -410,7 +412,7 @@ private fun SshPrivateKeyCard(
             val displayValue = if (revealed) {
                 value
             } else {
-                "•".repeat(24)
+                "••••••••"
             }
             Box(
                 modifier = Modifier
@@ -435,6 +437,7 @@ private fun SshPrivateKeyCard(
                 SelectionContainer {
                     Text(
                         text = displayValue,
+                        maxLines = if (revealed) Int.MAX_VALUE else 1,
                         style = MaterialTheme.typography.bodyMedium,
                         fontFamily = FontFamily.Monospace
                     )

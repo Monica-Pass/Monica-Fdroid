@@ -24,6 +24,7 @@ class FossBuildBoundaryGuardTest {
             "com.google.android.gms:play-services-auth",
             "com.google.mlkit:barcode-scanning",
             "credentials-play-services-auth",
+            "androidx.credentials.providerevents",
             "com.microsoft.identity.client:msal",
             "com.google.firebase",
             "com.microsoft.appcenter",
@@ -31,6 +32,7 @@ class FossBuildBoundaryGuardTest {
 
         forbidden.forEach { coordinate -> assertFalse(coordinate, gradle.contains(coordinate)) }
         assertFalse(manifest.contains("com.microsoft.identity.client.BrowserTabActivity"))
+        assertFalse(manifest.contains("androidx.identitycredentials.action.IMPORT_CREDENTIALS"))
         assertTrue(source("app/src/main/java/takagi/ru/monica/ui/scanner/QrCameraScanSession.kt")
             .contains("ZxingBarcodeDecoder(allowedFormats)"))
         assertTrue(source("app/src/main/java/takagi/ru/monica/utils/GoogleDriveAuthManager.kt")
@@ -47,7 +49,7 @@ class FossBuildBoundaryGuardTest {
         assertTrue(appGradle.contains("buildMonicaRustJniFromSource"))
         assertTrue(appGradle.contains("rust-jni"))
         assertTrue(File(root, "rust-jni/Cargo.lock").isFile)
-        assertTrue(mdbxGradle.contains("d1d3cc4fdff4e33fcb70099b3e7df36eeae43ba4"))
+        assertTrue(mdbxGradle.contains("90005c8c608c952093a4522ffa507a562e2e39a4"))
         assertTrue(mdbxGradle.contains("'--profile', 'mdbx3-release'"))
         assertFalse(File(root, "app/src/main/jniLibs").exists())
         assertFalse(File(root, "mdbx-engine/src/main/jniLibs").exists())

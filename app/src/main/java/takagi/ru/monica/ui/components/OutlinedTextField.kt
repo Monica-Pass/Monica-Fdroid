@@ -56,10 +56,14 @@ fun OutlinedTextField(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     shape: Shape = OutlinedTextFieldDefaults.shape,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
+    saveTextState: Boolean = true,
 ) {
-    var fieldValue by rememberSaveable(stateSaver = TextFieldValueStateSaver) {
+    val textState = if (saveTextState) rememberSaveable(stateSaver = TextFieldValueStateSaver) {
+        mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
+    } else remember {
         mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
     }
+    var fieldValue by textState
 
     LaunchedEffect(value) {
         if (value != fieldValue.text) {

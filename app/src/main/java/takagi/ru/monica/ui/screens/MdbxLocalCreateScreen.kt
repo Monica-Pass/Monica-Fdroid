@@ -115,20 +115,67 @@ fun MdbxLocalCreateScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.mdbx_create_vault_title)) },
+            MdbxTopAppBar(
+                title = { Text(stringResource(R.string.mdbx_create_vault_title), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
+        },
+        bottomBar = {
+            MdbxFormActionBar {
+                // === Submit Button ===
+                val isFormValid = vaultName.isNotBlank() &&
+                    (!passwordRequired || (
+                        normalizedMasterPassword.isNotBlank() &&
+                            normalizedMasterPassword == normalizedConfirmPassword
+                        )) &&
+                    (!keyFileRequired || keyFile != null) &&
+                    (!useCustomDirectory || customDirectoryUri != null) &&
+                    operationState !is MdbxViewModel.OperationState.Loading
+
+                Button(
+                    onClick = {
+                        submitted = true
+                        MdbxDiagLogger.append(
+                            "[MDBX][MdbxLocalCreateScreen] submitClicked name=${vaultName.trim().ifBlank { "<blank>" }} useCustomDirectory=$useCustomDirectory hasCustomUri=${customDirectoryUri != null} unlock=${unlockMethod.name} passwordRequired=$passwordRequired keyFileRequired=$keyFileRequired hasKeyFile=${keyFile != null} formValid=$isFormValid"
+                        )
+                        viewModel.createLocalVault(
+                            name = vaultName,
+                            masterPassword = masterPassword,
+                            unlockMethod = unlockMethod,
+                            keyFile = keyFile,
+                            tigaMode = selectedTigaMode,
+                            description = null,
+                            customDirectoryUri = if (useCustomDirectory) customDirectoryUri else null,
+                            engineType = selectedEngine
+                        )
+                    },
+                    enabled = isFormValid,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                ) {
+                    if (operationState is MdbxViewModel.OperationState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.mdbx_creating_vault))
+                    } else {
+                        Text(stringResource(R.string.mdbx_create_vault_button))
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -147,9 +194,9 @@ fun MdbxLocalCreateScreen(
                 visible = true,
                 enter = expandVertically() + fadeIn()
             ) {
-                Card(
+                MdbxCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(
                         modifier = Modifier.padding(vertical = 4.dp),
@@ -202,9 +249,9 @@ fun MdbxLocalCreateScreen(
             }
 
             // === Card: Vault Settings ===
-            Card(
+            MdbxCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -239,49 +286,6 @@ fun MdbxLocalCreateScreen(
                         onGenerateKeyFile = { keyFileCreateLauncher.launch("monica-mdbx.key") },
                         embedded = true
                     )
-                }
-            }
-
-            // === Submit Button ===
-            val isFormValid = vaultName.isNotBlank() &&
-                (!passwordRequired || (
-                    normalizedMasterPassword.isNotBlank() &&
-                        normalizedMasterPassword == normalizedConfirmPassword
-                    )) &&
-                (!keyFileRequired || keyFile != null) &&
-                (!useCustomDirectory || customDirectoryUri != null) &&
-                operationState !is MdbxViewModel.OperationState.Loading
-
-            Button(
-                onClick = {
-                    submitted = true
-                    MdbxDiagLogger.append(
-                        "[MDBX][MdbxLocalCreateScreen] submitClicked name=${vaultName.trim().ifBlank { "<blank>" }} useCustomDirectory=$useCustomDirectory hasCustomUri=${customDirectoryUri != null} unlock=${unlockMethod.name} passwordRequired=$passwordRequired keyFileRequired=$keyFileRequired hasKeyFile=${keyFile != null} formValid=$isFormValid"
-                    )
-                    viewModel.createLocalVault(
-                        name = vaultName,
-                        masterPassword = masterPassword,
-                        unlockMethod = unlockMethod,
-                        keyFile = keyFile,
-                        tigaMode = selectedTigaMode,
-                        description = null,
-                        customDirectoryUri = if (useCustomDirectory) customDirectoryUri else null,
-                        engineType = selectedEngine
-                    )
-                },
-                enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                if (operationState is MdbxViewModel.OperationState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mdbx_creating_vault))
-                } else {
-                    Text(stringResource(R.string.mdbx_create_vault_button))
                 }
             }
 

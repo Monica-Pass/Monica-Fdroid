@@ -1,5 +1,10 @@
 package takagi.ru.monica.autofill_ng
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
+import android.content.Context
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
@@ -63,6 +68,10 @@ class AutofillSaveTransparentActivity : ComponentActivity() {
     private lateinit var autofillPreferences: AutofillPreferences
     @Volatile
     private var didSave = false
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -166,6 +175,7 @@ class AutofillSaveTransparentActivity : ComponentActivity() {
                                     customFieldRepository = customFieldRepository,
                                     context = applicationContext,
                                     localKeePassDatabaseDao = database.localKeePassDatabaseDao(),
+                                    strings = AppLocaleStringResolver(this@AutofillSaveTransparentActivity),
                                 ) as T
                             }
                             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

@@ -1,5 +1,7 @@
 package takagi.ru.monica.autofill_ng.core
 
+import takagi.ru.monica.R
+
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
@@ -29,6 +31,7 @@ import takagi.ru.monica.utils.DeviceUtils
  * @since 2.0
  */
 class AutofillServiceChecker(private val context: Context) {
+    private val strings = takagi.ru.monica.utils.AppLocaleStringResolver(context)
     
     companion object {
         private const val TAG = "AutofillServiceChecker"
@@ -265,7 +268,7 @@ class AutofillServiceChecker(private val context: Context) {
         try {
             // 1. 检查 Android 版本
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                issues.add("Android 版本过低（需要 8.0 或更高版本）")
+                issues.add(strings.get(R.string.autofill_compat_android_old))
             }
             
             // 2. 检查设备品牌兼容性
@@ -276,16 +279,16 @@ class AutofillServiceChecker(private val context: Context) {
 
             when {
                 manufacturer.contains("huawei") && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                    issues.add("华为设备在 Android 10+ 上可能存在自动填充限制")
+                    issues.add(strings.get(R.string.autofill_compat_huawei))
                 }
                 manufacturer.contains("xiaomi") -> {
-                    issues.add("小米设备需要在 MIUI 安全中心授予自动填充权限")
+                    issues.add(strings.get(R.string.autofill_compat_xiaomi))
                 }
                 manufacturer.contains("oppo") || manufacturer.contains("realme") -> {
-                    issues.add("OPPO/Realme 设备需要在权限管理中允许自动填充")
+                    issues.add(strings.get(R.string.autofill_compat_oppo))
                 }
                 manufacturer.contains("vivo") -> {
-                    issues.add("Vivo 设备需要在 i 管家中允许自动填充")
+                    issues.add(strings.get(R.string.autofill_compat_vivo))
                 }
                 manufacturer.contains("samsung") -> {
                     // Samsung 通常兼容性较好
@@ -294,14 +297,14 @@ class AutofillServiceChecker(private val context: Context) {
             }
 
             if (isAndroid12Family && DeviceUtils.isChineseROM()) {
-                issues.add("Android 12 国产 ROM 可能存在自动填充触发不稳定（系统框架兼容性）")
+                issues.add(strings.get(R.string.autofill_compat_android12_rom))
             }
             
             // 3. 检查内联建议支持
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val supportsInline = DeviceUtils.supportsInlineSuggestions()
                 if (!supportsInline) {
-                    issues.add("设备不支持内联建议（键盘上方显示），将使用下拉菜单模式")
+                    issues.add(strings.get(R.string.autofill_compat_inline))
                 }
             }
             
@@ -311,7 +314,7 @@ class AutofillServiceChecker(private val context: Context) {
                             Build.MODEL.contains("Android SDK")
             
             if (isEmulator) {
-                issues.add("检测到模拟器环境，自动填充功能可能不稳定")
+                issues.add(strings.get(R.string.autofill_compat_emulator))
             }
             
             // 5. 检查系统自动填充框架
@@ -320,7 +323,7 @@ class AutofillServiceChecker(private val context: Context) {
                 val isSupported = autofillManager?.isAutofillSupported == true
                 
                 if (!isSupported) {
-                    issues.add("设备不支持自动填充框架")
+                    issues.add(strings.get(R.string.autofill_compat_unsupported))
                 }
             }
             
@@ -328,7 +331,7 @@ class AutofillServiceChecker(private val context: Context) {
             
         } catch (e: Exception) {
             AutofillLogger.e(TAG, "Error detecting compatibility issues", e)
-            issues.add("无法完成兼容性检查")
+            issues.add(strings.get(R.string.autofill_compat_check_failed))
         }
         
         return issues
@@ -349,72 +352,72 @@ class AutofillServiceChecker(private val context: Context) {
         try {
             // 1. 服务未声明
             if (!isServiceDeclared) {
-                recommendations.add("请检查 AndroidManifest.xml 中是否正确声明了 MonicaAutofillService")
-                recommendations.add("确保服务包含 BIND_AUTOFILL_SERVICE 权限和 autofill intent-filter")
+                recommendations.add(strings.get(R.string.autofill_check_manifest))
+                recommendations.add(strings.get(R.string.autofill_check_permission_manifest))
             }
             
             // 2. 系统未启用
             if (!isSystemEnabled) {
-                recommendations.add("请在系统设置中启用 Monica 作为自动填充服务")
-                recommendations.add("路径：设置 → 系统 → 语言和输入法 → 自动填充服务")
+                recommendations.add(strings.get(R.string.autofill_check_enable_system))
+                recommendations.add(strings.get(R.string.autofill_check_path_system))
                 
                 // 针对不同品牌提供具体路径
                 val manufacturer = Build.MANUFACTURER.lowercase()
                 when {
                     manufacturer.contains("xiaomi") -> {
-                        recommendations.add("小米设备：设置 → 更多设置 → 语言和输入法 → 自动填充服务")
-                        recommendations.add("同时需要在 MIUI 安全中心授予权限")
+                        recommendations.add(strings.get(R.string.autofill_check_path_xiaomi))
+                        recommendations.add(strings.get(R.string.autofill_check_miui_permission))
                     }
                     manufacturer.contains("huawei") -> {
-                        recommendations.add("华为设备：设置 → 系统和更新 → 语言和输入法 → 自动填充服务")
+                        recommendations.add(strings.get(R.string.autofill_check_path_huawei))
                     }
                     manufacturer.contains("oppo") || manufacturer.contains("realme") -> {
-                        recommendations.add("OPPO/Realme：设置 → 其他设置 → 键盘与输入法 → 自动填充服务")
+                        recommendations.add(strings.get(R.string.autofill_check_path_oppo))
                     }
                     manufacturer.contains("vivo") -> {
-                        recommendations.add("Vivo：设置 → 更多设置 → 输入法 → 自动填充服务")
+                        recommendations.add(strings.get(R.string.autofill_check_path_vivo))
                     }
                     manufacturer.contains("samsung") -> {
-                        recommendations.add("三星设备：设置 → 常规管理 → 语言和输入 → 自动填充服务")
+                        recommendations.add(strings.get(R.string.autofill_check_path_samsung))
                     }
                 }
             }
             
             // 3. 应用内未启用
             if (!isAppEnabled) {
-                recommendations.add("请在 Monica 应用设置中启用自动填充功能")
+                recommendations.add(strings.get(R.string.autofill_check_enable_app))
             }
             
             // 4. 权限问题
             if (!hasRequiredPermissions) {
-                recommendations.add("请检查应用权限设置，确保已授予必要权限")
+                recommendations.add(strings.get(R.string.autofill_check_app_permissions))
             }
             
             // 5. 兼容性问题
             if (compatibilityIssues.isNotEmpty()) {
-                recommendations.add("检测到 ${compatibilityIssues.size} 个兼容性问题，请查看详情")
+                recommendations.add(strings.get(R.string.autofill_check_issue_count, compatibilityIssues.size))
                 
                 // 针对特定问题提供建议
                 compatibilityIssues.forEach { issue ->
                     when {
-                        issue.contains("小米") -> {
-                            recommendations.add("小米设备：打开安全中心 → 应用管理 → Monica → 权限管理 → 允许自动填充")
+                        issue == strings.get(R.string.autofill_compat_xiaomi) -> {
+                            recommendations.add(strings.get(R.string.autofill_check_xiaomi_permission))
                         }
-                        issue.contains("华为") -> {
-                            recommendations.add("华为设备：可能需要在手机管家中允许 Monica 自启动")
+                        issue == strings.get(R.string.autofill_compat_huawei) -> {
+                            recommendations.add(strings.get(R.string.autofill_check_huawei_autostart))
                         }
-                        issue.contains("OPPO") || issue.contains("Realme") -> {
-                            recommendations.add("OPPO/Realme：设置 → 应用管理 → Monica → 权限 → 允许自动填充")
+                        issue == strings.get(R.string.autofill_compat_oppo) -> {
+                            recommendations.add(strings.get(R.string.autofill_check_oppo_permission))
                         }
-                        issue.contains("Vivo") -> {
-                            recommendations.add("Vivo：i 管家 → 应用管理 → 权限管理 → Monica → 允许自动填充")
+                        issue == strings.get(R.string.autofill_compat_vivo) -> {
+                            recommendations.add(strings.get(R.string.autofill_check_vivo_permission))
                         }
-                        issue.contains("内联建议") -> {
-                            recommendations.add("设备不支持内联建议，将使用传统下拉菜单模式")
+                        issue == strings.get(R.string.autofill_compat_inline) -> {
+                            recommendations.add(strings.get(R.string.autofill_compat_inline))
                         }
-                        issue.contains("Android 12 国产 ROM") -> {
-                            recommendations.add("请在系统设置中关闭 Monica 的省电限制，并允许自启动/后台运行")
-                            recommendations.add("若仍不稳定，请在登录页或输入框内手动触发一次自动填充以建立会话")
+                        issue == strings.get(R.string.autofill_compat_android12_rom) -> {
+                            recommendations.add(strings.get(R.string.autofill_check_background))
+                            recommendations.add(strings.get(R.string.autofill_check_trigger_manually))
                         }
                     }
                 }
@@ -422,17 +425,17 @@ class AutofillServiceChecker(private val context: Context) {
             
             // 6. 通用建议
             if (recommendations.isEmpty()) {
-                recommendations.add("服务配置正常，如仍有问题请尝试重启应用")
-                recommendations.add("可以使用故障排查工具查看详细日志")
+                recommendations.add(strings.get(R.string.autofill_check_configured))
+                recommendations.add(strings.get(R.string.autofill_check_view_logs))
             } else {
-                recommendations.add("完成上述步骤后，请重启应用以确保设置生效")
+                recommendations.add(strings.get(R.string.autofill_check_restart))
             }
             
             AutofillLogger.d(TAG, "Generated ${recommendations.size} recommendations")
             
         } catch (e: Exception) {
             AutofillLogger.e(TAG, "Error generating recommendations", e)
-            recommendations.add("无法生成建议，请联系技术支持")
+            recommendations.add(strings.get(R.string.autofill_check_recommendations_failed))
         }
         
         return recommendations

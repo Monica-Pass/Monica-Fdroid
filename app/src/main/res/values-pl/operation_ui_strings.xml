@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Nie udało się dodać usunięcia w Bitwarden do kolejki</string>
+    <string name="bitwarden_message_conflict_detail">Wpis zmieniono lokalnie i na serwerze</string>
+    <string name="bitwarden_message_empty_vault">Serwer nie zwrócił danych, ale lokalnie pozostało %1$d wpisów. Synchronizację wstrzymano, by chronić dane. Przed kontynuowaniem sprawdź serwer i konto.</string>
+    <string name="runtime_kdbx_decode_failed">Nie udało się odczytać bazy KDBX</string>
+</resources>

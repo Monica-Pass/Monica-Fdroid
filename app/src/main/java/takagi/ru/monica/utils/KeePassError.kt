@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import app.keemobile.kotpass.errors.CryptoError
 import app.keemobile.kotpass.errors.FormatError
 import java.io.FileNotFoundException
@@ -25,7 +27,7 @@ class KeePassOperationException(
     cause: Throwable? = null
 ) : Exception(message, cause)
 
-fun Throwable.toKeePassOperationException(): KeePassOperationException {
+internal fun Throwable.toKeePassOperationException(strings: StringResolver): KeePassOperationException {
     if (this is KeePassOperationException) return this
 
     val root = rootCause()
@@ -38,21 +40,21 @@ fun Throwable.toKeePassOperationException(): KeePassOperationException {
     if (root is KeePassDatabaseReadOnlyException) {
         return wrap(
             code = KeePassErrorCode.DATABASE_READ_ONLY,
-            userMessage = "数据库已设为只读，请先在数据库设置中关闭只读模式"
+            userMessage = strings.get(R.string.keepass_error_read_only)
         )
     }
 
     if (isOneDriveRedirectHandlerConflict()) {
         return wrap(
             code = KeePassErrorCode.ONEDRIVE_REDIRECT_CONFLICT,
-            userMessage = ONEDRIVE_REDIRECT_CONFLICT_USER_MESSAGE
+            userMessage = strings.get(R.string.onedrive_error_redirect)
         )
     }
 
     if (root is SecurityException || lowerMessage.contains("permission denied") || lowerMessage.contains("eacces")) {
         return wrap(
             code = KeePassErrorCode.URI_PERMISSION_DENIED,
-            userMessage = "缺少 KDBX 文件写入权限，请在数据库设置中重新授权后再删除或保存"
+            userMessage = strings.get(R.string.keepass_error_write_permission)
         )
     }
 
@@ -62,7 +64,7 @@ fun Throwable.toKeePassOperationException(): KeePassOperationException {
     ) {
         return wrap(
             code = KeePassErrorCode.KDF_MEMORY_INSUFFICIENT,
-            userMessage = "KDF 内存参数过高，设备内存不足，请降低内存占用或并行度"
+            userMessage = strings.get(R.string.keepass_error_memory)
         )
     }
 
@@ -72,7 +74,7 @@ fun Throwable.toKeePassOperationException(): KeePassOperationException {
     ) {
         return wrap(
             code = KeePassErrorCode.INVALID_CREDENTIAL,
-            userMessage = "数据库密码或密钥文件不正确"
+            userMessage = strings.get(R.string.keepass_error_credentials)
         )
     }
 
@@ -82,7 +84,7 @@ fun Throwable.toKeePassOperationException(): KeePassOperationException {
     ) {
         return wrap(
             code = KeePassErrorCode.LEGACY_KDB_UNSUPPORTED,
-            userMessage = "检测到旧版 .kdb（KeePass 1.x）数据库，当前仅支持 .kdbx。请先在 KeePassDX/KeePassXC 中另存为 .kdbx 后再导入。"
+            userMessage = strings.get(R.string.keepass_error_legacy)
         )
     }
 
@@ -98,20 +100,20 @@ fun Throwable.toKeePassOperationException(): KeePassOperationException {
     ) {
         return wrap(
             code = KeePassErrorCode.FORMAT_UNSUPPORTED,
-            userMessage = "数据库格式不支持或文件已损坏"
+            userMessage = strings.get(R.string.keepass_error_format)
         )
     }
 
     if (root is FileNotFoundException || root is IOException) {
         return wrap(
             code = KeePassErrorCode.IO_READ_WRITE_FAILED,
-            userMessage = "读取或写入 KeePass 文件失败"
+            userMessage = strings.get(R.string.keepass_error_io)
         )
     }
 
     return wrap(
         code = KeePassErrorCode.IO_READ_WRITE_FAILED,
-        userMessage = root.message?.takeIf { it.isNotBlank() } ?: "KeePass 操作失败"
+        userMessage = root.message?.takeIf { it.isNotBlank() } ?: strings.get(R.string.keepass_error_operation)
     )
 }
 

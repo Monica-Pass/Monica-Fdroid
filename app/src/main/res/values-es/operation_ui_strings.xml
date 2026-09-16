@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">No se pudo poner en cola la eliminación de Bitwarden</string>
+    <string name="bitwarden_message_conflict_detail">Esta entrada cambió tanto localmente como en el servidor</string>
+    <string name="bitwarden_message_empty_vault">El servidor no devolvió datos, pero quedan %1$d entradas locales. La sincronización se pausó para proteger tus datos. Revisa el servidor y la cuenta antes de continuar.</string>
+    <string name="runtime_kdbx_decode_failed">No se pudo leer la base de datos KDBX</string>
+</resources>

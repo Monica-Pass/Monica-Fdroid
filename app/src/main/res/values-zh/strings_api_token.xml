@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="entry_type_api_token">API 令牌</string>
+    <string name="api_token_no_database">请先打开原生 MDBX 数据库，以查看或新建 API 令牌。</string>
+    <string name="api_token_load_error">令牌读取或保存失败。请重新打开或同步数据库后重试，已有数据已保留。</string>
+    <string name="api_token_reload">重新加载</string>
+    <string name="api_token_root_collection">数据库根目录</string>
+    <string name="api_token_database">数据库</string>
+    <string name="api_token_collection">分类</string>
+    <string name="api_token_complete_payload">完整令牌数据（JSON）</string>
+    <string name="api_token_empty">此数据库中还没有 API 令牌。</string>
+    <string name="api_token_native_hint">以 MDBX 原生 API 令牌保存，与 Monica CLI 兼容。</string>
+    <string name="api_token_toggle_visibility">显示或隐藏内容</string>
+    <string name="api_token_validation">请填写服务商和令牌。API 地址可留空，填写时须为 HTTP 或 HTTPS 网址。</string>
+    <string name="api_token_import_json">粘贴令牌 JSON</string>
+    <string name="api_token_parse">解析</string>
+    <string name="api_token_delete_confirmation">从数据库中删除此 API 令牌？</string>
+    <string name="api_token_entry_id">条目 ID</string>
+    <string name="api_token_collection_id">分类 ID</string>
+    <string name="api_token_provider">服务商</string>
+    <string name="api_token_api_base">API 地址</string>
+    <string name="api_token_note">备注</string>
+    <string name="api_token_schema">数据格式版本</string>
+    <string name="api_token_name">令牌名称</string>
+    <string name="api_token_add">新建 API 令牌</string>
+    <string name="api_token_edit">编辑 API 令牌</string>
+    <string name="api_token_credentials">令牌信息</string>
+    <string name="api_token_manage_databases">管理数据库</string>
+    <string name="api_token_folder_error">分类读取失败，请重新打开存储位置选择器重试。</string>
+    <string name="api_token_storage">存储位置</string>
+    <string name="api_token_advanced">更多信息</string>
+    <string name="api_token_unknown_schema">此令牌使用其他数据格式，可在下方查看和复制完整数据。</string>
+    <string name="api_token_discard_title">放弃修改？</string>
+    <string name="api_token_discard_message">尚未保存的修改将丢失。</string>
+    <string name="api_token_discard">放弃</string>
+    <string name="api_token_name_hint">1–64 个字母、数字、- 或 _</string>
+    <string name="api_token_fields_limit">最多添加 128 个自定义字段，备注与字段内容合计不能超过 64 KB。</string>
+</resources>

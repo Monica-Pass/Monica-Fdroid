@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import android.util.Base64
 import android.util.Log
 import java.security.SecureRandom
@@ -106,7 +108,7 @@ class EncryptionHelper {
         /**
          * 加密文件
          */
-        fun encryptFile(inputFile: File, outputFile: File, password: String): Result<File> {
+        internal fun encryptFile(inputFile: File, outputFile: File, password: String, strings: StringResolver): Result<File> {
             return try {
                 Log.d(TAG, "Starting encryption: ${inputFile.name} -> ${outputFile.name}")
 
@@ -142,14 +144,14 @@ class EncryptionHelper {
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Encryption failed", e)
-                Result.failure(Exception("加密失败: ${e.message}", e))
+                Result.failure(Exception(strings.get(R.string.crypto_message_encrypt_failed, e.message ?: strings.get(R.string.import_data_unknown_error)), e))
             }
         }
         
         /**
          * 解密文件
          */
-        fun decryptFile(inputFile: File, outputFile: File, password: String): Result<File> {
+        internal fun decryptFile(inputFile: File, outputFile: File, password: String, strings: StringResolver): Result<File> {
             return try {
                 Log.d(TAG, "Starting decryption: ${inputFile.name} -> ${outputFile.name}")
 
@@ -158,14 +160,14 @@ class EncryptionHelper {
                 
                 // 2. 验证文件大小
                 if (fileBytes.size < FILE_MAGIC.length + SALT_LENGTH + GCM_IV_LENGTH) {
-                    return Result.failure(Exception("加密文件太小，可能已损坏"))
+                    return Result.failure(Exception(strings.get(R.string.crypto_message_file_too_small)))
                 }
 
                 // 3. 验证文件头
                 val magicBytes = fileBytes.copyOfRange(0, FILE_MAGIC.length)
                 val magic = String(magicBytes, Charsets.UTF_8)
                 if (magic != FILE_MAGIC) {
-                    return Result.failure(Exception("无效的加密文件格式"))
+                    return Result.failure(Exception(strings.get(R.string.crypto_message_invalid_file)))
                 }
                 
                 var offset = FILE_MAGIC.length
@@ -200,20 +202,20 @@ class EncryptionHelper {
                 
             } catch (e: javax.crypto.AEADBadTagException) {
                 Log.e(TAG, "Decryption failed - wrong password", e)
-                Result.failure(Exception("解密失败: 密码错误或文件已损坏", e))
+                Result.failure(Exception(strings.get(R.string.crypto_message_password_or_corrupt), e))
             } catch (e: Exception) {
                 Log.e(TAG, "Decryption failed", e)
-                Result.failure(Exception("解密失败: ${e.message}", e))
+                Result.failure(Exception(strings.get(R.string.crypto_message_decrypt_failed, e.message ?: strings.get(R.string.import_data_unknown_error)), e))
             }
         }
         
         /**
          * 测试密码是否正确
          */
-        fun testPassword(encryptedFile: File, password: String): Boolean {
+        internal fun testPassword(encryptedFile: File, password: String, strings: StringResolver): Boolean {
             val tempFile = File.createTempFile("monica_pwd_test", ".tmp")
             try {
-                val result = decryptFile(encryptedFile, tempFile, password)
+                val result = decryptFile(encryptedFile, tempFile, password, strings)
                 return result.isSuccess
             } catch (e: Exception) {
                 return false
@@ -228,14 +230,14 @@ class EncryptionHelper {
          * 尝试解密文件（如果是加密文件）
          * 如果不是加密文件，直接返回原文件
          */
-        fun decryptIfNeeded(file: File, password: String?): Result<File> {
+        internal fun decryptIfNeeded(file: File, password: String?, strings: StringResolver): Result<File> {
             return try {
                 if (!isEncryptedFile(file)) {
                     return Result.success(file)
                 }
                 
                 if (password.isNullOrBlank()) {
-                    return Result.failure(Exception("文件已加密，但未提供解密密码"))
+                    return Result.failure(Exception(strings.get(R.string.backup_password_required)))
                 }
                 
                 // 创建临时文件用于存储解密结果
@@ -245,7 +247,7 @@ class EncryptionHelper {
                     file.parentFile
                 )
                 
-                val result = decryptFile(file, decryptedFile, password)
+                val result = decryptFile(file, decryptedFile, password, strings)
                 
                 if (result.isSuccess) {
                     result
@@ -265,7 +267,7 @@ class EncryptionHelper {
          * @param password 加密密码
          * @return Base64 编码的加密结果（格式：salt:iv:ciphertext）
          */
-        fun encryptString(plainText: String, password: String): String {
+        internal fun encryptString(plainText: String, password: String, strings: StringResolver): String {
             try {
                 // 1. 生成盐值和 IV
                 val salt = generateSalt()
@@ -290,7 +292,7 @@ class EncryptionHelper {
                 return "$saltBase64:$ivBase64:$cipherBase64"
             } catch (e: Exception) {
                 Log.e(TAG, "String encryption failed", e)
-                throw Exception("字符串加密失败: ${e.message}", e)
+                throw Exception(strings.get(R.string.crypto_message_encrypt_failed, e.message ?: strings.get(R.string.import_data_unknown_error)), e)
             }
         }
         
@@ -300,12 +302,12 @@ class EncryptionHelper {
          * @param password 解密密码
          * @return 明文字符串
          */
-        fun decryptString(encryptedText: String, password: String): String {
+        internal fun decryptString(encryptedText: String, password: String, strings: StringResolver): String {
             try {
                 // 1. 分割并解码 Base64
                 val parts = encryptedText.split(":")
                 if (parts.size != 3) {
-                    throw Exception("无效的加密字符串格式")
+                    throw Exception(strings.get(R.string.crypto_message_invalid_text))
                 }
                 
                 val salt = Base64.decode(parts[0], Base64.NO_WRAP)
@@ -326,10 +328,10 @@ class EncryptionHelper {
                 return String(decryptedBytes, Charsets.UTF_8)
             } catch (e: javax.crypto.AEADBadTagException) {
                 Log.e(TAG, "String decryption failed - wrong password", e)
-                throw Exception("解密失败: 密码错误", e)
+                throw Exception(strings.get(R.string.crypto_message_password_or_corrupt), e)
             } catch (e: Exception) {
                 Log.e(TAG, "String decryption failed", e)
-                throw Exception("字符串解密失败: ${e.message}", e)
+                throw Exception(strings.get(R.string.crypto_message_decrypt_failed, e.message ?: strings.get(R.string.import_data_unknown_error)), e)
             }
         }
     }

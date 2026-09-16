@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">容 HTTP 之连</string>
+    <string name="webdav_allow_insecure_http_description">此项素闭。惟所信之 HTTP 服务器（如无 HTTPS 之本地 NAS）可启。闭之，则禁 WebDAV 以 HTTP 相连。</string>
+    <string name="fdroid_cloud_provider_unavailable">F-Droid 此版未备 %1$s，请用 WebDAV。</string>
+    <string name="qr_image_read_failed">图不可读，请易一图。</string>
+</resources>

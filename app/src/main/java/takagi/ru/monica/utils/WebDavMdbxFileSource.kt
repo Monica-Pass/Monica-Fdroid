@@ -1,5 +1,9 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.keepass.KeePassSourceChangedException
+
+import takagi.ru.monica.R
+
 import com.thegrizzlylabs.sardineandroid.DavResource
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import kotlinx.coroutines.Dispatchers
@@ -15,10 +19,11 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-class WebDavMdbxFileSource(
+class WebDavMdbxFileSource internal constructor(
     private val serverUrl: String,
     private val username: String,
-    private val password: String
+    private val password: String,
+    private val strings: StringResolver
 ) : MdbxFileSource {
 
     private val normalizedServerUrl = serverUrl.trim().trimEnd('/')
@@ -43,7 +48,8 @@ class WebDavMdbxFileSource(
                 FileSourceEntry(
                     name = resource.name,
                     path = WebDavKeePassFileSource.buildChildPath(
-                        WebDavKeePassFileSource.normalizeOptionalRemotePath(path), resource.name
+                        WebDavKeePassFileSource.normalizeOptionalRemotePath(path), resource.name,
+                        strings = strings,
                     ),
                     isDirectory = resource.isDirectory,
                     lastModified = resource.modified?.time,
@@ -59,7 +65,7 @@ class WebDavMdbxFileSource(
         name: String
     ): FileSourceEntry = withContext(Dispatchers.IO) {
         val sanitizedName = name.trim().trim('/').ifBlank {
-            throw IOException("目录名不能为空")
+            throw IOException(strings.get(R.string.cloud_message_foldername_required))
         }
         val normalizedParent = WebDavKeePassFileSource.normalizeOptionalRemotePath(parentPath)
         val targetPath = if (normalizedParent.isBlank()) sanitizedName
@@ -67,7 +73,7 @@ class WebDavMdbxFileSource(
         val targetUrl = WebDavKeePassFileSource.buildRemoteUrl(normalizedServerUrl, targetPath)
 
         if (webDavPathExists(targetUrl)) {
-            throw IOException("目录已存在: $sanitizedName")
+            throw IOException(strings.get(R.string.cloud_message_folder_exists_path, sanitizedName))
         }
 
         sardine.createDirectory(targetUrl)
@@ -91,7 +97,7 @@ class WebDavMdbxFileSource(
         bytes: ByteArray
     ): FileSourceEntry = withContext(Dispatchers.IO) {
         val sanitizedName = name.trim().trim('/').ifBlank {
-            throw IOException("文件名不能为空")
+            throw IOException(strings.get(R.string.cloud_message_filename_required))
         }
         val normalizedParent = WebDavKeePassFileSource.normalizeOptionalRemotePath(parentPath)
         val targetPath = if (normalizedParent.isBlank()) sanitizedName
@@ -99,7 +105,7 @@ class WebDavMdbxFileSource(
         val targetUrl = WebDavKeePassFileSource.buildRemoteUrl(normalizedServerUrl, targetPath)
 
         if (webDavPathExists(targetUrl)) {
-            throw IOException("文件已存在: $sanitizedName")
+            throw IOException(strings.get(R.string.cloud_message_file_exists_path, sanitizedName))
         }
 
         // Auto-create intermediate directories
@@ -124,10 +130,10 @@ class WebDavMdbxFileSource(
     /** File-to-file download used by MDBX2; avoids keeping a Blob in the JVM heap. */
     suspend fun readFileTo(path: String, destination: File) = withContext(Dispatchers.IO) {
         val normalizedPath = WebDavKeePassFileSource.normalizeOptionalRemotePath(path)
-        require(normalizedPath.isNotBlank()) { "远端文件路径不能为空" }
+        require(normalizedPath.isNotBlank()) { strings.get(R.string.cloud_message_path_required) }
         val targetUrl = WebDavKeePassFileSource.buildRemoteUrl(normalizedServerUrl, normalizedPath)
-        val parent = destination.parentFile ?: throw IOException("下载目标目录不存在")
-        check(parent.exists() || parent.mkdirs()) { "无法创建下载目标目录" }
+        val parent = destination.parentFile ?: throw IOException(strings.get(R.string.cloud_message_download_directory_missing))
+        check(parent.exists() || parent.mkdirs()) { strings.get(R.string.cloud_message_download_directory_create) }
         val temporary = File.createTempFile(".mdbx-download-", ".tmp", parent)
         try {
             sardine.get(targetUrl).use { input ->
@@ -142,7 +148,7 @@ class WebDavMdbxFileSource(
                 )
             } catch (_: Exception) {
                 if (!temporary.renameTo(destination)) {
-                    throw IOException("无法发布 WebDAV 下载文件")
+                    throw IOException(strings.get(R.string.cloud_message_download_finalize, "WebDAV"))
                 }
             }
         } finally {
@@ -161,7 +167,7 @@ class WebDavMdbxFileSource(
                 .equals(normalizeResourceUrl(targetUrl), ignoreCase = true)
         } ?: direct.firstOrNull { it.name.equals(normalizedPath.substringAfterLast('/'), ignoreCase = true) }
         val resource = directMatch ?: run {
-            val parentPath = WebDavKeePassFileSource.parentPathOf(normalizedPath)
+            val parentPath = WebDavKeePassFileSource.parentPathOf(normalizedPath, strings = strings)
             val parentUrl = WebDavMdbxSourceUrl(normalizedServerUrl, parentPath)
             listOrEmptyWhenNotFound { sardine.list(parentUrl) }
                 .firstOrNull { it.name.equals(normalizedPath.substringAfterLast('/'), ignoreCase = true) }
@@ -192,20 +198,20 @@ class WebDavMdbxFileSource(
     ): FileSourceEntry = withContext(Dispatchers.IO) {
         MdbxRemoteSyncPaths.requireRegularFile(source)
         val normalizedPath = WebDavKeePassFileSource.normalizeOptionalRemotePath(path)
-        require(normalizedPath.isNotBlank()) { "文件名不能为空" }
-        val parentPath = WebDavKeePassFileSource.parentPathOf(normalizedPath)
+        require(normalizedPath.isNotBlank()) { strings.get(R.string.cloud_message_filename_required) }
+        val parentPath = WebDavKeePassFileSource.parentPathOf(normalizedPath, strings = strings)
         if (parentPath.isNotBlank()) ensureDirectoryPathExists(parentPath)
         val targetUrl = WebDavKeePassFileSource.buildRemoteUrl(normalizedServerUrl, normalizedPath)
         val existing = statPath(normalizedPath)
         if (mode == MdbxRemoteWriteMode.CREATE_ONLY && existing != null) {
             if (isSameImmutableContent(normalizedPath, existing, source)) return@withContext existing
-            throw IOException("远端不可变对象已存在但内容不同: $normalizedPath")
+            throw IOException(strings.get(R.string.cloud_message_immutable_differs_path, normalizedPath))
         }
         if (mode == MdbxRemoteWriteMode.IF_MATCH) {
             val requiredVersion = expectedVersion?.takeIf(String::isNotBlank)
                 ?: throw IllegalArgumentException("WebDAV conditional replacement requires an ETag")
             if (existing?.versionToken != requiredVersion) {
-                throw IOException("远端文件已变化，请先重新同步")
+                throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
             }
         }
         try {
@@ -216,9 +222,9 @@ class WebDavMdbxFileSource(
                 if (raced != null && isSameImmutableContent(normalizedPath, raced, source)) {
                     return@withContext raced
                 }
-                throw IOException("远端不可变对象已存在但内容不同: $normalizedPath", error)
+                throw IOException(strings.get(R.string.cloud_message_immutable_differs_path, normalizedPath), error)
             }
-            throw IOException("远端文件已变化，请先重新同步", error)
+            throw IOException(strings.get(R.string.cloud_message_remote_changed), error)
         }
         statPath(normalizedPath) ?: FileSourceEntry(
             name = normalizedPath.substringAfterLast('/'),
@@ -233,7 +239,7 @@ class WebDavMdbxFileSource(
         existing: FileSourceEntry,
         source: File
     ): Boolean {
-        if (existing.isDirectory) throw IOException("远端路径已是目录: $normalizedPath")
+        if (existing.isDirectory) throw IOException(strings.get(R.string.cloud_message_remote_is_directory_path, normalizedPath))
         if (existing.sizeBytes != null && existing.sizeBytes != source.length()) return false
         val comparisonDirectory = source.parentFile
             ?: throw IOException("MDBX2 comparison source has no parent directory")
@@ -276,7 +282,7 @@ class WebDavMdbxFileSource(
                 try {
                     sardine.list(dirUrl, 0)
                 } catch (_: IOException) {
-                    throw IOException("无法创建远程目录: $accumulatedPath")
+                    throw IOException(strings.get(R.string.cloud_message_remote_folder_create, accumulatedPath))
                 }
             }
         }

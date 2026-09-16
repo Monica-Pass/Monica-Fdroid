@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Review and merge</string>
+    <string name="keepass_conflict_banner_title">Changes need merging</string>
+    <string name="keepass_conflict_banner_summary">Review both versions to continue syncing.</string>
+    <string name="keepass_conflict_merge_sync">Merge and sync</string>
+    <string name="keepass_conflict_comparing">Comparing both versions…</string>
+    <string name="keepass_conflict_merging">Merging and syncing…</string>
+    <string name="keepass_conflict_refresh">Refresh comparison</string>
+    <string name="keepass_conflict_merge_help">Changes to different entries or fields are combined. Choose a version when the same field changed on both sides.</string>
+    <string name="keepass_conflict_auto_merge">Ready to merge</string>
+    <string name="keepass_conflict_other_options">Other options</string>
+    <string name="keepass_conflict_recovery_hint">Original versions are kept in database recovery copies.</string>
+    <string name="keepass_conflict_keep_local_confirm">Replace the remote database with the entire local version? Remote-only changes will remain in a recovery copy.</string>
+    <string name="keepass_conflict_use_remote_confirm">Replace the local database with the entire remote version? Local-only changes will remain in a recovery copy.</string>
+    <string name="keepass_conflict_selected_count">%1$d of %2$d conflicts selected</string>
+    <string name="keepass_conflict_no_changes">Both versions contain the same data.</string>
+    <string name="keepass_conflict_protected_value">Protected value</string>
+    <string name="keepass_conflict_properties_value">Properties from this version</string>
+    <string name="keepass_conflict_kind_entry">Entry</string>
+    <string name="keepass_conflict_kind_group">Folder</string>
+    <string name="keepass_conflict_kind_metadata">Database settings</string>
+    <string name="keepass_conflict_kind_deleted_object">Deletion record</string>
+    <string name="keepass_conflict_kind_binary">Attachment</string>
+    <string name="keepass_conflict_kind_icon">Custom icon</string>
+    <string name="keepass_conflict_change_added">Added</string>
+    <string name="keepass_conflict_change_modified">Changed</string>
+    <string name="keepass_conflict_change_moved">Moved</string>
+    <string name="keepass_conflict_change_deleted">Deleted</string>
+    <string name="keepass_conflict_change_unchanged">Unchanged</string>
+</resources>

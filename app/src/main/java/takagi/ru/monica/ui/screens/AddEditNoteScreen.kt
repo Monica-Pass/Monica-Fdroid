@@ -1363,7 +1363,7 @@ private fun NoteEditorModeTopBar(
                     IconButton(onClick = onEnterFullScreen, enabled = enabled) {
                         Icon(
                             imageVector = Icons.Default.Fullscreen,
-                            contentDescription = "全屏编辑"
+                            contentDescription = stringResource(R.string.legacy_ui_fullscreen_edit)
                         )
                     }
                 }
@@ -1617,7 +1617,7 @@ private fun FullScreenNoteTopBar(
             IconButton(onClick = onExit) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "退出全屏"
+                    contentDescription = stringResource(R.string.legacy_ui_fullscreen_exit)
                 )
             }
         }

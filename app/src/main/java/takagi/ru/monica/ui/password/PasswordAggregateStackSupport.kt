@@ -35,6 +35,7 @@ internal fun buildPasswordAggregateManualStackGroups(
     val cardsByKey = passwordCardsByKey + aggregateCardsByKey
 
     val groups = stackEntries
+        .filter { it.stackOrder >= 0 }
         .groupBy(PasswordPageAggregateStackEntry::stackGroupId)
         .mapNotNull { (groupId, members) ->
             val cards = members

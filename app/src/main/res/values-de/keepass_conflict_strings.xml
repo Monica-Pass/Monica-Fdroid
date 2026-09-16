@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Prüfen und vereinen</string>
+    <string name="keepass_conflict_banner_title">Änderungen zusammenführen</string>
+    <string name="keepass_conflict_banner_summary">Prüfen Sie beide Versionen, um weiter zu synchronisieren.</string>
+    <string name="keepass_conflict_merge_sync">Vereinen &amp; abgleichen</string>
+    <string name="keepass_conflict_comparing">Beide Versionen werden verglichen…</string>
+    <string name="keepass_conflict_merging">Wird zusammengeführt und synchronisiert…</string>
+    <string name="keepass_conflict_refresh">Vergleich aktualisieren</string>
+    <string name="keepass_conflict_merge_help">Änderungen an verschiedenen Einträgen oder Feldern werden vereint. Wählen Sie eine Version, wenn dasselbe Feld auf beiden Seiten geändert wurde.</string>
+    <string name="keepass_conflict_auto_merge">Bereit zum Zusammenführen</string>
+    <string name="keepass_conflict_other_options">Weitere Optionen</string>
+    <string name="keepass_conflict_recovery_hint">Die Originalversionen bleiben in Wiederherstellungskopien der Datenbank erhalten.</string>
+    <string name="keepass_conflict_keep_local_confirm">Die entfernte Datenbank vollständig durch die lokale Version ersetzen? Änderungen, die nur entfernt vorliegen, bleiben in einer Wiederherstellungskopie erhalten.</string>
+    <string name="keepass_conflict_use_remote_confirm">Die lokale Datenbank vollständig durch die entfernte Version ersetzen? Änderungen, die nur lokal vorliegen, bleiben in einer Wiederherstellungskopie erhalten.</string>
+    <string name="keepass_conflict_selected_count">%1$d von %2$d Konflikten ausgewählt</string>
+    <string name="keepass_conflict_no_changes">Beide Versionen enthalten dieselben Daten.</string>
+    <string name="keepass_conflict_protected_value">Geschützter Wert</string>
+    <string name="keepass_conflict_properties_value">Eigenschaften dieser Version</string>
+    <string name="keepass_conflict_kind_entry">Eintrag</string>
+    <string name="keepass_conflict_kind_group">Ordner</string>
+    <string name="keepass_conflict_kind_metadata">Datenbankeinstellungen</string>
+    <string name="keepass_conflict_kind_deleted_object">Löschvermerk</string>
+    <string name="keepass_conflict_kind_binary">Anhang</string>
+    <string name="keepass_conflict_kind_icon">Eigenes Symbol</string>
+    <string name="keepass_conflict_change_added">Hinzugefügt</string>
+    <string name="keepass_conflict_change_modified">Geändert</string>
+    <string name="keepass_conflict_change_moved">Verschoben</string>
+    <string name="keepass_conflict_change_deleted">Gelöscht</string>
+    <string name="keepass_conflict_change_unchanged">Unverändert</string>
+</resources>

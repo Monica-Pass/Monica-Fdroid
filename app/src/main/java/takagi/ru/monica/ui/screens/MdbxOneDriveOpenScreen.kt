@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -132,7 +134,7 @@ fun MdbxOneDriveOpenScreen(
                     entries = listing.entries
                 },
                 onFailure = { error ->
-                    authError = error.toOneDriveUserMessage(strings.get(R.string.mdbx_ui_onedrive_folder_error))
+                    authError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), strings.get(R.string.mdbx_ui_onedrive_folder_error))
                 }
             )
             isLoadingEntries = false
@@ -174,7 +176,7 @@ fun MdbxOneDriveOpenScreen(
                     loadDirectory("")
                 }
                 .onFailure { error ->
-                    authError = error.toOneDriveUserMessage(strings.get(R.string.keepass_onedrive_sign_in_failed))
+                    authError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), strings.get(R.string.keepass_onedrive_sign_in_failed))
                 }
             isConnecting = false
         }
@@ -182,20 +184,67 @@ fun MdbxOneDriveOpenScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.mdbx_connect_to_remote_vault)) },
+            MdbxTopAppBar(
+                title = { Text(stringResource(R.string.mdbx_connect_to_remote_vault), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
+        },
+        bottomBar = {
+            MdbxFormActionBar {
+                // === Submit Button ===
+                val isFormValid = session != null &&
+                    selectedFile != null &&
+                    (!passwordRequired || (
+                        normalizedMasterPassword.isNotBlank() &&
+                            normalizedMasterPassword == normalizedConfirmPassword
+                        )) &&
+                    (!keyFileRequired || keyFile != null) &&
+                    operationState !is MdbxViewModel.OperationState.Loading
+
+                Button(
+                    onClick = {
+                        val s = session ?: return@Button
+                        val file = selectedFile ?: return@Button
+                        submitted = true
+                        viewModel.connectToOneDriveVault(
+                            masterPassword = masterPassword,
+                            unlockMethod = unlockMethod,
+                            keyFile = keyFile,
+                            tigaMode = MdbxTigaMode.MULTI,
+                            accountId = s.accountId,
+                            accountLabel = s.displayName.ifBlank { s.username },
+                            remoteFilePath = file.path,
+                            description = null,
+                            engineType = selectedEngine
+                        )
+                    },
+                    enabled = isFormValid,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                ) {
+                    if (operationState is MdbxViewModel.OperationState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.mdbx_creating_vault))
+                    } else {
+                        Text(stringResource(R.string.mdbx_connect_to_remote_vault))
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -224,7 +273,7 @@ fun MdbxOneDriveOpenScreen(
                 entries = entries,
                 emptyMessage = stringResource(R.string.mdbx_no_mdbx_files),
                 onNavigateUp = {
-                    loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath))
+                    loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath, strings = AppLocaleStringResolver(context)))
                     selectedFile = null
                 },
                 onRefresh = { loadDirectory(currentPath) },
@@ -259,9 +308,9 @@ fun MdbxOneDriveOpenScreen(
                         remote = true
                     )
 
-                    Card(
+                    MdbxCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -295,49 +344,6 @@ fun MdbxOneDriveOpenScreen(
                             }
                         }
                     }
-                }
-            }
-
-            // === Submit Button ===
-            val isFormValid = session != null &&
-                selectedFile != null &&
-                (!passwordRequired || (
-                    normalizedMasterPassword.isNotBlank() &&
-                        normalizedMasterPassword == normalizedConfirmPassword
-                    )) &&
-                (!keyFileRequired || keyFile != null) &&
-                operationState !is MdbxViewModel.OperationState.Loading
-
-            Button(
-                onClick = {
-                    val s = session ?: return@Button
-                    val file = selectedFile ?: return@Button
-                    submitted = true
-                    viewModel.connectToOneDriveVault(
-                        masterPassword = masterPassword,
-                        unlockMethod = unlockMethod,
-                        keyFile = keyFile,
-                        tigaMode = MdbxTigaMode.MULTI,
-                        accountId = s.accountId,
-                        accountLabel = s.displayName.ifBlank { s.username },
-                        remoteFilePath = file.path,
-                        description = null,
-                        engineType = selectedEngine
-                    )
-                },
-                enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                if (operationState is MdbxViewModel.OperationState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mdbx_creating_vault))
-                } else {
-                    Text(stringResource(R.string.mdbx_connect_to_remote_vault))
                 }
             }
 

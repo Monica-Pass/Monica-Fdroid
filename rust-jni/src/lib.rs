@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+mod autofill;
 mod list_sort;
 mod search;
 mod vault_overview;
@@ -13,6 +14,54 @@ use monica_rust_crypto::{derive_argon2id, derive_pbkdf2_sha256};
 use search::{filter_metadata_batch, SearchQuery};
 
 const RUST_CORE_VERSION: &str = "monica-rust-jni/0.5.0-kdf";
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustAutofillCore_nativeOpen(
+    env: JNIEnv,
+    _class: JClass,
+    metadata: JByteArray,
+) -> jlong {
+    (|| {
+        let len = usize::try_from(env.get_array_length(&metadata).ok()?).ok()?;
+        if !(8..=autofill::MAX_BYTES).contains(&len) {
+            return None;
+        }
+        autofill::open(&env.convert_byte_array(metadata).ok()?)
+    })()
+    .unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustAutofillCore_nativeQuery(
+    mut env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+    package: JString,
+    host: JString,
+    root: JString,
+    label: JString,
+) -> jintArray {
+    (|| {
+        let package: String = env.get_string(&package).ok()?.into();
+        let host: String = env.get_string(&host).ok()?.into();
+        let root: String = env.get_string(&root).ok()?.into();
+        let label: String = env.get_string(&label).ok()?.into();
+        let indices = autofill::query(handle, &package, &host, &root, &label)?;
+        let output = env.new_int_array(i32::try_from(indices.len()).ok()?).ok()?;
+        env.set_int_array_region(&output, 0, &indices).ok()?;
+        Some(output.into_raw())
+    })()
+    .unwrap_or(std::ptr::null_mut())
+}
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustAutofillCore_nativeClose(
+    _env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    autofill::close(handle);
+}
 
 #[no_mangle]
 pub extern "system" fn Java_takagi_ru_monica_rustcore_RustVaultPickerCore_nativeOpen(

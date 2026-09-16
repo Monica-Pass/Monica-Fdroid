@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
+import takagi.ru.monica.ui.components.MonicaExpandableContent
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,7 +10,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -1340,10 +1341,7 @@ private fun ExpandableSectionCard(
                 }
             },
             trailingContent = {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null
-                )
+                MonicaExpansionChevron(expanded, contentDescription = null)
             },
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent
@@ -1351,7 +1349,9 @@ private fun ExpandableSectionCard(
             modifier = Modifier.clickable { onExpandedChange(!expanded) }
         )
 
-        AnimatedVisibility(visible = expanded) {
+        MonicaExpandableContent(
+            expanded = expanded
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

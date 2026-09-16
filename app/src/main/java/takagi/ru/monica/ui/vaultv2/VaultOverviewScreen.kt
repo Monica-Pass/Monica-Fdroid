@@ -82,6 +82,7 @@ internal fun VaultOverviewScreen(
     modifier: Modifier = Modifier,
     selection: VaultOverviewSelectionState = remember { VaultOverviewSelectionState() },
     onRequestDeleteItem: (VaultV2Item) -> Unit = {},
+    walletStackLoopEnabled: Boolean = false,
 ) {
     var showSources by rememberSaveable { mutableStateOf(false) }
     var showCustomization by rememberSaveable { mutableStateOf(false) }
@@ -297,13 +298,7 @@ internal fun VaultOverviewScreen(
                                         }
                                     }
                                 }
-                                VaultOverviewModule.TYPES -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    VaultV2ItemType.entries.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        pair.forEach { type -> OverviewNavigationRow(stringResource(type.titleRes()), type.icon(),
-                                            snapshot.typeCounts[type] ?: 0, { onOpenType(type) }, Modifier.weight(1f).testTag("overview_type_${type.name}")) }
-                                        if (pair.size == 1) Spacer(Modifier.weight(1f))
-                                    } }
-                                }
+                                VaultOverviewModule.TYPES -> VaultOverviewTypeGrid(snapshot.typeCounts, onOpenType)
                                 VaultOverviewModule.FOLDERS -> {
                                     if (snapshot.folders.isEmpty()) OverviewEmpty(R.string.vault_overview_empty_folders)
                                     else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -337,6 +332,7 @@ internal fun VaultOverviewScreen(
     if (cardsVisible && snapshot != null) OverviewCardStackBrowser(
         walletCards, sourceByKey, selectedCardKey, cardStackState, isDetailVisible, reduceAnimations,
         onSelectedCardChange, onOpenItem, onManage = { pinModule = VaultOverviewModule.CARDS.name },
+        loopEnabled = walletStackLoopEnabled,
     )
     if (showCustomization) VaultOverviewCustomizationSheet(config, onConfigChange, { showCustomization = false })
     if (showAllFolders && snapshot != null) OverviewSheet(stringResource(R.string.vault_overview_folder_list), { showAllFolders = false }) {

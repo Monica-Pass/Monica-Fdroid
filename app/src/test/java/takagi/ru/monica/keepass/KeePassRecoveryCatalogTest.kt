@@ -1,5 +1,7 @@
 package takagi.ru.monica.keepass
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import app.keemobile.kotpass.cryptography.EncryptedValue
 import app.keemobile.kotpass.database.Credentials
 import app.keemobile.kotpass.database.KeePassDatabase
@@ -29,7 +31,7 @@ class KeePassRecoveryCatalogTest {
     @Test
     fun `recovery catalog lists verifies exports restores and deletes complete copies`() {
         val root = Files.createTempDirectory("keepass-recovery-test").toFile()
-        val store = KeePassRecoveryStore(root) { Instant.parse("2026-08-18T01:02:03Z") }
+        val store = KeePassRecoveryStore(root, strings = xmlTestStrings("en")) { Instant.parse("2026-08-18T01:02:03Z") }
         val bytes = "complete-kdbx-bytes".toByteArray()
         val created = store.create(42L, bytes)
 
@@ -51,7 +53,7 @@ class KeePassRecoveryCatalogTest {
     @Test
     fun `tampered recovery copy remains visible but cannot be restored`() {
         val root = Files.createTempDirectory("keepass-recovery-tamper").toFile()
-        val store = KeePassRecoveryStore(root) { Instant.parse("2026-08-18T02:00:00Z") }
+        val store = KeePassRecoveryStore(root, strings = xmlTestStrings("en")) { Instant.parse("2026-08-18T02:00:00Z") }
         val copy = store.create(7L, "original".toByteArray())
         copy.file.writeText("tampered")
 

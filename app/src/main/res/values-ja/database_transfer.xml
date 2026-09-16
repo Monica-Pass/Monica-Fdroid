@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">ZIP バックアップ</string>
+    <string name="transfer_zip_description">選択したデータベースのみを保存します。</string>
+    <string name="transfer_contents">保存する内容</string>
+    <string name="transfer_images_attachments">画像と添付ファイル</string>
+    <string name="transfer_encrypt_backup">バックアップを暗号化</string>
+    <string name="transfer_encryption_hint">パスキーや添付ファイルを含めるには暗号化が必要です。</string>
+    <string name="transfer_choose_location">保存先を選択</string>
+    <string name="transfer_background_continue">バックグラウンドで続行</string>
+    <string name="transfer_background_hint">このページを閉じても続行します。進捗は通知で確認できます。</string>
+    <string name="transfer_reading">ファイルを読み込み中…</string>
+    <string name="transfer_decrypting">バックアップを復号中…</string>
+    <string name="transfer_preparing">項目を準備中…</string>
+    <string name="transfer_writing">データベースに書き込み中…</string>
+    <string name="transfer_attachments">添付ファイルをコピー中…</string>
+    <string name="transfer_packing">アーカイブを作成中…</string>
+    <string name="transfer_encrypting">ファイルを暗号化中…</string>
+    <string name="transfer_saving">ファイルを保存中…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">%1$d 件をエクスポートしました。</string>
+    <string name="transfer_export_done">エクスポート完了</string>
+    <string name="transfer_channel">インポートとエクスポート</string>
+    <string name="transfer_open_result">Monica を開いて結果を確認してください。</string>
+    <string name="transfer_background_start_failed">エクスポートを開始できません。Monica を開いたまま再試行してください。</string>
+    <string name="transfer_cancelled">エクスポートをキャンセルしました。</string>
+    <string name="transfer_attachment_encryption">添付ファイルを含めるにはバックアップを暗号化してください。</string>
+    <string name="transfer_password_mismatch">パスワードが一致しません。</string>
+    <string name="transfer_kdbx_password_description">エクスポートする KDBX データベースのパスワードを設定してください。</string>
+    <string name="transfer_unsupported_token">このトークン形式は変換できません。ZIP バックアップを使用してください。</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">このデータベースで選択した Steam アカウントをエクスポートします。</string>
+    <string name="transfer_kdbx_description">パスワード、認証情報、パスキー、添付ファイルを KeePass 形式で保存します。</string>
+    <string name="transfer_unsupported_records">未対応の項目が含まれています。元のデータベース形式でコピーを保存してください。</string>
+    <string name="transfer_zip_password_title">ZIP バックアップを復号</string>
+    <string name="transfer_zip_password_description">この ZIP バックアップを作成したときのパスワードを入力してください。</string>
+</resources>

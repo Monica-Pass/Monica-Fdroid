@@ -148,6 +148,7 @@ internal fun OverviewCardStackBrowser(
     onSelectedCardChange: (String) -> Unit,
     onOpenItem: (VaultV2Item) -> Unit,
     onManage: () -> Unit,
+    loopEnabled: Boolean = false,
 ) {
     val entry = prepared?.entry(selectedCardKey) ?: return
     if (!state.expanded || isDetailVisible && state.hasOpenedDetail) return
@@ -173,6 +174,7 @@ internal fun OverviewCardStackBrowser(
         onManage = onManage,
         title = stringResource(R.string.vault_overview_cards),
         reduceAnimations = reduceAnimations,
+        loopEnabled = loopEnabled,
         sourceName = { card -> sources[prepared.itemsById[card.id]?.overviewSource()]?.name.takeIf { prepared.scope == "all" } },
     )
 }

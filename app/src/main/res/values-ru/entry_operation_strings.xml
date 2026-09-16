@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden недоступен</string>
+    <string name="entry_message_unsupported_type">Операция не поддерживает этот тип записи</string>
+    <string name="entry_message_ownership_conflict">Устраните конфликт привязок хранилища перед переносом записи в Monica</string>
+    <string name="entry_message_local_copy_failed">Не удалось создать локальную копию в Monica</string>
+    <string name="entry_message_attachments_incomplete">Скопированы не все вложения</string>
+    <string name="entry_message_bitwarden_sync_id_missing">У записи Bitwarden нет ID синхронизации</string>
+    <string name="entry_message_keepass_source_delete_failed">Не удалось удалить исходную запись KeePass</string>
+    <string name="entry_message_source_delete_failed">Не удалось удалить исходную запись</string>
+    <string name="entry_message_storage_save_failed">Не удалось сохранить в выбранном месте</string>
+    <string name="entry_message_from_password">Из пароля: %1$s</string>
+    <string name="entry_message_passkey_android_required">Для полной поддержки ключей доступа нужен Android 14 или новее. На устройстве: %1$s</string>
+    <string name="entry_message_passkey_save_failed">Не удалось сохранить ключ доступа: %1$s</string>
+    <string name="entry_message_passkey_missing">Ключ доступа не найден</string>
+    <string name="entry_message_passkey_update_failed">Не удалось обновить ключ доступа: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">Не удалось обновить привязку ключа доступа MDBX: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">Не удалось обновить привязку: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">Не удалось обновить историю использования: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">Не удалось удалить ключ доступа: %1$s</string>
+    <string name="entry_message_category_path_invalid">Недопустимый путь к папке</string>
+    <string name="entry_message_category_move_into_self">Нельзя переместить папку в неё саму или её подпапку</string>
+    <string name="entry_message_category_missing">Папка не найдена</string>
+    <string name="entry_message_category_exists">В месте назначения уже есть папка с таким именем</string>
+    <string name="entry_message_category_move_conflict">Перемещение приведёт к конфликту с существующей папкой</string>
+    <string name="entry_message_category_name_required">Введите имя папки</string>
+    <string name="entry_message_category_name_separator">Имя папки не может содержать /</string>
+    <string name="entry_message_category_rename_conflict">Переименование приведёт к конфликту с существующей папкой</string>
+    <string name="entry_message_saved">Сохранено</string>
+</resources>

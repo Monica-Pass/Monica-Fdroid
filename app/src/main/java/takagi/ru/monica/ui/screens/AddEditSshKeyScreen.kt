@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -118,6 +119,7 @@ fun AddEditSshKeyScreen(
     initialBitwardenVaultId: Long? = null,
     initialBitwardenFolderId: String? = null,
     onNavigateBack: () -> Unit,
+    onNavigateToApiToken: () -> Unit = {},
     onNavigateToPassword: () -> Unit,
     onNavigateToBarcode: () -> Unit = onNavigateToPassword,
     onNavigateToWifi: () -> Unit,
@@ -353,6 +355,7 @@ fun AddEditSshKeyScreen(
                             current = EntryTypeChipOption.SSH_KEY,
                             onSelect = { option ->
                                 when (option) {
+                                    EntryTypeChipOption.API_TOKEN -> onNavigateToApiToken()
                                     EntryTypeChipOption.PASSWORD -> onNavigateToPassword()
                                     EntryTypeChipOption.WIFI -> onNavigateToWifi()
                                     EntryTypeChipOption.SSH_KEY -> Unit
@@ -530,6 +533,7 @@ private fun SshKeyFormBody(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .animateMonicaContentSize()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {

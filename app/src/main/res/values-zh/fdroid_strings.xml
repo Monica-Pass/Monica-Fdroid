@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">允许 HTTP 连接</string>
+    <string name="webdav_allow_insecure_http_description">默认关闭。仅为可信任的 HTTP 服务器开启，例如不支持 HTTPS 的局域网 NAS。关闭时将阻止 WebDAV 的 HTTP 请求。</string>
+    <string name="fdroid_cloud_provider_unavailable">F-Droid 版不支持 %1$s，请使用 WebDAV。</string>
+</resources>

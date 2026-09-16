@@ -1,5 +1,9 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -64,11 +68,12 @@ data class ParsedBankCardItem(
     val cardData: BankCardData
 )
 
-class BankCardViewModel(
+class BankCardViewModel internal constructor(
     private val repository: SecureItemRepository,
     context: Context? = null,
     private val localKeePassDatabaseDao: LocalKeePassDatabaseDao? = null,
-    private val securityManager: SecurityManager? = null
+    private val securityManager: SecurityManager? = null,
+    private val strings: StringResolver
 ) : ViewModel() {
     private val attachmentFacade = context?.let { AttachmentContainer.facade(it) }
     private data class KeePassMutationIdentity(
@@ -946,40 +951,40 @@ class BankCardViewModel(
         categoryId: Long?
     ): Result<Long> {
         if (item.itemType != ItemType.BANK_CARD) {
-            return Result.failure(IllegalArgumentException("仅支持银行卡项目"))
+            return Result.failure(IllegalArgumentException(strings.get(R.string.entry_message_unsupported_type)))
         }
         if (item.hasOwnershipConflict()) {
-            return Result.failure(IllegalStateException("银行卡来源冲突，无法移动到 Monica 本地"))
+            return Result.failure(IllegalStateException(strings.get(R.string.entry_message_ownership_conflict)))
         }
 
         val newId = copyCardToMonicaLocal(item, categoryId)
-            ?: return Result.failure(IllegalStateException("创建 Monica 本地银行卡副本失败"))
+            ?: return Result.failure(IllegalStateException(strings.get(R.string.entry_message_local_copy_failed)))
 
         val sourceDelete = when (val ownership = item.resolveOwnership()) {
             is SecureItemOwnership.Bitwarden -> {
                 val vaultId = ownership.vaultId
                 val cipherId = ownership.cipherId
                 if (vaultId == null || cipherId.isNullOrBlank()) {
-                    Result.failure(IllegalStateException("Bitwarden 银行卡缺少同步标识"))
+                    Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_sync_id_missing)))
                 } else {
                     bitwardenRepository?.queueCipherDelete(
                         vaultId = vaultId,
                         cipherId = cipherId,
                         entryId = item.id,
                         itemType = BitwardenPendingOperation.ITEM_TYPE_CARD
-                    ) ?: Result.failure(IllegalStateException("Bitwarden 仓库不可用"))
+                    ) ?: Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_unavailable)))
                 }
             }
             is SecureItemOwnership.KeePass -> {
                 if (keepassSecureItemDeleteExecutor.delete(item, useRecycleBin = false)) {
                     Result.success(Unit)
                 } else {
-                    Result.failure(IllegalStateException("KeePass 银行卡源删除失败"))
+                    Result.failure(IllegalStateException(strings.get(R.string.entry_message_keepass_source_delete_failed)))
                 }
             }
             is SecureItemOwnership.MonicaLocal -> Result.success(Unit)
             is SecureItemOwnership.Mdbx -> Result.success(Unit)
-            is SecureItemOwnership.Conflict -> Result.failure(IllegalStateException("银行卡来源冲突，无法移动到 Monica 本地"))
+            is SecureItemOwnership.Conflict -> Result.failure(IllegalStateException(strings.get(R.string.entry_message_ownership_conflict)))
         }
 
         if (sourceDelete.isFailure) {
@@ -988,7 +993,7 @@ class BankCardViewModel(
                 "Bank card move to Monica local kept target copy after source cleanup failed; sourceId=${item.id} targetId=$newId error=${sourceDelete.exceptionOrNull()?.message}"
             )
             return Result.failure(
-                sourceDelete.exceptionOrNull() ?: IllegalStateException("删除银行卡源失败")
+                sourceDelete.exceptionOrNull() ?: IllegalStateException(strings.get(R.string.entry_message_source_delete_failed))
             )
         }
 

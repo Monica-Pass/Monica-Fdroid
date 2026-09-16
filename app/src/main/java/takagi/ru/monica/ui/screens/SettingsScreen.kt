@@ -46,6 +46,8 @@ import androidx.core.content.FileProvider
 import androidx.fragment.app.FragmentActivity
 import takagi.ru.monica.BuildConfig
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.BottomNavContentTab
 import takagi.ru.monica.data.InterfaceScale
@@ -74,11 +76,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import takagi.ru.monica.data.SecureItem
@@ -124,7 +122,7 @@ internal fun settingsSectionCornerRadii(
     else -> SettingsSectionCornerRadii(top = 4, bottom = 4)
 }
 
-private fun settingsSectionItemShape(index: Int, totalItems: Int): RoundedCornerShape {
+internal fun settingsSectionItemShape(index: Int, totalItems: Int): RoundedCornerShape {
     val radii = settingsSectionCornerRadii(index, totalItems)
     return RoundedCornerShape(
         topStart = radii.top.dp,
@@ -615,6 +613,8 @@ fun SettingsScreen(
         R.string.password_card_hide_other_content_when_authenticator_title,
         R.string.password_card_hide_other_content_when_authenticator_desc,
         R.string.stack_mode_menu_title,
+        R.string.wallet_stack_loop_title,
+        R.string.wallet_stack_loop_desc,
         R.string.group_mode_menu_title,
         R.string.website_stack_match_mode_title,
         R.string.website_stack_match_mode_desc,
@@ -2696,44 +2696,6 @@ fun AppearanceSelectionSheet(
     }
 }
 
-@Composable
-fun LanguageSelectionDialog(
-    currentLanguage: Language,
-    onLanguageSelected: (Language) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(context.getString(R.string.language)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Language.values().forEach { language ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = language == currentLanguage,
-                            onClick = { onLanguageSelected(language) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(getLanguageDisplayName(language, context))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(context.getString(R.string.ok))
-            }
-        }
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutoLockSelectionSheet(
@@ -2840,21 +2802,6 @@ private fun getAppearanceDisplayName(
         context.getString(R.string.appearance_with_oled_subtitle, themeLabel)
     } else {
         themeLabel
-    }
-}
-
-private fun getLanguageDisplayName(language: Language, context: android.content.Context): String {
-    return when (language) {
-        Language.SYSTEM -> context.getString(R.string.language_system)
-        Language.ENGLISH -> context.getString(R.string.language_english)
-        Language.CHINESE -> context.getString(R.string.language_chinese)
-        Language.VIETNAMESE -> context.getString(R.string.language_vietnamese)
-        Language.JAPANESE -> context.getString(R.string.language_japanese)
-        Language.RUSSIAN -> context.getString(R.string.language_russian)
-        Language.KOREAN -> context.getString(R.string.language_korean)
-        Language.GERMAN -> context.getString(R.string.language_german)
-        Language.SPANISH -> context.getString(R.string.language_spanish)
-        Language.FRENCH -> context.getString(R.string.language_french)
     }
 }
 
@@ -3137,17 +3084,7 @@ fun NotificationValidatorCard(
             }
             
             // Expanded Content
-            AnimatedVisibility(
-                visible = expanded && enabled,
-                enter = slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(220)
-                ),
-                exit = slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth / 3 },
-                    animationSpec = tween(180)
-                )
-            ) {
+            MonicaExpandableContent(expanded = expanded && enabled) {
                 Column {
                     Divider(modifier = Modifier.padding(horizontal = 16.dp))
 
@@ -3300,25 +3237,15 @@ private fun CommonAccountCard() {
                     )
                 }
                 
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                MonicaExpansionChevron(
+                    expanded = expanded,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
             // Expanded Content
-            AnimatedVisibility(
-                visible = expanded,
-                enter = slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(220)
-                ),
-                exit = slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth / 3 },
-                    animationSpec = tween(180)
-                )
-            ) {
+            MonicaExpandableContent(expanded = expanded) {
                 Column {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 

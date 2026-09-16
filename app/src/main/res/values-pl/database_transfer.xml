@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">Kopia ZIP</string>
+    <string name="transfer_zip_description">Tylko wybrana baza danych.</string>
+    <string name="transfer_contents">Zawartość</string>
+    <string name="transfer_images_attachments">Obrazy i załączniki</string>
+    <string name="transfer_encrypt_backup">Szyfruj kopię</string>
+    <string name="transfer_encryption_hint">Klucze dostępu i załączniki wymagają zaszyfrowanej kopii.</string>
+    <string name="transfer_choose_location">Wybierz miejsce zapisu</string>
+    <string name="transfer_background_continue">Kontynuuj w tle</string>
+    <string name="transfer_background_hint">Możesz opuścić ten ekran. Postęp zobaczysz w powiadomieniu.</string>
+    <string name="transfer_reading">Odczytywanie pliku…</string>
+    <string name="transfer_decrypting">Odszyfrowywanie kopii…</string>
+    <string name="transfer_preparing">Przygotowywanie wpisów…</string>
+    <string name="transfer_writing">Zapisywanie w bazie…</string>
+    <string name="transfer_attachments">Kopiowanie załączników…</string>
+    <string name="transfer_packing">Tworzenie archiwum…</string>
+    <string name="transfer_encrypting">Szyfrowanie pliku…</string>
+    <string name="transfer_saving">Zapisywanie pliku…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">Wyeksportowano %1$d wpisów.</string>
+    <string name="transfer_export_done">Eksport zakończony</string>
+    <string name="transfer_channel">Import i eksport</string>
+    <string name="transfer_open_result">Otwórz Monicę, aby zobaczyć wynik.</string>
+    <string name="transfer_background_start_failed">Nie udało się rozpocząć eksportu. Spróbuj ponownie z otwartą Monicą.</string>
+    <string name="transfer_cancelled">Eksport anulowany.</string>
+    <string name="transfer_attachment_encryption">Zaszyfruj kopię, aby dołączyć załączniki.</string>
+    <string name="transfer_password_mismatch">Hasła się różnią.</string>
+    <string name="transfer_kdbx_password_description">Ustaw hasło chroniące eksportowaną bazę KDBX.</string>
+    <string name="transfer_unsupported_token">Nie można przekonwertować tego tokena. Użyj kopii ZIP.</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">Eksportuj wybrane konta Steam z tej bazy.</string>
+    <string name="transfer_kdbx_description">Hasła, kody 2FA, klucze dostępu i załączniki w formacie KeePass.</string>
+    <string name="transfer_unsupported_records">Baza zawiera nieobsługiwane typy wpisów. Zapisz kopię w oryginalnym formacie.</string>
+    <string name="transfer_zip_password_title">Odszyfruj kopię ZIP</string>
+    <string name="transfer_zip_password_description">Wpisz hasło ustawione przy tworzeniu tej kopii ZIP.</string>
+</resources>

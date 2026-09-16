@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Die Bitwarden-Löschung konnte nicht eingereiht werden</string>
+    <string name="bitwarden_message_conflict_detail">Dieser Eintrag wurde lokal und auf dem Server geändert</string>
+    <string name="bitwarden_message_empty_vault">Der Server hat keine Daten geliefert, aber %1$d lokale Einträge sind noch vorhanden. Die Synchronisierung wurde zum Schutz Ihrer Daten pausiert. Prüfen Sie Server und Konto, bevor Sie fortfahren.</string>
+    <string name="runtime_kdbx_decode_failed">Die KDBX-Datenbank konnte nicht gelesen werden</string>
+</resources>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">Sauvegarde ZIP</string>
+    <string name="transfer_zip_description">Sauvegarder uniquement la base sélectionnée.</string>
+    <string name="transfer_contents">Contenu</string>
+    <string name="transfer_images_attachments">Images et pièces jointes</string>
+    <string name="transfer_encrypt_backup">Chiffrer la sauvegarde</string>
+    <string name="transfer_encryption_hint">Les Passkeys et pièces jointes exigent une sauvegarde chiffrée.</string>
+    <string name="transfer_choose_location">Choisir un emplacement</string>
+    <string name="transfer_background_continue">Continuer en arrière-plan</string>
+    <string name="transfer_background_hint">Vous pouvez quitter cette page. La progression apparaîtra dans une notification.</string>
+    <string name="transfer_reading">Lecture du fichier…</string>
+    <string name="transfer_decrypting">Déchiffrement…</string>
+    <string name="transfer_preparing">Préparation des éléments…</string>
+    <string name="transfer_writing">Écriture dans la base…</string>
+    <string name="transfer_attachments">Copie des pièces jointes…</string>
+    <string name="transfer_packing">Création de l’archive…</string>
+    <string name="transfer_encrypting">Chiffrement…</string>
+    <string name="transfer_saving">Enregistrement…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">%1$d éléments exportés.</string>
+    <string name="transfer_export_done">Export terminé</string>
+    <string name="transfer_channel">Import et export</string>
+    <string name="transfer_open_result">Ouvrez Monica pour voir le résultat.</string>
+    <string name="transfer_background_start_failed">Impossible de lancer l’export. Réessayez en gardant Monica ouverte.</string>
+    <string name="transfer_cancelled">Export annulé.</string>
+    <string name="transfer_attachment_encryption">Chiffrez la sauvegarde pour inclure les pièces jointes.</string>
+    <string name="transfer_password_mismatch">Les mots de passe ne correspondent pas.</string>
+    <string name="transfer_kdbx_password_description">Définissez un mot de passe pour protéger la base KDBX exportée.</string>
+    <string name="transfer_unsupported_token">Ce format de jeton ne peut pas être converti. Utilisez une sauvegarde ZIP.</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">Exporter les comptes Steam sélectionnés de cette base.</string>
+    <string name="transfer_kdbx_description">Mots de passe, authentificateurs, Passkeys et pièces jointes au format KeePass.</string>
+    <string name="transfer_unsupported_records">Cette base contient des types non pris en charge. Enregistrez une copie au format d’origine.</string>
+    <string name="transfer_zip_password_title">Déchiffrer la sauvegarde ZIP</string>
+    <string name="transfer_zip_password_description">Saisissez le mot de passe utilisé pour créer cette sauvegarde ZIP.</string>
+</resources>

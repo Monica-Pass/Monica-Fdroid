@@ -1,5 +1,9 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.os.Build
 import android.util.Log
@@ -34,11 +38,12 @@ import takagi.ru.monica.utils.OperationLogger
  * 
  * 管理 Passkey 数据和 UI 状态
  */
-class PasskeyViewModel(
+class PasskeyViewModel internal constructor(
     private val repository: PasskeyRepository,
     context: Context? = null,
     private val localKeePassDatabaseDao: LocalKeePassDatabaseDao? = null,
-    securityManager: SecurityManager? = null
+    securityManager: SecurityManager? = null,
+    private val strings: StringResolver
 ) : ViewModel() {
     private val keepassBridge = if (context != null && localKeePassDatabaseDao != null && securityManager != null) {
         KeePassCompatibilityBridge(
@@ -147,8 +152,8 @@ class PasskeyViewModel(
     /**
      * 获取不支持原因（低版本设备）
      */
-    val unsupportedReason: String? = if (!isPasskeyFullySupported) {
-        "Passkey 完整功能需要 Android 14 或更高版本。当前设备: $androidVersion"
+    val unsupportedReason: String? get() = if (!isPasskeyFullySupported) {
+        strings.get(R.string.entry_message_passkey_android_required, androidVersion)
     } else null
     
     // ==================== 操作方法 ====================
@@ -213,7 +218,7 @@ class PasskeyViewModel(
                     logPasskeyUpdate(existing, passkey)
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "保存 Passkey 失败: ${e.message}"
+                _errorMessage.value = strings.get(R.string.entry_message_passkey_save_failed, e.message.orEmpty())
             } finally {
                 _isLoading.value = false
             }
@@ -229,7 +234,7 @@ class PasskeyViewModel(
         } else {
             repository.getPasskeyById(passkey.credentialId)
         }
-            ?: return Result.failure(IllegalArgumentException("Passkey 不存在"))
+            ?: return Result.failure(IllegalArgumentException(strings.get(R.string.entry_message_passkey_missing)))
         return try {
             val result = keepassPasskeyUpdateExecutor.update(
                 existing = existing,
@@ -241,7 +246,7 @@ class PasskeyViewModel(
             }
             result
         } catch (e: Exception) {
-            _errorMessage.value = "更新 Passkey 失败: ${e.message}"
+            _errorMessage.value = strings.get(R.string.entry_message_passkey_update_failed, e.message.orEmpty())
             Result.failure(e)
         }
     }
@@ -255,7 +260,7 @@ class PasskeyViewModel(
             repository.updateMdbxDatabaseForPasskeys(recordIds, databaseId, folderId)
             Result.success(Unit)
         } catch (e: Exception) {
-            _errorMessage.value = "更新 MDBX Passkey 归属失败: ${e.message}"
+            _errorMessage.value = strings.get(R.string.entry_message_passkey_ownership_failed, e.message.orEmpty())
             Result.failure(e)
         }
     }
@@ -273,7 +278,7 @@ class PasskeyViewModel(
                 repository.updateBoundPasswordId(recordId, passwordId)
                 logPasskeyUpdate(existing, existing.copy(boundPasswordId = passwordId))
             } catch (e: Exception) {
-                _errorMessage.value = "更新绑定失败: ${e.message}"
+                _errorMessage.value = strings.get(R.string.entry_message_passkey_binding_failed, e.message.orEmpty())
             }
         }
     }
@@ -286,7 +291,7 @@ class PasskeyViewModel(
             try {
                 repository.updateUsage(recordId, signCount)
             } catch (e: Exception) {
-                _errorMessage.value = "更新使用记录失败: ${e.message}"
+                _errorMessage.value = strings.get(R.string.entry_message_passkey_usage_failed, e.message.orEmpty())
             }
         }
     }
@@ -306,7 +311,7 @@ class PasskeyViewModel(
             }
             result
         } catch (e: Exception) {
-            _errorMessage.value = "删除 Passkey 失败: ${e.message}"
+            _errorMessage.value = strings.get(R.string.entry_message_passkey_delete_failed, e.message.orEmpty())
             Result.failure(e)
         }
     }
@@ -325,7 +330,7 @@ class PasskeyViewModel(
                     repository.deletePasskeyByRecordId(recordId)
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "删除 Passkey 失败: ${e.message}"
+                _errorMessage.value = strings.get(R.string.entry_message_passkey_delete_failed, e.message.orEmpty())
             }
         }
     }

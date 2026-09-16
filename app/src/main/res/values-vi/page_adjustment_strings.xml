@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_stack_loop_title">Lặp vòng nhóm thẻ</string>
+    <string name="wallet_stack_loop_desc">Vuốt qua nhóm thẻ theo cả hai hướng. Thẻ cuối nối tiếp thẻ đầu.</string>
+    <string name="page_adjustment_preview_games">Trò chơi</string>
+    <string name="page_adjustment_preview_folder">Thư mục 1</string>
+    <string name="page_adjustment_preview_subfolder">Thư mục con</string>
+</resources>

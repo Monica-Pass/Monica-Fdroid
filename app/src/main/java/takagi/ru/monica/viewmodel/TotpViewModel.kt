@@ -1,5 +1,11 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -109,12 +115,13 @@ data class ParsedTotpItem(
 /**
  * TOTP验证器ViewModel
  */
-class TotpViewModel(
+class TotpViewModel internal constructor(
     private val repository: SecureItemRepository,
     private val passwordRepository: PasswordRepository,
     context: Context? = null,
     private val localKeePassDatabaseDao: LocalKeePassDatabaseDao? = null,
-    private val securityManager: SecurityManager? = null
+    private val securityManager: SecurityManager? = null,
+    private val strings: StringResolver
 ) : ViewModel() {
     private val applicationContext = context?.applicationContext
 
@@ -342,7 +349,7 @@ class TotpViewModel(
                 id = -password.id,
                 itemType = ItemType.TOTP,
                 title = password.title,
-                notes = "来自密码: ${password.title}",
+                notes = strings.get(R.string.entry_message_from_password, password.title),
                 itemData = Json.encodeToString(resolvedTotpData),
                 isFavorite = false,
                 createdAt = password.createdAt,
@@ -1193,7 +1200,7 @@ class TotpViewModel(
                 val distinctTargets = targets.distinctBy(StorageTarget::stableKey)
                 if (distinctTargets.isEmpty()) {
                     Log.w("TotpViewModel", "saveTotpAcrossTargets blocked because target list is empty id=$id")
-                    onFailure("未选择保存位置")
+                    onFailure(strings.get(R.string.multi_storage_no_target))
                     false
                 } else {
                     requireKeePassKeyFilesAvailable(distinctTargets)
@@ -1294,7 +1301,7 @@ class TotpViewModel(
                             "TotpViewModel",
                             "saveTotpAcrossTargets failed current target=${currentTarget.stableKey} id=$id targets=${distinctTargets.map(StorageTarget::stableKey)}"
                         )
-                        onFailure("无法保存到所选存储位置")
+                        onFailure(strings.get(R.string.entry_message_storage_save_failed))
                         false
                     } else {
                         var allTargetsSaved = true
@@ -1324,7 +1331,9 @@ class TotpViewModel(
                     }
                 }
             } catch (e: Exception) {
-                val failureMessage = e.toKeePassOperationException().message
+                val failureMessage = applicationContext?.let {
+                    e.toKeePassOperationException(AppLocaleStringResolver(it)).message
+                } ?: e.message.orEmpty()
                 Log.e(
                     "TotpViewModel",
                     "saveTotpAcrossTargets crashed id=$id targets=${targets.map(StorageTarget::stableKey)} error=${e::class.java.simpleName}: ${e.message}",
@@ -2055,40 +2064,40 @@ class TotpViewModel(
         categoryId: Long?
     ): Result<Long> {
         if (item.itemType != ItemType.TOTP) {
-            return Result.failure(IllegalArgumentException("仅支持验证器项目"))
+            return Result.failure(IllegalArgumentException(strings.get(R.string.entry_message_unsupported_type)))
         }
         if (item.hasOwnershipConflict()) {
-            return Result.failure(IllegalStateException("验证器来源冲突，无法移动到 Monica 本地"))
+            return Result.failure(IllegalStateException(strings.get(R.string.entry_message_ownership_conflict)))
         }
 
         val newId = copyTotpToMonicaLocal(item, categoryId)
-            ?: return Result.failure(IllegalStateException("创建 Monica 本地验证器副本失败"))
+            ?: return Result.failure(IllegalStateException(strings.get(R.string.entry_message_local_copy_failed)))
 
         val sourceDelete = when (val ownership = item.resolveOwnership()) {
             is SecureItemOwnership.Bitwarden -> {
                 val vaultId = ownership.vaultId
                 val cipherId = ownership.cipherId
                 if (vaultId == null || cipherId.isNullOrBlank()) {
-                    Result.failure(IllegalStateException("Bitwarden 验证器缺少同步标识"))
+                    Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_sync_id_missing)))
                 } else {
                     bitwardenRepository?.queueCipherDelete(
                         vaultId = vaultId,
                         cipherId = cipherId,
                         entryId = item.id,
                         itemType = BitwardenPendingOperation.ITEM_TYPE_TOTP
-                    ) ?: Result.failure(IllegalStateException("Bitwarden 仓库不可用"))
+                    ) ?: Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_unavailable)))
                 }
             }
             is SecureItemOwnership.KeePass -> {
                 if (keepassSecureItemDeleteExecutor.delete(item, useRecycleBin = false)) {
                     Result.success(Unit)
                 } else {
-                    Result.failure(IllegalStateException("KeePass 验证器源删除失败"))
+                    Result.failure(IllegalStateException(strings.get(R.string.entry_message_keepass_source_delete_failed)))
                 }
             }
             is SecureItemOwnership.MonicaLocal -> Result.success(Unit)
             is SecureItemOwnership.Mdbx -> Result.success(Unit)
-            is SecureItemOwnership.Conflict -> Result.failure(IllegalStateException("验证器来源冲突，无法移动到 Monica 本地"))
+            is SecureItemOwnership.Conflict -> Result.failure(IllegalStateException(strings.get(R.string.entry_message_ownership_conflict)))
         }
 
         if (sourceDelete.isFailure) {
@@ -2097,7 +2106,7 @@ class TotpViewModel(
                 "TOTP move to Monica local kept target copy after source cleanup failed; sourceId=${item.id} targetId=$newId error=${sourceDelete.exceptionOrNull()?.message}"
             )
             return Result.failure(
-                sourceDelete.exceptionOrNull() ?: IllegalStateException("删除验证器源失败")
+                sourceDelete.exceptionOrNull() ?: IllegalStateException(strings.get(R.string.entry_message_source_delete_failed))
             )
         }
 

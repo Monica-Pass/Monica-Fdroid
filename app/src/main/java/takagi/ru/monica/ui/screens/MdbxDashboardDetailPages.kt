@@ -2,7 +2,6 @@ package takagi.ru.monica.ui.screens
 
 import takagi.ru.monica.R
 import takagi.ru.monica.utils.StringResolver
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +64,8 @@ import takagi.ru.monica.repository.MdbxHealthRepairItem
 import takagi.ru.monica.repository.MdbxHealthRepairItemKind
 import takagi.ru.monica.repository.MdbxHealthSeverity
 import takagi.ru.monica.repository.MdbxVaultDiagnostics
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.viewmodel.MdbxViewModel
 
 private data class MdbxHealthCheckPresentation(
@@ -220,9 +221,11 @@ internal fun MdbxHealthDetailPage(
                     }
                 )
             }
-            visibleChecks.forEach { check ->
-                item(key = "health-check-${check.title}") {
-                    MdbxHealthCheckCard(check)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(MdbxGroupSpacing)) {
+                    visibleChecks.forEachIndexed { index, check ->
+                        MdbxHealthCheckCard(check, index, visibleChecks.size)
+                    }
                 }
             }
             if (issueCount > 0 && passedCheckCount > 0) {
@@ -245,7 +248,7 @@ internal fun MdbxHealthDetailPage(
                 MdbxDetailInformationCard(
                     title = strings.get(R.string.mdbx_ui_database_information),
                     rows = listOf(
-                        MdbxDetailInformationRow(strings.get(R.string.keepass_remote_sync_status), diagnostics.lastSyncStatus),
+                        MdbxDetailInformationRow(strings.get(R.string.keepass_remote_sync_status), strings.get(mdbxSyncStatusLabel(diagnostics.lastSyncStatus))),
                         MdbxDetailInformationRow(strings.get(R.string.mdbx_ui_format_version), diagnostics.formatVersion ?: strings.get(R.string.mdbx_ui_not_provided)),
                         MdbxDetailInformationRow(strings.get(R.string.mdbx_ui_file_size), formatBytes(diagnostics.fileSizeBytes)),
                         MdbxDetailInformationRow(strings.get(R.string.mdbx_ui_current_client), diagnostics.currentDeviceId ?: strings.get(R.string.mdbx_ui_not_provided)),
@@ -457,53 +460,14 @@ private fun MdbxVaultDiagnostics.healthCheckPresentations(strings: StringResolve
 }
 
 @Composable
-internal fun MdbxDetailHeroCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    warning: Boolean
-) {
-    val containerColor = if (warning) {
-        MaterialTheme.colorScheme.errorContainer
-    } else {
-        MaterialTheme.colorScheme.primaryContainer
-    }
-    val contentColor = if (warning) {
-        MaterialTheme.colorScheme.onErrorContainer
-    } else {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = MaterialTheme.shapes.medium,
-                color = contentColor.copy(alpha = 0.12f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(26.dp))
-                }
-            }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor
-                )
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.82f)
-                )
-            }
+internal fun MdbxDetailHeroCard(icon: ImageVector, title: String, subtitle: String, warning: Boolean) {
+    val accent = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        MdbxIconBadge(icon, accent, if (warning) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -524,15 +488,16 @@ private fun MdbxDetailSectionLabel(title: String, subtitle: String) {
 }
 
 @Composable
-private fun MdbxHealthCheckCard(check: MdbxHealthCheckPresentation) {
+private fun MdbxHealthCheckCard(check: MdbxHealthCheckPresentation, index: Int, count: Int) {
     val accentColor = if (check.hasIssue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     val iconContainer = if (check.hasIssue) {
         MaterialTheme.colorScheme.errorContainer
     } else {
         MaterialTheme.colorScheme.primaryContainer
     }
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
+        shape = settingsSectionItemShape(index, count),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Row(
@@ -541,7 +506,7 @@ private fun MdbxHealthCheckCard(check: MdbxHealthCheckPresentation) {
             verticalAlignment = Alignment.Top
         ) {
             Surface(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(32.dp),
                 shape = MaterialTheme.shapes.medium,
                 color = iconContainer
             ) {
@@ -615,7 +580,7 @@ private fun MdbxHealthGuidanceCard(
         MdbxHealthGuidanceAction.ATTACHMENTS -> onOpenAttachments
     }
 
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
@@ -668,10 +633,10 @@ private fun MdbxHealthGuidanceCard(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f)
+                color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.72f)
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     Text(
@@ -688,62 +653,67 @@ private fun MdbxHealthGuidanceCard(
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    strings.get(R.string.mdbx_ui_health_recommended_actions),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-                guidance.steps.forEachIndexed { index, step ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(22.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = accentColor.copy(alpha = 0.14f)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    (index + 1).toString(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = accentColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        Text(
-                            step,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            AnimatedVisibility(visible = detailsExpanded) {
+            Column {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    HorizontalDivider()
                     Text(
-                        strings.get(R.string.mdbx_ui_technical_details),
+                        strings.get(R.string.mdbx_ui_health_recommended_actions),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold
                     )
-                    guidance.technicalDetails.take(6).forEach { detail ->
-                        Text(
-                            detail,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    guidance.steps.forEachIndexed { index, step ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(22.dp),
+                                shape = MaterialTheme.shapes.small,
+                                color = accentColor.copy(alpha = 0.14f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        (index + 1).toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = accentColor,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Text(
+                                step,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
-                    if (guidance.technicalDetails.size > 6) {
+                }
+
+                MonicaExpandableContent(expanded = detailsExpanded) {
+                    Column(
+                        modifier = Modifier.padding(top = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HorizontalDivider()
                         Text(
-                            strings.get(R.string.mdbx_ui_more_diagnostics, guidance.technicalDetails.size - 6),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            strings.get(R.string.mdbx_ui_technical_details),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
                         )
+                        guidance.technicalDetails.take(6).forEach { detail ->
+                            Text(
+                                detail,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (guidance.technicalDetails.size > 6) {
+                            Text(
+                                strings.get(R.string.mdbx_ui_more_diagnostics, guidance.technicalDetails.size - 6),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -763,8 +733,8 @@ private fun MdbxHealthGuidanceCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        if (detailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    MonicaExpansionChevron(
+                        expanded = detailsExpanded,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
@@ -853,7 +823,7 @@ internal fun MdbxHealthRepairDialog(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.large,
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest
+                            color = MaterialTheme.colorScheme.surfaceContainerLow
                         ) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
@@ -985,12 +955,12 @@ private fun MdbxDetailMetricCard(
     label: String,
     value: String
 ) {
-    Card(
+    MdbxCard(
         modifier = modifier.heightIn(min = 92.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -1003,8 +973,6 @@ private fun MdbxDetailMetricCard(
                 value,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -1017,7 +985,7 @@ private fun MdbxAttachmentIntegrityCard(
 ) {
     val strings = rememberScreenStrings()
     val warning = mismatchCount > 0
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (warning) {
@@ -1066,44 +1034,12 @@ private data class MdbxDetailInformationRow(
 )
 
 @Composable
-private fun MdbxDetailInformationCard(
-    title: String,
-    rows: List<MdbxDetailInformationRow>
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(modifier = Modifier.padding(vertical = 6.dp)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-            )
-            rows.forEachIndexed { index, row ->
-                if (index > 0) {
-                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 11.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        row.label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(76.dp)
-                    )
-                    Text(
-                        row.value,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+private fun MdbxDetailInformationCard(title: String, rows: List<MdbxDetailInformationRow>) {
+    MdbxExpandableSection(title = title) {
+        rows.forEach { row ->
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(row.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(row.value, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

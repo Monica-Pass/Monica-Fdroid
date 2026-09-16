@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_message_credentials_required">Nhập tên tài khoản và mật khẩu</string>
+    <string name="steam_message_rsa_failed">Không thể lấy khóa RSA của Steam</string>
+    <string name="steam_message_rsa_incomplete">Steam trả về dữ liệu RSA không đầy đủ</string>
+    <string name="steam_message_password_encrypt">Không thể mã hóa mật khẩu Steam</string>
+    <string name="steam_message_login_request">Không thể gửi yêu cầu đăng nhập Steam</string>
+    <string name="steam_message_login_failed">Đăng nhập Steam thất bại</string>
+    <string name="steam_message_login_rejected">Steam từ chối đăng nhập (EResult=%1$s, interval=%2$s)</string>
+    <string name="steam_message_login_incomplete">Steam trả về phản hồi đăng nhập không đầy đủ. Có thể cần xác minh thêm.</string>
+    <string name="steam_message_session_invalid">Phiên đăng nhập không hợp lệ</string>
+    <string name="steam_message_code_required">Nhập mã xác minh</string>
+    <string name="steam_message_session_expired">Phiên đăng nhập đã hết hạn. Hãy bắt đầu lại.</string>
+    <string name="steam_message_verification_failed">Xác minh Steam thất bại</string>
+    <string name="steam_message_qr_create">Không thể bắt đầu đăng nhập Steam bằng QR</string>
+    <string name="steam_message_qr_failed">Đăng nhập Steam bằng QR thất bại</string>
+    <string name="steam_message_code_submit">Không thể gửi mã xác minh Steam</string>
+    <string name="steam_message_session_needs_code">Phiên đăng nhập này yêu cầu mã xác minh</string>
+    <string name="steam_message_qr_expired">Phiên đăng nhập QR đã hết hạn. Hãy bắt đầu lại.</string>
+    <string name="steam_message_not_qr">Phiên này không dùng đăng nhập QR</string>
+    <string name="steam_message_poll_failed">Không thể kiểm tra trạng thái đăng nhập Steam</string>
+    <string name="steam_message_steamid_missing">Đã đăng nhập Steam nhưng thiếu SteamID. Không thể tiếp tục.</string>
+    <string name="steam_message_token_missing">Đã đăng nhập Steam nhưng không lấy được mã truy cập. Không thể tiếp tục nhập.</string>
+    <string name="steam_message_login_timeout">Hết thời gian chờ đăng nhập Steam. Hãy thử lại sau.</string>
+    <string name="steam_message_qr_parameters">Dữ liệu phiên đăng nhập QR không hợp lệ. Hãy bắt đầu lại.</string>
+    <string name="steam_message_replacement_code">Tài khoản này đã có trình xác thực. Nhập mã để thay thế.</string>
+    <string name="steam_message_steamid_invalid">SteamID không hợp lệ. Không thể thiết lập Steam Guard.</string>
+    <string name="steam_message_account_restricted">Tài khoản Steam này bị hạn chế và không thể thêm Steam Guard</string>
+    <string name="steam_message_rate_limited">Quá nhiều yêu cầu Steam. Hãy thử lại sau.</string>
+    <string name="steam_message_add_failed">Không thể thêm Steam Guard</string>
+    <string name="steam_message_phone_required">Liên kết số điện thoại với tài khoản Steam này trước khi thêm Steam Guard</string>
+    <string name="steam_message_response_missing">Steam trả về dữ liệu trình xác thực không đầy đủ: thiếu %1$s</string>
+    <string name="steam_message_activation_expired">Kích hoạt Steam Guard đã hết hạn. Hãy đăng nhập lại.</string>
+    <string name="steam_message_activation_data">Dữ liệu Steam Guard không đầy đủ. Không thể tạo mã kích hoạt.</string>
+    <string name="steam_message_activation_failed">Kích hoạt Steam Guard thất bại</string>
+    <string name="steam_message_activation_code_invalid">Mã kích hoạt Steam không hợp lệ hoặc hết hạn</string>
+    <string name="steam_message_activation_status">Kích hoạt Steam Guard thất bại (status=%1$d)</string>
+    <string name="steam_message_sequential_codes">Kích hoạt Steam Guard thất bại: không thể tạo các mã liên tiếp mà Steam yêu cầu</string>
+    <string name="steam_message_replace_start">Không thể bắt đầu thay thế trình xác thực</string>
+    <string name="steam_message_replace_sms">Nhập mã SMS để thay thế trình xác thực hiện tại</string>
+    <string name="steam_message_replace_denied">Đã đăng nhập Steam nhưng việc chuyển trình xác thực bị từ chối (EResult=2). Tài khoản có thể không có số điện thoại dùng được hoặc việc chuyển bị hạn chế. Hãy nhập maFile hoặc liên kết số điện thoại trong Steam rồi thử lại.</string>
+    <string name="steam_message_replace_forbidden">Đã đăng nhập Steam nhưng không được phép chuyển trình xác thực (EResult=15). Hãy nhập maFile hoặc đăng nhập lại sau rồi thử lại.</string>
+    <string name="steam_message_replace_limited">Đã đăng nhập Steam nhưng việc chuyển trình xác thực tạm thời bị hạn chế (EResult=84). Hãy thử lại sau.</string>
+    <string name="steam_message_replace_result">Đã đăng nhập Steam nhưng chuyển trình xác thực thất bại (EResult=%1$d)</string>
+    <string name="steam_message_replace_session">Phiên thay thế không hợp lệ. Hãy đăng nhập lại để nhập.</string>
+    <string name="steam_message_replace_failed">Thay thế trình xác thực thất bại</string>
+    <string name="steam_message_session_state">Trạng thái phiên đăng nhập không hợp lệ. Hãy bắt đầu lại.</string>
+    <string name="steam_message_oauth_missing">Đã đăng nhập Steam nhưng không nhận được mã OAuth. Không thể tiếp tục nhập.</string>
+    <string name="steam_message_captcha_unsupported">Steam yêu cầu CAPTCHA mà phiên bản này không xử lý được. Hãy đăng nhập một lần bằng ứng dụng Steam rồi thử lại.</string>
+    <string name="steam_message_enter_token_code">Nhập mã Steam Guard</string>
+    <string name="steam_message_enter_email_code">Nhập mã được gửi qua email</string>
+    <string name="steam_message_invalid_parameters">Steam từ chối yêu cầu: tham số không hợp lệ</string>
+    <string name="steam_message_access_denied">Steam từ chối truy cập</string>
+    <string name="steam_message_already_bound">Tài khoản này đã có trình xác thực Steam. Hãy dùng quy trình thay thế.</string>
+    <string name="steam_message_operation_disallowed">Steam không cho phép thao tác này ở trạng thái hiện tại</string>
+    <string name="steam_message_confirmation_required">Steam yêu cầu xác nhận bổ sung</string>
+    <string name="steam_message_code_invalid">Mã xác minh Steam không hợp lệ hoặc hết hạn</string>
+    <string name="steam_message_request_status">Yêu cầu Steam thất bại (status=%1$d)</string>
+    <string name="steam_message_bad_credentials">Tên tài khoản hoặc mật khẩu Steam sai</string>
+    <string name="steam_message_duplicate_request">Steam báo yêu cầu trùng lặp (EResult=29). Tài khoản có thể đã có trình xác thực.</string>
+    <string name="steam_message_session_conflict">Xung đột phiên đăng nhập Steam. Hãy thử lại sau.</string>
+    <string name="steam_message_extra_verification">Steam yêu cầu xác minh đăng nhập bổ sung (EResult=63)</string>
+    <string name="steam_message_login_result">Đăng nhập Steam thất bại (EResult=%1$d)</string>
+    <string name="steam_message_token_code_invalid">Mã Steam Guard không hợp lệ hoặc hết hạn</string>
+    <string name="steam_message_sms_email_code_invalid">Mã xác minh SMS hoặc email không hợp lệ hoặc hết hạn</string>
+</resources>

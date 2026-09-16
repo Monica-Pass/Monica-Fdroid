@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -68,8 +67,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -100,8 +97,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -583,47 +578,24 @@ private fun WelcomeStep(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Box {
-                        AssistChip(
-                            onClick = { languageExpanded = true },
-                            label = { Text(stringResource(R.string.qs_change)) }
-                        )
-                        DropdownMenu(
-                            expanded = languageExpanded,
-                            onDismissRequest = { languageExpanded = false },
-                            modifier = Modifier
-                                .widthIn(min = 200.dp)
-                                .heightIn(max = 360.dp)
-                        ) {
-                            Language.values().forEach { language ->
-                                val isSelected = selectedLanguage == language
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(languageLabelRes(language))) },
-                                    onClick = {
-                                        languageExpanded = false
-                                        if (!isSelected) {
-                                            onLanguageSelected(language)
-                                        }
-                                    },
-                                    modifier = Modifier.semantics { selected = isSelected },
-                                    trailingIcon = if (isSelected) {
-                                        {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    }
-                                )
-                            }
-                        }
-                    }
+                    AssistChip(
+                        onClick = { languageExpanded = true },
+                        label = { Text(stringResource(R.string.qs_change)) }
+                    )
                 }
             }
         }
+    }
+
+    if (languageExpanded) {
+        LanguageSelectionDialog(
+            currentLanguage = selectedLanguage,
+            onLanguageSelected = { language ->
+                languageExpanded = false
+                if (language != selectedLanguage) onLanguageSelected(language)
+            },
+            onDismiss = { languageExpanded = false },
+        )
     }
 }
 
@@ -1722,6 +1694,7 @@ private fun languageLabelRes(language: Language): Int = when (language) {
     Language.SYSTEM -> R.string.qs_lang_system
     Language.ENGLISH -> R.string.qs_lang_english
     Language.CHINESE -> R.string.qs_lang_chinese
+    Language.CLASSICAL_CHINESE -> R.string.language_classical_chinese
     Language.VIETNAMESE -> R.string.qs_lang_vietnamese
     Language.JAPANESE -> R.string.qs_lang_japanese
     Language.RUSSIAN -> R.string.qs_lang_russian
@@ -1729,6 +1702,8 @@ private fun languageLabelRes(language: Language): Int = when (language) {
     Language.GERMAN -> R.string.qs_lang_german
     Language.SPANISH -> R.string.qs_lang_spanish
     Language.FRENCH -> R.string.qs_lang_french
+    Language.POLISH -> R.string.language_polish
+    Language.NYA -> R.string.qs_lang_nya
 }
 
 @StringRes

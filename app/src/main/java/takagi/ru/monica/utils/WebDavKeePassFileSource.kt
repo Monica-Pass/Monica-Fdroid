@@ -1,16 +1,24 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import android.content.Context
 import com.thegrizzlylabs.sardineandroid.DavResource
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
+import com.thegrizzlylabs.sardineandroid.impl.SardineException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import takagi.ru.monica.data.KeepassRemoteSource
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.keepass.KeePassSourceChangedException
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 data class KeePassLocalMirrorPaths(
@@ -18,22 +26,25 @@ data class KeePassLocalMirrorPaths(
     val cacheCopyPath: String
 )
 
-class WebDavKeePassFileSource(
+class WebDavKeePassFileSource internal constructor(
     private val serverUrl: String,
     private val username: String,
     private val password: String,
-    private val remotePath: String? = null
+    private val remotePath: String? = null,
+    private val strings: StringResolver
 ) : KeePassFileSource {
     private val normalizedServerUrl = serverUrl.trim().trimEnd('/')
     private val normalizedRemotePath = normalizeOptionalRemotePath(remotePath)
     private val remoteUrl = buildRemoteUrl(normalizedServerUrl, normalizedRemotePath)
-    private val sardine by lazy {
-        OkHttpSardine().apply {
+    private val httpClient by lazy { OkHttpClient.Builder().build() }
+    private val sardine by lazy { authenticatedSardine(httpClient) }
+
+    private fun authenticatedSardine(client: OkHttpClient): OkHttpSardine =
+        OkHttpSardine(client).apply {
             if (username.isNotBlank() || password.isNotBlank()) {
                 setCredentials(username.trim(), password)
             }
         }
-    }
 
     override suspend fun stat(): FileSourceStat = withContext(Dispatchers.IO) {
         requireRemotePath()
@@ -52,7 +63,7 @@ class WebDavKeePassFileSource(
 
         val exists = webDavPathExists(remoteUrl)
         if (!exists) {
-            throw IOException("远端文件不存在: $normalizedRemotePath")
+            throw IOException(strings.get(R.string.cloud_message_remote_file_missing, normalizedRemotePath))
         }
 
         FileSourceStat(
@@ -68,7 +79,7 @@ class WebDavKeePassFileSource(
     override suspend fun read(): ByteArray = withContext(Dispatchers.IO) {
         requireRemotePath()
         if (!webDavPathExists(remoteUrl)) {
-            throw IOException("远端文件不存在: $normalizedRemotePath")
+            throw IOException(strings.get(R.string.cloud_message_remote_file_missing, normalizedRemotePath))
         }
         sardine.get(remoteUrl).use { input ->
             input.readBytes()
@@ -80,19 +91,46 @@ class WebDavKeePassFileSource(
         expectedVersion: String?
     ): FileSourceWriteResult = withContext(Dispatchers.IO) {
         requireRemotePath()
-        val parentUrl = buildRemoteUrl(normalizedServerUrl, parentPathOf(normalizedRemotePath))
+        val parentUrl = buildRemoteUrl(normalizedServerUrl, parentPathOf(normalizedRemotePath, strings = strings))
         if (parentUrl.isNotBlank() && !webDavPathExists(parentUrl)) {
-            throw IOException("远端目录不存在: ${parentPathOf(normalizedRemotePath)}")
+            throw IOException(strings.get(R.string.cloud_message_remote_directory_missing, parentPathOf(normalizedRemotePath, strings = strings)))
         }
 
-        if (!expectedVersion.isNullOrBlank()) {
-            val current = runCatching { stat() }.getOrNull()
-            if (current != null && !current.matchesExpectedVersion(expectedVersion)) {
-                throw IOException("远端文件已变化，请先重新同步")
+        val conditions = if (!expectedVersion.isNullOrBlank()) {
+            val current = stat()
+            if (!current.matchesExpectedVersion(expectedVersion)) {
+                throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
             }
-        }
+            when {
+                !current.etag.isNullOrBlank() && !current.etag.startsWith("W/") ->
+                    mapOf("If-Match" to current.etag)
+                current.lastModified != null -> mapOf(
+                    "If-Unmodified-Since" to DateTimeFormatter.RFC_1123_DATE_TIME
+                        .withZone(ZoneId.of("GMT")).format(Instant.ofEpochMilli(current.lastModified))
+                )
+                else -> throw IOException(strings.get(R.string.cloud_message_webdav_version_missing))
+            }
+        } else emptyMap()
 
-        sardine.put(remoteUrl, bytes, KEEPASS_KDBX_MIME_TYPE)
+        // Sardine 0.8 has no public byte-array PUT overload accepting headers.
+        // A per-write client keeps the version condition on authentication retries too.
+        val writer = if (conditions.isEmpty()) sardine else authenticatedSardine(
+            httpClient.newBuilder().addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                if (chain.request().method == "PUT") {
+                    conditions.forEach { (name, value) -> request.header(name, value) }
+                }
+                chain.proceed(request.build())
+            }.build()
+        )
+        try {
+            writer.put(remoteUrl, bytes, KEEPASS_KDBX_MIME_TYPE)
+        } catch (error: SardineException) {
+            if (error.statusCode == 412) {
+                throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed_merge)).apply { initCause(error) }
+            }
+            throw error
+        }
         val latest = runCatching { stat() }.getOrDefault(FileSourceStat())
         FileSourceWriteResult(
             versionToken = latest.versionToken,
@@ -107,14 +145,14 @@ class WebDavKeePassFileSource(
                 ""
             } else {
                 val stat = runCatching { stat() }.getOrNull()
-                if (stat?.isDirectory == true) normalizedRemotePath else parentPathOf(normalizedRemotePath)
+                if (stat?.isDirectory == true) normalizedRemotePath else parentPathOf(normalizedRemotePath, strings = strings)
             }
         )
     }
 
     override suspend fun createFile(name: String): FileSourceEntry = withContext(Dispatchers.IO) {
-        val targetPath = buildChildPath(parentPathOf(normalizedRemotePath), name)
-        createFileInDirectory(parentPathOf(targetPath), name)
+        val targetPath = buildChildPath(parentPathOf(normalizedRemotePath, strings = strings), name, strings = strings)
+        createFileInDirectory(parentPathOf(targetPath, strings = strings), name)
     }
 
     override suspend fun testConnection(): Result<Unit> = withContext(Dispatchers.IO) {
@@ -122,11 +160,11 @@ class WebDavKeePassFileSource(
             val targetDirectory = when {
                 normalizedRemotePath.isBlank() -> ""
                 runCatching { stat() }.getOrNull()?.isDirectory == true -> normalizedRemotePath
-                else -> parentPathOf(normalizedRemotePath)
+                else -> parentPathOf(normalizedRemotePath, strings = strings)
             }
             val targetUrl = buildRemoteUrl(normalizedServerUrl, targetDirectory).ifBlank { normalizedServerUrl }
             if (!webDavPathExists(targetUrl)) {
-                throw IOException("无法访问 WebDAV 路径: $targetUrl")
+                throw IOException(strings.get(R.string.cloud_message_webdav_path_unavailable, targetUrl))
             }
             Unit
         }
@@ -138,9 +176,9 @@ class WebDavKeePassFileSource(
         if (!webDavPathExists(targetUrl)) {
             throw IOException(
                 if (normalizedDirectoryPath.isBlank()) {
-                    "无法访问 WebDAV 根目录"
+                    strings.get(R.string.cloud_message_webdav_root_unavailable)
                 } else {
-                    "远端目录不存在: $normalizedDirectoryPath"
+                    strings.get(R.string.cloud_message_remote_directory_missing, normalizedDirectoryPath)
                 }
             )
         }
@@ -153,7 +191,7 @@ class WebDavKeePassFileSource(
                 FileSourceEntry(
                     id = resource.href?.toString(),
                     name = resource.name,
-                    path = buildChildPath(normalizedDirectoryPath, resource.name),
+                    path = buildChildPath(normalizedDirectoryPath, resource.name, strings = strings),
                     isDirectory = resource.isDirectory,
                     versionToken = resource.etag?.takeIf { it.isNotBlank() }
                         ?: resource.modified?.time?.toString()
@@ -170,10 +208,10 @@ class WebDavKeePassFileSource(
 
     suspend fun createDirectory(parentPath: String?, name: String): FileSourceEntry = withContext(Dispatchers.IO) {
         val normalizedParentPath = normalizeOptionalRemotePath(parentPath)
-        val targetPath = buildChildPath(normalizedParentPath, name)
+        val targetPath = buildChildPath(normalizedParentPath, name, strings = strings)
         val targetUrl = buildRemoteUrl(normalizedServerUrl, targetPath)
         if (webDavPathExists(targetUrl)) {
-            throw IOException("同名目录已存在")
+            throw IOException(strings.get(R.string.cloud_message_folder_exists))
         }
         sardine.createDirectory(targetUrl)
         FileSourceEntry(
@@ -190,20 +228,20 @@ class WebDavKeePassFileSource(
         bytes: ByteArray = ByteArray(0)
     ): FileSourceEntry = withContext(Dispatchers.IO) {
         val normalizedParentPath = normalizeOptionalRemotePath(parentPath)
-        val targetPath = buildChildPath(normalizedParentPath, name)
+        val targetPath = buildChildPath(normalizedParentPath, name, strings = strings)
         val targetUrl = buildRemoteUrl(normalizedServerUrl, targetPath)
         val parentUrl = buildRemoteUrl(normalizedServerUrl, normalizedParentPath)
         if (parentUrl.isNotBlank() && !webDavPathExists(parentUrl)) {
             throw IOException(
                 if (normalizedParentPath.isBlank()) {
-                    "远端目录不存在"
+                    strings.get(R.string.cloud_message_remote_directory_unavailable)
                 } else {
-                    "远端目录不存在: $normalizedParentPath"
+                    strings.get(R.string.cloud_message_remote_directory_missing, normalizedParentPath)
                 }
             )
         }
         if (webDavPathExists(targetUrl)) {
-            throw IOException("同名文件已存在")
+            throw IOException(strings.get(R.string.cloud_message_file_exists))
         }
         sardine.put(targetUrl, bytes, KEEPASS_KDBX_MIME_TYPE)
         val latest = runCatching { resolveResource(targetUrl) }.getOrNull()
@@ -230,7 +268,7 @@ class WebDavKeePassFileSource(
         }?.let { return it }
         directResources.firstOrNull()?.let { return it }
 
-        val parentUrl = buildRemoteUrl(normalizedServerUrl, parentPathOf(normalizedRemotePath))
+        val parentUrl = buildRemoteUrl(normalizedServerUrl, parentPathOf(normalizedRemotePath, strings = strings))
         if (parentUrl.isBlank()) return null
         val fileName = normalizedRemotePath.substringAfterLast('/')
         return runCatching { sardine.list(parentUrl) }
@@ -253,28 +291,25 @@ class WebDavKeePassFileSource(
 
     private fun requireRemotePath() {
         if (normalizedRemotePath.isBlank()) {
-            throw IllegalStateException("未指定远端文件路径")
+            throw IllegalStateException(strings.get(R.string.cloud_message_path_required))
         }
     }
 
     private fun FileSourceStat.matchesExpectedVersion(expectedVersion: String): Boolean {
         val expected = expectedVersion.trim()
-        return expected.isBlank() ||
-            expected == etag ||
-            expected == versionToken ||
-            expected == lastModified?.toString() ||
-            expected == sizeBytes?.toString()
+        val currentVersion = etag ?: versionToken ?: lastModified?.toString()
+        return expected.isBlank() || expected == currentVersion
     }
 
     companion object {
-        fun normalizeRemotePath(remotePath: String): String {
+        internal fun normalizeRemotePath(remotePath: String, strings: StringResolver): String {
             val normalized = remotePath
                 .trim()
                 .replace('\\', '/')
                 .trimStart('/')
                 .replace(Regex("/+"), "/")
             if (normalized.isBlank()) {
-                throw IllegalArgumentException("远端文件路径不能为空")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_path_required))
             }
             return normalized
         }
@@ -303,20 +338,20 @@ class WebDavKeePassFileSource(
             }
         }
 
-        fun parentPathOf(remotePath: String): String {
+        internal fun parentPathOf(remotePath: String, strings: StringResolver): String {
             if (remotePath.isBlank()) {
                 return ""
             }
-            val normalized = normalizeRemotePath(remotePath)
+            val normalized = normalizeRemotePath(remotePath, strings = strings)
             val index = normalized.lastIndexOf('/')
             return if (index <= 0) "" else normalized.substring(0, index)
         }
 
-        fun buildChildPath(parentPath: String, name: String): String {
+        internal fun buildChildPath(parentPath: String, name: String, strings: StringResolver): String {
             val sanitizedName = name.trim().trim('/').ifBlank {
-                throw IllegalArgumentException("文件名不能为空")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_filename_required))
             }
-            require('/' !in sanitizedName) { "文件名不能包含路径分隔符" }
+            require('/' !in sanitizedName) { strings.get(R.string.cloud_message_filename_separator) }
             return if (parentPath.isBlank()) sanitizedName else "$parentPath/$sanitizedName"
         }
 
@@ -324,23 +359,25 @@ class WebDavKeePassFileSource(
 }
 
 object WebDavKeePassSupport {
-    fun createFileSource(
+    internal fun createFileSource(
         source: KeepassRemoteSource,
-        securityManager: SecurityManager
+        securityManager: SecurityManager,
+        strings: StringResolver
     ): WebDavKeePassFileSource {
-        require(source.baseUrl?.isNotBlank() == true) { "WebDAV 基础地址不能为空" }
+        require(source.baseUrl?.isNotBlank() == true) { strings.get(R.string.cloud_message_webdav_url_required) }
         val username = source.usernameEncrypted?.let { securityManager.decryptData(it) }.orEmpty()
         val password = source.passwordEncrypted?.let { securityManager.decryptData(it) }.orEmpty()
         return WebDavKeePassFileSource(
             serverUrl = source.baseUrl,
             username = username,
             password = password,
-            remotePath = source.remotePath
+            remotePath = source.remotePath,
+            strings = strings,
         )
     }
 
-    fun buildLocalMirrorPaths(sourceId: Long, remotePath: String): KeePassLocalMirrorPaths {
-        val fileName = displayNameFromRemotePath(remotePath)
+    internal fun buildLocalMirrorPaths(sourceId: Long, remotePath: String, strings: StringResolver): KeePassLocalMirrorPaths {
+        val fileName = displayNameFromRemotePath(remotePath, strings = strings)
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
             .ifBlank { "remote.kdbx" }
         val baseDir = "keepass_remote/webdav_$sourceId"
@@ -350,8 +387,8 @@ object WebDavKeePassSupport {
         )
     }
 
-    fun displayNameFromRemotePath(remotePath: String): String {
-        val normalized = WebDavKeePassFileSource.normalizeRemotePath(remotePath)
+    internal fun displayNameFromRemotePath(remotePath: String, strings: StringResolver): String {
+        val normalized = WebDavKeePassFileSource.normalizeRemotePath(remotePath, strings = strings)
         return normalized.substringAfterLast('/').ifBlank { "remote.kdbx" }
     }
 
@@ -360,8 +397,9 @@ object WebDavKeePassSupport {
         relativePath: String,
         bytes: ByteArray
     ) {
+        val strings = AppLocaleStringResolver(context)
         val file = File(context.filesDir, relativePath)
-        val parent = file.parentFile ?: throw IOException("无效的文件路径")
+        val parent = file.parentFile ?: throw IOException(strings.get(R.string.storage_error_invalid_path))
         if (!parent.exists()) {
             parent.mkdirs()
         }
@@ -372,7 +410,7 @@ object WebDavKeePassSupport {
             output.fd.sync()
         }
         if (file.exists() && !file.delete()) {
-            throw IOException("无法替换本地工作副本")
+            throw IOException(strings.get(R.string.cloud_message_working_copy_replace))
         }
         if (!tempFile.renameTo(file)) {
             FileOutputStream(file).use { output ->

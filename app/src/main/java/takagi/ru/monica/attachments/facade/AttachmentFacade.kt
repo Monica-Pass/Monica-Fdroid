@@ -414,13 +414,14 @@ class AttachmentFacade(
     suspend fun promoteLocalAttachmentsToBitwarden(
         owner: AttachmentOwner,
         targetContext: BitwardenContext,
-        fileNames: Set<String>
+        fileNames: Set<String>,
+        attachmentIds: Set<Long>? = null
     ): Int = withContext(Dispatchers.IO) {
         if (fileNames.isEmpty()) return@withContext 0
         if (!targetContext.isOnline) throw AttachmentError.Offline
         val sources = repository
             .listByOwnerAndSource(owner, AttachmentSource.LOCAL)
-            .filter { it.fileName in fileNames }
+            .filter { it.fileName in fileNames && (attachmentIds == null || it.id in attachmentIds) }
         if (sources.isEmpty()) return@withContext 0
 
         val uploaded = mutableListOf<Pair<Attachment, Attachment>>()
@@ -1125,7 +1126,11 @@ class AttachmentFacade(
 
     /** 将当前 Room 密码下的全部附件强制写入其 MDBX 数据库。 */
     suspend fun mirrorAttachmentsForPassword(passwordId: Long): Int = withContext(Dispatchers.IO) {
-        val attachments = repository.listByPassword(passwordId)
+        mirrorAttachmentsForOwner(AttachmentOwner.password(passwordId))
+    }
+
+    suspend fun mirrorAttachmentsForOwner(owner: AttachmentOwner): Int = withContext(Dispatchers.IO) {
+        val attachments = repository.list(owner)
         attachments.forEach { attachment ->
             val ready = ensureLocalCacheForTransfer(
                 attachment = attachment,

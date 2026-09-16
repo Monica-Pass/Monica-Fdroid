@@ -105,6 +105,7 @@ fun EncryptedImportPasswordDialog(
         onDismissRequest = onDismiss,
         title = {
             val title = when (importType) {
+                "monica_zip" -> stringResource(R.string.transfer_zip_password_title)
                 "stratum" -> stringResource(R.string.stratum_decrypt_password_title)
                 else -> stringResource(R.string.aegis_decrypt_password_title)
             }
@@ -114,6 +115,7 @@ fun EncryptedImportPasswordDialog(
             Column {
                 Text(
                     when (importType) {
+                        "monica_zip" -> stringResource(R.string.transfer_zip_password_description)
                         "stratum" -> stringResource(R.string.stratum_decrypt_password_hint)
                         else -> stringResource(R.string.aegis_decrypt_password_hint)
                     },
@@ -125,6 +127,8 @@ fun EncryptedImportPasswordDialog(
                     onValueChange = onPasswordChange,
                     label = { Text(stringResource(R.string.password)) },
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password),
                     isError = passwordError != null,
                     supportingText = passwordError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                     modifier = Modifier.fillMaxWidth()

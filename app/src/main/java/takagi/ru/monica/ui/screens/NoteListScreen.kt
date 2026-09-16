@@ -486,7 +486,7 @@ fun NoteListScreen(
             }
 
             val baseMessage = context.getString(R.string.selected_items, movedCount)
-            val toastMessage = if (failedCount > 0) "$baseMessage，失败$failedCount" else baseMessage
+            val toastMessage = if (failedCount > 0) context.getString(R.string.legacy_ui_result_with_failed, baseMessage, failedCount) else baseMessage
             android.widget.Toast.makeText(context, toastMessage, android.widget.Toast.LENGTH_SHORT).show()
 
             showBatchMoveCategoryDialog = false

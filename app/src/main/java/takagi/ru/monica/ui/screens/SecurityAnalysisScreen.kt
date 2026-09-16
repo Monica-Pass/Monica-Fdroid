@@ -38,8 +38,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Public
@@ -82,6 +80,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.data.CompromisedPassword
 import takagi.ru.monica.data.DuplicatePasswordGroup
 import takagi.ru.monica.data.DuplicateUrlGroup
@@ -817,13 +817,13 @@ private fun CollapsibleSecurityGroupCard(
                 )
             }
             IconButton(onClick = { expanded = !expanded }) {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                MonicaExpansionChevron(
+                    expanded = expanded,
                     contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand)
                 )
             }
         }
-        AnimatedVisibility(visible = expanded) {
+        MonicaExpandableContent(expanded = expanded) {
             Column {
                 HorizontalDivider()
                 content()

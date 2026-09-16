@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.net.Uri
 import android.util.Base64
@@ -15,6 +17,7 @@ import takagi.ru.monica.data.LocalKeePassDatabase
 class KeePassKeyFileStore(
     context: Context,
 ) {
+    private val strings = AppLocaleStringResolver(context)
     private val appContext = context.applicationContext
     private val root = File(appContext.noBackupFilesDir, ROOT_DIRECTORY)
     private val securityManager = takagi.ru.monica.security.SecurityManager(appContext)
@@ -22,16 +25,16 @@ class KeePassKeyFileStore(
     fun copyFromUri(uri: Uri, displayName: String? = null): StoredKeyFile {
         val bytes = appContext.contentResolver.readKeePassKeyFileBytes(
             uri = uri,
-            unavailableMessage = "无法读取 KeePass 密钥文件",
+            unavailableMessage = strings.get(R.string.cloud_message_keyfile_unreadable),
         )
         return copyBytes(bytes, displayName)
     }
 
     fun copyBytes(bytes: ByteArray, displayName: String? = null): StoredKeyFile = synchronized(IO_LOCK) {
-        require(bytes.isNotEmpty()) { "密钥文件为空" }
+        require(bytes.isNotEmpty()) { strings.get(R.string.cloud_message_keyfile_empty) }
 
         val fingerprint = fingerprint(bytes)
-        val relativePath = relativePathForFingerprint(fingerprint)
+        val relativePath = relativePathForFingerprint(fingerprint, strings = strings)
         val target = fileForRelativePath(relativePath)
         val existingCopyIsValid = target.isFile && runCatching {
             KeePassKeyFileStore.fingerprint(readInternal(relativePath)) == fingerprint
@@ -53,11 +56,11 @@ class KeePassKeyFileStore(
 
     fun readInternal(relativePath: String): ByteArray = synchronized(IO_LOCK) {
         val target = fileForRelativePath(relativePath)
-        check(target.isFile) { "内部密钥文件不存在" }
+        check(target.isFile) { strings.get(R.string.cloud_message_keyfile_copy_missing) }
         val encrypted = target.readText(Charsets.UTF_8)
         val encoded = securityManager.decryptData(encrypted)
         val bytes = Base64.decode(encoded, Base64.NO_WRAP)
-        require(bytes.isNotEmpty()) { "内部密钥文件为空" }
+        require(bytes.isNotEmpty()) { strings.get(R.string.cloud_message_keyfile_copy_empty) }
         bytes
     }
 
@@ -66,7 +69,7 @@ class KeePassKeyFileStore(
         return database.keyFileUri?.takeIf { it.isNotBlank() }?.let { uri ->
             appContext.contentResolver.readKeePassKeyFileBytes(
                 uri = Uri.parse(uri),
-                unavailableMessage = "无法读取 KeePass 密钥文件",
+                unavailableMessage = strings.get(R.string.cloud_message_keyfile_unreadable),
             )
         }
     }
@@ -76,7 +79,7 @@ class KeePassKeyFileStore(
         appContext.contentResolver.openOutputStream(targetUri, "w")?.use { output ->
             output.write(bytes)
             output.flush()
-        } ?: error("无法写入目标文件")
+        } ?: error(strings.get(R.string.keepass_operation_write_failed))
     }
 
     fun deleteInternal(relativePath: String): Boolean = synchronized(IO_LOCK) {
@@ -95,12 +98,12 @@ class KeePassKeyFileStore(
             }
 
             if (target.exists()) {
-                if (previous.exists()) check(previous.delete()) { "无法清理旧密钥文件临时副本" }
-                check(target.renameTo(previous)) { "无法替换损坏的内部密钥文件" }
+                if (previous.exists()) check(previous.delete()) { strings.get(R.string.cloud_message_keyfile_temp_cleanup) }
+                check(target.renameTo(previous)) { strings.get(R.string.cloud_message_keyfile_replace) }
             }
 
             try {
-                check(temporary.renameTo(target)) { "无法保存内部密钥文件" }
+                check(temporary.renameTo(target)) { strings.get(R.string.cloud_message_keyfile_save) }
             } catch (error: Throwable) {
                 if (!target.exists() && previous.exists()) previous.renameTo(target)
                 throw error
@@ -114,13 +117,13 @@ class KeePassKeyFileStore(
 
     private fun fileForRelativePath(relativePath: String): File {
         val normalized = relativePath.replace('\\', '/')
-        require(normalized.startsWith("$ROOT_DIRECTORY/")) { "非法密钥文件路径" }
+        require(normalized.startsWith("$ROOT_DIRECTORY/")) { strings.get(R.string.cloud_message_keyfile_path_invalid) }
         require(!normalized.contains("../") && !normalized.endsWith("/..")) {
-            "非法密钥文件路径"
+            strings.get(R.string.cloud_message_keyfile_path_invalid)
         }
         val target = File(appContext.noBackupFilesDir, normalized)
         check(target.canonicalPath.startsWith(root.canonicalPath + File.separator)) {
-            "非法密钥文件路径"
+            strings.get(R.string.cloud_message_keyfile_path_invalid)
         }
         return target
     }
@@ -136,10 +139,10 @@ class KeePassKeyFileStore(
         private const val ROOT_DIRECTORY = "keepass_keyfiles"
         private val IO_LOCK = Any()
 
-        fun relativePathForFingerprint(fingerprint: String): String {
+        internal fun relativePathForFingerprint(fingerprint: String, strings: StringResolver): String {
             val normalized = fingerprint.trim().lowercase()
             require(normalized.matches(Regex("[0-9a-f]{16,128}"))) {
-                "非法密钥文件指纹"
+                strings.get(R.string.cloud_message_keyfile_fingerprint_invalid)
             }
             return "$ROOT_DIRECTORY/$normalized.bin"
         }

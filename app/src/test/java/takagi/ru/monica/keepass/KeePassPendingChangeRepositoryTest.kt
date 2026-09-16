@@ -65,6 +65,12 @@ class KeePassPendingChangeRepositoryTest {
         private val existingByKey = existingChanges.associateBy { it.databaseId to it.changeId }
         val inserted = mutableListOf<KeePassPendingChange>()
 
+        override suspend fun getUnfinishedChangesByDatabase(databaseId: Long): List<KeePassPendingChange> = emptyList()
+
+        override suspend fun settleConflictChanges(
+            databaseId: Long, changeIds: List<Long>, discardLocalChanges: Boolean, now: Long
+        ) = Unit
+
         override fun getRunnableChangesFlow(): Flow<List<KeePassPendingChange>> = flowOf(emptyList())
 
         override fun getRunnableChangesByDatabaseFlow(databaseId: Long): Flow<List<KeePassPendingChange>> {

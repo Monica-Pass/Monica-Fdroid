@@ -71,7 +71,7 @@
     <string name="dedup_merge_write">Ghi</string>
     <string name="dedup_merge_copies_count">%1$d bản sao</string>
     <string name="dedup_merge_conflict_fields">Các trường xung đột: %1$s</string>
-    <string name="dedup_merge_list_separator">", "</string>
+    <string name="dedup_merge_list_separator">\u002c\u0020</string>
     <string name="dedup_merge_password_count">Mật khẩu: %1$d</string>
     <string name="dedup_merge_secure_item_count">Mục bảo mật: %1$d</string>
     <string name="dedup_merge_passkey_count">Khóa truy cập: %1$d</string>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">HTTP erlauben</string>
+    <string name="webdav_allow_insecure_http_description">Standardmäßig aus. Nur für vertrauenswürdige HTTP-Server aktivieren, etwa ein lokales NAS ohne HTTPS. Sonst blockiert WebDAV HTTP-Verbindungen.</string>
+    <string name="fdroid_cloud_provider_unavailable">Die F-Droid-Version unterstützt %1$s nicht. Verwende WebDAV.</string>
+    <string name="qr_image_read_failed">Das Bild kann nicht gelesen werden. Wähle ein anderes.</string>
+</resources>

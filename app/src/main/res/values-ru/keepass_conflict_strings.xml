@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Проверить и объединить</string>
+    <string name="keepass_conflict_banner_title">Нужно объединить изменения</string>
+    <string name="keepass_conflict_banner_summary">Проверьте обе версии для продолжения синхронизации.</string>
+    <string name="keepass_conflict_merge_sync">Объединить и синхронизировать</string>
+    <string name="keepass_conflict_comparing">Сравнение двух версий…</string>
+    <string name="keepass_conflict_merging">Объединение и синхронизация…</string>
+    <string name="keepass_conflict_refresh">Обновить сравнение</string>
+    <string name="keepass_conflict_merge_help">Изменения разных записей или полей объединяются. Если одно поле изменено с обеих сторон, выберите версию.</string>
+    <string name="keepass_conflict_auto_merge">Готово к объединению</string>
+    <string name="keepass_conflict_other_options">Другие варианты</string>
+    <string name="keepass_conflict_recovery_hint">Исходные версии сохраняются в копиях восстановления базы.</string>
+    <string name="keepass_conflict_keep_local_confirm">Заменить удалённую базу целиком локальной версией? Изменения только на удалённой стороне останутся в копии восстановления.</string>
+    <string name="keepass_conflict_use_remote_confirm">Заменить локальную базу целиком удалённой версией? Изменения только на локальной стороне останутся в копии восстановления.</string>
+    <string name="keepass_conflict_selected_count">Выбрано конфликтов: %1$d из %2$d</string>
+    <string name="keepass_conflict_no_changes">Обе версии содержат одинаковые данные.</string>
+    <string name="keepass_conflict_protected_value">Защищённое значение</string>
+    <string name="keepass_conflict_properties_value">Свойства из этой версии</string>
+    <string name="keepass_conflict_kind_entry">Запись</string>
+    <string name="keepass_conflict_kind_group">Папка</string>
+    <string name="keepass_conflict_kind_metadata">Настройки базы данных</string>
+    <string name="keepass_conflict_kind_deleted_object">Запись об удалении</string>
+    <string name="keepass_conflict_kind_binary">Вложение</string>
+    <string name="keepass_conflict_kind_icon">Свой значок</string>
+    <string name="keepass_conflict_change_added">Добавлено</string>
+    <string name="keepass_conflict_change_modified">Изменено</string>
+    <string name="keepass_conflict_change_moved">Перемещено</string>
+    <string name="keepass_conflict_change_deleted">Удалено</string>
+    <string name="keepass_conflict_change_unchanged">Без изменений</string>
+</resources>

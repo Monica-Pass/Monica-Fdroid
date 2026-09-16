@@ -54,8 +54,8 @@ android {
         applicationId "takagi.ru.monica.fdroid"
         minSdk 26
         targetSdk 34
-        versionCode 18
-        versionName "1.0.311"
+        versionCode 19
+        versionName "1.0.312"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,9 +75,9 @@ android {
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.311"'
-        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.311"'
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"18"'
+        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.312"'
+        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.312"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"19"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
@@ -146,7 +146,7 @@ android {
         variant.outputs.all { output ->
             // 目标格式: Monica-Android-[架构]-[版本号].APK
             def archTag = resolveArchTag(output)
-            def versionNameTag = sanitizeTag('1.0.311', '0.0.0')
+            def versionNameTag = sanitizeTag('1.0.312', '0.0.0')
             outputFileName = "Monica-Android-${archTag}-${versionNameTag}.apk"
         }
     }
@@ -326,7 +326,7 @@ dependencies {
     // F-Droid build: credentials-play-services-auth (Google Password Manager client bridge)
     // and play-services-auth (GMS Identity/Drive authorization) removed.
     // Passkey provider functionality uses androidx.credentials:credentials only.
-    implementation "androidx.credentials:credentials:1.3.0"
+    implementation "androidx.credentials:credentials:1.6.0"
 
     // DataStore
     implementation libs.androidx.datastore.preferences

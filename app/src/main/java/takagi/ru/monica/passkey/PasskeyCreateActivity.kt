@@ -1,5 +1,8 @@
 package takagi.ru.monica.passkey
 
+import android.content.Context
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
@@ -179,6 +182,10 @@ class PasskeyCreateActivity : FragmentActivity() {
         val mdbxFolderId: String? = null
     )
     
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -198,7 +205,7 @@ class PasskeyCreateActivity : FragmentActivity() {
             Log.i(TAG, "providerRequest retrieved successfully")
             pendingCallingAppInfo = providerRequest.callingAppInfo
             Log.d(TAG, "CallingAppInfo: $pendingCallingAppInfo")
-            Log.d(TAG, "CallingAppInfo origin: ${pendingCallingAppInfo?.origin}")
+            Log.d(TAG, "CallingAppInfo origin: ${PasskeyBrowserOrigin.read(this, pendingCallingAppInfo)}")
             Log.d(TAG, "CallingAppInfo packageName: ${pendingCallingAppInfo?.packageName}")
             
             val callingRequest = providerRequest.callingRequest
@@ -1030,7 +1037,7 @@ class PasskeyCreateActivity : FragmentActivity() {
             rpId = rpId,
             callingPackage = pendingCallingAppInfo?.packageName,
             requestOrigin = extractRequestOrigin(requestJson),
-            callingOrigin = pendingCallingAppInfo?.origin,
+            callingOrigin = PasskeyBrowserOrigin.read(this, pendingCallingAppInfo),
             resolvedOrigin = verdict?.resolvedOrigin,
             resolvedSource = verdict?.resolvedSource?.name,
             reasons = verdict?.reasons ?: emptyList(),

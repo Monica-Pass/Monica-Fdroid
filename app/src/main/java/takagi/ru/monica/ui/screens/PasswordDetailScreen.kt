@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.localizedName
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -7,10 +9,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,6 +35,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
@@ -1008,11 +1009,7 @@ fun PasswordDetailScreen(
                 }
 
                 item("password_history") {
-                    AnimatedVisibility(
-                        visible = passwordHistory.isNotEmpty(),
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
-                    ) {
+                    MonicaExpandableContent(expanded = passwordHistory.isNotEmpty()) {
                         PasswordHistorySection(
                             history = passwordHistory,
                             visibilityState = passwordHistoryVisibility,
@@ -1028,11 +1025,7 @@ fun PasswordDetailScreen(
                 }
 
                 item("bitwarden_snapshot") {
-                    AnimatedVisibility(
-                        visible = shouldShowBitwardenSnapshotSection,
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
-                    ) {
+                    MonicaExpandableContent(expanded = shouldShowBitwardenSnapshotSection) {
                         BitwardenSyncSnapshotSection(
                             currentPreview = currentBitwardenSnapshotPreview,
                             history = bitwardenSyncRawHistory,
@@ -1234,8 +1227,7 @@ private fun PasswordHistorySection(
 
     ElevatedCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(28.dp, 28.dp, 20.dp, 20.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -1243,8 +1235,8 @@ private fun PasswordHistorySection(
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
-                .animateContentSize(),
+                .animateMonicaContentSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
@@ -1398,11 +1390,12 @@ private fun HistoryPasswordValue(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             if (hasReadableValue) {
                 Text(
-                    text = if (visible) value else "•".repeat(value.length),
+                    text = if (visible) value else "••••••••",
+                    maxLines = if (visible) Int.MAX_VALUE else 1,
                     style = if (visible) {
                         MaterialTheme.typography.bodyLarge.copy(
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -2245,7 +2238,7 @@ private fun SsoLoginCard(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = ssoProvider.displayName,
+                            text = ssoProvider.localizedName(),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -3006,11 +2999,8 @@ private fun CollapsibleSection(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                Icon(
-                    imageVector = if (expanded) 
-                        MonicaIcons.Navigation.expandLess 
-                    else 
-                        MonicaIcons.Navigation.expandMore,
+                MonicaExpansionChevron(
+                    expanded = expanded,
                     contentDescription = if (expanded) 
                         stringResource(R.string.collapse) 
                     else 
@@ -3020,11 +3010,7 @@ private fun CollapsibleSection(
             }
             
             // 内容区域 (带动画)
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
+            MonicaExpandableContent(expanded = expanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3226,7 +3212,7 @@ private fun PasswordListCard(
 }
 
 @Composable
-private fun PasswordItemRow(
+internal fun PasswordItemRow(
     entry: PasswordEntry,
     displayPassword: String,
     unavailableSource: PasswordSource?,
@@ -3291,7 +3277,7 @@ private fun PasswordItemRow(
                     IconButton(onClick = { visible = !visible }) {
                         Icon(
                             if (visible) MonicaIcons.Security.visibilityOff else MonicaIcons.Security.visibility,
-                            contentDescription = null,
+                            contentDescription = stringResource(if (visible) R.string.hide else R.string.show),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -3330,7 +3316,7 @@ private fun PasswordItemRow(
             }
         }
         
-        Box {
+        Box(Modifier.fillMaxWidth().animateMonicaContentSize()) {
             if (hasPasswordValue && !isUnavailable) {
                 PasswordFieldActionMenuHost(
                     state = actionMenuState,
@@ -3359,6 +3345,7 @@ private fun PasswordItemRow(
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontFamily = if (visible && hasPasswordValue) androidx.compose.ui.text.font.FontFamily.Monospace else androidx.compose.ui.text.font.FontFamily.Default
             ),
+            maxLines = if (visible || isUnavailable || !hasPasswordValue) Int.MAX_VALUE else 1,
             color = MaterialTheme.colorScheme.onSurface
             )
         }

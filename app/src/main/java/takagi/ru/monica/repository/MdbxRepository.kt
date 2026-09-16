@@ -79,6 +79,21 @@ interface MdbxRepository {
         passkeys.forEach { deletePasskey(it) }
     }
 
+    /** Acknowledgements are emitted only after native persistence, including partial batches. */
+    suspend fun upsertImportBatch(
+        databaseId: Long,
+        passwords: List<PasswordEntry>,
+        secureItems: List<SecureItem>,
+        passkeys: List<PasskeyEntry>,
+        onCommitted: (Set<String>) -> Unit,
+    ) {
+        require(passwords.all { it.mdbxDatabaseId == databaseId } &&
+            secureItems.all { it.mdbxDatabaseId == databaseId } && passkeys.all { it.mdbxDatabaseId == databaseId })
+        passwords.forEach { upsertPassword(it); onCommitted(setOf(mdbxPasswordObjectId(it))) }
+        secureItems.forEach { upsertSecureItem(it); onCommitted(setOf(mdbxSecureItemObjectId(it))) }
+        passkeys.forEach { upsertPasskey(it); onCommitted(setOf("passkey:${it.credentialId}")) }
+    }
+
     suspend fun listSteamMaFileEntries(databaseId: Long): List<MdbxStoredVaultEntry>
     suspend fun upsertSteamMaFileEntry(
         databaseId: Long,

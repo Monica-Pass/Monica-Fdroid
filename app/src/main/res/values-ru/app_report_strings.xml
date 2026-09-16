@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Диагностика списка приложений Monica</string>
+    <string name="app_report_generated">Создано: %1$s</string>
+    <string name="app_report_brand">Марка устройства: %1$s</string>
+    <string name="app_report_model">Модель устройства: %1$s</string>
+    <string name="app_report_android">Версия Android: %1$s (API %2$d)</string>
+    <string name="app_report_summary">Сводка</string>
+    <string name="app_report_total">Всего приложений: %1$d</string>
+    <string name="app_report_user_count">Пользовательских приложений: %1$d</string>
+    <string name="app_report_system_count">Системных приложений: %1$d (обновлено: %2$d)</string>
+    <string name="app_report_visible_percent">Видимых: %1$d (%2$s%%)</string>
+    <string name="app_report_hidden_percent">Скрытых: %1$d (%2$s%%)</string>
+    <string name="app_report_filter_health">Проверка фильтра: %1$s</string>
+    <string name="app_report_filter_loose">Возможно, фильтр скрывает слишком мало системных компонентов</string>
+    <string name="app_report_filter_strict">Возможно, фильтр скрывает полезные приложения</string>
+    <string name="app_report_filter_good">Фильтр выглядит сбалансированным</string>
+    <string name="app_report_visible_apps">Видимых приложений: %1$d</string>
+    <string name="app_report_user_apps">Приложений, установленных пользователем: %1$d</string>
+    <string name="app_report_system_apps">Системных приложений: %1$d</string>
+    <string name="app_report_more_apps">Других приложений: %1$d</string>
+    <string name="app_report_hidden_components">Скрытых системных компонентов: %1$d</string>
+    <string name="app_report_hidden_feedback">Если полезное приложение скрыто, укажите имя его пакета в отзыве.</string>
+    <string name="app_report_android_core">Ядро Android</string>
+    <string name="app_report_android_system">Система Android</string>
+    <string name="app_report_google_services">Сервисы Google</string>
+    <string name="app_report_chip_vendor">Компоненты производителя чипа</string>
+    <string name="app_report_other">Другие компоненты</string>
+    <string name="app_report_more_components">Дополнительных компонентов: %1$d</string>
+    <string name="app_report_all_apps">Полный список приложений: %1$d</string>
+    <string name="app_report_format">Формат: [статус] название приложения</string>
+    <string name="app_report_package_type">Имя пакета · Тип</string>
+    <string name="app_report_unknown_app">Неизвестное приложение</string>
+    <string name="app_report_user_app">Пользовательское приложение</string>
+    <string name="app_report_system_app">Системное приложение</string>
+    <string name="app_report_updated_system_app">Обновлённое системное приложение</string>
+    <string name="app_report_filter_rules">Правила фильтрации приложений</string>
+    <string name="app_report_rule_count">Правил фильтрации: %1$d</string>
+    <string name="app_report_rules_feedback">Предложить изменения фильтра можно здесь:</string>
+    <string name="app_report_complete">Отчёт завершён</string>
+    <string name="app_report_hidden_count">Скрытых приложений: %1$d</string>
+    <string name="app_report_path">Путь к файлу:</string>
+</resources>

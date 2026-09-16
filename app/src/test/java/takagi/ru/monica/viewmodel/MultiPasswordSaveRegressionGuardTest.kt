@@ -1524,7 +1524,7 @@ class MultiPasswordSaveRegressionGuardTest {
         assertTrue(
             "The user-facing MDBX menu action should say sync, not refresh.",
             topActionsSource.contains("MdbxSyncTopActionsMenuItem") &&
-                topActionsSource.contains("同步 MDBX 数据库") &&
+                topActionsSource.contains("stringResource(R.string.legacy_ui_sync_mdbx)") &&
                 !topActionsSource.contains("\"${'$'}{stringResource(R.string.refresh)} MDBX\"")
         )
         assertTrue(
@@ -1547,7 +1547,7 @@ class MultiPasswordSaveRegressionGuardTest {
                 quickFolderSectionsSource.contains("AnimatedVisibility") &&
                 quickFolderSectionsSource.contains("expandHorizontally") &&
                 quickFolderSectionsSource.contains("shrinkHorizontally") &&
-                quickFolderSectionsSource.contains("未同步${'$'}{state.pendingCount}条")
+                quickFolderSectionsSource.contains("stringResource(R.string.legacy_ui_unsynced_count, state.pendingCount)")
         )
         assertTrue(
             "The MDBX unsynced chip must use store diagnostics instead of a hard-coded status-only count.",
@@ -1563,7 +1563,7 @@ class MultiPasswordSaveRegressionGuardTest {
             quickFolderSectionsSource.contains("shape = CircleShape") &&
                 quickFolderSectionsSource.contains("IconButton(") &&
                 quickFolderSectionsSource.contains("imageVector = Icons.Default.Sync") &&
-                quickFolderSectionsSource.contains("contentDescription = \"同步 MDBX 数据库\"") &&
+                quickFolderSectionsSource.contains("contentDescription = stringResource(R.string.legacy_ui_sync_mdbx)") &&
                 !quickFolderSectionsSource.contains("TextButton")
         )
         assertTrue(
@@ -1695,12 +1695,12 @@ class MultiPasswordSaveRegressionGuardTest {
                 quickFolderSource.contains("var currentId: String? = folderId.trim().takeIf { it.isNotBlank() }") &&
                 quickFolderSource.contains("currentId = folder?.parentFolderId.normalizedMdbxParentId()") &&
                 quickFolderSource.contains("return segments.asReversed()") &&
-                quickFolderSource.contains("val segments = buildMdbxFolderPathSegments(filter.folderId, selectedMdbxFolders)") &&
+                quickFolderSource.contains("val segments = buildMdbxFolderPathSegments(context, filter.folderId, selectedMdbxFolders)") &&
                 quickFolderSource.contains("targetFilter = CategoryFilter.MdbxFolderFilter(filter.databaseId, segment.folderId)") &&
                 quickFolderSource.contains("internal fun buildMdbxFolderPathLabel(") &&
-                topSectionSource.contains("is CategoryFilter.MdbxFolderFilter -> buildMdbxFolderPathLabel(filter.folderId, selectedMdbxFolders)") &&
+                topSectionSource.contains("is CategoryFilter.MdbxFolderFilter -> buildMdbxFolderPathLabel(context, filter.folderId, selectedMdbxFolders)") &&
                 vaultV2Source.contains("import takagi.ru.monica.ui.buildMdbxFolderPathLabel") &&
-                vaultV2Source.contains("val folderLabel = buildMdbxFolderPathLabel(selected.folderId, mdbxFolders)")
+                vaultV2Source.contains("val folderLabel = buildMdbxFolderPathLabel(context, selected.folderId, mdbxFolders)")
         )
         assertTrue(
             "Both category menu surfaces must read MDBX folders from the shared folder flow.",
@@ -2257,8 +2257,8 @@ class MultiPasswordSaveRegressionGuardTest {
                 quickStatusTransferSource.contains("val sourceWeight") &&
                 quickStatusTransferSource.contains("val targetWeight") &&
                 quickStatusTransferSource.contains("QuickStatusTransferSuccessStatus") &&
-                quickStatusTransferSource.contains("\"移动\"") &&
-                quickStatusTransferSource.contains("\"复制\"") &&
+                quickStatusTransferSource.contains("UnifiedMoveAction.MOVE -> stringResource(R.string.move)") &&
+                quickStatusTransferSource.contains("UnifiedMoveAction.COPY -> stringResource(R.string.copy)") &&
                 quickFolderSource.contains("QuickStatusTransferBar(") &&
                 quickFolderSource.contains("toQuickStatusTransferState(") &&
                 quickFolderSource.contains("targetState = statusMode") &&
@@ -2432,8 +2432,8 @@ class MultiPasswordSaveRegressionGuardTest {
                 quickDeleteSource.contains("enum class QuickStatusDeletePhase") &&
                 quickDeleteSource.contains("fun QuickStatusDeleteBar(") &&
                 quickDeleteSource.contains("QuickStatusDeleteSuccessStatus") &&
-                quickDeleteSource.contains("正在删除") &&
-                quickDeleteSource.contains("删除成功，已删除") &&
+                quickDeleteSource.contains("stringResource(R.string.legacy_ui_deleting)") &&
+                quickDeleteSource.contains("stringResource(R.string.legacy_ui_deleted_count, count)") &&
                 quickFolderSource.contains("QuickStatusDeleteBar(") &&
                 quickFolderSource.contains("toQuickStatusDeleteState(") &&
                 quickFolderSource.contains("DELETE_RUNNING") &&
@@ -3418,7 +3418,7 @@ class MultiPasswordSaveRegressionGuardTest {
             "WebDAV must never upload an incomplete backup over the remote backup. Failed serialization can otherwise turn a good full backup into a tiny partial one.",
             beforeUpload.contains("!report.success || report.failedItems.isNotEmpty()") &&
                 beforeUpload.contains("Backup upload blocked because generated backup is incomplete") &&
-                beforeUpload.contains("备份文件不完整，已阻止上传覆盖远端备份")
+                beforeUpload.contains("R.string.backup_incomplete_upload_blocked")
         )
     }
 

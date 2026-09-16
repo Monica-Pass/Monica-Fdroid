@@ -4,9 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -40,6 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import takagi.ru.monica.ui.components.InfoFieldWithCopy
 import takagi.ru.monica.ui.components.PasswordField
 import takagi.ru.monica.ui.icons.MonicaIcons
@@ -66,8 +64,7 @@ fun BitwardenSyncSnapshotSection(
 
     ElevatedCard(
         modifier = modifier
-            .fillMaxWidth()
-            .animateContentSize(),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(28.dp, 28.dp, 20.dp, 20.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -75,8 +72,7 @@ fun BitwardenSyncSnapshotSection(
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
-                .animateContentSize(),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
@@ -190,16 +186,14 @@ private fun SnapshotExpandableCard(
         badgeContent
     }
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onToggleExpanded() },
+        onClick = onToggleExpanded,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp, 18.dp, 24.dp, 18.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         tonalElevation = 2.dp
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -241,8 +235,8 @@ private fun SnapshotExpandableCard(
                             modifier = Modifier.padding(end = 8.dp)
                         )
                     }
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    MonicaExpansionChevron(
+                        expanded = expanded,
                         contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.show),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -255,11 +249,15 @@ private fun SnapshotExpandableCard(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = if (expanded) Int.MAX_VALUE else 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 10.dp).animateMonicaContentSize()
             )
 
-            AnimatedVisibility(visible = expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            MonicaExpandableContent(expanded = expanded) {
+                Column(
+                    modifier = Modifier.padding(top = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     content()
                 }
             }
@@ -420,7 +418,7 @@ private fun SnapshotPreviewContent(
 
             if (preview.metadataFields.isNotEmpty()) {
                 SnapshotFieldGroup(
-                    title = "Bitwarden Metadata",
+                    title = stringResource(R.string.legacy_ui_bitwarden_metadata),
                     itemKey = "${itemKey}_meta",
                     fields = preview.metadataFields,
                     sensitiveVisibilityState = sensitiveVisibilityState,

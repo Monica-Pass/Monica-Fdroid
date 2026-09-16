@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import android.content.Context
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +11,8 @@ class OneDriveMdbxFileSource(
     private val context: Context,
     private val accountId: String
 ) : MdbxFileSource {
+
+    private val strings = AppLocaleStringResolver(context)
 
     private fun delegate(remotePath: String? = null) =
         OneDriveKeePassFileSource(context, accountId, remotePath = remotePath)
@@ -54,7 +58,7 @@ class OneDriveMdbxFileSource(
         bytes: ByteArray
     ): FileSourceEntry = withContext(Dispatchers.IO) {
         val normalizedParentPath = OneDriveKeePassFileSource.normalizeOptionalRemotePath(parentPath)
-        val targetPath = OneDriveKeePassFileSource.buildChildPath(normalizedParentPath, name)
+        val targetPath = OneDriveKeePassFileSource.buildChildPath(normalizedParentPath, name, strings = strings)
         val writeResult = delegate(remotePath = targetPath).write(bytes, expectedVersion = null)
         FileSourceEntry(
             name = name,
@@ -88,7 +92,7 @@ class OneDriveMdbxFileSource(
         mode: MdbxRemoteWriteMode = MdbxRemoteWriteMode.CREATE_ONLY,
         expectedVersion: String? = null
     ): FileSourceWriteResult = withContext(Dispatchers.IO) {
-        val parent = OneDriveKeePassFileSource.parentPathOf(path)
+        val parent = OneDriveKeePassFileSource.parentPathOf(path, strings = strings)
         if (parent.isNotBlank()) ensureDirectoryPath(parent)
         delegate(path).writeFrom(source, mode, expectedVersion)
     }
@@ -99,11 +103,11 @@ class OneDriveMdbxFileSource(
             .filter(String::isNotBlank)
         var current = ""
         for (segment in segments) {
-            val next = OneDriveKeePassFileSource.buildChildPath(current, segment)
+            val next = OneDriveKeePassFileSource.buildChildPath(current, segment, strings = strings)
             val existing = statPath(next)
             when {
                 existing == null -> createDirectory(current.ifBlank { null }, segment)
-                !existing.isDirectory -> error("OneDrive 远端路径不是目录: $next")
+                !existing.isDirectory -> error(strings.get(R.string.cloud_message_not_directory, next))
             }
             current = next
         }

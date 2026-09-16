@@ -1,5 +1,8 @@
 package takagi.ru.monica
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
+import takagi.ru.monica.R
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -152,6 +155,7 @@ import takagi.ru.monica.viewmodel.PasswordViewModel
 import takagi.ru.monica.viewmodel.SecurityAnalysisViewModel
 import takagi.ru.monica.viewmodel.SettingsViewModel
 import takagi.ru.monica.viewmodel.TotpCategoryFilter
+import takagi.ru.monica.viewmodel.CategoryFilter
 import takagi.ru.monica.viewmodel.TotpViewModel
 import androidx.compose.foundation.isSystemInDarkTheme
 import takagi.ru.monica.data.AppSettings
@@ -196,6 +200,12 @@ private data class PendingAddStorageDefaults(
     val bitwardenFolderId: String? = null,
     val explicit: Boolean = false,
 )
+
+private fun nativeTokenCreateRoute(filter: CategoryFilter): String = when (filter) {
+    is CategoryFilter.MdbxDatabase -> Screen.AddEditApiToken.createRoute(filter.databaseId)
+    is CategoryFilter.MdbxFolderFilter -> Screen.AddEditApiToken.createRoute(filter.databaseId, folderId = filter.folderId)
+    else -> Screen.AddEditApiToken.createRoute()
+}
 
 private data class PendingSendDraft(
     val title: String? = null,
@@ -385,7 +395,13 @@ class MainActivity : BaseMonicaActivity() {
 
     override fun onStart() {
         super.onStart()
+        takagi.ru.monica.repository.Mdbx2NativeReadSessions.updateForeground(true)
         takagi.ru.monica.autofill_ng.protection.AutofillProtection.restoreIfEnabled(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        takagi.ru.monica.repository.Mdbx2NativeReadSessions.updateForeground(false)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -563,7 +579,8 @@ fun MonicaApp(
             secureItemRepository,
             customFieldRepository,
             navController.context,
-            database.localKeePassDatabaseDao()
+            database.localKeePassDatabaseDao(),
+            strings = AppLocaleStringResolver(context),
         )
     }
     val totpViewModel: takagi.ru.monica.viewmodel.TotpViewModel = viewModel {
@@ -572,7 +589,8 @@ fun MonicaApp(
             repository,
             navController.context,
             database.localKeePassDatabaseDao(),
-            securityManager
+            securityManager,
+            strings = AppLocaleStringResolver(context),
         )
     }
     val bankCardViewModel: takagi.ru.monica.viewmodel.BankCardViewModel = viewModel {
@@ -580,7 +598,8 @@ fun MonicaApp(
             secureItemRepository,
             navController.context,
             database.localKeePassDatabaseDao(),
-            securityManager
+            securityManager,
+            strings = AppLocaleStringResolver(context),
         )
     }
     val documentViewModel: takagi.ru.monica.viewmodel.DocumentViewModel = viewModel {
@@ -588,7 +607,8 @@ fun MonicaApp(
             secureItemRepository,
             navController.context,
             database.localKeePassDatabaseDao(),
-            securityManager
+            securityManager,
+            strings = AppLocaleStringResolver(context),
         )
     }
     val billingAddressViewModel: BillingAddressViewModel = viewModel {
@@ -612,7 +632,8 @@ fun MonicaApp(
             repository,
             navController.context,
             database.localKeePassDatabaseDao(),
-            securityManager
+            securityManager,
+            strings = AppLocaleStringResolver(context),
         )
     }
     val bitwardenViewModel: takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel = viewModel(
@@ -632,7 +653,8 @@ fun MonicaApp(
             repository = passkeyRepository,
             context = navController.context,
             localKeePassDatabaseDao = database.localKeePassDatabaseDao(),
-            securityManager = securityManager
+            securityManager = securityManager,
+            strings = AppLocaleStringResolver(context),
         )
     }
     
@@ -973,6 +995,7 @@ fun MonicaContent(
     }
     
     // 当认证状态变化时处理导航
+
     LaunchedEffect(isAuthenticated) {
         if (isAuthenticated) {
             val currentRoute = navController.currentDestination?.route
@@ -1062,6 +1085,7 @@ fun MonicaContent(
     androidx.compose.runtime.CompositionLocalProvider(
         takagi.ru.monica.ui.LocalSharedTransitionScope provides null,
         takagi.ru.monica.ui.LocalReduceAnimations provides true,
+        takagi.ru.monica.ui.components.LocalExpansionAnimationsEnabled provides !settings.reduceAnimations,
         takagi.ru.monica.ui.LocalHapticFeedbackEnabled provides settings.hapticFeedbackEnabled
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -1116,6 +1140,11 @@ fun MonicaContent(
             ) {
             // V1 经典本地密码库界面
             SimpleMainScreen(
+                onCreateApiToken = { target ->
+                    navController.navigate(target?.let { Screen.AddEditApiToken.createRoute(it.databaseId, folderId = it.folderId) }
+                        ?: nativeTokenCreateRoute(viewModel.categoryFilter.value))
+                },
+                onOpenApiTokens = { id, tokenId -> navController.navigate(Screen.ApiTokens.createRoute(id, tokenId)) },
                 passwordViewModel = viewModel,
                 settingsViewModel = settingsViewModel,
                 totpViewModel = totpViewModel,
@@ -1391,7 +1420,7 @@ fun MonicaContent(
                             // 显示成功消息
                             android.widget.Toast.makeText(
                                 navController.context,
-                                "数据已清空",
+                                navController.context.getString(R.string.legacy_ui_data_cleared),
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                             android.util.Log.d("MainActivity", "All selected data cleared successfully")
@@ -1399,7 +1428,7 @@ fun MonicaContent(
                             android.util.Log.e("MainActivity", "Failed to clear data", e)
                             android.widget.Toast.makeText(
                                 navController.context,
-                                "清空失败: ${e.message}",
+                                navController.context.getString(R.string.legacy_ui_clear_failed, e.message),
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -1464,6 +1493,14 @@ fun MonicaContent(
             }
             key(passwordId) {
                 AddEditPasswordScreen(
+                    onSwitchToApiToken = { target ->
+                        val route = target?.let { Screen.AddEditApiToken.createRoute(it.databaseId, folderId = it.folderId) }
+                            ?: nativeTokenCreateRoute(viewModel.categoryFilter.value)
+                        navController.navigate(route) {
+                            popUpTo(Screen.AddEditPassword.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     viewModel = viewModel,
                     totpViewModel = totpViewModel,
                     bankCardViewModel = bankCardViewModel,
@@ -1534,6 +1571,12 @@ fun MonicaContent(
                 ?.savedStateHandle
                 ?.get<String>("qr_result")
             takagi.ru.monica.ui.screens.AddEditWifiScreen(
+                onNavigateToApiToken = {
+                    navController.navigate(nativeTokenCreateRoute(viewModel.categoryFilter.value)) {
+                        popUpTo(Screen.AddEditWifi.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 viewModel = viewModel,
                 localKeePassViewModel = localKeePassViewModel,
                 passwordId = if (passwordIdArg == -1L) null else passwordIdArg,
@@ -1642,6 +1685,12 @@ fun MonicaContent(
                 }
             }
             takagi.ru.monica.ui.screens.AddEditSshKeyScreen(
+                onNavigateToApiToken = {
+                    navController.navigate(nativeTokenCreateRoute(viewModel.categoryFilter.value)) {
+                        popUpTo(Screen.AddEditSshKey.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 viewModel = viewModel,
                 localKeePassViewModel = localKeePassViewModel,
                 passwordId = if (passwordIdArg == -1L) null else passwordIdArg,
@@ -2677,48 +2726,18 @@ fun MonicaContent(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onExportZip = { uri, preferences, backupEncryptionPassword ->
-                    dataExportImportViewModel.exportZipBackup(
-                        outputUri = uri,
-                        preferences = preferences,
-                        backupEncryptionPassword = backupEncryptionPassword,
-                    )
+                onExportZip = { uri, preferences, password, source, progress ->
+                    dataExportImportViewModel.exportZipBackup(uri, preferences, password, source, progress)
                 },
-                onPrepareZip = { preferences, backupEncryptionPassword ->
-                    dataExportImportViewModel.prepareZipBackup(
-                        preferences = preferences,
-                        backupEncryptionPassword = backupEncryptionPassword,
-                    )
-                },
-                onWritePreparedZip = { uri, zipFile, message ->
-                    dataExportImportViewModel.writePreparedZipBackup(uri, zipFile, message)
-                },
-                onExportKdbx = { uri, password ->
-                    val ctx = navController.context
-                    val outputStream = ctx.contentResolver.openOutputStream(uri)
-                    if (outputStream != null) {
-                        val result = keePassViewModel.exportToLocalKdbx(ctx, outputStream, password)
-                        result.fold(
-                            onSuccess = { count: Int ->
-                                Result.success("成功导出 $count 条记录到 KDBX 文件")
-                            },
-                            onFailure = { error: Throwable ->
-                                Result.failure(error)
-                            }
-                        )
-                    } else {
-                        Result.failure(Exception("无法打开文件"))
-                    }
+                onExportKdbx = { uri, password, source, progress ->
+                    dataExportImportViewModel.exportKdbxBackup(uri, password, source, progress)
                 },
                 biometricEnabled = settings.biometricEnabled,
-                onLoadSteamMaFileCandidates = {
-                    dataExportImportViewModel.loadSteamMaFileExportCandidates()
+                onLoadSteamMaFileCandidates = { source ->
+                    dataExportImportViewModel.loadSteamMaFileExportCandidates(source)
                 },
-                onPrepareSteamMaFileExport = { accountIds ->
-                    dataExportImportViewModel.prepareSteamMaFileExport(accountIds)
-                },
-                onWritePreparedSteamMaFileExport = { uri, preparedExport ->
-                    dataExportImportViewModel.writePreparedSteamMaFileExport(uri, preparedExport)
+                onExportSteamMaFile = { uri, accountIds, source, progress ->
+                    dataExportImportViewModel.exportSteamMaFile(uri, accountIds, source, progress)
                 }
             )
         }
@@ -2738,30 +2757,44 @@ fun MonicaContent(
                     navController.context
                 )
             }
+            var importDestinationKey by androidx.compose.runtime.saveable.rememberSaveable {
+                mutableStateOf(takagi.ru.monica.credentialexchange.ImportDestination.Local.key)
+            }
+            val importDestination = takagi.ru.monica.credentialexchange.ImportDestination.fromKey(importDestinationKey)
+            val importSummary by dataExportImportViewModel.lastImportSummary.collectAsState()
+            val importProgress by dataExportImportViewModel.importProgress.collectAsState()
             takagi.ru.monica.ui.screens.ImportDataScreen(
+                destination = importDestination,
+                onDestinationChange = { importDestinationKey = it.key; dataExportImportViewModel.clearImportSummary() },
+                importSummary = importSummary,
+                importProgress = importProgress,
+                onResetSummary = { dataExportImportViewModel.clearImportSummary() },
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onImport = { uri ->
-                    dataExportImportViewModel.importData(uri)
+                    dataExportImportViewModel.importData(uri, destination = importDestination)
+                },
+                onImportChromeCsv = { uri ->
+                    dataExportImportViewModel.importChromeCsv(uri, destination = importDestination)
                 },
                 onImportKeePassCsv = { uri ->
-                    dataExportImportViewModel.importKeePassCsv(uri)
+                    dataExportImportViewModel.importKeePassCsv(uri, destination = importDestination)
                 },
                 onImportBitwardenCsv = { uri ->
-                    dataExportImportViewModel.importBitwardenCsv(uri)
+                    dataExportImportViewModel.importBitwardenCsv(uri, destination = importDestination)
                 },
                 onImportProtonPassCsv = { uri ->
-                    dataExportImportViewModel.importProtonPassCsv(uri)
+                    dataExportImportViewModel.importProtonPassCsv(uri, destination = importDestination)
                 },
                 onImportPasswordKeyboardCsv = { uri, tagHandling ->
-                    dataExportImportViewModel.importPasswordKeyboardCsv(uri, tagHandling)
+                    dataExportImportViewModel.importPasswordKeyboardCsv(uri, tagHandling, destination = importDestination)
                 },
                 onImportAegis = { uri ->
-                    dataExportImportViewModel.importAegisJson(uri)
+                    dataExportImportViewModel.importAegisJson(uri, destination = importDestination)
                 },
                 onImportEncryptedAegis = { uri, password ->
-                    dataExportImportViewModel.importEncryptedAegisJson(uri, password)
+                    dataExportImportViewModel.importEncryptedAegisJson(uri, password, destination = importDestination)
                 },
                 onImportSteamMaFile = { uri ->
                     dataExportImportViewModel.importSteamMaFile(uri)
@@ -2781,10 +2814,10 @@ fun MonicaContent(
                     dataExportImportViewModel.clearSteamLoginImportSession(sessionId)
                 },
                 onImportZip = { uri, password ->
-                    dataExportImportViewModel.importZipBackup(uri, password)
+                    dataExportImportViewModel.importZipBackup(uri, password, destination = importDestination)
                 },
                 onImportStratum = { uri, password ->
-                    dataExportImportViewModel.importStratum(uri, password)
+                    dataExportImportViewModel.importStratum(uri, password, destination = importDestination)
                 },
                 onImportKdbx = { uri, password, keyFileUri ->
                     val ctx = navController.context
@@ -2957,7 +2990,7 @@ fun MonicaContent(
                             // 显示成功消息
                             android.widget.Toast.makeText(
                                 navController.context,
-                                "数据已清空",
+                                navController.context.getString(R.string.legacy_ui_data_cleared),
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                             android.util.Log.d("MainActivity", "All selected data cleared successfully")
@@ -2965,7 +2998,7 @@ fun MonicaContent(
                             android.util.Log.e("MainActivity", "Failed to clear data", e)
                             android.widget.Toast.makeText(
                                 navController.context,
-                                "清空失败: ${e.message}",
+                                navController.context.getString(R.string.legacy_ui_clear_failed, e.message),
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -3223,6 +3256,82 @@ fun MonicaContent(
                 onNavigateToOneDriveOpen = {
                     navController.navigate(Screen.MdbxOneDriveOpen.route)
                 }
+            )
+        }
+
+        composable(
+            route = Screen.ApiTokens.route,
+            arguments = listOf(navArgument("databaseId") { type = NavType.LongType; defaultValue = -1L }),
+            enterTransition = { easyNotesScreenEnter() }, exitTransition = { easyNotesScreenExit() },
+            popEnterTransition = { easyNotesScreenEnter() }, popExitTransition = { easyNotesScreenExit() },
+        ) { entry ->
+            takagi.ru.monica.ui.screens.NativeApiTokensScreen(
+                viewModel = mdbxViewModel,
+                appSettings = settings,
+                initialDatabaseId = entry.arguments?.getLong("databaseId")?.takeIf { it > 0 },
+                onNavigateBack = { navController.popBackStack() },
+                onOpen = { id, tokenId -> navController.navigate(Screen.ApiTokenDetail.createRoute(id, tokenId)) },
+                onCreate = { id -> navController.navigate(Screen.AddEditApiToken.createRoute(id)) },
+                onManageDatabases = { navController.navigate(Screen.MdbxManager.createRoute()) },
+            )
+        }
+
+        composable(
+            route = Screen.ApiTokenDetail.route,
+            arguments = listOf(navArgument("databaseId") { type = NavType.LongType }, navArgument("entryId") { type = NavType.StringType }),
+            enterTransition = { easyNotesScreenEnter() }, exitTransition = { easyNotesScreenExit() },
+            popEnterTransition = { easyNotesScreenEnter() }, popExitTransition = { easyNotesScreenExit() },
+        ) { entry ->
+            val databaseId = entry.arguments!!.getLong("databaseId")
+            val entryId = entry.arguments!!.getString("entryId")!!
+            takagi.ru.monica.ui.screens.ApiTokenDetailScreen(mdbxViewModel, databaseId, entryId,
+                onNavigateBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(Screen.AddEditApiToken.createRoute(databaseId, entryId)) })
+        }
+
+        composable(
+            route = Screen.AddEditApiToken.route,
+            arguments = listOf(
+                navArgument("databaseId") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("entryId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("folderId") { type = NavType.StringType; defaultValue = "" },
+            ),
+            enterTransition = { easyNotesScreenEnter() }, exitTransition = { easyNotesScreenExit() },
+            popEnterTransition = { easyNotesScreenEnter() }, popExitTransition = { easyNotesScreenExit() },
+        ) { entry ->
+            val databaseId = entry.arguments?.getLong("databaseId")?.takeIf { it > 0 }
+            val entryId = entry.arguments?.getString("entryId")?.takeIf { it.isNotBlank() }
+            takagi.ru.monica.ui.screens.AddEditApiTokenScreen(mdbxViewModel, databaseId, entryId,
+                initialFolderId = entry.arguments?.getString("folderId")?.takeIf { it.isNotBlank() },
+                onNavigateBack = { navController.popBackStack() },
+                onSaved = { saved ->
+                    if (entryId != null) navController.popBackStack()
+                    else navController.navigate(Screen.ApiTokenDetail.createRoute(saved.databaseId, saved.entryId)) {
+                        popUpTo(Screen.AddEditApiToken.route) { inclusive = true }
+                    }
+                },
+                onSwitchType = { type, selectedDatabaseId, selectedFolderId ->
+                    val route = when (type) {
+                        takagi.ru.monica.ui.components.EntryTypeChipOption.PASSWORD -> Screen.AddEditPassword.createRoute()
+                        takagi.ru.monica.ui.components.EntryTypeChipOption.WIFI -> Screen.AddEditWifi.createRoute()
+                        takagi.ru.monica.ui.components.EntryTypeChipOption.SSH_KEY -> Screen.AddEditSshKey.createRoute()
+                        takagi.ru.monica.ui.components.EntryTypeChipOption.BARCODE -> Screen.AddEditPassword.createRoute(initialType = "barcode")
+                        takagi.ru.monica.ui.components.EntryTypeChipOption.API_TOKEN -> null
+                    }
+                    if (route != null) {
+                        if (type == takagi.ru.monica.ui.components.EntryTypeChipOption.PASSWORD ||
+                            type == takagi.ru.monica.ui.components.EntryTypeChipOption.BARCODE) {
+                            navController.previousBackStackEntry?.savedStateHandle?.setPendingAddStorageDefaults(
+                                PendingAddStorageDefaults(mdbxDatabaseId = selectedDatabaseId,
+                                    mdbxFolderId = selectedFolderId, explicit = selectedDatabaseId != null))
+                        }
+                        navController.navigate(route) {
+                            popUpTo(Screen.AddEditApiToken.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onManageDatabases = { navController.navigate(Screen.MdbxManager.createRoute()) },
             )
         }
 
@@ -4162,7 +4271,7 @@ private fun inflateViewSafely(
         Log.e("MainActivity", "Error inflating layout: $layoutId", e)
         // 返回一个简单的降级视图
         return TextView(parent?.context ?: layoutInflater.context).apply {
-            text = "无法加载视图"
+            text = context.getString(R.string.legacy_ui_view_load_failed)
             gravity = Gravity.CENTER
         }
     }

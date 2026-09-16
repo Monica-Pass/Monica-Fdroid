@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">Die exportierte Sicherungsdatei ist leer</string>
+    <string name="export_message_empty_zip">Die ZIP-Sicherung hat keinen Inhalt</string>
+    <string name="export_message_open_failed">Das Exportziel kann nicht geöffnet werden</string>
+    <string name="export_message_incomplete">Der Export ist unvollständig: %1$d/%2$d Bytes</string>
+    <string name="export_message_invalid_encrypted">Die geschriebene Sicherung hat ein ungültiges Verschlüsselungsformat</string>
+    <string name="export_message_verify_failed">Die exportierte Datei konnte nicht überprüft werden</string>
+    <string name="export_message_backup_summary">Sicherung exportiert: %1$d Passwörter und %2$d Bilder</string>
+    <string name="import_message_aegis_unencrypted">Dieser Import benötigt einen unverschlüsselten Aegis-JSON-Export</string>
+    <string name="import_message_aegis_missing">Ungültige Aegis-Datei: %1$s fehlt</string>
+    <string name="import_message_aegis_empty_slots">Ungültige Aegis-Datei: slots ist leer</string>
+    <string name="import_message_aegis_slot_type">Nicht unterstützter Aegis-Slot-Typ: %1$s</string>
+    <string name="import_message_aegis_no_totp">Keine gültigen TOTP-Einträge in der Aegis-Datei gefunden</string>
+    <string name="import_message_aegis_failed">Die Aegis-Datei konnte nicht importiert werden: %1$s</string>
+    <string name="import_message_key_length">Der entschlüsselte Schlüssel hat eine ungültige Länge</string>
+    <string name="import_message_steam_missing">Ungültige Steam-Guard-Daten: %1$s fehlt</string>
+    <string name="import_message_steam_device_id">Ungültige Geräte-ID. Erwartetes Format: android:xxxx</string>
+    <string name="import_message_steam_secret">Ungültiges Steam-shared_secret-Format</string>
+    <string name="import_message_steam_exists">Dieser Steam-Guard-Authentifikator existiert bereits</string>
+    <string name="export_message_empty_mafile">Die exportierte maFile ist leer</string>
+    <string name="crypto_message_encrypt_failed">Verschlüsselung fehlgeschlagen: %1$s</string>
+    <string name="crypto_message_decrypt_failed">Entschlüsselung fehlgeschlagen: %1$s</string>
+    <string name="crypto_message_file_too_small">Die verschlüsselte Datei ist zu klein und möglicherweise beschädigt</string>
+    <string name="crypto_message_invalid_file">Ungültiges Format der verschlüsselten Datei</string>
+    <string name="crypto_message_password_or_corrupt">Falsches Passwort oder beschädigte verschlüsselte Daten</string>
+    <string name="crypto_message_invalid_text">Ungültiges Format des verschlüsselten Texts</string>
+    <string name="photo_message_camera_failed">Die Kamera konnte nicht geöffnet werden: %1$s</string>
+    <string name="photo_message_gallery_missing">Keine Galerie-App verfügbar</string>
+    <string name="photo_message_gallery_failed">Die Galerie konnte nicht geöffnet werden: %1$s</string>
+    <string name="photo_message_data_failed">Das zurückgegebene Bild konnte nicht gelesen werden: %1$s</string>
+    <string name="photo_message_file_missing">Die Fotodatei ist leer oder fehlt</string>
+    <string name="photo_message_not_selected">Kein Bild ausgewählt</string>
+</resources>

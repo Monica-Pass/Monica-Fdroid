@@ -46,8 +46,19 @@ class PasswordPageAggregateStackRepository(
         return validKeys.size
     }
 
+    suspend fun markNeverStack(itemKeys: List<String>): Int {
+        val keys = itemKeys.filter(String::isNotBlank).distinct()
+        if (keys.isEmpty()) return 0
+        clearManualStack(keys)
+        dao.replaceEntriesForKeys(keys, keys.map { key ->
+            PasswordPageAggregateStackEntry(key, "no-stack:$key", stackOrder = -1)
+        })
+        return keys.size
+    }
+
     suspend fun pruneDegenerateGroups(): Int {
         val groupIds = dao.getAll()
+            .filter { it.stackOrder >= 0 }
             .map(PasswordPageAggregateStackEntry::stackGroupId)
             .distinct()
         return cleanupDegenerateGroups(groupIds)
@@ -62,6 +73,7 @@ class PasswordPageAggregateStackRepository(
 
         val remainingEntries = dao.getByStackGroupIds(validGroupIds)
         val existingGroupIds = remainingEntries
+            .filter { it.stackOrder >= 0 }
             .groupBy(PasswordPageAggregateStackEntry::stackGroupId)
             .filterValues { entries -> entries.size < 2 }
             .keys

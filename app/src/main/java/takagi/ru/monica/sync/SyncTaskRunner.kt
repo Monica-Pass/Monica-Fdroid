@@ -24,7 +24,10 @@ object SyncTaskRunner {
         request: SyncRequest,
         block: suspend () -> Unit
     ): SyncEnqueueResult {
-        tasks[request.requestId] = PendingTask(block = block)
+        tasks[request.requestId] = PendingTask(block = {
+            block()
+            SyncExecutionResult.Success(finishedAtMillis = System.currentTimeMillis())
+        })
         val result = coordinator.request(request)
         when (result) {
             is SyncEnqueueResult.Accepted -> {
@@ -41,15 +44,25 @@ object SyncTaskRunner {
 
     suspend fun <T> requestAndAwait(
         request: SyncRequest,
+        resultClassifier: (T) -> SyncExecutionResult = {
+            SyncExecutionResult.Success(finishedAtMillis = System.currentTimeMillis())
+        },
         block: suspend () -> T
     ): SyncTaskAwaitResult<T> {
         val completion = CompletableDeferred<T>()
         tasks[request.requestId] = PendingTask(
             block = {
                 try {
-                    completion.complete(block())
+                    val value = block()
+                    val executionResult = resultClassifier(value)
+                    completion.complete(value)
+                    executionResult
                 } catch (error: SyncTaskBlockedException) {
                     completion.completeExceptionally(error)
+                    SyncExecutionResult.Blocked(
+                        finishedAtMillis = System.currentTimeMillis(),
+                        error = error.syncError
+                    )
                 } catch (error: CancellationException) {
                     completion.cancel(error)
                     throw error
@@ -110,7 +123,7 @@ object SyncTaskRunner {
     internal fun pendingTaskCountForTest(): Int = tasks.size
 
     private data class PendingTask(
-        val block: suspend () -> Unit,
+        val block: suspend () -> SyncExecutionResult,
         val onDropped: (String) -> Unit = {},
         val onBlocked: (SyncError) -> Unit = {}
     ) {
@@ -157,7 +170,6 @@ object SyncTaskRunner {
                     )
                 }
                 block.block()
-                SyncExecutionResult.Success(finishedAtMillis = System.currentTimeMillis())
             } catch (error: CancellationException) {
                 SyncExecutionResult.Canceled(
                     finishedAtMillis = System.currentTimeMillis(),

@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.components
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -98,7 +100,7 @@ fun QuickStatusDeleteBar(
                 }
             }
             Text(
-                text = "正在删除",
+                text = stringResource(R.string.legacy_ui_deleting),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -165,7 +167,7 @@ private fun QuickStatusDeleteSuccessStatus(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "删除成功，已删除${count}条",
+                text = stringResource(R.string.legacy_ui_deleted_count, count),
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

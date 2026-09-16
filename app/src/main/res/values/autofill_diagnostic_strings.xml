@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">Autofill requires Android 8.0 or later</string>
+    <string name="autofill_compat_huawei">Huawei devices may restrict autofill on Android 10 or later</string>
+    <string name="autofill_compat_xiaomi">Xiaomi devices may require autofill permission in MIUI Security</string>
+    <string name="autofill_compat_oppo">OPPO/Realme devices may require autofill permission in permission settings</string>
+    <string name="autofill_compat_vivo">Vivo devices may require autofill permission in iManager</string>
+    <string name="autofill_compat_android12_rom">Autofill may be unreliable on some Android 12 ROMs due to system compatibility issues</string>
+    <string name="autofill_compat_inline">This device does not support keyboard suggestions. Autofill will use a dropdown.</string>
+    <string name="autofill_compat_emulator">Autofill may be unreliable in this emulator</string>
+    <string name="autofill_compat_unsupported">This device does not support the autofill framework</string>
+    <string name="autofill_compat_check_failed">Could not complete the compatibility check</string>
+    <string name="autofill_check_manifest">Check that MonicaAutofillServiceNg is declared in AndroidManifest.xml</string>
+    <string name="autofill_check_permission_manifest">The service must declare BIND_AUTOFILL_SERVICE and an autofill intent-filter</string>
+    <string name="autofill_check_enable_system">Select Monica as the autofill service in system settings</string>
+    <string name="autofill_check_path_system">Settings → System → Languages &amp; input → Autofill service</string>
+    <string name="autofill_check_path_xiaomi">Xiaomi: Settings → Additional settings → Languages &amp; input → Autofill service</string>
+    <string name="autofill_check_miui_permission">Also allow the required permissions in MIUI Security</string>
+    <string name="autofill_check_path_huawei">Huawei: Settings → System &amp; updates → Languages &amp; input → Autofill service</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme: Settings → Additional settings → Keyboard &amp; input method → Autofill service</string>
+    <string name="autofill_check_path_vivo">Vivo: Settings → More settings → Input method → Autofill service</string>
+    <string name="autofill_check_path_samsung">Samsung: Settings → General management → Language &amp; input → Autofill service</string>
+    <string name="autofill_check_enable_app">Enable autofill in Monica settings</string>
+    <string name="autofill_check_app_permissions">Check that Monica has the required app permissions</string>
+    <string name="autofill_check_issue_count">Compatibility issues: %1$d. See the details below.</string>
+    <string name="autofill_check_xiaomi_permission">Xiaomi: Security → Manage apps → Monica → Permissions → Allow autofill</string>
+    <string name="autofill_check_huawei_autostart">Huawei: you may need to allow Monica to launch automatically in Phone Manager</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme: Settings → App management → Monica → Permissions → Allow autofill</string>
+    <string name="autofill_check_vivo_permission">Vivo: iManager → App management → Permission management → Monica → Allow autofill</string>
+    <string name="autofill_check_background">Disable battery restrictions for Monica and allow automatic launch and background activity</string>
+    <string name="autofill_check_trigger_manually">If autofill remains unreliable, trigger it manually from a login field to start a session</string>
+    <string name="autofill_check_configured">The service is configured correctly. If problems persist, restart Monica.</string>
+    <string name="autofill_check_view_logs">Use the troubleshooting tools to view detailed logs</string>
+    <string name="autofill_check_restart">Restart Monica after applying these changes</string>
+    <string name="autofill_check_recommendations_failed">Could not generate suggestions. Contact support.</string>
+    <string name="autofill_report_parsing">Field recognition</string>
+    <string name="autofill_report_matching">Password matching</string>
+    <string name="autofill_report_building">Response construction</string>
+    <string name="autofill_report_performance">Performance</string>
+    <string name="autofill_report_parsing_failures">Field recognition failures: %1$d</string>
+    <string name="autofill_report_matching_failures">Requests with no matching password: %1$d</string>
+    <string name="autofill_report_building_failures">Response construction failures: %1$d</string>
+    <string name="autofill_report_slow">Average response time is too high: %1$d ms</string>
+    <string name="autofill_report_improve_recognition">Improve field recognition</string>
+    <string name="autofill_report_recognition_hint">Some app fields could not be recognized. Check the field parser settings.</string>
+    <string name="autofill_report_add_passwords">Add password entries</string>
+    <string name="autofill_report_add_passwords_hint">No matching passwords were found. Add password entries for these apps.</string>
+    <string name="autofill_report_integrity">Check data completeness</string>
+    <string name="autofill_report_integrity_hint">Responses may fail when data is incomplete. Check the password entries.</string>
+    <string name="autofill_report_optimize">Improve performance</string>
+    <string name="autofill_report_optimize_hint">Responses are slow. Try clearing the cache or reducing the number of password entries.</string>
+    <string name="autofill_report_title">=== Monica autofill diagnostics ===</string>
+    <string name="autofill_report_exported_at">Exported at: %1$s</string>
+    <string name="autofill_report_device">Device information</string>
+    <string name="autofill_report_manufacturer">Manufacturer: %1$s</string>
+    <string name="autofill_report_model">Model: %1$s</string>
+    <string name="autofill_report_android">Android: %1$s (API %2$d)</string>
+    <string name="autofill_report_rom">ROM: %1$s</string>
+    <string name="autofill_report_inline">Keyboard suggestions supported: %1$s</string>
+    <string name="autofill_report_statistics">Statistics</string>
+    <string name="autofill_report_log_details">Log details</string>
+    <string name="autofill_report_end">=== End of log ===</string>
+</resources>

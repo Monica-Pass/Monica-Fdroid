@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">ZIP backup</string>
+    <string name="transfer_zip_description">Back up only the selected database.</string>
+    <string name="transfer_contents">Include</string>
+    <string name="transfer_images_attachments">Images and attachments</string>
+    <string name="transfer_encrypt_backup">Encrypt backup</string>
+    <string name="transfer_encryption_hint">Passkeys and attachments require an encrypted backup.</string>
+    <string name="transfer_choose_location">Choose where to save</string>
+    <string name="transfer_background_continue">Continue in background</string>
+    <string name="transfer_background_hint">You can leave this page. Progress will appear in a notification.</string>
+    <string name="transfer_reading">Reading file…</string>
+    <string name="transfer_decrypting">Decrypting backup…</string>
+    <string name="transfer_preparing">Preparing items…</string>
+    <string name="transfer_writing">Writing to database…</string>
+    <string name="transfer_attachments">Copying attachments…</string>
+    <string name="transfer_packing">Creating archive…</string>
+    <string name="transfer_encrypting">Encrypting file…</string>
+    <string name="transfer_saving">Saving file…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">Exported %1$d items.</string>
+    <string name="transfer_export_done">Export complete</string>
+    <string name="transfer_channel">Imports and exports</string>
+    <string name="transfer_open_result">Open Monica to see the result.</string>
+    <string name="transfer_background_start_failed">Could not start the export. Try again with Monica open.</string>
+    <string name="transfer_cancelled">Export cancelled.</string>
+    <string name="transfer_attachment_encryption">Encrypt the backup to include attachments.</string>
+    <string name="transfer_password_mismatch">Passwords do not match.</string>
+    <string name="transfer_kdbx_password_description">Set a password to protect the exported KDBX database.</string>
+    <string name="transfer_unsupported_token">This token format cannot be converted. Use a ZIP backup.</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">Export selected Steam accounts from this database.</string>
+    <string name="transfer_kdbx_description">Passwords, authenticators, Passkeys and attachments in KeePass format.</string>
+    <string name="transfer_unsupported_records">This database contains unsupported item types. Save a native database copy instead.</string>
+    <string name="transfer_zip_password_title">Unlock ZIP backup</string>
+    <string name="transfer_zip_password_description">Enter the password used to create this ZIP backup.</string>
+</resources>

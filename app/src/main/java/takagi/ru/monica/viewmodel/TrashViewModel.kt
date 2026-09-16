@@ -1,8 +1,11 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
@@ -68,7 +71,7 @@ internal fun TrashSettings.shouldAutoCleanup(): Boolean =
  * 回收站 ViewModel
  */
 class TrashViewModel(application: Application) : AndroidViewModel(application) {
-    
+    private val strings = AppLocaleStringResolver(application)
     private val database = PasswordDatabase.getDatabase(application)
     private val securityManager = SecurityManager(application)
     private val mdbxRepository: MdbxRepository = MdbxRepositoryFactory.create(
@@ -159,7 +162,7 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
             }
             categories.add(TrashCategory(
                 type = ItemType.PASSWORD,
-                displayName = "密码",
+                displayName = strings.get(R.string.item_type_password),
                 count = passwordItems.size,
                 items = passwordItems
             ))
@@ -167,12 +170,12 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
         
         // 所有 SecureItem 类型统一进入回收站，避免新增类型遗漏。
         val secureTypeLabels = mapOf(
-            ItemType.TOTP to "验证器",
-            ItemType.BANK_CARD to "银行卡",
-            ItemType.DOCUMENT to "证件",
-            ItemType.NOTE to "笔记",
-            ItemType.BILLING_ADDRESS to "账单地址",
-            ItemType.PAYMENT_ACCOUNT to "支付账户"
+            ItemType.TOTP to strings.get(R.string.item_type_authenticator),
+            ItemType.BANK_CARD to strings.get(R.string.item_type_bank_card),
+            ItemType.DOCUMENT to strings.get(R.string.item_type_document),
+            ItemType.NOTE to strings.get(R.string.nav_notes),
+            ItemType.BILLING_ADDRESS to strings.get(R.string.billing_address),
+            ItemType.PAYMENT_ACCOUNT to strings.get(R.string.payment_account)
         )
         secureItems
             .groupBy { it.itemType }
@@ -257,36 +260,39 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 永久删除条目
      */
-    fun permanentlyDeleteItem(item: TrashItem, onResult: (Boolean) -> Unit) {
+    fun permanentlyDeleteItem(item: TrashItem, onResult: (Result<Unit>) -> Unit) {
         viewModelScope.launch {
             try {
-                if (!permanentlyDeleteWithSources(item.originalData)) {
-                    onResult(false)
-                    return@launch
+                val result = permanentlyDeleteWithSources(item.originalData)
+                if (result.isSuccess) {
+                    logTrashPermanentDelete(item)
                 }
-                logTrashPermanentDelete(item)
-                onResult(true)
+                onResult(result)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("TrashViewModel", "Failed to permanently delete item", e)
-                onResult(false)
+                onResult(Result.failure(e))
             }
         }
     }
 
-    fun permanentlyDeleteItems(items: List<TrashItem>, onResult: (Boolean) -> Unit) {
+    fun permanentlyDeleteItems(items: List<TrashItem>, onResult: (Result<Unit>) -> Unit) {
         viewModelScope.launch {
             try {
-                val (deletedCount, hasFailure) = permanentlyDeleteTrashItems(items)
+                val (deletedCount, failure) = permanentlyDeleteTrashItems(items)
                 if (deletedCount > 0) {
                     logTrashSummaryDelete(
                         title = getApplication<Application>().getString(R.string.timeline_permanent_delete_title),
                         detail = getApplication<Application>().getString(R.string.timeline_deleted_items_count, deletedCount)
                     )
                 }
-                onResult(!hasFailure)
+                onResult(if (failure == null) Result.success(Unit) else Result.failure(failure))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("TrashViewModel", "Failed to permanently delete items", e)
-                onResult(false)
+                onResult(Result.failure(e))
             }
         }
     }
@@ -395,7 +401,7 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 清空回收站
      */
-    fun emptyTrash(onResult: (Boolean) -> Unit) {
+    fun emptyTrash(onResult: (Result<Unit>) -> Unit) {
         viewModelScope.launch {
             try {
                 val deletedPasswords = database.passwordEntryDao().getDeletedEntriesSync()
@@ -419,7 +425,7 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                         originalData = item
                     )
                 }
-                val (deletedCount, hasFailure) = permanentlyDeleteTrashItems(items)
+                val (deletedCount, failure) = permanentlyDeleteTrashItems(items)
 
                 if (deletedCount > 0) {
                     logTrashSummaryDelete(
@@ -428,10 +434,12 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
 
-                onResult(!hasFailure)
+                onResult(if (failure == null) Result.success(Unit) else Result.failure(failure))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("TrashViewModel", "Failed to empty trash", e)
-                onResult(false)
+                onResult(Result.failure(e))
             }
         }
     }
@@ -458,7 +466,7 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                     .filter { it.deletedAt != null && it.deletedAt < cutoffDate }
 
                 expiredPasswords.forEach { entry ->
-                    if (permanentlyDeleteWithSources(entry)) {
+                    if (permanentlyDeleteWithSources(entry).isSuccess) {
                         deletedCount += 1
                     }
                 }
@@ -468,7 +476,7 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                     .filter { it.deletedAt != null && it.deletedAt < cutoffDate }
 
                 expiredSecureItems.forEach { item ->
-                    if (permanentlyDeleteWithSources(item)) {
+                    if (permanentlyDeleteWithSources(item).isSuccess) {
                         deletedCount += 1
                     }
                 }
@@ -479,6 +487,8 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                         detail = getApplication<Application>().getString(R.string.timeline_auto_clear_in_days, settings.autoDeleteDays)
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("TrashViewModel", "Failed to cleanup expired items", e)
             }
@@ -727,10 +737,10 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    private suspend fun deleteKeepassEntryIfNeeded(data: Any): Boolean {
+    private suspend fun deleteKeepassEntryIfNeeded(data: Any): Result<Unit> {
         return when (data) {
             is PasswordEntry -> {
-                val keepassId = data.keepassDatabaseId ?: return true
+                val keepassId = data.keepassDatabaseId ?: return Result.success(Unit)
                 val result = keepassBridge.deleteLegacyPasswordEntries(
                     databaseId = keepassId,
                     entries = listOf(data.copy(keepassDatabaseId = keepassId))
@@ -741,16 +751,16 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                         "KeePass permanent delete failed for password id=${data.id}, db=$keepassId",
                         result.exceptionOrNull()
                     )
-                    return false
+                    return Result.failure(checkNotNull(result.exceptionOrNull()))
                 }
                 val deletedCount = result.getOrNull() ?: 0
                 if (deletedCount <= 0) {
                     android.util.Log.w("TrashViewModel", "KeePass password already absent during permanent delete: id=${data.id}, db=$keepassId")
                 }
-                true
+                Result.success(Unit)
             }
             is SecureItem -> {
-                val keepassId = data.keepassDatabaseId ?: return true
+                val keepassId = data.keepassDatabaseId ?: return Result.success(Unit)
                 val result = keepassBridge.deleteLegacySecureItems(
                     databaseId = keepassId,
                     items = listOf(data.copy(keepassDatabaseId = keepassId))
@@ -761,62 +771,71 @@ class TrashViewModel(application: Application) : AndroidViewModel(application) {
                         "KeePass permanent delete failed for secure item id=${data.id}, db=$keepassId",
                         result.exceptionOrNull()
                     )
-                    return false
+                    return Result.failure(checkNotNull(result.exceptionOrNull()))
                 }
                 val deletedCount = result.getOrNull() ?: 0
                 if (deletedCount <= 0) {
                     android.util.Log.w("TrashViewModel", "KeePass secure item already absent during permanent delete: id=${data.id}, db=$keepassId")
                 }
-                true
+                Result.success(Unit)
             }
-            else -> true
+            else -> Result.success(Unit)
         }
     }
 
-    private suspend fun permanentlyDeleteTrashItems(items: List<TrashItem>): Pair<Int, Boolean> {
-        var hasFailure = false
+    private suspend fun permanentlyDeleteTrashItems(items: List<TrashItem>): Pair<Int, Throwable?> {
+        var firstFailure: Throwable? = null
         var deletedCount = 0
         items.forEach { item ->
-            if (permanentlyDeleteWithSources(item.originalData)) {
+            val result = permanentlyDeleteWithSources(item.originalData)
+            if (result.isSuccess) {
                 deletedCount += 1
-            } else {
-                hasFailure = true
+            } else if (firstFailure == null) {
+                firstFailure = result.exceptionOrNull()
             }
         }
-        return deletedCount to hasFailure
+        return deletedCount to firstFailure
     }
 
-    private suspend fun permanentlyDeleteWithSources(data: Any): Boolean {
-        if (!deleteRemoteCipherIfNeeded(data)) return false
-        if (!deleteKeepassEntryIfNeeded(data)) return false
-        when (data) {
-            is PasswordEntry -> database.passwordEntryDao().delete(data)
-            is SecureItem -> database.secureItemDao().delete(data)
+    private suspend fun permanentlyDeleteWithSources(data: Any): Result<Unit> {
+        return try {
+            deleteRemoteCipherIfNeeded(data).getOrThrow()
+            deleteKeepassEntryIfNeeded(data).getOrThrow()
+            // Keep a failed source deletion visible and retryable in the local recycle bin.
+            when (data) {
+                is PasswordEntry -> database.passwordEntryDao().delete(data)
+                is SecureItem -> database.secureItemDao().delete(data)
+            }
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("TrashViewModel", "Failed to permanently delete item from its sources", e)
+            Result.failure(e)
         }
-        return true
     }
 
-    private suspend fun deleteRemoteCipherIfNeeded(data: Any): Boolean {
+    private suspend fun deleteRemoteCipherIfNeeded(data: Any): Result<Unit> {
         return when (data) {
             is PasswordEntry -> {
                 val vaultId = data.bitwardenVaultId
                 val cipherId = data.bitwardenCipherId
                 if (vaultId != null && !cipherId.isNullOrBlank()) {
-                    bitwardenRepository.permanentDeleteCipher(vaultId, cipherId).isSuccess
+                    bitwardenRepository.permanentDeleteCipher(vaultId, cipherId)
                 } else {
-                    true
+                    Result.success(Unit)
                 }
             }
             is SecureItem -> {
                 val vaultId = data.bitwardenVaultId
                 val cipherId = data.bitwardenCipherId
                 if (vaultId != null && !cipherId.isNullOrBlank()) {
-                    bitwardenRepository.permanentDeleteCipher(vaultId, cipherId).isSuccess
+                    bitwardenRepository.permanentDeleteCipher(vaultId, cipherId)
                 } else {
-                    true
+                    Result.success(Unit)
                 }
             }
-            else -> true
+            else -> Result.success(Unit)
         }
     }
 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_type_api_token">API 토큰</string>
+    <string name="api_token_no_database">API 토큰을 보거나 만들려면 네이티브 MDBX 데이터베이스를 여세요.</string>
+    <string name="api_token_load_error">토큰을 불러오거나 저장할 수 없습니다. 데이터베이스를 다시 열거나 동기화한 후 다시 불러오세요. 기존 데이터는 보존되었습니다.</string>
+    <string name="api_token_reload">다시 불러오기</string>
+    <string name="api_token_root_collection">데이터베이스 루트</string>
+    <string name="api_token_database">데이터베이스</string>
+    <string name="api_token_collection">카테고리</string>
+    <string name="api_token_complete_payload">전체 토큰 데이터(JSON)</string>
+    <string name="api_token_empty">이 데이터베이스에 API 토큰이 없습니다.</string>
+    <string name="api_token_native_hint">Monica CLI와 호환되는 네이티브 MDBX API 토큰으로 저장됩니다.</string>
+    <string name="api_token_toggle_visibility">값 표시 또는 숨기기</string>
+    <string name="api_token_validation">공급자와 토큰을 입력하세요. 선택 사항인 API 주소는 HTTP 또는 HTTPS URL이어야 합니다.</string>
+    <string name="api_token_fields_limit">사용자 지정 필드는 최대 128개까지 사용할 수 있습니다. 메모와 필드 값의 합계는 64 KB 이내여야 합니다.</string>
+    <string name="api_token_import_json">토큰 JSON 붙여넣기</string>
+    <string name="api_token_parse">분석</string>
+    <string name="api_token_delete_confirmation">이 API 토큰을 데이터베이스에서 삭제하시겠습니까?</string>
+    <string name="api_token_entry_id">항목 ID</string>
+    <string name="api_token_collection_id">컬렉션 ID</string>
+    <string name="api_token_provider">공급자</string>
+    <string name="api_token_api_base">API 기본 URL</string>
+    <string name="api_token_note">메모</string>
+    <string name="api_token_schema">페이로드 스키마</string>
+    <string name="api_token_name">토큰 이름</string>
+    <string name="api_token_add">API 토큰 추가</string>
+    <string name="api_token_edit">API 토큰 수정</string>
+    <string name="api_token_credentials">토큰 상세 정보</string>
+    <string name="api_token_manage_databases">데이터베이스 관리</string>
+    <string name="api_token_folder_error">카테고리를 불러올 수 없습니다. 저장소 선택기를 다시 열어 재시도하세요.</string>
+    <string name="api_token_storage">저장 위치</string>
+    <string name="api_token_advanced">추가 정보</string>
+    <string name="api_token_unknown_schema">이 토큰은 다른 형식을 사용합니다. 아래에서 전체 데이터를 보고 복사할 수 있습니다.</string>
+    <string name="api_token_discard_title">변경 사항을 버리시겠습니까?</string>
+    <string name="api_token_discard_message">저장하지 않은 변경 사항이 사라집니다.</string>
+    <string name="api_token_discard">버리기</string>
+    <string name="api_token_name_hint">영문자, 숫자, - 또는 _로 1~64자</string>
+</resources>

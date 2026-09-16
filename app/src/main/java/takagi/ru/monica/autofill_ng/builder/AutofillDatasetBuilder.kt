@@ -1,5 +1,6 @@
 package takagi.ru.monica.autofill_ng.builder
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import android.app.PendingIntent
 import android.content.Context
 import android.graphics.BlendMode
@@ -259,8 +260,9 @@ object AutofillDatasetBuilder {
             domain: String? = null,
             packageName: String? = null
         ): RemoteViews {
+            val strings = AppLocaleStringResolver(context)
             return RemoteViews(context.packageName, R.layout.autofill_manual_card).apply {
-                setTextViewText(R.id.text_title, context.getString(R.string.autofill_manual_entry_title))
+                setTextViewText(R.id.text_title, strings.get(R.string.autofill_manual_entry_title))
                 setViewVisibility(R.id.text_username, android.view.View.GONE)
                 setImageViewResource(R.id.icon_app, R.drawable.ic_list)
             }
@@ -273,8 +275,9 @@ object AutofillDatasetBuilder {
             context: Context,
             message: String? = null
         ): RemoteViews {
+            val strings = AppLocaleStringResolver(context)
             return RemoteViews(context.packageName, R.layout.autofill_manual_card).apply {
-                val displayMessage = message ?: context.getString(R.string.autofill_manual_entry_title)
+                val displayMessage = message ?: strings.get(R.string.autofill_manual_entry_title)
                 setTextViewText(R.id.text_title, displayMessage)
                 setViewVisibility(R.id.text_username, android.view.View.GONE)
                 setImageViewResource(R.id.icon_app, R.drawable.ic_key)
@@ -282,9 +285,10 @@ object AutofillDatasetBuilder {
         }
 
         fun createPasswordSuggestion(context: Context): RemoteViews {
+            val strings = AppLocaleStringResolver(context)
             return RemoteViews(context.packageName, R.layout.autofill_dataset_card).apply {
-                setTextViewText(R.id.text_title, context.getString(R.string.password_suggestion_title))
-                setTextViewText(R.id.text_username, context.getString(R.string.password_suggestion_subtitle))
+                setTextViewText(R.id.text_title, strings.get(R.string.password_suggestion_title))
+                setTextViewText(R.id.text_username, strings.get(R.string.password_suggestion_subtitle))
                 setImageViewResource(R.id.icon_app, R.drawable.ic_key_24dp)
             }
         }

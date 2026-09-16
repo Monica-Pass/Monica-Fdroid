@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_stack_loop_title">카드 묶음 반복</string>
+    <string name="wallet_stack_loop_desc">카드 묶음을 양방향으로 넘길 수 있습니다. 마지막 카드 다음에 첫 카드가 이어집니다.</string>
+    <string name="page_adjustment_preview_games">게임</string>
+    <string name="page_adjustment_preview_folder">폴더 1</string>
+    <string name="page_adjustment_preview_subfolder">하위 폴더</string>
+</resources>

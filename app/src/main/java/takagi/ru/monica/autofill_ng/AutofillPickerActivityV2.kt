@@ -1,5 +1,7 @@
 package takagi.ru.monica.autofill_ng
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Activity
 import android.app.Application
 import android.content.ClipData
@@ -2443,6 +2445,7 @@ private fun AutofillPickerContent(
                             customFieldRepository = customFieldRepository,
                             context = context.applicationContext,
                             localKeePassDatabaseDao = appDb.localKeePassDatabaseDao(),
+                            strings = AppLocaleStringResolver(context),
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
@@ -2478,6 +2481,7 @@ private fun AutofillPickerContent(
                             context = context.applicationContext,
                             localKeePassDatabaseDao = appDb.localKeePassDatabaseDao(),
                             securityManager = securityManager,
+                            strings = AppLocaleStringResolver(context),
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
@@ -2496,6 +2500,7 @@ private fun AutofillPickerContent(
                             context = context.applicationContext,
                             localKeePassDatabaseDao = appDb.localKeePassDatabaseDao(),
                             securityManager = securityManager,
+                            strings = AppLocaleStringResolver(context),
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

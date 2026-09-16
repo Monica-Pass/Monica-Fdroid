@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">Cho phép HTTP</string>
+    <string name="webdav_allow_insecure_http_description">Mặc định tắt. Chỉ bật cho máy chủ HTTP đáng tin cậy, như NAS nội bộ không có HTTPS. Khi tắt, WebDAV sẽ chặn kết nối HTTP.</string>
+    <string name="fdroid_cloud_provider_unavailable">Bản F-Droid không hỗ trợ %1$s. Hãy dùng WebDAV.</string>
+    <string name="qr_image_read_failed">Không đọc được ảnh. Hãy chọn ảnh khác.</string>
+</resources>

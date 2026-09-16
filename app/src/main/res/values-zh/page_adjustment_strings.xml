@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="wallet_stack_loop_title">卡叠循环</string>
+    <string name="wallet_stack_loop_desc">上下滑动可循环翻阅卡叠，末张与首张相接。</string>
     <string name="page_adjustment_preview_games">游戏</string>
     <string name="page_adjustment_preview_folder">目录1</string>
     <string name="page_adjustment_preview_subfolder">子目录</string>

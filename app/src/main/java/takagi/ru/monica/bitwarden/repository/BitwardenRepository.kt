@@ -61,6 +61,9 @@ import takagi.ru.monica.bitwarden.sync.BitwardenMutationSyncBridge
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
 import takagi.ru.monica.data.bitwarden.*
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.AppLocaleStringResolver
+import takagi.ru.monica.utils.StringResolver
 import takagi.ru.monica.utils.LocaleHelper
 import takagi.ru.monica.utils.StartupLanguageCache
 
@@ -74,6 +77,7 @@ import takagi.ru.monica.utils.StartupLanguageCache
  * 4. 管理加密密钥的安全存储
  */
 class BitwardenRepository(private val context: Context) {
+    internal val strings: StringResolver = AppLocaleStringResolver(context)
 
     data class AttachmentCipherSnapshot(
         val context: takagi.ru.monica.attachments.facade.AttachmentFacade.BitwardenContext,
@@ -107,61 +111,61 @@ class BitwardenRepository(private val context: Context) {
         }
         
         /**
-         * 将技术性错误消息转换为用户友好的中文提示
+         * 将技术性错误消息转换为当前语言的用户提示
          */
-        fun parseErrorMessage(rawError: String?): String {
-            if (rawError.isNullOrBlank()) return "未知错误"
+        internal fun parseErrorMessage(rawError: String?, strings: StringResolver): String {
+            if (rawError.isNullOrBlank()) return strings.get(R.string.bitwarden_message_unknown)
             
             return when {
                 // 账号密码错误（也可能是新设备验证触发，Bitwarden 新版不区分这两种情况）
                 rawError.contains("invalid_username_or_password", ignoreCase = true) ||
                 rawError.contains("Username or password is incorrect", ignoreCase = true) ->
-                    "登录失败：账号或密码错误。\n\n如果您确认密码正确，Bitwarden 可能要求验证新设备——请检查邮箱是否收到验证邮件，点击邮件中的链接完成授权后重试"
+                    strings.get(R.string.bitwarden_message_bad_login)
                 
                 // 验证码错误
                 rawError.contains("Invalid New Device OTP", ignoreCase = true) ||
                 rawError.contains("invalid new device otp", ignoreCase = true) ->
-                    "验证码错误或已过期，请重新获取"
+                    strings.get(R.string.bitwarden_message_code_expired)
                 
                 rawError.contains("Two-step token is invalid", ignoreCase = true) ||
                 rawError.contains("invalid two-step", ignoreCase = true) ->
-                    "两步验证码错误，请检查后重试"
+                    strings.get(R.string.bitwarden_message_two_step_invalid)
                 
                 // 需要新设备验证
                 rawError.contains("New device verification required", ignoreCase = true) ||
                 rawError.contains("new device verification", ignoreCase = true) ->
-                    "需要验证新设备，请检查邮箱获取验证码"
+                    strings.get(R.string.bitwarden_message_new_device)
                 
                 // Captcha 验证
                 rawError.contains("captcha required", ignoreCase = true) &&
                 rawError.contains("sitekey", ignoreCase = true).not() ->
-                    "登录触发风控验证，但服务器未返回可用验证码配置，请稍后重试或先用官方客户端完成验证"
+                    strings.get(R.string.bitwarden_message_challenge_missing)
 
                 rawError.contains("captcha", ignoreCase = true) ->
-                    "需要 Captcha 验证，请稍后重试或使用官方客户端登录"
+                    strings.get(R.string.bitwarden_message_captcha)
 
                 rawError.contains("Bitwarden Argon2id KDF memory is too high", ignoreCase = true) ->
-                    "当前 Bitwarden 账户的 Argon2id KDF 内存参数过高，Monica 当前 Android JVM 加密实现无法安全处理。\n\n请临时降低 Bitwarden Web 中的 KDF 内存后重试，或等待后续 native Bitwarden/Argon2 支持。"
+                    strings.get(R.string.bitwarden_message_kdf_memory)
                 
                 // 账户锁定
                 rawError.contains("locked", ignoreCase = true) ||
                 rawError.contains("too many attempts", ignoreCase = true) ->
-                    "登录尝试次数过多，账户已暂时锁定，请稍后重试"
+                    strings.get(R.string.bitwarden_message_login_locked)
                 
                 // 服务器错误
                 rawError.contains("500") || rawError.contains("502") || 
                 rawError.contains("503") || rawError.contains("504") ->
-                    "服务器暂时不可用，请稍后重试"
+                    strings.get(R.string.bitwarden_message_server_unavailable)
                 
                 // 其他 400 错误
                 rawError.contains("400") && rawError.contains("invalid_grant") ->
-                    "认证失败：可能是服务器区域或自建地址不匹配、SSO 账户限制、或验证流程未完成，请重试"
+                    strings.get(R.string.bitwarden_message_auth_failed)
 
                 // 高内存 Argon2id KDF 在当前设备/ABI/native 库不可用时的明确提示
                 rawError.contains("Bitwarden Argon2id KDF requires", ignoreCase = true) ||
                 rawError.contains("ARGON2_MEMORY_ALLOCATION_ERROR", ignoreCase = true) ||
                 rawError.contains("ARGON2JNI_MALLOC_FAILED", ignoreCase = true) ->
-                    "登录失败：当前设备无法完成该 Bitwarden Argon2id KDF 参数。请降低服务端 KDF 内存参数后重试，或使用支持该参数的官方客户端。"
+                    strings.get(R.string.bitwarden_message_kdf_memory)
                 
                 // 默认返回原始错误（截断过长内容）
                 else -> {
@@ -170,7 +174,7 @@ class BitwardenRepository(private val context: Context) {
                     } else {
                         rawError
                     }
-                    "登录失败: $shortError"
+                    strings.get(R.string.bitwarden_message_login_failed, shortError)
                 }
             }
         }
@@ -486,11 +490,12 @@ class BitwardenRepository(private val context: Context) {
 
     internal fun describeLoginError(error: Throwable): String {
         if (error is CancellationException) throw error
-        val kind = classifyBitwardenLoginError(error) ?: return parseErrorMessage(error.message)
         // Use the same current-language cache as activities. The shared settings flow can
         // replay the previous language immediately after an update, unlike this cache.
         val localizedContext = LocaleHelper.setLocale(context, StartupLanguageCache.read(context))
-        return localizedContext.getString(kind.messageRes)
+        val kind = classifyBitwardenLoginError(error)
+        return if (kind != null) localizedContext.getString(kind.messageRes)
+        else parseErrorMessage(error.message, StringResolver { id, args -> localizedContext.getString(id, *args) })
     }
 
     suspend fun sendTwoFactorEmailLogin(
@@ -616,7 +621,7 @@ class BitwardenRepository(private val context: Context) {
      */
     suspend fun unlock(vaultId: Long, masterPassword: String): UnlockResult = withContext(Dispatchers.IO) {
         try {
-            val vault = vaultDao.getVaultById(vaultId) ?: return@withContext UnlockResult.Error("Vault 不存在")
+            val vault = vaultDao.getVaultById(vaultId) ?: return@withContext UnlockResult.Error(strings.get(R.string.bitwarden_message_vault_missing))
             val canonicalEmail = BitwardenVaultIdentity.resolveCanonicalEmail(vault)
             val normalizedIterations = when (vault.kdfType) {
                 BitwardenVault.KDF_TYPE_PBKDF2 -> vault.kdfIterations.takeIf { it > 0 } ?: PBKDF2_DEFAULT_ITERATIONS
@@ -647,16 +652,16 @@ class BitwardenRepository(private val context: Context) {
                 }
 
                 else -> {
-                    return@withContext UnlockResult.Error("不支持的 KDF 类型: ${vault.kdfType}，请重新登录")
+                    return@withContext UnlockResult.Error(strings.get(R.string.bitwarden_message_kdf_unsupported, vault.kdfType))
                 }
             }
 
             try {
                 val storedMasterKey = vault.encryptedMasterKey?.let { decryptFromStorage(it) }
-                    ?: return@withContext UnlockResult.Error("需要重新登录")
+                    ?: return@withContext UnlockResult.Error(strings.get(R.string.legacy_ui_reauthenticate))
                 val derivedMasterKey = Base64.encodeToString(masterKey, Base64.NO_WRAP)
                 if (storedMasterKey != derivedMasterKey) {
-                    return@withContext UnlockResult.Error("主密码错误")
+                    return@withContext UnlockResult.Error(strings.get(R.string.ime_unlock_error))
                 }
             
                 // 尝试从存储中恢复密钥
@@ -687,16 +692,16 @@ class BitwardenRepository(private val context: Context) {
                 }
                 
                 // 密钥恢复失败，需要重新登录
-                UnlockResult.Error("需要重新登录")
+                UnlockResult.Error(strings.get(R.string.legacy_ui_reauthenticate))
             } finally {
                 masterKey.fill(0)
             }
         } catch (e: BitwardenKdfMemoryException) {
             Log.e(TAG, "解锁 KDF 内存不足", e)
-            UnlockResult.Error("当前 Bitwarden 账户的 Argon2id KDF 内存参数过高，Monica 当前 Android JVM 加密实现无法安全处理。请临时降低 Bitwarden Web 中的 KDF 内存后重试，或等待后续 native Bitwarden/Argon2 支持。")
+            UnlockResult.Error(strings.get(R.string.bitwarden_message_kdf_memory))
         } catch (e: Exception) {
             Log.e(TAG, "解锁异常", e)
-            UnlockResult.Error(e.message ?: "解锁失败")
+            UnlockResult.Error(e.message ?: strings.get(R.string.bitwarden_message_unlock_failed))
         }
     }
     
@@ -831,14 +836,14 @@ class BitwardenRepository(private val context: Context) {
     suspend fun sync(vaultId: Long): SyncResult = withContext(Dispatchers.IO) {
         syncMutexForVault(vaultId).withLock {
             try {
-                val vault = vaultDao.getVaultById(vaultId) ?: return@withLock SyncResult.Error("Vault 不存在")
+                val vault = vaultDao.getVaultById(vaultId) ?: return@withLock SyncResult.Error(strings.get(R.string.bitwarden_message_vault_missing))
 
                 if (!isVaultUnlocked(vaultId)) {
-                    return@withLock SyncResult.Error("Vault 未解锁")
+                    return@withLock SyncResult.Error(strings.get(R.string.legacy_ui_vault_locked))
                 }
 
-                val symmetricKey = symmetricKeyCache[vaultId] ?: return@withLock SyncResult.Error("密钥不可用")
-                var accessToken = accessTokenCache[vaultId] ?: return@withLock SyncResult.Error("令牌不可用")
+                val symmetricKey = symmetricKeyCache[vaultId] ?: return@withLock SyncResult.Error(strings.get(R.string.bitwarden_message_key_unavailable))
+                var accessToken = accessTokenCache[vaultId] ?: return@withLock SyncResult.Error(strings.get(R.string.bitwarden_message_token_unavailable))
 
                 // 检查 Token 是否需要刷新
                 val expiresAt = vault.accessTokenExpiresAt ?: 0
@@ -848,7 +853,7 @@ class BitwardenRepository(private val context: Context) {
                         accessToken = refreshResult
                         accessTokenCache[vaultId] = accessToken
                     } else {
-                        return@withLock SyncResult.Error("Token 刷新失败，请重新登录")
+                        return@withLock SyncResult.Error(strings.get(R.string.bitwarden_message_token_refresh_failed))
                     }
                 }
 
@@ -932,14 +937,14 @@ class BitwardenRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "同步异常", e)
-                SyncResult.Error(e.message ?: "同步失败")
+                SyncResult.Error(e.message ?: strings.get(R.string.bitwarden_message_sync_failed))
             }
         }
     }
 
     suspend fun getVaultCacheRiskSummary(vaultId: Long): VaultCacheRiskSummary = withContext(Dispatchers.IO) {
         if (vaultDao.getVaultById(vaultId) == null) {
-            throw IllegalStateException("Vault 不存在")
+            throw IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing))
         }
         collectVaultCacheRiskSummary(vaultId)
     }
@@ -949,7 +954,7 @@ class BitwardenRepository(private val context: Context) {
         mode: CacheClearMode
     ): CacheClearResult = withContext(Dispatchers.IO) {
         if (vaultDao.getVaultById(vaultId) == null) {
-            throw IllegalStateException("Vault 不存在")
+            throw IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing))
         }
 
         val riskSummary = collectVaultCacheRiskSummary(vaultId)
@@ -1055,16 +1060,16 @@ class BitwardenRepository(private val context: Context) {
         withContext(Dispatchers.IO) {
             try {
                 val vault = vaultDao.getVaultById(vaultId)
-                    ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                    ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
                 if (!isVaultUnlocked(vaultId)) {
-                    return@withContext Result.failure(IllegalStateException("Vault 未解锁"))
+                    return@withContext Result.failure(IllegalStateException(strings.get(R.string.legacy_ui_vault_locked)))
                 }
 
                 val symmetricKey = symmetricKeyCache[vaultId]
-                    ?: return@withContext Result.failure(IllegalStateException("密钥不可用"))
+                    ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_key_unavailable)))
                 var accessToken = accessTokenCache[vaultId]
-                    ?: return@withContext Result.failure(IllegalStateException("令牌不可用"))
+                    ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_unavailable)))
 
                 val expiresAt = vault.accessTokenExpiresAt ?: 0
                 if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1073,7 +1078,7 @@ class BitwardenRepository(private val context: Context) {
                         accessToken = refreshed
                         accessTokenCache[vaultId] = refreshed
                     } else {
-                        return@withContext Result.failure(IllegalStateException("Token 刷新失败，请重新登录"))
+                        return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_refresh_failed)))
                     }
                 }
 
@@ -1141,19 +1146,19 @@ class BitwardenRepository(private val context: Context) {
     suspend fun createFolder(vaultId: Long, name: String): Result<BitwardenFolder> = withContext(Dispatchers.IO) {
         try {
             val trimmed = name.trim()
-            if (trimmed.isBlank()) return@withContext Result.failure(IllegalArgumentException("文件夹名称不能为空"))
+            if (trimmed.isBlank()) return@withContext Result.failure(IllegalArgumentException(strings.get(R.string.bitwarden_message_folder_name_required)))
 
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext Result.failure(IllegalStateException("Vault 未解锁"))
+                return@withContext Result.failure(IllegalStateException(strings.get(R.string.legacy_ui_vault_locked)))
             }
 
             val symmetricKey = symmetricKeyCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("密钥不可用"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_key_unavailable)))
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("令牌不可用"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_unavailable)))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1162,7 +1167,7 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext Result.failure(IllegalStateException("Token 刷新失败，请重新登录"))
+                    return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_refresh_failed)))
                 }
             }
 
@@ -1175,7 +1180,7 @@ class BitwardenRepository(private val context: Context) {
 
             if (!response.isSuccessful || response.body() == null) {
                 return@withContext Result.failure(
-                    IllegalStateException("创建失败: ${response.code()} ${response.message()}")
+                    IllegalStateException(strings.get(R.string.bitwarden_message_create_http, response.code(), response.message()))
                 )
             }
 
@@ -1199,19 +1204,19 @@ class BitwardenRepository(private val context: Context) {
     suspend fun renameFolder(vaultId: Long, folderId: String, newName: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val trimmed = newName.trim()
-            if (trimmed.isBlank()) return@withContext Result.failure(IllegalArgumentException("文件夹名称不能为空"))
+            if (trimmed.isBlank()) return@withContext Result.failure(IllegalArgumentException(strings.get(R.string.bitwarden_message_folder_name_required)))
 
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext Result.failure(IllegalStateException("Vault 未解锁"))
+                return@withContext Result.failure(IllegalStateException(strings.get(R.string.legacy_ui_vault_locked)))
             }
 
             val symmetricKey = symmetricKeyCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("密钥不可用"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_key_unavailable)))
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("令牌不可用"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_unavailable)))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1220,7 +1225,7 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext Result.failure(IllegalStateException("Token 刷新失败，请重新登录"))
+                    return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_refresh_failed)))
                 }
             }
 
@@ -1233,7 +1238,7 @@ class BitwardenRepository(private val context: Context) {
             )
             if (!response.isSuccessful) {
                 return@withContext Result.failure(
-                    IllegalStateException("重命名失败: ${response.code()} ${response.message()}")
+                    IllegalStateException(strings.get(R.string.bitwarden_message_rename_http, response.code(), response.message()))
                 )
             }
 
@@ -1248,14 +1253,14 @@ class BitwardenRepository(private val context: Context) {
     suspend fun deleteFolder(vaultId: Long, folderId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext Result.failure(IllegalStateException("Vault 未解锁"))
+                return@withContext Result.failure(IllegalStateException(strings.get(R.string.legacy_ui_vault_locked)))
             }
 
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("令牌不可用"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_unavailable)))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1264,7 +1269,7 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext Result.failure(IllegalStateException("Token 刷新失败，请重新登录"))
+                    return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_refresh_failed)))
                 }
             }
 
@@ -1272,7 +1277,7 @@ class BitwardenRepository(private val context: Context) {
             val response = vaultApi.deleteFolder("Bearer $accessToken", folderId)
             if (!response.isSuccessful) {
                 return@withContext Result.failure(
-                    IllegalStateException("删除失败: ${response.code()} ${response.message()}")
+                    IllegalStateException(strings.get(R.string.bitwarden_message_delete_http, response.code(), response.message()))
                 )
             }
 
@@ -1302,7 +1307,7 @@ class BitwardenRepository(private val context: Context) {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
             // 已有待删除操作时直接复用，保证幂等。
             val existingDelete = pendingOpDao.findActiveDeleteByCipher(vaultId, cipherId)
@@ -1346,7 +1351,7 @@ class BitwardenRepository(private val context: Context) {
     ): Result<BitwardenRestoreQueueOutcome> = withContext(Dispatchers.IO) {
         try {
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
             val existingRestore = pendingOpDao.findActiveRestoreByCipher(vaultId, cipherId)
             if (existingRestore != null) {
@@ -1399,14 +1404,14 @@ class BitwardenRepository(private val context: Context) {
     suspend fun deleteCipher(vaultId: Long, cipherId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_vault_missing)))
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext Result.failure(IllegalStateException("Vault 未解锁"))
+                return@withContext Result.failure(IllegalStateException(strings.get(R.string.legacy_ui_vault_locked)))
             }
 
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("令牌不可用"))
+                ?: return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_unavailable)))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1415,7 +1420,7 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext Result.failure(IllegalStateException("Token 刷新失败，请重新登录"))
+                    return@withContext Result.failure(IllegalStateException(strings.get(R.string.bitwarden_message_token_refresh_failed)))
                 }
             }
 
@@ -1423,7 +1428,7 @@ class BitwardenRepository(private val context: Context) {
             val response = vaultApi.deleteCipher("Bearer $accessToken", cipherId)
             if (!response.isSuccessful && response.code() != 404) {
                 return@withContext Result.failure(
-                    IllegalStateException("删除失败: ${response.code()} ${response.message()}")
+                    IllegalStateException(strings.get(R.string.bitwarden_message_delete_http, response.code(), response.message()))
                 )
             }
 
@@ -1435,16 +1440,21 @@ class BitwardenRepository(private val context: Context) {
     }
 
     suspend fun permanentDeleteCipher(vaultId: Long, cipherId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        fun failure(message: String): Result<Unit> {
+            // Keep the reason in exported diagnostics without logging credentials or item contents.
+            BitwardenDiagLogger.append("BitwardenRepository permanentDeleteCipher: vaultId=$vaultId, failure=$message")
+            return Result.failure(IllegalStateException(message))
+        }
         try {
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext Result.failure(IllegalStateException("Vault 不存在"))
+                ?: return@withContext failure(context.getString(takagi.ru.monica.R.string.bitwarden_trash_vault_missing))
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext Result.failure(IllegalStateException("Vault 未解锁"))
+                return@withContext failure(context.getString(takagi.ru.monica.R.string.bitwarden_cache_requires_unlock))
             }
 
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext Result.failure(IllegalStateException("令牌不可用"))
+                ?: return@withContext failure(context.getString(takagi.ru.monica.R.string.pull_sync_requires_bitwarden_login))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1453,21 +1463,25 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext Result.failure(IllegalStateException("Token 刷新失败，请重新登录"))
+                    return@withContext failure(context.getString(takagi.ru.monica.R.string.pull_sync_requires_bitwarden_login))
                 }
             }
 
             val vaultApi = apiManager.getVaultApi(vault)
             val response = vaultApi.permanentDeleteCipher("Bearer $accessToken", cipherId)
             if (!response.isSuccessful && response.code() != 404) {
-                return@withContext Result.failure(
-                    IllegalStateException("永久删除失败: ${response.code()} ${response.message()}")
+                return@withContext failure(
+                    context.getString(takagi.ru.monica.R.string.bitwarden_trash_delete_http_error, response.code())
                 )
             }
 
+            BitwardenDiagLogger.append("BitwardenRepository permanentDeleteCipher: vaultId=$vaultId, status=${response.code()}")
             Result.success(Unit)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "永久删除 Bitwarden Cipher 失败", e)
+            BitwardenDiagLogger.append("BitwardenRepository permanentDeleteCipher: vaultId=$vaultId, exception=${e.javaClass.simpleName}")
             Result.failure(e)
         }
     }
@@ -1519,20 +1533,20 @@ class BitwardenRepository(private val context: Context) {
         expirationMillis: Long?
     ): SendMutationResult = withContext(Dispatchers.IO) {
         try {
-            if (title.isBlank()) return@withContext SendMutationResult.Error("标题不能为空")
-            if (text.isBlank()) return@withContext SendMutationResult.Error("发送内容不能为空")
+            if (title.isBlank()) return@withContext SendMutationResult.Error(strings.get(R.string.error_title_required))
+            if (text.isBlank()) return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_send_text_required))
 
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext SendMutationResult.Error("Vault 不存在")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_vault_missing))
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext SendMutationResult.Error("Vault 未解锁")
+                return@withContext SendMutationResult.Error(strings.get(R.string.legacy_ui_vault_locked))
             }
 
             val symmetricKey = symmetricKeyCache[vaultId]
-                ?: return@withContext SendMutationResult.Error("密钥不可用")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_key_unavailable))
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext SendMutationResult.Error("令牌不可用")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_token_unavailable))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1541,7 +1555,7 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext SendMutationResult.Error("Token 刷新失败，请重新登录")
+                    return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_token_refresh_failed))
                 }
             }
 
@@ -1567,18 +1581,18 @@ class BitwardenRepository(private val context: Context) {
 
             if (!response.isSuccessful) {
                 return@withContext SendMutationResult.Error(
-                    "创建 Send 失败: ${response.code()} ${response.message()}"
+                    strings.get(R.string.bitwarden_message_send_create_http, response.code(), response.message())
                 )
             }
 
             val body = response.body()
-                ?: return@withContext SendMutationResult.Error("服务器未返回 Send 数据")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_send_missing))
             val mapped = BitwardenSendMapper.mapApiToEntity(
                 vaultId = vault.id,
                 serverUrl = vault.serverUrl,
                 api = body,
                 vaultKey = symmetricKey
-            ) ?: return@withContext SendMutationResult.Error("Send 解密失败")
+            ) ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_send_decrypt_failed))
 
             val existing = sendDao.getBySendId(vault.id, mapped.bitwardenSendId)
             val now = System.currentTimeMillis()
@@ -1605,7 +1619,7 @@ class BitwardenRepository(private val context: Context) {
             SendMutationResult.Success(entity)
         } catch (e: Exception) {
             Log.e(TAG, "创建 Send 失败", e)
-            SendMutationResult.Error(e.message ?: "创建 Send 失败")
+            SendMutationResult.Error(e.message ?: strings.get(R.string.bitwarden_message_send_create_failed))
         }
     }
 
@@ -1624,24 +1638,24 @@ class BitwardenRepository(private val context: Context) {
         var encryptedTmp: File? = null
         var sendKeyToClear: SymmetricCryptoKey? = null
         try {
-            if (title.isBlank()) return@withContext SendMutationResult.Error("标题不能为空")
-            if (fileName.isBlank()) return@withContext SendMutationResult.Error("文件名不能为空")
+            if (title.isBlank()) return@withContext SendMutationResult.Error(strings.get(R.string.error_title_required))
+            if (fileName.isBlank()) return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_filename_required))
 
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext SendMutationResult.Error("Vault 不存在")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_vault_missing))
 
             if (!isFileSendAllowed(vault)) {
-                return@withContext SendMutationResult.Error("官方 Bitwarden 服务器的文件 Send 需要会员账号")
+                return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_send_premium))
             }
 
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext SendMutationResult.Error("Vault 未解锁")
+                return@withContext SendMutationResult.Error(strings.get(R.string.legacy_ui_vault_locked))
             }
 
             val symmetricKey = symmetricKeyCache[vaultId]
-                ?: return@withContext SendMutationResult.Error("密钥不可用")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_key_unavailable))
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext SendMutationResult.Error("令牌不可用")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_token_unavailable))
 
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
@@ -1650,13 +1664,13 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext SendMutationResult.Error("Token 刷新失败，请重新登录")
+                    return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_token_refresh_failed))
                 }
             }
 
             val metadata = AttachmentUriMetadata.resolve(context, fileUri, fileName)
             if (metadata.sizeBytes > AttachmentSizeValidator.HARD_LIMIT_BYTES) {
-                return@withContext SendMutationResult.Error("文件过大，已超出当前允许的上传体积")
+                return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_file_too_large))
             }
             encryptedTmp = File.createTempFile("bw_send_", ".bin", context.cacheDir)
             val keyMaterial = BitwardenCrypto.generateSendKeyMaterial()
@@ -1665,15 +1679,17 @@ class BitwardenRepository(private val context: Context) {
             try {
                 context.contentResolver.openInputStream(fileUri)?.use { input ->
                     encryptSendFileData(input, encryptedTmp, sendKey)
-                } ?: return@withContext SendMutationResult.Error("无法读取所选文件")
+                } ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_file_unreadable))
 
                 val encryptedFileLength = encryptedTmp.length()
                 val maxRequestFileBytes = AttachmentSizeValidator.HARD_LIMIT_BYTES - SEND_UPLOAD_REQUEST_HEADROOM_BYTES
                 if (encryptedFileLength > maxRequestFileBytes) {
                     return@withContext SendMutationResult.Error(
-                        "文件 Send 上传体积超限：原始文件 ${formatBytes(metadata.sizeBytes)}，" +
-                            "加密后 ${formatBytes(encryptedFileLength)}。已超出服务器允许的上传体积，" +
-                            "自部署服务的限制可能低于官方默认值，请改用更小的文件。"
+                        strings.get(
+                            R.string.bitwarden_message_encrypted_size_limit,
+                            formatBytes(metadata.sizeBytes),
+                            formatBytes(encryptedFileLength)
+                        )
                     )
                 }
 
@@ -1700,16 +1716,16 @@ class BitwardenRepository(private val context: Context) {
                 )
                 if (!createResponse.isSuccessful) {
                     return@withContext SendMutationResult.Error(
-                        "创建文件 Send 失败: ${createResponse.code()} ${createResponse.message()}"
+                        strings.get(R.string.bitwarden_message_file_send_create_http, createResponse.code(), createResponse.message())
                     )
                 }
 
                 val uploadData = createResponse.body()
-                    ?: return@withContext SendMutationResult.Error("服务器未返回文件上传数据")
+                    ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_upload_data_missing))
                 val sendResponse = uploadData.sendResponse
-                    ?: return@withContext SendMutationResult.Error("服务器未返回 Send 数据")
+                    ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_send_missing))
                 val fileId = sendResponse.file?.id
-                    ?: return@withContext SendMutationResult.Error("服务器未返回文件 ID")
+                    ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_file_id_missing))
 
                 try {
                     uploadSendFile(
@@ -1741,7 +1757,7 @@ class BitwardenRepository(private val context: Context) {
                     serverUrl = vault.serverUrl,
                     api = sendResponse,
                     vaultKey = symmetricKey
-                ) ?: return@withContext SendMutationResult.Error("Send 解密失败")
+                ) ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_send_decrypt_failed))
 
                 val existing = sendDao.getBySendId(vault.id, mapped.bitwardenSendId)
                 val now = System.currentTimeMillis()
@@ -1770,7 +1786,7 @@ class BitwardenRepository(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "创建文件 Send 失败", e)
-            SendMutationResult.Error(e.message ?: "创建文件 Send 失败")
+            SendMutationResult.Error(e.message ?: strings.get(R.string.bitwarden_message_file_send_create_failed))
         } finally {
             sendKeyToClear?.clear()
             encryptedTmp?.delete()
@@ -1786,7 +1802,7 @@ class BitwardenRepository(private val context: Context) {
 
     private fun resolveSendUploadUrl(vault: BitwardenVault, uploadUrl: String?): String {
         val trimmed = uploadUrl?.trim().takeIf { !it.isNullOrBlank() }
-            ?: throw IOException("服务器未返回上传地址")
+            ?: throw IOException(strings.get(R.string.bitwarden_message_upload_url_missing))
         trimmed.toHttpUrlOrNull()?.let { return trimmed }
 
         val apiBase = vault.apiUrl
@@ -1794,7 +1810,7 @@ class BitwardenRepository(private val context: Context) {
             ?: BitwardenApiFactory.inferServerUrls(vault.serverUrl).api
         val resolved = apiBase.toHttpUrlOrNull()?.resolve(trimmed)
         return resolved?.toString()
-            ?: throw IOException("服务器返回了无效的上传地址: $trimmed")
+            ?: throw IOException(strings.get(R.string.bitwarden_message_upload_url_invalid, trimmed))
     }
 
     private fun encryptSendFileData(
@@ -1880,10 +1896,9 @@ class BitwardenRepository(private val context: Context) {
             )
             if (!response.isSuccessful) {
                 val message = if (response.code() == HttpURLConnection.HTTP_ENTITY_TOO_LARGE) {
-                    "文件上传失败: 413 Payload Too Large（加密后上传大小 ${formatBytes(encryptedFile.length())}，" +
-                        "已超出服务器允许的上传体积）"
+                    strings.get(R.string.bitwarden_message_upload_limit_http, formatBytes(encryptedFile.length()))
                 } else {
-                    "文件上传失败: ${response.code()} ${response.message()}"
+                    strings.get(R.string.bitwarden_message_upload_http, response.code(), response.message())
                 }
                 throw IOException(message)
             }
@@ -1908,9 +1923,9 @@ class BitwardenRepository(private val context: Context) {
             httpClient.newCall(request).execute().use { response ->
                 if (response.code != HttpURLConnection.HTTP_CREATED && !response.isSuccessful) {
                     val message = if (response.code == HttpURLConnection.HTTP_ENTITY_TOO_LARGE) {
-                        "文件上传失败: 413 Payload Too Large"
+                        strings.get(R.string.bitwarden_message_upload_limit)
                     } else {
-                        "文件上传失败: ${response.code}"
+                        strings.get(R.string.bitwarden_message_upload_code, response.code)
                     }
                     throw IOException(message)
                 }
@@ -1921,13 +1936,13 @@ class BitwardenRepository(private val context: Context) {
     suspend fun deleteSend(vaultId: Long, sendId: String): SendMutationResult = withContext(Dispatchers.IO) {
         try {
             val vault = vaultDao.getVaultById(vaultId)
-                ?: return@withContext SendMutationResult.Error("Vault 不存在")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_vault_missing))
             if (!isVaultUnlocked(vaultId)) {
-                return@withContext SendMutationResult.Error("Vault 未解锁")
+                return@withContext SendMutationResult.Error(strings.get(R.string.legacy_ui_vault_locked))
             }
 
             var accessToken = accessTokenCache[vaultId]
-                ?: return@withContext SendMutationResult.Error("令牌不可用")
+                ?: return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_token_unavailable))
             val expiresAt = vault.accessTokenExpiresAt ?: 0
             if (expiresAt <= System.currentTimeMillis() + 60000) {
                 val refreshed = refreshToken(vault)
@@ -1935,7 +1950,7 @@ class BitwardenRepository(private val context: Context) {
                     accessToken = refreshed
                     accessTokenCache[vaultId] = refreshed
                 } else {
-                    return@withContext SendMutationResult.Error("Token 刷新失败，请重新登录")
+                    return@withContext SendMutationResult.Error(strings.get(R.string.bitwarden_message_token_refresh_failed))
                 }
             }
 
@@ -1947,7 +1962,7 @@ class BitwardenRepository(private val context: Context) {
 
             if (!response.isSuccessful && response.code() != 404) {
                 return@withContext SendMutationResult.Error(
-                    "删除 Send 失败: ${response.code()} ${response.message()}"
+                    strings.get(R.string.bitwarden_message_send_delete_http, response.code(), response.message())
                 )
             }
 
@@ -1955,7 +1970,7 @@ class BitwardenRepository(private val context: Context) {
             SendMutationResult.Deleted(sendId)
         } catch (e: Exception) {
             Log.e(TAG, "删除 Send 失败", e)
-            SendMutationResult.Error(e.message ?: "删除 Send 失败")
+            SendMutationResult.Error(e.message ?: strings.get(R.string.bitwarden_message_send_delete_failed))
         }
     }
     

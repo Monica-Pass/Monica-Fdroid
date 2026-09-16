@@ -1,5 +1,10 @@
 package takagi.ru.monica.passkey
 
+import android.content.Context
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.AppLocaleStringResolver
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
@@ -74,6 +79,12 @@ class MonicaCredentialProviderService : CredentialProviderService() {
         SecurityManager(applicationContext)
     }
     
+    private val strings by lazy { AppLocaleStringResolver(this) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
+
     override fun onDestroy() {
         serviceJob.cancel()
         super.onDestroy()
@@ -216,7 +227,7 @@ class MonicaCredentialProviderService : CredentialProviderService() {
                 "Monica - $rpName",
                 pendingIntent
             )
-                .setDescription("为 $userName 创建通行密钥")
+                .setDescription(strings.get(R.string.legacy_ui_passkey_create_for, userName))
                 .build()
             
             val response = BeginCreateCredentialResponse.Builder()

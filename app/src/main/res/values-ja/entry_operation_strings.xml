@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden を利用できません</string>
+    <string name="entry_message_unsupported_type">この操作はこの種類のアイテムに対応していません</string>
+    <string name="entry_message_ownership_conflict">このアイテムを Monica に移動する前に、保存先の関連付けの競合を解決してください</string>
+    <string name="entry_message_local_copy_failed">Monica にローカルコピーを作成できませんでした</string>
+    <string name="entry_message_attachments_incomplete">一部の添付ファイルをコピーできませんでした</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Bitwarden アイテムに同期 ID がありません</string>
+    <string name="entry_message_keepass_source_delete_failed">元の KeePass アイテムを削除できませんでした</string>
+    <string name="entry_message_source_delete_failed">元のアイテムを削除できませんでした</string>
+    <string name="entry_message_storage_save_failed">選択した場所に保存できませんでした</string>
+    <string name="entry_message_from_password">元のパスワード: %1$s</string>
+    <string name="entry_message_passkey_android_required">パスキーの全機能を利用するには Android 14 以降が必要です。この端末: %1$s</string>
+    <string name="entry_message_passkey_save_failed">パスキーを保存できませんでした: %1$s</string>
+    <string name="entry_message_passkey_missing">パスキーが見つかりません</string>
+    <string name="entry_message_passkey_update_failed">パスキーを更新できませんでした: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">MDBX パスキーの関連付けを更新できませんでした: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">関連付けを更新できませんでした: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">使用履歴を更新できませんでした: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">パスキーを削除できませんでした: %1$s</string>
+    <string name="entry_message_category_path_invalid">フォルダーのパスが無効です</string>
+    <string name="entry_message_category_move_into_self">フォルダーを自分自身やそのサブフォルダーに移動することはできません</string>
+    <string name="entry_message_category_missing">フォルダーが見つかりません</string>
+    <string name="entry_message_category_exists">移動先に同じ名前のフォルダーがすでに存在します</string>
+    <string name="entry_message_category_move_conflict">移動すると既存のフォルダーと競合します</string>
+    <string name="entry_message_category_name_required">フォルダー名を入力してください</string>
+    <string name="entry_message_category_name_separator">フォルダー名に / は使用できません</string>
+    <string name="entry_message_category_rename_conflict">名前を変更すると既存のフォルダーと競合します</string>
+    <string name="entry_message_saved">保存しました</string>
+</resources>

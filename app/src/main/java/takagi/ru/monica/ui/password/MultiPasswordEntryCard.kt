@@ -222,7 +222,7 @@ fun MultiPasswordEntryCard(
                                     ) {
                                         Icon(
                                             Icons.Default.Star,
-                                            contentDescription = "Remove cover",
+                                            contentDescription = stringResource(R.string.legacy_ui_remove_cover),
                                             tint = MaterialTheme.colorScheme.tertiary,
                                             modifier = Modifier.size(20.dp)
                                         )
@@ -231,7 +231,7 @@ fun MultiPasswordEntryCard(
                             } else {
                                 Icon(
                                     Icons.Default.Star,
-                                    contentDescription = "Cover",
+                                    contentDescription = stringResource(R.string.legacy_ui_cover),
                                     tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(20.dp)
                                 )

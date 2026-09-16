@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">HTTP 연결 허용</string>
+    <string name="webdav_allow_insecure_http_description">기본값은 꺼짐입니다. HTTPS를 지원하지 않는 로컬 NAS 등 신뢰할 수 있는 HTTP 서버에만 허용하세요. 꺼져 있으면 WebDAV의 HTTP 연결을 차단합니다.</string>
+    <string name="fdroid_cloud_provider_unavailable">F-Droid 버전은 %1$s을(를) 지원하지 않습니다. WebDAV를 사용하세요.</string>
+    <string name="qr_image_read_failed">이미지를 읽을 수 없습니다. 다른 이미지를 선택하세요.</string>
+</resources>

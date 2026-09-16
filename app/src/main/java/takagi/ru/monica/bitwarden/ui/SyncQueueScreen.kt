@@ -1,5 +1,7 @@
 package takagi.ru.monica.bitwarden.ui
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -53,21 +55,21 @@ fun SyncQueueScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("同步队列") },
+                title = { Text(stringResource(R.string.legacy_ui_sync_queue)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     if (failedItems.isNotEmpty()) {
                         TextButton(onClick = onRetryAll) {
-                            Text("全部重试")
+                            Text(stringResource(R.string.legacy_ui_retry_all))
                         }
                     }
                     if (completedItems.isNotEmpty()) {
                         IconButton(onClick = onClearCompleted) {
-                            Icon(Icons.Outlined.ClearAll, contentDescription = "清除已完成")
+                            Icon(Icons.Outlined.ClearAll, contentDescription = stringResource(R.string.legacy_ui_clear_completed))
                         }
                     }
                 }
@@ -93,11 +95,11 @@ fun SyncQueueScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "同步队列为空",
+                        text = stringResource(R.string.legacy_ui_sync_queue_empty),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "所有数据都已同步",
+                        text = stringResource(R.string.legacy_ui_sync_queue_all_synced),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -115,7 +117,7 @@ fun SyncQueueScreen(
                 if (processingItems.isNotEmpty()) {
                     item {
                         SectionHeader(
-                            title = "处理中",
+                            title = stringResource(R.string.legacy_ui_processing),
                             count = processingItems.size,
                             icon = Icons.Outlined.Sync,
                             color = MaterialTheme.colorScheme.primary
@@ -134,7 +136,7 @@ fun SyncQueueScreen(
                 if (pendingItems.isNotEmpty()) {
                     item {
                         SectionHeader(
-                            title = "待处理",
+                            title = stringResource(R.string.legacy_ui_pending),
                             count = pendingItems.size,
                             icon = Icons.Outlined.Pending,
                             color = MaterialTheme.colorScheme.secondary
@@ -153,7 +155,7 @@ fun SyncQueueScreen(
                 if (failedItems.isNotEmpty()) {
                     item {
                         SectionHeader(
-                            title = "失败",
+                            title = stringResource(R.string.sync_status_failed_badge),
                             count = failedItems.size,
                             icon = Icons.Outlined.Error,
                             color = MaterialTheme.colorScheme.error
@@ -172,7 +174,7 @@ fun SyncQueueScreen(
                 if (completedItems.isNotEmpty()) {
                     item {
                         SectionHeader(
-                            title = "已完成",
+                            title = stringResource(R.string.legacy_ui_completed),
                             count = completedItems.size,
                             icon = Icons.Outlined.CheckCircle,
                             color = MaterialTheme.colorScheme.tertiary
@@ -322,7 +324,7 @@ private fun SyncQueueItemCard(
                     
                     if (item.retryCount > 0) {
                         Text(
-                            text = " · 重试 ${item.retryCount} 次",
+                            text = stringResource(R.string.legacy_ui_retry_count, item.retryCount),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -346,7 +348,7 @@ private fun SyncQueueItemCard(
                 IconButton(onClick = onRetry) {
                     Icon(
                         Icons.Outlined.Refresh,
-                        contentDescription = "重试",
+                        contentDescription = stringResource(R.string.retry),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -356,7 +358,7 @@ private fun SyncQueueItemCard(
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Outlined.Close,
-                        contentDescription = "移除",
+                        contentDescription = stringResource(R.string.remove),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -385,24 +387,26 @@ private fun getTypeIcon(type: SyncItemType): androidx.compose.ui.graphics.vector
     }
 }
 
+@Composable
 private fun getTypeLabel(type: SyncItemType): String {
     return when (type) {
-        SyncItemType.PASSWORD -> "密码"
-        SyncItemType.TOTP -> "验证器"
-        SyncItemType.CARD -> "银行卡"
-        SyncItemType.NOTE -> "安全笔记"
-        SyncItemType.IDENTITY -> "身份证件"
-        SyncItemType.PASSKEY -> "通行密钥"
-        SyncItemType.SSH_KEY -> "SSH 密钥"
-        SyncItemType.FOLDER -> "文件夹"
+        SyncItemType.PASSWORD -> stringResource(R.string.password)
+        SyncItemType.TOTP -> stringResource(R.string.nav_authenticator)
+        SyncItemType.CARD -> stringResource(R.string.nav_bank_cards)
+        SyncItemType.NOTE -> stringResource(R.string.legacy_ui_secure_note)
+        SyncItemType.IDENTITY -> stringResource(R.string.legacy_ui_identity_document)
+        SyncItemType.PASSKEY -> stringResource(R.string.passkey)
+        SyncItemType.SSH_KEY -> stringResource(R.string.entry_type_ssh_key)
+        SyncItemType.FOLDER -> stringResource(R.string.folder_generic)
     }
 }
 
+@Composable
 private fun getOperationLabel(operation: SyncOperation): String {
     return when (operation) {
-        SyncOperation.CREATE -> "创建"
-        SyncOperation.UPDATE -> "更新"
-        SyncOperation.DELETE -> "删除"
-        SyncOperation.MOVE_FOLDER -> "移动"
+        SyncOperation.CREATE -> stringResource(R.string.create)
+        SyncOperation.UPDATE -> stringResource(R.string.legacy_ui_update)
+        SyncOperation.DELETE -> stringResource(R.string.delete)
+        SyncOperation.MOVE_FOLDER -> stringResource(R.string.move)
     }
 }

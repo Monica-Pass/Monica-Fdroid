@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">Tự động điền yêu cầu Android 8.0 trở lên</string>
+    <string name="autofill_compat_huawei">Thiết bị Huawei có thể hạn chế tự động điền trên Android 10 trở lên</string>
+    <string name="autofill_compat_xiaomi">Thiết bị Xiaomi có thể cần cấp quyền tự động điền trong Bảo mật MIUI</string>
+    <string name="autofill_compat_oppo">Thiết bị OPPO/Realme có thể cần cấp quyền tự động điền trong cài đặt quyền</string>
+    <string name="autofill_compat_vivo">Thiết bị Vivo có thể cần cấp quyền tự động điền trong iManager</string>
+    <string name="autofill_compat_android12_rom">Tự động điền có thể thiếu ổn định trên một số ROM Android 12 do vấn đề tương thích hệ thống</string>
+    <string name="autofill_compat_inline">Thiết bị này không hỗ trợ gợi ý trên bàn phím. Tự động điền sẽ dùng danh sách thả xuống.</string>
+    <string name="autofill_compat_emulator">Tự động điền có thể thiếu ổn định trên trình giả lập này</string>
+    <string name="autofill_compat_unsupported">Thiết bị này không hỗ trợ hệ thống tự động điền</string>
+    <string name="autofill_compat_check_failed">Không thể hoàn tất kiểm tra tương thích</string>
+    <string name="autofill_check_manifest">Kiểm tra xem MonicaAutofillServiceNg đã được khai báo trong AndroidManifest.xml chưa</string>
+    <string name="autofill_check_permission_manifest">Dịch vụ phải khai báo BIND_AUTOFILL_SERVICE và intent-filter cho tự động điền</string>
+    <string name="autofill_check_enable_system">Chọn Monica làm dịch vụ tự động điền trong cài đặt hệ thống</string>
+    <string name="autofill_check_path_system">Cài đặt → Hệ thống → Ngôn ngữ và nhập liệu → Dịch vụ tự động điền</string>
+    <string name="autofill_check_path_xiaomi">Xiaomi: Cài đặt → Cài đặt bổ sung → Ngôn ngữ và nhập liệu → Dịch vụ tự động điền</string>
+    <string name="autofill_check_miui_permission">Đồng thời cấp các quyền cần thiết trong Bảo mật MIUI</string>
+    <string name="autofill_check_path_huawei">Huawei: Cài đặt → Hệ thống và cập nhật → Ngôn ngữ và nhập liệu → Dịch vụ tự động điền</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme: Cài đặt → Cài đặt bổ sung → Bàn phím và phương thức nhập → Dịch vụ tự động điền</string>
+    <string name="autofill_check_path_vivo">Vivo: Cài đặt → Cài đặt khác → Phương thức nhập → Dịch vụ tự động điền</string>
+    <string name="autofill_check_path_samsung">Samsung: Cài đặt → Quản lý chung → Ngôn ngữ và nhập liệu → Dịch vụ tự động điền</string>
+    <string name="autofill_check_enable_app">Bật tự động điền trong cài đặt Monica</string>
+    <string name="autofill_check_app_permissions">Kiểm tra xem Monica đã có đủ quyền ứng dụng cần thiết chưa</string>
+    <string name="autofill_check_issue_count">Số vấn đề tương thích: %1$d. Xem chi tiết bên dưới.</string>
+    <string name="autofill_check_xiaomi_permission">Xiaomi: Bảo mật → Quản lý ứng dụng → Monica → Quyền → Cho phép tự động điền</string>
+    <string name="autofill_check_huawei_autostart">Huawei: có thể cần cho phép Monica tự khởi động trong Trình quản lý điện thoại</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme: Cài đặt → Quản lý ứng dụng → Monica → Quyền → Cho phép tự động điền</string>
+    <string name="autofill_check_vivo_permission">Vivo: iManager → Quản lý ứng dụng → Quản lý quyền → Monica → Cho phép tự động điền</string>
+    <string name="autofill_check_background">Tắt hạn chế pin cho Monica và cho phép tự khởi động, hoạt động nền</string>
+    <string name="autofill_check_trigger_manually">Nếu tự động điền vẫn thiếu ổn định, hãy kích hoạt thủ công từ trường đăng nhập để bắt đầu phiên</string>
+    <string name="autofill_check_configured">Dịch vụ đã được cấu hình đúng. Nếu vấn đề vẫn tiếp diễn, hãy khởi động lại Monica.</string>
+    <string name="autofill_check_view_logs">Dùng công cụ khắc phục sự cố để xem nhật ký chi tiết</string>
+    <string name="autofill_check_restart">Khởi động lại Monica sau khi áp dụng các thay đổi này</string>
+    <string name="autofill_check_recommendations_failed">Không thể tạo đề xuất. Hãy liên hệ hỗ trợ.</string>
+    <string name="autofill_report_parsing">Nhận diện trường</string>
+    <string name="autofill_report_matching">Đối chiếu mật khẩu</string>
+    <string name="autofill_report_building">Tạo phản hồi</string>
+    <string name="autofill_report_performance">Hiệu năng</string>
+    <string name="autofill_report_parsing_failures">Lỗi nhận diện trường: %1$d</string>
+    <string name="autofill_report_matching_failures">Yêu cầu không có mật khẩu phù hợp: %1$d</string>
+    <string name="autofill_report_building_failures">Lỗi tạo phản hồi: %1$d</string>
+    <string name="autofill_report_slow">Thời gian phản hồi trung bình quá cao: %1$d ms</string>
+    <string name="autofill_report_improve_recognition">Cải thiện nhận diện trường</string>
+    <string name="autofill_report_recognition_hint">Không nhận diện được một số trường ứng dụng. Hãy kiểm tra cài đặt phân tích trường.</string>
+    <string name="autofill_report_add_passwords">Thêm mục mật khẩu</string>
+    <string name="autofill_report_add_passwords_hint">Không tìm thấy mật khẩu phù hợp. Hãy thêm mục mật khẩu cho các ứng dụng này.</string>
+    <string name="autofill_report_integrity">Kiểm tra tính đầy đủ của dữ liệu</string>
+    <string name="autofill_report_integrity_hint">Phản hồi có thể thất bại khi dữ liệu không đầy đủ. Hãy kiểm tra các mục mật khẩu.</string>
+    <string name="autofill_report_optimize">Cải thiện hiệu năng</string>
+    <string name="autofill_report_optimize_hint">Phản hồi chậm. Hãy thử xóa bộ nhớ đệm hoặc giảm số mục mật khẩu.</string>
+    <string name="autofill_report_title">=== Chẩn đoán tự động điền Monica ===</string>
+    <string name="autofill_report_exported_at">Xuất lúc: %1$s</string>
+    <string name="autofill_report_device">Thông tin thiết bị</string>
+    <string name="autofill_report_manufacturer">Nhà sản xuất: %1$s</string>
+    <string name="autofill_report_model">Mẫu máy: %1$s</string>
+    <string name="autofill_report_android">Android: %1$s (API %2$d)</string>
+    <string name="autofill_report_rom">ROM: %1$s</string>
+    <string name="autofill_report_inline">Hỗ trợ gợi ý trên bàn phím: %1$s</string>
+    <string name="autofill_report_statistics">Thống kê</string>
+    <string name="autofill_report_log_details">Chi tiết nhật ký</string>
+    <string name="autofill_report_end">=== Kết thúc nhật ký ===</string>
+</resources>

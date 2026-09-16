@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Xem và hợp nhất</string>
+    <string name="keepass_conflict_banner_title">Cần hợp nhất thay đổi</string>
+    <string name="keepass_conflict_banner_summary">Xem lại cả hai phiên bản để tiếp tục đồng bộ.</string>
+    <string name="keepass_conflict_merge_sync">Hợp nhất và đồng bộ</string>
+    <string name="keepass_conflict_comparing">Đang so sánh hai phiên bản…</string>
+    <string name="keepass_conflict_merging">Đang hợp nhất và đồng bộ…</string>
+    <string name="keepass_conflict_refresh">Làm mới so sánh</string>
+    <string name="keepass_conflict_merge_help">Thay đổi ở các mục hoặc trường khác nhau sẽ được kết hợp. Hãy chọn một phiên bản khi cùng một trường thay đổi ở cả hai bên.</string>
+    <string name="keepass_conflict_auto_merge">Sẵn sàng hợp nhất</string>
+    <string name="keepass_conflict_other_options">Tùy chọn khác</string>
+    <string name="keepass_conflict_recovery_hint">Các phiên bản gốc được giữ trong bản sao khôi phục cơ sở dữ liệu.</string>
+    <string name="keepass_conflict_keep_local_confirm">Thay thế cơ sở dữ liệu từ xa bằng toàn bộ phiên bản cục bộ? Thay đổi chỉ có ở từ xa sẽ được giữ trong bản sao khôi phục.</string>
+    <string name="keepass_conflict_use_remote_confirm">Thay thế cơ sở dữ liệu cục bộ bằng toàn bộ phiên bản từ xa? Thay đổi chỉ có ở cục bộ sẽ được giữ trong bản sao khôi phục.</string>
+    <string name="keepass_conflict_selected_count">Đã chọn %1$d/%2$d xung đột</string>
+    <string name="keepass_conflict_no_changes">Hai phiên bản chứa cùng dữ liệu.</string>
+    <string name="keepass_conflict_protected_value">Giá trị được bảo vệ</string>
+    <string name="keepass_conflict_properties_value">Thuộc tính từ phiên bản này</string>
+    <string name="keepass_conflict_kind_entry">Mục</string>
+    <string name="keepass_conflict_kind_group">Thư mục</string>
+    <string name="keepass_conflict_kind_metadata">Cài đặt cơ sở dữ liệu</string>
+    <string name="keepass_conflict_kind_deleted_object">Bản ghi xóa</string>
+    <string name="keepass_conflict_kind_binary">Tệp đính kèm</string>
+    <string name="keepass_conflict_kind_icon">Biểu tượng tùy chỉnh</string>
+    <string name="keepass_conflict_change_added">Đã thêm</string>
+    <string name="keepass_conflict_change_modified">Đã thay đổi</string>
+    <string name="keepass_conflict_change_moved">Đã di chuyển</string>
+    <string name="keepass_conflict_change_deleted">Đã xóa</string>
+    <string name="keepass_conflict_change_unchanged">Không thay đổi</string>
+</resources>

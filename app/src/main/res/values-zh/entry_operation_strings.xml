@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden 仓库不可用</string>
+    <string name="entry_message_unsupported_type">此操作不支持该项目类型</string>
+    <string name="entry_message_ownership_conflict">项目来源冲突，请先解决后再移到 Monica 本地</string>
+    <string name="entry_message_local_copy_failed">无法创建 Monica 本地副本</string>
+    <string name="entry_message_attachments_incomplete">附件未能全部复制</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Bitwarden 项目缺少同步标识</string>
+    <string name="entry_message_keepass_source_delete_failed">无法删除 KeePass 源项目</string>
+    <string name="entry_message_source_delete_failed">无法删除源项目</string>
+    <string name="entry_message_storage_save_failed">无法保存到所选位置</string>
+    <string name="entry_message_from_password">来自密码：%1$s</string>
+    <string name="entry_message_passkey_android_required">完整的 Passkey 功能需要 Android 14 或更高版本。当前设备：%1$s</string>
+    <string name="entry_message_passkey_save_failed">保存 Passkey 失败：%1$s</string>
+    <string name="entry_message_passkey_missing">Passkey 不存在</string>
+    <string name="entry_message_passkey_update_failed">更新 Passkey 失败：%1$s</string>
+    <string name="entry_message_passkey_ownership_failed">更新 MDBX Passkey 归属失败：%1$s</string>
+    <string name="entry_message_passkey_binding_failed">更新绑定失败：%1$s</string>
+    <string name="entry_message_passkey_usage_failed">更新使用记录失败：%1$s</string>
+    <string name="entry_message_passkey_delete_failed">删除 Passkey 失败：%1$s</string>
+    <string name="entry_message_category_path_invalid">分类路径无效</string>
+    <string name="entry_message_category_move_into_self">不能移到自身或子分类下</string>
+    <string name="entry_message_category_missing">分类不存在</string>
+    <string name="entry_message_category_exists">目标位置已存在同名分类</string>
+    <string name="entry_message_category_move_conflict">移动后会与现有分类冲突</string>
+    <string name="entry_message_category_name_required">分类名称不能为空</string>
+    <string name="entry_message_category_name_separator">分类名称不能包含 /</string>
+    <string name="entry_message_category_rename_conflict">重命名后会与现有分类冲突</string>
+    <string name="entry_message_saved">已保存</string>
+</resources>

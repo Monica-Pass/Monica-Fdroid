@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">검토 및 병합</string>
+    <string name="keepass_conflict_banner_title">변경 사항을 병합해야 합니다</string>
+    <string name="keepass_conflict_banner_summary">동기화를 계속하려면 두 버전을 검토하세요.</string>
+    <string name="keepass_conflict_merge_sync">병합 및 동기화</string>
+    <string name="keepass_conflict_comparing">두 버전 비교 중…</string>
+    <string name="keepass_conflict_merging">병합 및 동기화 중…</string>
+    <string name="keepass_conflict_refresh">비교 새로고침</string>
+    <string name="keepass_conflict_merge_help">서로 다른 항목이나 필드의 변경 사항은 함께 병합됩니다. 양쪽에서 같은 필드를 변경한 경우 사용할 버전을 선택하세요.</string>
+    <string name="keepass_conflict_auto_merge">병합 준비 완료</string>
+    <string name="keepass_conflict_other_options">기타 옵션</string>
+    <string name="keepass_conflict_recovery_hint">원래 버전은 데이터베이스 복구 사본에 보관됩니다.</string>
+    <string name="keepass_conflict_keep_local_confirm">원격 데이터베이스 전체를 로컬 버전으로 바꾸시겠습니까? 원격에만 있는 변경 사항은 복구 사본에 보관됩니다.</string>
+    <string name="keepass_conflict_use_remote_confirm">로컬 데이터베이스 전체를 원격 버전으로 바꾸시겠습니까? 로컬에만 있는 변경 사항은 복구 사본에 보관됩니다.</string>
+    <string name="keepass_conflict_selected_count">충돌 %2$d개 중 %1$d개 선택됨</string>
+    <string name="keepass_conflict_no_changes">두 버전의 데이터가 동일합니다.</string>
+    <string name="keepass_conflict_protected_value">보호된 값</string>
+    <string name="keepass_conflict_properties_value">이 버전의 속성</string>
+    <string name="keepass_conflict_kind_entry">항목</string>
+    <string name="keepass_conflict_kind_group">폴더</string>
+    <string name="keepass_conflict_kind_metadata">데이터베이스 설정</string>
+    <string name="keepass_conflict_kind_deleted_object">삭제 기록</string>
+    <string name="keepass_conflict_kind_binary">첨부 파일</string>
+    <string name="keepass_conflict_kind_icon">사용자 지정 아이콘</string>
+    <string name="keepass_conflict_change_added">추가됨</string>
+    <string name="keepass_conflict_change_modified">변경됨</string>
+    <string name="keepass_conflict_change_moved">이동됨</string>
+    <string name="keepass_conflict_change_deleted">삭제됨</string>
+    <string name="keepass_conflict_change_unchanged">변경 없음</string>
+</resources>

@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -124,7 +126,7 @@ fun MdbxOneDriveCreateScreen(
                     entries = listing.entries
                 },
                 onFailure = { error ->
-                    authError = error.toOneDriveUserMessage(strings.get(R.string.mdbx_ui_onedrive_folder_error))
+                    authError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), strings.get(R.string.mdbx_ui_onedrive_folder_error))
                 }
             )
             isLoadingEntries = false
@@ -165,7 +167,7 @@ fun MdbxOneDriveCreateScreen(
                     loadDirectory("")
                 }
                 .onFailure { error ->
-                    authError = error.toOneDriveUserMessage(strings.get(R.string.keepass_onedrive_sign_in_failed))
+                    authError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), strings.get(R.string.keepass_onedrive_sign_in_failed))
                 }
             isConnecting = false
         }
@@ -173,20 +175,69 @@ fun MdbxOneDriveCreateScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.mdbx_create_vault_title)) },
+            MdbxTopAppBar(
+                title = { Text(stringResource(R.string.mdbx_create_vault_title), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
+        },
+        bottomBar = {
+            MdbxFormActionBar {
+                // === Submit Button ===
+                val isFormValid = session != null &&
+                    vaultName.isNotBlank() &&
+                    (!passwordRequired || (
+                        masterPassword.isNotBlank() &&
+                            java.text.Normalizer.normalize(masterPassword, java.text.Normalizer.Form.NFC) ==
+                                java.text.Normalizer.normalize(confirmPassword, java.text.Normalizer.Form.NFC)
+                        )) &&
+                    (!keyFileRequired || keyFile != null) &&
+                    operationState !is MdbxViewModel.OperationState.Loading
+
+                Button(
+                    onClick = {
+                        session?.let { s ->
+                            submitted = true
+                            viewModel.createOneDriveVault(
+                                name = vaultName,
+                                masterPassword = masterPassword,
+                                unlockMethod = unlockMethod,
+                                keyFile = keyFile,
+                                tigaMode = selectedTigaMode,
+                                accountId = s.accountId,
+                                accountLabel = s.displayName.ifBlank { s.username },
+                                directoryPath = currentPath.ifBlank { null },
+                                description = null,
+                                engineType = selectedEngine
+                            )
+                        }
+                    },
+                    enabled = isFormValid,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                ) {
+                    if (operationState is MdbxViewModel.OperationState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.mdbx_creating_vault))
+                    } else {
+                        Text(strings.get(R.string.mdbx_ui_onedrive_create_vault))
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
@@ -215,7 +266,7 @@ fun MdbxOneDriveCreateScreen(
                 entries = entries.filter { it.isDirectory },
                 emptyMessage = stringResource(R.string.onedrive_backup_no_folders),
                 onNavigateUp = {
-                    loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath))
+                    loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath, strings = AppLocaleStringResolver(context)))
                 },
                 onRefresh = { loadDirectory(currentPath) },
                 entrySupportingText = { entry -> entry.path.toOneDriveDisplayPath() },
@@ -248,9 +299,9 @@ fun MdbxOneDriveCreateScreen(
                         onTigaModeChange = { selectedTigaMode = it }
                     )
 
-                    Card(
+                    MdbxCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -288,51 +339,6 @@ fun MdbxOneDriveCreateScreen(
                             }
                         }
                     }
-                }
-            }
-
-            // === Submit Button ===
-            val isFormValid = session != null &&
-                vaultName.isNotBlank() &&
-                (!passwordRequired || (
-                    masterPassword.isNotBlank() &&
-                        java.text.Normalizer.normalize(masterPassword, java.text.Normalizer.Form.NFC) ==
-                            java.text.Normalizer.normalize(confirmPassword, java.text.Normalizer.Form.NFC)
-                    )) &&
-                (!keyFileRequired || keyFile != null) &&
-                operationState !is MdbxViewModel.OperationState.Loading
-
-            Button(
-                onClick = {
-                    session?.let { s ->
-                        submitted = true
-                        viewModel.createOneDriveVault(
-                            name = vaultName,
-                            masterPassword = masterPassword,
-                            unlockMethod = unlockMethod,
-                            keyFile = keyFile,
-                            tigaMode = selectedTigaMode,
-                            accountId = s.accountId,
-                            accountLabel = s.displayName.ifBlank { s.username },
-                            directoryPath = currentPath.ifBlank { null },
-                            description = null,
-                            engineType = selectedEngine
-                        )
-                    }
-                },
-                enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                if (operationState is MdbxViewModel.OperationState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mdbx_creating_vault))
-                } else {
-                    Text(strings.get(R.string.mdbx_ui_onedrive_create_vault))
                 }
             }
 

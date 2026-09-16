@@ -24,6 +24,14 @@ class MdbxRepositoryRouter(
     override suspend fun readStoredAttachments(databaseId: Long): List<MdbxStoredAttachment> =
         repositoryFor(databaseId).readStoredAttachments(databaseId)
 
+    override suspend fun upsertImportBatch(
+        databaseId: Long,
+        passwords: List<PasswordEntry>,
+        secureItems: List<SecureItem>,
+        passkeys: List<PasskeyEntry>,
+        onCommitted: (Set<String>) -> Unit,
+    ) = repositoryFor(databaseId).upsertImportBatch(databaseId, passwords, secureItems, passkeys, onCommitted)
+
     override suspend fun createFolder(
         databaseId: Long,
         name: String,

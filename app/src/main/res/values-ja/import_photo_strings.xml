@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">エクスポートしたバックアップファイルが空です</string>
+    <string name="export_message_empty_zip">ZIP バックアップに内容がありません</string>
+    <string name="export_message_open_failed">エクスポート先を開けません</string>
+    <string name="export_message_incomplete">エクスポートが不完全です: %1$d/%2$d バイト</string>
+    <string name="export_message_invalid_encrypted">書き込んだバックアップの暗号化形式が無効です</string>
+    <string name="export_message_verify_failed">エクスポートしたファイルを検証できませんでした</string>
+    <string name="export_message_backup_summary">バックアップをエクスポートしました: パスワード %1$d 件、画像 %2$d 枚</string>
+    <string name="import_message_aegis_unencrypted">このインポートには暗号化されていない Aegis JSON エクスポートが必要です</string>
+    <string name="import_message_aegis_missing">Aegis ファイルが無効です: %1$s がありません</string>
+    <string name="import_message_aegis_empty_slots">Aegis ファイルが無効です: slots が空です</string>
+    <string name="import_message_aegis_slot_type">未対応の Aegis スロットの種類: %1$s</string>
+    <string name="import_message_aegis_no_totp">Aegis ファイルに有効な TOTP エントリーが見つかりません</string>
+    <string name="import_message_aegis_failed">Aegis ファイルをインポートできませんでした: %1$s</string>
+    <string name="import_message_key_length">復号したキーの長さが無効です</string>
+    <string name="import_message_steam_missing">Steam Guard データが無効です: %1$s がありません</string>
+    <string name="import_message_steam_device_id">デバイス ID が無効です。必要な形式: android:xxxx</string>
+    <string name="import_message_steam_secret">Steam の shared_secret 形式が無効です</string>
+    <string name="import_message_steam_exists">この Steam Guard 認証器はすでに存在します</string>
+    <string name="export_message_empty_mafile">エクスポートした maFile が空です</string>
+    <string name="crypto_message_encrypt_failed">暗号化に失敗しました: %1$s</string>
+    <string name="crypto_message_decrypt_failed">復号に失敗しました: %1$s</string>
+    <string name="crypto_message_file_too_small">暗号化ファイルが小さすぎます。破損している可能性があります</string>
+    <string name="crypto_message_invalid_file">暗号化ファイルの形式が無効です</string>
+    <string name="crypto_message_password_or_corrupt">パスワードが正しくないか、暗号化データが破損しています</string>
+    <string name="crypto_message_invalid_text">暗号化テキストの形式が無効です</string>
+    <string name="photo_message_camera_failed">カメラを開けませんでした: %1$s</string>
+    <string name="photo_message_gallery_missing">利用可能なギャラリーアプリがありません</string>
+    <string name="photo_message_gallery_failed">ギャラリーを開けませんでした: %1$s</string>
+    <string name="photo_message_data_failed">返された画像を読み取れませんでした: %1$s</string>
+    <string name="photo_message_file_missing">写真ファイルが空か、見つかりません</string>
+    <string name="photo_message_not_selected">画像が選択されていません</string>
+</resources>

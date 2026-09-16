@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="entry_type_api_token">Jeton API</string>
+    <string name="api_token_no_database">Ouvrez une base MDBX compatible avec les jetons natifs.</string>
+    <string name="api_token_load_error">Impossible de lire ou enregistrer le jeton. Rouvrez ou synchronisez la base, puis réessayez.</string>
+    <string name="api_token_reload">Réessayer</string>
+    <string name="api_token_root_collection">Racine de la base</string>
+    <string name="api_token_database">Base</string>
+    <string name="api_token_collection">Dossier</string>
+    <string name="api_token_complete_payload">Données complètes (JSON)</string>
+    <string name="api_token_empty">Aucun jeton API dans cette base.</string>
+    <string name="api_token_native_hint">Jeton MDBX natif, compatible avec Monica CLI.</string>
+    <string name="api_token_toggle_visibility">Afficher ou masquer</string>
+    <string name="api_token_import_json">Importer du JSON</string>
+    <string name="api_token_parse">Importer</string>
+    <string name="api_token_entry_id">ID du jeton</string>
+    <string name="api_token_collection_id">ID du dossier</string>
+    <string name="api_token_api_base">Adresse API</string>
+    <string name="api_token_note">Note</string>
+    <string name="api_token_schema">Version du format</string>
+    <string name="api_token_add">Ajouter un jeton</string>
+    <string name="api_token_edit">Modifier le jeton</string>
+    <string name="api_token_credentials">Identifiants</string>
+    <string name="api_token_manage_databases">Gérer les bases</string>
+    <string name="api_token_folder_error">Impossible de charger les dossiers. Rouvrez le sélecteur.</string>
+    <string name="api_token_storage">Emplacement</string>
+    <string name="api_token_advanced">Plus d’informations</string>
+    <string name="api_token_unknown_schema">Ce jeton utilise un autre format. Ses données restent consultables et copiables ci-dessous.</string>
+    <string name="api_token_discard_title">Abandonner les modifications ?</string>
+    <string name="api_token_discard_message">Les modifications non enregistrées seront perdues.</string>
+    <string name="api_token_discard">Abandonner</string>
+    <string name="api_token_name_hint">1 à 64 lettres, chiffres, - ou _</string>
+    <string name="api_token_name">Nom du jeton</string>
+    <string name="api_token_provider">Fournisseur</string>
+    <string name="api_token_delete_confirmation">Supprimer ce jeton de la base ?</string>
+    <string name="api_token_validation">Indiquez le fournisseur et le jeton. L’adresse API est facultative et doit être une URL HTTP ou HTTPS.</string>
+    <string name="api_token_fields_limit">128 champs maximum. Notes et champs limités à 64 Ko au total.</string>
+</resources>

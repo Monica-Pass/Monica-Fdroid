@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">此密库唯可读，欲修之，请先于设中解其限。</string>
+    <string name="keepass_error_write_permission">未得 KDBX 写入之权，请于密库之设重授其权，再存或删。</string>
+    <string name="keepass_error_memory">KDF 之参逾此设备内存之力，请减内存用量或并行之数。</string>
+    <string name="keepass_error_credentials">密库之钥或钥文件有误</string>
+    <string name="keepass_error_legacy">旧版 .kdb（KeePass 1.x）密库尚不可用。请先以 KeePassDX 或 KeePassXC 另存为 .kdbx，再纳之。</string>
+    <string name="keepass_error_format">密库之式不识，或文件已损</string>
+    <string name="keepass_error_io">KeePass 文件未能读写</string>
+    <string name="keepass_error_operation">KeePass 之事未成</string>
+    <string name="onedrive_error_redirect">旧版 Monica Steam 占 OneDrive 登录之回调，请更 Monica Steam 再试。密库文件无损。</string>
+    <string name="onedrive_error_power">OneDrive 暂未能续登录之期。请罢电池优化，或亮屏重启 Monica，再试之。</string>
+    <string name="onedrive_error_operation">OneDrive 之事未成</string>
+    <string name="keepass_error_not_remote">此密库无远端之源</string>
+    <string name="keepass_error_remote_source_missing">未见远端之源</string>
+    <string name="keepass_error_working_copy_missing">未见本地工作副本</string>
+    <string name="keepass_sync_pulled">已取远端新本</string>
+    <string name="keepass_sync_both_changed">远端文件与本地副本皆有更易，请先解其争，再同步。</string>
+    <string name="keepass_sync_up_to_date">远端密库已为新本</string>
+    <string name="keepass_sync_remote_changed">远端文件已更，请重同步而后续。</string>
+    <string name="keepass_sync_complete">远端同步已成</string>
+    <string name="keepass_error_group_name_required">请入组名</string>
+    <string name="keepass_error_group_path">分组之径无效</string>
+    <string name="keepass_error_group_missing">未见分组：%1$s</string>
+    <string name="keepass_error_group_child">分组不可移入自身或其子组</string>
+    <string name="keepass_error_group_uuid">目标密库已有同 UUID 之异组：%1$s</string>
+    <string name="keepass_error_select_folder">请择至少一卷夹</string>
+    <string name="keepass_group_unnamed">未名之组</string>
+    <string name="keepass_error_parent_group">未见上级分组：%1$s</string>
+    <string name="keepass_error_group_exists">此处已有同名之组</string>
+    <string name="keepass_error_no_credentials">无密库信物可用</string>
+    <string name="keepass_error_source_type">不识此远端来源之类：%1$s</string>
+    <string name="keepass_error_upload_verification">远端验而不合：上传之数有异（%1$d/%2$d 字节）</string>
+    <string name="storage_error_invalid_path">文件之径无效</string>
+    <string name="storage_error_create_directory">密库目录未能建</string>
+    <string name="storage_error_read_database">密库文件未能读</string>
+    <string name="storage_error_open_database">密库文件未能启</string>
+    <string name="storage_error_recovery_copy">KeePass 恢复副本未能建</string>
+    <string name="storage_error_verify_database">密库文件未能验</string>
+    <string name="storage_error_write_verification">外部 KeePass 文件写毕，验而不合</string>
+    <string name="storage_error_rollback_verification">外部 KeePass 文件回退后，验而不合</string>
+    <string name="storage_error_write_database">密库文件未能写</string>
+    <string name="keepass_error_conflict_cache_missing">缺解争所需之缓存副本</string>
+    <string name="onedrive_error_session_expired">OneDrive 名籍之期已尽，请重登。</string>
+</resources>

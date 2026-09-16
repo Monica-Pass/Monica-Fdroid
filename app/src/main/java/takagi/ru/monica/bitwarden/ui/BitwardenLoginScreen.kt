@@ -1,5 +1,9 @@
 package takagi.ru.monica.bitwarden.ui
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
+import androidx.annotation.StringRes
+import androidx.compose.ui.platform.LocalContext
 import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -39,10 +43,10 @@ import takagi.ru.monica.ui.components.rememberBringIntoViewOnFocusModifier
 import takagi.ru.monica.viewmodel.ParsedTotpItem
 import takagi.ru.monica.util.TotpGenerator
 
-private enum class BitwardenServerPreset(val label: String) {
-    US("美国官方"),
-    EU("欧洲官方"),
-    SELF_HOSTED("自托管")
+private enum class BitwardenServerPreset(@StringRes val label: Int) {
+    US(R.string.legacy_ui_bitwarden_server_us),
+    EU(R.string.legacy_ui_bitwarden_server_eu),
+    SELF_HOSTED(R.string.legacy_ui_bitwarden_server_self_hosted)
 }
 
 /**
@@ -63,6 +67,7 @@ fun BitwardenLoginScreen(
 ) {
     val loginState by viewModel.loginState.collectAsState()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
     
     // 表单状态
     var serverUrl by rememberSaveable { mutableStateOf("") }
@@ -92,7 +97,7 @@ fun BitwardenLoginScreen(
     var hasAutoRequestedEmailTwoFactor by remember { mutableStateOf(false) }
     var showCaptchaDialog by remember { mutableStateOf(false) }
     var captchaResponse by remember { mutableStateOf("") }
-    var captchaMessage by remember { mutableStateOf("需要验证码，请输入 Captcha response") }
+    var captchaMessage by remember { mutableStateOf(context.getString(R.string.legacy_ui_captcha_needed)) }
     var captchaForTwoFactor by remember { mutableStateOf(false) }
     var captchaSiteKey by remember { mutableStateOf<String?>(null) }
     var showCaptchaWebView by remember { mutableStateOf(false) }
@@ -180,7 +185,7 @@ fun BitwardenLoginScreen(
             !hasAutoRequestedEmailTwoFactor
         ) {
             hasAutoRequestedEmailTwoFactor = true
-            twoFactorStatusMessage = "正在请求发送邮箱验证码..."
+            twoFactorStatusMessage = context.getString(R.string.legacy_ui_email_code_requesting)
             viewModel.sendTwoFactorEmailLogin()
         }
     }
@@ -188,10 +193,10 @@ fun BitwardenLoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("登录 Bitwarden") },
+                title = { Text(stringResource(R.string.legacy_ui_bitwarden_login)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -224,12 +229,12 @@ fun BitwardenLoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "连接到 Bitwarden",
+                    text = stringResource(R.string.legacy_ui_bitwarden_connect),
                     style = MaterialTheme.typography.headlineSmall
                 )
                 
                 Text(
-                    text = "登录后可同步您的 Bitwarden 密码库",
+                    text = stringResource(R.string.legacy_ui_bitwarden_connect_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -242,7 +247,7 @@ fun BitwardenLoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it.trim() },
-                    label = { Text("邮箱地址") },
+                    label = { Text(stringResource(R.string.legacy_ui_email_address)) },
                     leadingIcon = {
                         Icon(Icons.Outlined.Email, contentDescription = null)
                     },
@@ -263,7 +268,7 @@ fun BitwardenLoginScreen(
                 OutlinedTextField(
                     value = masterPassword,
                     onValueChange = { masterPassword = it },
-                    label = { Text("主密码") },
+                    label = { Text(stringResource(R.string.master_password)) },
                     leadingIcon = {
                         Icon(Icons.Outlined.Lock, contentDescription = null)
                     },
@@ -271,7 +276,7 @@ fun BitwardenLoginScreen(
                         IconButton(onClick = { showPassword = !showPassword }) {
                             Icon(
                                 if (showPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = if (showPassword) "隐藏密码" else "显示密码"
+                                contentDescription = if (showPassword) stringResource(R.string.hide_password) else stringResource(R.string.show_password)
                             )
                         }
                     },
@@ -300,10 +305,10 @@ fun BitwardenLoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        value = selectedServerPreset.label,
+                        value = stringResource(selectedServerPreset.label),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("服务器") },
+                        label = { Text(stringResource(R.string.legacy_ui_server)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = serverMenuExpanded) },
                         modifier = Modifier
                             .menuAnchor()
@@ -315,7 +320,7 @@ fun BitwardenLoginScreen(
                     ) {
                         BitwardenServerPreset.entries.forEach { preset ->
                             DropdownMenuItem(
-                                text = { Text(preset.label) },
+                                text = { Text(stringResource(preset.label)) },
                                 onClick = {
                                     selectedServerPresetName = preset.name
                                     serverMenuExpanded = false
@@ -334,13 +339,13 @@ fun BitwardenLoginScreen(
                 ) {
                     Icon(Icons.Outlined.Security, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (showAdvancedTls) "收起证书与 mTLS 设置" else "证书与 mTLS 设置")
+                    Text(if (showAdvancedTls) stringResource(R.string.legacy_ui_tls_collapse) else stringResource(R.string.legacy_ui_tls_settings))
                 }
 
                 if (selectedServerPreset != BitwardenServerPreset.SELF_HOSTED) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "证书设置入口已开启，切换到“自托管”后可配置。",
+                        text = stringResource(R.string.legacy_ui_tls_self_hosted_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth()
@@ -357,7 +362,7 @@ fun BitwardenLoginScreen(
                         OutlinedTextField(
                             value = serverUrl,
                             onValueChange = { serverUrl = it.trim() },
-                            label = { Text("自托管服务器 URL") },
+                            label = { Text(stringResource(R.string.legacy_ui_self_hosted_url)) },
                             placeholder = { Text("https://vault.example.com") },
                             leadingIcon = {
                                 Icon(Icons.Outlined.Cloud, contentDescription = null)
@@ -387,12 +392,12 @@ fun BitwardenLoginScreen(
                                         .padding(12.dp)
                                 ) {
                                     Text(
-                                        text = "高级 TLS（可选）",
+                                        text = stringResource(R.string.legacy_ui_tls_advanced),
                                         style = MaterialTheme.typography.titleSmall
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "默认留空即使用系统证书链，不会改变原有登录行为。",
+                                        text = stringResource(R.string.legacy_ui_tls_default_hint),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -401,7 +406,7 @@ fun BitwardenLoginScreen(
                                     OutlinedTextField(
                                         value = tlsCertificateAlias,
                                         onValueChange = { tlsCertificateAlias = it },
-                                        label = { Text("系统证书别名（可选）") },
+                                        label = { Text(stringResource(R.string.legacy_ui_tls_certificate_alias)) },
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -411,7 +416,7 @@ fun BitwardenLoginScreen(
                                     OutlinedTextField(
                                         value = tlsCaCertificatePem,
                                         onValueChange = { tlsCaCertificatePem = it },
-                                        label = { Text("自签 CA 证书 PEM（可选）") },
+                                        label = { Text(stringResource(R.string.legacy_ui_tls_ca_pem)) },
                                         placeholder = { Text("-----BEGIN CERTIFICATE-----") },
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -428,7 +433,7 @@ fun BitwardenLoginScreen(
                                             checked = tlsMtlsEnabled,
                                             onCheckedChange = { tlsMtlsEnabled = it }
                                         )
-                                        Text("启用 mTLS（客户端证书）")
+                                        Text(stringResource(R.string.legacy_ui_tls_enable_mtls))
                                     }
 
                                     AnimatedVisibility(visible = tlsMtlsEnabled) {
@@ -436,7 +441,7 @@ fun BitwardenLoginScreen(
                                             OutlinedTextField(
                                                 value = tlsClientCertPkcs12Base64,
                                                 onValueChange = { tlsClientCertPkcs12Base64 = it },
-                                                label = { Text("客户端证书 PKCS#12(Base64)") },
+                                                label = { Text(stringResource(R.string.legacy_ui_tls_client_certificate)) },
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .heightIn(min = 96.dp)
@@ -447,12 +452,12 @@ fun BitwardenLoginScreen(
                                             OutlinedTextField(
                                                 value = tlsClientCertPassword,
                                                 onValueChange = { tlsClientCertPassword = it },
-                                                label = { Text("客户端证书密码（可选）") },
+                                                label = { Text(stringResource(R.string.legacy_ui_tls_client_password)) },
                                                 trailingIcon = {
                                                     IconButton(onClick = { showClientCertPassword = !showClientCertPassword }) {
                                                         Icon(
                                                             if (showClientCertPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                                            contentDescription = if (showClientCertPassword) "隐藏密码" else "显示密码"
+                                                            contentDescription = if (showClientCertPassword) stringResource(R.string.hide_password) else stringResource(R.string.show_password)
                                                         )
                                                     }
                                                 },
@@ -497,7 +502,7 @@ fun BitwardenLoginScreen(
                     } else {
                         Icon(Icons.Default.Login, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("登录")
+                        Text(stringResource(R.string.legacy_ui_login))
                     }
                 }
                 
@@ -550,12 +555,12 @@ fun BitwardenLoginScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "安全说明",
+                                text = stringResource(R.string.legacy_ui_security_explanation),
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "您的主密码不会被存储。Monica 使用与 Bitwarden 相同的加密标准来保护您的数据。",
+                                text = stringResource(R.string.legacy_ui_bitwarden_security_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -584,7 +589,7 @@ fun BitwardenLoginScreen(
             } else null,
             statusMessage = twoFactorStatusMessage,
             onSendEmailCode = {
-                twoFactorStatusMessage = "正在请求发送邮箱验证码..."
+                twoFactorStatusMessage = context.getString(R.string.legacy_ui_email_code_requesting)
                 viewModel.sendTwoFactorEmailLogin()
             },
             onConfirm = {
@@ -612,7 +617,7 @@ fun BitwardenLoginScreen(
                     tint = MaterialTheme.colorScheme.primary
                 )
             },
-            title = { Text("需要 Captcha 验证") },
+            title = { Text(stringResource(R.string.legacy_ui_captcha_required_title)) },
             text = {
                 Column {
                     Text(
@@ -624,14 +629,14 @@ fun BitwardenLoginScreen(
                         TextButton(
                             onClick = { showCaptchaWebView = true }
                         ) {
-                            Text("自动完成 Captcha（实验）")
+                            Text(stringResource(R.string.legacy_ui_captcha_auto))
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = captchaResponse,
                         onValueChange = { captchaResponse = it },
-                        label = { Text("Captcha response") },
+                        label = { Text(stringResource(R.string.legacy_ui_captcha_response)) },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Text,
                             imeAction = ImeAction.Done
@@ -667,7 +672,7 @@ fun BitwardenLoginScreen(
                     },
                     enabled = captchaResponse.isNotBlank()
                 ) {
-                    Text("提交")
+                    Text(stringResource(R.string.legacy_ui_submit))
                 }
             },
             dismissButton = {
@@ -677,7 +682,7 @@ fun BitwardenLoginScreen(
                         captchaResponse = ""
                     }
                 ) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -700,7 +705,7 @@ fun BitwardenLoginScreen(
                 }
             },
             onError = { message ->
-                captchaMessage = "自动 Captcha 失败：$message，请改为手动输入。"
+                captchaMessage = context.getString(R.string.legacy_ui_captcha_auto_failed, message)
                 showCaptchaWebView = false
             },
             onDismiss = { showCaptchaWebView = false }
@@ -710,11 +715,11 @@ fun BitwardenLoginScreen(
     if (showTotpPicker) {
         AlertDialog(
             onDismissRequest = { showTotpPicker = false },
-            title = { Text("从 Monica 选择验证码") },
+            title = { Text(stringResource(R.string.legacy_ui_totp_from_monica)) },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     if (totpSuggestions.isEmpty()) {
-                        Text("Monica 中没有可用的验证器项目。")
+                        Text(stringResource(R.string.legacy_ui_totp_from_monica_empty))
                     } else {
                         totpSuggestions.forEach { parsed ->
                             val code = remember(parsed.item.id) {
@@ -743,7 +748,7 @@ fun BitwardenLoginScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showTotpPicker = false }) { Text("取消") }
+                TextButton(onClick = { showTotpPicker = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -760,7 +765,7 @@ private fun CaptchaWebViewDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Captcha 验证") },
+        title = { Text(stringResource(R.string.legacy_ui_captcha_verification)) },
         text = {
             Column(
                 modifier = Modifier
@@ -777,13 +782,13 @@ private fun CaptchaWebViewDialog(
                                 if (value.isNotBlank()) {
                                     onToken(value)
                                 } else {
-                                    onError("empty token")
+                                    onError(context.getString(R.string.legacy_ui_captcha_empty_token))
                                 }
                             }
 
                             @JavascriptInterface
                             fun onError(error: String?) {
-                                onError(error ?: "unknown error")
+                                onError(error ?: context.getString(R.string.legacy_ui_captcha_unknown_error))
                             }
                         }
 
@@ -833,7 +838,7 @@ private fun CaptchaWebViewDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.close))
             }
         }
     )
@@ -865,7 +870,7 @@ fun TwoFactorDialog(
             )
         },
         title = {
-            Text("两步验证")
+            Text(stringResource(R.string.legacy_ui_two_factor))
         },
         text = {
             Column {
@@ -882,7 +887,7 @@ fun TwoFactorDialog(
                     ) {
                         Icon(Icons.Outlined.Email, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("发送/重发邮箱验证码")
+                        Text(stringResource(R.string.legacy_ui_email_code_send))
                     }
                 }
 
@@ -900,7 +905,7 @@ fun TwoFactorDialog(
                 // 验证方式选择（如果有多种）
                 if (availableMethods.size > 1) {
                     Text(
-                        text = "验证方式",
+                        text = stringResource(R.string.legacy_ui_verification_method),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -957,7 +962,7 @@ fun TwoFactorDialog(
                     ) {
                         Icon(Icons.Outlined.Key, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("从 Monica 选择验证码")
+                        Text(stringResource(R.string.legacy_ui_totp_from_monica))
                     }
                 }
             }
@@ -967,12 +972,12 @@ fun TwoFactorDialog(
                 onClick = onConfirm,
                 enabled = code.isNotBlank()
             ) {
-                Text("验证")
+                Text(stringResource(R.string.legacy_ui_verify))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -981,64 +986,69 @@ fun TwoFactorDialog(
 /**
  * 获取两步验证方式名称
  */
+@Composable
 private fun getTwoFactorMethodName(method: Int): String {
     return when (method) {
-        0 -> "验证器应用 (TOTP)"
-        1 -> "邮箱验证码"
+        0 -> stringResource(R.string.legacy_ui_two_factor_authenticator)
+        1 -> stringResource(R.string.legacy_ui_two_factor_email_code)
         2 -> "Duo Security"
         3 -> "YubiKey"
-        4 -> "U2F 安全密钥"
-        5 -> "记住设备"
-        6 -> "组织 Duo"
+        4 -> stringResource(R.string.legacy_ui_two_factor_u2f)
+        5 -> stringResource(R.string.legacy_ui_two_factor_remember_device)
+        6 -> stringResource(R.string.legacy_ui_two_factor_org_duo)
         7 -> "WebAuthn"
-        BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE -> "新设备邮箱验证"
-        else -> "未知方式"
+        BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE -> stringResource(R.string.legacy_ui_two_factor_new_device)
+        else -> stringResource(R.string.legacy_ui_two_factor_unknown)
     }
 }
 
+@Composable
 private fun getTwoFactorMethodHint(method: Int): String {
     return when (method) {
         BitwardenAuthService.TWO_FACTOR_EMAIL ->
-            "仅当你确实开启邮箱两步验证且已收到邮件时使用"
+            stringResource(R.string.legacy_ui_two_factor_email_hint)
         BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR ->
-            "来自 Google/Microsoft Authenticator 等 App 的动态码"
+            stringResource(R.string.legacy_ui_two_factor_totp_hint)
         BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE ->
-            "新设备验证邮件中的验证码"
+            stringResource(R.string.legacy_ui_two_factor_new_device_hint)
         else -> ""
     }
 }
 
+@Composable
 private fun getTwoFactorInputGuide(method: Int): String {
     return when (method) {
         BitwardenAuthService.TWO_FACTOR_EMAIL ->
-            "当前方式：邮箱验证码。若没有收到邮件，请切换到验证器动态码；标准邮箱两步验证不等同于新设备验证邮件。"
+            stringResource(R.string.legacy_ui_two_factor_email_guide)
         BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR ->
-            "当前方式：验证器动态码（TOTP）。请输入验证器 App 里当前 6 位动态码。"
+            stringResource(R.string.legacy_ui_two_factor_totp_guide)
         BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE ->
-            "当前方式：新设备邮箱验证。请输入邮箱中的新设备验证码。"
+            stringResource(R.string.legacy_ui_two_factor_new_device_guide)
         else ->
-            "请输入该验证方式对应的验证码完成登录。"
+            stringResource(R.string.legacy_ui_two_factor_generic_guide)
     }
 }
 
+@Composable
 private fun getTwoFactorFieldLabel(method: Int): String {
     return when (method) {
-        BitwardenAuthService.TWO_FACTOR_EMAIL -> "邮箱验证码"
-        BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR -> "验证器动态码 (TOTP)"
-        BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE -> "新设备验证码"
-        else -> "验证码"
+        BitwardenAuthService.TWO_FACTOR_EMAIL -> stringResource(R.string.legacy_ui_two_factor_email_code)
+        BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR -> stringResource(R.string.legacy_ui_two_factor_totp_label)
+        BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE -> stringResource(R.string.legacy_ui_two_factor_new_device_label)
+        else -> stringResource(R.string.legacy_ui_verification_code)
     }
 }
 
+@Composable
 private fun getTwoFactorFieldPlaceholder(method: Int): String {
     return when (method) {
         BitwardenAuthService.TWO_FACTOR_EMAIL ->
-            "输入邮箱收到的验证码"
+            stringResource(R.string.legacy_ui_two_factor_email_placeholder)
         BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR ->
-            "输入验证器 App 的 6 位动态码"
+            stringResource(R.string.legacy_ui_two_factor_totp_placeholder)
         BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE ->
-            "输入新设备验证邮件中的验证码"
-        else -> "输入验证码"
+            stringResource(R.string.legacy_ui_two_factor_new_device_placeholder)
+        else -> stringResource(R.string.legacy_ui_verification_code_placeholder)
     }
 }
 

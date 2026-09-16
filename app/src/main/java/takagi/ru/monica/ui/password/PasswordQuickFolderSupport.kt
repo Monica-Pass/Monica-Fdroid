@@ -199,6 +199,7 @@ internal fun buildQuickFolderShortcuts(
     when (val filter = currentFilter) {
         is CategoryFilter.KeePassDatabase -> {
             shortcuts += buildKeePassDatabaseQuickFolderShortcuts(
+                context = context,
                 databaseId = filter.databaseId,
                 keepassGroups = keepassGroupsForSelectedDb,
                 allPasswords = quickFolderSourceEntries,
@@ -226,6 +227,7 @@ internal fun buildQuickFolderShortcuts(
                 )
             }
             shortcuts += buildKeePassGroupQuickFolderShortcuts(
+                context = context,
                 databaseId = databaseId,
                 currentPath = currentPath,
                 keepassGroups = keepassGroupsForSelectedDb,
@@ -274,11 +276,11 @@ internal fun buildQuickFolderShortcuts(
             knownFolderIds.forEach { folderId ->
                 val folderName = syncedFolderNameById[folderId]
                     ?: linkedFolderNameByKey[folderId]
-                    ?: "Folder ${folderId.take(8)}"
+                    ?: context.getString(R.string.legacy_ui_folder_fallback, folderId.take(8))
                 shortcuts += PasswordQuickFolderShortcut(
                     key = "bitwarden_${vaultId}_${folderId}",
                     title = folderName,
-                    subtitle = "Bitwarden 文件夹",
+                    subtitle = context.getString(R.string.legacy_ui_bitwarden_folder),
                     isBack = false,
                     targetFilter = CategoryFilter.BitwardenFolderFilter(folderId = folderId, vaultId = vaultId),
                     passwordCount = folderCountById[folderId] ?: 0
@@ -304,6 +306,7 @@ internal fun buildQuickFolderShortcuts(
                 )
             }
             shortcuts += buildMdbxFolderQuickFolderShortcuts(
+                context = context,
                 databaseId = databaseId,
                 currentParentFolderId = currentFolderId,
                 folders = selectedMdbxFolders,
@@ -317,6 +320,7 @@ internal fun buildQuickFolderShortcuts(
 
     if (currentFilter is CategoryFilter.All && quickFolderCurrentPath == null) {
         appendRootDatabaseShortcuts(
+            context = context,
             shortcuts = shortcuts,
             currentFilter = currentFilter,
             quickFolderSourceEntries = quickFolderSourceEntries,
@@ -404,6 +408,7 @@ internal fun buildCategoryMenuFolderShortcuts(
     when (val filter = currentFilter) {
         is CategoryFilter.KeePassDatabase -> {
             shortcuts += buildKeePassDatabaseQuickFolderShortcuts(
+                context = context,
                 databaseId = filter.databaseId,
                 keepassGroups = keepassGroupsForSelectedDb,
                 allPasswords = menuSourceEntries,
@@ -428,6 +433,7 @@ internal fun buildCategoryMenuFolderShortcuts(
                 passwordCount = null
             )
             shortcuts += buildKeePassGroupQuickFolderShortcuts(
+                context = context,
                 databaseId = filter.databaseId,
                 currentPath = currentPath,
                 keepassGroups = keepassGroupsForSelectedDb,
@@ -492,11 +498,11 @@ internal fun buildCategoryMenuFolderShortcuts(
             knownFolderIds.forEach { folderId ->
                 val folderName = syncedFolderNameById[folderId]
                     ?: linkedFolderNameById[folderId]
-                    ?: "Folder ${folderId.take(8)}"
+                    ?: context.getString(R.string.legacy_ui_folder_fallback, folderId.take(8))
                 shortcuts += PasswordQuickFolderShortcut(
                     key = "menu_bitwarden_${vaultId}_${folderId}",
                     title = folderName,
-                    subtitle = "Bitwarden 文件夹",
+                    subtitle = context.getString(R.string.legacy_ui_bitwarden_folder),
                     isBack = false,
                     targetFilter = CategoryFilter.BitwardenFolderFilter(folderId = folderId, vaultId = vaultId),
                     passwordCount = folderCountById[folderId] ?: 0
@@ -522,6 +528,7 @@ internal fun buildCategoryMenuFolderShortcuts(
                 )
             }
             shortcuts += buildMdbxFolderQuickFolderShortcuts(
+                context = context,
                 databaseId = databaseId,
                 currentParentFolderId = currentFolderId,
                 folders = selectedMdbxFolders,
@@ -665,7 +672,7 @@ internal fun buildQuickFolderBreadcrumbs(
         }
 
         is CategoryFilter.MdbxFolderFilter -> {
-            val segments = buildMdbxFolderPathSegments(filter.folderId, selectedMdbxFolders)
+            val segments = buildMdbxFolderPathSegments(context, filter.folderId, selectedMdbxFolders)
             segments.forEachIndexed { index, segment ->
                 crumbs += PasswordQuickFolderBreadcrumb(
                     key = "mdbx_folder_${filter.databaseId}_${segment.folderId}",
@@ -683,6 +690,7 @@ internal fun buildQuickFolderBreadcrumbs(
 }
 
 private fun appendRootDatabaseShortcuts(
+    context: Context,
     shortcuts: MutableList<PasswordQuickFolderShortcut>,
     currentFilter: CategoryFilter,
     quickFolderSourceEntries: List<takagi.ru.monica.data.PasswordEntry>,
@@ -712,7 +720,7 @@ private fun appendRootDatabaseShortcuts(
         shortcuts += PasswordQuickFolderShortcut(
             key = "keepass_${databaseId}_${groupPath}",
             title = decodeKeePassPathForDisplay(groupPath),
-            subtitle = "KeePass 组 · $databaseName",
+            subtitle = context.getString(R.string.legacy_ui_keepass_group_database, databaseName),
             isBack = false,
             targetFilter = CategoryFilter.KeePassGroupFilter(databaseId, groupPath),
             passwordCount = count
@@ -749,11 +757,11 @@ private fun appendRootDatabaseShortcuts(
         val vaultId = key.first
         val folderId = key.second
         val vaultName = bitwardenVaults.find { it.id == vaultId }?.email ?: "Bitwarden"
-        val folderName = linkedFolderNameByKey[key] ?: "Folder ${folderId.take(8)}"
+        val folderName = linkedFolderNameByKey[key] ?: context.getString(R.string.legacy_ui_folder_fallback, folderId.take(8))
         shortcuts += PasswordQuickFolderShortcut(
             key = "bitwarden_${vaultId}_${folderId}",
             title = folderName,
-            subtitle = "Bitwarden 文件夹 · $vaultName",
+            subtitle = context.getString(R.string.legacy_ui_bitwarden_folder_vault, vaultName),
             isBack = false,
             targetFilter = CategoryFilter.BitwardenFolderFilter(folderId = folderId, vaultId = vaultId),
             passwordCount = folderCountByKey[key] ?: 0
@@ -762,6 +770,7 @@ private fun appendRootDatabaseShortcuts(
 }
 
 internal fun buildKeePassDatabaseQuickFolderShortcuts(
+    context: Context,
     databaseId: Long,
     keepassGroups: List<KeePassGroupInfo>,
     allPasswords: List<takagi.ru.monica.data.PasswordEntry>,
@@ -786,7 +795,7 @@ internal fun buildKeePassDatabaseQuickFolderShortcuts(
         PasswordQuickFolderShortcut(
             key = "keepass_${databaseId}_${childPath}",
             title = groupNameByPath[childPath]?.takeIf { it.isNotBlank() } ?: decodeKeePassPathForDisplay(childPath),
-            subtitle = "KeePass 组",
+            subtitle = context.getString(R.string.legacy_ui_keepass_group),
             isBack = false,
             targetFilter = CategoryFilter.KeePassGroupFilter(databaseId, childPath),
             passwordCount = subtreeCount
@@ -795,6 +804,7 @@ internal fun buildKeePassDatabaseQuickFolderShortcuts(
 }
 
 internal fun buildKeePassGroupQuickFolderShortcuts(
+    context: Context,
     databaseId: Long,
     currentPath: String,
     keepassGroups: List<KeePassGroupInfo>,
@@ -819,7 +829,7 @@ internal fun buildKeePassGroupQuickFolderShortcuts(
         PasswordQuickFolderShortcut(
             key = "keepass_${databaseId}_${childPath}",
             title = groupNameByPath[childPath]?.takeIf { it.isNotBlank() } ?: decodeKeePassPathForDisplay(childPath),
-            subtitle = "KeePass 子组",
+            subtitle = context.getString(R.string.legacy_ui_keepass_subgroup),
             isBack = false,
             targetFilter = CategoryFilter.KeePassGroupFilter(databaseId, childPath),
             passwordCount = subtreeCount
@@ -851,6 +861,7 @@ internal fun countKeePassSubtreePasswords(
 }
 
 internal fun buildMdbxFolderQuickFolderShortcuts(
+    context: Context,
     databaseId: Long,
     currentParentFolderId: String? = null,
     folders: List<MdbxStoredFolderEntry>,
@@ -869,8 +880,8 @@ internal fun buildMdbxFolderQuickFolderShortcuts(
         .map { folder ->
             PasswordQuickFolderShortcut(
                 key = "mdbx_${databaseId}_${folder.folderId}",
-                title = folder.name.ifBlank { "Folder ${folder.folderId.take(8)}" },
-                subtitle = "MDBX 文件夹",
+                title = folder.name.ifBlank { context.getString(R.string.legacy_ui_folder_fallback, folder.folderId.take(8)) },
+                subtitle = context.getString(R.string.legacy_ui_mdbx_folder),
                 isBack = false,
                 targetFilter = CategoryFilter.MdbxFolderFilter(databaseId, folder.folderId),
                 passwordCount = folderCountById[folder.folderId] ?: 0
@@ -913,6 +924,7 @@ internal fun String?.normalizedMdbxParentId(): String? {
 }
 
 internal fun buildMdbxFolderPathSegments(
+    context: Context,
     folderId: String,
     folders: List<MdbxStoredFolderEntry>
 ): List<MdbxFolderPathSegment> {
@@ -926,7 +938,8 @@ internal fun buildMdbxFolderPathSegments(
         val folder = folderById[currentId]
         segments += MdbxFolderPathSegment(
             folderId = currentId,
-            name = folder?.name?.takeIf { it.isNotBlank() } ?: "Folder ${currentId.take(8)}"
+            name = folder?.name?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.legacy_ui_folder_fallback, currentId.take(8))
         )
         currentId = folder?.parentFolderId.normalizedMdbxParentId()
     }
@@ -934,12 +947,13 @@ internal fun buildMdbxFolderPathSegments(
 }
 
 internal fun buildMdbxFolderPathLabel(
+    context: Context,
     folderId: String,
     folders: List<MdbxStoredFolderEntry>
 ): String {
-    return buildMdbxFolderPathSegments(folderId, folders)
+    return buildMdbxFolderPathSegments(context, folderId, folders)
         .joinToString("/") { it.name }
-        .ifBlank { "Folder ${folderId.take(8)}" }
+        .ifBlank { context.getString(R.string.legacy_ui_folder_fallback, folderId.take(8)) }
 }
 
 private fun MdbxStoredFolderEntry.parentFolderIdForComparison(): String? {

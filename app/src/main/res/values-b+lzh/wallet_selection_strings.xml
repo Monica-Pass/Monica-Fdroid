@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="wallet_selection_stack_title">卡叠 · %1$s</string>
+    <string name="wallet_selection_unstacked">独立之卡</string>
+    <string name="wallet_selection_group_count">已择 %1$d / %2$d 张</string>
+    <string name="wallet_selection_visible_group_count">今所示：已择 %1$d / %2$d 张</string>
+</resources>

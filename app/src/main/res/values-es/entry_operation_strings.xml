@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden no está disponible</string>
+    <string name="entry_message_unsupported_type">Esta operación no admite este tipo de elemento</string>
+    <string name="entry_message_ownership_conflict">Resuelve los vínculos de almacenamiento en conflicto antes de mover este elemento a Monica</string>
+    <string name="entry_message_local_copy_failed">No se pudo crear una copia local en Monica</string>
+    <string name="entry_message_attachments_incomplete">No se copiaron todos los adjuntos</string>
+    <string name="entry_message_bitwarden_sync_id_missing">El elemento de Bitwarden no tiene ID de sincronización</string>
+    <string name="entry_message_keepass_source_delete_failed">No se pudo eliminar el elemento original de KeePass</string>
+    <string name="entry_message_source_delete_failed">No se pudo eliminar el elemento original</string>
+    <string name="entry_message_storage_save_failed">No se pudo guardar en la ubicación seleccionada</string>
+    <string name="entry_message_from_password">De la contraseña: %1$s</string>
+    <string name="entry_message_passkey_android_required">La compatibilidad completa con claves de acceso requiere Android 14 o posterior. Este dispositivo: %1$s</string>
+    <string name="entry_message_passkey_save_failed">No se pudo guardar la clave de acceso: %1$s</string>
+    <string name="entry_message_passkey_missing">Clave de acceso no encontrada</string>
+    <string name="entry_message_passkey_update_failed">No se pudo actualizar la clave de acceso: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">No se pudo actualizar el vínculo MDBX de la clave de acceso: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">No se pudo actualizar el vínculo: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">No se pudo actualizar el historial de uso: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">No se pudo eliminar la clave de acceso: %1$s</string>
+    <string name="entry_message_category_path_invalid">Ruta de carpeta no válida</string>
+    <string name="entry_message_category_move_into_self">No se puede mover una carpeta a sí misma ni a una de sus subcarpetas</string>
+    <string name="entry_message_category_missing">Carpeta no encontrada</string>
+    <string name="entry_message_category_exists">Ya existe una carpeta con este nombre en el destino</string>
+    <string name="entry_message_category_move_conflict">El movimiento entraría en conflicto con una carpeta existente</string>
+    <string name="entry_message_category_name_required">Introduce un nombre de carpeta</string>
+    <string name="entry_message_category_name_separator">El nombre de la carpeta no puede contener /</string>
+    <string name="entry_message_category_rename_conflict">El cambio de nombre entraría en conflicto con una carpeta existente</string>
+    <string name="entry_message_saved">Guardado</string>
+</resources>

@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.MonicaExpandableContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -113,6 +114,7 @@ fun AddEditWifiScreen(
     onConsumePendingQrResult: () -> Unit = {},
     onScanQrCode: (() -> Unit)? = null,
     onNavigateBack: () -> Unit,
+    onNavigateToApiToken: () -> Unit = {},
     onNavigateToPassword: () -> Unit,
     onNavigateToBarcode: () -> Unit = onNavigateToPassword,
     onNavigateToSshKey: (() -> Unit)? = null,
@@ -329,6 +331,7 @@ fun AddEditWifiScreen(
                             current = EntryTypeChipOption.WIFI,
                             onSelect = { option ->
                                 when (option) {
+                                    EntryTypeChipOption.API_TOKEN -> onNavigateToApiToken()
                                     EntryTypeChipOption.PASSWORD -> onNavigateToPassword()
                                     EntryTypeChipOption.SSH_KEY -> onNavigateToSshKey?.invoke()
                                     EntryTypeChipOption.WIFI -> Unit
@@ -538,7 +541,7 @@ private fun WifiFormBody(
                 )
 
                 // 密码（开放网络不显示）
-                if (security != WifiSecurity.NONE) {
+                MonicaExpandableContent(expanded = security != WifiSecurity.NONE) {
                     var passwordVisible by remember { mutableStateOf(false) }
                     OutlinedTextField(
                         value = password,

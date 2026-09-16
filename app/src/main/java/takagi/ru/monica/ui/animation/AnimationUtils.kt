@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 
 /**
@@ -94,6 +95,18 @@ object AnimationUtils {
      * 退出动画缓动
      */
     val exitEasing = FastOutLinearInEasing
+
+    /** Shared, interruptible expansion motion. Critical damping keeps long cards from bouncing. */
+    val expansionSizeSpec: FiniteAnimationSpec<IntSize> = spring(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntSize.VisibilityThreshold
+    )
+
+    val expansionRotationSpec: FiniteAnimationSpec<Float> = spring(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow
+    )
     
     // ==================== 列表动画 ====================
     
@@ -263,14 +276,11 @@ object AnimationUtils {
      */
     fun expandVerticallyAnimation(): EnterTransition {
         return expandVertically(
-            animationSpec = tween(
-                durationMillis = DURATION_MEDIUM,
-                easing = enterEasing
-            ),
+            animationSpec = expansionSizeSpec,
             expandFrom = Alignment.Top
         ) + fadeIn(
             animationSpec = tween(
-                durationMillis = DURATION_MEDIUM,
+                durationMillis = DURATION_SHORT,
                 easing = enterEasing
             )
         )
@@ -283,10 +293,7 @@ object AnimationUtils {
      */
     fun shrinkVerticallyAnimation(): ExitTransition {
         return shrinkVertically(
-            animationSpec = tween(
-                durationMillis = DURATION_SHORT,
-                easing = exitEasing
-            ),
+            animationSpec = expansionSizeSpec,
             shrinkTowards = Alignment.Top
         ) + fadeOut(
             animationSpec = tween(

@@ -1,5 +1,8 @@
 package takagi.ru.monica.autofill_ng.service
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -60,6 +63,12 @@ class AutofillOtpNotificationService : Service() {
     private var activeSessionId: Long = 0L
 
     private var isForeground = false
+
+    private val strings by lazy { AppLocaleStringResolver(this) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -168,7 +177,7 @@ class AutofillOtpNotificationService : Service() {
         clipboard.setPrimaryClip(ClipData.newPlainText("OTP Code", code))
         // Android 13+ 系统会自带剪贴板提示
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            Toast.makeText(this, getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, strings.get(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -195,7 +204,7 @@ class AutofillOtpNotificationService : Service() {
         )
 
         val title = if (label.isBlank()) {
-            getString(R.string.autofill_otp_notification_channel)
+            strings.get(R.string.autofill_otp_notification_channel)
         } else {
             label
         }
@@ -208,8 +217,8 @@ class AutofillOtpNotificationService : Service() {
         }
 
         val copyActionText = runCatching {
-            getString(R.string.autofill_otp_copy_action, code)
-        }.getOrDefault(getString(R.string.copy))
+            strings.get(R.string.autofill_otp_copy_action, code)
+        }.getOrDefault(strings.get(R.string.copy))
 
         return builder
             .setSmallIcon(AppLauncherIconManager.resolveBrandingIconRes(this))
@@ -260,7 +269,7 @@ class AutofillOtpNotificationService : Service() {
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            getString(R.string.autofill_otp_notification_channel),
+            strings.get(R.string.autofill_otp_notification_channel),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "Shows 2FA codes during autofill"

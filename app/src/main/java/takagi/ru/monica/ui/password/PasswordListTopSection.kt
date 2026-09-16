@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
@@ -183,7 +185,7 @@ internal fun PasswordListTopSection(
     }
     Column {
         val title = when (val filter = currentFilter) {
-            is CategoryFilter.All -> "ALL"
+            is CategoryFilter.All -> stringResource(R.string.legacy_ui_all_title)
             is CategoryFilter.Archived -> stringResource(R.string.archive_page_title)
             is CategoryFilter.Local -> stringResource(R.string.filter_monica)
             is CategoryFilter.LocalOnly -> stringResource(R.string.filter_local_only)
@@ -201,7 +203,7 @@ internal fun PasswordListTopSection(
             is CategoryFilter.BitwardenVaultStarred -> "${stringResource(R.string.filter_bitwarden)} · ${stringResource(R.string.filter_starred)}"
             is CategoryFilter.BitwardenVaultUncategorized -> "${stringResource(R.string.filter_bitwarden)} · ${stringResource(R.string.filter_uncategorized)}"
             is CategoryFilter.MdbxDatabase -> mdbxDatabases.find { it.id == filter.databaseId }?.name ?: "MDBX"
-            is CategoryFilter.MdbxFolderFilter -> buildMdbxFolderPathLabel(filter.folderId, selectedMdbxFolders)
+            is CategoryFilter.MdbxFolderFilter -> buildMdbxFolderPathLabel(context, filter.folderId, selectedMdbxFolders)
         }
 
         ExpressiveTopBar(
@@ -306,7 +308,8 @@ internal fun PasswordListTopSection(
                                         planLocalCategoryMove(
                                             categories = categories,
                                             sourceCategory = category,
-                                            targetParentCategory = categories.find { it.id == targetParentCategoryId }
+                                            targetParentCategory = categories.find { it.id == targetParentCategoryId },
+                                            strings = AppLocaleStringResolver(context),
                                         )
                                     }.onSuccess { plan ->
                                         plan.updatedCategories.forEach(viewModel::updateCategory)
@@ -325,7 +328,8 @@ internal fun PasswordListTopSection(
                                                 planLocalCategoryMove(
                                                     categories = categories,
                                                     sourceCategory = category,
-                                                    targetParentCategory = categories.find { it.id == target.categoryId }
+                                                    targetParentCategory = categories.find { it.id == target.categoryId },
+                                                    strings = AppLocaleStringResolver(context),
                                                 )
                                             }.onSuccess { plan ->
                                                 plan.updatedCategories.forEach(viewModel::updateCategory)
@@ -352,7 +356,7 @@ internal fun PasswordListTopSection(
                                                 context,
                                                 context.getString(
                                                     R.string.save_failed_with_error,
-                                                    "当前暂不支持将分类移动到 KeePass 数据库"
+                                                    context.getString(R.string.legacy_ui_move_category_keepass_unsupported)
                                                 ),
                                                 Toast.LENGTH_SHORT
                                             ).show()
@@ -363,7 +367,7 @@ internal fun PasswordListTopSection(
                                                 context,
                                                 context.getString(
                                                     R.string.save_failed_with_error,
-                                                    "当前暂不支持将分类移动到 MDBX 数据库"
+                                                    context.getString(R.string.legacy_ui_move_category_mdbx_unsupported)
                                                 ),
                                                 Toast.LENGTH_SHORT
                                             ).show()

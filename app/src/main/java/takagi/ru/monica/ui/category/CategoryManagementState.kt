@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.category
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.ColumnScope
@@ -211,7 +213,8 @@ private fun executeCategoryMove(
         planLocalCategoryMove(
             categories = categories,
             sourceCategory = category,
-            targetParentCategory = categories.find { it.id == targetParentCategoryId }
+            targetParentCategory = categories.find { it.id == targetParentCategoryId },
+            strings = AppLocaleStringResolver(context),
         )
     }.onSuccess { plan ->
         plan.updatedCategories.forEach(passwordViewModel::updateCategory)
@@ -236,6 +239,7 @@ private fun executeCategoryRename(
             categories = categories,
             sourceCategory = category,
             newLeafName = newLeafName,
+            strings = AppLocaleStringResolver(context),
         )
     }.onSuccess { plan ->
         plan.updatedCategories.forEach(passwordViewModel::updateCategory)
@@ -270,14 +274,14 @@ private fun executeCategoryMoveToTarget(
         is StorageTarget.KeePass -> {
             Toast.makeText(
                 context,
-                context.getString(R.string.save_failed_with_error, "当前暂不支持将分类移动到 KeePass 数据库"),
+                context.getString(R.string.save_failed_with_error, context.getString(R.string.legacy_ui_move_category_keepass_unsupported)),
                 Toast.LENGTH_SHORT
             ).show()
         }
         is StorageTarget.Mdbx -> {
             Toast.makeText(
                 context,
-                context.getString(R.string.save_failed_with_error, "当前暂不支持将分类移动到 MDBX 数据库"),
+                context.getString(R.string.save_failed_with_error, context.getString(R.string.legacy_ui_move_category_mdbx_unsupported)),
                 Toast.LENGTH_SHORT
             ).show()
         }

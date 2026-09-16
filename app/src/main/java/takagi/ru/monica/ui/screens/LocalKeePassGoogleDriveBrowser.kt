@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -84,6 +86,7 @@ private enum class KeepassGoogleDriveConnectionState {
 @Composable
 fun KeepassGoogleDriveBrowserBottomSheet(
     viewModel: LocalKeePassViewModel,
+    startWithCreate: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -102,6 +105,14 @@ fun KeepassGoogleDriveBrowserBottomSheet(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var showCreateDatabaseDialog by remember { mutableStateOf(false) }
     var connectionState by remember { mutableStateOf(KeepassGoogleDriveConnectionState.NotConnected) }
+    var initialCreatePending by remember { mutableStateOf(startWithCreate) }
+    LaunchedEffect(connectionState) {
+        if (initialCreatePending && connectionState == KeepassGoogleDriveConnectionState.Connected) {
+            initialCreatePending = false
+            showCreateDatabaseDialog = true
+        }
+    }
+
 
     fun loadDirectory(
         targetPath: String = currentPath,
@@ -217,236 +228,232 @@ fun KeepassGoogleDriveBrowserBottomSheet(
         "/$currentPath"
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                stringResource(R.string.keepass_gdrive_attach_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                stringResource(R.string.keepass_gdrive_browser_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(Icons.Default.CloudQueue, contentDescription = null)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                session?.displayName ?: stringResource(R.string.keepass_gdrive_not_connected),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                session?.username?.ifBlank {
-                                    stringResource(R.string.keepass_gdrive_sign_in_hint)
-                                } ?: stringResource(R.string.keepass_gdrive_sign_in_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Button(
-                            onClick = { beginAuthorization(forceSwitch = session != null) },
-                            enabled = !isConnecting && !isLoadingEntries
-                        ) {
-                            if (isConnecting) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text(
-                                if (session == null) stringResource(R.string.keepass_gdrive_sign_in_action)
-                                else stringResource(R.string.keepass_gdrive_switch_account)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        stringResource(R.string.keepass_webdav_status_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        when (connectionState) {
-                            KeepassGoogleDriveConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
-                            KeepassGoogleDriveConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
-                            KeepassGoogleDriveConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
-                            KeepassGoogleDriveConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
-                        },
-                        color = when (connectionState) {
-                            KeepassGoogleDriveConnectionState.Connected -> MaterialTheme.colorScheme.primary
-                            KeepassGoogleDriveConnectionState.Failed -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                    Text(
-                        stringResource(R.string.keepass_gdrive_current_path, currentPathLabel),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            browserError?.let { error ->
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
+    DatabaseManagementFormSheet(
+        onDismiss = onDismiss,
+        testTagPrefix = "keepass_googledrive",
+        actions = {
+            if (session != null) {
+                Button(
+                    onClick = { showCreateDatabaseDialog = true },
+                    enabled = !isLoadingEntries,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.keepass_gdrive_create_confirm))
                 }
             }
+        }
+    ) {
+        Text(
+            stringResource(R.string.keepass_gdrive_attach_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
 
-            AnimatedVisibility(visible = session != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Text(
+            stringResource(R.string.keepass_gdrive_browser_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Surface(
+            shape = DatabaseManagementPanelShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(Icons.Default.CloudQueue, contentDescription = null)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            session?.displayName ?: stringResource(R.string.keepass_gdrive_not_connected),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            session?.username?.ifBlank {
+                                stringResource(R.string.keepass_gdrive_sign_in_hint)
+                            } ?: stringResource(R.string.keepass_gdrive_sign_in_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = { beginAuthorization(forceSwitch = session != null) },
+                        enabled = !isConnecting && !isLoadingEntries
                     ) {
-                        OutlinedButton(
-                            onClick = { loadDirectory(currentPath, currentFolderId) },
-                            enabled = !isLoadingEntries,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
+                        if (isConnecting) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.refresh))
                         }
-                        OutlinedButton(
-                            onClick = {
-                                loadDirectory(
-                                    GoogleDriveKeePassFileSource.parentPathOf(currentPath),
-                                    null
-                                )
-                            },
-                            enabled = !isLoadingEntries,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.ArrowUpward, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.keepass_webdav_go_parent))
-                        }
+                        Text(
+                            if (session == null) stringResource(R.string.keepass_gdrive_sign_in_action)
+                            else stringResource(R.string.keepass_gdrive_switch_account)
+                        )
+                    }
+                }
+            }
+        }
+
+        Surface(
+            shape = DatabaseManagementPanelShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    stringResource(R.string.keepass_webdav_status_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    when (connectionState) {
+                        KeepassGoogleDriveConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
+                        KeepassGoogleDriveConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
+                        KeepassGoogleDriveConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
+                        KeepassGoogleDriveConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
+                    },
+                    color = when (connectionState) {
+                        KeepassGoogleDriveConnectionState.Connected -> MaterialTheme.colorScheme.primary
+                        KeepassGoogleDriveConnectionState.Failed -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+                Text(
+                    stringResource(R.string.keepass_gdrive_current_path, currentPathLabel),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        browserError?.let { error ->
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = session != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { loadDirectory(currentPath, currentFolderId) },
+                        enabled = !isLoadingEntries,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.refresh))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            loadDirectory(
+                                GoogleDriveKeePassFileSource.parentPathOf(currentPath, strings = AppLocaleStringResolver(context)),
+                                null
+                            )
+                        },
+                        enabled = !isLoadingEntries,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.ArrowUpward, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.keepass_webdav_go_parent))
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { showCreateFolderDialog = true },
+                        enabled = !isLoadingEntries,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.CreateNewFolder, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.keepass_webdav_create_folder_confirm))
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showCreateFolderDialog = true },
-                            enabled = !isLoadingEntries,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.CreateNewFolder, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.keepass_webdav_create_folder_confirm))
-                        }
-                        Button(
-                            onClick = { showCreateDatabaseDialog = true },
-                            enabled = !isLoadingEntries,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.keepass_gdrive_create_confirm))
-                        }
-                    }
+                }
 
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            if (isLoadingEntries) {
+                Surface(
+                    shape = DatabaseManagementPanelShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        if (isLoadingEntries) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(stringResource(R.string.keepass_remote_loading_files))
+                            }
+                        } else if (entries.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.keepass_gdrive_empty_directory),
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            entries.forEach { entry ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(stringResource(R.string.keepass_remote_loading_files))
-                                }
-                            } else if (entries.isEmpty()) {
-                                Text(
-                                    text = stringResource(R.string.keepass_gdrive_empty_directory),
-                                    modifier = Modifier.padding(16.dp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            } else {
-                                entries.forEach { entry ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                if (entry.isDirectory) {
-                                                    loadDirectory(entry.path, entry.id)
-                                                } else {
-                                                    selectedDatabaseEntry = entry
-                                                }
+                                        .clickable {
+                                            if (entry.isDirectory) {
+                                                loadDirectory(entry.path, entry.id)
+                                            } else {
+                                                selectedDatabaseEntry = entry
                                             }
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Link,
-                                            contentDescription = null
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(entry.name, fontWeight = FontWeight.Medium)
-                                            Text(
-                                                if (entry.isDirectory) "/${entry.path}" else entry.path,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
                                         }
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                            contentDescription = null
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Link,
+                                        contentDescription = null
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(entry.name, fontWeight = FontWeight.Medium)
+                                        Text(
+                                            if (entry.isDirectory) "/${entry.path}" else entry.path,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null
+                                    )
                                 }
                             }
                         }
@@ -488,7 +495,7 @@ fun KeepassGoogleDriveBrowserBottomSheet(
                 onDismiss = { selectedDatabaseEntry = null },
                 onAttach = { displayName, databasePassword, keyFileUri, description ->
                     val fileId = entry.id ?: run {
-                        browserError = "Google Drive 文件标识为空"
+                        browserError = context.getString(R.string.legacy_ui_gdrive_file_id_missing)
                         selectedDatabaseEntry = null
                         return@AttachExistingGoogleDriveDatabaseDialog
                     }
@@ -548,6 +555,7 @@ private fun CreateGoogleDriveFolderDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.keepass_gdrive_create_folder_message))
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = folderName,
                     onValueChange = { folderName = it },
                     label = { Text(stringResource(R.string.keepass_webdav_create_folder_action)) },
@@ -598,6 +606,7 @@ private fun AttachExistingGoogleDriveDatabaseDialog(
             ) {
                 Text(entry.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text(stringResource(R.string.database_name)) },
@@ -605,6 +614,7 @@ private fun AttachExistingGoogleDriveDatabaseDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = databasePassword,
                     onValueChange = { databasePassword = it },
                     label = { Text(stringResource(R.string.keepass_webdav_database_password)) },
@@ -623,6 +633,7 @@ private fun AttachExistingGoogleDriveDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = keyFileName,
                     onValueChange = {},
                     readOnly = true,
@@ -638,6 +649,7 @@ private fun AttachExistingGoogleDriveDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description_optional)) },
@@ -715,6 +727,7 @@ private fun CreateGoogleDriveDatabaseDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.keepass_webdav_create_name_label)) },
@@ -723,6 +736,7 @@ private fun CreateGoogleDriveDatabaseDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(stringResource(R.string.database_password)) },
@@ -740,6 +754,7 @@ private fun CreateGoogleDriveDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text(stringResource(R.string.confirm_password)) },
@@ -774,6 +789,7 @@ private fun CreateGoogleDriveDatabaseDialog(
                 }
                 AnimatedVisibility(visible = useKeyFile) {
                     OutlinedTextField(
+                        shape = DatabaseManagementFieldShape,
                         value = keyFileName,
                         onValueChange = {},
                         readOnly = true,
@@ -795,6 +811,7 @@ private fun CreateGoogleDriveDatabaseDialog(
                     )
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description_optional)) },

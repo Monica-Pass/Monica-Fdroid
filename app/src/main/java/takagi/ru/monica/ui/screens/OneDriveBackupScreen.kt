@@ -1,62 +1,21 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.BookmarkRemove
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,17 +23,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -108,8 +59,6 @@ import takagi.ru.monica.utils.FileSourceEntry
 import takagi.ru.monica.utils.isOneDriveAuthTemporarilyUnavailable
 import takagi.ru.monica.utils.toOneDriveUserMessage
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 private enum class OneDriveBackupConnectionState {
     NotConnected,
@@ -125,62 +74,56 @@ private enum class OneDriveRestoreMode {
 
 private const val ONEDRIVE_BACKUP_LOG_TAG = "OneDriveBackupScreen"
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun OneDriveBackupScreen(
-    passwordRepository: PasswordRepository,
-    secureItemRepository: SecureItemRepository,
-    onNavigateBack: () -> Unit
+/** Route-owned state and callbacks; kept outside composition and recycled history rows. */
+private class OneDriveBackupScreenState(
+    private val context: Context,
+    private val activity: Activity?,
+    private val coroutineScope: kotlinx.coroutines.CoroutineScope,
+    private val backupHelper: OneDriveBackupHelper,
+    private val authManager: OneDriveAuthManager,
+    private val webDavHelper: WebDavHelper,
+    private val passwordRepository: PasswordRepository,
+    private val secureItemRepository: SecureItemRepository,
+    folderPickerState: androidx.compose.runtime.MutableState<Boolean>,
 ) {
-    val context = LocalContext.current
-    val activity = remember(context) { context.findActivity() }
-    val coroutineScope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-    val backupHelper = remember { OneDriveBackupHelper(context) }
-    val authManager = remember { OneDriveAuthManager(context) }
-    val webDavHelper = remember { WebDavHelper(context) }
+    var showFolderPicker by folderPickerState
+    var session by mutableStateOf<OneDriveAccountSession?>(null)
+    var savedConfig by mutableStateOf<OneDriveBackupConfig?>(null)
+    var currentPath by mutableStateOf("")
+    var browserEntries by mutableStateOf<List<FileSourceEntry>>(emptyList())
+    var backupList by mutableStateOf<List<BackupFile>>(emptyList())
+    var browserError by mutableStateOf<String?>(null)
+    var signingIn by mutableStateOf(false)
+    var loadingEntries by mutableStateOf(false)
+    var loadingBackups by mutableStateOf(false)
+    var creatingBackup by mutableStateOf(false)
+    var creatingFolder by mutableStateOf(false)
+    var connectionState by mutableStateOf(OneDriveBackupConnectionState.NotConnected)
+    var restoringBackupPath by mutableStateOf<String?>(null)
+    var showCreateFolderDialog by mutableStateOf(false)
+    var showDeleteDialogFor by mutableStateOf<BackupFile?>(null)
+    var showRestoreDialogFor by mutableStateOf<BackupFile?>(null)
+    var restoreMode by mutableStateOf(OneDriveRestoreMode.MergeLocal)
+    var restoreGlobalDedup by mutableStateOf(false)
+    var showDecryptPasswordDialogFor by mutableStateOf<BackupFile?>(null)
+    var decryptPassword by mutableStateOf("")
+    var encryptionEnabled by mutableStateOf(false)
+    var encryptionPassword by mutableStateOf("")
+    var encryptionPasswordVisible by mutableStateOf(false)
+    var backupPreferences by mutableStateOf(BackupPreferences())
+    var passwordCount by mutableStateOf(0)
+    var authenticatorCount by mutableStateOf(0)
+    var documentCount by mutableStateOf(0)
+    var bankCardCount by mutableStateOf(0)
+    var noteCount by mutableStateOf(0)
+    var trashCount by mutableStateOf(0)
+    var localKeePassCount by mutableStateOf(0)
+    var passkeyCount by mutableStateOf(0)
 
-    var session by remember { mutableStateOf<OneDriveAccountSession?>(null) }
-    var savedConfig by remember { mutableStateOf<OneDriveBackupConfig?>(null) }
-    var currentPath by remember { mutableStateOf("") }
-    var browserEntries by remember { mutableStateOf<List<FileSourceEntry>>(emptyList()) }
-    var backupList by remember { mutableStateOf<List<BackupFile>>(emptyList()) }
-    var browserError by remember { mutableStateOf<String?>(null) }
-    var signingIn by remember { mutableStateOf(false) }
-    var loadingEntries by remember { mutableStateOf(false) }
-    var loadingBackups by remember { mutableStateOf(false) }
-    var creatingBackup by remember { mutableStateOf(false) }
-    var creatingFolder by remember { mutableStateOf(false) }
-    var connectionState by remember { mutableStateOf(OneDriveBackupConnectionState.NotConnected) }
-    var showCreateFolderDialog by remember { mutableStateOf(false) }
-    var showDeleteDialogFor by remember { mutableStateOf<BackupFile?>(null) }
-    var showRestoreDialogFor by remember { mutableStateOf<BackupFile?>(null) }
-    var restoreMode by remember { mutableStateOf(OneDriveRestoreMode.MergeLocal) }
-    var restoreGlobalDedup by remember { mutableStateOf(false) }
-    var showDecryptPasswordDialogFor by remember { mutableStateOf<BackupFile?>(null) }
-    var decryptPassword by remember { mutableStateOf("") }
-
-    var encryptionEnabled by remember { mutableStateOf(false) }
-    var encryptionPassword by remember { mutableStateOf("") }
-    var encryptionPasswordVisible by remember { mutableStateOf(false) }
-    var backupPreferences by remember { mutableStateOf(BackupPreferences()) }
-
-    var passwordCount by remember { mutableStateOf(0) }
-    var authenticatorCount by remember { mutableStateOf(0) }
-    var documentCount by remember { mutableStateOf(0) }
-    var bankCardCount by remember { mutableStateOf(0) }
-    var noteCount by remember { mutableStateOf(0) }
-    var trashCount by remember { mutableStateOf(0) }
-    var localKeePassCount by remember { mutableStateOf(0) }
-    var passkeyCount by remember { mutableStateOf(0) }
-    val oneDriveReady = session != null && connectionState == OneDriveBackupConnectionState.Connected
     fun currentSessionBackupConfig(): OneDriveBackupConfig? {
         val activeSession = session ?: return null
         return savedConfig?.takeIf { config -> config.accountId == activeSession.accountId }
     }
-
-    val savedConfigForCurrentSession = currentSessionBackupConfig()
-    val backupReady = oneDriveReady && savedConfigForCurrentSession != null
 
     suspend fun refreshBackups() {
         if (currentSessionBackupConfig() == null) {
@@ -204,7 +147,7 @@ fun OneDriveBackupScreen(
             },
             onFailure = {
                 backupList = emptyList()
-                browserError = it.toOneDriveUserMessage(context.getString(R.string.keepass_onedrive_load_files_failed))
+                browserError = it.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.keepass_onedrive_load_files_failed))
                 connectionState = OneDriveBackupConnectionState.Failed
                 Log.w(
                     ONEDRIVE_BACKUP_LOG_TAG,
@@ -236,7 +179,7 @@ fun OneDriveBackupScreen(
             )
         }.onFailure { error ->
             browserEntries = emptyList()
-            browserError = error.toOneDriveUserMessage(context.getString(R.string.keepass_onedrive_load_files_failed))
+            browserError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.keepass_onedrive_load_files_failed))
             connectionState = OneDriveBackupConnectionState.Failed
             Log.w(
                 ONEDRIVE_BACKUP_LOG_TAG,
@@ -302,12 +245,14 @@ fun OneDriveBackupScreen(
                         ?.folderPath
                         .orEmpty()
                     loadDirectory(configuredPath)
+                    if (currentSessionBackupConfig() == null) showFolderPicker = true
+                    else if (connectionState == OneDriveBackupConnectionState.Connected) refreshBackups()
                 }
                 .onFailure { error ->
                     browserEntries = emptyList()
                     backupList = emptyList()
                     connectionState = OneDriveBackupConnectionState.Failed
-                    browserError = error.toOneDriveUserMessage(
+                    browserError = error.toOneDriveUserMessage(AppLocaleStringResolver(context),
                         context.getString(R.string.keepass_onedrive_sign_in_failed)
                     )
                     Log.w(ONEDRIVE_BACKUP_LOG_TAG, "OneDrive interactive sign-in failed", error)
@@ -317,828 +262,605 @@ fun OneDriveBackupScreen(
     }
 
     suspend fun performRestore(backup: BackupFile, decryptPasswordValue: String?) {
-        val downloadedFile = File(context.cacheDir, "restore_${backup.name}")
-        val result = backupHelper.downloadBackup(backup, downloadedFile)
-            .mapCatching {
-                webDavHelper.restoreFromBackupFile(
-                    backupFile = it,
-                    decryptPassword = decryptPasswordValue,
-                    overwrite = restoreMode == OneDriveRestoreMode.ReplaceLocal,
-                    restoreMonicaConfig = true
-                ).getOrThrow()
-            }
+        restoringBackupPath = backup.path
+        try {
+            val downloadedFile = File(context.cacheDir, "restore_${backup.name}")
+            val result = backupHelper.downloadBackup(backup, downloadedFile)
+                .mapCatching {
+                    webDavHelper.restoreFromBackupFile(
+                        backupFile = it,
+                        decryptPassword = decryptPasswordValue,
+                        overwrite = restoreMode == OneDriveRestoreMode.ReplaceLocal,
+                        restoreMonicaConfig = true
+                    ).getOrThrow()
+                }
 
-        result.fold(
-            onSuccess = { restoreResult ->
-                val stats = BackupRestoreApplier.applyRestoreResult(
-                    context = context,
-                    restoreResult = restoreResult,
-                    passwordRepository = passwordRepository,
-                    secureItemRepository = secureItemRepository,
-                    localOnlyDedup = when (restoreMode) {
-                        OneDriveRestoreMode.MergeLocal -> !restoreGlobalDedup
-                        OneDriveRestoreMode.ReplaceLocal -> true
-                    },
-                    logTag = "OneDriveBackup"
-                )
-                Toast.makeText(
-                    context,
-                    buildRestoreSummary(context, restoreResult, stats),
-                    Toast.LENGTH_LONG
-                ).show()
-                refreshBackups()
-            },
-            onFailure = { error ->
-                when (error) {
-                    is WebDavHelper.PasswordRequiredException -> {
-                        decryptPassword = decryptPasswordValue.orEmpty()
-                        showDecryptPasswordDialogFor = backup
+            result.fold(
+                onSuccess = { restoreResult ->
+                    val stats = BackupRestoreApplier.applyRestoreResult(
+                        context = context,
+                        restoreResult = restoreResult,
+                        passwordRepository = passwordRepository,
+                        secureItemRepository = secureItemRepository,
+                        localOnlyDedup = when (restoreMode) {
+                            OneDriveRestoreMode.MergeLocal -> !restoreGlobalDedup
+                            OneDriveRestoreMode.ReplaceLocal -> true
+                        },
+                        logTag = "OneDriveBackup"
+                    )
+                    Toast.makeText(
+                        context,
+                        buildRestoreSummary(context, restoreResult, stats),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    refreshBackups()
+                },
+                onFailure = { error ->
+                    when (error) {
+                        is WebDavHelper.PasswordRequiredException -> {
+                            decryptPassword = decryptPasswordValue.orEmpty()
+                            showDecryptPasswordDialogFor = backup
+                        }
+                        else -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.webdav_restore_failed, error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.import_data_unknown_error))),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
-                    else -> {
+                }
+            )
+            downloadedFile.delete()
+
+        } finally {
+            restoringBackupPath = null
+        }
+    }
+
+    fun createBackup() {
+        if (currentSessionBackupConfig() == null) {
+            Log.w(
+                ONEDRIVE_BACKUP_LOG_TAG,
+                "Create backup blocked: no config for current session, " +
+                    "state=$connectionState, session=${session.debugRef()}, savedConfig=${savedConfig.debugRef()}"
+            )
+            Toast.makeText(context, context.getString(R.string.onedrive_backup_directory_required), Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!backupPreferences.hasAnyEnabled()) {
+            Toast.makeText(context, context.getString(R.string.backup_validation_error), Toast.LENGTH_SHORT).show()
+            return
+        }
+        creatingBackup = true
+        coroutineScope.launch {
+            val backupTarget = SyncTarget.Backup(SyncBackupProvider.ONEDRIVE)
+            val taskId = SyncDiagnostics.nextTaskId("backup-onedrive-screen")
+            val targetLog = backupTarget.stableKey.value
+            val triggerLog = "ONEDRIVE_SCREEN_MANUAL"
+            try {
+                val syncResult = SyncTaskRunner.requestAndAwait(
+                    request = SyncRequest(
+                        requestId = taskId,
+                        target = backupTarget,
+                        trigger = SyncTrigger.MANUAL,
+                        createdAtMillis = System.currentTimeMillis(),
+                        priority = SyncPriority.MANUAL,
+                        mode = SyncMode.FOREGROUND,
+                        networkPolicy = SyncNetworkPolicy.REQUIRED
+                    )
+                ) {
+                    SyncDiagnostics.queued(taskId, targetLog, triggerLog)
+                    val startedAt = SyncDiagnostics.start(taskId, targetLog, triggerLog)
+                    try {
+                        val localPasswords = passwordRepository.getAllLocalPasswordEntries()
+                        val securityManager = takagi.ru.monica.security.SecurityManager(context)
+                        val failedPasswordTitles = mutableListOf<String>()
+                        val decryptedPasswords = localPasswords.map { entry ->
+                            runCatching {
+                                entry.copy(password = securityManager.decryptData(entry.password))
+                            }.getOrElse { error ->
+                                Log.w(
+                                    ONEDRIVE_BACKUP_LOG_TAG,
+                                    "Failed to decrypt password for OneDrive backup: ${entry.title} (${error.message})"
+                                )
+                                failedPasswordTitles += entry.title.ifBlank { entry.website.ifBlank { entry.username } }
+                                entry.copy(password = "")
+                            }
+                        }
+                        if (failedPasswordTitles.isNotEmpty()) {
+                            throw IllegalStateException(
+                                context.getString(R.string.legacy_ui_backup_decrypt_failed, failedPasswordTitles.size)
+                            )
+                        }
+                        val localSecureItems = secureItemRepository.getAllLocalItems()
+                        Log.i(
+                            ONEDRIVE_BACKUP_LOG_TAG,
+                            "Creating OneDrive backup zip: passwords=${localPasswords.size}, " +
+                                "secureItems=${localSecureItems.size}, scope=${BackupContentScope.MONICA_LOCAL_ONLY}"
+                        )
+                        val (file, report) = webDavHelper.createBackupZip(
+                            passwords = decryptedPasswords,
+                            secureItems = localSecureItems,
+                            preferences = backupPreferences,
+                            contentScope = BackupContentScope.MONICA_LOCAL_ONLY
+                        ).getOrThrow()
+
+                        if (!report.success || report.failedItems.isNotEmpty()) {
+                            file.delete()
+                            throw IllegalStateException(
+                                context.getString(R.string.webdav_create_backup_failed)
+                            )
+                        }
+
+                        Log.i(
+                            ONEDRIVE_BACKUP_LOG_TAG,
+                            "OneDrive backup zip ready: sizeBytes=${file.length()}, " +
+                                "passwords=${report.successItems.passwords}/${report.totalItems.passwords}, " +
+                                "totp=${report.successItems.totp}/${report.totalItems.totp}, " +
+                                "notes=${report.successItems.notes}/${report.totalItems.notes}, " +
+                                "warnings=${report.warnings.size}, failures=${report.failedItems.size}"
+                        )
+                        try {
+                            backupHelper.uploadBackup(file, isPermanent = true).getOrThrow()
+                        } finally {
+                            file.delete()
+                        }
+                        SyncDiagnostics.success(
+                            taskId = taskId,
+                            target = targetLog,
+                            trigger = triggerLog,
+                            startedAt = startedAt,
+                            detail = "passwords=${decryptedPasswords.size} secureItems=${localSecureItems.size} warnings=${report.warnings.size} failures=${report.failedItems.size}"
+                        )
+                        report
+                    } catch (error: Exception) {
+                        SyncDiagnostics.failed(taskId, targetLog, triggerLog, startedAt, error)
+                        throw error
+                    }
+                }
+
+                when (syncResult) {
+                    is SyncTaskAwaitResult.Completed -> {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.webdav_restore_failed, error.toOneDriveUserMessage(context.getString(R.string.import_data_unknown_error))),
+                            if (syncResult.value.hasIssues()) {
+                                syncResult.value.getSummary(context)
+                            } else {
+                                context.getString(R.string.webdav_backup_success)
+                            },
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Merged -> {
+                        SyncDiagnostics.skipped(
+                            taskId = taskId,
+                            target = targetLog,
+                            trigger = triggerLog,
+                            reason = "merged_with_running_backup",
+                            detail = "running=${syncResult.status.runningRequestId.orEmpty()}"
+                        )
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_in_progress),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Skipped -> {
+                        SyncDiagnostics.skipped(taskId, targetLog, triggerLog, syncResult.reason)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, syncResult.reason),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Blocked -> {
+                        val reason = syncResult.error.redactedMessage ?: syncResult.error.kind.name
+                        SyncDiagnostics.blocked(taskId, targetLog, triggerLog, reason)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, reason),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Canceled -> {
+                        val reason = syncResult.reason ?: "backup canceled"
+                        SyncDiagnostics.skipped(taskId, targetLog, triggerLog, reason)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, reason),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Failed -> {
+                        Toast.makeText(
+                            context,
+                            context.getString(
+                                R.string.webdav_backup_failed,
+                                syncResult.error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.webdav_create_backup_failed))
+                            ),
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 }
+                if (syncResult is SyncTaskAwaitResult.Completed) {
+                    refreshBackups()
+                }
+            } catch (error: Exception) {
+                Log.e(ONEDRIVE_BACKUP_LOG_TAG, "OneDrive backup creation failed", error)
+                Toast.makeText(
+                    context,
+                    context.getString(
+                        R.string.webdav_backup_failed,
+                        error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.webdav_create_backup_failed))
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                creatingBackup = false
             }
-        )
-        downloadedFile.delete()
-    }
-
-    LaunchedEffect(Unit) {
-        savedConfig = backupHelper.getConfig()
-        backupPreferences = webDavHelper.getBackupPreferences().copy(includeWebDavConfig = false)
-        val encryptionConfig = webDavHelper.getEncryptionConfig()
-        encryptionEnabled = encryptionConfig.enabled
-        encryptionPassword = encryptionConfig.password
-        loadCounts()
-
-        Log.d(
-            ONEDRIVE_BACKUP_LOG_TAG,
-            "Initializing OneDrive backup screen, savedConfig=${savedConfig.debugRef()}"
-        )
-        val configuredSessionResult = runCatching { backupHelper.getConfiguredSession() }
-        val configuredSession = configuredSessionResult.getOrNull()
-        val cachedSession = runCatching { authManager.getCachedSession() }.getOrNull()
-
-        session = configuredSession ?: cachedSession
-        if (configuredSessionResult.isFailure) {
-            val error = configuredSessionResult.exceptionOrNull()
-            Log.w(
-                ONEDRIVE_BACKUP_LOG_TAG,
-                "Configured OneDrive session refresh failed, " +
-                    "temporaryAuth=${error?.isOneDriveAuthTemporarilyUnavailable() == true}, " +
-                    "cachedSession=${cachedSession.debugRef()}",
-                error
-            )
-            browserError = configuredSessionResult.exceptionOrNull()
-                ?.toOneDriveUserMessage(context.getString(R.string.keepass_onedrive_load_files_failed))
-            browserEntries = emptyList()
-            backupList = emptyList()
-            loadingEntries = false
-            loadingBackups = false
-            connectionState = OneDriveBackupConnectionState.Failed
-            return@LaunchedEffect
-        }
-
-        Log.d(
-            ONEDRIVE_BACKUP_LOG_TAG,
-            "Initial OneDrive session resolved, configured=${configuredSession.debugRef()}, " +
-                "cached=${cachedSession.debugRef()}, active=${session.debugRef()}, " +
-                "configMatches=${currentSessionBackupConfig() != null}"
-        )
-        if (session != null) {
-            connectionState = OneDriveBackupConnectionState.Connected
-            val initialPath = currentSessionBackupConfig()?.folderPath.orEmpty()
-            loadDirectory(initialPath)
-        }
-        if (session != null &&
-            connectionState == OneDriveBackupConnectionState.Connected &&
-            currentSessionBackupConfig() != null
-        ) {
-            refreshBackups()
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.onedrive_backup_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.go_back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            OneDriveLocationPanel(
-                session = session,
-                isConnecting = signingIn,
-                accountActionLabel = if (session == null) {
-                    stringResource(R.string.keepass_onedrive_sign_in_action)
-                } else {
-                    stringResource(R.string.keepass_onedrive_switch_account)
-                },
-                connectionLabel = when (connectionState) {
-                    OneDriveBackupConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
-                    OneDriveBackupConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
-                    OneDriveBackupConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
-                    OneDriveBackupConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
-                },
-                connectionFailed = connectionState == OneDriveBackupConnectionState.Failed,
-                errorMessage = browserError,
-                onAccountAction = ::signInOrSwitchAccount,
-                browserTitle = stringResource(R.string.onedrive_backup_browser_title),
-                currentPath = currentPath,
-                isLoadingEntries = loadingEntries,
-                entries = browserEntries,
-                emptyMessage = stringResource(R.string.onedrive_backup_no_folders),
-                onNavigateUp = {
-                    coroutineScope.launch {
-                        loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath))
-                    }
-                },
-                onRefresh = { coroutineScope.launch { loadDirectory(currentPath) } },
-                onCreateFolder = { showCreateFolderDialog = true },
-                entrySupportingText = { stringResource(R.string.onedrive_backup_folder_item) },
-                onEntryClick = { entry -> coroutineScope.launch { loadDirectory(entry.path) } }
-            ) {
-                Button(
-                    onClick = { saveCurrentFolderAsBackupDirectory() },
-                    enabled = !loadingEntries,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Done, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.onedrive_backup_use_current_folder))
-                }
-                savedConfigForCurrentSession?.let { config ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.onedrive_backup_config_title),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                config.folderPath.toOneDriveDisplayPath(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        IconButton(onClick = {
-                            backupHelper.clearConfig()
-                            savedConfig = null
-                            backupList = emptyList()
-                        }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.clear))
-                        }
-                    }
-                }
-            }
-
-            Card {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.onedrive_backup_security_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.onedrive_backup_encryption_title))
-                            Text(
-                                text = stringResource(R.string.onedrive_backup_encryption_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = encryptionEnabled,
-                            onCheckedChange = {
-                                encryptionEnabled = it
-                                webDavHelper.setEncryptionConfig(it, if (it) encryptionPassword else "")
-                            }
-                        )
-                    }
-
-                    if (encryptionEnabled) {
-                        OutlinedTextField(
-                            value = encryptionPassword,
-                            onValueChange = {
-                                encryptionPassword = it
-                                webDavHelper.setEncryptionConfig(encryptionEnabled, it)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(stringResource(R.string.password)) },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                            visualTransformation = if (encryptionPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                TextButton(onClick = { encryptionPasswordVisible = !encryptionPasswordVisible }) {
-                                    Text(if (encryptionPasswordVisible) stringResource(R.string.hide) else stringResource(R.string.show))
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
-                        )
-                    }
-                }
-            }
-
-            SelectiveBackupCard(
-                preferences = backupPreferences,
-                onPreferencesChange = {
-                    val normalized = it.copy(includeWebDavConfig = false)
-                    backupPreferences = normalized
-                    webDavHelper.saveBackupPreferences(normalized)
-                },
-                passwordCount = passwordCount,
-                authenticatorCount = authenticatorCount,
-                documentCount = documentCount,
-                bankCardCount = bankCardCount,
-                noteCount = noteCount,
-                trashCount = trashCount,
-                passkeyCount = passkeyCount,
-                localKeePassCount = localKeePassCount,
-                isWebDavConfigured = false
-            )
-
-            Button(
-                onClick = {
-                    if (currentSessionBackupConfig() == null) {
-                        Log.w(
-                            ONEDRIVE_BACKUP_LOG_TAG,
-                            "Create backup blocked: no config for current session, " +
-                                "state=$connectionState, session=${session.debugRef()}, savedConfig=${savedConfig.debugRef()}"
-                        )
-                        Toast.makeText(context, context.getString(R.string.onedrive_backup_directory_required), Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    if (!backupPreferences.hasAnyEnabled()) {
-                        Toast.makeText(context, context.getString(R.string.backup_validation_error), Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    creatingBackup = true
-                    coroutineScope.launch {
-                        val backupTarget = SyncTarget.Backup(SyncBackupProvider.ONEDRIVE)
-                        val taskId = SyncDiagnostics.nextTaskId("backup-onedrive-screen")
-                        val targetLog = backupTarget.stableKey.value
-                        val triggerLog = "ONEDRIVE_SCREEN_MANUAL"
-                        try {
-                            val syncResult = SyncTaskRunner.requestAndAwait(
-                                request = SyncRequest(
-                                    requestId = taskId,
-                                    target = backupTarget,
-                                    trigger = SyncTrigger.MANUAL,
-                                    createdAtMillis = System.currentTimeMillis(),
-                                    priority = SyncPriority.MANUAL,
-                                    mode = SyncMode.FOREGROUND,
-                                    networkPolicy = SyncNetworkPolicy.REQUIRED
-                                )
-                            ) {
-                                SyncDiagnostics.queued(taskId, targetLog, triggerLog)
-                                val startedAt = SyncDiagnostics.start(taskId, targetLog, triggerLog)
-                                try {
-                                    val localPasswords = passwordRepository.getAllLocalPasswordEntries()
-                                    val securityManager = takagi.ru.monica.security.SecurityManager(context)
-                                    val failedPasswordTitles = mutableListOf<String>()
-                                    val decryptedPasswords = localPasswords.map { entry ->
-                                        runCatching {
-                                            entry.copy(password = securityManager.decryptData(entry.password))
-                                        }.getOrElse { error ->
-                                            Log.w(
-                                                ONEDRIVE_BACKUP_LOG_TAG,
-                                                "Failed to decrypt password for OneDrive backup: ${entry.title} (${error.message})"
-                                            )
-                                            failedPasswordTitles += entry.title.ifBlank { entry.website.ifBlank { entry.username } }
-                                            entry.copy(password = "")
-                                        }
-                                    }
-                                    if (failedPasswordTitles.isNotEmpty()) {
-                                        throw IllegalStateException(
-                                            "有 ${failedPasswordTitles.size} 条密码无法解密，已取消备份。请先用主密码解锁 Monica 后重新备份。"
-                                        )
-                                    }
-                                    val localSecureItems = secureItemRepository.getAllLocalItems()
-                                    Log.i(
-                                        ONEDRIVE_BACKUP_LOG_TAG,
-                                        "Creating OneDrive backup zip: passwords=${localPasswords.size}, " +
-                                            "secureItems=${localSecureItems.size}, scope=${BackupContentScope.MONICA_LOCAL_ONLY}"
-                                    )
-                                    val (file, report) = webDavHelper.createBackupZip(
-                                        passwords = decryptedPasswords,
-                                        secureItems = localSecureItems,
-                                        preferences = backupPreferences,
-                                        contentScope = BackupContentScope.MONICA_LOCAL_ONLY
-                                    ).getOrThrow()
-
-                                    if (!report.success || report.failedItems.isNotEmpty()) {
-                                        file.delete()
-                                        throw IllegalStateException(
-                                            context.getString(R.string.webdav_create_backup_failed)
-                                        )
-                                    }
-
-                                    Log.i(
-                                        ONEDRIVE_BACKUP_LOG_TAG,
-                                        "OneDrive backup zip ready: sizeBytes=${file.length()}, " +
-                                            "passwords=${report.successItems.passwords}/${report.totalItems.passwords}, " +
-                                            "totp=${report.successItems.totp}/${report.totalItems.totp}, " +
-                                            "notes=${report.successItems.notes}/${report.totalItems.notes}, " +
-                                            "warnings=${report.warnings.size}, failures=${report.failedItems.size}"
-                                    )
-                                    try {
-                                        backupHelper.uploadBackup(file, isPermanent = true).getOrThrow()
-                                    } finally {
-                                        file.delete()
-                                    }
-                                    SyncDiagnostics.success(
-                                        taskId = taskId,
-                                        target = targetLog,
-                                        trigger = triggerLog,
-                                        startedAt = startedAt,
-                                        detail = "passwords=${decryptedPasswords.size} secureItems=${localSecureItems.size} warnings=${report.warnings.size} failures=${report.failedItems.size}"
-                                    )
-                                    report
-                                } catch (error: Exception) {
-                                    SyncDiagnostics.failed(taskId, targetLog, triggerLog, startedAt, error)
-                                    throw error
-                                }
-                            }
-
-                            when (syncResult) {
-                                is SyncTaskAwaitResult.Completed -> {
-                                    Toast.makeText(
-                                        context,
-                                        if (syncResult.value.hasIssues()) {
-                                            syncResult.value.getSummary()
-                                        } else {
-                                            context.getString(R.string.webdav_backup_success)
-                                        },
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                                is SyncTaskAwaitResult.Merged -> {
-                                    SyncDiagnostics.skipped(
-                                        taskId = taskId,
-                                        target = targetLog,
-                                        trigger = triggerLog,
-                                        reason = "merged_with_running_backup",
-                                        detail = "running=${syncResult.status.runningRequestId.orEmpty()}"
-                                    )
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.webdav_backup_in_progress),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                                is SyncTaskAwaitResult.Skipped -> {
-                                    SyncDiagnostics.skipped(taskId, targetLog, triggerLog, syncResult.reason)
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.webdav_backup_failed, syncResult.reason),
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                                is SyncTaskAwaitResult.Blocked -> {
-                                    val reason = syncResult.error.redactedMessage ?: syncResult.error.kind.name
-                                    SyncDiagnostics.blocked(taskId, targetLog, triggerLog, reason)
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.webdav_backup_failed, reason),
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                                is SyncTaskAwaitResult.Canceled -> {
-                                    val reason = syncResult.reason ?: "backup canceled"
-                                    SyncDiagnostics.skipped(taskId, targetLog, triggerLog, reason)
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.webdav_backup_failed, reason),
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                                is SyncTaskAwaitResult.Failed -> {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(
-                                            R.string.webdav_backup_failed,
-                                            syncResult.error.toOneDriveUserMessage(context.getString(R.string.webdav_create_backup_failed))
-                                        ),
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                            if (syncResult is SyncTaskAwaitResult.Completed) {
-                                refreshBackups()
-                            }
-                        } catch (error: Exception) {
-                            Log.e(ONEDRIVE_BACKUP_LOG_TAG, "OneDrive backup creation failed", error)
-                            Toast.makeText(
-                                context,
-                                context.getString(
-                                    R.string.webdav_backup_failed,
-                                    error.toOneDriveUserMessage(context.getString(R.string.webdav_create_backup_failed))
-                                ),
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } finally {
-                            creatingBackup = false
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = backupReady && !creatingBackup
-            ) {
-                if (creatingBackup) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                } else {
-                    Icon(Icons.Default.CloudSync, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text(if (creatingBackup) stringResource(R.string.webdav_backup_in_progress) else stringResource(R.string.webdav_backup_now))
-            }
-
-            Card {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.webdav_backup_list),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        IconButton(
-                            onClick = { coroutineScope.launch { refreshBackups() } },
-                            enabled = backupReady && !loadingBackups
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
-                        }
-                    }
-
-                    if (loadingBackups) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 20.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (savedConfigForCurrentSession == null) {
-                        Text(
-                            text = stringResource(R.string.onedrive_backup_directory_required),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else if (backupList.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.webdav_no_backups),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        backupList.forEachIndexed { index, backup ->
-                            if (index > 0) {
-                                HorizontalDivider()
-                            }
-                            OneDriveBackupListItem(
-                                backup = backup,
-                                helper = backupHelper,
-                                onRestore = { showRestoreDialogFor = backup },
-                                onDelete = { showDeleteDialogFor = backup },
-                                onStatusChanged = { coroutineScope.launch { refreshBackups() } }
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-
-    if (showCreateFolderDialog) {
-        var folderName by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showCreateFolderDialog = false },
-            title = { Text(stringResource(R.string.keepass_onedrive_create_folder_title)) },
-            text = {
-                OutlinedTextField(
-                    value = folderName,
-                    onValueChange = { folderName = it },
-                    label = { Text(stringResource(R.string.folder_name)) },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val activeSession = session ?: return@TextButton
-                        showCreateFolderDialog = false
-                        creatingFolder = true
-                        coroutineScope.launch {
-                            runCatching {
-                                backupHelper.createFolder(activeSession.accountId, currentPath, folderName)
-                            }.onSuccess {
-                                loadDirectory(currentPath)
-                            }.onFailure { error ->
-                                Toast.makeText(context, error.toOneDriveUserMessage(context.getString(R.string.webdav_operation_failed, "")), Toast.LENGTH_LONG).show()
-                            }
-                            creatingFolder = false
-                        }
-                    },
-                    enabled = folderName.isNotBlank()
-                ) {
-                    Text(stringResource(R.string.create))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateFolderDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
-    showDeleteDialogFor?.let { backup ->
-        AlertDialog(
-            onDismissRequest = { showDeleteDialogFor = null },
-            title = { Text(stringResource(R.string.delete_backup)) },
-            text = { Text(stringResource(R.string.delete_backup_confirm, backup.name)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialogFor = null
-                        coroutineScope.launch {
-                            backupHelper.deleteBackup(backup).fold(
-                                onSuccess = {
-                                    Toast.makeText(context, context.getString(R.string.backup_deleted), Toast.LENGTH_SHORT).show()
-                                    refreshBackups()
-                                },
-                                onFailure = { error ->
-                                    Toast.makeText(context, context.getString(R.string.delete_failed, error.toOneDriveUserMessage("")), Toast.LENGTH_LONG).show()
-                                }
-                            )
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialogFor = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
-    showRestoreDialogFor?.let { backup ->
-        AlertDialog(
-            onDismissRequest = { showRestoreDialogFor = null },
-            title = { Text(stringResource(R.string.webdav_restore_backup_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(backup.name, fontWeight = FontWeight.SemiBold)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = restoreMode == OneDriveRestoreMode.MergeLocal,
-                                onClick = { restoreMode = OneDriveRestoreMode.MergeLocal }
-                            ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = restoreMode == OneDriveRestoreMode.MergeLocal, onClick = null)
-                        Text(stringResource(R.string.webdav_restore_mode_merge_title))
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = restoreMode == OneDriveRestoreMode.ReplaceLocal,
-                                onClick = { restoreMode = OneDriveRestoreMode.ReplaceLocal }
-                            ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = restoreMode == OneDriveRestoreMode.ReplaceLocal, onClick = null)
-                        Text(stringResource(R.string.webdav_restore_mode_replace_title))
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = restoreGlobalDedup,
-                            onCheckedChange = { restoreGlobalDedup = it },
-                            enabled = restoreMode == OneDriveRestoreMode.MergeLocal
-                        )
-                        Text(stringResource(R.string.webdav_restore_mode_global_dedup))
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRestoreDialogFor = null
-                        if (backup.isEncrypted()) {
-                            decryptPassword = ""
-                            showDecryptPasswordDialogFor = backup
-                        } else {
-                            coroutineScope.launch { performRestore(backup, null) }
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.webdav_restore_action))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRestoreDialogFor = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
-    showDecryptPasswordDialogFor?.let { backup ->
-        AlertDialog(
-            onDismissRequest = { showDecryptPasswordDialogFor = null },
-            title = { Text(stringResource(R.string.webdav_enter_decrypt_password)) },
-            text = {
-                OutlinedTextField(
-                    value = decryptPassword,
-                    onValueChange = { decryptPassword = it },
-                    label = { Text(stringResource(R.string.password)) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDecryptPasswordDialogFor = null
-                        coroutineScope.launch { performRestore(backup, decryptPassword) }
-                    },
-                    enabled = decryptPassword.isNotBlank()
-                ) {
-                    Text(stringResource(R.string.confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDecryptPasswordDialogFor = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
+    fun openFolderPicker() {
+        showFolderPicker = true
+        coroutineScope.launch { loadDirectory(currentSessionBackupConfig()?.folderPath.orEmpty()) }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun OneDriveBackupListItem(
-    backup: BackupFile,
-    helper: OneDriveBackupHelper,
-    onRestore: () -> Unit,
-    onDelete: () -> Unit,
-    onStatusChanged: () -> Unit
+fun OneDriveBackupScreen(
+    passwordRepository: PasswordRepository,
+    secureItemRepository: SecureItemRepository,
+    onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
     val coroutineScope = rememberCoroutineScope()
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
-    var menuExpanded by remember { mutableStateOf(false) }
+    val backupHelper = remember { OneDriveBackupHelper(context) }
+    val authManager = remember { OneDriveAuthManager(context) }
+    val webDavHelper = remember { WebDavHelper(context) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.CloudDownload,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            val statusHints = buildList {
-                if (backup.isPermanent) add(stringResource(R.string.webdav_tag_permanent))
-                if (backup.isEncrypted()) add(stringResource(R.string.webdav_backup_encrypted))
-            }
-            Text(
-                text = backup.name,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+    val folderPickerState = rememberSaveable { mutableStateOf(false) }
+    val screenState = remember {
+        OneDriveBackupScreenState(context, activity, coroutineScope, backupHelper, authManager, webDavHelper,
+            passwordRepository, secureItemRepository, folderPickerState)
+    }
+
+    with(screenState) {
+        val oneDriveReady = session != null && connectionState == OneDriveBackupConnectionState.Connected
+
+        val savedConfigForCurrentSession = currentSessionBackupConfig()
+        val backupReady = oneDriveReady && savedConfigForCurrentSession != null
+
+        LaunchedEffect(Unit) {
+            savedConfig = backupHelper.getConfig()
+            backupPreferences = webDavHelper.getBackupPreferences().copy(includeWebDavConfig = false)
+            val encryptionConfig = webDavHelper.getEncryptionConfig()
+            encryptionEnabled = encryptionConfig.enabled
+            encryptionPassword = encryptionConfig.password
+            loadCounts()
+
+            Log.d(
+                ONEDRIVE_BACKUP_LOG_TAG,
+                "Initializing OneDrive backup screen, savedConfig=${savedConfig.debugRef()}"
             )
-            Text(
-                text = buildString {
-                    append(dateFormat.format(backup.modified))
-                    append(" • ")
-                    append(helper.formatFileSize(backup.size))
-                    if (statusHints.isNotEmpty()) {
-                        append(" • ")
-                        append(statusHints.joinToString(" · "))
-                    }
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        IconButton(onClick = onRestore) {
-            Icon(Icons.Default.Sync, contentDescription = stringResource(R.string.webdav_restore_action))
-        }
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = null)
+            val configuredSessionResult = runCatching { backupHelper.getConfiguredSession() }
+            val configuredSession = configuredSessionResult.getOrNull()
+            val cachedSession = runCatching { authManager.getCachedSession() }.getOrNull()
+
+            session = configuredSession ?: cachedSession
+            if (configuredSessionResult.isFailure) {
+                val error = configuredSessionResult.exceptionOrNull()
+                Log.w(
+                    ONEDRIVE_BACKUP_LOG_TAG,
+                    "Configured OneDrive session refresh failed, " +
+                        "temporaryAuth=${error?.isOneDriveAuthTemporarilyUnavailable() == true}, " +
+                        "cachedSession=${cachedSession.debugRef()}",
+                    error
+                )
+                browserError = configuredSessionResult.exceptionOrNull()
+                    ?.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.keepass_onedrive_load_files_failed))
+                browserEntries = emptyList()
+                backupList = emptyList()
+                loadingEntries = false
+                loadingBackups = false
+                connectionState = OneDriveBackupConnectionState.Failed
+                return@LaunchedEffect
             }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
+
+            Log.d(
+                ONEDRIVE_BACKUP_LOG_TAG,
+                "Initial OneDrive session resolved, configured=${configuredSession.debugRef()}, " +
+                    "cached=${cachedSession.debugRef()}, active=${session.debugRef()}, " +
+                    "configMatches=${currentSessionBackupConfig() != null}"
+            )
+            if (session != null) {
+                connectionState = OneDriveBackupConnectionState.Connected
+                val initialPath = currentSessionBackupConfig()?.folderPath.orEmpty()
+                loadDirectory(initialPath)
+            }
+            if (session != null &&
+                connectionState == OneDriveBackupConnectionState.Connected &&
+                currentSessionBackupConfig() != null
             ) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (backup.isPermanent) {
-                                stringResource(R.string.webdav_unmark_permanent)
-                            } else {
-                                stringResource(R.string.webdav_mark_permanent)
-                            }
-                        )
+                refreshBackups()
+            }
+        }
+
+        val connectionLabel = when (connectionState) {
+            OneDriveBackupConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
+            OneDriveBackupConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
+            OneDriveBackupConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
+            OneDriveBackupConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
+        }
+        CloudBackupPage(
+            title = stringResource(R.string.onedrive_backup_title),
+            configured = savedConfigForCurrentSession != null,
+            backups = backupList,
+            loading = loadingBackups,
+            refreshEnabled = !signingIn && !creatingBackup && session != null && restoringBackupPath == null,
+            onRefresh = {
+                coroutineScope.launch {
+                    if (connectionState != OneDriveBackupConnectionState.Connected) {
+                        loadDirectory(currentSessionBackupConfig()?.folderPath.orEmpty())
+                    }
+                    if (connectionState == OneDriveBackupConnectionState.Connected) refreshBackups()
+                }
+            },
+            onNavigateBack = onNavigateBack,
+            errorMessage = browserError,
+            primaryAction = {
+                when {
+                    savedConfigForCurrentSession != null -> CloudBackupPrimaryButton(
+                        label = stringResource(if (creatingBackup) R.string.webdav_backup_in_progress else R.string.webdav_create_new_backup),
+                        onClick = ::createBackup, busy = creatingBackup,
+                        enabled = backupReady && !loadingBackups && restoringBackupPath == null,
+                    )
+                    session == null || connectionState == OneDriveBackupConnectionState.Failed -> CloudBackupPrimaryButton(
+                        label = stringResource(R.string.keepass_onedrive_sign_in_action), onClick = ::signInOrSwitchAccount,
+                        busy = signingIn, icon = Icons.Default.Login,
+                    )
+                    else -> CloudBackupPrimaryButton(
+                        label = stringResource(R.string.onedrive_backup_browser_title), onClick = ::openFolderPicker,
+                        enabled = !loadingEntries, icon = Icons.Default.FolderOpen,
+                    )
+                }
+            },
+            location = {
+                CloudBackupLocationCard(
+                    title = session?.displayName?.ifBlank { session?.username.orEmpty() } ?: "OneDrive",
+                    subtitle = savedConfigForCurrentSession?.folderPath?.toOneDriveDisplayPath()
+                        ?: stringResource(R.string.onedrive_backup_directory_required),
+                    supporting = listOfNotNull(session?.username?.takeIf(String::isNotBlank), connectionLabel).joinToString(" · "),
+                    actionLabel = stringResource(R.string.onedrive_backup_browser_title),
+                    onClick = if (session != null && !creatingBackup && restoringBackupPath == null) ::openFolderPicker else null,
+                    busy = signingIn,
+                )
+            },
+            connection = {
+                CloudBackupNotice(stringResource(R.string.onedrive_backup_description), icon = Icons.Default.Backup)
+                if (session != null) DatabaseManagementActionGroup(listOf(
+                    DatabaseManagementAction(Icons.Default.ManageAccounts, stringResource(R.string.keepass_onedrive_switch_account),
+                        ::signInOrSwitchAccount, enabled = !signingIn),
+                ))
+            },
+            settings = {
+                CloudBackupEncryptionSettings(
+                    enabled = encryptionEnabled, password = encryptionPassword, passwordVisible = encryptionPasswordVisible,
+                    onEnabledChange = {
+                        encryptionEnabled = it
+                        webDavHelper.setEncryptionConfig(it, if (it) encryptionPassword else "")
                     },
-                    leadingIcon = {
-                        Icon(
-                            if (backup.isPermanent) Icons.Default.BookmarkRemove else Icons.Default.BookmarkAdd,
-                            contentDescription = null
-                        )
+                    onPasswordChange = { encryptionPassword = it; webDavHelper.setEncryptionConfig(encryptionEnabled, it) },
+                    onVisibilityChange = { encryptionPasswordVisible = !encryptionPasswordVisible },
+                )
+                SelectiveBackupCard(
+                    preferences = backupPreferences,
+                    onPreferencesChange = {
+                        val normalized = it.copy(includeWebDavConfig = false)
+                        backupPreferences = normalized
+                        webDavHelper.saveBackupPreferences(normalized)
                     },
-                    onClick = {
-                        menuExpanded = false
+                    passwordCount = passwordCount, authenticatorCount = authenticatorCount, documentCount = documentCount,
+                    bankCardCount = bankCardCount, noteCount = noteCount, trashCount = trashCount, passkeyCount = passkeyCount,
+                    localKeePassCount = localKeePassCount, isWebDavConfigured = false,
+                )
+                CloudBackupConnectionSettings(
+                    title = stringResource(R.string.onedrive_backup_config_title),
+                    fields = listOf(
+                        stringResource(R.string.onedrive_backup_directory_label) to savedConfigForCurrentSession?.folderPath.orEmpty().toOneDriveDisplayPath(),
+                        stringResource(R.string.username) to session?.username.orEmpty(),
+                    ),
+                    actions = listOf(
+                    DatabaseManagementAction(Icons.Default.FolderOpen, stringResource(R.string.onedrive_backup_browser_title),
+                        ::openFolderPicker, enabled = !creatingBackup && !signingIn && restoringBackupPath == null),
+                    DatabaseManagementAction(Icons.Default.ManageAccounts, stringResource(R.string.keepass_onedrive_switch_account),
+                        ::signInOrSwitchAccount, enabled = !creatingBackup && !signingIn && restoringBackupPath == null),
+                    DatabaseManagementAction(Icons.Default.LinkOff, stringResource(R.string.clear), {
+                        backupHelper.clearConfig()
+                        savedConfig = null
+                        backupList = emptyList()
+                    }, enabled = !creatingBackup && restoringBackupPath == null, warning = true),
+                ))
+            },
+            backupRow = { index, backup ->
+                CloudBackupFileRow(
+                    backup = backup, sizeLabel = backupHelper.formatFileSize(backup.size), index = index, count = backupList.size,
+                    busy = restoringBackupPath == backup.path, enabled = !loadingBackups && !creatingBackup && restoringBackupPath == null,
+                    onRestore = {
+                        restoreMode = OneDriveRestoreMode.MergeLocal
+                        restoreGlobalDedup = false
+                        showRestoreDialogFor = backup
+                    },
+                    onDelete = { showDeleteDialogFor = backup },
+                    onTogglePermanent = {
                         coroutineScope.launch {
                             val result = if (backup.isPermanent) {
-                                helper.unmarkPermanent(backup)
+                                backupHelper.unmarkPermanent(backup)
                             } else {
-                                helper.markBackupAsPermanent(backup)
+                                backupHelper.markBackupAsPermanent(backup)
                             }
                             result.fold(
                                 onSuccess = {
-                                    onStatusChanged()
+                                    refreshBackups()
                                 },
                                 onFailure = { error ->
                                     Toast.makeText(
                                         context,
-                                        context.getString(R.string.webdav_operation_failed, error.toOneDriveUserMessage("")),
+                                        context.getString(R.string.webdav_operation_failed, error.toOneDriveUserMessage(AppLocaleStringResolver(context), "")),
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
                             )
                         }
-                    }
+                    },
                 )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.delete)) },
-                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                    onClick = {
-                        menuExpanded = false
-                        onDelete()
+            },
+        )
+
+        if (showFolderPicker && session != null) {
+            CloudBackupFolderSheet(
+                account = session?.username.orEmpty(), currentPath = currentPath, entries = browserEntries,
+                loading = loadingEntries || creatingFolder, enabled = oneDriveReady && !signingIn,
+                errorMessage = browserError,
+                onNavigateUp = { coroutineScope.launch { loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath, strings = AppLocaleStringResolver(context))) } },
+                onRefresh = { coroutineScope.launch { loadDirectory(currentPath) } },
+                onCreateFolder = { showCreateFolderDialog = true },
+                onEntryClick = { entry -> coroutineScope.launch { loadDirectory(entry.path) } },
+                onSave = { saveCurrentFolderAsBackupDirectory(); showFolderPicker = false },
+                onDismiss = { showFolderPicker = false },
+            )
+        }
+
+        if (showCreateFolderDialog) {
+            var folderName by remember { mutableStateOf("") }
+            AlertDialog(
+                onDismissRequest = { showCreateFolderDialog = false },
+                title = { Text(stringResource(R.string.keepass_onedrive_create_folder_title)) },
+                text = {
+                    OutlinedTextField(
+                        shape = DatabaseManagementFieldShape,
+                        value = folderName,
+                        onValueChange = { folderName = it },
+                        label = { Text(stringResource(R.string.folder_name)) },
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val activeSession = session ?: return@TextButton
+                            showCreateFolderDialog = false
+                            creatingFolder = true
+                            coroutineScope.launch {
+                                runCatching {
+                                    backupHelper.createFolder(activeSession.accountId, currentPath, folderName)
+                                }.onSuccess {
+                                    loadDirectory(currentPath)
+                                }.onFailure { error ->
+                                    Toast.makeText(context, error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.webdav_operation_failed, "")), Toast.LENGTH_LONG).show()
+                                }
+                                creatingFolder = false
+                            }
+                        },
+                        enabled = folderName.isNotBlank()
+                    ) {
+                        Text(stringResource(R.string.create))
                     }
-                )
-            }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCreateFolderDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+
+        showDeleteDialogFor?.let { backup ->
+            AlertDialog(
+                onDismissRequest = { showDeleteDialogFor = null },
+                title = { Text(stringResource(R.string.delete_backup)) },
+                text = { Text(stringResource(R.string.delete_backup_confirm, backup.name)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialogFor = null
+                            coroutineScope.launch {
+                                backupHelper.deleteBackup(backup).fold(
+                                    onSuccess = {
+                                        Toast.makeText(context, context.getString(R.string.backup_deleted), Toast.LENGTH_SHORT).show()
+                                        refreshBackups()
+                                    },
+                                    onFailure = { error ->
+                                        Toast.makeText(context, context.getString(R.string.delete_failed, error.toOneDriveUserMessage(AppLocaleStringResolver(context), "")), Toast.LENGTH_LONG).show()
+                                    }
+                                )
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialogFor = null }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+
+        showRestoreDialogFor?.let { backup ->
+            CloudBackupRestoreSheet(
+                backup = backup, sizeLabel = backupHelper.formatFileSize(backup.size),
+                merge = restoreMode == OneDriveRestoreMode.MergeLocal, globalDedup = restoreGlobalDedup,
+                onMergeChange = { restoreMode = if (it) OneDriveRestoreMode.MergeLocal else OneDriveRestoreMode.ReplaceLocal },
+                onGlobalDedupChange = { restoreGlobalDedup = it },
+                onDismiss = { showRestoreDialogFor = null },
+                onRestore = {
+                    showRestoreDialogFor = null
+                    if (backup.isEncrypted()) {
+                        decryptPassword = ""
+                        showDecryptPasswordDialogFor = backup
+                    } else {
+                        coroutineScope.launch { performRestore(backup, null) }
+                    }
+                },
+            )
+        }
+
+        showDecryptPasswordDialogFor?.let { backup ->
+            AlertDialog(
+                onDismissRequest = { showDecryptPasswordDialogFor = null },
+                title = { Text(stringResource(R.string.webdav_enter_decrypt_password)) },
+                text = {
+                    OutlinedTextField(
+                        shape = DatabaseManagementFieldShape,
+                        value = decryptPassword,
+                        onValueChange = { decryptPassword = it },
+                        label = { Text(stringResource(R.string.password)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDecryptPasswordDialogFor = null
+                            coroutineScope.launch { performRestore(backup, decryptPassword) }
+                        },
+                        enabled = decryptPassword.isNotBlank()
+                    ) {
+                        Text(stringResource(R.string.confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDecryptPasswordDialogFor = null }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
         }
     }
 }
@@ -1150,13 +872,13 @@ private fun buildRestoreSummary(
 ): String {
     val report = restoreResult.report
     if (report.hasIssues()) {
-        return report.getSummary()
+        return report.getSummary(context)
     }
     val summaryParts = mutableListOf<String>()
     summaryParts += context.getString(R.string.webdav_restore_summary_part_passwords, stats.passwordImported)
     summaryParts += context.getString(R.string.webdav_restore_summary_part_other_data, stats.secureItemImported)
     if (stats.passkeyImported > 0) {
-        summaryParts += "通行密钥 ${stats.passkeyImported}"
+        summaryParts += context.getString(R.string.legacy_ui_restore_passkey_count, stats.passkeyImported)
     }
     return context.getString(
         R.string.webdav_restore_summary_success,

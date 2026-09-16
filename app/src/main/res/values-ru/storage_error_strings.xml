@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">База доступна только для чтения. Перед редактированием отключите этот режим в её настройках.</string>
+    <string name="keepass_error_write_permission">Нет доступа на запись KDBX. Предоставьте доступ заново в настройках базы перед сохранением или удалением.</string>
+    <string name="keepass_error_memory">Настройкам KDF требуется больше памяти, чем доступно на устройстве. Уменьшите использование памяти или параллелизм.</string>
+    <string name="keepass_error_credentials">Неверный пароль базы или файл ключа</string>
+    <string name="keepass_error_legacy">Устаревшие базы .kdb (KeePass 1.x) не поддерживаются. Сохраните базу в формате .kdbx через KeePassDX или KeePassXC, затем импортируйте.</string>
+    <string name="keepass_error_format">Неподдерживаемый формат базы или повреждённый файл</string>
+    <string name="keepass_error_io">Не удалось прочитать или записать файл KeePass</string>
+    <string name="keepass_error_operation">Ошибка операции KeePass</string>
+    <string name="onedrive_error_redirect">Старая версия Monica Steam перехватывает вход в OneDrive. Обновите Monica Steam и повторите попытку. Файл базы данных не повреждён.</string>
+    <string name="onedrive_error_power">OneDrive сейчас не может обновить сеанс входа. Отключите оптимизацию батареи либо включите экран и заново откройте Monica перед повторной попыткой.</string>
+    <string name="onedrive_error_operation">Ошибка операции OneDrive</string>
+    <string name="keepass_error_not_remote">У базы нет удалённого источника</string>
+    <string name="keepass_error_remote_source_missing">Удалённый источник не найден</string>
+    <string name="keepass_error_working_copy_missing">Локальная рабочая копия не найдена</string>
+    <string name="keepass_sync_pulled">Последняя удалённая версия скачана</string>
+    <string name="keepass_sync_both_changed">Удалённый файл и локальная рабочая копия изменились. Устраните конфликт перед синхронизацией.</string>
+    <string name="keepass_sync_up_to_date">Удалённая база актуальна</string>
+    <string name="keepass_sync_remote_changed">Удалённый файл изменился. Выполните синхронизацию перед продолжением.</string>
+    <string name="keepass_sync_complete">Удалённая синхронизация завершена</string>
+    <string name="keepass_error_group_name_required">Введите имя группы</string>
+    <string name="keepass_error_group_path">Недопустимый путь к группе</string>
+    <string name="keepass_error_group_missing">Группа не найдена: %1$s</string>
+    <string name="keepass_error_group_child">Нельзя переместить группу в неё саму или её подгруппу</string>
+    <string name="keepass_error_group_uuid">В месте назначения уже есть другая группа с тем же UUID: %1$s</string>
+    <string name="keepass_error_select_folder">Выберите хотя бы одну папку</string>
+    <string name="keepass_group_unnamed">Группа без имени</string>
+    <string name="keepass_error_parent_group">Родительская группа не найдена: %1$s</string>
+    <string name="keepass_error_group_exists">Здесь уже есть группа с таким именем</string>
+    <string name="keepass_error_no_credentials">Нет учётных данных базы</string>
+    <string name="keepass_error_source_type">Неподдерживаемый тип удалённого источника: %1$s</string>
+    <string name="keepass_error_upload_verification">Удалённая проверка не пройдена: загруженное содержимое отличается (%1$d/%2$d байт)</string>
+    <string name="storage_error_invalid_path">Недопустимый путь к файлу</string>
+    <string name="storage_error_create_directory">Не удалось создать каталог базы</string>
+    <string name="storage_error_read_database">Не удалось прочитать файл базы</string>
+    <string name="storage_error_open_database">Не удалось открыть файл базы</string>
+    <string name="storage_error_recovery_copy">Не удалось создать копию восстановления KeePass</string>
+    <string name="storage_error_verify_database">Не удалось проверить файл базы</string>
+    <string name="storage_error_write_verification">Проверка после записи внешнего файла KeePass не пройдена</string>
+    <string name="storage_error_rollback_verification">Проверка после восстановления внешнего файла KeePass не пройдена</string>
+    <string name="storage_error_write_database">Не удалось записать файл базы</string>
+    <string name="keepass_error_conflict_cache_missing">Отсутствует кэшированная копия для разрешения конфликтов</string>
+    <string name="onedrive_error_session_expired">Сеанс аккаунта OneDrive истёк. Войдите заново.</string>
+</resources>

@@ -1,11 +1,12 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -171,29 +172,80 @@ fun MdbxWebDavOpenScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.mdbx_connect_to_remote_vault)) },
+            MdbxTopAppBar(
+                title = { Text(stringResource(R.string.mdbx_connect_to_remote_vault), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
+        },
+        bottomBar = {
+            MdbxFormActionBar {
+                // === Submit Button ===
+                val isFormValid = connectionState is ConnectionState.Connected &&
+                    selectedWebDavFile != null &&
+                    serverUrl.isNotBlank() &&
+                    username.isNotBlank() &&
+                    webDavPassword.isNotBlank() &&
+                    (!passwordRequired || (
+                        normalizedMasterPassword.isNotBlank() &&
+                            normalizedMasterPassword == normalizedConfirmPassword
+                        )) &&
+                    (!keyFileRequired || keyFile != null) &&
+                    operationState !is MdbxViewModel.OperationState.Loading
+
+                Button(
+                    onClick = {
+                        selectedWebDavFile?.let { file ->
+                            submitted = true
+                            viewModel.connectToExistingWebDavVault(
+                                masterPassword = masterPassword,
+                                unlockMethod = unlockMethod,
+                                keyFile = keyFile,
+                                tigaMode = MdbxTigaMode.MULTI,
+                                serverUrl = serverUrl,
+                                username = username,
+                                webDavPassword = webDavPassword,
+                                remoteFilePath = file.path,
+                                description = null,
+                                engineType = selectedEngine
+                            )
+                        }
+                    },
+                    enabled = isFormValid,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                ) {
+                    if (operationState is MdbxViewModel.OperationState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.mdbx_creating_vault))
+                    } else {
+                        Text(stringResource(R.string.mdbx_connect_to_remote_vault))
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // === Card: WebDAV Connection ===
-            Card(
+            MdbxCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -244,9 +296,9 @@ fun MdbxWebDavOpenScreen(
                     }
                 }
 
-                Card(
+                MdbxCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -264,7 +316,7 @@ fun MdbxWebDavOpenScreen(
                             Row {
                                 IconButton(
                                     onClick = {
-                                        val parent = WebDavKeePassFileSource.parentPathOf(webDavCurrentPath)
+                                        val parent = WebDavKeePassFileSource.parentPathOf(webDavCurrentPath, strings = AppLocaleStringResolver(context))
                                         loadWebDavDirectory(parent)
                                         selectedWebDavFile = null
                                     },
@@ -286,7 +338,7 @@ fun MdbxWebDavOpenScreen(
                             )
                         }
 
-                        Card(
+                        MdbxCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(max = 320.dp),
@@ -313,7 +365,11 @@ fun MdbxWebDavOpenScreen(
                                     )
                                 }
                             } else {
-                                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                                LazyColumn(
+                                    modifier = Modifier.heightIn(max = 300.dp),
+                                    contentPadding = PaddingValues(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
                                     items(webDavEntries, key = { it.path }) { entry ->
                                         val isMdbxFile = !entry.isDirectory &&
                                             entry.name.endsWith(".mdbx", ignoreCase = true)
@@ -364,9 +420,10 @@ fun MdbxWebDavOpenScreen(
                                                 }
                                             },
                                             colors = ListItemDefaults.colors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                                containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                                                    else MaterialTheme.colorScheme.surfaceContainerLow
                                             ),
-                                            modifier = Modifier.clickable(
+                                            modifier = Modifier.mdbxClickable(
                                                 enabled = entry.isDirectory || isMdbxFile
                                             ) {
                                                 if (entry.isDirectory) {
@@ -422,9 +479,9 @@ fun MdbxWebDavOpenScreen(
                         remote = true
                     )
 
-                    Card(
+                    MdbxCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -458,53 +515,6 @@ fun MdbxWebDavOpenScreen(
                             }
                         }
                     }
-                }
-            }
-
-            // === Submit Button ===
-            val isFormValid = connectionState is ConnectionState.Connected &&
-                selectedWebDavFile != null &&
-                serverUrl.isNotBlank() &&
-                username.isNotBlank() &&
-                webDavPassword.isNotBlank() &&
-                (!passwordRequired || (
-                    normalizedMasterPassword.isNotBlank() &&
-                        normalizedMasterPassword == normalizedConfirmPassword
-                    )) &&
-                (!keyFileRequired || keyFile != null) &&
-                operationState !is MdbxViewModel.OperationState.Loading
-
-            Button(
-                onClick = {
-                    selectedWebDavFile?.let { file ->
-                        submitted = true
-                        viewModel.connectToExistingWebDavVault(
-                            masterPassword = masterPassword,
-                            unlockMethod = unlockMethod,
-                            keyFile = keyFile,
-                            tigaMode = MdbxTigaMode.MULTI,
-                            serverUrl = serverUrl,
-                            username = username,
-                            webDavPassword = webDavPassword,
-                            remoteFilePath = file.path,
-                            description = null,
-                            engineType = selectedEngine
-                        )
-                    }
-                },
-                enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                if (operationState is MdbxViewModel.OperationState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mdbx_creating_vault))
-                } else {
-                    Text(stringResource(R.string.mdbx_connect_to_remote_vault))
                 }
             }
 

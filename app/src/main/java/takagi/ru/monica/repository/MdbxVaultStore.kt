@@ -1,6 +1,8 @@
 package takagi.ru.monica.repository
 
 import android.content.Context
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import android.os.Build
 import android.net.Uri
 import android.database.sqlite.SQLiteDatabase
@@ -393,6 +395,7 @@ class MdbxVaultStore(
     private val secureItemDao: SecureItemDao? = null,
     private val customFieldDao: CustomFieldDao? = null
 ) : MdbxRepository {
+    private val strings = AppLocaleStringResolver(context)
     private val epochKeyCache = ConcurrentHashMap<Long, ByteArray>()
     private val vaultWriteLocks = ConcurrentHashMap<String, Mutex>()
 
@@ -502,7 +505,7 @@ class MdbxVaultStore(
                             found
                         }
                         if (duplicateExists) {
-                            throw IllegalArgumentException("MDBX 文件夹已存在: $normalizedName")
+                            throw IllegalArgumentException(strings.get(R.string.mdbx_message_folder_exists, normalizedName))
                         }
 
                         val now = now()
@@ -2783,7 +2786,7 @@ class MdbxVaultStore(
                         ?: throw IllegalStateException("MDBX WebDAV base URL is missing")
                     val username = source.usernameEncrypted?.let(securityManager::decryptData).orEmpty()
                     val password = source.passwordEncrypted?.let(securityManager::decryptData).orEmpty()
-                    WebDavMdbxFileSource(baseUrl, username, password)
+                    WebDavMdbxFileSource(baseUrl, username, password, strings = strings)
                         .overwriteFile(source.remotePath, workingCopy.readBytes())
                     databaseDao.updateSyncStatus(database.id, MdbxSyncStatus.IN_SYNC.name, null)
                 }.onFailure { error ->
@@ -3723,7 +3726,7 @@ class MdbxVaultStore(
         epochKey: ByteArray?
     ): CommitChangePreview {
         if (!tableExists(db, "object_versions")) {
-            return CommitChangePreview("没有对象变更", "没有字段变更")
+            return CommitChangePreview(strings.get(R.string.mdbx_message_no_objects), strings.get(R.string.mdbx_message_no_fields))
         }
         val diffs = readObjectVersionsForCommit(db, commitId).map { version ->
             val previous = readPreviousObjectVersion(
@@ -3756,25 +3759,25 @@ class MdbxVaultStore(
 
     private fun summarizeCommitObjects(labels: List<String>): String =
         when {
-            labels.isEmpty() -> "没有对象变更"
+            labels.isEmpty() -> strings.get(R.string.mdbx_message_no_objects)
             labels.size == 1 -> labels.first()
-            else -> "${labels.first()} 等 ${labels.size} 个对象"
+            else -> strings.get(R.string.mdbx_message_object_preview, labels.first(), labels.size)
         }
 
     private fun summarizeCommitFields(labels: List<String>): String =
         when {
-            labels.isEmpty() -> "没有字段变更"
-            labels.size <= 3 -> labels.joinToString("、")
-            else -> labels.take(3).joinToString("、") + " 等 ${labels.size} 项"
+            labels.isEmpty() -> strings.get(R.string.mdbx_message_no_fields)
+            labels.size <= 3 -> labels.joinToString(" · ")
+            else -> strings.get(R.string.mdbx_message_field_preview, labels.take(3).joinToString(" · "), labels.size)
         }
 
     private fun commitFieldLabel(field: String): String =
         when (field.lowercase(Locale.ROOT)) {
-            "created" -> "新建"
-            "title" -> "标题"
-            "payload" -> "内容摘要"
-            "deleted" -> "删除状态"
-            "metadata" -> "元数据"
+            "created" -> strings.get(R.string.add)
+            "title" -> strings.get(R.string.title)
+            "payload" -> strings.get(R.string.timeline_display_content_summary)
+            "deleted" -> strings.get(R.string.timeline_display_deleted_state)
+            "metadata" -> strings.get(R.string.timeline_display_metadata)
             else -> field
         }
 
@@ -3784,7 +3787,7 @@ class MdbxVaultStore(
     ): Map<String, StructureFolderInfo> {
         if (!tableExists(db, "folders")) return emptyMap()
         val raw = linkedMapOf<String, Pair<String?, String>>()
-        raw["root"] = null to "根目录"
+        raw["root"] = null to strings.get(R.string.root_directory)
         db.rawQuery(
             """
             SELECT folder_id, parent_folder_id, name_ct
@@ -3901,7 +3904,7 @@ class MdbxVaultStore(
                     path = folder.path,
                     status = MdbxStructureNodeStatus.UNCHANGED,
                     childCount = folderChildCount[folderId] ?: 0,
-                    metadata = "${folderChildCount[folderId] ?: 0} 项"
+                    metadata = strings.get(R.string.mdbx_ui_history_object_quantity, folderChildCount[folderId] ?: 0, strings.get(R.string.mdbx_ui_object_entry))
                 )
             }
         val entryNodes = visibleEntries.map { entry ->
@@ -3945,14 +3948,14 @@ class MdbxVaultStore(
 
     private fun entryTypeLabel(type: String): String =
         when (type.lowercase(Locale.ROOT)) {
-            "password" -> "密码"
-            "totp" -> "验证器"
-            "note" -> "安全笔记"
-            "card" -> "银行卡"
-            "document-ref" -> "文档"
-            "billing-address" -> "账单地址"
-            "payment-account" -> "支付方式"
-            "passkey" -> "通行密钥"
+            "password" -> strings.get(R.string.password)
+            "totp" -> strings.get(R.string.item_type_authenticator)
+            "note" -> strings.get(R.string.note_detail_title)
+            "card" -> strings.get(R.string.timeline_item_card)
+            "document-ref" -> strings.get(R.string.item_type_document)
+            "billing-address" -> strings.get(R.string.billing_address)
+            "payment-account" -> strings.get(R.string.payment_account)
+            "passkey" -> strings.get(R.string.passkey)
             else -> type
         }
 

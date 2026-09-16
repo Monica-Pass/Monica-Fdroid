@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">Копия ZIP</string>
+    <string name="transfer_zip_description">Только выбранная база данных.</string>
+    <string name="transfer_contents">Содержимое</string>
+    <string name="transfer_images_attachments">Изображения и вложения</string>
+    <string name="transfer_encrypt_backup">Шифровать копию</string>
+    <string name="transfer_encryption_hint">Для Passkey и вложений нужна зашифрованная копия.</string>
+    <string name="transfer_choose_location">Выбрать место</string>
+    <string name="transfer_background_continue">Продолжить в фоне</string>
+    <string name="transfer_background_hint">Можно покинуть этот экран. Ход операции будет виден в уведомлении.</string>
+    <string name="transfer_reading">Чтение файла…</string>
+    <string name="transfer_decrypting">Расшифровка копии…</string>
+    <string name="transfer_preparing">Подготовка записей…</string>
+    <string name="transfer_writing">Запись в базу…</string>
+    <string name="transfer_attachments">Копирование вложений…</string>
+    <string name="transfer_packing">Создание архива…</string>
+    <string name="transfer_encrypting">Шифрование файла…</string>
+    <string name="transfer_saving">Сохранение файла…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">Экспортировано записей: %1$d.</string>
+    <string name="transfer_export_done">Экспорт завершён</string>
+    <string name="transfer_channel">Импорт и экспорт</string>
+    <string name="transfer_open_result">Откройте Monica, чтобы увидеть результат.</string>
+    <string name="transfer_background_start_failed">Не удалось начать экспорт. Повторите с открытой Monica.</string>
+    <string name="transfer_cancelled">Экспорт отменён.</string>
+    <string name="transfer_attachment_encryption">Зашифруйте копию, чтобы включить вложения.</string>
+    <string name="transfer_password_mismatch">Пароли не совпадают.</string>
+    <string name="transfer_kdbx_password_description">Задайте пароль для защиты экспортируемой базы KDBX.</string>
+    <string name="transfer_unsupported_token">Этот формат токена нельзя преобразовать. Используйте копию ZIP.</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">Экспорт выбранных аккаунтов Steam из этой базы.</string>
+    <string name="transfer_kdbx_description">Пароли, коды 2FA, Passkey и вложения в формате KeePass.</string>
+    <string name="transfer_unsupported_records">База содержит неподдерживаемые типы записей. Сохраните копию в исходном формате.</string>
+    <string name="transfer_zip_password_title">Расшифровать копию ZIP</string>
+    <string name="transfer_zip_password_description">Введите пароль, заданный при создании этой копии ZIP.</string>
+</resources>

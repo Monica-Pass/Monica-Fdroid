@@ -1,5 +1,9 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.keepass.KeePassSourceChangedException
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,9 +25,10 @@ import java.util.Locale
 
 internal class OneDriveHttpException(
     val statusCode: Int,
-    responseBody: String
+    responseBody: String,
+    strings: StringResolver
 ) : IOException(
-    "HTTP $statusCode: " + responseBody.ifBlank { "OneDrive 请求失败" }
+    "HTTP $statusCode: " + responseBody.ifBlank { strings.get(R.string.cloud_message_provider_request_failed, "OneDrive") }
 )
 
 internal fun interface OneDriveAccessTokenProvider {
@@ -34,18 +39,20 @@ private class MsalOneDriveAccessTokenProvider(
     context: Context,
     private val accountIdentifier: String
 ) : OneDriveAccessTokenProvider {
+    private val strings = AppLocaleStringResolver(context)
     private val authManager = OneDriveAuthManager(context.applicationContext)
 
     override suspend fun acquire(): String =
         authManager.acquireAccessToken(accountIdentifier).accessToken
-            ?: throw IOException("OneDrive 访问令牌为空")
+            ?: throw IOException(strings.get(R.string.cloud_message_provider_token_missing, "OneDrive"))
 }
 
 private data class OneDriveFileSourceDependencies(
     val accessTokenProvider: OneDriveAccessTokenProvider,
     val httpClient: OkHttpClient,
     val graphBaseUrl: String,
-    val cacheDirectory: File
+    val cacheDirectory: File,
+    val strings: StringResolver
 )
 
 @Serializable
@@ -122,6 +129,7 @@ class OneDriveKeePassFileSource private constructor(
     private val httpClient = dependencies.httpClient
     private val graphBaseUrl = dependencies.graphBaseUrl
     private val cacheDirectory = dependencies.cacheDirectory
+    private val strings = dependencies.strings
     private val normalizedRemotePath = normalizeOptionalRemotePath(remotePath)
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -140,7 +148,8 @@ class OneDriveKeePassFileSource private constructor(
             accessTokenProvider = MsalOneDriveAccessTokenProvider(context, accountIdentifier),
             httpClient = sharedHttpClient,
             graphBaseUrl = GRAPH_BASE_URL,
-            cacheDirectory = context.applicationContext.cacheDir
+            cacheDirectory = context.applicationContext.cacheDir,
+            strings = AppLocaleStringResolver(context)
         )
     )
 
@@ -152,7 +161,8 @@ class OneDriveKeePassFileSource private constructor(
         accessTokenProvider: OneDriveAccessTokenProvider,
         httpClient: OkHttpClient,
         graphBaseUrl: String,
-        cacheDirectory: File
+        cacheDirectory: File,
+        strings: StringResolver
     ) : this(
         accountIdentifier = accountIdentifier,
         driveId = driveId,
@@ -162,7 +172,8 @@ class OneDriveKeePassFileSource private constructor(
             accessTokenProvider = accessTokenProvider,
             httpClient = httpClient,
             graphBaseUrl = graphBaseUrl.trimEnd('/'),
-            cacheDirectory = cacheDirectory
+            cacheDirectory = cacheDirectory,
+            strings = strings
         )
     )
 
@@ -184,8 +195,8 @@ class OneDriveKeePassFileSource private constructor(
     suspend fun readTo(destination: File) = withContext(Dispatchers.IO) {
         requireRemotePath()
         val token = accessToken()
-        val parent = destination.parentFile ?: throw IOException("下载目标目录不存在")
-        check(parent.exists() || parent.mkdirs()) { "无法创建下载目标目录" }
+        val parent = destination.parentFile ?: throw IOException(strings.get(R.string.cloud_message_download_directory_missing))
+        check(parent.exists() || parent.mkdirs()) { strings.get(R.string.cloud_message_download_directory_create) }
         val temporary = File.createTempFile(".mdbx-download-", ".tmp", parent)
         try {
             val request = Request.Builder()
@@ -195,11 +206,11 @@ class OneDriveKeePassFileSource private constructor(
                 .build()
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw OneDriveHttpException(response.code, response.body?.string().orEmpty())
+                    throw OneDriveHttpException(response.code, response.body?.string().orEmpty(), strings = strings)
                 }
                 response.body?.byteStream()?.use { input ->
                     temporary.outputStream().use { output -> input.copyTo(output) }
-                } ?: throw IOException("OneDrive 返回了空内容")
+                } ?: throw IOException(strings.get(R.string.cloud_message_provider_empty_content, "OneDrive"))
             }
             try {
                 Files.move(
@@ -210,7 +221,7 @@ class OneDriveKeePassFileSource private constructor(
                 )
             } catch (_: Exception) {
                 if (!temporary.renameTo(destination)) {
-                    throw IOException("无法发布 OneDrive 下载文件")
+                    throw IOException(strings.get(R.string.cloud_message_download_finalize, "OneDrive"))
                 }
             }
         } finally {
@@ -232,7 +243,7 @@ class OneDriveKeePassFileSource private constructor(
             if (error.statusCode == 404) null else throw error
         }
         if (mode == MdbxRemoteWriteMode.CREATE_ONLY && existing != null) {
-            if (existing.isDirectory) throw IOException("OneDrive 远端路径已是目录")
+            if (existing.isDirectory) throw IOException(strings.get(R.string.cloud_message_remote_is_directory))
             val temporary = File.createTempFile(".mdbx-compare-", ".tmp", cacheDirectory)
             try {
                 readTo(temporary)
@@ -250,7 +261,7 @@ class OneDriveKeePassFileSource private constructor(
             } finally {
                 temporary.delete()
             }
-            throw IOException("OneDrive 不可变对象已存在但内容不同")
+            throw IOException(strings.get(R.string.cloud_message_immutable_differs))
         }
         if (mode == MdbxRemoteWriteMode.IF_MATCH) {
             val requiredVersion = expectedVersion?.takeIf(String::isNotBlank)
@@ -258,7 +269,7 @@ class OneDriveKeePassFileSource private constructor(
                     "OneDrive conditional replacement requires an ETag"
                 )
             if (existing?.versionToken != requiredVersion && existing?.etag != requiredVersion) {
-                throw IOException("远端文件已变化，请先重新同步")
+                throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
             }
         }
         val token = accessToken()
@@ -322,13 +333,13 @@ class OneDriveKeePassFileSource private constructor(
         val targetDirectory = when {
             normalizedRemotePath.isBlank() -> ""
             runCatching { stat() }.getOrNull()?.isDirectory == true -> normalizedRemotePath
-            else -> parentPathOf(normalizedRemotePath)
+            else -> parentPathOf(normalizedRemotePath, strings = strings)
         }
         listDirectory(targetDirectory)
     }
 
     override suspend fun createFile(name: String): FileSourceEntry = withContext(Dispatchers.IO) {
-        val targetParent = parentPathOf(normalizedRemotePath)
+        val targetParent = parentPathOf(normalizedRemotePath, strings = strings)
         createFileInDirectory(targetParent, name)
     }
 
@@ -342,7 +353,7 @@ class OneDriveKeePassFileSource private constructor(
                 if (item.folder != null) {
                     buildChildrenRelativeUrl(normalizedRemotePath)
                 } else {
-                    val parent = parentPathOf(normalizedRemotePath)
+                    val parent = parentPathOf(normalizedRemotePath, strings = strings)
                     if (parent.isBlank()) {
                         "${driveBaseRelativeUrl()}/root/children"
                     } else {
@@ -374,7 +385,7 @@ class OneDriveKeePassFileSource private constructor(
                 FileSourceEntry(
                     id = item.id,
                     name = item.name,
-                    path = buildChildPath(normalizedDirectoryPath, item.name),
+                    path = buildChildPath(normalizedDirectoryPath, item.name, strings = strings),
                     isDirectory = item.folder != null,
                     versionToken = item.eTag ?: item.cTag,
                     lastModified = item.lastModifiedDateTime?.toEpochMillis(),
@@ -389,9 +400,9 @@ class OneDriveKeePassFileSource private constructor(
 
     suspend fun createDirectory(parentPath: String?, name: String): FileSourceEntry = withContext(Dispatchers.IO) {
         val normalizedParentPath = normalizeOptionalRemotePath(parentPath)
-        val targetPath = buildChildPath(normalizedParentPath, name)
+        val targetPath = buildChildPath(normalizedParentPath, name, strings = strings)
         if (pathExists(targetPath)) {
-            throw IOException("同名目录已存在")
+            throw IOException(strings.get(R.string.cloud_message_folder_exists))
         }
         val token = accessToken()
         val payload = executeJsonRequest(
@@ -427,9 +438,9 @@ class OneDriveKeePassFileSource private constructor(
         bytes: ByteArray = ByteArray(0)
     ): FileSourceEntry = withContext(Dispatchers.IO) {
         val normalizedParentPath = normalizeOptionalRemotePath(parentPath)
-        val targetPath = buildChildPath(normalizedParentPath, name)
+        val targetPath = buildChildPath(normalizedParentPath, name, strings = strings)
         if (pathExists(targetPath)) {
-            throw IOException("同名文件已存在")
+            throw IOException(strings.get(R.string.cloud_message_file_exists))
         }
         val token = accessToken()
         val payload = executeJsonRequest(
@@ -455,7 +466,7 @@ class OneDriveKeePassFileSource private constructor(
     }
 
     suspend fun deleteEntry(targetPath: String) = withContext(Dispatchers.IO) {
-        val normalizedTargetPath = normalizeRemotePath(targetPath)
+        val normalizedTargetPath = normalizeRemotePath(targetPath, strings = strings)
         val item = resolveItemByPath(normalizedTargetPath)
         val token = accessToken()
         executeJsonRequest(
@@ -467,11 +478,11 @@ class OneDriveKeePassFileSource private constructor(
     }
 
     suspend fun renameEntry(targetPath: String, newName: String): FileSourceEntry = withContext(Dispatchers.IO) {
-        val normalizedTargetPath = normalizeRemotePath(targetPath)
+        val normalizedTargetPath = normalizeRemotePath(targetPath, strings = strings)
         val sanitizedName = newName.trim().trim('/').ifBlank {
-            throw IllegalArgumentException("文件名不能为空")
+            throw IllegalArgumentException(strings.get(R.string.cloud_message_filename_required))
         }
-        require('/' !in sanitizedName) { "文件名不能包含路径分隔符" }
+        require('/' !in sanitizedName) { strings.get(R.string.cloud_message_filename_separator) }
         val item = resolveItemByPath(normalizedTargetPath)
         val token = accessToken()
         val payload = executeJsonRequest(
@@ -489,7 +500,7 @@ class OneDriveKeePassFileSource private constructor(
         FileSourceEntry(
             id = updated.id,
             name = updated.name,
-            path = buildChildPath(parentPathOf(normalizedTargetPath), updated.name),
+            path = buildChildPath(parentPathOf(normalizedTargetPath, strings = strings), updated.name, strings = strings),
             isDirectory = updated.folder != null,
             versionToken = updated.eTag ?: updated.cTag,
             lastModified = updated.lastModifiedDateTime?.toEpochMillis(),
@@ -567,14 +578,14 @@ class OneDriveKeePassFileSource private constructor(
                     202 -> {
                         offset = endExclusive
                     }
-                    412 -> throw IOException("远端文件已变化，请先重新同步")
+                    412 -> throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
                     else -> throw IOException(
-                        responseBody.ifBlank { "OneDrive 大文件上传失败: HTTP ${response.code}" }
+                        responseBody.ifBlank { strings.get(R.string.cloud_message_upload_http, "OneDrive", response.code) }
                     )
                 }
             }
         }
-        throw IOException("OneDrive 大文件上传未返回最终结果")
+        throw IOException(strings.get(R.string.cloud_message_upload_unconfirmed, "OneDrive"))
     }
 
     private suspend fun uploadLargeFileFrom(
@@ -584,7 +595,7 @@ class OneDriveKeePassFileSource private constructor(
         createOnly: Boolean
     ): FileSourceWriteResult {
         val totalSize = source.length()
-        require(totalSize > 0L) { "OneDrive 大文件上传源不能为空" }
+        require(totalSize > 0L) { strings.get(R.string.cloud_message_upload_empty, "OneDrive") }
         val sessionPayload = executeJsonRequest(
             relativeUrl = buildUploadSessionRelativeUrl(),
             accessToken = accessToken,
@@ -625,16 +636,16 @@ class OneDriveKeePassFileSource private constructor(
                             return item.toWriteResult()
                         }
                         202 -> offset = endExclusive
-                        409 -> throw IOException("OneDrive 不可变对象已存在")
-                        412 -> throw IOException("远端文件已变化，请先重新同步")
+                        409 -> throw IOException(strings.get(R.string.cloud_message_immutable_exists))
+                        412 -> throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
                         else -> throw IOException(
-                            responseBody.ifBlank { "OneDrive 大文件上传失败: HTTP ${response.code}" }
+                            responseBody.ifBlank { strings.get(R.string.cloud_message_upload_http, "OneDrive", response.code) }
                         )
                     }
                 }
             }
         }
-        throw IOException("OneDrive 大文件上传未返回最终结果")
+        throw IOException(strings.get(R.string.cloud_message_upload_unconfirmed, "OneDrive"))
     }
 
     private suspend fun executeJsonRequest(
@@ -659,9 +670,9 @@ class OneDriveKeePassFileSource private constructor(
             val responseBody = response.body?.string().orEmpty()
             if (response.code !in expectedStatusCodes) {
                 if (response.code == 412) {
-                    throw IOException("远端文件已变化，请先重新同步")
+                    throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
                 }
-                throw OneDriveHttpException(response.code, responseBody)
+                throw OneDriveHttpException(response.code, responseBody, strings = strings)
             }
             return responseBody
         }
@@ -688,9 +699,9 @@ class OneDriveKeePassFileSource private constructor(
             .build()
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw OneDriveHttpException(response.code, response.body?.string().orEmpty())
+                throw OneDriveHttpException(response.code, response.body?.string().orEmpty(), strings = strings)
             }
-            return response.body?.bytes() ?: throw IOException("OneDrive 返回了空内容")
+            return response.body?.bytes() ?: throw IOException(strings.get(R.string.cloud_message_provider_empty_content, "OneDrive"))
         }
     }
 
@@ -746,7 +757,7 @@ class OneDriveKeePassFileSource private constructor(
 
     private fun requireRemotePath() {
         if (normalizedRemotePath.isBlank()) {
-            throw IllegalStateException("未指定 OneDrive 远端文件路径")
+            throw IllegalStateException(strings.get(R.string.cloud_message_path_required))
         }
     }
 
@@ -760,7 +771,7 @@ class OneDriveKeePassFileSource private constructor(
     }
 
     private fun encodePath(path: String): String {
-        return normalizeRemotePath(path)
+        return normalizeRemotePath(path, strings = strings)
             .split('/')
             .filter { it.isNotBlank() }
             .joinToString("/") { segment -> encodePathSegment(segment) }
@@ -768,7 +779,7 @@ class OneDriveKeePassFileSource private constructor(
 
     private suspend fun accessToken(): String = accessTokenProvider.acquire()
         .takeIf(String::isNotBlank)
-        ?: throw IOException("OneDrive 访问令牌为空")
+        ?: throw IOException(strings.get(R.string.cloud_message_provider_token_missing, "OneDrive"))
 
     private fun OneDriveDriveItemDto.toStat(): FileSourceStat {
         return FileSourceStat(
@@ -817,14 +828,14 @@ class OneDriveKeePassFileSource private constructor(
             }
         }
 
-        fun normalizeRemotePath(remotePath: String): String {
+        internal fun normalizeRemotePath(remotePath: String, strings: StringResolver): String {
             val normalized = remotePath
                 .trim()
                 .replace('\\', '/')
                 .trimStart('/')
                 .replace(Regex("/+"), "/")
             if (normalized.isBlank()) {
-                throw IllegalArgumentException("远端文件路径不能为空")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_path_required))
             }
             return normalized
         }
@@ -838,20 +849,20 @@ class OneDriveKeePassFileSource private constructor(
                 .orEmpty()
         }
 
-        fun parentPathOf(remotePath: String): String {
+        internal fun parentPathOf(remotePath: String, strings: StringResolver): String {
             if (remotePath.isBlank()) {
                 return ""
             }
-            val normalized = normalizeRemotePath(remotePath)
+            val normalized = normalizeRemotePath(remotePath, strings = strings)
             val index = normalized.lastIndexOf('/')
             return if (index <= 0) "" else normalized.substring(0, index)
         }
 
-        fun buildChildPath(parentPath: String, name: String): String {
+        internal fun buildChildPath(parentPath: String, name: String, strings: StringResolver): String {
             val sanitizedName = name.trim().trim('/').ifBlank {
-                throw IllegalArgumentException("文件名不能为空")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_filename_required))
             }
-            require('/' !in sanitizedName) { "文件名不能包含路径分隔符" }
+            require('/' !in sanitizedName) { strings.get(R.string.cloud_message_filename_separator) }
             return if (parentPath.isBlank()) sanitizedName else "$parentPath/$sanitizedName"
         }
 
@@ -882,8 +893,9 @@ object OneDriveKeePassSupport {
         context: Context,
         source: KeepassRemoteSource
     ): OneDriveKeePassFileSource {
+        val strings = AppLocaleStringResolver(context)
         val accountIdentifier = source.tokenRef?.takeIf { it.isNotBlank() }
-            ?: throw IllegalArgumentException("OneDrive 账户引用不能为空")
+            ?: throw IllegalArgumentException(strings.get(R.string.cloud_message_provider_account_required, "OneDrive"))
         return OneDriveKeePassFileSource(
             context = context,
             accountIdentifier = accountIdentifier,
@@ -893,8 +905,8 @@ object OneDriveKeePassSupport {
         )
     }
 
-    fun buildLocalMirrorPaths(sourceId: Long, remotePath: String): KeePassLocalMirrorPaths {
-        val fileName = displayNameFromRemotePath(remotePath)
+    internal fun buildLocalMirrorPaths(sourceId: Long, remotePath: String, strings: StringResolver): KeePassLocalMirrorPaths {
+        val fileName = displayNameFromRemotePath(remotePath, strings = strings)
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
             .ifBlank { "remote.kdbx" }
         val baseDir = "keepass_remote/onedrive_$sourceId"
@@ -904,8 +916,8 @@ object OneDriveKeePassSupport {
         )
     }
 
-    fun displayNameFromRemotePath(remotePath: String): String {
-        val normalized = OneDriveKeePassFileSource.normalizeRemotePath(remotePath)
+    internal fun displayNameFromRemotePath(remotePath: String, strings: StringResolver): String {
+        val normalized = OneDriveKeePassFileSource.normalizeRemotePath(remotePath, strings = strings)
         return normalized.substringAfterLast('/').ifBlank { "remote.kdbx" }
     }
 

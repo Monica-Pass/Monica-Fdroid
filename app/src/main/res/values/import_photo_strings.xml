@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">The exported backup file is empty</string>
+    <string name="export_message_empty_zip">The ZIP backup has no content</string>
+    <string name="export_message_open_failed">Cannot open the export destination</string>
+    <string name="export_message_incomplete">The export is incomplete: %1$d/%2$d bytes</string>
+    <string name="export_message_invalid_encrypted">The written backup has an invalid encrypted format</string>
+    <string name="export_message_verify_failed">Could not verify the exported file</string>
+    <string name="export_message_backup_summary">Backup exported: %1$d passwords and %2$d images</string>
+    <string name="import_message_aegis_unencrypted">This import needs an unencrypted Aegis JSON export</string>
+    <string name="import_message_aegis_missing">Invalid Aegis file: missing %1$s</string>
+    <string name="import_message_aegis_empty_slots">Invalid Aegis file: slots is empty</string>
+    <string name="import_message_aegis_slot_type">Unsupported Aegis slot type: %1$s</string>
+    <string name="import_message_aegis_no_totp">No valid TOTP entries found in the Aegis file</string>
+    <string name="import_message_aegis_failed">Could not import the Aegis file: %1$s</string>
+    <string name="import_message_key_length">Decrypted key has an invalid length</string>
+    <string name="import_message_steam_missing">Invalid Steam Guard data: missing %1$s</string>
+    <string name="import_message_steam_device_id">Invalid device ID. Expected format: android:xxxx</string>
+    <string name="import_message_steam_secret">Invalid Steam shared_secret format</string>
+    <string name="import_message_steam_exists">This Steam Guard authenticator already exists</string>
+    <string name="export_message_empty_mafile">The exported maFile is empty</string>
+    <string name="crypto_message_encrypt_failed">Encryption failed: %1$s</string>
+    <string name="crypto_message_decrypt_failed">Decryption failed: %1$s</string>
+    <string name="crypto_message_file_too_small">The encrypted file is too small and may be damaged</string>
+    <string name="crypto_message_invalid_file">Invalid encrypted file format</string>
+    <string name="crypto_message_password_or_corrupt">Incorrect password or damaged encrypted data</string>
+    <string name="crypto_message_invalid_text">Invalid encrypted text format</string>
+    <string name="photo_message_camera_failed">Could not open the camera: %1$s</string>
+    <string name="photo_message_gallery_missing">No gallery app is available</string>
+    <string name="photo_message_gallery_failed">Could not open the gallery: %1$s</string>
+    <string name="photo_message_data_failed">Could not read the returned image: %1$s</string>
+    <string name="photo_message_file_missing">The photo file is empty or missing</string>
+    <string name="photo_message_not_selected">No image selected</string>
+</resources>

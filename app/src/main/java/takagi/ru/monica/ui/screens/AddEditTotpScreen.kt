@@ -1,17 +1,10 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.MonicaExpandableCard
+import takagi.ru.monica.ui.components.MonicaExpandableContent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -856,26 +849,8 @@ fun AddEditTotpScreen(
                                 modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                             )
 
-                            AnimatedVisibility(
-                                visible = inlinePreviewVisible,
-                                enter = slideInVertically(
-                                    initialOffsetY = { -it / 3 },
-                                    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
-                                ) + expandVertically(
-                                    expandFrom = Alignment.Top,
-                                    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
-                                ) + fadeIn(
-                                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)
-                                ),
-                                exit = slideOutVertically(
-                                    targetOffsetY = { -it / 4 },
-                                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
-                                ) + shrinkVertically(
-                                    shrinkTowards = Alignment.Top,
-                                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
-                                ) + fadeOut(
-                                    animationSpec = tween(durationMillis = 140)
-                                )
+                            MonicaExpandableContent(
+                                expanded = inlinePreviewVisible
                             ) {
                                 previewTotpData?.let { previewData ->
                                     InlineTotpPreviewCard(
@@ -975,11 +950,11 @@ fun AddEditTotpScreen(
 
             // Advanced Options
             item {
-                CollapsibleCard(
+                MonicaExpandableCard(
                     title = stringResource(R.string.advanced_options),
                     icon = Icons.Default.Settings,
                     expanded = showAdvanced,
-                    onExpandChange = { showAdvanced = it }
+                    onExpandedChange = { showAdvanced = it }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // OTP Type
@@ -1115,11 +1090,11 @@ fun AddEditTotpScreen(
 
             // Association Options
             item {
-                CollapsibleCard(
+                MonicaExpandableCard(
                     title = stringResource(R.string.association_options),
                     icon = Icons.Default.Link,
                     expanded = showAssociation,
-                    onExpandChange = { showAssociation = it }
+                    onExpandedChange = { showAssociation = it }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(
@@ -1398,67 +1373,6 @@ private fun InfoCard(
                 color = MaterialTheme.colorScheme.primary
             )
             content()
-        }
-    }
-}
-
-@Composable
-private fun CollapsibleCard(
-    title: String,
-    icon: ImageVector,
-    expanded: Boolean,
-    onExpandChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onExpandChange(!expanded) }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null
-                )
-            }
-            
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    content()
-                }
-            }
         }
     }
 }

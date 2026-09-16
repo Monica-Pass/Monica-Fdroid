@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -77,7 +78,7 @@ class VaultOverviewScreenTest {
     private var created: String? = null
     private lateinit var listState: LazyListState
 
-    private fun showOverview(wideDetail: Boolean = false) {
+    private fun showOverview(wideDetail: Boolean = false, loopEnabled: Boolean = false) {
         val manager = SecurityManager(context)
         compose.setContent {
             MaterialTheme {
@@ -96,6 +97,7 @@ class VaultOverviewScreenTest {
                             selectedCardKey = selectedCardKey, onSelectedCardChange = { selectedCardKey = it },
                             cardStackState = cardStack, isDetailVisible = wideDetail && route != null,
                             securityManager = manager, reduceAnimations = false, trashCount = 0,
+                            walletStackLoopEnabled = loopEnabled,
                             onConfigChange = { config = it(config).normalized() }, onSelectScope = { scopeKey = it },
                             onOpenSource = { route = "source:$it" }, onOpenItem = { route = it.key },
                             onOpenType = { route = "type:${it.name}:$scopeKey" }, onOpenFolder = { route = "folder:${it.key}" },
@@ -179,6 +181,29 @@ class VaultOverviewScreenTest {
         Espresso.pressBack()
         compose.onNodeWithTag("wallet_stack_browser").assertDoesNotExist()
         compose.onNodeWithTag("overview_card_deck").assertIsDisplayed()
+    }
+
+    @Test fun cardStacksLoopFromTheOverviewWhenEnabled() {
+        selectedCardKey = cards.last().overviewIdentity()
+        showOverview(loopEnabled = true)
+        compose.waitUntil(5000) { cardStack.prepared?.cards?.size == 2 }
+        compose.onNodeWithTag("wallet_stack_overview:local").performClick()
+        val next = compose.onNodeWithTag("wallet_stack_scroll").fetchSemanticsNode()
+            .config[SemanticsActions.CustomActions][0]
+        compose.runOnIdle { assertTrue(next.action()) }
+        compose.waitUntil(5000) { selectedCardKey == cards.first().overviewIdentity() }
+        compose.onNodeWithTag("wallet_stack_card_1").assertIsDisplayed()
+        val previous = compose.onNodeWithTag("wallet_stack_scroll").fetchSemanticsNode()
+            .config[SemanticsActions.CustomActions][1]
+        compose.runOnIdle { assertTrue(previous.action()) }
+        compose.waitUntil(5000) { selectedCardKey == cards.last().overviewIdentity() }
+        compose.onNodeWithTag("wallet_stack_card_2").performClick()
+        compose.runOnIdle { assertEquals(cards.last().key, route) }
+        compose.onNodeWithTag("return_home").performClick()
+        compose.onNodeWithTag("wallet_stack_card_2").assertIsDisplayed()
+        Espresso.pressBack()
+        compose.onNodeWithTag("wallet_stack_browser").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(cards.last().overviewIdentity(), selectedCardKey) }
     }
 
     @Test fun inlineDetailHidesTheOverlayAndReturnsToTheSameCard() {

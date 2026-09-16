@@ -1,16 +1,8 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.MonicaExpandableContent
 import android.widget.Toast
 import android.graphics.Bitmap
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -900,38 +892,8 @@ fun AddEditBankCardScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    AnimatedVisibility(
-                        visible = inlineCardholderSuggestionVisible,
-                        enter = slideInVertically(
-                            animationSpec = tween(
-                                durationMillis = 240,
-                                easing = FastOutSlowInEasing
-                            ),
-                            initialOffsetY = { -it / 2 }
-                        ) +
-                            fadeIn(animationSpec = tween(180)) +
-                            expandVertically(
-                                expandFrom = Alignment.Top,
-                                animationSpec = tween(
-                                    durationMillis = 240,
-                                    easing = FastOutSlowInEasing
-                                )
-                            ),
-                        exit = slideOutVertically(
-                            animationSpec = tween(
-                                durationMillis = 160,
-                                easing = FastOutSlowInEasing
-                            ),
-                            targetOffsetY = { -it / 4 }
-                        ) +
-                            fadeOut(animationSpec = tween(120)) +
-                            shrinkVertically(
-                                shrinkTowards = Alignment.Top,
-                                animationSpec = tween(
-                                    durationMillis = 160,
-                                    easing = FastOutSlowInEasing
-                                )
-                            )
+                    MonicaExpandableContent(
+                        expanded = inlineCardholderSuggestionVisible
                     ) {
                         inlineCardholderSuggestion?.let { suggestion ->
                             InlineCommonNameSuggestionCard(

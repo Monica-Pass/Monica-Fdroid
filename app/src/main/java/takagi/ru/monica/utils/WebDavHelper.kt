@@ -57,6 +57,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ensureActive
 import okhttp3.OkHttpClient
 import java.io.File
 import java.io.FileInputStream
@@ -70,6 +71,9 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
+import takagi.ru.monica.transfer.TransferPhase
+import takagi.ru.monica.transfer.TransferProgress
+import takagi.ru.monica.transfer.TransferProgressReporter
 import java.util.concurrent.TimeUnit
 
 private class PasskeyBackupEncryptionRequiredException(message: String) :
@@ -123,7 +127,20 @@ private data class PasswordBackupEntry(
     // WIFI 条目扩展元数据（JSON 序列化的 WifiData），仅 loginType=WIFI 时有值
     val wifiMetadata: String = "",
     // 
-    val customFields: List<CustomFieldBackupEntry> = emptyList()
+    val customFields: List<CustomFieldBackupEntry> = emptyList(),
+    val boundNoteId: Long? = null,
+    val addressLine: String = "",
+    val city: String = "",
+    val state: String = "",
+    val zipCode: String = "",
+    val country: String = "",
+    val creditCardNumber: String = "",
+    val creditCardHolder: String = "",
+    val creditCardExpiry: String = "",
+    val creditCardCVV: String = "",
+    val isArchived: Boolean = false,
+    val archivedAt: Long? = null
+
 )
 
 @Serializable
@@ -423,6 +440,7 @@ private data class PageAdjustmentSettingsBackupEntry(
     val passwordCardShowAuthenticator: Boolean = false,
     val passwordCardHideOtherContentWhenAuthenticator: Boolean = false,
     val stackCardMode: String = "AUTO",
+    val walletStackLoopEnabled: Boolean = false,
     val passwordGroupMode: String = "smart",
     val passwordWebsiteStackMatchMode: String = "strict",
     val authenticatorCardDisplayFields: List<String> = emptyList(),
@@ -559,6 +577,7 @@ internal object KeePassBackupEntryPolicy {
     ): Boolean = hasInternalKeyFileCopy && !backupEncrypted
 
     fun validateRestoreSet(
+        strings: StringResolver,
         databaseId: Long,
         hasMetadata: Boolean,
         hasDatabase: Boolean,
@@ -567,10 +586,10 @@ internal object KeePassBackupEntryPolicy {
         backupEncrypted: Boolean,
     ): RestoreSetValidation {
         if (!hasMetadata) {
-            return RestoreSetValidation(false, warning = "KeePass数据库元信息缺失")
+            return RestoreSetValidation(false, warning = strings.get(R.string.backup_keepass_metadata_missing))
         }
         if (!hasDatabase) {
-            return RestoreSetValidation(false, warning = "KeePass数据库文件缺失")
+            return RestoreSetValidation(false, warning = strings.get(R.string.keepass_operation_database_file_missing))
         }
 
         val declaredKey = declaredKeyEntryName
@@ -581,15 +600,15 @@ internal object KeePassBackupEntryPolicy {
                 declaredKey.kind != Kind.KEY_FILE ||
                 declaredKey.databaseId != databaseId)
         ) {
-            return RestoreSetValidation(false, warning = "KeePass密钥文件声明无效")
+            return RestoreSetValidation(false, warning = strings.get(R.string.backup_keepass_key_declaration_invalid))
         }
 
         if (declaredKey != null) {
             if (!backupEncrypted) {
-                return RestoreSetValidation(false, warning = "未加密备份不能恢复 KeePass 密钥文件")
+                return RestoreSetValidation(false, warning = strings.get(R.string.backup_keepass_key_encryption_required))
             }
             if (!hasKeyFile) {
-                return RestoreSetValidation(false, warning = "备份中的 KeePass 密钥文件缺失")
+                return RestoreSetValidation(false, warning = strings.get(R.string.backup_keepass_key_missing))
             }
             return RestoreSetValidation(true, useKeyFile = true)
         }
@@ -597,7 +616,7 @@ internal object KeePassBackupEntryPolicy {
         return RestoreSetValidation(
             canRestore = true,
             useKeyFile = false,
-            warning = if (hasKeyFile) "已忽略未在元信息中声明的 KeePass 密钥文件" else null,
+            warning = if (hasKeyFile) strings.get(R.string.backup_keepass_undeclared_key) else null,
         )
     }
 }
@@ -609,6 +628,7 @@ internal object KeePassBackupEntryPolicy {
 class WebDavHelper(
     private val context: Context
 ) {
+    private val strings = AppLocaleStringResolver(context)
     private var sardine: Sardine? = null
     private var serverUrl: String = ""
     private var username: String = ""
@@ -763,6 +783,7 @@ class WebDavHelper(
             passwordCardShowAuthenticator = passwordCardShowAuthenticator,
             passwordCardHideOtherContentWhenAuthenticator = passwordCardHideOtherContentWhenAuthenticator,
             stackCardMode = stackCardMode,
+            walletStackLoopEnabled = walletStackLoopEnabled,
             passwordGroupMode = passwordGroupMode,
             passwordWebsiteStackMatchMode = passwordWebsiteStackMatchMode,
             authenticatorCardDisplayFields = authenticatorCardDisplayFields,
@@ -829,7 +850,7 @@ class WebDavHelper(
             val securityQuestionsSnapshot = securityManager.exportSecurityQuestionsForBackup()
             if (securityQuestionsSnapshot != null && backupEncryptPassword == null) {
                 throw SecurityQuestionsBackupEncryptionRequiredException(
-                    "密保问题包含可验证答案摘要，仅会写入已加密的备份"
+                    strings.get(R.string.backup_security_answers_encrypted_only)
                 )
             }
             securityQuestionsSnapshot?.let { snapshot ->
@@ -857,7 +878,7 @@ class WebDavHelper(
             warnings.add(e.message.orEmpty())
         } catch (e: Exception) {
             android.util.Log.w("WebDavHelper", "Failed to backup portable app settings: ${e.message}")
-            warnings.add("Monica应用设置备份失败: ${e.message}")
+            warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_component_settings), e.message ?: strings.get(R.string.import_data_unknown_error)))
         }
     }
 
@@ -877,7 +898,8 @@ class WebDavHelper(
         cacheBackupDir: File,
         backupEncryptPassword: String?,
         warnings: MutableList<String>,
-    ) {
+    ): Boolean {
+        var credentialsSkipped = false
         try {
             val autofillPreferences = AutofillPreferences(context)
             val blockedFieldSignatures = autofillPreferences.blockedFieldSignatureRecords.first()
@@ -903,18 +925,19 @@ class WebDavHelper(
                 .getAllVaults()
 
             if (backupEncryptPassword == null) {
-                warnings.add("未启用备份加密，已跳过 WebDAV 连接凭证和 Bitwarden Vault 密钥材料")
+                warnings.add(strings.get(R.string.backup_credentials_skipped))
+                credentialsSkipped = true
             }
 
             val encryptedWebDavPassword = backupEncryptPassword?.let {
-                EncryptionHelper.encryptString(password, it)
+                EncryptionHelper.encryptString(password, it, strings)
             } ?: ""
             val encryptedEncPassword = if (
                 backupEncryptPassword != null &&
                 enableEncryption &&
                 encryptionPassword.isNotEmpty()
             ) {
-                EncryptionHelper.encryptString(encryptionPassword, backupEncryptPassword)
+                EncryptionHelper.encryptString(encryptionPassword, backupEncryptPassword, strings)
             } else {
                 ""
             }
@@ -1043,8 +1066,9 @@ class WebDavHelper(
             )
         } catch (e: Exception) {
             android.util.Log.w("WebDavHelper", "Failed to backup connection config: ${e.message}")
-            warnings.add("Monica连接配置备份失败: ${e.message}")
+            warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_component_connections), e.message ?: strings.get(R.string.import_data_unknown_error)))
         }
+        return credentialsSkipped
     }
 
     private fun isLocalSecureItem(item: SecureItem): Boolean {
@@ -1087,11 +1111,17 @@ class WebDavHelper(
             customIconType = backup.customIconType,
             customIconValue = normalizedIconValue,
             customIconUpdatedAt = backup.customIconUpdatedAt,
-            wifiMetadata = backup.wifiMetadata
+            wifiMetadata = backup.wifiMetadata,
+            boundNoteId = backup.boundNoteId, addressLine = backup.addressLine,
+            city = backup.city, state = backup.state, zipCode = backup.zipCode, country = backup.country,
+            creditCardNumber = backup.creditCardNumber, creditCardHolder = backup.creditCardHolder,
+            creditCardExpiry = backup.creditCardExpiry, creditCardCVV = backup.creditCardCVV,
+            isArchived = backup.isArchived, archivedAt = backup.archivedAt?.let(::Date)
         )
     }
 
     private fun restoreSecureItemAsMonicaLocal(
+        sourceId: Long,
         itemType: ItemType,
         title: String,
         itemData: String,
@@ -1103,7 +1133,8 @@ class WebDavHelper(
         updatedAt: Long
     ): DataExportImportManager.ExportItem {
         return DataExportImportManager.ExportItem(
-            id = 0,
+            // Used only to remap attachments and links. The applier allocates a new local ID.
+            id = sourceId,
             itemType = itemType.name,
             title = title,
             itemData = itemData,
@@ -1591,7 +1622,7 @@ class WebDavHelper(
         val kind = classified?.kind ?: takagi.ru.monica.webdav.WebDavErrorKind.Unknown
         return when (kind) {
             takagi.ru.monica.webdav.WebDavErrorKind.CertificateUntrusted ->
-                "服务器 HTTPS 证书不受信任，请确认证书后重试$urlHint"
+                strings.get(R.string.backup_webdav_certificate_untrusted) + urlHint
             takagi.ru.monica.webdav.WebDavErrorKind.RateLimited -> {
                 val waitSec = ((classified?.retryAfterMillis ?: 0L) / 1000L).coerceAtLeast(1L)
                 context.getString(R.string.webdav_error_rate_limited, waitSec) + urlHint
@@ -1605,11 +1636,11 @@ class WebDavHelper(
                 context.getString(R.string.webdav_error_network_unreachable) + urlHint
             takagi.ru.monica.webdav.WebDavErrorKind.MalformedResponse ->
                 context.getString(R.string.webdav_error_malformed_response) + urlHint
-            takagi.ru.monica.webdav.WebDavErrorKind.NotFound -> "资源不存在$urlHint"
+            takagi.ru.monica.webdav.WebDavErrorKind.NotFound -> strings.get(R.string.backup_webdav_not_found) + urlHint
             takagi.ru.monica.webdav.WebDavErrorKind.Ok,
             takagi.ru.monica.webdav.WebDavErrorKind.Unknown -> {
-                val raw = classified?.cause?.message ?: "未知错误"
-                "连接测试失败: $raw$urlHint"
+                val raw = classified?.cause?.message ?: strings.get(R.string.import_data_unknown_error)
+                strings.get(R.string.webdav_connection_failed, raw) + urlHint
             }
         }
     }
@@ -1694,7 +1725,7 @@ class WebDavHelper(
             // 验证：检查是否至少启用了一种内容类型
             if (!preferences.hasAnyEnabled()) {
                 android.util.Log.w("WebDavHelper", "Backup cancelled: no content types selected")
-                return@withContext Result.failure(Exception("请至少选择一种备份内容"))
+                return@withContext Result.failure(Exception(strings.get(R.string.backup_select_content)))
             }
 
             android.util.Log.d(
@@ -1706,6 +1737,7 @@ class WebDavHelper(
             // P0修复：错误跟踪
             val failedItems = mutableListOf<FailedItem>()
             val warnings = mutableListOf<String>()
+            var connectionCredentialsSkipped = false
             var successPasswordCount = 0
             var successNoteCount = 0
             var successImageCount = 0
@@ -1718,7 +1750,7 @@ class WebDavHelper(
                 runCatching { createSteamMaFileBackups(securityManager) }
                     .onFailure { error ->
                         android.util.Log.w("WebDavHelper", "Failed to prepare Steam maFile backups: ${error.message}")
-                        warnings.add("Steam maFile备份失败: ${error.message}")
+                        warnings.add(strings.get(R.string.backup_report_backup_failed, "Steam maFile", error.message ?: strings.get(R.string.import_data_unknown_error)))
                     }
                     .getOrDefault(emptyList())
             } else {
@@ -1765,10 +1797,10 @@ class WebDavHelper(
                 val repairedDetachedPasswordCount =
                     backupPasswordCandidates.count(BackupContentPolicy::isLikelyDetachedKeePassPassword)
                 if (skippedExternalPasswordCount > 0) {
-                    warnings.add("已跳过 $skippedExternalPasswordCount 条非 Monica 本地密码")
+                    warnings.add(strings.get(R.string.backup_external_passwords_skipped, skippedExternalPasswordCount))
                 }
                 if (repairedDetachedPasswordCount > 0) {
-                    warnings.add("已按 Monica 本地修复 $repairedDetachedPasswordCount 条遗留 KeePass 标记的密码")
+                    warnings.add(strings.get(R.string.backup_detached_passwords_repaired, repairedDetachedPasswordCount))
                 }
                 android.util.Log.d(
                     "WebDavHelper",
@@ -1802,10 +1834,10 @@ class WebDavHelper(
                 val repairedDetachedSecureItemCount =
                     backupSecureItemCandidates.count(BackupContentPolicy::isLikelyDetachedKeePassSecureItem)
                 if (skippedExternalSecureItemCount > 0) {
-                    warnings.add("已跳过 $skippedExternalSecureItemCount 条非 Monica 本地安全项")
+                    warnings.add(strings.get(R.string.backup_external_items_skipped, skippedExternalSecureItemCount))
                 }
                 if (repairedDetachedSecureItemCount > 0) {
-                    warnings.add("已按 Monica 本地修复 $repairedDetachedSecureItemCount 条遗留 KeePass 标记的安全项")
+                    warnings.add(strings.get(R.string.backup_detached_items_repaired, repairedDetachedSecureItemCount))
                 }
                 android.util.Log.d(
                     "WebDavHelper",
@@ -1839,7 +1871,7 @@ class WebDavHelper(
                 mdbxFallbackItemCount += passkeysForBackup.count { it.isMdbxOwned() }
                 val skippedExternalPasskeyCount = passkeyCandidates.size - passkeysForBackup.size
                 if (skippedExternalPasskeyCount > 0) {
-                    warnings.add("已跳过 $skippedExternalPasskeyCount 条非 Monica 本地通行密钥")
+                    warnings.add(strings.get(R.string.backup_external_passkeys_skipped, skippedExternalPasskeyCount))
                 }
                 android.util.Log.d(
                     "WebDavHelper",
@@ -1945,9 +1977,9 @@ class WebDavHelper(
                             android.util.Log.e("WebDavHelper", "导出密码失败: ${password.id}", e)
                             failedItems.add(FailedItem(
                                 id = password.id,
-                                type = "密码",
+                                type = strings.get(R.string.item_type_password),
                                 title = password.title,
-                                reason = "序列化失败: ${e.message}"
+                                reason = strings.get(R.string.backup_report_serialize_failed, e.message ?: strings.get(R.string.import_data_unknown_error))
                             ))
                         }
                     }
@@ -1977,7 +2009,7 @@ class WebDavHelper(
                         }
                     } catch (e: Exception) {
                         android.util.Log.w("WebDavHelper", "Password history backup failed: ${e.message}")
-                        warnings.add("历史密码备份失败: ${e.message}")
+                        warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.password_history_title), e.message ?: strings.get(R.string.import_data_unknown_error)))
                     }
 
                     if (uploadedPasswordIconFiles.isNotEmpty()) {
@@ -1987,7 +2019,7 @@ class WebDavHelper(
                             if (iconFile.exists()) {
                                 addFileToZipPending("password_icons/$fileName")
                             } else {
-                                warnings.add("自定义图标文件缺失: $fileName")
+                                warnings.add(strings.get(R.string.backup_report_file_missing, fileName))
                             }
                         }
                     }
@@ -2040,9 +2072,9 @@ class WebDavHelper(
                             failedItems.add(
                                 FailedItem(
                                     id = item.id,
-                                    type = "验证器",
+                                    type = strings.get(R.string.item_type_authenticator),
                                     title = item.title,
-                                    reason = "序列化失败: ${e.message}"
+                                    reason = strings.get(R.string.backup_report_serialize_failed, e.message ?: strings.get(R.string.import_data_unknown_error))
                                 )
                             )
                         }
@@ -2099,14 +2131,14 @@ class WebDavHelper(
                                 FailedItem(
                                     id = item.id,
                                     type = when (item.itemType) {
-                                        ItemType.BANK_CARD -> "卡片"
-                                        ItemType.DOCUMENT -> "证件"
-                                        ItemType.BILLING_ADDRESS -> "账单地址"
-                                        ItemType.PAYMENT_ACCOUNT -> "支付方式"
-                                        else -> "安全项"
+                                        ItemType.BANK_CARD -> strings.get(R.string.item_type_bank_card)
+                                        ItemType.DOCUMENT -> strings.get(R.string.item_type_document)
+                                        ItemType.BILLING_ADDRESS -> strings.get(R.string.billing_address)
+                                        ItemType.PAYMENT_ACCOUNT -> strings.get(R.string.payment_account)
+                                        else -> strings.get(R.string.backup_component_secure_items)
                                     },
                                     title = item.title,
-                                    reason = "序列化失败: ${e.message}"
+                                    reason = strings.get(R.string.backup_report_serialize_failed, e.message ?: strings.get(R.string.import_data_unknown_error))
                                 )
                             )
                         }
@@ -2145,9 +2177,9 @@ class WebDavHelper(
                         } catch (e: Exception) {
                             failedItems.add(FailedItem(
                                 id = item.id,
-                                type = "笔记",
+                                type = strings.get(R.string.nav_notes),
                                 title = item.title,
-                                reason = "序列化失败: ${e.message}"
+                                reason = strings.get(R.string.backup_report_serialize_failed, e.message ?: strings.get(R.string.import_data_unknown_error))
                             ))
                         }
                     }
@@ -2239,7 +2271,7 @@ class WebDavHelper(
 
                 if (mdbxFallbackItemCount > 0) {
                     warnings.add(
-                        "已备份 $mdbxFallbackItemCount 条 MDBX2 内容；通用备份恢复时会转换为 Monica 本地条目，不会重建 MDBX2 数据库文件"
+                        strings.get(R.string.backup_mdbx_local_restore, mdbxFallbackItemCount)
                     )
                 }
 
@@ -2261,7 +2293,7 @@ class WebDavHelper(
                     )
                 ) {
                     throw KeePassKeyFileBackupEncryptionRequiredException(
-                        "KeePass数据库“${databaseWithInternalKeyFile?.name.orEmpty()}”包含内部密钥文件副本，请先启用备份加密"
+                        strings.get(R.string.backup_keepass_enable_encryption, databaseWithInternalKeyFile?.name.orEmpty())
                     )
                 }
 
@@ -2284,7 +2316,7 @@ class WebDavHelper(
                                         id = 0,
                                         type = STEAM_MAFILE_BACKUP_TYPE,
                                         title = backup.fileName,
-                                        reason = "写入失败: ${e.message}"
+                                        reason = strings.get(R.string.backup_report_write_failed, e.message ?: strings.get(R.string.import_data_unknown_error))
                                     )
                                 )
                             }
@@ -2316,11 +2348,11 @@ class WebDavHelper(
                                     addFileToZip(zipOut, imageFile, "images/$fileName")
                                     successImageCount++
                                 } else {
-                                    warnings.add("图片文件缺失: $fileName")
+                                    warnings.add(strings.get(R.string.backup_report_file_missing, fileName))
                                 }
                             }
                         } catch (e: Exception) {
-                            warnings.add("图片备份失败: ${e.message}")
+                            warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_content_images), e.message ?: strings.get(R.string.import_data_unknown_error)))
                         }
                     }
 
@@ -2332,7 +2364,7 @@ class WebDavHelper(
                             if (iconFile.exists()) {
                                 addFileToZip(zipOut, iconFile, entryName)
                             } else {
-                                warnings.add("自定义图标文件缺失: $fileName")
+                                warnings.add(strings.get(R.string.backup_report_file_missing, fileName))
                             }
                         }
                     }
@@ -2372,7 +2404,7 @@ class WebDavHelper(
                             }
                         } catch (e: Exception) {
                             android.util.Log.w("WebDavHelper", "Failed to backup timeline: ${e.message}")
-                            warnings.add("操作历史备份失败: ${e.message}")
+                            warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_content_timeline), e.message ?: strings.get(R.string.import_data_unknown_error)))
                         }
                     }
                     
@@ -2478,7 +2510,7 @@ class WebDavHelper(
                             android.util.Log.d("WebDavHelper", "Backup $totalTrashCount trash items (${deletedPasswords.size} passwords, ${deletedSecureItems.size} secure items)")
                         } catch (e: Exception) {
                             android.util.Log.w("WebDavHelper", "Failed to backup trash: ${e.message}")
-                            warnings.add("回收站备份失败: ${e.message}")
+                            warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_content_trash), e.message ?: strings.get(R.string.import_data_unknown_error)))
                         }
                     }
                     
@@ -2520,7 +2552,7 @@ class WebDavHelper(
                         }
                     } catch (e: Exception) {
                         android.util.Log.w("WebDavHelper", "Failed to backup common account info: ${e.message}")
-                        warnings.add("常用账号信息备份失败: ${e.message}")
+                        warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_component_common_accounts), e.message ?: strings.get(R.string.import_data_unknown_error)))
                     }
                     
                     // 7.8 ✅ 便携应用设置始终随正常备份保存；连接凭据仍需用户明确选择。
@@ -2531,7 +2563,7 @@ class WebDavHelper(
                         warnings = warnings,
                     )
                     if (preferences.includeWebDavConfig && isConfigured()) {
-                        writeConnectionConfigBackup(
+                        connectionCredentialsSkipped = writeConnectionConfigBackup(
                             zipOut = zipOut,
                             cacheBackupDir = cacheBackupDir,
                             backupEncryptPassword = backupEncryptPassword,
@@ -2564,7 +2596,7 @@ class WebDavHelper(
                                                 ?.let(keyFileStore::readInternal)
                                         } catch (e: Exception) {
                                             throw KeePassKeyFileBackupUnavailableException(
-                                                "KeePass数据库“${kpDb.name}”的内部密钥文件无法读取: ${e.message}",
+                                                strings.get(R.string.backup_keepass_key_read_failed, kpDb.name, e.message ?: strings.get(R.string.import_data_unknown_error)),
                                                 e,
                                             )
                                         }
@@ -2575,7 +2607,7 @@ class WebDavHelper(
                                             !keyFileFingerprint.equals(kpDb.keyFileFingerprint, ignoreCase = true)
                                         ) {
                                             throw KeePassKeyFileBackupUnavailableException(
-                                                "KeePass数据库“${kpDb.name}”的内部密钥文件指纹校验失败"
+                                                strings.get(R.string.backup_keepass_key_fingerprint_failed, kpDb.name)
                                             )
                                         }
                                         val keyFileEntryName = keyFileBytes?.let {
@@ -2631,7 +2663,7 @@ class WebDavHelper(
                                             
                                             backupCount++
                                         } else {
-                                            warnings.add("KeePass数据库文件不存在: ${kpDb.name}")
+                                            warnings.add(strings.get(R.string.backup_report_file_missing, kpDb.name))
                                         }
                                     } catch (e: KeePassKeyFileBackupEncryptionRequiredException) {
                                         throw e
@@ -2639,7 +2671,7 @@ class WebDavHelper(
                                         throw e
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to backup KeePass database ${kpDb.id}: ${e.message}")
-                                        warnings.add("KeePass数据库备份失败: ${kpDb.name}")
+                                        warnings.add(strings.get(R.string.backup_keepass_failed, kpDb.name))
                                     }
                                 }
                                 
@@ -2652,7 +2684,7 @@ class WebDavHelper(
                             throw e
                         } catch (e: Exception) {
                             android.util.Log.w("WebDavHelper", "Failed to backup KeePass databases: ${e.message}")
-                            warnings.add("KeePass数据库备份失败: ${e.message}")
+                            warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.backup_content_local_keepass), e.message ?: strings.get(R.string.import_data_unknown_error)))
                         }
                     }
 
@@ -2678,7 +2710,7 @@ class WebDavHelper(
                                     addFileToZip(zipOut, blobFile, "attachments/$blobName")
                                     writtenBlobs += blobName
                                 } else {
-                                    warnings.add("附件密文文件缺失: $blobName")
+                                    warnings.add(strings.get(R.string.backup_report_file_missing, blobName))
                                 }
                             }
 
@@ -2708,7 +2740,7 @@ class WebDavHelper(
                                     if (written) {
                                         portableEntries += payload.entry
                                     } else {
-                                        warnings.add("附件可迁移备份失败: ${payload.attachment.fileName}")
+                                        warnings.add(strings.get(R.string.backup_attachment_failed, payload.attachment.fileName))
                                     }
                                 }
                                 val portableMetaFile = File(cacheBackupDir, "attachments_portable.json")
@@ -2728,24 +2760,25 @@ class WebDavHelper(
                                     "Backup portable attachments: ${portableEntries.size}/${localAttachments.size}"
                                 )
                                 if (portableEntries.size < localAttachments.size) {
-                                    warnings.add("部分附件无法解密备份: ${localAttachments.size - portableEntries.size}个")
+                                    warnings.add(strings.get(R.string.backup_attachment_decrypt_failed, localAttachments.size - portableEntries.size))
                                 }
                             } else {
-                                warnings.add("本地附件跨设备恢复需要启用备份加密；当前仅保留同机兼容附件备份")
+                                warnings.add(strings.get(R.string.backup_attachment_encryption_required))
                             }
                         }
                     } catch (e: Exception) {
                         android.util.Log.w("WebDavHelper", "Failed to backup attachments: ${e.message}")
-                        warnings.add("附件备份失败: ${e.message}")
+                        warnings.add(strings.get(R.string.backup_report_backup_failed, strings.get(R.string.attachment_section_title), e.message ?: strings.get(R.string.import_data_unknown_error)))
                     }
                 }
 
                 // 8. 加密
                 if (shouldEncryptBackup) {
                     val encryptResult = EncryptionHelper.encryptFile(
-                        zipFile,
-                        finalFile,
-                        checkNotNull(backupEncryptPassword),
+                        inputFile = zipFile,
+                        outputFile = finalFile,
+                        password = checkNotNull(backupEncryptPassword),
+                        strings = strings,
                     )
                     if (encryptResult.isFailure) throw encryptResult.exceptionOrNull()!!
                 }
@@ -2781,7 +2814,8 @@ class WebDavHelper(
                     totalItems = totalCounts,
                     successItems = successCounts,
                     failedItems = failedItems,
-                    warnings = warnings
+                    warnings = warnings,
+                    connectionCredentialsSkipped = connectionCredentialsSkipped
                 )
                 android.util.Log.d(
                     "WebDavHelper",
@@ -2821,7 +2855,7 @@ class WebDavHelper(
         // 检查是否已有备份正在进行
         if (!backupLock.compareAndSet(false, true)) {
             android.util.Log.w("WebDavHelper", "Backup already in progress, ignoring request")
-            return@withContext Result.failure(Exception("备份正在进行中，请稍候再试"))
+            return@withContext Result.failure(Exception(strings.get(R.string.backup_already_running)))
         }
         
         try {
@@ -2839,7 +2873,7 @@ class WebDavHelper(
             )
             
             if (createResult.isFailure) {
-                return@withContext Result.failure(createResult.exceptionOrNull() ?: Exception("创建备份失败"))
+                return@withContext Result.failure(createResult.exceptionOrNull() ?: Exception(strings.get(R.string.webdav_create_backup_failed)))
             }
 
             val (backupFile, report) = createResult.getOrThrow()
@@ -2857,7 +2891,7 @@ class WebDavHelper(
                             "notes=${report.successItems.notes}/${report.totalItems.notes}"
                     )
                     return@withContext Result.failure(
-                        Exception("备份文件不完整，已阻止上传覆盖远端备份")
+                        Exception(strings.get(R.string.backup_incomplete_upload_blocked))
                     )
                 }
 
@@ -2877,25 +2911,25 @@ class WebDavHelper(
                     val uploadDetails = mutableListOf<FieldChange>()
                     val backedUpCounts = report.successItems
                     if (backedUpCounts.passwords > 0) {
-                        uploadDetails.add(FieldChange("密码", "", "${backedUpCounts.passwords}项"))
+                        uploadDetails.add(FieldChange("密码", "", backedUpCounts.passwords.toString()))
                     }
                     if (backedUpCounts.totp > 0) {
-                        uploadDetails.add(FieldChange("验证器", "", "${backedUpCounts.totp}项"))
+                        uploadDetails.add(FieldChange("验证器", "", backedUpCounts.totp.toString()))
                     }
                     if (backedUpCounts.bankCards > 0) {
-                        uploadDetails.add(FieldChange("卡片", "", "${backedUpCounts.bankCards}项"))
+                        uploadDetails.add(FieldChange("卡片", "", backedUpCounts.bankCards.toString()))
                     }
                     if (backedUpCounts.notes > 0) {
-                        uploadDetails.add(FieldChange("笔记", "", "${backedUpCounts.notes}项"))
+                        uploadDetails.add(FieldChange("笔记", "", backedUpCounts.notes.toString()))
                     }
                     if (backedUpCounts.documents > 0) {
-                        uploadDetails.add(FieldChange("证件", "", "${backedUpCounts.documents}项"))
+                        uploadDetails.add(FieldChange("证件", "", backedUpCounts.documents.toString()))
                     }
                     if (backedUpCounts.billingAddresses > 0) {
-                        uploadDetails.add(FieldChange("账单地址", "", "${backedUpCounts.billingAddresses}项"))
+                        uploadDetails.add(FieldChange("账单地址", "", backedUpCounts.billingAddresses.toString()))
                     }
                     if (backedUpCounts.paymentAccounts > 0) {
-                        uploadDetails.add(FieldChange("支付方式", "", "${backedUpCounts.paymentAccounts}项"))
+                        uploadDetails.add(FieldChange("支付方式", "", backedUpCounts.paymentAccounts.toString()))
                     }
                     OperationLogger.logWebDavUpload(
                         isAutomatic = !isManualTrigger,
@@ -2913,7 +2947,7 @@ class WebDavHelper(
                     )
                     Result.success(finalReport)
                 } else {
-                    Result.failure(uploadResult.exceptionOrNull() ?: Exception("上传失败"))
+                    Result.failure(uploadResult.exceptionOrNull() ?: Exception(strings.get(R.string.backup_upload_failed)))
                 }
             } finally {
                 // 上传完成后删除生成的 ZIP 文件
@@ -2922,10 +2956,10 @@ class WebDavHelper(
         } catch (e: OutOfMemoryError) {
             android.util.Log.e("WebDavHelper", "Out of memory during backup", e)
             System.gc()
-            Result.failure(Exception("内存不足，请先压缩图片后再试"))
+            Result.failure(Exception(strings.get(R.string.backup_memory_insufficient)))
         } catch (e: Exception) {
             android.util.Log.e("WebDavHelper", "Backup failed", e)
-            Result.failure(Exception("备份过程失败: ${e.message}"))
+            Result.failure(Exception(strings.get(R.string.webdav_backup_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
         } finally {
             // 释放备份锁
             backupLock.set(false)
@@ -3066,14 +3100,15 @@ class WebDavHelper(
     /**
      * 异常：需要密码
      */
-    class PasswordRequiredException : Exception("备份文件已加密，请提供解密密码")
+    class PasswordRequiredException(message: String) : Exception(message)
 
     /**
      * 异常：备份中包含 Monica 配置，需由上层明确是否覆盖本地配置
      */
     class MonicaConfigDecisionRequiredException(
-        val configEntries: List<String>
-    ) : Exception("检测到 Monica 配置，请确认是否覆盖本地配置")
+        val configEntries: List<String>,
+        message: String
+    ) : Exception(message)
 
     private fun normalizeBackupEntryName(entryName: String): String {
         return entryName.replace('\\', '/').trimStart('/').lowercase(Locale.ROOT)
@@ -3131,7 +3166,7 @@ class WebDavHelper(
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("WebDavHelper", "Failed to clear Monica local data: ${e.message}")
-            Result.failure(Exception("无法清除 Monica 本地数据: ${e.message}"))
+            Result.failure(Exception(strings.get(R.string.backup_local_clear_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
         }
     }
 
@@ -3146,7 +3181,12 @@ class WebDavHelper(
         decryptPassword: String? = null,
         overwrite: Boolean = false,
         restoreMonicaConfig: Boolean? = true,
+        importDataOnly: Boolean = false,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
     ): Result<RestoreResult> = withContext(Dispatchers.IO) {
+        val stagedAttachmentFiles = mutableSetOf<File>()
+        var decryptedBackup: File? = null
+        var handedOff = false
         try {
             // P0修复：错误跟踪
             val failedItems = mutableListOf<FailedItem>()
@@ -3176,7 +3216,7 @@ class WebDavHelper(
             // 1. 检测是否加密
             val isEncrypted = EncryptionHelper.isEncryptedFile(backupFile)
             val resolvedDecryptPassword = if (isEncrypted) {
-                (decryptPassword ?: encryptionPassword).takeIf { it.isNotEmpty() }
+                (decryptPassword ?: if (importDataOnly) null else encryptionPassword)?.takeIf { it.isNotEmpty() }
             } else {
                 decryptPassword
             }
@@ -3185,15 +3225,18 @@ class WebDavHelper(
             val zipFile = if (isEncrypted) {
                 val password = resolvedDecryptPassword
                 if (password == null) {
-                    return@withContext Result.failure(PasswordRequiredException())
+                    return@withContext Result.failure(PasswordRequiredException(strings.get(R.string.backup_password_required)))
                 }
                 
                 val decryptedFile = File(context.cacheDir, "restore_decrypted_${System.nanoTime()}.zip")
-                val decryptResult = EncryptionHelper.decryptFile(backupFile, decryptedFile, password)
+                    .also { decryptedBackup = it }
+                progress.report(TransferProgress(TransferPhase.DECRYPTING))
+                val decryptResult = EncryptionHelper.decryptFile(backupFile, decryptedFile, password, strings)
                 
                 if (decryptResult.isFailure) {
+                    decryptedFile.delete()
                     return@withContext Result.failure(decryptResult.exceptionOrNull() 
-                        ?: Exception("解密失败"))
+                        ?: Exception(strings.get(R.string.backup_decryption_failed)))
                 }
                 
                 android.util.Log.d("WebDavHelper", "Backup decrypted successfully")
@@ -3202,23 +3245,26 @@ class WebDavHelper(
                 backupFile
             }
 
+            val isDatabaseExport = java.util.zip.ZipFile(zipFile).use { archive ->
+                archive.getEntry("database_export.json") != null
+            }
             detectedMonicaConfigEntries = runCatching {
                 detectMonicaConfigEntries(zipFile)
             }.onFailure { error ->
                 android.util.Log.w("WebDavHelper", "Failed to detect Monica config entries: ${error.message}")
-                warnings.add("Monica配置检测失败，按默认恢复策略继续")
+                warnings.add(strings.get(R.string.backup_config_detection_failed))
             }.getOrDefault(emptyList())
 
             if (detectedMonicaConfigEntries.isNotEmpty() && restoreMonicaConfig == null) {
                 return@withContext Result.failure(
-                    MonicaConfigDecisionRequiredException(detectedMonicaConfigEntries)
+                    MonicaConfigDecisionRequiredException(detectedMonicaConfigEntries, strings.get(R.string.backup_config_decision))
                 )
             }
 
             val shouldRestoreMonicaConfig = restoreMonicaConfig != false
 
             if (!shouldRestoreMonicaConfig && detectedMonicaConfigEntries.isNotEmpty()) {
-                warnings.add("已跳过 Monica 配置恢复: ${detectedMonicaConfigEntries.size}项")
+                warnings.add(strings.get(R.string.backup_report_skipped_count, strings.get(R.string.backup_component_settings), detectedMonicaConfigEntries.size))
             }
 
             val keepassRestoreTempDir = File(
@@ -3240,6 +3286,7 @@ class WebDavHelper(
                 val passkeys = mutableListOf<PasskeyEntry>()
                 val steamMaFiles = mutableListOf<SteamMaFilePayload>()
                 val passwordHistory = mutableListOf<PasswordHistoryBackupEntry>()
+                val nativeTokens = mutableListOf<takagi.ru.monica.transfer.NativeTokenBackup>()
                 val pendingKeePassMetadata = mutableMapOf<Long, KeePassDatabaseBackupEntry>()
                 val pendingKeePassKeyFiles = mutableMapOf<Long, ByteArray>()
                 val pendingKeePassDatabases = mutableMapOf<Long, File>()
@@ -3254,9 +3301,14 @@ class WebDavHelper(
                 val secureCsvFiles = mutableListOf<File>()
                 
                 // 3. 解压ZIP文件并读取JSON/CSV、密码历史和图片
-                ZipInputStream(FileInputStream(zipFile)).use { zipIn ->
+                progress.report(TransferProgress(TransferPhase.READING))
+                val zipEntryCount = java.util.zip.ZipFile(zipFile).use { it.size().toLong() }
+                var readEntries = 0L
+                ZipInputStream(FileInputStream(zipFile).buffered()).use { zipIn ->
                     var entry = zipIn.nextEntry
                     while (entry != null) {
+                        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                        progress.report(TransferProgress(TransferPhase.READING, readEntries++, zipEntryCount))
                         // 防止Zip Slip漏洞
                         val entryName = entry.name.substringAfterLast('/')
                         if (entryName.contains("..")) {
@@ -3277,6 +3329,43 @@ class WebDavHelper(
                             val keePassEntry = KeePassBackupEntryPolicy.parse(normalizedEntryName)
                             
                             when {
+                                isDatabaseExport && entryName == "native_api_tokens.json" -> {
+                                    nativeTokens += Json { ignoreUnknownKeys = true }.decodeFromString<
+                                        List<takagi.ru.monica.transfer.NativeTokenBackup>>(tempFile.readText(Charsets.UTF_8))
+                                }
+                                isDatabaseExport && normalizedEntryName == "trash/trash_passwords.json" -> {
+                                    val rows = org.json.JSONArray(tempFile.readText(Charsets.UTF_8))
+                                    for (i in 0 until rows.length()) {
+                                        val row = rows.getJSONObject(i)
+                                        val backup = Json { ignoreUnknownKeys = true }.decodeFromString<PasswordBackupEntry>(row.toString())
+                                        val restored = restorePasswordAsMonicaLocal(backup).copy(isDeleted = true,
+                                            deletedAt = row.optLong("deletedAt").takeIf { it > 0L }?.let(::Date))
+                                        passwordsWithMetadata += restored to backup.categoryName
+                                        if (backup.customFields.isNotEmpty()) pendingCustomFields[backup.id] = backup.customFields
+                                        backupPasswordCount++
+                                        restoredPasswordCount++
+                                    }
+                                }
+                                isDatabaseExport && normalizedEntryName == "trash/trash_secure_items.json" -> {
+                                    val rows = org.json.JSONArray(tempFile.readText(Charsets.UTF_8))
+                                    for (i in 0 until rows.length()) {
+                                        val row = rows.getJSONObject(i)
+                                        val restored = DataExportImportManager.ExportItem(
+                                            id = row.getLong("id"), itemType = row.getString("itemType"), title = row.getString("title"),
+                                            itemData = row.getString("itemData"), notes = row.optString("notes"),
+                                            isFavorite = row.optBoolean("isFavorite"), imagePaths = row.optString("imagePaths"),
+                                            createdAt = row.getLong("createdAt"), updatedAt = row.getLong("updatedAt"),
+                                            sortOrder = row.optInt("sortOrder"), isDeleted = true,
+                                            deletedAt = row.optLong("deletedAt").takeIf { it > 0L })
+                                        secureItems += restored
+                                    }
+                                }
+                                importDataOnly && (
+                                    entryName.equals("categories.json", true) || entryName.equals("timeline_history.json", true) ||
+                                    entryName.endsWith("_generated_history.json", true) ||
+                                    normalizedEntryName.startsWith("trash/") || normalizedEntryName.contains("/trash/") ||
+                                    keePassEntry != null
+                                ) -> Unit
                                 !shouldRestoreMonicaConfig && isMonicaConfigEntry(
                                     normalizeBackupEntryName(normalizedEntryName),
                                     entryName,
@@ -3293,9 +3382,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "密码",
+                                            type = strings.get(R.string.item_type_password),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3330,9 +3419,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "笔记",
+                                            type = strings.get(R.string.nav_notes),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3345,9 +3434,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "卡片",
+                                            type = strings.get(R.string.item_type_bank_card),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3360,9 +3449,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "证件",
+                                            type = strings.get(R.string.item_type_document),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3375,9 +3464,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "账单地址",
+                                            type = strings.get(R.string.billing_address),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3390,9 +3479,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "支付方式",
+                                            type = strings.get(R.string.payment_account),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3408,7 +3497,7 @@ class WebDavHelper(
                                                 id = 0,
                                                 type = STEAM_MAFILE_BACKUP_TYPE,
                                                 title = entryName,
-                                                reason = "maFile解析失败"
+                                                reason = strings.get(R.string.backup_report_parse_failed, "maFile")
                                             )
                                         )
                                     }
@@ -3424,9 +3513,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "验证器",
+                                            type = strings.get(R.string.item_type_authenticator),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3443,9 +3532,9 @@ class WebDavHelper(
                                     } else {
                                         failedItems.add(FailedItem(
                                             id = 0,
-                                            type = "通行密钥",
+                                            type = strings.get(R.string.backup_content_passkeys),
                                             title = entryName,
-                                            reason = "JSON解析失败"
+                                            reason = strings.get(R.string.backup_report_parse_failed, "JSON")
                                         ))
                                     }
                                 }
@@ -3459,7 +3548,7 @@ class WebDavHelper(
                                         )
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore password history: ${e.message}")
-                                        warnings.add("历史密码恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.password_history_title), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 entryName.endsWith("_generated_history.json", ignoreCase = true) -> {
@@ -3473,7 +3562,7 @@ class WebDavHelper(
                                         android.util.Log.d("WebDavHelper", "Restored ${history.size} password generation history entries")
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore password generation history: ${e.message}")
-                                        warnings.add("密码生成历史恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.data_type_generator_history), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复分类数据
@@ -3506,7 +3595,7 @@ class WebDavHelper(
                                         android.util.Log.d("WebDavHelper", "Restored ${categoryBackups.size} categories")
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore categories: ${e.message}")
-                                        warnings.add("分类恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.category), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复操作历史记录 (时间线)
@@ -3551,7 +3640,7 @@ class WebDavHelper(
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore timeline: ${e.message}")
-                                        warnings.add("操作历史恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.backup_content_timeline), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复回收站数据 - 密码
@@ -3611,7 +3700,7 @@ class WebDavHelper(
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore trash passwords: ${e.message}")
-                                        warnings.add("回收站密码恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.backup_component_recycle_passwords), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复回收站数据 - 安全项目
@@ -3663,7 +3752,7 @@ class WebDavHelper(
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore trash secure items: ${e.message}")
-                                        warnings.add("回收站项目恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.backup_component_recycle_items), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName.contains("/password_icons/") || normalizedEntryName.startsWith("password_icons/") -> {
@@ -3675,7 +3764,7 @@ class WebDavHelper(
                                         val destFile = File(iconDir, entryName)
                                         tempFile.copyTo(destFile, overwrite = true)
                                     } catch (e: Exception) {
-                                        warnings.add("自定义图标恢复失败: $entryName - ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_file_restore_failed, entryName, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName.startsWith(
@@ -3693,13 +3782,14 @@ class WebDavHelper(
                                             )
                                         } else {
                                             pendingPortableAttachmentPayloads[normalizedEntryName] = tempFile
+                                            stagedAttachmentFiles += tempFile
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w(
                                             "WebDavHelper",
                                             "Failed to restore portable attachment entry $entryName: ${e.message}"
                                         )
-                                        warnings.add("可迁移附件恢复失败: $entryName - ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_file_restore_failed, entryName, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName.contains("/attachments/") || normalizedEntryName.startsWith("attachments/") -> {
@@ -3729,7 +3819,7 @@ class WebDavHelper(
                                             "WebDavHelper",
                                             "Failed to restore attachment entry $entryName: ${e.message}"
                                         )
-                                        warnings.add("附件恢复失败: $entryName - ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_file_restore_failed, entryName, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName.contains("/images/") || entryName.endsWith(".enc") -> {
@@ -3747,7 +3837,7 @@ class WebDavHelper(
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore image file $entryName: ${e.message}")
                                         // P0修复：记录失败
-                                        warnings.add("图片恢复失败: $entryName - ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_file_restore_failed, entryName, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复常用账号信息（兼容旧根目录与新的 monica_config 目录）
@@ -3817,7 +3907,7 @@ class WebDavHelper(
                                         )
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore common account info: ${e.message}")
-                                        warnings.add("常用账号信息恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.backup_component_common_accounts), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复 Monica 自动填充屏蔽字段配置
@@ -3843,11 +3933,11 @@ class WebDavHelper(
                                             }
                                         if (autofillBlockedFieldRecords.isNotEmpty()) {
                                             AutofillPreferences(context).importBlockedFieldSignatureRecords(autofillBlockedFieldRecords)
-                                            warnings.add("✓ 非自动填充字段已恢复: ${autofillBlockedFieldRecords.size}项")
+                                            warnings.add(strings.get(R.string.backup_report_restored_count, strings.get(R.string.autofill_blocked_fields_title), autofillBlockedFieldRecords.size))
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore blocked autofill fields: ${e.message}")
-                                        warnings.add("非自动填充字段恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.autofill_blocked_fields_title), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName == "monica_config/autofill_save_blocked_targets.json" -> {
@@ -3862,11 +3952,11 @@ class WebDavHelper(
                                             AutofillPreferences(context).importSaveBlockedTargets(
                                                 saveBlockedTargetsBackup.blockedTargets,
                                             )
-                                            warnings.add("✓ 不保存名单已恢复: ${saveBlockedTargetsBackup.blockedTargets.size}项")
+                                            warnings.add(strings.get(R.string.backup_report_restored_count, strings.get(R.string.autofill_save_blocked_targets_title), saveBlockedTargetsBackup.blockedTargets.size))
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore save-blocked targets: ${e.message}")
-                                        warnings.add("不保存名单恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.autofill_save_blocked_targets_title), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName == "monica_config/autofill_blacklist.json" -> {
@@ -3884,10 +3974,10 @@ class WebDavHelper(
                                             setBlacklistEnabled(autofillBlacklistBackup.enabled)
                                             setBlacklistPackages(normalizedPackages)
                                         }
-                                        warnings.add("✓ 自动填充黑名单已恢复: ${normalizedPackages.size}个应用")
+                                        warnings.add(strings.get(R.string.backup_report_restored_count, strings.get(R.string.autofill_blacklist_title), normalizedPackages.size))
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore autofill blacklist: ${e.message}")
-                                        warnings.add("自动填充黑名单恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.autofill_blacklist_title), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName == "monica_config/bitwarden_vaults.json" ||
@@ -3901,11 +3991,11 @@ class WebDavHelper(
                                             resolvedDecryptPassword,
                                         )
                                         if (restoredCount > 0) {
-                                            warnings.add("✓ Bitwarden Vault已恢复: ${restoredCount}个（已锁定）")
+                                            warnings.add(strings.get(R.string.backup_bitwarden_restored_locked, restoredCount))
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore Bitwarden vaults: ${e.message}")
-                                        warnings.add("Bitwarden Vault恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, "Bitwarden", e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName == "monica_config/page_adjustment_settings.json" -> {
@@ -3999,6 +4089,7 @@ class WebDavHelper(
                                                 passwordCardHideOtherContentWhenAuthenticator =
                                                     pageAdjustmentBackup.passwordCardHideOtherContentWhenAuthenticator,
                                                 stackCardMode = pageAdjustmentBackup.stackCardMode,
+                                                walletStackLoopEnabled = pageAdjustmentBackup.walletStackLoopEnabled,
                                                 passwordGroupMode = pageAdjustmentBackup.passwordGroupMode,
                                                 passwordWebsiteStackMatchMode =
                                                     pageAdjustmentBackup.passwordWebsiteStackMatchMode,
@@ -4066,10 +4157,10 @@ class WebDavHelper(
                                                     ),
                                             )
                                         )
-                                        warnings.add("✓ 页面调整自定义已恢复")
+                                        warnings.add(strings.get(R.string.backup_report_restored, strings.get(R.string.legacy_ui_config_page_adjustment)))
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore page adjustment settings: ${e.message}")
-                                        warnings.add("页面调整自定义恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.legacy_ui_config_page_adjustment), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 normalizedEntryName == "monica_config/security_questions.json" -> {
@@ -4090,16 +4181,16 @@ class WebDavHelper(
                                                 )
                                             )
                                         if (restored) {
-                                            warnings.add("✓ 密保问题已恢复")
+                                            warnings.add(strings.get(R.string.backup_report_restored, strings.get(R.string.security_questions)))
                                         } else {
-                                            warnings.add("密保问题备份格式无效，已跳过恢复")
+                                            warnings.add(strings.get(R.string.backup_security_questions_invalid))
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w(
                                             "WebDavHelper",
                                             "Failed to restore security questions: ${e.message}"
                                         )
-                                        warnings.add("密保问题恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.security_questions), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复 Monica 旧版聚合配置（兼容 monica_config.json）
@@ -4126,14 +4217,14 @@ class WebDavHelper(
                                             }
                                         if (autofillBlockedFieldRecords.isNotEmpty()) {
                                             AutofillPreferences(context).importBlockedFieldSignatureRecords(autofillBlockedFieldRecords)
-                                            warnings.add("✓ 非自动填充字段已恢复: ${autofillBlockedFieldRecords.size}项")
+                                            warnings.add(strings.get(R.string.backup_report_restored_count, strings.get(R.string.autofill_blocked_fields_title), autofillBlockedFieldRecords.size))
                                         }
 
                                         if (monicaConfigBackup.saveBlockedTargets.isNotEmpty()) {
                                             AutofillPreferences(context).importSaveBlockedTargets(
                                                 monicaConfigBackup.saveBlockedTargets,
                                             )
-                                            warnings.add("✓ 不保存名单已恢复: ${monicaConfigBackup.saveBlockedTargets.size}项")
+                                            warnings.add(strings.get(R.string.backup_report_restored_count, strings.get(R.string.autofill_save_blocked_targets_title), monicaConfigBackup.saveBlockedTargets.size))
                                         }
 
                                         if (monicaConfigBackup.autofillBlacklistEnabled != null ||
@@ -4151,7 +4242,7 @@ class WebDavHelper(
                                                 }
                                             }
                                             if (normalizedPackages != null) {
-                                                warnings.add("✓ 自动填充黑名单已恢复: ${normalizedPackages.size}个应用")
+                                                warnings.add(strings.get(R.string.backup_report_restored_count, strings.get(R.string.autofill_blacklist_title), normalizedPackages.size))
                                             }
                                         }
 
@@ -4160,12 +4251,12 @@ class WebDavHelper(
                                             resolvedDecryptPassword,
                                         )
                                         if (restoredBitwardenVaultCount > 0) {
-                                            warnings.add("✓ Bitwarden Vault已恢复: ${restoredBitwardenVaultCount}个（已锁定）")
+                                            warnings.add(strings.get(R.string.backup_bitwarden_restored_locked, restoredBitwardenVaultCount))
                                         }
 
                                         if (!isConfigured()) {
                                             if (monicaConfigBackup.encryptedPassword.isBlank()) {
-                                                warnings.add("WebDAV连接密码未包含在备份中，恢复后需要重新填写")
+                                                warnings.add(strings.get(R.string.backup_webdav_password_missing))
                                             } else {
                                                 try {
                                                     val decryptedWebDavPassword = decryptBackupValueWithLegacyFallback(
@@ -4188,20 +4279,20 @@ class WebDavHelper(
                                                         }
                                                         configureAutoBackup(monicaConfigBackup.autoBackupEnabled)
                                                         android.util.Log.d("WebDavHelper", "Restored WebDAV config from legacy Monica config")
-                                                        warnings.add("✓ WebDAV配置已恢复: ${monicaConfigBackup.serverUrl}")
+                                                        warnings.add(strings.get(R.string.backup_webdav_config_restored, monicaConfigBackup.serverUrl))
                                                     }
                                                 } catch (e: Exception) {
                                                     android.util.Log.w("WebDavHelper", "Failed to decrypt legacy Monica config WebDAV credentials: ${e.message}")
-                                                    warnings.add("WebDAV配置解密失败（可能密码不匹配）: ${e.message}")
+                                                    warnings.add(strings.get(R.string.backup_webdav_config_decrypt_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                                 }
                                             }
                                         } else {
                                             android.util.Log.d("WebDavHelper", "WebDAV already configured, skipping legacy Monica connection restore")
-                                            warnings.add("WebDAV已配置，已跳过连接配置恢复")
+                                            warnings.add(strings.get(R.string.backup_webdav_config_skipped))
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore legacy Monica config: ${e.message}")
-                                        warnings.add("Monica配置恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.backup_component_settings), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 // ✅ 恢复 WebDAV 连接配置（新文件与旧版 webdav_config.json 均兼容）
@@ -4215,7 +4306,7 @@ class WebDavHelper(
                                         // 只有当本地未配置 WebDAV 时才恢复连接信息
                                         if (!isConfigured()) {
                                             if (webDavConfigBackup.encryptedPassword.isBlank()) {
-                                                warnings.add("WebDAV连接密码未包含在备份中，恢复后需要重新填写")
+                                                warnings.add(strings.get(R.string.backup_webdav_password_missing))
                                             } else {
                                                 try {
                                                     val decryptedWebDavPassword = decryptBackupValueWithLegacyFallback(
@@ -4245,25 +4336,25 @@ class WebDavHelper(
                                                         webDavConfigBackup.backupRetentionConfig?.let(::setBackupRetentionConfig)
 
                                                         android.util.Log.d("WebDavHelper", "Restored WebDAV config")
-                                                        warnings.add("✓ WebDAV配置已恢复: ${webDavConfigBackup.serverUrl}")
+                                                        warnings.add(strings.get(R.string.backup_webdav_config_restored, webDavConfigBackup.serverUrl))
                                                     }
                                                 } catch (e: Exception) {
                                                     android.util.Log.w("WebDavHelper", "Failed to decrypt WebDAV credentials: ${e.message}")
-                                                    warnings.add("WebDAV配置解密失败（可能密码不匹配）: ${e.message}")
+                                                    warnings.add(strings.get(R.string.backup_webdav_config_decrypt_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                                 }
                                             }
                                         } else {
                                             android.util.Log.d("WebDavHelper", "WebDAV already configured, skipping restore")
-                                            warnings.add("WebDAV已配置，已跳过连接配置恢复")
+                                            warnings.add(strings.get(R.string.backup_webdav_config_skipped))
                                         }
                                     } catch (e: Exception) {
                                         android.util.Log.w("WebDavHelper", "Failed to restore WebDAV config: ${e.message}")
-                                        warnings.add("WebDAV配置恢复失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, "WebDAV", e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                                 entryName.equals("keepass_webdav_config.json", ignoreCase = true) -> {
                                     // KeePass WebDAV 已下线，不再恢复该配置文件。
-                                    warnings.add("KeePass WebDAV功能已下线，已跳过配置恢复")
+                                    warnings.add(strings.get(R.string.backup_legacy_keepass_config_skipped))
                                 }
                                 // ✅ 恢复 KeePass 数据库（恢复为内部存储）
                                 keePassEntry != null -> {
@@ -4279,23 +4370,23 @@ class WebDavHelper(
                                                             tempFile.readText(Charsets.UTF_8),
                                                         )
                                                     if (metadata.id != 0L && metadata.id != dbId) {
-                                                        throw IllegalArgumentException("KeePass元信息ID与文件名不一致")
+                                                        throw IllegalArgumentException(strings.get(R.string.backup_keepass_id_mismatch))
                                                     }
                                                     if (pendingKeePassMetadata.put(dbId, metadata) != null) {
                                                         invalidKeePassRestoreIds += dbId
                                                         pendingKeePassMetadata.remove(dbId)
-                                                        warnings.add("KeePass数据库 $dbId 存在重复元信息，已跳过")
+                                                        warnings.add(strings.get(R.string.backup_keepass_duplicate_metadata, dbId))
                                                     }
                                                 }
 
                                                 KeePassBackupEntryPolicy.Kind.KEY_FILE -> {
                                                     if (!isEncrypted) {
-                                                        throw SecurityException("未加密备份中的 KeePass 密钥文件已被拒绝")
+                                                        throw SecurityException(strings.get(R.string.backup_keepass_key_encryption_required))
                                                     }
                                                     if (pendingKeePassKeyFiles.put(dbId, tempFile.readBytes()) != null) {
                                                         invalidKeePassRestoreIds += dbId
                                                         pendingKeePassKeyFiles.remove(dbId)
-                                                        warnings.add("KeePass数据库 $dbId 存在重复密钥文件，已跳过")
+                                                        warnings.add(strings.get(R.string.backup_keepass_duplicate_keys, dbId))
                                                     }
                                                 }
 
@@ -4303,7 +4394,7 @@ class WebDavHelper(
                                                     if (pendingKeePassDatabases.containsKey(dbId)) {
                                                         invalidKeePassRestoreIds += dbId
                                                         pendingKeePassDatabases.remove(dbId)?.delete()
-                                                        warnings.add("KeePass数据库 $dbId 存在重复数据库文件，已跳过")
+                                                        warnings.add(strings.get(R.string.backup_keepass_duplicate_files, dbId))
                                                     } else {
                                                         keepassRestoreTempDir.mkdirs()
                                                         val stagedFile = File(
@@ -4319,7 +4410,7 @@ class WebDavHelper(
                                     } catch (e: Exception) {
                                         invalidKeePassRestoreIds += keePassEntry.databaseId
                                         android.util.Log.w("WebDavHelper", "Failed to stage KeePass file: ${e.message}")
-                                        warnings.add("KeePass文件处理失败: ${e.message}")
+                                        warnings.add(strings.get(R.string.backup_report_restore_failed, strings.get(R.string.backup_component_keepass_files), e.message ?: strings.get(R.string.import_data_unknown_error)))
                                     }
                                 }
                             }
@@ -4362,7 +4453,8 @@ class WebDavHelper(
                     val categoryDao = database.categoryDao()
                     
                     // 获取当前所有分类
-                    val existingCategories = try { categoryDao.getAllCategories().first() } catch (e: Exception) { emptyList() }
+                    val existingCategories = if (importDataOnly) emptyList() else
+                        try { categoryDao.getAllCategories().first() } catch (e: Exception) { emptyList() }
                     val categoryByName = existingCategories.associateBy { it.name }.toMutableMap()
                     
                     // 收集需要创建的分类名称
@@ -4375,7 +4467,7 @@ class WebDavHelper(
                         paymentAccountsWithMetadata.mapNotNull { it.second } +
                         passkeysWithMetadata.mapNotNull { it.second })
                         .distinct()
-                        .filter { it.isNotBlank() && !categoryByName.containsKey(it) }
+                        .filter { !importDataOnly && it.isNotBlank() && !categoryByName.containsKey(it) }
                     
                     // 创建缺失的分类
                     categoryNamesToCreate.forEach { categoryName ->
@@ -4481,7 +4573,7 @@ class WebDavHelper(
                                 else ->
                                     LegacyMonicaSecureCsvRole.GENERIC_SECURE
                             }
-                            val parseResult = LegacyMonicaZipCsvRestoreParser.parseSecureItems(csvFile, role)
+                            val parseResult = LegacyMonicaZipCsvRestoreParser.parseSecureItems(csvFile, role, strings = strings)
                             warnings.addAll(parseResult.warnings)
 
                             val jsonBackedTypes = buildSet {
@@ -4508,7 +4600,7 @@ class WebDavHelper(
                                 }
                             )
                         } catch (e: Exception) {
-                            warnings.add("导入CSV失败 ${csvFile.name}: ${e.message}")
+                            warnings.add(strings.get(R.string.backup_csv_import_failed, csvFile.name, e.message ?: strings.get(R.string.import_data_unknown_error)))
                         } finally {
                             csvFile.delete()
                         }
@@ -4528,7 +4620,7 @@ class WebDavHelper(
                             android.util.Log.d("WebDavHelper", "Restored ${csvPasswords.size} passwords from CSV")
                         } catch (e: Exception) {
                             android.util.Log.e("WebDavHelper", "Failed to import passwords from CSV: ${e.message}")
-                            warnings.add("CSV密码导入失败: ${e.message}")
+                            warnings.add(strings.get(R.string.import_data_failed_with_reason, e.message ?: strings.get(R.string.import_data_unknown_error)))
                         }
                     }
                     csvFile.delete()
@@ -4572,7 +4664,7 @@ class WebDavHelper(
                 )
 
                 if (backupPasskeyCount > 0) {
-                    warnings.add("通行密钥恢复: $restoredPasskeyCount/$backupPasskeyCount")
+                    warnings.add(strings.get(R.string.backup_passkey_restored_count, restoredPasskeyCount, backupPasskeyCount))
                 }
                 if (missingPasskeyPrivateKeyCount > 0) {
                     warnings.add(
@@ -4585,7 +4677,7 @@ class WebDavHelper(
 
                 val hasRestorableCoreData =
                     passwords.isNotEmpty() ||
-                        normalizedSecureItems.isNotEmpty() ||
+                        normalizedSecureItems.isNotEmpty() || nativeTokens.isNotEmpty() ||
                         passkeys.any { it.syncStatus != "REFERENCE" } ||
                         steamMaFiles.isNotEmpty()
 
@@ -4599,12 +4691,12 @@ class WebDavHelper(
                     )
                     if (failedItems.isNotEmpty()) {
                         return@withContext Result.failure(
-                            Exception("备份解析存在失败项，已阻止替换本地数据以避免数据丢失")
+                            Exception(strings.get(R.string.backup_parse_replace_blocked))
                         )
                     }
                     if (!hasRestorableCoreData) {
                         return@withContext Result.failure(
-                            Exception("备份中没有可恢复的数据，已阻止替换本地数据以避免数据丢失")
+                            Exception(strings.get(R.string.backup_empty_replace_blocked))
                         )
                     }
                     val clearResult = if (steamMaFiles.isNotEmpty()) {
@@ -4630,12 +4722,22 @@ class WebDavHelper(
                 
                 Result.success(RestoreResult(
                     content = BackupContent(
-                        passwords = passwords,
-                        secureItems = normalizedSecureItems,
+                        passwords = if (isDatabaseExport) passwords.map { entry ->
+                            val security = takagi.ru.monica.security.SecurityManager(context)
+                            entry.copy(password = security.encryptData(entry.password),
+                                authenticatorKey = if (entry.authenticatorKey.isEmpty()) "" else security.encryptData(entry.authenticatorKey))
+                        } else passwords,
+                        secureItems = if (isDatabaseExport) normalizedSecureItems.map { item ->
+                            if (item.itemType == "TOTP") item else item.copy(
+                                itemData = takagi.ru.monica.security.SecurityManager(context).encryptData(item.itemData))
+                        } else normalizedSecureItems,
                         passkeys = passkeys,
                         steamMaFiles = steamMaFiles,
                         customFieldsMap = pendingCustomFields.toMap(),
-                        passwordHistory = passwordHistory,
+                        passwordHistory = if (isDatabaseExport) passwordHistory.map { item ->
+                            item.copy(password = takagi.ru.monica.security.SecurityManager(context).encryptData(item.password))
+                        } else passwordHistory,
+                        nativeTokens = nativeTokens,
                         attachments = pendingAttachments.toList(),
                         portableAttachments = takagi.ru.monica.attachments.backup.PortableAttachmentBackup.RestorePlan(
                             entries = pendingPortableAttachmentEntries.toList(),
@@ -4650,7 +4752,10 @@ class WebDavHelper(
                         if (shouldRestoreMonicaConfig) detectedMonicaConfigEntries.size else 0,
                     restartRecommended =
                         shouldRestoreMonicaConfig && detectedMonicaConfigEntries.isNotEmpty(),
-                ))
+                )).also {
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    handedOff = true
+                }
             } finally {
                 // 清除临时存储的自定义字段，避免内存泄漏
                 pendingCustomFields.clear()
@@ -4660,7 +4765,12 @@ class WebDavHelper(
                 }
             }
         } catch (e: Exception) {
-            Result.failure(Exception("恢复备份失败: ${e.message}"))
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Result.failure(Exception(strings.get(R.string.webdav_restore_failed,
+                e.message ?: strings.get(R.string.import_data_unknown_error)), e))
+        } finally {
+            decryptedBackup?.delete()
+            if (!handedOff) stagedAttachmentFiles.forEach { it.delete() }
         }
     }
 
@@ -4683,7 +4793,7 @@ class WebDavHelper(
             
             if (downloadResult.isFailure) {
                 return@withContext Result.failure(downloadResult.exceptionOrNull() 
-                    ?: Exception("下载备份失败"))
+                    ?: Exception(strings.get(R.string.backup_download_failed)))
             }
             
             try {
@@ -4700,7 +4810,7 @@ class WebDavHelper(
                     if (ex is PasswordRequiredException || ex is MonicaConfigDecisionRequiredException) {
                         return@withContext Result.failure(ex)
                     }
-                    return@withContext Result.failure(ex ?: Exception("恢复失败"))
+                    return@withContext Result.failure(ex ?: Exception(strings.get(R.string.legacy_ui_report_restore_failed)))
                 }
                 
                 // 记录 WebDAV 下载/同步操作到时间线
@@ -4713,13 +4823,13 @@ class WebDavHelper(
                 // 密码统计
                 if (result.content.passwords.isNotEmpty()) {
                     val passwordCount = result.content.passwords.size
-                    downloadDetails.add(FieldChange("密码", "", "${passwordCount}项"))
+                    downloadDetails.add(FieldChange("密码", "", passwordCount.toString()))
                     // 收集密码名称用于git-branch风格展示（最多10个）
                     result.content.passwords.take(10).forEach { pwd ->
                         newItemNames.add(FieldChange("密码", "", pwd.title.ifBlank { pwd.username }))
                     }
                     if (passwordCount > 10) {
-                        newItemNames.add(FieldChange("密码", "", "...还有${passwordCount - 10}项"))
+                        newItemNames.add(FieldChange("密码", "", strings.get(R.string.backup_report_more_items, passwordCount - 10)))
                     }
                 }
                 
@@ -4727,67 +4837,67 @@ class WebDavHelper(
                 val secureItems = result.content.secureItems
                 val totpItems = secureItems.filter { it.itemType == "TOTP" }
                 if (totpItems.isNotEmpty()) {
-                    downloadDetails.add(FieldChange("验证器", "", "${totpItems.size}项"))
+                    downloadDetails.add(FieldChange("验证器", "", totpItems.size.toString()))
                     totpItems.take(10).forEach { item ->
                         newItemNames.add(FieldChange("验证器", "", item.title))
                     }
                     if (totpItems.size > 10) {
-                        newItemNames.add(FieldChange("验证器", "", "...还有${totpItems.size - 10}项"))
+                        newItemNames.add(FieldChange("验证器", "", strings.get(R.string.backup_report_more_items, totpItems.size - 10)))
                     }
                 }
                 
                 val cardItems = secureItems.filter { it.itemType == "BANK_CARD" }
                 if (cardItems.isNotEmpty()) {
-                    downloadDetails.add(FieldChange("卡片", "", "${cardItems.size}项"))
+                    downloadDetails.add(FieldChange("卡片", "", cardItems.size.toString()))
                     cardItems.take(10).forEach { item ->
                         newItemNames.add(FieldChange("卡片", "", item.title))
                     }
                     if (cardItems.size > 10) {
-                        newItemNames.add(FieldChange("卡片", "", "...还有${cardItems.size - 10}项"))
+                        newItemNames.add(FieldChange("卡片", "", strings.get(R.string.backup_report_more_items, cardItems.size - 10)))
                     }
                 }
                 
                 val noteItems = secureItems.filter { it.itemType == "NOTE" }
                 if (noteItems.isNotEmpty()) {
-                    downloadDetails.add(FieldChange("笔记", "", "${noteItems.size}项"))
+                    downloadDetails.add(FieldChange("笔记", "", noteItems.size.toString()))
                     noteItems.take(10).forEach { item ->
                         newItemNames.add(FieldChange("笔记", "", item.title))
                     }
                     if (noteItems.size > 10) {
-                        newItemNames.add(FieldChange("笔记", "", "...还有${noteItems.size - 10}项"))
+                        newItemNames.add(FieldChange("笔记", "", strings.get(R.string.backup_report_more_items, noteItems.size - 10)))
                     }
                 }
                 
                 val docItems = secureItems.filter { it.itemType == "DOCUMENT" }
                 if (docItems.isNotEmpty()) {
-                    downloadDetails.add(FieldChange("证件", "", "${docItems.size}项"))
+                    downloadDetails.add(FieldChange("证件", "", docItems.size.toString()))
                     docItems.take(10).forEach { item ->
                         newItemNames.add(FieldChange("证件", "", item.title))
                     }
                     if (docItems.size > 10) {
-                        newItemNames.add(FieldChange("证件", "", "...还有${docItems.size - 10}项"))
+                        newItemNames.add(FieldChange("证件", "", strings.get(R.string.backup_report_more_items, docItems.size - 10)))
                     }
                 }
 
                 val billingAddressItems = secureItems.filter { it.itemType == "BILLING_ADDRESS" }
                 if (billingAddressItems.isNotEmpty()) {
-                    downloadDetails.add(FieldChange("账单地址", "", "${billingAddressItems.size}项"))
+                    downloadDetails.add(FieldChange("账单地址", "", billingAddressItems.size.toString()))
                     billingAddressItems.take(10).forEach { item ->
                         newItemNames.add(FieldChange("账单地址", "", item.title))
                     }
                     if (billingAddressItems.size > 10) {
-                        newItemNames.add(FieldChange("账单地址", "", "...还有${billingAddressItems.size - 10}项"))
+                        newItemNames.add(FieldChange("账单地址", "", strings.get(R.string.backup_report_more_items, billingAddressItems.size - 10)))
                     }
                 }
 
                 val paymentAccountItems = secureItems.filter { it.itemType == "PAYMENT_ACCOUNT" }
                 if (paymentAccountItems.isNotEmpty()) {
-                    downloadDetails.add(FieldChange("支付方式", "", "${paymentAccountItems.size}项"))
+                    downloadDetails.add(FieldChange("支付方式", "", paymentAccountItems.size.toString()))
                     paymentAccountItems.take(10).forEach { item ->
                         newItemNames.add(FieldChange("支付方式", "", item.title))
                     }
                     if (paymentAccountItems.size > 10) {
-                        newItemNames.add(FieldChange("支付方式", "", "...还有${paymentAccountItems.size - 10}项"))
+                        newItemNames.add(FieldChange("支付方式", "", strings.get(R.string.backup_report_more_items, paymentAccountItems.size - 10)))
                     }
                 }
                 
@@ -4803,7 +4913,7 @@ class WebDavHelper(
                 downloadedFile.delete()
             }
         } catch (e: Exception) {
-            Result.failure(Exception("恢复备份失败: ${e.message}"))
+            Result.failure(Exception(strings.get(R.string.webdav_restore_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
         }
     }
     
@@ -4885,7 +4995,7 @@ class WebDavHelper(
     ): PasswordHistoryBackupEntry {
         val decoded = decodePasswordHistoryForBackup(entry.password, securityManager)
             ?: throw PortableSecretExportException(
-                entryTitle = "密码历史 #${entry.entryId}",
+                entryTitle = strings.get(R.string.backup_password_history_entry, entry.entryId),
                 cause = IllegalStateException("Stored password history cannot be decrypted")
             )
         return PasswordHistoryBackupEntry(
@@ -4953,6 +5063,7 @@ class WebDavHelper(
             }
             Pair(
                 restoreSecureItemAsMonicaLocal(
+                    sourceId = longField("id"),
                     itemType = ItemType.NOTE,
                     title = stringField("title"),
                     itemData = stringField("itemData"),
@@ -4995,6 +5106,7 @@ class WebDavHelper(
             ) ?: fallbackType
             Pair(
                 restoreSecureItemAsMonicaLocal(
+                    sourceId = longField("id"),
                     itemType = itemType,
                     title = stringField("title"),
                     itemData = stringField("itemData"),
@@ -5029,6 +5141,7 @@ class WebDavHelper(
             }
             Pair(
                 restoreSecureItemAsMonicaLocal(
+                    sourceId = longField("id"),
                     itemType = ItemType.TOTP,
                     title = stringField("title"),
                     itemData = normalizeRestoredTotpItemData(stringField("itemData"), stringField("title")),
@@ -5267,16 +5380,8 @@ class WebDavHelper(
         }
     }
 
-    private fun parsePasswordDataString(data: String): Map<String, String> {
-        val result = mutableMapOf<String, String>()
-        data.split(";").forEach { pair ->
-            val parts = pair.split(":", limit = 2)
-            if (parts.size == 2) {
-                result[parts[0].trim()] = parts[1].trim()
-            }
-        }
-        return result
-    }
+    private fun parsePasswordDataString(data: String): Map<String, String> =
+        takagi.ru.monica.util.CsvPasswordData.decode(data)
 
     private fun parseLegacyPasswordFields(fields: List<String>): PasswordEntry? {
         return try {
@@ -5414,7 +5519,7 @@ class WebDavHelper(
         val database = try {
             takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
         } catch (e: Exception) {
-            warnings.add("KeePass数据库恢复失败: 无法打开本地数据库")
+            warnings.add(strings.get(R.string.backup_keepass_local_open_failed))
             return
         }
         val keepassDao = database.localKeePassDatabaseDao()
@@ -5426,10 +5531,11 @@ class WebDavHelper(
             val validation = if (dbId in invalidIds) {
                 KeePassBackupEntryPolicy.RestoreSetValidation(
                     canRestore = false,
-                    warning = "KeePass数据库 $dbId 存在重复或无效条目，已跳过",
+                    warning = strings.get(R.string.backup_keepass_invalid_entries, dbId),
                 )
             } else {
                 KeePassBackupEntryPolicy.validateRestoreSet(
+                    strings = strings,
                     databaseId = dbId,
                     hasMetadata = metadata != null,
                     hasDatabase = stagedDatabaseFile?.isFile == true,
@@ -5439,7 +5545,7 @@ class WebDavHelper(
                 )
             }
 
-            validation.warning?.let { warnings.add("KeePass数据库 $dbId：$it") }
+            validation.warning?.let { warnings.add(strings.get(R.string.backup_keepass_validation, dbId, it)) }
             if (!validation.canRestore || metadata == null || stagedDatabaseFile == null) return@forEach
 
             var internalDatabaseFile: File? = null
@@ -5448,15 +5554,15 @@ class WebDavHelper(
             try {
                 if (validation.useKeyFile) {
                     val keyBytes = keyFilesById[dbId]
-                        ?: error("备份中的 KeePass 密钥文件缺失")
+                        ?: error(strings.get(R.string.backup_keepass_key_missing))
                     val actualFingerprint = KeePassKeyFileStore.fingerprint(keyBytes)
                     if (
                         !metadata.keyFileFingerprint.isNullOrBlank() &&
                         !actualFingerprint.equals(metadata.keyFileFingerprint, ignoreCase = true)
                     ) {
-                        throw SecurityException("备份中的 KeePass 密钥文件指纹不匹配")
+                        throw SecurityException(strings.get(R.string.backup_keepass_key_mismatch))
                     }
-                    val relativePath = KeePassKeyFileStore.relativePathForFingerprint(actualFingerprint)
+                    val relativePath = KeePassKeyFileStore.relativePathForFingerprint(actualFingerprint, strings = strings)
                     keyFileWasReferenced = keepassDao.getAllDatabasesSync().any {
                         it.keyFileInternalPath == relativePath
                     }
@@ -5476,7 +5582,7 @@ class WebDavHelper(
                 val existingDbs = keepassDao.getAllDatabasesSync()
                 val existsWithSameName = existingDbs.any { it.name == metadata.name }
                 val newKeePassDb = takagi.ru.monica.data.LocalKeePassDatabase(
-                    name = if (existsWithSameName) "${metadata.name} (恢复)" else metadata.name,
+                    name = if (existsWithSameName) strings.get(R.string.backup_restored_name, metadata.name) else metadata.name,
                     description = metadata.description,
                     filePath = "keepass/$internalFileName",
                     // 恢复后的设备路径不能沿用旧设备 URI；只绑定当前设备内部副本。
@@ -5490,7 +5596,7 @@ class WebDavHelper(
                     lastAccessedAt = System.currentTimeMillis(),
                 )
                 keepassDao.insertDatabase(newKeePassDb)
-                warnings.add("✓ KeePass数据库已恢复: ${metadata.name}")
+                warnings.add(strings.get(R.string.backup_keepass_restored, metadata.name))
             } catch (e: Exception) {
                 internalDatabaseFile?.delete()
                 val failedKeyFile = storedKeyFile
@@ -5505,7 +5611,7 @@ class WebDavHelper(
                     }
                 }
                 android.util.Log.w("WebDavHelper", "Failed to restore KeePass database $dbId: ${e.message}")
-                warnings.add("KeePass数据库恢复失败: ${metadata.name}")
+                warnings.add(strings.get(R.string.backup_keepass_restore_failed, metadata.name))
             }
         }
     }
@@ -5705,7 +5811,7 @@ class WebDavHelper(
             android.util.Log.e("WebDavHelper", "Out of memory while uploading backup", e)
             // 显式请求垃圾回收
             System.gc()
-            Result.failure(Exception("备份文件过大，内存不足。请先压缩图片后再试。"))
+            Result.failure(Exception(strings.get(R.string.backup_memory_insufficient)))
         } catch (e: Exception) {
             android.util.Log.e("WebDavHelper", "Failed to upload backup", e)
             // 将底层异常归一为面向用户的错误消息，同时附带规范化 URL 便于排查
@@ -5970,7 +6076,7 @@ class WebDavHelper(
     private fun encryptSensitiveBackupValue(value: String?, backupEncryptPassword: String?): String? {
         val sanitizedValue = value?.takeIf { it.isNotBlank() } ?: return null
         val password = backupEncryptPassword ?: return null
-        return EncryptionHelper.encryptString(sanitizedValue, password)
+        return EncryptionHelper.encryptString(sanitizedValue, password, strings)
     }
 
     private fun decryptBackupValueWithLegacyFallback(value: String?, decryptPassword: String?): String? {
@@ -5985,7 +6091,7 @@ class WebDavHelper(
         var lastError: Exception? = null
         for (candidate in candidatePasswords) {
             try {
-                return EncryptionHelper.decryptString(sanitizedValue, candidate)
+                return EncryptionHelper.decryptString(sanitizedValue, candidate, strings)
             } catch (e: Exception) {
                 lastError = e
             }
@@ -6160,7 +6266,8 @@ data class BackupContent(
      * 实际写入 attachments 表的时机是 [BackupRestoreApplier.applyRestoreResult]，需要等
      * 密码拿到新 id 之后按 `passwordIdMap` 重映射 `parentPasswordId`。
      */
-    val attachments: List<takagi.ru.monica.attachments.backup.AttachmentBackupCodec.Entry> = emptyList()
+    val attachments: List<takagi.ru.monica.attachments.backup.AttachmentBackupCodec.Entry> = emptyList(),
+    val nativeTokens: List<takagi.ru.monica.transfer.NativeTokenBackup> = emptyList(),
 )
 
 /**
@@ -6220,6 +6327,3 @@ private fun getSystemServiceForUser(context: Context, serviceName: String): Any?
         return context.getSystemService(serviceName)
     }
 }
-
-
-

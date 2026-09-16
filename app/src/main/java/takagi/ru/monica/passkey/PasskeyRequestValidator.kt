@@ -35,7 +35,7 @@ object PasskeyRequestValidator {
         val normalizedRpId = PasskeyRpIdNormalizer.normalize(rpId)
         val requestOrigin = extractRequestOrigin(requestJson)
         val requestHost = extractHttpsHost(requestOrigin)
-        val callingOrigin = callingAppInfo?.origin?.takeIf { it.isNotBlank() }
+        val callingOrigin = PasskeyBrowserOrigin.read(context, callingAppInfo)
         val callingHost = extractHttpsHost(callingOrigin)
 
         if (!requestOrigin.isNullOrBlank() && requestHost == null && !requestOrigin.startsWith("android:")) {

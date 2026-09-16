@@ -193,13 +193,24 @@ impl SyncDeltaEnvelope {
 
     pub fn encode(&self, limits: SyncDeltaLimits) -> StorageResult<Vec<u8>> {
         self.validate_structure(limits)?;
-        let mut writer = LimitedVecWriter::new(limits.max_payload_bytes);
+        let mut writer = LimitedWriter::new(Vec::new(), limits.max_payload_bytes);
         serde_json::to_writer(&mut writer, self).map_err(|error| {
             writer
                 .limit_error()
                 .unwrap_or_else(|| StorageError::SchemaCreation(error.to_string()))
         })?;
-        Ok(writer.bytes)
+        Ok(writer.inner)
+    }
+
+    // The wire envelope serializes payload bytes again as a JSON integer array.
+    // Validate it before commit, without allocating another encoded copy.
+    fn validate_encoded_size(&self, limits: SyncDeltaLimits) -> StorageResult<()> {
+        let mut writer = LimitedWriter::new(io::sink(), limits.max_payload_bytes);
+        serde_json::to_writer(&mut writer, self).map_err(|error| {
+            writer
+                .limit_error()
+                .unwrap_or_else(|| StorageError::SchemaCreation(error.to_string()))
+        })
     }
 
     pub fn decode(bytes: &[u8], limits: SyncDeltaLimits) -> StorageResult<Self> {
@@ -342,6 +353,7 @@ pub(crate) fn materialize_pending_sync_delta(
         },
         limits,
     )?;
+    envelope.validate_encoded_size(limits)?;
     persist_envelope(conn, &envelope)?;
     crate::integrity_root::apply_sync_delta(conn, &envelope, &body, &latest)?;
     conn.inner().execute(
@@ -772,13 +784,13 @@ fn load_device_heads(
 }
 
 fn serialize_body_bounded(body: &SyncDeltaBody, limit: usize) -> StorageResult<Vec<u8>> {
-    let mut writer = LimitedVecWriter::new(limit);
+    let mut writer = LimitedWriter::new(Vec::new(), limit);
     serde_json::to_writer(&mut writer, body).map_err(|error| {
         writer
             .limit_error()
             .unwrap_or_else(|| StorageError::SchemaCreation(error.to_string()))
     })?;
-    Ok(writer.bytes)
+    Ok(writer.inner)
 }
 
 pub(crate) fn persist_envelope(
@@ -852,16 +864,18 @@ fn validate_actual_limit(name: &str, actual: usize, limit: usize) -> StorageResu
     Ok(())
 }
 
-struct LimitedVecWriter {
-    bytes: Vec<u8>,
+struct LimitedWriter<W> {
+    inner: W,
+    written: usize,
     limit: usize,
     exceeded_at: Option<usize>,
 }
 
-impl LimitedVecWriter {
-    fn new(limit: usize) -> Self {
+impl<W> LimitedWriter<W> {
+    fn new(inner: W, limit: usize) -> Self {
         Self {
-            bytes: Vec::new(),
+            inner,
+            written: 0,
             limit,
             exceeded_at: None,
         }
@@ -876,23 +890,20 @@ impl LimitedVecWriter {
     }
 }
 
-impl Write for LimitedVecWriter {
+impl<W: Write> Write for LimitedWriter<W> {
     fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
-        let actual = self
-            .bytes
-            .len()
-            .checked_add(buffer.len())
-            .unwrap_or(usize::MAX);
+        let actual = self.written.checked_add(buffer.len()).unwrap_or(usize::MAX);
         if actual > self.limit {
             self.exceeded_at = Some(actual);
             return Err(io::Error::other("sync delta payload limit exceeded"));
         }
-        self.bytes.extend_from_slice(buffer);
-        Ok(buffer.len())
+        let written = self.inner.write(buffer)?;
+        self.written += written;
+        Ok(written)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        Ok(())
+        self.inner.flush()
     }
 }
 
@@ -940,6 +951,10 @@ mod tests {
         )
         .unwrap();
         let encoded = envelope.encode(limits).unwrap();
+        let exact = SyncDeltaLimits::new(encoded.len(), 50_000, 512).unwrap();
+        let short = SyncDeltaLimits::new(encoded.len() - 1, 50_000, 512).unwrap();
+        envelope.validate_encoded_size(exact).unwrap();
+        assert!(envelope.validate_encoded_size(short).is_err());
         let decoded = SyncDeltaEnvelope::decode(&encoded, limits).unwrap();
         decoded.verify(&conn, limits).unwrap();
 

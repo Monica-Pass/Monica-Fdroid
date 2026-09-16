@@ -39,6 +39,7 @@ class BiometricAuthHelper(
     )
 
     private val appContext = context.applicationContext
+    private val strings = AppLocaleStringResolver(appContext)
     private val biometricManager = BiometricManager.from(appContext)
     private val executor = ContextCompat.getMainExecutor(appContext)
     private val vivoHelper by lazy(LazyThreadSafetyMode.NONE) { VivoFingerprintHelper(appContext) }
@@ -81,11 +82,11 @@ class BiometricAuthHelper(
     fun getBiometricStatusMessage(): String {
         val result = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
         val baseMessage = when (result) {
-            BiometricManager.BIOMETRIC_SUCCESS -> appContext.getString(R.string.biometric_available)
-            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> appContext.getString(R.string.biometric_no_hardware)
-            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> appContext.getString(R.string.biometric_hw_unavailable)
-            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> appContext.getString(R.string.biometric_none_enrolled)
-            else -> appContext.getString(R.string.biometric_not_available)
+            BiometricManager.BIOMETRIC_SUCCESS -> strings.get(R.string.biometric_available)
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> strings.get(R.string.biometric_no_hardware)
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> strings.get(R.string.biometric_hw_unavailable)
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> strings.get(R.string.biometric_none_enrolled)
+            else -> strings.get(R.string.biometric_not_available)
         }
 
         return if (
@@ -93,7 +94,7 @@ class BiometricAuthHelper(
             VivoFingerprintHelper.isVivoDevice() &&
             vivoHelper.hasUnderDisplayFingerprint()
         ) {
-            "$baseMessage (屏下指纹)"
+            strings.get(R.string.legacy_ui_biometric_under_display_status, baseMessage)
         } else {
             baseMessage
         }
@@ -122,19 +123,19 @@ class BiometricAuthHelper(
     fun prepare(activity: FragmentActivity) {
         promptFor(activity)
         promptInfoFor(
-            title = appContext.getString(R.string.biometric_login_title),
-            subtitle = appContext.getString(R.string.biometric_login_subtitle),
-            description = appContext.getString(R.string.biometric_login_description),
-            negativeButtonText = appContext.getString(R.string.use_password)
+            title = strings.get(R.string.biometric_login_title),
+            subtitle = strings.get(R.string.biometric_login_subtitle),
+            description = strings.get(R.string.biometric_login_description),
+            negativeButtonText = strings.get(R.string.use_password)
         )
     }
 
     fun authenticate(
         activity: FragmentActivity,
-        title: String = appContext.getString(R.string.biometric_login_title),
-        subtitle: String? = appContext.getString(R.string.biometric_login_subtitle),
-        description: String? = appContext.getString(R.string.biometric_login_description),
-        negativeButtonText: String = appContext.getString(R.string.use_password),
+        title: String = strings.get(R.string.biometric_login_title),
+        subtitle: String? = strings.get(R.string.biometric_login_subtitle),
+        description: String? = strings.get(R.string.biometric_login_description),
+        negativeButtonText: String = strings.get(R.string.use_password),
         onSuccess: () -> Unit,
         onError: (errorCode: Int, errorMessage: String) -> Unit,
         onCancel: () -> Unit

@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="entry_type_api_token">API Token</string>
+    <string name="api_token_no_database">Open a native MDBX database to view or create API tokens.</string>
+    <string name="api_token_load_error">Could not load or save the token. Reopen or sync the database, then reload. Existing data has been kept.</string>
+    <string name="api_token_reload">Reload</string>
+    <string name="api_token_root_collection">Database root</string>
+    <string name="api_token_database">Database</string>
+    <string name="api_token_collection">Category</string>
+    <string name="api_token_complete_payload">Complete token data (JSON)</string>
+    <string name="api_token_empty">No API tokens in this database.</string>
+    <string name="api_token_native_hint">Stored as a native MDBX API token, compatible with Monica CLI.</string>
+    <string name="api_token_toggle_visibility">Show or hide value</string>
+    <string name="api_token_validation">Enter a provider and token. The optional API address must be an HTTP or HTTPS URL.</string>
+    <string name="api_token_fields_limit">Use up to 128 custom fields. Notes and field values together must fit within 64 KB.</string>
+    <string name="api_token_import_json">Paste token JSON</string>
+    <string name="api_token_parse">Parse</string>
+    <string name="api_token_delete_confirmation">Delete this API token from the database?</string>
+    <string name="api_token_entry_id">Entry ID</string>
+    <string name="api_token_collection_id">Collection ID</string>
+    <string name="api_token_provider">Provider</string>
+    <string name="api_token_api_base">API base URL</string>
+    <string name="api_token_note">Note</string>
+    <string name="api_token_schema">Payload schema</string>
+    <string name="api_token_name">Token name</string>
+    <string name="api_token_add">Add API token</string>
+    <string name="api_token_edit">Edit API token</string>
+    <string name="api_token_credentials">Token details</string>
+    <string name="api_token_manage_databases">Manage databases</string>
+    <string name="api_token_folder_error">Could not load categories. Reopen the storage picker to retry.</string>
+    <string name="api_token_storage">Storage location</string>
+    <string name="api_token_advanced">More information</string>
+    <string name="api_token_unknown_schema">This token uses another format. You can view and copy its complete data below.</string>
+    <string name="api_token_discard_title">Discard changes?</string>
+    <string name="api_token_discard_message">Your unsaved changes will be lost.</string>
+    <string name="api_token_discard">Discard</string>
+    <string name="api_token_name_hint">1–64 letters, digits, - or _</string>
+</resources>

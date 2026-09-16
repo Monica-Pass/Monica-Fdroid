@@ -2051,7 +2051,7 @@
     <string name="developer_disable_password_verification_desc">Ignorez la vérification d\'identité dans l\'application, y compris la saisie automatique, le clavier Monica et les actions destructrices. Les boîtes de dialogue de confirmation demeurent et les mots de passe de chiffrement d\'exportation sont toujours requis.</string>
     <string name="developer_disable_password_verification_failed">Impossible d\'activer le contournement complet de la vérification. Déverrouillez Monica normalement une fois, puis réessayez.</string>
     <string name="developer_passkey_hyperos_biometric_bypass">Compatibilité de la clé d\'accès HyperOS</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">Sur les appareils HyperOS, ignorez la vérification biométrique du mot de passe et revenez au mot de passe principal. Gardez cette option désactivée, sauf si les invites biométriques échouent sur cet appareil.</string>
+    <string name="developer_passkey_hyperos_biometric_bypass_desc">Sur les appareils HyperOS, ignorez la vérification biométrique des clés d\'accès et utilisez le mot de passe principal. Gardez cette option désactivée, sauf si les invites biométriques échouent sur cet appareil.</string>
     <string name="developer_launcher_name_use_pass">Utilisez Monica Pass comme nom de lanceur</string>
     <string name="developer_launcher_name_use_pass_desc">Activé : Monica Pass. Désactivé : Monica. Ce réglage modifie uniquement le nom de l’entrée principale du lanceur.</string>
     <string name="developer_bitwarden_forensics_toggle">Activer l\'analyse médico-légale de Bitwarden Sync</string>
@@ -2752,7 +2752,7 @@
     <string name="sync_status_conflict_badge">Conflit</string>
     <string name="sync_status_local_badge">Locale</string>
     <string name="bitwarden_synced_item">Élément synchronisé Bitwarden</string>
-    <string name="sync_status_with_vault">· %1$s</string>
+    <string name="sync_status_with_vault">\u0020· %1$s</string>
     <string name="sync_last_sync">Dernière synchronisation : %1$s</string>
     <string name="sync_now">Synchronisez maintenant</string>
     <string name="sync_status_synced_full">Synchronisé avec Bitwarden</string>
@@ -4037,8 +4037,8 @@
     <string name="vault_v2_hierarchy_local_source">Monica locale</string>
     <string name="vault_v2_hierarchy_current_folder">Dossier actuel</string>
     <plurals name="vault_v2_hierarchy_item_count">
-        <item quantity="one">Article %1$d</item>
-        <item quantity="other">Articles %1$d</item>
+        <item quantity="one">%1$d entrée</item>
+        <item quantity="other">%1$d entrées</item>
     </plurals>
     <string name="keepass_native_open_manager">Gérer le contenu</string>
     <string name="keepass_native_manager_title">Gestion native KeePass</string>
@@ -4338,4 +4338,9 @@
     <string name="wallet_stack_open_card">Voir la carte</string>
     <string name="language_french">Français</string>
     <string name="qs_lang_french">Français</string>
+    <string name="timeline_trash_delete_unknown_error">Une erreur inattendue est survenue. Veuillez réessayer.</string>
+    <string name="bitwarden_trash_vault_missing">Le coffre Bitwarden est introuvable.</string>
+    <string name="bitwarden_trash_delete_http_error">Bitwarden a refusé la suppression (HTTP %1$d).</string>
+    <string name="language_nya">喵喵语</string>
+    <string name="qs_lang_nya">喵喵语</string>
 </resources>

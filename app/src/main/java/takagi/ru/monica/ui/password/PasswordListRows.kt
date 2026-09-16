@@ -60,7 +60,8 @@ internal fun LazyListScope.passwordPageListRows(
     passwordEntries: List<PasswordEntry>,
     aggregateConfig: PasswordListAggregateConfig?,
     aggregateUiState: PasswordListAggregateUiState,
-    decryptAuthenticatorKey: ((String) -> String)? = null
+    decryptAuthenticatorKey: ((String) -> String)? = null,
+    nativeTokens: takagi.ru.monica.ui.screens.NativeTokenListUi? = null
 ) {
     val orderedSelectionKeys = passwordPageListItems.flatMap { item ->
         when (item) {
@@ -160,9 +161,7 @@ internal fun LazyListScope.passwordPageListRows(
     fun openCard(card: PasswordPageCardItemUi) {
         when (card.type) {
             PasswordPageContentType.PASSWORD ->
-                card.passwordId?.let { passwordId ->
-                    passwordEntries.firstOrNull { it.id == passwordId }?.let(onPasswordClick)
-                }
+                onPasswordClick(card.entry)
 
             PasswordPageContentType.AUTHENTICATOR ->
                 card.secureItemId?.let { aggregateConfig?.onOpenTotp?.invoke(it) }
@@ -200,6 +199,7 @@ internal fun LazyListScope.passwordPageListRows(
     }
 
     fun toggleFavoriteForCard(card: PasswordPageCardItemUi) {
+        if (nativeTokens?.favoriteDisplayEntry(card.entry) == true) return
         when (card.type) {
             PasswordPageContentType.PASSWORD ->
                 card.passwordId?.let { passwordId ->
@@ -286,7 +286,9 @@ internal fun LazyListScope.passwordPageListRows(
                         }
                     },
                     onSwipeLeft = { password ->
-                        if (itemToDelete == null) {
+                        if (password.loginType == "API_TOKEN") {
+                            requestDeleteForCards(listOf(password.toPasswordPageCardItemUi()))
+                        } else if (itemToDelete == null) {
                             haptic.performWarning()
                             onItemToDeleteChange(password)
                         }
@@ -310,10 +312,22 @@ internal fun LazyListScope.passwordPageListRows(
                     },
 
                     onToggleFavorite = { password ->
-                        viewModel.toggleFavorite(password.id, !password.isFavorite)
+                        if (nativeTokens?.favoriteDisplayEntry(password) != true) {
+                            viewModel.toggleFavorite(password.id, !password.isFavorite)
+                        }
                     },
                     onToggleGroupCover = { password ->
                         coroutineScope.launch {
+                            if (passwords.any { it.id < 0 }) {
+                                val db = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
+                                takagi.ru.monica.repository.PasswordPageAggregateStackRepository(
+                                    db.passwordPageAggregateStackDao()
+                                ).applyManualStack(
+                                    (listOf(password) + passwords.filterNot { it.id == password.id })
+                                        .map { passwordSelectionKey(it.id) }
+                                )
+                                return@launch
+                            }
                             val websiteKey = password.website.ifBlank {
                                 context.getString(R.string.filter_uncategorized)
                             }

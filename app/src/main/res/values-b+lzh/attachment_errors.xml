@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="attachment_error_bitwarden_locked">Bitwarden 密府尚封，或会话已失效。请启封或再登入。</string>
+    <string name="attachment_error_remote_data">服务器所回附件资料未全，请同步密府，再试之。</string>
+    <string name="attachment_error_unsupported_encryption">此附件之加密格式（类型 %1$d）暂不支持，请以官版客户端导出，再上传。</string>
+    <string name="attachment_error_unknown">附件之事未成，请再试。</string>
+    <string name="attachment_error_decryption_failed">附件解密或完整性校验未成，请同步密府，再试之。</string>
+    <string name="password_batch_attachment_failure">%1$d 项之附件未能迁移。%2$s</string>
+</resources>

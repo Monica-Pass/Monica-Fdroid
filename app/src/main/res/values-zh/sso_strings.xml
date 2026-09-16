@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sso_login_title">第三方账号登录</string>
+    <string name="sso_login_btn">登录</string>
+    <string name="use_sso">使用</string>
+    <string name="sso_ref_account">关联账号</string>
+</resources>

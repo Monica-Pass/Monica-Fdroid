@@ -1,5 +1,7 @@
 package takagi.ru.monica.bitwarden.ui
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -109,10 +111,10 @@ fun BitwardenSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bitwarden 设置") },
+                title = { Text(stringResource(R.string.legacy_ui_bitwarden_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -121,7 +123,7 @@ fun BitwardenSettingsScreen(
                         IconButton(
                             onClick = {
                                 if (isAnyVaultSyncing) {
-                                    Toast.makeText(context, "正在同步，请稍候", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.legacy_ui_sync_wait), Toast.LENGTH_SHORT).show()
                                 }
                                 viewModel.syncUnlockedVaults()
                             }
@@ -132,7 +134,7 @@ fun BitwardenSettingsScreen(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Icon(Icons.Default.Sync, contentDescription = "同步")
+                                Icon(Icons.Default.Sync, contentDescription = stringResource(R.string.legacy_ui_sync))
                             }
                         }
                     }
@@ -143,7 +145,7 @@ fun BitwardenSettingsScreen(
             FloatingActionButton(
                 onClick = onNavigateToLogin
             ) {
-                Icon(Icons.Default.Add, contentDescription = "添加 Vault")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.legacy_ui_add_vault))
             }
         }
     ) { paddingValues ->
@@ -157,7 +159,7 @@ fun BitwardenSettingsScreen(
             // 已连接的 Vault
             item {
                 Text(
-                    text = "已连接的 Vault",
+                    text = stringResource(R.string.legacy_ui_connected_vaults),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -203,7 +205,7 @@ fun BitwardenSettingsScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "同步设置",
+                    text = stringResource(R.string.legacy_ui_sync_settings),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -251,7 +253,7 @@ fun BitwardenSettingsScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "关于",
+                    text = stringResource(R.string.about),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -282,13 +284,13 @@ fun BitwardenSettingsScreen(
                     tint = MaterialTheme.colorScheme.error
                 )
             },
-            title = { Text("确认登出") },
+            title = { Text(stringResource(R.string.legacy_ui_logout_confirm)) },
             text = {
                 Column {
-                    Text("确定要登出 ${vaultToLogout!!.email} 吗？")
+                    Text(stringResource(R.string.legacy_ui_logout_account, vaultToLogout!!.email))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "这将删除本地存储的所有 Bitwarden 密码数据。您可以随时重新登录来恢复数据。",
+                        text = stringResource(R.string.legacy_ui_bitwarden_logout_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -305,7 +307,7 @@ fun BitwardenSettingsScreen(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("登出")
+                    Text(stringResource(R.string.legacy_ui_logout))
                 }
             },
             dismissButton = {
@@ -315,7 +317,7 @@ fun BitwardenSettingsScreen(
                         vaultToLogout = null
                     }
                 ) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -379,8 +381,8 @@ fun VaultCard(
     val isSyncing = syncStatus?.isRunning == true
     val lastSyncTime = vault.lastSyncAt ?: syncStatus?.lastSuccessAt ?: 0L
     val secondaryStatus = when {
-        isSyncing -> "同步中"
-        syncStatus?.queuedReason != null -> "等待同步"
+        isSyncing -> stringResource(R.string.legacy_ui_syncing)
+        syncStatus?.queuedReason != null -> stringResource(R.string.sync_status_pending_short)
         syncStatus?.blockedReason != null -> formatSyncBlockReason(syncStatus.blockedReason)
         else -> null
     }
@@ -418,14 +420,14 @@ fun VaultCard(
                     } else if (isUnlocked) {
                         Icon(
                             Icons.Outlined.LockOpen,
-                            contentDescription = "已解锁",
+                            contentDescription = stringResource(R.string.ime_state_unlocked),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         )
                     } else {
                         Icon(
                             Icons.Outlined.Lock,
-                            contentDescription = "已锁定",
+                            contentDescription = stringResource(R.string.ime_state_locked),
                             tint = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(28.dp)
                         )
@@ -458,7 +460,7 @@ fun VaultCard(
                         )
                     } else if (lastSyncTime > 0) {
                         Text(
-                            text = "上次同步: ${formatTime(lastSyncTime)}",
+                            text = stringResource(R.string.legacy_ui_last_sync, formatTime(lastSyncTime)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -469,7 +471,7 @@ fun VaultCard(
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         Icons.Default.ExpandMore,
-                        contentDescription = if (expanded) "收起" else "展开",
+                        contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
                         modifier = Modifier.rotate(rotationAngle)
                     )
                 }
@@ -494,7 +496,7 @@ fun VaultCard(
                         ) {
                             Icon(Icons.Outlined.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("锁定", maxLines = 1, overflow = TextOverflow.Clip)
+                            Text(stringResource(R.string.legacy_ui_lock), maxLines = 1, overflow = TextOverflow.Clip)
                         }
                     } else {
                         Button(
@@ -508,7 +510,7 @@ fun VaultCard(
                         ) {
                             Icon(Icons.Outlined.LockOpen, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (isUnlocking) "解锁中" else "解锁", maxLines = 1, overflow = TextOverflow.Clip)
+                            Text(if (isUnlocking) stringResource(R.string.legacy_ui_unlocking) else stringResource(R.string.unlock), maxLines = 1, overflow = TextOverflow.Clip)
                         }
                     }
 
@@ -516,7 +518,7 @@ fun VaultCard(
                         OutlinedButton(
                             onClick = {
                                 if (isSyncing) {
-                                    Toast.makeText(context, "正在同步，请稍候", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.legacy_ui_sync_wait), Toast.LENGTH_SHORT).show()
                                 }
                                 onSync()
                             },
@@ -535,7 +537,7 @@ fun VaultCard(
                                 Icon(Icons.Outlined.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                             }
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("同步", maxLines = 1, overflow = TextOverflow.Clip)
+                            Text(stringResource(R.string.legacy_ui_sync), maxLines = 1, overflow = TextOverflow.Clip)
                         }
                     } else {
                         OutlinedButton(
@@ -549,7 +551,7 @@ fun VaultCard(
                         ) {
                             Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (isActive) "当前" else "选择", maxLines = 1, overflow = TextOverflow.Clip)
+                            Text(if (isActive) stringResource(R.string.legacy_ui_current) else stringResource(R.string.select), maxLines = 1, overflow = TextOverflow.Clip)
                         }
                     }
                     
@@ -567,7 +569,7 @@ fun VaultCard(
                     ) {
                         Icon(Icons.Outlined.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("登出", maxLines = 1, overflow = TextOverflow.Clip)
+                        Text(stringResource(R.string.legacy_ui_logout), maxLines = 1, overflow = TextOverflow.Clip)
                     }
                 }
             }
@@ -602,12 +604,12 @@ fun EmptyVaultCard(onAddClick: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "尚未连接 Bitwarden",
+                text = stringResource(R.string.legacy_ui_bitwarden_disconnected),
                 style = MaterialTheme.typography.titleMedium
             )
             
             Text(
-                text = "连接您的 Bitwarden 账户以同步密码",
+                text = stringResource(R.string.legacy_ui_bitwarden_login_to_sync),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -617,7 +619,7 @@ fun EmptyVaultCard(onAddClick: () -> Unit) {
             Button(onClick = onAddClick) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("添加 Bitwarden 账户")
+                Text(stringResource(R.string.legacy_ui_bitwarden_add_account))
             }
         }
     }
@@ -644,11 +646,11 @@ fun SyncSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "自动同步",
+                        text = stringResource(R.string.legacy_ui_auto_sync),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "启动时自动同步 Bitwarden 数据",
+                        text = stringResource(R.string.legacy_ui_auto_sync_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -668,11 +670,11 @@ fun SyncSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "仅 Wi-Fi 同步",
+                        text = stringResource(R.string.legacy_ui_sync_wifi_only),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "仅在 Wi-Fi 网络下自动同步",
+                        text = stringResource(R.string.legacy_ui_sync_wifi_only_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -693,17 +695,17 @@ fun SyncSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "永不锁定",
+                        text = stringResource(R.string.legacy_ui_never_lock),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "保持 Bitwarden 解锁状态，无需重复输入密码",
+                        text = stringResource(R.string.legacy_ui_never_lock_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (isNeverLockEnabled) {
                         Text(
-                            text = "⚠️ 仅在安全环境下使用",
+                            text = stringResource(R.string.legacy_ui_never_lock_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -733,7 +735,7 @@ fun AboutCard() {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Bitwarden 集成",
+                    text = stringResource(R.string.legacy_ui_bitwarden_integration),
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -741,8 +743,7 @@ fun AboutCard() {
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "Monica 支持连接您的 Bitwarden 账户（包括官方服务器和自托管 Vaultwarden）。" +
-                        "您的数据使用与 Bitwarden 相同的加密标准进行保护。",
+                text = stringResource(R.string.legacy_ui_bitwarden_integration_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -750,11 +751,11 @@ fun AboutCard() {
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "支持的服务器:",
+                text = stringResource(R.string.legacy_ui_supported_servers),
                 style = MaterialTheme.typography.labelMedium
             )
             Text(
-                text = "• Bitwarden 官方服务器\n• Vaultwarden (自托管)\n• 其他兼容 Bitwarden API 的服务",
+                text = stringResource(R.string.legacy_ui_bitwarden_servers),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -783,11 +784,11 @@ fun UnlockVaultDialog(
                 tint = MaterialTheme.colorScheme.primary
             )
         },
-        title = { Text("解锁 Vault") },
+        title = { Text(stringResource(R.string.legacy_ui_unlock_vault)) },
         text = {
             Column {
                 Text(
-                    text = "输入主密码解锁 $email",
+                    text = stringResource(R.string.legacy_ui_unlock_account_hint, email),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 
@@ -796,7 +797,7 @@ fun UnlockVaultDialog(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("主密码") },
+                    label = { Text(stringResource(R.string.master_password)) },
                     visualTransformation = if (showPassword) {
                         VisualTransformation.None
                     } else {
@@ -820,12 +821,12 @@ fun UnlockVaultDialog(
                 onClick = { onUnlock(password) },
                 enabled = password.isNotBlank()
             ) {
-                Text("解锁")
+                Text(stringResource(R.string.unlock))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -834,14 +835,15 @@ fun UnlockVaultDialog(
 /**
  * 格式化时间
  */
+@Composable
 private fun formatTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
     return when {
-        diff < 60_000 -> "刚刚"
-        diff < 3600_000 -> "${diff / 60_000} 分钟前"
-        diff < 86400_000 -> "${diff / 3600_000} 小时前"
+        diff < 60_000 -> stringResource(R.string.time_just_now)
+        diff < 3600_000 -> stringResource(R.string.legacy_ui_minutes_ago, diff / 60_000)
+        diff < 86400_000 -> stringResource(R.string.legacy_ui_hours_ago, diff / 3600_000)
         else -> {
             val sdf = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
             sdf.format(Date(timestamp))
@@ -849,13 +851,14 @@ private fun formatTime(timestamp: Long): String {
     }
 }
 
+@Composable
 private fun formatSyncBlockReason(reason: takagi.ru.monica.bitwarden.sync.SyncBlockReason): String {
     return when (reason) {
-        takagi.ru.monica.bitwarden.sync.SyncBlockReason.AUTO_SYNC_DISABLED -> "自动同步已关闭"
-        takagi.ru.monica.bitwarden.sync.SyncBlockReason.NETWORK_UNAVAILABLE -> "网络不可用"
-        takagi.ru.monica.bitwarden.sync.SyncBlockReason.WIFI_REQUIRED -> "等待 Wi-Fi"
-        takagi.ru.monica.bitwarden.sync.SyncBlockReason.VAULT_LOCKED -> "Vault 未解锁"
-        takagi.ru.monica.bitwarden.sync.SyncBlockReason.AUTH_REQUIRED -> "需要重新认证"
+        takagi.ru.monica.bitwarden.sync.SyncBlockReason.AUTO_SYNC_DISABLED -> stringResource(R.string.legacy_ui_auto_sync_disabled)
+        takagi.ru.monica.bitwarden.sync.SyncBlockReason.NETWORK_UNAVAILABLE -> stringResource(R.string.legacy_ui_network_unavailable)
+        takagi.ru.monica.bitwarden.sync.SyncBlockReason.WIFI_REQUIRED -> stringResource(R.string.legacy_ui_waiting_wifi)
+        takagi.ru.monica.bitwarden.sync.SyncBlockReason.VAULT_LOCKED -> stringResource(R.string.legacy_ui_vault_locked)
+        takagi.ru.monica.bitwarden.sync.SyncBlockReason.AUTH_REQUIRED -> stringResource(R.string.legacy_ui_reauthenticate)
     }
 }
 
@@ -900,16 +903,16 @@ private fun SyncQueueEntryCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "同步队列",
+                            text = stringResource(R.string.legacy_ui_sync_queue),
                             style = MaterialTheme.typography.titleSmall
                         )
                         
                         if (pendingCount > 0 || failedCount > 0) {
                             Text(
                                 text = buildString {
-                                    if (pendingCount > 0) append("${pendingCount} 待处理")
+                                    if (pendingCount > 0) append(stringResource(R.string.legacy_ui_pending_count, pendingCount))
                                     if (pendingCount > 0 && failedCount > 0) append(" · ")
-                                    if (failedCount > 0) append("${failedCount} 失败")
+                                    if (failedCount > 0) append(stringResource(R.string.legacy_ui_failed_count, failedCount))
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (failedCount > 0) 
@@ -919,7 +922,7 @@ private fun SyncQueueEntryCard(
                             )
                         } else {
                            Text(
-                                text = "已同步",
+                                text = stringResource(R.string.sync_status_synced_short),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             ) 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_type_api_token">API トークン</string>
+    <string name="api_token_no_database">API トークンを表示または作成するには、ネイティブ MDBX データベースを開いてください。</string>
+    <string name="api_token_load_error">トークンを読み込みまたは保存できませんでした。データベースを開き直すか同期してから再読み込みしてください。既存のデータは保持されています。</string>
+    <string name="api_token_reload">再読み込み</string>
+    <string name="api_token_root_collection">データベースのルート</string>
+    <string name="api_token_database">データベース</string>
+    <string name="api_token_collection">カテゴリ</string>
+    <string name="api_token_complete_payload">トークンの全データ（JSON）</string>
+    <string name="api_token_empty">このデータベースに API トークンはありません。</string>
+    <string name="api_token_native_hint">Monica CLI と互換性のあるネイティブ MDBX API トークンとして保存されます。</string>
+    <string name="api_token_toggle_visibility">値を表示または非表示</string>
+    <string name="api_token_validation">プロバイダーとトークンを入力してください。任意の API アドレスを指定する場合は HTTP または HTTPS の URL を使用してください。</string>
+    <string name="api_token_fields_limit">カスタムフィールドは最大 128 個です。メモとフィールドの値の合計は 64 KB 以内にしてください。</string>
+    <string name="api_token_import_json">トークンの JSON を貼り付け</string>
+    <string name="api_token_parse">解析</string>
+    <string name="api_token_delete_confirmation">この API トークンをデータベースから削除しますか？</string>
+    <string name="api_token_entry_id">エントリー ID</string>
+    <string name="api_token_collection_id">コレクション ID</string>
+    <string name="api_token_provider">プロバイダー</string>
+    <string name="api_token_api_base">API ベース URL</string>
+    <string name="api_token_note">メモ</string>
+    <string name="api_token_schema">ペイロードのスキーマ</string>
+    <string name="api_token_name">トークン名</string>
+    <string name="api_token_add">API トークンを追加</string>
+    <string name="api_token_edit">API トークンを編集</string>
+    <string name="api_token_credentials">トークンの詳細</string>
+    <string name="api_token_manage_databases">データベースを管理</string>
+    <string name="api_token_folder_error">カテゴリを読み込めませんでした。保存先の選択画面を開き直して再試行してください。</string>
+    <string name="api_token_storage">保存先</string>
+    <string name="api_token_advanced">詳細情報</string>
+    <string name="api_token_unknown_schema">このトークンは別の形式を使用しています。以下で全データを確認してコピーできます。</string>
+    <string name="api_token_discard_title">変更を破棄しますか？</string>
+    <string name="api_token_discard_message">保存していない変更は失われます。</string>
+    <string name="api_token_discard">破棄</string>
+    <string name="api_token_name_hint">英数字、-、_ を 1～64 文字</string>
+</resources>

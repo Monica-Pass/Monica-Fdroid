@@ -1,5 +1,6 @@
 package takagi.ru.monica.bitwarden.viewmodel
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import android.app.Application
 import android.net.ConnectivityManager
 import android.net.Uri
@@ -33,6 +34,7 @@ import takagi.ru.monica.bitwarden.sync.BitwardenSyncOrchestrator
 import takagi.ru.monica.bitwarden.sync.BitwardenSyncNotificationHelper
 import takagi.ru.monica.bitwarden.sync.BitwardenSyncSummary
 import takagi.ru.monica.bitwarden.sync.NetworkGateResult
+import takagi.ru.monica.bitwarden.sync.classifyBitwardenSyncError
 import takagi.ru.monica.bitwarden.sync.SyncBlockReason
 import takagi.ru.monica.bitwarden.sync.SyncExecutionOutcome
 import takagi.ru.monica.bitwarden.sync.SyncTriggerReason
@@ -79,6 +81,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     }
     
     // 仓库
+    private val strings = AppLocaleStringResolver(application)
     private val repository = BitwardenRepository.getInstance(application)
     private val securityManager = SecurityManager(application.applicationContext)
     private val bitwardenOfflineSecretCache = BitwardenOfflineSecretCache(
@@ -172,6 +175,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     val events = _events.asSharedFlow()
     
     private val syncOrchestrator = BitwardenSyncOrchestrator(
+        strings = strings,
         scope = viewModelScope,
         isAutoSyncEnabled = { _isAutoSyncEnabled.value },
         checkNetwork = { evaluateNetworkGate() },
@@ -280,7 +284,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "加载 Vault 失败", e)
-                _events.emit(BitwardenEvent.ShowError("加载 Vault 失败: ${e.message}"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_vault_load_failed, e.message ?: "")))
             }
         }
     }
@@ -297,7 +301,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     ) {
         if (email.isBlank() || masterPassword.isBlank()) {
             viewModelScope.launch {
-                _events.emit(BitwardenEvent.ShowError("请填写邮箱和主密码"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_bitwarden_credentials_required)))
             }
             return
         }
@@ -319,7 +323,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _activeVault.value = result.vault
                     setUnlockState(result.vault.id, UnlockState.Unlocked)
                     _unlockState.value = UnlockState.Unlocked
-                    _events.emit(BitwardenEvent.ShowSuccess("登录成功"))
+                    _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_login_success)))
                     _events.emit(BitwardenEvent.NavigateToVault(result.vault.id))
                     // 延迟加载以避免并发问题
                     kotlinx.coroutines.delay(100)
@@ -346,7 +350,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                             )
                         )
                     } else {
-                        val message = "登录被风控拦截，请稍后重试或使用官方客户端完成一次验证后再试。"
+                        val message = strings.get(R.string.legacy_ui_login_challenge)
                         _loginState.value = LoginState.Error(message)
                         _events.emit(BitwardenEvent.ShowError(message))
                     }
@@ -370,7 +374,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     ) {
         val state = twoFactorState ?: run {
             viewModelScope.launch {
-                _events.emit(BitwardenEvent.ShowError("两步验证状态丢失，请重新登录"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_two_factor_state_lost)))
             }
             return
         }
@@ -398,7 +402,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _unlockState.value = UnlockState.Unlocked
                     loadVaults()
                     loadVaultData(result.vault.id)
-                    _events.emit(BitwardenEvent.ShowSuccess("登录成功"))
+                    _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_login_success)))
                     _events.emit(BitwardenEvent.NavigateToVault(result.vault.id))
                 }
                 
@@ -406,7 +410,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _loginState.value = LoginState.TwoFactorRequired(result.providers)
                     twoFactorState = result.state
                     _events.emit(BitwardenEvent.ShowTwoFactorDialog(result.providers))
-                    _events.emit(BitwardenEvent.ShowError("验证码错误，请重试"))
+                    _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_verification_code_incorrect)))
                 }
 
                 is BitwardenRepository.RepositoryLoginResult.CaptchaRequired -> {
@@ -420,7 +424,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                             )
                         )
                     } else {
-                        val message = "两步验证被风控拦截，请稍后重试或使用官方客户端完成一次验证后再试。"
+                        val message = strings.get(R.string.legacy_ui_two_factor_challenge)
                         _loginState.value = LoginState.Error(message)
                         _events.emit(BitwardenEvent.ShowError(message))
                     }
@@ -437,7 +441,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     fun sendTwoFactorEmailLogin() {
         val state = twoFactorState ?: run {
             viewModelScope.launch {
-                _events.emit(BitwardenEvent.ShowError("两步验证状态丢失，请重新登录"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_two_factor_state_lost)))
             }
             return
         }
@@ -450,10 +454,10 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             )
             result.fold(
                 onSuccess = {
-                    _events.emit(BitwardenEvent.ShowSuccess("邮箱验证码已发送，请检查收件箱和垃圾邮件"))
+                    _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_email_code_sent)))
                 },
                 onFailure = { error ->
-                    _events.emit(BitwardenEvent.ShowError("发送邮箱验证码失败：${repository.describeLoginError(error)}"))
+                    _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_email_code_send_failed, repository.describeLoginError(error))))
                 }
             )
         }
@@ -486,7 +490,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                         loadVaultData(vault.id)
                         maybeTriggerSilentAutoSync(vault, trigger = "unlock")
                     }
-                    _events.emit(BitwardenEvent.ShowSuccess("Vault 已解锁"))
+                    _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_vault_unlocked)))
                 }
                 
                 is BitwardenRepository.UnlockResult.Error -> {
@@ -529,7 +533,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     resolveVault(vaultId)?.let { loadVaultData(it.id) }
                 }
             }
-            _events.emit(BitwardenEvent.ShowSuccess("Vault 已锁定"))
+            _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_vault_now_locked)))
         }
     }
     
@@ -570,10 +574,10 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                 loadVaults()
                 removeUnlockState(targetVaultId)
                 _loginState.value = LoginState.Idle
-                _events.emit(BitwardenEvent.ShowSuccess("已登出"))
+                _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_logged_out)))
                 _events.emit(BitwardenEvent.NavigateToLogin)
             } else {
-                _events.emit(BitwardenEvent.ShowError("登出失败"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_logout_failed)))
             }
         }
     }
@@ -610,7 +614,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
         
         if (!repository.isVaultUnlocked(vault.id)) {
             viewModelScope.launch {
-                _events.emit(BitwardenEvent.ShowError("请先解锁 Vault"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_unlock_vault_first)))
             }
             return
         }
@@ -626,7 +630,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
         val unlockedVaultIds = collectUnlockedVaultIds()
         if (unlockedVaultIds.isEmpty()) {
             viewModelScope.launch {
-                _events.emit(BitwardenEvent.ShowError("请先解锁至少一个 Vault"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_unlock_any_vault)))
             }
             return
         }
@@ -729,7 +733,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             if (vault == null) {
                 _sends.value = emptyList()
                 if (_sendsAcrossVaults.value.isEmpty()) {
-                    _sendState.value = SendState.Error("请先连接 Bitwarden Vault")
+                    _sendState.value = SendState.Error(strings.get(R.string.legacy_ui_connect_bitwarden_first))
                 } else {
                     _sendState.value = SendState.Idle
                 }
@@ -848,10 +852,10 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             }
             is BitwardenCoordinatedSyncResult.Canceled -> {
-                BitwardenRepository.SendSyncResult.Error(coordinatedResult.reason ?: "同步被取消")
+                BitwardenRepository.SendSyncResult.Error(coordinatedResult.reason ?: strings.get(R.string.legacy_ui_sync_cancelled))
             }
             is BitwardenCoordinatedSyncResult.Failed -> {
-                BitwardenRepository.SendSyncResult.Error(coordinatedResult.error.message ?: "同步失败")
+                BitwardenRepository.SendSyncResult.Error(coordinatedResult.error.message ?: strings.get(R.string.bitwarden_message_sync_failed))
             }
         }
     }
@@ -908,7 +912,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _sendCreateSuccessVersion.value = _sendCreateSuccessVersion.value + 1
                     logBitwardenSendCreate(vault.id, result.send)
                     requestLocalMutationSync(vault.id)
-                    _events.emit(BitwardenEvent.SendCreated("Send 已创建"))
+                    _events.emit(BitwardenEvent.SendCreated(strings.get(R.string.legacy_ui_send_created)))
                 }
                 is BitwardenRepository.SendMutationResult.Error -> {
                     _sendState.value = SendState.Error(result.message)
@@ -970,7 +974,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _sendCreateSuccessVersion.value = _sendCreateSuccessVersion.value + 1
                     logBitwardenSendCreate(vault.id, result.send)
                     requestLocalMutationSync(vault.id)
-                    _events.emit(BitwardenEvent.SendCreated("文件 Send 已创建"))
+                    _events.emit(BitwardenEvent.SendCreated(strings.get(R.string.legacy_ui_file_send_created)))
                 }
                 is BitwardenRepository.SendMutationResult.Error -> {
                     _sendState.value = SendState.Error(result.message)
@@ -1015,7 +1019,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                         sendName = deletingSend?.name
                     )
                     requestLocalMutationSync(vault.id)
-                    _events.emit(BitwardenEvent.SendDeleted("Send 已删除"))
+                    _events.emit(BitwardenEvent.SendDeleted(strings.get(R.string.legacy_ui_send_deleted)))
                 }
                 is BitwardenRepository.SendMutationResult.Error -> {
                     _sendState.value = SendState.Error(result.message)
@@ -1076,9 +1080,9 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             if (success) {
                 logBitwardenConflictResolved(conflictSnapshot, "保留本地版本")
                 loadConflicts()
-                _events.emit(BitwardenEvent.ShowSuccess("冲突已解决（保留本地版本）"))
+                _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_conflict_resolved_local)))
             } else {
-                _events.emit(BitwardenEvent.ShowError("解决冲突失败"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_conflict_resolve_failed)))
             }
         }
     }
@@ -1094,9 +1098,9 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                 logBitwardenConflictResolved(conflictSnapshot, "使用服务器版本")
                 loadConflicts()
                 sync() // 重新同步以获取服务器版本
-                _events.emit(BitwardenEvent.ShowSuccess("冲突已解决（使用服务器版本）"))
+                _events.emit(BitwardenEvent.ShowSuccess(strings.get(R.string.legacy_ui_conflict_resolved_remote)))
             } else {
-                _events.emit(BitwardenEvent.ShowError("解决冲突失败"))
+                _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_conflict_resolve_failed)))
             }
         }
     }
@@ -1369,7 +1373,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             loadConflicts()
         } catch (e: Exception) {
             Log.e(TAG, "加载 Vault 数据失败", e)
-            _events.emit(BitwardenEvent.ShowError("加载数据失败: ${e.message}"))
+            _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_data_load_failed, e.message ?: "")))
         }
     }
 
@@ -1456,7 +1460,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     private suspend fun runSync(vaultId: Long, silent: Boolean): SyncExecutionOutcome {
         val vault = _vaults.value.firstOrNull { it.id == vaultId }
             ?: repository.getAllVaults().firstOrNull { it.id == vaultId }
-            ?: return SyncExecutionOutcome.FatalError("Vault 不存在")
+            ?: return SyncExecutionOutcome.FatalError(strings.get(R.string.bitwarden_message_vault_missing))
 
         if (!silent) {
             _syncState.value = SyncState.Syncing
@@ -1487,7 +1491,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                 val message = coordinatedResult.error.redactedMessage ?: coordinatedResult.error.kind.name
                 if (!silent) {
                     _syncState.value = SyncState.Error(message)
-                    _events.emit(BitwardenEvent.ShowError("同步受阻: $message"))
+                    _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_sync_blocked_detail, message)))
                 } else {
                     Log.w(TAG, "Silent auto sync blocked: $message")
                 }
@@ -1495,10 +1499,10 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             is BitwardenCoordinatedSyncResult.Canceled -> {
-                val message = coordinatedResult.reason ?: "同步被取消"
+                val message = coordinatedResult.reason ?: strings.get(R.string.legacy_ui_sync_cancelled)
                 if (!silent) {
                     _syncState.value = SyncState.Error(message)
-                    _events.emit(BitwardenEvent.ShowError("同步失败: $message"))
+                    _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_sync_failed_detail, message)))
                 } else {
                     Log.w(TAG, "Silent auto sync canceled: $message")
                 }
@@ -1506,10 +1510,10 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             is BitwardenCoordinatedSyncResult.Failed -> {
-                val message = coordinatedResult.error.message ?: "同步失败"
+                val message = coordinatedResult.error.message ?: strings.get(R.string.bitwarden_message_sync_failed)
                 if (!silent) {
                     _syncState.value = SyncState.Error(message)
-                    _events.emit(BitwardenEvent.ShowError("同步失败: $message"))
+                    _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_sync_failed_detail, message)))
                 } else {
                     Log.w(TAG, "Silent auto sync failed: $message")
                 }
@@ -1579,19 +1583,19 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                     if (result.conflictCount > 0 || result.uploadFailedCount > 0 || result.skippedDueToLocalDirtyCount > 0) {
                         val warningParts = buildList {
-                            if (result.conflictCount > 0) add("${result.conflictCount} 个冲突")
-                            if (result.uploadFailedCount > 0) add("${result.uploadFailedCount} 个上传失败")
-                            if (result.skippedDueToLocalDirtyCount > 0) add("${result.skippedDueToLocalDirtyCount} 个条目因本地待上传被跳过")
+                            if (result.conflictCount > 0) add(strings.get(R.string.legacy_ui_sync_conflict_count, result.conflictCount))
+                            if (result.uploadFailedCount > 0) add(strings.get(R.string.legacy_ui_sync_upload_failed_count, result.uploadFailedCount))
+                            if (result.skippedDueToLocalDirtyCount > 0) add(strings.get(R.string.legacy_ui_sync_dirty_skipped_count, result.skippedDueToLocalDirtyCount))
                         }
                         _events.emit(
                             BitwardenEvent.ShowWarning(
-                                "同步完成，但存在 ${warningParts.joinToString("，")}"
+                                strings.get(R.string.legacy_ui_sync_completed_with_warnings, warningParts.joinToString("，"))
                             )
                         )
                     } else {
                         _events.emit(
                             BitwardenEvent.ShowSuccess(
-                                getApplication<Application>().getString(
+                                strings.get(
                                     R.string.bitwarden_sync_success_with_offline_ready,
                                     result.appliedChangeCount,
                                     syncSummary.offlineReadyCount
@@ -1614,7 +1618,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _syncState.value = SyncState.Error(result.message)
                 }
                 if (!silent) {
-                    _events.emit(BitwardenEvent.ShowError("同步失败: ${result.message}"))
+                    _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_sync_failed_detail, result.message)))
                 } else {
                     Log.w(TAG, "Silent auto sync failed: ${result.message}")
                 }
@@ -1623,12 +1627,11 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
 
             is BitwardenRepository.SyncResult.EmptyVaultBlocked -> {
                 if (!silent) {
-                    _syncState.value = SyncState.Error("空 Vault 保护已触发")
+                    _syncState.value = SyncState.Error(strings.get(R.string.legacy_ui_empty_vault_protection))
                 }
                 if (!silent) {
                     _events.emit(BitwardenEvent.ShowWarning(
-                        "服务器返回空数据，本地有 ${result.localCount} 条记录。" +
-                            "请使用 V2 界面处理此情况。"
+                        strings.get(R.string.legacy_ui_empty_vault_warning, result.localCount)
                     ))
                 } else {
                     Log.w(
@@ -1636,7 +1639,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                         "Silent auto sync blocked by empty-vault protection: local=${result.localCount}, server=${result.serverCount}"
                     )
                 }
-                SyncExecutionOutcome.FatalError("空 Vault 保护已触发")
+                SyncExecutionOutcome.FatalError(strings.get(R.string.legacy_ui_empty_vault_protection))
             }
         }
         }
@@ -1727,34 +1730,8 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
         }.getOrNull()
     }
 
-    private fun classifyError(message: String): SyncExecutionOutcome {
-        val msg = message.lowercase()
-        return when {
-            msg.contains("mdk not available") ||
-                msg.contains("vault 未解锁") ||
-                msg.contains("密钥不可用") -> {
-                SyncExecutionOutcome.Blocked(SyncBlockReason.VAULT_LOCKED, message)
-            }
-
-            msg.contains("token 刷新失败") ||
-                msg.contains("重新登录") ||
-                msg.contains("401") ||
-                msg.contains("403") ||
-                msg.contains("unauthorized") ||
-                msg.contains("forbidden") -> {
-                SyncExecutionOutcome.Blocked(SyncBlockReason.AUTH_REQUIRED, message)
-            }
-
-            msg.contains("timeout") ||
-                msg.contains("connect") ||
-                msg.contains("network") ||
-                msg.contains("ioexception") -> {
-                SyncExecutionOutcome.RetryableError(message)
-            }
-
-            else -> SyncExecutionOutcome.FatalError(message)
-        }
-    }
+    private fun classifyError(message: String): SyncExecutionOutcome =
+        classifyBitwardenSyncError(message, strings)
     
     // ==================== 状态类型 ====================
     

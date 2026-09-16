@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import takagi.ru.monica.localization.xmlTestStrings
 import org.junit.Test
 import takagi.ru.monica.bitwarden.sync.BitwardenSyncOrchestrator
 import takagi.ru.monica.bitwarden.sync.NetworkGateResult
@@ -27,6 +28,7 @@ class BitwardenSyncOrchestratorTest {
         val releaseFirst = CompletableDeferred<Unit>()
 
         val orchestrator = BitwardenSyncOrchestrator(
+            strings = xmlTestStrings("en"),
             scope = CoroutineScope(coroutineContext + job),
             config = SyncManagerConfig(
                 pageEnterThrottleMs = 45_000L,
@@ -81,6 +83,7 @@ class BitwardenSyncOrchestratorTest {
         val releaseSecond = CompletableDeferred<Unit>()
 
         val orchestrator = BitwardenSyncOrchestrator(
+            strings = xmlTestStrings("en"),
             scope = CoroutineScope(coroutineContext + job),
             config = SyncManagerConfig(
                 pageEnterThrottleMs = 45_000L,
@@ -145,6 +148,7 @@ class BitwardenSyncOrchestratorTest {
         val finished = AtomicInteger(0)
 
         val orchestrator = BitwardenSyncOrchestrator(
+            strings = xmlTestStrings("en"),
             scope = CoroutineScope(coroutineContext + job),
             config = SyncManagerConfig(
                 pageEnterThrottleMs = 1L,

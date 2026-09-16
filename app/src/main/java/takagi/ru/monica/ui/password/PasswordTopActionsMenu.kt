@@ -188,7 +188,7 @@ internal fun MdbxSyncTopActionsMenuItem(
     onClick: () -> Unit,
 ) {
     DropdownMenuItem(
-        text = { Text("同步 MDBX 数据库") },
+        text = { Text(stringResource(R.string.legacy_ui_sync_mdbx)) },
         leadingIcon = { Icon(Icons.Default.Sync, contentDescription = null) },
         onClick = onClick
     )

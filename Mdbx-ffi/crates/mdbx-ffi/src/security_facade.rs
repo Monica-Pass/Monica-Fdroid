@@ -780,6 +780,17 @@ impl MdbxVault {
         }))
     }
 
+    /// Remaining reuse window for a disclosure reader. This never authorizes
+    /// disclosure or renews the session; normal reveal APIs remain mandatory.
+    pub fn read_session_remaining_secs(&self, scope: MdbxTigaScope) -> Result<u64, MdbxFfiError> {
+        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        Ok(TigaService::read_session_remaining_secs(
+            &conn,
+            &scope.into_core()?,
+            unix_now(),
+        )?)
+    }
+
     pub fn list_unlock_methods(&self) -> Result<Vec<MdbxUnlockMethod>, MdbxFfiError> {
         let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
         Ok(UnlockService::list_methods(&conn)?

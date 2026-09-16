@@ -514,4 +514,11 @@
     <string name="mdbx_ui_repair_no_changes">数据库状态没有需要写入的变化</string>
     <string name="mdbx_ui_manager_entry_title">MDBX 数据库管理</string>
     <string name="mdbx_ui_manager_entry_description">管理本地、WebDAV 和 OneDrive MDBX 数据库，兼容旧测试版库</string>
+    <string name="mdbx_ui_database_count">%1$s 个数据库</string>
+    <string name="mdbx_ui_source_count">已连接 %1$s 个数据库</string>
+    <string name="mdbx_ui_structure_removed">已删除</string>
+    <string name="mdbx_ui_dangling_head_counts">%1$s 个分支 · %2$s 台设备</string>
+    <string name="mdbx_ui_show_details">展开详情</string>
+    <string name="mdbx_ui_compare_versions">对比版本</string>
+    <string name="mdbx_ui_exit_comparison">退出对比</string>
 </resources>

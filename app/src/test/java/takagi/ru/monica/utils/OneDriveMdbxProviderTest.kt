@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
@@ -141,6 +143,46 @@ class OneDriveMdbxProviderTest {
     }
 
     @Test
+    fun localizedPreconditionFailuresRemainConflictsAndNeverOverwriteStaleFiles() = runBlocking {
+        val server = MockWebServer().apply { start() }
+        val cacheDirectory = tempDirectory()
+        val sourceFile = tempFile("replace")
+        try {
+            listOf("en", "zh", "lzh", "pl", "fr").forEach { locale ->
+                val strings = xmlTestStrings(locale)
+                val localizedSource = source(server, cacheDirectory, strings)
+                server.enqueue(MockResponse().setBody(driveItemJson("current", 7)))
+                val before = server.requestCount
+                val stale = runCatching {
+                    localizedSource.writeFrom(sourceFile, MdbxRemoteWriteMode.IF_MATCH, "old")
+                }.exceptionOrNull()
+                assertTrue(stale is takagi.ru.monica.keepass.KeePassSourceChangedException)
+                assertEquals(strings.get(takagi.ru.monica.R.string.cloud_message_remote_changed), stale?.message)
+                assertEquals(before + 1, server.requestCount)
+                assertEquals("GET", server.takeRequest(5, TimeUnit.SECONDS)!!.method)
+
+                // The server can change after the metadata check; HTTP 412 must still block the write.
+                server.enqueue(MockResponse().setBody(driveItemJson("current", 7)))
+                server.enqueue(MockResponse().setResponseCode(412))
+                val rejected = runCatching {
+                    localizedSource.writeFrom(sourceFile, MdbxRemoteWriteMode.IF_MATCH, "current")
+                }.exceptionOrNull()!!
+                assertEquals("GET", server.takeRequest(5, TimeUnit.SECONDS)!!.method)
+                val upload = server.takeRequest(5, TimeUnit.SECONDS)!!
+                assertEquals("current", upload.getHeader("If-Match"))
+                assertEquals(
+                    takagi.ru.monica.sync.SyncErrorKind.CONFLICT,
+                    takagi.ru.monica.sync.classifySyncFailure(java.io.IOException("Upload failed", rejected)).kind
+                )
+            }
+        } finally {
+            sourceFile.delete()
+            cacheDirectory.deleteRecursively()
+            server.shutdown()
+        }
+    }
+
+    @Test
     fun pathSegmentsUseRfc3986EncodingWithoutAndroidRuntime() {
         assertEquals(
             "%E8%B4%A6%E6%88%B7%20A%21",
@@ -150,14 +192,16 @@ class OneDriveMdbxProviderTest {
 
     private fun source(
         server: MockWebServer,
-        cacheDirectory: File
+        cacheDirectory: File,
+        strings: StringResolver = xmlTestStrings("en")
     ): OneDriveKeePassFileSource = OneDriveKeePassFileSource(
         accountIdentifier = "test-account",
         remotePath = "main.mdbx",
         accessTokenProvider = OneDriveAccessTokenProvider { "test-token" },
         httpClient = OkHttpClient(),
         graphBaseUrl = server.url("/v1.0").toString().trimEnd('/'),
-        cacheDirectory = cacheDirectory
+        cacheDirectory = cacheDirectory,
+        strings = strings,
     )
 
     private fun tempFile(content: String): File =

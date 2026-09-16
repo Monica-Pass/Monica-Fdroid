@@ -71,7 +71,7 @@
     <string name="dedup_merge_write">쓰기</string>
     <string name="dedup_merge_copies_count">사본 %1$d개</string>
     <string name="dedup_merge_conflict_fields">충돌 필드: %1$s</string>
-    <string name="dedup_merge_list_separator">", "</string>
+    <string name="dedup_merge_list_separator">\u002c\u0020</string>
     <string name="dedup_merge_password_count">비밀번호 %1$d개</string>
     <string name="dedup_merge_secure_item_count">보안 항목 %1$d개</string>
     <string name="dedup_merge_passkey_count">패스키 %1$d개</string>

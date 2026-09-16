@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">このデータベースは読み取り専用です。編集するには設定で読み取り専用モードをオフにしてください。</string>
+    <string name="keepass_error_write_permission">KDBX への書き込み権限がありません。保存や削除の前にデータベース設定でアクセス権を再付与してください。</string>
+    <string name="keepass_error_memory">KDF 設定に必要なメモリが端末の容量を超えています。メモリ使用量または並列度を下げてください。</string>
+    <string name="keepass_error_credentials">データベースのパスワードまたはキーファイルが正しくありません</string>
+    <string name="keepass_error_legacy">旧形式の .kdb（KeePass 1.x）データベースには対応していません。KeePassDX または KeePassXC で .kdbx 形式に保存してからインポートしてください。</string>
+    <string name="keepass_error_format">未対応のデータベース形式か、ファイルが破損しています</string>
+    <string name="keepass_error_io">KeePass ファイルを読み書きできませんでした</string>
+    <string name="keepass_error_operation">KeePass の操作に失敗しました</string>
+    <string name="onedrive_error_redirect">古いバージョンの Monica Steam が OneDrive のログインを受け取っています。Monica Steam を更新して再試行してください。データベースファイルは破損していません。</string>
+    <string name="onedrive_error_power">OneDrive のログインセッションを現在更新できません。バッテリーの最適化を無効にするか、画面をオンにして Monica を開き直してから再試行してください。</string>
+    <string name="onedrive_error_operation">OneDrive の操作に失敗しました</string>
+    <string name="keepass_error_not_remote">このデータベースにはリモートの接続元がありません</string>
+    <string name="keepass_error_remote_source_missing">リモートの接続元が見つかりません</string>
+    <string name="keepass_error_working_copy_missing">ローカル作業コピーが見つかりません</string>
+    <string name="keepass_sync_pulled">最新のリモート版をダウンロードしました</string>
+    <string name="keepass_sync_both_changed">リモートファイルとローカル作業コピーの両方が変更されています。同期する前に競合を解決してください。</string>
+    <string name="keepass_sync_up_to_date">リモートデータベースは最新です</string>
+    <string name="keepass_sync_remote_changed">リモートファイルが変更されています。続行する前に再度同期してください。</string>
+    <string name="keepass_sync_complete">リモート同期が完了しました</string>
+    <string name="keepass_error_group_name_required">グループ名を入力してください</string>
+    <string name="keepass_error_group_path">グループのパスが無効です</string>
+    <string name="keepass_error_group_missing">グループが見つかりません: %1$s</string>
+    <string name="keepass_error_group_child">グループを自分自身やそのサブグループに移動することはできません</string>
+    <string name="keepass_error_group_uuid">移動先に同じ UUID の別のグループがすでに存在します: %1$s</string>
+    <string name="keepass_error_select_folder">フォルダーを 1 つ以上選択してください</string>
+    <string name="keepass_group_unnamed">名前のないグループ</string>
+    <string name="keepass_error_parent_group">親グループが見つかりません: %1$s</string>
+    <string name="keepass_error_group_exists">ここには同じ名前のグループがすでに存在します</string>
+    <string name="keepass_error_no_credentials">データベースの認証情報を利用できません</string>
+    <string name="keepass_error_source_type">未対応のリモート接続元の種類: %1$s</string>
+    <string name="keepass_error_upload_verification">リモート検証に失敗しました: アップロードした内容が異なります（%1$d/%2$d バイト）</string>
+    <string name="storage_error_invalid_path">ファイルパスが無効です</string>
+    <string name="storage_error_create_directory">データベースのディレクトリを作成できませんでした</string>
+    <string name="storage_error_read_database">データベースファイルを読み取れませんでした</string>
+    <string name="storage_error_open_database">データベースファイルを開けませんでした</string>
+    <string name="storage_error_recovery_copy">KeePass の復旧コピーを作成できませんでした</string>
+    <string name="storage_error_verify_database">データベースファイルを検証できませんでした</string>
+    <string name="storage_error_write_verification">外部 KeePass ファイルへの書き込み後の検証に失敗しました</string>
+    <string name="storage_error_rollback_verification">外部 KeePass ファイルの復元後の検証に失敗しました</string>
+    <string name="storage_error_write_database">データベースファイルに書き込めませんでした</string>
+    <string name="keepass_error_conflict_cache_missing">競合の解決に必要なキャッシュコピーがありません</string>
+    <string name="onedrive_error_session_expired">OneDrive アカウントのセッションの有効期限が切れました。再度ログインしてください。</string>
+</resources>

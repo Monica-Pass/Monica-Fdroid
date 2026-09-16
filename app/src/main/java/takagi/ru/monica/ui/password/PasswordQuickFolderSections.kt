@@ -110,15 +110,19 @@ internal data class QuickStatusKeePassSyncState(
             coordinatorPhase == SyncPhase.CONFLICT
 }
 
-internal fun LocalMdbxDatabase.mdbxPathPendingSyncCount(): Int {
-    val pending = when (runCatching { MdbxSyncStatus.valueOf(lastSyncStatus) }.getOrNull()) {
+internal fun LocalMdbxDatabase.mdbxPathPendingSyncCount(cachedCount: Int? = null): Int {
+    return when (runCatching { MdbxSyncStatus.valueOf(lastSyncStatus) }.getOrNull()) {
+        // Diagnostics may finish after a successful sync. The current persisted
+        // status takes precedence over their older cached count.
+        MdbxSyncStatus.LOCAL_ONLY,
+        MdbxSyncStatus.IN_SYNC -> 0
         MdbxSyncStatus.PENDING_UPLOAD,
         MdbxSyncStatus.REMOTE_CHANGED,
         MdbxSyncStatus.CONFLICT,
-        MdbxSyncStatus.FAILED -> true
-        else -> false
+        MdbxSyncStatus.FAILED -> (cachedCount ?: 1).coerceAtLeast(1)
+        MdbxSyncStatus.SYNCING -> (cachedCount ?: 0).coerceAtLeast(0)
+        null -> 0
     }
-    return if (pending) 1 else 0
 }
 
 @Composable
@@ -308,7 +312,7 @@ private fun QuickStatusKeePassSyncBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Sync,
-                    contentDescription = "同步 KeePass 数据库",
+                    contentDescription = stringResource(R.string.legacy_ui_sync_keepass),
                     modifier = Modifier
                         .size(19.dp)
                         .graphicsLayer { rotationZ = rotation }
@@ -318,35 +322,36 @@ private fun QuickStatusKeePassSyncBar(
     }
 }
 
+@Composable
 internal fun keepassQuickSyncStatusLabel(state: QuickStatusKeePassSyncState): String {
     when (state.coordinatorPhase) {
-        SyncPhase.RUNNING -> return "正在同步"
+        SyncPhase.RUNNING -> return stringResource(R.string.sync_status_syncing_short)
         SyncPhase.BLOCKED -> return when (state.coordinatorErrorKind) {
-            SyncErrorKind.NETWORK_UNAVAILABLE -> "网络不可用"
-            SyncErrorKind.WIFI_REQUIRED -> "需要 Wi-Fi"
-            SyncErrorKind.TARGET_LOCKED -> "数据库未解锁"
-            else -> "同步受阻"
+            SyncErrorKind.NETWORK_UNAVAILABLE -> stringResource(R.string.legacy_ui_network_unavailable)
+            SyncErrorKind.WIFI_REQUIRED -> stringResource(R.string.legacy_ui_wifi_required)
+            SyncErrorKind.TARGET_LOCKED -> stringResource(R.string.legacy_ui_database_locked)
+            else -> stringResource(R.string.legacy_ui_sync_blocked)
         }
         SyncPhase.FAILED -> return when (state.coordinatorErrorKind) {
-            SyncErrorKind.CONFLICT -> "同步冲突"
-            SyncErrorKind.NETWORK_UNAVAILABLE -> "网络连接失败"
-            SyncErrorKind.AUTH_REQUIRED -> "登录状态已失效"
-            SyncErrorKind.PERMISSION_DENIED -> "缺少写入权限"
-            else -> "同步失败"
+            SyncErrorKind.CONFLICT -> stringResource(R.string.sync_conflict)
+            SyncErrorKind.NETWORK_UNAVAILABLE -> stringResource(R.string.legacy_ui_network_connection_failed)
+            SyncErrorKind.AUTH_REQUIRED -> stringResource(R.string.legacy_ui_login_expired)
+            SyncErrorKind.PERMISSION_DENIED -> stringResource(R.string.legacy_ui_write_permission_missing)
+            else -> stringResource(R.string.sync_status_failed_short)
         }
-        SyncPhase.CONFLICT -> return "同步冲突"
-        SyncPhase.CANCELED -> return "同步已取消"
+        SyncPhase.CONFLICT -> return stringResource(R.string.sync_conflict)
+        SyncPhase.CANCELED -> return stringResource(R.string.legacy_ui_sync_cancelled)
         else -> Unit
     }
-    if (state.isRunning) return "正在同步"
+    if (state.isRunning) return stringResource(R.string.sync_status_syncing_short)
     return when (state.status) {
-        KeePassSyncStatus.PENDING_UPLOAD -> "等待上传"
-        KeePassSyncStatus.REMOTE_CHANGED -> "远端有更新"
-        KeePassSyncStatus.CONFLICT -> "同步冲突"
-        KeePassSyncStatus.FAILED -> "同步失败"
-        KeePassSyncStatus.SYNCING -> "正在同步"
-        KeePassSyncStatus.IN_SYNC -> "已同步"
-        KeePassSyncStatus.LOCAL_ONLY -> "本地数据库"
+        KeePassSyncStatus.PENDING_UPLOAD -> stringResource(R.string.legacy_ui_upload_pending)
+        KeePassSyncStatus.REMOTE_CHANGED -> stringResource(R.string.legacy_ui_remote_updated)
+        KeePassSyncStatus.CONFLICT -> stringResource(R.string.sync_conflict)
+        KeePassSyncStatus.FAILED -> stringResource(R.string.sync_status_failed_short)
+        KeePassSyncStatus.SYNCING -> stringResource(R.string.sync_status_syncing_short)
+        KeePassSyncStatus.IN_SYNC -> stringResource(R.string.sync_status_synced_short)
+        KeePassSyncStatus.LOCAL_ONLY -> stringResource(R.string.legacy_ui_local_database)
     }
 }
 
@@ -389,7 +394,7 @@ private fun QuickStatusBitwardenSyncBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (state.isRunning) "正在同步" else "等待同步",
+                    text = if (state.isRunning) stringResource(R.string.sync_status_syncing_short) else stringResource(R.string.sync_status_pending_short),
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -451,11 +456,12 @@ private fun PasswordBatchDeleteGlobalProgressState.toQuickStatusDeleteState(): Q
         successCount = successCount
     )
 
+@Composable
 private fun buildQuickStatusSourceLabel(
     breadcrumbs: List<PasswordQuickFolderBreadcrumb>
 ): String {
     val titles = breadcrumbs.map { it.title }.filter { it.isNotBlank() }
-    return titles.joinToString(separator = "/").ifBlank { "当前位置" }
+    return titles.joinToString(separator = "/").ifBlank { stringResource(R.string.legacy_ui_current_location) }
 }
 
 @Composable
@@ -551,7 +557,7 @@ internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = "未同步${state.pendingCount}条",
+                        text = stringResource(R.string.legacy_ui_unsynced_count, state.pendingCount),
                         style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -585,7 +591,7 @@ internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
             ) {
                 Icon(
                     imageVector = Icons.Default.Sync,
-                    contentDescription = "同步 MDBX 数据库",
+                    contentDescription = stringResource(R.string.legacy_ui_sync_mdbx),
                     modifier = Modifier
                         .size(19.dp)
                         .graphicsLayer { rotationZ = rotation }

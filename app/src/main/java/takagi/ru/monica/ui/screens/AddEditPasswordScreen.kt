@@ -1,22 +1,13 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.MonicaExpandableCard
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.localizedName
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -119,6 +110,8 @@ import takagi.ru.monica.ui.components.MonicaExpressiveFilterChip
 import takagi.ru.monica.ui.components.MonicaModalBottomSheet
 import takagi.ru.monica.ui.components.NotePickerBottomSheet
 import takagi.ru.monica.ui.components.PasswordEntryPickerBottomSheet
+import takagi.ru.monica.ui.components.PasswordCredentialPickerSheet
+import takagi.ru.monica.ui.components.PasswordCredentialEditorBar
 import takagi.ru.monica.ui.components.PasswordStrengthIndicator
 import takagi.ru.monica.ui.components.buildMultiStorageTarget
 import takagi.ru.monica.ui.components.keepassBlockReasonLabel
@@ -268,6 +261,7 @@ fun AddEditPasswordScreen(
     onConsumePendingQrResult: () -> Unit = {},
     onScanAuthenticatorQrCode: (() -> Unit)? = null,
     onSaveCompleted: ((Long?) -> Unit)? = null,
+    onSwitchToApiToken: ((StorageTarget.Mdbx?) -> Unit)? = null,
     onSwitchToWifi: ((Long?) -> Unit)? = null,
     onSwitchToSshKey: ((Long?) -> Unit)? = null,
     onNavigateBack: () -> Unit
@@ -363,7 +357,7 @@ fun AddEditPasswordScreen(
     var multiCredentialEditorSectionName by rememberSaveable {
         mutableStateOf(MultiCredentialEditorSection.COMMON.name)
     }
-    var credentialMenuExpanded by remember { mutableStateOf(false) }
+    var showCredentialPicker by remember { mutableStateOf(false) }
     var selectedAuthenticatorCredentialIndex by rememberSaveable { mutableStateOf(0) }
     val credentialAuthenticatorSecrets = rememberSaveable(saver = takagi.ru.monica.utils.StringListSaver) {
         mutableStateListOf("")
@@ -1392,7 +1386,7 @@ fun AddEditPasswordScreen(
         if (isMultiCredentialMode) persistCurrentAuthenticatorDraft()
         focusedCredentialUsernameIndex = null
         focusedPasswordFieldIndex = null
-        credentialMenuExpanded = false
+        showCredentialPicker = false
         multiCredentialEditorSectionName = MultiCredentialEditorSection.COMMON.name
     }
 
@@ -1401,7 +1395,7 @@ fun AddEditPasswordScreen(
         if (isMultiCredentialMode) persistCurrentAuthenticatorDraft()
         selectedCredentialEditorIndex = index
         loadCredentialAuthenticatorDraft(index)
-        credentialMenuExpanded = false
+        showCredentialPicker = false
         multiCredentialEditorSectionName = MultiCredentialEditorSection.CREDENTIAL.name
     }
 
@@ -1419,7 +1413,7 @@ fun AddEditPasswordScreen(
         selectedCredentialEditorIndex = newIndex
         loadCredentialAuthenticatorDraft(newIndex)
         multiCredentialEditorSectionName = MultiCredentialEditorSection.CREDENTIAL.name
-        credentialMenuExpanded = false
+        showCredentialPicker = false
         pendingCredentialFocusIndex = newIndex
     }
 
@@ -1634,7 +1628,7 @@ fun AddEditPasswordScreen(
             credentialUsernames.lastIndex.coerceAtLeast(0)
         )
         if (credentialUsernames.size <= 1) {
-            credentialMenuExpanded = false
+            showCredentialPicker = false
             multiCredentialEditorSectionName = MultiCredentialEditorSection.COMMON.name
         }
     }
@@ -2604,6 +2598,26 @@ fun AddEditPasswordScreen(
         }
     )
 
+    if (isMultiCredentialMode && showCredentialPicker) {
+        PasswordCredentialPickerSheet(
+            usernames = credentialUsernames,
+            selectedIndex = selectedCredentialEditorIndex,
+            commonSelected = multiCredentialEditorSection == MultiCredentialEditorSection.COMMON,
+            canAdd = canAddIndependentCredential,
+            canRemoveSelected = !isEditing || selectedCredentialEditorIndex > 0,
+            onSelect = ::showCredentialEditor,
+            onSelectCommon = ::showCommonCredentialEditor,
+            onAdd = ::addAndSelectCredential,
+            onRemoveSelected = {
+                showCredentialPicker = false
+                if (!isEditing || selectedCredentialEditorIndex > 0) {
+                    removeCredentialFieldAt(selectedCredentialEditorIndex)
+                }
+            },
+            onDismiss = { showCredentialPicker = false },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -2622,6 +2636,7 @@ fun AddEditPasswordScreen(
                     actions = {
                         if (onSwitchToWifi != null) {
                             EntryTypeChip(
+                                showApiToken = !isEditing && onSwitchToApiToken != null,
                                 current = if (isBarcodeMode) {
                                     EntryTypeChipOption.BARCODE
                                 } else {
@@ -2629,6 +2644,8 @@ fun AddEditPasswordScreen(
                                 },
                                 onSelect = { option ->
                                     when (option) {
+                                        EntryTypeChipOption.API_TOKEN -> onSwitchToApiToken?.invoke(
+                                            selectedStorageTargets.filterIsInstance<StorageTarget.Mdbx>().firstOrNull())
                                         EntryTypeChipOption.WIFI ->
                                             onSwitchToWifi(if (isEditing) passwordId else null)
                                         EntryTypeChipOption.SSH_KEY ->
@@ -2661,189 +2678,61 @@ fun AddEditPasswordScreen(
             )
         },
         floatingActionButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isMultiCredentialMode) {
-                    SmallFloatingActionButton(
-                        onClick = ::showCommonCredentialEditor,
-                        modifier = Modifier.size(48.dp),
-                        containerColor = if (multiCredentialEditorSection == MultiCredentialEditorSection.COMMON) {
+            if (isMultiCredentialMode) {
+                PasswordCredentialEditorBar(
+                    commonSelected = multiCredentialEditorSection == MultiCredentialEditorSection.COMMON,
+                    selectedIndex = selectedCredentialEditorIndex,
+                    credentialCount = credentialUsernames.size,
+                    canAdd = canAddIndependentCredential,
+                    canSave = canSave,
+                    isSaving = isSaving,
+                    onOpenPicker = { showCredentialPicker = true },
+                    onAdd = ::addAndSelectCredential,
+                    onSave = handleSave,
+                )
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (canAddIndependentCredential) {
+                        SmallFloatingActionButton(
+                            onClick = ::addAndSelectCredential,
+                            modifier = Modifier.size(48.dp),
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = stringResource(R.string.add_credential)
+                            )
+                        }
+                    }
+
+                    FloatingActionButton(
+                        onClick = handleSave,
+                        containerColor = if (canSave) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
+                            MaterialTheme.colorScheme.surfaceVariant
                         },
-                        contentColor = if (multiCredentialEditorSection == MultiCredentialEditorSection.COMMON) {
+                        contentColor = if (canSave) {
                             MaterialTheme.colorScheme.onPrimaryContainer
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     ) {
-                        when {
-                            selectedSimpleIconBitmap != null -> Image(
-                                bitmap = selectedSimpleIconBitmap,
-                                contentDescription = stringResource(R.string.common_info),
-                                modifier = Modifier.size(24.dp)
+                        if (isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.dp
                             )
-                            selectedUploadedIconBitmap != null -> Image(
-                                bitmap = selectedUploadedIconBitmap,
-                                contentDescription = stringResource(R.string.common_info),
-                                modifier = Modifier.size(24.dp).clip(CircleShape)
-                            )
-                            autoMatchedSimpleIcon.bitmap != null -> Image(
-                                bitmap = autoMatchedSimpleIcon.bitmap,
-                                contentDescription = stringResource(R.string.common_info),
-                                modifier = Modifier.size(24.dp).clip(CircleShape)
-                            )
-                            fallbackWebsiteFavicon != null -> Image(
-                                bitmap = fallbackWebsiteFavicon,
-                                contentDescription = stringResource(R.string.common_info),
-                                modifier = Modifier.size(24.dp).clip(CircleShape)
-                            )
-                            else -> Icon(
-                                imageVector = Icons.Default.Tune,
-                                contentDescription = stringResource(R.string.common_info)
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(R.string.save)
                             )
                         }
-                    }
-
-                    Box {
-                        Surface(
-                            modifier = Modifier
-                                .height(48.dp)
-                                .widthIn(min = 96.dp, max = 136.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { credentialMenuExpanded = true },
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (multiCredentialEditorSection == MultiCredentialEditorSection.CREDENTIAL) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceContainerHigh
-                            },
-                            contentColor = if (multiCredentialEditorSection == MultiCredentialEditorSection.CREDENTIAL) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            shadowElevation = 6.dp
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = stringResource(
-                                        R.string.credential_number,
-                                        selectedCredentialEditorIndex + 1
-                                    ),
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelLarge
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = credentialMenuExpanded,
-                            onDismissRequest = { credentialMenuExpanded = false }
-                        ) {
-                            credentialUsernames.forEachIndexed { index, credentialUsername ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = credentialDisplayLabel(index, credentialUsername),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        if (index == selectedCredentialEditorIndex) {
-                                            Icon(Icons.Default.Check, contentDescription = null)
-                                        } else {
-                                            Icon(Icons.Default.AccountCircle, contentDescription = null)
-                                        }
-                                    },
-                                    onClick = { showCredentialEditor(index) }
-                                )
-                            }
-                            if (
-                                multiCredentialEditorSection == MultiCredentialEditorSection.CREDENTIAL &&
-                                (!isEditing || selectedCredentialEditorIndex > 0)
-                            ) {
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = stringResource(R.string.delete),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.DeleteOutline,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    onClick = {
-                                        credentialMenuExpanded = false
-                                        removeCredentialFieldAt(selectedCredentialEditorIndex)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (canAddIndependentCredential) {
-                    SmallFloatingActionButton(
-                        onClick = ::addAndSelectCredential,
-                        modifier = Modifier.size(48.dp),
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(R.string.add_credential)
-                        )
-                    }
-                }
-
-                FloatingActionButton(
-                    onClick = handleSave,
-                    containerColor = if (canSave) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    },
-                    contentColor = if (canSave) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = stringResource(R.string.save)
-                        )
                     }
                 }
             }
@@ -3108,7 +2997,7 @@ fun AddEditPasswordScreen(
                                                 IconButton(onClick = { urlMenuExpanded = true }) {
                                                     Icon(
                                                         imageVector = Icons.Default.MoreVert,
-                                                        contentDescription = "URL 菜单"
+                                                        contentDescription = stringResource(R.string.legacy_ui_url_menu)
                                                     )
                                                 }
                                                 DropdownMenu(
@@ -3117,7 +3006,7 @@ fun AddEditPasswordScreen(
                                                 ) {
                                                     if (index > 0) {
                                                         DropdownMenuItem(
-                                                            text = { Text("上移") },
+                                                            text = { Text(stringResource(R.string.move_up)) },
                                                             leadingIcon = { Icon(Icons.Default.KeyboardArrowUp, null) },
                                                             onClick = {
                                                                 val previous = websiteUrls[index - 1]
@@ -3130,7 +3019,7 @@ fun AddEditPasswordScreen(
                                                     }
                                                     if (index < websiteUrls.lastIndex) {
                                                         DropdownMenuItem(
-                                                            text = { Text("下移") },
+                                                            text = { Text(stringResource(R.string.move_down)) },
                                                             leadingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
                                                             onClick = {
                                                                 val next = websiteUrls[index + 1]
@@ -3142,7 +3031,7 @@ fun AddEditPasswordScreen(
                                                         )
                                                     }
                                                     DropdownMenuItem(
-                                                        text = { Text("删除") },
+                                                        text = { Text(stringResource(R.string.delete)) },
                                                         leadingIcon = { Icon(Icons.Default.Delete, null) },
                                                         onClick = {
                                                             if (websiteUrls.size == 1) {
@@ -3298,7 +3187,7 @@ fun AddEditPasswordScreen(
                                                 }) {
                                                     Icon(
                                                         Icons.Default.ContentCopy,
-                                                        contentDescription = "Copy",
+                                                        contentDescription = stringResource(R.string.copy),
                                                         modifier = Modifier.size(20.dp)
                                                     )
                                                 }
@@ -3328,25 +3217,8 @@ fun AddEditPasswordScreen(
                                 )
                             }
 
-                            AnimatedVisibility(
-                                visible = activeUsernameSuggestionVisible,
-                                enter = slideInVertically(
-                                    animationSpec = tween(240, easing = FastOutSlowInEasing),
-                                    initialOffsetY = { -it / 2 }
-                                ) + fadeIn(animationSpec = tween(180)) + expandVertically(
-                                    expandFrom = Alignment.Top,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
-                                    )
-                                ),
-                                exit = slideOutVertically(
-                                    animationSpec = tween(160, easing = FastOutSlowInEasing),
-                                    targetOffsetY = { -it / 4 }
-                                ) + fadeOut(animationSpec = tween(120)) + shrinkVertically(
-                                    shrinkTowards = Alignment.Top,
-                                    animationSpec = tween(160, easing = FastOutSlowInEasing)
-                                )
+                            MonicaExpandableContent(
+                                expanded = activeUsernameSuggestionVisible
                             ) {
                                 UsernameSuggestionPanel(
                                     state = activeUsernameSuggestionState,
@@ -3379,10 +3251,8 @@ fun AddEditPasswordScreen(
                                 }
                             }
 
-                            AnimatedVisibility(
-                                visible = settings.separateUsernameAccountEnabled && !isMultiCredentialMode,
-                                enter = EnterTransition.None,
-                                exit = ExitTransition.None
+                            MonicaExpandableContent(
+                                expanded = settings.separateUsernameAccountEnabled && !isMultiCredentialMode
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                                     OutlinedTextField(
@@ -3400,10 +3270,8 @@ fun AddEditPasswordScreen(
                                         shape = RoundedCornerShape(12.dp)
                                     )
 
-                                    AnimatedVisibility(
-                                        visible = separatedUsernameSuggestionVisible,
-                                        enter = fadeIn(animationSpec = tween(180)) + expandVertically(),
-                                        exit = fadeOut(animationSpec = tween(120)) + shrinkVertically()
+                                    MonicaExpandableContent(
+                                        expanded = separatedUsernameSuggestionVisible
                                     ) {
                                         UsernameSuggestionPanel(
                                             state = separatedUsernameSuggestionState,
@@ -3431,12 +3299,10 @@ fun AddEditPasswordScreen(
                         }
 
                         // Passwords (仅在账号密码模式下显示)
-                        AnimatedVisibility(
-                            visible = showCredentialEditorContent &&
+                        MonicaExpandableContent(
+                            expanded = showCredentialEditorContent &&
                                 loginType.equals("PASSWORD", ignoreCase = true) &&
-                                !isBarcodeMode,
-                            enter = EnterTransition.None,
-                            exit = ExitTransition.None
+                                !isBarcodeMode
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 val visiblePasswordIndices = if (isMultiCredentialMode) {
@@ -3527,35 +3393,8 @@ fun AddEditPasswordScreen(
                                         val passwordSuggestionVisible = focusedPasswordFieldIndex == index &&
                                             pwd.isBlank() &&
                                             !inlinePasswordSuggestion.isNullOrBlank()
-                                        AnimatedVisibility(
-                                            visible = passwordSuggestionVisible,
-                                            enter = slideInVertically(
-                                                animationSpec = tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing
-                                                ),
-                                                initialOffsetY = { -it / 2 }
-                                            ) +
-                                                fadeIn(animationSpec = tween(180)) +
-                                                expandVertically(
-                                                    expandFrom = Alignment.Top,
-                                                    animationSpec = spring<IntSize>(
-                                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                                        stiffness = Spring.StiffnessMediumLow
-                                                    )
-                                                ),
-                                            exit = slideOutVertically(
-                                                animationSpec = tween(
-                                                    durationMillis = 160,
-                                                    easing = FastOutSlowInEasing
-                                                ),
-                                                targetOffsetY = { -it / 4 }
-                                            ) +
-                                                fadeOut(animationSpec = tween(120)) +
-                                                shrinkVertically(
-                                                    shrinkTowards = Alignment.Top,
-                                                    animationSpec = tween(160, easing = FastOutSlowInEasing)
-                                                )
+                                        MonicaExpandableContent(
+                                            expanded = passwordSuggestionVisible
                                         ) {
                                             inlinePasswordSuggestion?.let { suggestion ->
                                                 InlineGeneratedPasswordSuggestionCard(
@@ -3720,26 +3559,8 @@ fun AddEditPasswordScreen(
                                 }
                             }
 
-                            AnimatedVisibility(
-                                visible = authenticatorPreviewVisible,
-                                enter = slideInVertically(
-                                    initialOffsetY = { -it / 3 },
-                                    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
-                                ) + expandVertically(
-                                    expandFrom = Alignment.Top,
-                                    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
-                                ) + fadeIn(
-                                    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)
-                                ),
-                                exit = slideOutVertically(
-                                    targetOffsetY = { -it / 4 },
-                                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
-                                ) + shrinkVertically(
-                                    shrinkTowards = Alignment.Top,
-                                    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
-                                ) + fadeOut(
-                                    animationSpec = tween(durationMillis = 140)
-                                )
+                            MonicaExpandableContent(
+                                expanded = authenticatorPreviewVisible
                             ) {
                                 authenticatorPreviewTotpData?.let { previewData ->
                                     InlineTotpPreviewCard(
@@ -3985,11 +3806,11 @@ fun AddEditPasswordScreen(
             // Collapsible: Personal Info - 根据设置和数据决定是否显示
             if (showCredentialEditorContent && shouldShowPersonalInfo()) {
                 item {
-                    CollapsibleCard(
+                    MonicaExpandableCard(
                         title = stringResource(R.string.personal_info),
                         icon = Icons.Default.Person,
                         expanded = personalInfoExpanded,
-                        onExpandChange = { personalInfoExpanded = it }
+                        onExpandedChange = { personalInfoExpanded = it }
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Multiple Email Fields
@@ -4138,11 +3959,11 @@ fun AddEditPasswordScreen(
             // Collapsible: Address Info - 根据设置和数据决定是否显示
             if (showCredentialEditorContent && shouldShowAddressInfo()) {
                 item {
-                    CollapsibleCard(
+                    MonicaExpandableCard(
                         title = stringResource(R.string.address_info),
                         icon = Icons.Default.Home,
                         expanded = addressInfoExpanded,
-                        onExpandChange = { addressInfoExpanded = it }
+                        onExpandedChange = { addressInfoExpanded = it }
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (!commonAccountInfo.billingAddress.isEmpty()) {
@@ -4241,11 +4062,11 @@ fun AddEditPasswordScreen(
             // Collapsible: Payment Info
             if (showCredentialEditorContent && shouldShowPaymentInfo()) {
             item {
-                CollapsibleCard(
+                MonicaExpandableCard(
                     title = stringResource(R.string.payment_info),
                     icon = Icons.Default.CreditCard,
                     expanded = paymentInfoExpanded,
-                    onExpandChange = { paymentInfoExpanded = it }
+                    onExpandedChange = { paymentInfoExpanded = it }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // Import Button
@@ -5015,12 +4836,6 @@ private fun PasswordTotpBindingPickerBottomSheet(
 }
 
 @Composable
-private fun credentialDisplayLabel(index: Int, username: String): String {
-    val base = stringResource(R.string.credential_number, index + 1)
-    return username.trim().takeIf { it.isNotEmpty() }?.let { "$base · $it" } ?: base
-}
-
-@Composable
 private fun InlineGeneratedPasswordSuggestionCard(
     password: String,
     onApply: () -> Unit,
@@ -5453,91 +5268,7 @@ private fun InfoCard(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            content()
-        }
-    }
-}
-
-/**
- * Collapsible Card for optional sections
- */
-@Composable
-private fun CollapsibleCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    expanded: Boolean,
-    onExpandChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onExpandChange(!expanded) }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null
-                )
-            }
-            
-            AnimatedVisibility(
-                visible = expanded,
-                enter = EnterTransition.None,
-                exit = ExitTransition.None
-            ) {
-                Column(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    content()
-                }
-            }
-        }
-    }
+    takagi.ru.monica.ui.components.PasswordEditorSection(title, content)
 }
 
 @Composable
@@ -6043,10 +5774,8 @@ private fun LoginTypeSelector(
         }
         
         // SSO 详细设置
-        AnimatedVisibility(
-            visible = loginType.equals("SSO", ignoreCase = true),
-            enter = EnterTransition.None,
-            exit = ExitTransition.None
+        MonicaExpandableContent(
+            expanded = loginType.equals("SSO", ignoreCase = true)
         ) {
             Column(
                 modifier = Modifier.padding(top = 8.dp),
@@ -6058,7 +5787,7 @@ private fun LoginTypeSelector(
                     onExpandedChange = { showProviderMenu = it }
                 ) {
                     val providerDisplayName = if (ssoProvider.isNotEmpty()) {
-                        takagi.ru.monica.data.SsoProvider.fromName(ssoProvider).displayName
+                        takagi.ru.monica.data.SsoProvider.fromName(ssoProvider).localizedName()
                     } else {
                         context.getString(R.string.sso_provider_select)
                     }
@@ -6087,7 +5816,7 @@ private fun LoginTypeSelector(
                     ) {
                         takagi.ru.monica.data.SsoProvider.entries.forEach { provider ->
                             DropdownMenuItem(
-                                text = { Text(provider.displayName) },
+                                text = { Text(provider.localizedName()) },
                                 leadingIcon = { Icon(imageVector = getSsoProviderIcon(provider.name), contentDescription = null) },
                                 trailingIcon = if (ssoProvider == provider.name) {
                                     { Icon(Icons.Default.Check, null) }
@@ -6143,7 +5872,7 @@ private fun LoginTypeSelector(
                 
                 // 提示文字
                 val displayProvider = if (ssoProvider.isNotEmpty()) {
-                    takagi.ru.monica.data.SsoProvider.fromName(ssoProvider).displayName
+                    takagi.ru.monica.data.SsoProvider.fromName(ssoProvider).localizedName()
                 } else {
                     context.getString(R.string.sso_provider_select)
                 }
@@ -6230,4 +5959,3 @@ private fun encodePasswordWebsiteUrls(urls: List<String>): String {
 private fun normalizeWebsiteForSiblingGroupKey(value: String): String {
     return PasswordWebsiteCodec.normalizeForKey(value)
 }
-

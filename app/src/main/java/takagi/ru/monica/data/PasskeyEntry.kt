@@ -178,21 +178,6 @@ data class PasskeyEntry(
         else -> "Unknown ($publicKeyAlgorithm)"
     }
     
-    /**
-     * 格式化最后使用时间
-     */
-    fun getLastUsedFormatted(): String {
-        val now = System.currentTimeMillis()
-        val diff = now - lastUsedAt
-        return when {
-            diff < 60_000 -> "刚刚"
-            diff < 3600_000 -> "${diff / 60_000} 分钟前"
-            diff < 86400_000 -> "${diff / 3600_000} 小时前"
-            diff < 2592000_000 -> "${diff / 86400_000} 天前"
-            else -> "${diff / 2592000_000} 个月前"
-        }
-    }
-    
     companion object {
         // Passkey 模式
         const val MODE_LEGACY = "LEGACY"

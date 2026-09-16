@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">ZIP 存本</string>
+    <string name="transfer_zip_description">惟存所选之库。</string>
+    <string name="transfer_contents">所出之物</string>
+    <string name="transfer_images_attachments">图与附件</string>
+    <string name="transfer_encrypt_backup">密封存本</string>
+    <string name="transfer_encryption_hint">通行之钥及附件，须密封而出。</string>
+    <string name="transfer_choose_location">择所存之处</string>
+    <string name="transfer_background_continue">退而续行</string>
+    <string name="transfer_background_hint">可离此页，进度将报于通知。</string>
+    <string name="transfer_reading">正读文牍…</string>
+    <string name="transfer_decrypting">正解存本…</string>
+    <string name="transfer_preparing">正理诸项…</string>
+    <string name="transfer_writing">正写密库…</string>
+    <string name="transfer_attachments">正摹附件…</string>
+    <string name="transfer_packing">正合存本…</string>
+    <string name="transfer_encrypting">正密封文牍…</string>
+    <string name="transfer_saving">正存文牍…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">已出 %1$d 项。</string>
+    <string name="transfer_export_done">出毕</string>
+    <string name="transfer_channel">纳与出</string>
+    <string name="transfer_open_result">启 Monica 以观其果。</string>
+    <string name="transfer_background_start_failed">未能始出，请启 Monica 再试。</string>
+    <string name="transfer_cancelled">已罢导出。</string>
+    <string name="transfer_attachment_encryption">欲存附件，须密封之。</string>
+    <string name="transfer_password_mismatch">两钥不合。</string>
+    <string name="transfer_kdbx_password_description">请设密钥，以护所出 KDBX 密库。</string>
+    <string name="transfer_unsupported_token">此令牌不可转，请以 ZIP 存之。</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">出此库所选 Steam 账户。</string>
+    <string name="transfer_kdbx_description">以 KeePass 格式出密钥、验器、通行之钥及附件。</string>
+    <string name="transfer_unsupported_records">此库有未能识之项，请另存原库副本。</string>
+    <string name="transfer_zip_password_title">解 ZIP 存本</string>
+    <string name="transfer_zip_password_description">请入封此 ZIP 存本时所设之钥。</string>
+</resources>

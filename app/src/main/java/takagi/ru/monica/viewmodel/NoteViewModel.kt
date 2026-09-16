@@ -1,5 +1,9 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -72,12 +76,13 @@ data class ParsedNoteItem(
     val uiModel: NoteListItemUiModel = item.toNoteListItemUiModel(content),
 )
 
-class NoteViewModel(
+class NoteViewModel internal constructor(
     private val repository: SecureItemRepository,
     private val passwordRepository: PasswordRepository? = null,
     context: Context? = null,
     private val localKeePassDatabaseDao: LocalKeePassDatabaseDao? = null,
-    private val securityManager: SecurityManager? = null
+    private val securityManager: SecurityManager? = null,
+    private val strings: StringResolver
 ) : ViewModel() {
 
     companion object {
@@ -1013,40 +1018,40 @@ class NoteViewModel(
         categoryId: Long?
     ): Result<Long> {
         if (item.itemType != ItemType.NOTE) {
-            return Result.failure(IllegalArgumentException("仅支持笔记项目"))
+            return Result.failure(IllegalArgumentException(strings.get(R.string.entry_message_unsupported_type)))
         }
         if (item.hasOwnershipConflict()) {
-            return Result.failure(IllegalStateException("笔记来源冲突，无法移动到 Monica 本地"))
+            return Result.failure(IllegalStateException(strings.get(R.string.entry_message_ownership_conflict)))
         }
 
         val newId = copyNoteToMonicaLocal(item, categoryId)
-            ?: return Result.failure(IllegalStateException("创建 Monica 本地笔记副本失败"))
+            ?: return Result.failure(IllegalStateException(strings.get(R.string.entry_message_local_copy_failed)))
 
         val sourceDelete = when (val ownership = item.resolveOwnership()) {
             is SecureItemOwnership.Bitwarden -> {
                 val vaultId = ownership.vaultId
                 val cipherId = ownership.cipherId
                 if (vaultId == null || cipherId.isNullOrBlank()) {
-                    Result.failure(IllegalStateException("Bitwarden 笔记缺少同步标识"))
+                    Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_sync_id_missing)))
                 } else {
                     bitwardenRepository?.queueCipherDelete(
                         vaultId = vaultId,
                         cipherId = cipherId,
                         entryId = item.id,
                         itemType = BitwardenPendingOperation.ITEM_TYPE_NOTE
-                    ) ?: Result.failure(IllegalStateException("Bitwarden 仓库不可用"))
+                    ) ?: Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_unavailable)))
                 }
             }
             is SecureItemOwnership.KeePass -> {
                 if (keepassSecureItemDeleteExecutor.delete(item, useRecycleBin = false)) {
                     Result.success(Unit)
                 } else {
-                    Result.failure(IllegalStateException("KeePass 笔记源删除失败"))
+                    Result.failure(IllegalStateException(strings.get(R.string.entry_message_keepass_source_delete_failed)))
                 }
             }
             is SecureItemOwnership.MonicaLocal -> Result.success(Unit)
             is SecureItemOwnership.Mdbx -> Result.success(Unit)
-            is SecureItemOwnership.Conflict -> Result.failure(IllegalStateException("笔记来源冲突，无法移动到 Monica 本地"))
+            is SecureItemOwnership.Conflict -> Result.failure(IllegalStateException(strings.get(R.string.entry_message_ownership_conflict)))
         }
 
         if (sourceDelete.isFailure) {
@@ -1055,7 +1060,7 @@ class NoteViewModel(
                 "Note move to Monica local kept target copy after source cleanup failed; sourceId=${item.id} targetId=$newId error=${sourceDelete.exceptionOrNull()?.message}"
             )
             return Result.failure(
-                sourceDelete.exceptionOrNull() ?: IllegalStateException("删除源笔记失败")
+                sourceDelete.exceptionOrNull() ?: IllegalStateException(strings.get(R.string.entry_message_source_delete_failed))
             )
         }
 

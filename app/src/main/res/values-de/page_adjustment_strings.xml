@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_stack_loop_title">Kartenstapel endlos blättern</string>
+    <string name="wallet_stack_loop_desc">Blättern Sie in einem Kartenstapel in beide Richtungen. Nach der letzten Karte folgt die erste.</string>
+    <string name="page_adjustment_preview_games">Spiele</string>
+    <string name="page_adjustment_preview_folder">Ordner 1</string>
+    <string name="page_adjustment_preview_subfolder">Unterordner</string>
+</resources>

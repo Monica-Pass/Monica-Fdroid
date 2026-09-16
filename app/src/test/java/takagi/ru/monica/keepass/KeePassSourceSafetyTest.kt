@@ -1,5 +1,7 @@
 package takagi.ru.monica.keepass
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -21,7 +23,8 @@ class KeePassSourceSafetyTest {
         KeePassSourceSafety.requireUnchanged(
             expectedRevision = expected,
             currentBytes = loaded.copyOf(),
-            sourceLabel = "content://fixture/database.kdbx"
+            sourceLabel = "content://fixture/database.kdbx",
+            strings = xmlTestStrings("en"),
         )
     }
 
@@ -32,7 +35,8 @@ class KeePassSourceSafetyTest {
         KeePassSourceSafety.requireUnchanged(
             expectedRevision = expected,
             currentRevision = expected.copy(),
-            sourceLabel = "content://fixture/database.kdbx"
+            sourceLabel = "content://fixture/database.kdbx",
+            strings = xmlTestStrings("en"),
         )
     }
 
@@ -52,11 +56,12 @@ class KeePassSourceSafetyTest {
             KeePassSourceSafety.requireUnchanged(
                 expectedRevision = expected,
                 currentBytes = "encrypted-kdbx-v2-from-other-client".encodeToByteArray(),
-                sourceLabel = "content://fixture/database.kdbx"
+                sourceLabel = "content://fixture/database.kdbx",
+                strings = xmlTestStrings("en"),
             )
             fail("Expected KeePassSourceChangedException")
         } catch (error: KeePassSourceChangedException) {
-            assertTrue(error.message.orEmpty().contains("已被其他应用修改"))
+            assertTrue(error.message.orEmpty().contains("Another app changed"))
         }
     }
 
@@ -67,7 +72,8 @@ class KeePassSourceSafetyTest {
             val bytes = "encrypted-kdbx-recovery".encodeToByteArray()
             val store = KeePassRecoveryStore(
                 rootDir = root,
-                nowProvider = { Instant.parse("2026-08-17T12:00:00Z") }
+                nowProvider = { Instant.parse("2026-08-17T12:00:00Z") },
+                strings = xmlTestStrings("en"),
             )
 
             val copy = store.create(databaseId = 42L, bytes = bytes)
@@ -87,7 +93,7 @@ class KeePassSourceSafetyTest {
         try {
             val bytes = "encrypted-kdbx-recovery".encodeToByteArray()
             val revision = KeePassSourceSafety.revisionOf(bytes)
-            val store = KeePassRecoveryStore(root)
+            val store = KeePassRecoveryStore(root, strings = xmlTestStrings("en"))
 
             val copy = store.create(databaseId = 42L, bytes = bytes, revision = revision)
 
@@ -102,7 +108,7 @@ class KeePassSourceSafetyTest {
     fun corruptedRecoveryCopyFailsVerificationAndIsRetained() {
         val root = Files.createTempDirectory("monica-keepass-recovery-corrupt").toFile()
         try {
-            val store = KeePassRecoveryStore(root)
+            val store = KeePassRecoveryStore(root, strings = xmlTestStrings("en"))
             val copy = store.create(42L, "encrypted-kdbx-recovery".encodeToByteArray())
             copy.file.writeText("corrupted")
 

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">ZIP 백업</string>
+    <string name="transfer_zip_description">선택한 데이터베이스만 백업합니다.</string>
+    <string name="transfer_contents">포함할 항목</string>
+    <string name="transfer_images_attachments">이미지 및 첨부파일</string>
+    <string name="transfer_encrypt_backup">백업 암호화</string>
+    <string name="transfer_encryption_hint">패스키와 첨부파일을 포함하려면 암호화가 필요합니다.</string>
+    <string name="transfer_choose_location">저장 위치 선택</string>
+    <string name="transfer_background_continue">백그라운드에서 계속</string>
+    <string name="transfer_background_hint">이 페이지를 나가도 계속 진행됩니다. 알림에서 진행 상황을 확인하세요.</string>
+    <string name="transfer_reading">파일 읽는 중…</string>
+    <string name="transfer_decrypting">백업 복호화 중…</string>
+    <string name="transfer_preparing">항목 준비 중…</string>
+    <string name="transfer_writing">데이터베이스에 기록 중…</string>
+    <string name="transfer_attachments">첨부파일 복사 중…</string>
+    <string name="transfer_packing">압축 파일 생성 중…</string>
+    <string name="transfer_encrypting">파일 암호화 중…</string>
+    <string name="transfer_saving">파일 저장 중…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">%1$d개 항목을 내보냈습니다.</string>
+    <string name="transfer_export_done">내보내기 완료</string>
+    <string name="transfer_channel">가져오기 및 내보내기</string>
+    <string name="transfer_open_result">Monica를 열어 결과를 확인하세요.</string>
+    <string name="transfer_background_start_failed">내보내기를 시작할 수 없습니다. Monica를 연 상태로 다시 시도하세요.</string>
+    <string name="transfer_cancelled">내보내기를 취소했습니다.</string>
+    <string name="transfer_attachment_encryption">첨부파일을 포함하려면 백업을 암호화하세요.</string>
+    <string name="transfer_password_mismatch">비밀번호가 일치하지 않습니다.</string>
+    <string name="transfer_kdbx_password_description">내보낼 KDBX 데이터베이스를 보호할 비밀번호를 설정하세요.</string>
+    <string name="transfer_unsupported_token">이 토큰 형식은 변환할 수 없습니다. ZIP 백업을 사용하세요.</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">이 데이터베이스에서 선택한 Steam 계정을 내보냅니다.</string>
+    <string name="transfer_kdbx_description">비밀번호, 인증 정보, 패스키, 첨부파일을 KeePass 형식으로 저장합니다.</string>
+    <string name="transfer_unsupported_records">지원하지 않는 항목 유형이 있습니다. 원래 데이터베이스 형식으로 사본을 저장하세요.</string>
+    <string name="transfer_zip_password_title">ZIP 백업 복호화</string>
+    <string name="transfer_zip_password_description">이 ZIP 백업을 만들 때 설정한 비밀번호를 입력하세요.</string>
+</resources>

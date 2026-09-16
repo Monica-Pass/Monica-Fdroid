@@ -58,7 +58,9 @@ class DataExportImportManager(private val context: Context) {
         val importedAuthenticatorKey: String? = null,
         /** true 表示来自 Monica 自身导出的 CSV，导入时应跳过重复检测直接恢复 */
         val isFromAppExport: Boolean = false,
-        val sortOrder: Int = 0
+        val sortOrder: Int = 0,
+        val isDeleted: Boolean = false,
+        val deletedAt: Long? = null,
     )
 
     data class ImportedCustomField(
@@ -77,11 +79,19 @@ class DataExportImportManager(private val context: Context) {
      * @param formatHint 格式提示，如果提供则跳过自动检测
      * @return 导入的数据项列表
      */
+    data class CsvImportResult(val items: List<ExportItem>, val rejectedCount: Int)
+
     suspend fun importData(
         inputUri: Uri,
         formatHint: CsvFormat? = null,
         passwordKeyboardTagHandling: PasswordKeyboardTagHandling = PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD
-    ): Result<List<ExportItem>> = withContext(Dispatchers.IO) {
+    ): Result<List<ExportItem>> = importDataWithReport(inputUri, formatHint, passwordKeyboardTagHandling).map { it.items }
+
+    suspend fun importDataWithReport(
+        inputUri: Uri,
+        formatHint: CsvFormat? = null,
+        passwordKeyboardTagHandling: PasswordKeyboardTagHandling = PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD
+    ): Result<CsvImportResult> = withContext(Dispatchers.IO) {
         try {
             val items = mutableListOf<ExportItem>()
             var lineCount = 0
@@ -124,6 +134,7 @@ class DataExportImportManager(private val context: Context) {
                     
                     if (isHeader) {
                         when (csvFormat) {
+                            CsvFormat.CHROME_PASSWORD,
                             CsvFormat.KEEPASS_PASSWORD,
                             CsvFormat.BITWARDEN_PASSWORD,
                             CsvFormat.PROTON_PASS_PASSWORD -> {
@@ -175,6 +186,7 @@ class DataExportImportManager(private val context: Context) {
                     while (true) {
                         record = readCsvRecord(reader)
                         if (record == null) break
+                        require(lineCount < 50_000) { "Too many CSV records" }
                         val currentLine = record
                         lineCount++
                         if (currentLine.isNotBlank()) {
@@ -207,7 +219,7 @@ class DataExportImportManager(private val context: Context) {
             if (items.isEmpty()) {
                 Result.failure(Exception(strings.get(R.string.import_csv_no_data_found)))
             } else {
-                Result.success(items)
+                Result.success(CsvImportResult(items, errorCount))
             }
         } catch (e: Exception) {
             android.util.Log.e("DataImport", "导入异常", e)
@@ -383,11 +395,11 @@ class DataExportImportManager(private val context: Context) {
                 CsvFormat.CHROME_PASSWORD -> {
                     if (fields.size >= 4) {
                         // Chrome格式: name,url,username,password,note
-                        val name = fields.getOrNull(0)?.trim() ?: ""
-                        val url = fields.getOrNull(1)?.trim() ?: ""
-                        val username = fields.getOrNull(2)?.trim() ?: ""
-                        val password = fields.getOrNull(3)?.trim() ?: ""
-                        val note = fields.getOrNull(4)?.trim() ?: ""
+                        val name = getFieldValue(fields, headerIndexMap, listOf("name", "title")) ?: fields.getOrNull(0).orEmpty()
+                        val url = getFieldValue(fields, headerIndexMap, listOf("url", "website")) ?: fields.getOrNull(1).orEmpty()
+                        val username = getFieldValue(fields, headerIndexMap, listOf("username")) ?: fields.getOrNull(2).orEmpty()
+                        val password = getFieldValue(fields, headerIndexMap, listOf("password")) ?: fields.getOrNull(3).orEmpty()
+                        val note = getFieldValue(fields, headerIndexMap, listOf("note", "notes")) ?: fields.getOrNull(4).orEmpty()
                         
                         // 跳过空记录
                         if (name.isBlank() && username.isBlank() && password.isBlank()) {
@@ -395,13 +407,7 @@ class DataExportImportManager(private val context: Context) {
                         }
                         
                         // 转换为密码条目格式 (使用应用的格式: username:xxx;password:xxx;website:xxx)
-                        val passwordData = buildString {
-                            append("username:$username;")
-                            append("password:$password")
-                            if (url.isNotEmpty()) {
-                                append(";website:$url")
-                            }
-                        }
+                        val passwordData = CsvPasswordData.encode(username, password, url)
                         
                         ExportItem(
                             id = 0,
@@ -420,27 +426,21 @@ class DataExportImportManager(private val context: Context) {
                 CsvFormat.KEEPASS_PASSWORD -> {
                     if (fields.size >= 3) {
                         val title = getFieldValue(fields, headerIndexMap, listOf("title", "标题", "account", "账户", "name", "名称")) 
-                            ?: fields.getOrNull(0)?.trim().orEmpty()
+                            ?: fields.getOrNull(0).orEmpty()
                         val username = getFieldValue(fields, headerIndexMap, listOf("user name", "username", "user_name", "login name", "login", "login_username", "用户名", "账号", "登录名"))
-                            ?: fields.getOrNull(1)?.trim().orEmpty()
+                            ?: fields.getOrNull(1).orEmpty()
                         val password = getFieldValue(fields, headerIndexMap, listOf("password", "pass", "pwd", "login_password", "密码", "口令"))
-                            ?: fields.getOrNull(2)?.trim().orEmpty()
+                            ?: fields.getOrNull(2).orEmpty()
                         val url = getFieldValue(fields, headerIndexMap, listOf("url", "website", "web site", "web_site", "location", "address", "login_uri", "网址", "链接", "地址"))
-                            ?: fields.getOrNull(3)?.trim().orEmpty()
+                            ?: fields.getOrNull(3).orEmpty()
                         val note = getFieldValue(fields, headerIndexMap, listOf("notes", "note", "comment", "comments", "description", "备注", "注释", "描述"))
-                            ?: fields.getOrNull(4)?.trim().orEmpty()
+                            ?: fields.getOrNull(4).orEmpty()
                         
                         if (title.isBlank() && username.isBlank() && password.isBlank()) {
                             return null
                         }
                         
-                        val passwordData = buildString {
-                            append("username:$username;")
-                            append("password:$password")
-                            if (url.isNotEmpty()) {
-                                append(";website:$url")
-                            }
-                        }
+                        val passwordData = CsvPasswordData.encode(username, password, url)
                         
                         ExportItem(
                             id = 0,
@@ -459,37 +459,31 @@ class DataExportImportManager(private val context: Context) {
                 CsvFormat.BITWARDEN_PASSWORD -> {
                     if (fields.size >= 4) {
                         val type = getFieldValue(fields, headerIndexMap, listOf("type"))
-                            ?: fields.getOrNull(2)?.trim().orEmpty()
-                        if (type.isNotBlank() && type.lowercase() != "login") {
+                            ?: fields.getOrNull(2).orEmpty()
+                        if (type.isNotBlank() && type.trim().lowercase(Locale.ROOT) != "login") {
                             return null
                         }
 
                         val title = getFieldValue(fields, headerIndexMap, listOf("name", "title", "标题"))
-                            ?: fields.getOrNull(3)?.trim().orEmpty()
+                            ?: fields.getOrNull(3).orEmpty()
                         val username = getFieldValue(fields, headerIndexMap, listOf("login_username", "username", "user name", "user_name"))
-                            ?: fields.getOrNull(8)?.trim().orEmpty()
+                            ?: fields.getOrNull(8).orEmpty()
                         val password = getFieldValue(fields, headerIndexMap, listOf("login_password", "password", "pass", "pwd"))
-                            ?: fields.getOrNull(9)?.trim().orEmpty()
+                            ?: fields.getOrNull(9).orEmpty()
                         val url = getFieldValue(fields, headerIndexMap, listOf("login_uri", "url", "website", "web site", "web_site"))
-                            ?: fields.getOrNull(7)?.trim().orEmpty()
+                            ?: fields.getOrNull(7).orEmpty()
                         val note = getFieldValue(fields, headerIndexMap, listOf("notes", "note", "comment", "comments", "description"))
-                            ?: fields.getOrNull(4)?.trim().orEmpty()
+                            ?: fields.getOrNull(4).orEmpty()
                         val isFavorite = parseBooleanLike(
                             getFieldValue(fields, headerIndexMap, listOf("favorite", "favourite", "isfavorite"))
-                                ?: fields.getOrNull(1)?.trim().orEmpty()
+                                ?: fields.getOrNull(1).orEmpty()
                         )
 
                         if (title.isBlank() && username.isBlank() && password.isBlank() && url.isBlank()) {
                             return null
                         }
 
-                        val passwordData = buildString {
-                            append("username:$username;")
-                            append("password:$password")
-                            if (url.isNotEmpty()) {
-                                append(";website:$url")
-                            }
-                        }
+                        val passwordData = CsvPasswordData.encode(username, password, url)
 
                         ExportItem(
                             id = 0,
@@ -500,7 +494,10 @@ class DataExportImportManager(private val context: Context) {
                             isFavorite = isFavorite,
                             imagePaths = "",
                             createdAt = System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis()
+                            updatedAt = System.currentTimeMillis(),
+                            importedAuthenticatorKey = getFieldValue(fields, headerIndexMap, listOf("login_totp"))?.takeIf { it.isNotBlank() },
+                            importedCustomFields = getFieldValue(fields, headerIndexMap, listOf("fields"))
+                                ?.takeIf { it.isNotEmpty() }?.let { listOf(ImportedCustomField("Bitwarden fields", it, true)) }.orEmpty()
                         )
                     } else null
                 }
@@ -508,50 +505,41 @@ class DataExportImportManager(private val context: Context) {
                 CsvFormat.PROTON_PASS_PASSWORD -> {
                     if (fields.size >= 4) {
                         val type = getFieldValue(fields, headerIndexMap, listOf("type"))
-                            ?: fields.getOrNull(0)?.trim().orEmpty()
-                        if (type.isNotBlank() && type.lowercase() != "login") {
+                            ?: fields.getOrNull(0).orEmpty()
+                        if (type.isNotBlank() && type.trim().lowercase(Locale.ROOT) != "login") {
                             return null
                         }
 
                         val title = getFieldValue(fields, headerIndexMap, listOf("name", "title"))
-                            ?: fields.getOrNull(1)?.trim().orEmpty()
+                            ?: fields.getOrNull(1).orEmpty()
                         val url = getFieldValue(fields, headerIndexMap, listOf("url", "website", "uri"))
-                            ?: fields.getOrNull(2)?.trim().orEmpty()
+                            ?: fields.getOrNull(2).orEmpty()
                         val email = getFieldValue(fields, headerIndexMap, listOf("email", "mail"))
-                            ?: fields.getOrNull(3)?.trim().orEmpty()
+                            ?: fields.getOrNull(3).orEmpty()
                         val username = getFieldValue(fields, headerIndexMap, listOf("username", "user name", "user_name", "login"))
-                            ?: fields.getOrNull(4)?.trim().orEmpty()
+                            ?: fields.getOrNull(4).orEmpty()
                         val password = getFieldValue(fields, headerIndexMap, listOf("password", "pass", "pwd"))
-                            ?: fields.getOrNull(5)?.trim().orEmpty()
+                            ?: fields.getOrNull(5).orEmpty()
                         val note = getFieldValue(fields, headerIndexMap, listOf("note", "notes", "description"))
-                            ?: fields.getOrNull(6)?.trim().orEmpty()
+                            ?: fields.getOrNull(6).orEmpty()
                         val totp = getFieldValue(fields, headerIndexMap, listOf("totp", "otp", "2fa", "authenticator"))
-                            ?: fields.getOrNull(7)?.trim().orEmpty()
+                            ?: fields.getOrNull(7).orEmpty()
                         val createdAt = parseEpochSecondsOrMillis(
                             getFieldValue(fields, headerIndexMap, listOf("createtime", "created", "createdat"))
-                                ?: fields.getOrNull(8)?.trim().orEmpty()
+                                ?: fields.getOrNull(8).orEmpty()
                         )
                         val updatedAt = parseEpochSecondsOrMillis(
                             getFieldValue(fields, headerIndexMap, listOf("modifytime", "modified", "updated", "updatedat"))
-                                ?: fields.getOrNull(9)?.trim().orEmpty()
+                                ?: fields.getOrNull(9).orEmpty()
                         )
                         val vault = getFieldValue(fields, headerIndexMap, listOf("vault", "vaultname"))
-                            ?: fields.getOrNull(10)?.trim().orEmpty()
+                            ?: fields.getOrNull(10).orEmpty()
 
                         if (title.isBlank() && username.isBlank() && email.isBlank() && password.isBlank() && url.isBlank()) {
                             return null
                         }
 
-                        val passwordData = buildString {
-                            append("username:${username.ifBlank { email }};")
-                            append("password:$password")
-                            if (url.isNotEmpty()) {
-                                append(";website:$url")
-                            }
-                            if (email.isNotEmpty()) {
-                                append(";email:$email")
-                            }
-                        }
+                        val passwordData = CsvPasswordData.encode(username.ifEmpty { email }, password, url, email)
 
                         val importedCustomFields = buildList {
                             if (vault.isNotBlank()) {
@@ -605,38 +593,38 @@ class DataExportImportManager(private val context: Context) {
                             fields,
                             headerIndexMap,
                             listOf("username", "user name", "user_name", "login", "login_username", "用户名", "账号")
-                        ) ?: fields.getOrNull(0)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(0).orEmpty()
                         val password = getFieldValue(
                             fields,
                             headerIndexMap,
                             listOf("password", "pass", "pwd", "login_password", "密码", "口令")
-                        ) ?: fields.getOrNull(1)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(1).orEmpty()
                         val title = getFieldValue(
                             fields,
                             headerIndexMap,
                             listOf("title", "name", "标题", "名称")
-                        ) ?: fields.getOrNull(2)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(2).orEmpty()
                         val remarks = getFieldValue(
                             fields,
                             headerIndexMap,
                             listOf("remarks", "remark", "notes", "note", "comment", "description", "备注", "说明")
-                        ) ?: fields.getOrNull(3)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(3).orEmpty()
                         val rawUrl = getFieldValue(
                             fields,
                             headerIndexMap,
                             listOf("url", "website", "web site", "web_site", "link", "链接", "网址")
-                        ) ?: fields.getOrNull(4)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(4).orEmpty()
                         val url = normalizePasswordKeyboardWebsite(rawUrl)
                         val tag = getFieldValue(
                             fields,
                             headerIndexMap,
                             listOf("tag", "tags", "label", "labels", "标签", "分类")
-                        ) ?: fields.getOrNull(5)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(5).orEmpty()
                         val custom = getFieldValue(
                             fields,
                             headerIndexMap,
                             listOf("custom", "custom_fields", "customfields", "extra", "extend", "扩展", "自定义字段")
-                        ) ?: fields.getOrNull(6)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(6).orEmpty()
                         val validator = getFieldValue(
                             fields,
                             headerIndexMap,
@@ -652,19 +640,13 @@ class DataExportImportManager(private val context: Context) {
                                 "动态码",
                                 "二步验证"
                             )
-                        ) ?: fields.getOrNull(7)?.trim().orEmpty()
+                        ) ?: fields.getOrNull(7).orEmpty()
 
                         if (title.isBlank() && username.isBlank() && password.isBlank() && url.isBlank()) {
                             return null
                         }
 
-                        val passwordData = buildString {
-                            append("username:$username;")
-                            append("password:$password")
-                            if (url.isNotEmpty()) {
-                                append(";website:$url")
-                            }
-                        }
+                        val passwordData = CsvPasswordData.encode(username, password, url)
 
                         val importedCustomFields = buildList {
                             if (
@@ -686,7 +668,7 @@ class DataExportImportManager(private val context: Context) {
                             .map {
                                 it.copy(
                                     title = it.title.trim(),
-                                    value = it.value.trim()
+                                    value = it.value
                                 )
                             }
                             .filter { it.title.isNotBlank() && it.value.isNotBlank() }
@@ -739,7 +721,7 @@ class DataExportImportManager(private val context: Context) {
         val index = keys.firstNotNullOfOrNull { key ->
             headerIndexMap[key]
         } ?: return null
-        return fields.getOrNull(index)?.trim()
+        return fields.getOrNull(index) ?: throw IllegalArgumentException("Missing CSV column")
     }
 
     private fun isHeaderLine(firstLine: String, format: CsvFormat): Boolean {
@@ -1292,100 +1274,16 @@ class DataExportImportManager(private val context: Context) {
     /**
      * 读取一条完整的CSV记录，支持包含换行的带引号字段
      */
-    private fun readCsvRecord(reader: BufferedReader): String? {
-        val builder = StringBuilder()
-        var inQuotes = false
-        var line: String?
+    private fun readCsvRecord(reader: BufferedReader): String? = CsvRecords.read(reader)
 
-        // 初始行
-        line = reader.readLine() ?: return null
-        builder.append(line)
-        inQuotes = toggleQuoteState(builder.toString())
+    private fun parseCsvLine(line: String): List<String> = CsvRecords.fields(line)
 
-        // 如果引号未闭合，继续读取下一行并追加，直到闭合或文件结束
-        while (inQuotes) {
-            val next = reader.readLine() ?: break
-            builder.append('\n').append(next)
-            inQuotes = toggleQuoteState(builder.toString())
-        }
-
-        return builder.toString()
-    }
-
-    /**
-     * 根据CSV引号规则检测当前文本是否处于未闭合的引号状态
-     */
-    private fun toggleQuoteState(text: String): Boolean {
-        var inQuotes = false
-        var i = 0
-        while (i < text.length) {
-            val c = text[i]
-            when {
-                c == '"' && inQuotes && i + 1 < text.length && text[i + 1] == '"' -> {
-                    // 转义的引号，跳过
-                    i++
-                }
-                c == '"' -> {
-                    inQuotes = !inQuotes
-                }
-            }
-            i++
-        }
-        return inQuotes
-    }
-
-    /**
-     * 解析CSV行（处理带引号的字段）
-     */
-    private fun parseCsvLine(line: String): List<String> {
-        val fields = mutableListOf<String>()
-        val currentField = StringBuilder()
-        var inQuotes = false
-        var i = 0
-        
-        try {
-            while (i < line.length) {
-                val char = line[i]
-                
-                when {
-                    char == '"' && inQuotes && i + 1 < line.length && line[i + 1] == '"' -> {
-                        // 转义的引号
-                        currentField.append('"')
-                        i++
-                    }
-                    char == '"' -> {
-                        inQuotes = !inQuotes
-                    }
-                    char == ',' && !inQuotes -> {
-                        fields.add(currentField.toString().trim())
-                        currentField.clear()
-                    }
-                    else -> {
-                        currentField.append(char)
-                    }
-                }
-                i++
-            }
-            fields.add(currentField.toString().trim())
-        } catch (e: Exception) {
-            android.util.Log.e("DataImport", "解析CSV行失败: length=${line.length}", e)
-            // 返回当前已解析的字段
-        }
-        
-        return fields
-    }
-
-/**
-     * 从Aegis JSON文件导入TOTP数据
-     * @param inputUri 输入文件的URI
-     * @return 导入的数据项列表
-     */
     suspend fun importAegisJson(
         inputUri: Uri
     ): Result<List<AegisEntry>> = withContext(Dispatchers.IO) {
         try {
             val inputStream = context.contentResolver.openInputStream(inputUri)
-                ?: return@withContext Result.failure(Exception("无法读取文件，请检查文件是否存在"))
+                ?: return@withContext Result.failure(Exception(strings.get(R.string.keepass_operation_file_unavailable)))
         
             inputStream.use { input ->
                 val reader = BufferedReader(InputStreamReader(input, Charsets.UTF_8))
@@ -1399,7 +1297,7 @@ class DataExportImportManager(private val context: Context) {
                 val dbField = root["db"]
                 if (dbField != null && dbField is kotlinx.serialization.json.JsonPrimitive) {
                     // 这是一个加密的vault，我们无法解密它
-                    return@withContext Result.failure(Exception("无法导入加密的Aegis备份文件。请导出未加密的JSON文件。"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_unencrypted)))
                 }
                 
                 // 尝试解析未加密的数据库格式
@@ -1422,7 +1320,7 @@ class DataExportImportManager(private val context: Context) {
                 }
                 
                 if (entriesArray == null) {
-                    return@withContext Result.failure(Exception("无效的Aegis JSON格式：未找到entries数组"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "entries")))
                 }
                 
                 val entries = mutableListOf<AegisEntry>()
@@ -1477,14 +1375,14 @@ class DataExportImportManager(private val context: Context) {
                 android.util.Log.d("AegisImport", "成功解析 $parsedCount 条目，$errorCount 个错误")
                 
                 if (entries.isEmpty()) {
-                    Result.failure(Exception("未能从Aegis文件中导入任何有效的TOTP条目"))
+                    Result.failure(Exception(strings.get(R.string.import_message_aegis_no_totp)))
                 } else {
                     Result.success(entries)
                 }
             }
         } catch (e: Exception) {
             android.util.Log.e("AegisImport", "导入Aegis文件失败", e)
-            Result.failure(Exception("导入Aegis文件失败：${e.message ?: "未知错误"}"))
+            Result.failure(Exception(strings.get(R.string.import_message_aegis_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
         }
     }
 
@@ -1550,7 +1448,7 @@ class DataExportImportManager(private val context: Context) {
     ): Result<List<AegisEntry>> = withContext(Dispatchers.IO) {
         try {
             val inputStream = context.contentResolver.openInputStream(inputUri)
-                ?: return@withContext Result.failure(Exception("无法读取文件，请检查文件是否存在"))
+                ?: return@withContext Result.failure(Exception(strings.get(R.string.keepass_operation_file_unavailable)))
         
             inputStream.use { input ->
                 val reader = BufferedReader(InputStreamReader(input, Charsets.UTF_8))
@@ -1562,41 +1460,41 @@ class DataExportImportManager(private val context: Context) {
                 
                 // 获取header信息
                 val header = root["header"]?.jsonObject
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少header"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "header")))
                 
                 // 获取slots信息
                 val slots = header["slots"]?.jsonArray
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少slots"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "slots")))
                 
                 if (slots.isEmpty()) {
-                    return@withContext Result.failure(Exception("无效的Aegis文件格式：slots为空"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_empty_slots)))
                 }
                 
                 // 获取第一个slot
                 val slot = slots[0].jsonObject
                 val slotType = slot["type"]?.jsonPrimitive?.content?.toIntOrNull()
                 if (slotType != 1) {
-                    return@withContext Result.failure(Exception("不支持的slot类型: $slotType"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_slot_type, slotType?.toString() ?: "?")))
                 }
                 
                 val salt = slot["salt"]?.jsonPrimitive?.content
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少salt"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "salt")))
                 
                 val key = slot["key"]?.jsonPrimitive?.content
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少key"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "key")))
                 
                 val keyParams = slot["key_params"]?.jsonObject
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少key_params"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "key_params")))
                 
                 val nonce = keyParams["nonce"]?.jsonPrimitive?.content
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少nonce"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "nonce")))
                 
                 val tag = keyParams["tag"]?.jsonPrimitive?.content
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少tag"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "tag")))
                 
                 // 获取加密的db数据
                 val encryptedDb = root["db"]?.jsonPrimitive?.content
-                    ?: return@withContext Result.failure(Exception("无效的Aegis文件格式：缺少db"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "db")))
                 
                 // 解密数据
                 val decryptor = AegisDecryptor()
@@ -1607,12 +1505,12 @@ class DataExportImportManager(private val context: Context) {
                     decryptor.decryptMasterKey(password, salt, keyParamsObj, key)
                 } catch (e: Exception) {
                     android.util.Log.e("EncryptedAegisImport", "解密主密钥失败", e)
-                    return@withContext Result.failure(Exception("解密主密钥失败：密码错误或文件损坏"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.crypto_message_password_or_corrupt)))
                 }
                 
                 // 验证解密后的主密钥长度
                 if (decryptedKey.size != 32) {
-                    return@withContext Result.failure(Exception("解密主密钥失败：密钥长度不正确"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.import_message_key_length)))
                 }
                 
                 // 然后使用主密钥解密db字段
@@ -1625,14 +1523,14 @@ class DataExportImportManager(private val context: Context) {
                     decryptor.decryptWithKeyBase64(decryptedKey, dbKeyParams, encryptedDb)
                 } catch (e: Exception) {
                     android.util.Log.e("EncryptedAegisImport", "解密db数据失败", e)
-                    return@withContext Result.failure(Exception("解密db数据失败：密码错误或文件损坏"))
+                    return@withContext Result.failure(Exception(strings.get(R.string.crypto_message_password_or_corrupt)))
                 }
                 
                 // 解析解密后的JSON
                 val decryptedContent = String(decryptedDbData, Charsets.UTF_8)
                 val decryptedRoot = json.parseToJsonElement(decryptedContent).jsonObject
                 val entriesArray = decryptedRoot["entries"]?.jsonArray
-                    ?: return@withContext Result.failure(Exception("无效的解密数据：未找到entries数组"))
+                    ?: return@withContext Result.failure(Exception(strings.get(R.string.import_message_aegis_missing, "entries")))
                 
                 val entries = mutableListOf<AegisEntry>()
                 var parsedCount = 0
@@ -1683,14 +1581,14 @@ class DataExportImportManager(private val context: Context) {
                 android.util.Log.d("EncryptedAegisImport", "成功解析 $parsedCount 条目，$errorCount 个错误")
                 
                 if (entries.isEmpty()) {
-                    Result.failure(Exception("未能从Aegis文件中导入任何有效的TOTP条目"))
+                    Result.failure(Exception(strings.get(R.string.import_message_aegis_no_totp)))
                 } else {
                     Result.success(entries)
                 }
             }
         } catch (e: Exception) {
             android.util.Log.e("EncryptedAegisImport", "导入加密Aegis文件失败", e)
-            Result.failure(Exception("导入加密Aegis文件失败：${e.message ?: "未知错误"}"))
+            Result.failure(Exception(strings.get(R.string.import_message_aegis_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
         }
     }
     
@@ -1705,7 +1603,7 @@ class DataExportImportManager(private val context: Context) {
     ): Result<SteamGuardImportEntry> = withContext(Dispatchers.IO) {
         try {
             val inputStream = context.contentResolver.openInputStream(inputUri)
-                ?: return@withContext Result.failure(Exception("无法读取文件，请检查文件是否存在"))
+                ?: return@withContext Result.failure(Exception(strings.get(R.string.keepass_operation_file_unavailable)))
 
             inputStream.use { input ->
                 val content = BufferedReader(InputStreamReader(input, Charsets.UTF_8)).readText()
@@ -1721,7 +1619,7 @@ class DataExportImportManager(private val context: Context) {
             }
         } catch (e: Exception) {
             android.util.Log.e("SteamImport", "导入失败", e)
-            Result.failure(Exception("导入失败：${e.message ?: "未知错误"}"))
+            Result.failure(Exception(strings.get(R.string.import_data_failed_with_reason, e.message ?: strings.get(R.string.import_data_unknown_error))))
         }
     }
 
@@ -1742,7 +1640,7 @@ class DataExportImportManager(private val context: Context) {
             )
         } catch (e: Exception) {
             android.util.Log.e("SteamImport", "Steam App 共存导入失败", e)
-            Result.failure(Exception("导入失败：${e.message ?: "未知错误"}"))
+            Result.failure(Exception(strings.get(R.string.import_data_failed_with_reason, e.message ?: strings.get(R.string.import_data_unknown_error))))
         }
     }
 
@@ -1775,22 +1673,22 @@ class DataExportImportManager(private val context: Context) {
     ): Result<SteamGuardImportEntry> {
         val sharedSecret = root["shared_secret"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
         if (sharedSecret.isBlank()) {
-            return Result.failure(Exception("无效的 SteamGuard 内容：缺少 shared_secret"))
+            return Result.failure(Exception(strings.get(R.string.import_message_steam_missing, "shared_secret")))
         }
 
         val serialNumber = root["serial_number"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
         if (serialNumber.isBlank()) {
-            return Result.failure(Exception("无效的 SteamGuard 内容：缺少 serial_number"))
+            return Result.failure(Exception(strings.get(R.string.import_message_steam_missing, "serial_number")))
         }
 
         val normalizedDeviceId = normalizeSteamDeviceId(deviceIdInput?.takeIf { it.isNotBlank() })
             ?: if (requireDeviceId) null else buildFallbackSteamDeviceId(sharedSecret, serialNumber)
         if (normalizedDeviceId == null) {
-            return Result.failure(Exception("无效的设备ID（格式应为 android:xxxx）"))
+            return Result.failure(Exception(strings.get(R.string.import_message_steam_device_id)))
         }
 
         val decodedBytes = decodeSteamSharedSecret(sharedSecret)
-            ?: return Result.failure(Exception("无效的 Steam shared_secret 格式"))
+            ?: return Result.failure(Exception(strings.get(R.string.import_message_steam_secret)))
 
         val secretBase32 = base32Encode(decodedBytes)
         val accountName = customName?.trim()

@@ -1,5 +1,8 @@
 package takagi.ru.monica.autofill_ng
 
+import android.content.Context
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.assist.AssistStructure
 import android.content.Intent
 import android.os.Bundle
@@ -59,6 +62,10 @@ class AutofillSaveActivity : ComponentActivity() {
     private lateinit var database: PasswordDatabase
     private lateinit var settingsManager: SettingsManager
     
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         

@@ -145,7 +145,9 @@ internal data class FavoriteSelectionToggleRequest(
     val selectedPasswords: Set<Long>,
     val passwordEntries: List<PasswordEntry>,
     val selectedSupplementaryItems: List<PasswordAggregateListItemUi>,
-    val aggregateUiState: PasswordListAggregateUiState
+    val aggregateUiState: PasswordListAggregateUiState,
+    val nativeEntries: List<takagi.ru.monica.data.NativeApiTokenSummary> = emptyList(),
+    val nativeViewModel: takagi.ru.monica.viewmodel.MdbxViewModel? = null,
 )
 
 internal data class PasswordListInitialRenderState(
@@ -1287,14 +1289,15 @@ internal suspend fun applyFavoriteSelectionToggle(
     request: FavoriteSelectionToggleRequest
 ): Int {
     val selectedEntries = request.passwordEntries.filter { it.id in request.selectedPasswords }
-    val favoriteTargets = selectedEntries.size + request.selectedSupplementaryItems.count {
+    val selectedNative = request.nativeEntries.filter { it.displayId in request.selectedPasswords }
+    val favoriteTargets = selectedEntries.size + selectedNative.size + request.selectedSupplementaryItems.count {
         it.type != PasswordPageContentType.PASSKEY
     }
     if (favoriteTargets <= 0) {
         return 0
     }
 
-    val allFavorited = selectedEntries.all { it.isFavorite } &&
+    val allFavorited = selectedEntries.all { it.isFavorite } && selectedNative.all { it.isFavorite } &&
         request.selectedSupplementaryItems.all { item ->
             when (item.type) {
                 PasswordPageContentType.AUTHENTICATOR,
@@ -1305,6 +1308,10 @@ internal suspend fun applyFavoriteSelectionToggle(
             }
         }
     val newFavoriteState = !allFavorited
+
+    selectedNative.forEach { token ->
+        checkNotNull(request.nativeViewModel).setNativeApiTokenFavorite(token, newFavoriteState)
+    }
 
     selectedEntries.forEach { entry ->
         request.viewModel.toggleFavorite(entry.id, newFavoriteState)

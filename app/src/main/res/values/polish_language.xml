@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Native language name stays recognizable from any current UI language. -->
+    <string name="language_polish" translatable="false">Polski</string>
+</resources>

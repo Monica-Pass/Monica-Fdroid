@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="vault_overview_archive">归藏</string>
+    <string name="vault_overview_trash">废篓</string>
+    <string name="vault_overview_done">毕</string>
+    <string name="vault_overview_note">简牍</string>
+    <string name="vault_overview_passkey">通行之钥</string>
+    <string name="vault_overview_enabled_title">密府总览</string>
+    <string name="vault_overview_enabled_desc">启密府时，先示常用卡片、条目及所藏；停用则复旧有列表。</string>
+    <string name="vault_overview_title">密府</string>
+    <string name="vault_overview_customize">自定总览</string>
+    <string name="vault_overview_customize_hint">择所示之部，拖动以易次序。诸数据库共用此布局。</string>
+    <string name="vault_overview_cards">常用卡片</string>
+    <string name="vault_overview_items">常用之项</string>
+    <string name="vault_overview_favorites">珍藏</string>
+    <string name="vault_overview_types">依类</string>
+    <string name="vault_overview_folders">分类与卷夹</string>
+    <string name="vault_overview_databases">诸数据库</string>
+    <string name="vault_overview_all_items">阅全部条目</string>
+    <string name="vault_overview_view_all">尽阅</string>
+    <string name="vault_overview_local">Monica 本机</string>
+    <string name="vault_overview_all_databases">全部数据库</string>
+    <string name="vault_overview_choose_database">择数据库</string>
+    <string name="vault_overview_choose_database_hint">卡片、条目、卷夹与所寻，皆依此范围。</string>
+    <string name="vault_overview_locked">已封</string>
+    <string name="vault_overview_locked_hint">启封此库，乃可阅其所藏。</string>
+    <string name="vault_overview_locked_excluded">已封之 %1$d 库，未计于内。</string>
+    <string name="vault_overview_unlock">启封数据库</string>
+    <string name="vault_overview_pin_cards">择常用卡片</string>
+    <string name="vault_overview_pin_items">择常用之项</string>
+    <string name="vault_overview_pin_hint">置顶者先示，不改珍藏之状。</string>
+    <string name="vault_overview_recommend">兼示常阅之项</string>
+    <string name="vault_overview_recommend_hint">依本机往日所阅而荐</string>
+    <string name="vault_overview_empty_cards">可自卡包择卡片置顶，亦可先阅卡片，以启常用之荐。</string>
+    <string name="vault_overview_empty_items">可置顶条目于此，亦可先阅条目，以启常用之荐。</string>
+    <string name="vault_overview_empty_favorites">所珍藏之项，将见于此。</string>
+    <string name="vault_overview_empty_folders">此库尚无卷夹。</string>
+    <string name="vault_overview_empty_pins">此库无相合之项。</string>
+    <string name="vault_overview_previous_card">前卡</string>
+    <string name="vault_overview_next_card">后卡</string>
+    <string name="vault_overview_card_position">%1$d / %2$d</string>
+    <string name="vault_overview_move_up">上移 %1$s</string>
+    <string name="vault_overview_move_down">下移 %1$s</string>
+    <string name="vault_overview_reset">复初始布局</string>
+    <string name="vault_overview_search_all">遍寻诸库</string>
+    <string name="vault_overview_return">返总览</string>
+    <string name="vault_overview_folder_list">全部卷夹</string>
+    <string name="vault_overview_hidden_hint">请于“自定总览”择欲示之部。</string>
+</resources>

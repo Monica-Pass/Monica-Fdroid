@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">Sejf Bitwarden jest zablokowany lub sesja wygasła. Odblokuj go albo zaloguj się ponownie.</string>
+    <string name="attachment_error_remote_data">Serwer zwrócił niepełne dane załącznika. Zsynchronizuj sejf i spróbuj ponownie.</string>
+    <string name="attachment_error_unsupported_encryption">Załącznik używa nieobsługiwanego szyfrowania (typ %1$d). Wyeksportuj go w oficjalnym kliencie i wgraj ponownie.</string>
+    <string name="attachment_error_unknown">Operacja na załączniku nie powiodła się. Spróbuj ponownie.</string>
+    <string name="attachment_error_decryption_failed">Odszyfrowanie załącznika lub sprawdzenie jego integralności nie powiodło się. Zsynchronizuj sejf i spróbuj ponownie.</string>
+    <string name="password_batch_attachment_failure">Nie udało się przenieść załączników. Dotyczy elementów: %1$d. %2$s</string>
+</resources>

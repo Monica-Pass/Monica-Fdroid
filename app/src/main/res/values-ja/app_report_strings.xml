@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Monica アプリ一覧の診断</string>
+    <string name="app_report_generated">生成日時: %1$s</string>
+    <string name="app_report_brand">端末のブランド: %1$s</string>
+    <string name="app_report_model">端末のモデル: %1$s</string>
+    <string name="app_report_android">Android バージョン: %1$s（API %2$d）</string>
+    <string name="app_report_summary">概要</string>
+    <string name="app_report_total">アプリ総数: %1$d</string>
+    <string name="app_report_user_count">ユーザーアプリ: %1$d</string>
+    <string name="app_report_system_count">システムアプリ: %1$d（更新済み: %2$d）</string>
+    <string name="app_report_visible_percent">表示: %1$d（%2$s%%）</string>
+    <string name="app_report_hidden_percent">非表示: %1$d（%2$s%%）</string>
+    <string name="app_report_filter_health">フィルターチェック: %1$s</string>
+    <string name="app_report_filter_loose">フィルターがシステムコンポーネントを十分に非表示にできていない可能性があります</string>
+    <string name="app_report_filter_strict">フィルターが有用なアプリを非表示にしている可能性があります</string>
+    <string name="app_report_filter_good">フィルターのバランスは良好です</string>
+    <string name="app_report_visible_apps">表示中のアプリ: %1$d</string>
+    <string name="app_report_user_apps">ユーザーがインストールしたアプリ: %1$d</string>
+    <string name="app_report_system_apps">システムアプリ: %1$d</string>
+    <string name="app_report_more_apps">その他のアプリ: %1$d</string>
+    <string name="app_report_hidden_components">非表示のシステムコンポーネント: %1$d</string>
+    <string name="app_report_hidden_feedback">有用なアプリが非表示になっている場合は、フィードバックにパッケージ名を記載してください。</string>
+    <string name="app_report_android_core">Android コア</string>
+    <string name="app_report_android_system">Android システム</string>
+    <string name="app_report_google_services">Google サービス</string>
+    <string name="app_report_chip_vendor">チップメーカーのコンポーネント</string>
+    <string name="app_report_other">その他のコンポーネント</string>
+    <string name="app_report_more_components">追加のコンポーネント: %1$d</string>
+    <string name="app_report_all_apps">全アプリ一覧: %1$d</string>
+    <string name="app_report_format">形式: [状態] アプリ名</string>
+    <string name="app_report_package_type">パッケージ名 · 種類</string>
+    <string name="app_report_unknown_app">不明なアプリ</string>
+    <string name="app_report_user_app">ユーザーアプリ</string>
+    <string name="app_report_system_app">システムアプリ</string>
+    <string name="app_report_updated_system_app">更新済みシステムアプリ</string>
+    <string name="app_report_filter_rules">アプリのフィルタールール</string>
+    <string name="app_report_rule_count">フィルタールール: %1$d</string>
+    <string name="app_report_rules_feedback">フィルターの変更を提案するには、次のページをご覧ください:</string>
+    <string name="app_report_complete">レポート完了</string>
+    <string name="app_report_hidden_count">非表示のアプリ: %1$d</string>
+    <string name="app_report_path">ファイルパス:</string>
+</resources>

@@ -1,9 +1,12 @@
 package takagi.ru.monica.bitwarden.sync
 
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.StringResolver
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.sync.SyncDiagnostics
 import takagi.ru.monica.sync.SyncError
 import takagi.ru.monica.sync.SyncErrorKind
+import takagi.ru.monica.sync.SyncExecutionResult
 import takagi.ru.monica.sync.SyncMode
 import takagi.ru.monica.sync.SyncNetworkPolicy
 import takagi.ru.monica.sync.SyncPriority
@@ -12,6 +15,7 @@ import takagi.ru.monica.sync.SyncTarget
 import takagi.ru.monica.sync.SyncTaskAwaitResult
 import takagi.ru.monica.sync.SyncTaskRunner
 import takagi.ru.monica.sync.SyncTrigger
+import takagi.ru.monica.sync.classifySyncFailure
 
 sealed class BitwardenCoordinatedSyncResult {
     data class Completed(val result: BitwardenRepository.SyncResult) : BitwardenCoordinatedSyncResult()
@@ -47,13 +51,69 @@ suspend fun BitwardenRepository.syncViaCoordinator(
     )
 
     @Suppress("DEPRECATION")
-    return when (val result = SyncTaskRunner.requestAndAwait(request) { sync(vaultId) }) {
+    return awaitCoordinatedBitwardenSync(request, strings) { sync(vaultId) }
+}
+
+internal suspend fun awaitCoordinatedBitwardenSync(
+    request: SyncRequest,
+    strings: StringResolver,
+    sync: suspend () -> BitwardenRepository.SyncResult
+): BitwardenCoordinatedSyncResult {
+    return when (val result = SyncTaskRunner.requestAndAwait(
+        request = request,
+        resultClassifier = { it.toCoordinatorExecutionResult(strings) },
+        block = sync
+    )) {
         is SyncTaskAwaitResult.Completed -> BitwardenCoordinatedSyncResult.Completed(result.value)
         is SyncTaskAwaitResult.Merged -> BitwardenCoordinatedSyncResult.Merged
         is SyncTaskAwaitResult.Skipped -> BitwardenCoordinatedSyncResult.Skipped(result.reason)
         is SyncTaskAwaitResult.Blocked -> BitwardenCoordinatedSyncResult.Blocked(result.error)
         is SyncTaskAwaitResult.Canceled -> BitwardenCoordinatedSyncResult.Canceled(result.reason)
         is SyncTaskAwaitResult.Failed -> BitwardenCoordinatedSyncResult.Failed(result.error)
+    }
+}
+
+private fun BitwardenRepository.SyncResult.toCoordinatorExecutionResult(
+    strings: StringResolver
+): SyncExecutionResult {
+    val finishedAt = System.currentTimeMillis()
+    return when (this) {
+        is BitwardenRepository.SyncResult.Success -> SyncExecutionResult.Success(finishedAt)
+        is BitwardenRepository.SyncResult.EmptyVaultBlocked -> SyncExecutionResult.Failed(
+            finishedAt,
+            SyncError(SyncErrorKind.VALIDATION_FAILED, reason)
+        )
+        is BitwardenRepository.SyncResult.Error -> {
+            val outcome = classifyBitwardenSyncError(message, strings)
+            if (outcome is SyncExecutionOutcome.Blocked) {
+                SyncExecutionResult.Blocked(
+                    finishedAt,
+                    SyncError(
+                        kind = if (outcome.reason == SyncBlockReason.VAULT_LOCKED) {
+                            SyncErrorKind.TARGET_LOCKED
+                        } else {
+                            SyncErrorKind.AUTH_REQUIRED
+                        },
+                        redactedMessage = message
+                    )
+                )
+            } else {
+                val classified = classifySyncFailure(IllegalStateException(message))
+                val error = if (
+                    outcome is SyncExecutionOutcome.RetryableError &&
+                    classified.kind == SyncErrorKind.UNEXPECTED
+                ) {
+                    classified.copy(kind = SyncErrorKind.NETWORK_UNAVAILABLE, retryable = true)
+                } else {
+                    classified
+                }
+                if (error.kind == SyncErrorKind.CONFLICT) {
+                    SyncExecutionResult.Conflict(finishedAt, error)
+                } else {
+                    SyncExecutionResult.Failed(finishedAt, error)
+                }
+            }
+        }
     }
 }
 
@@ -67,10 +127,10 @@ suspend fun BitwardenRepository.syncForUserVisibleRequest(
         trigger = SyncTrigger.MANUAL,
         priority = SyncPriority.MANUAL,
         mode = SyncMode.FOREGROUND
-    ).toRepositorySyncResultForUi()
+    ).toRepositorySyncResultForUi(strings)
 }
 
-fun BitwardenCoordinatedSyncResult.toRepositorySyncResultForUi(): BitwardenRepository.SyncResult {
+internal fun BitwardenCoordinatedSyncResult.toRepositorySyncResultForUi(strings: StringResolver): BitwardenRepository.SyncResult {
     return when (this) {
         is BitwardenCoordinatedSyncResult.Completed -> result
         BitwardenCoordinatedSyncResult.Merged -> emptyBitwardenSyncSuccess()
@@ -79,10 +139,10 @@ fun BitwardenCoordinatedSyncResult.toRepositorySyncResultForUi(): BitwardenRepos
             BitwardenRepository.SyncResult.Error(error.redactedMessage ?: error.kind.name)
         }
         is BitwardenCoordinatedSyncResult.Canceled -> {
-            BitwardenRepository.SyncResult.Error(reason ?: "同步被取消")
+            BitwardenRepository.SyncResult.Error(reason ?: strings.get(R.string.legacy_ui_sync_cancelled))
         }
         is BitwardenCoordinatedSyncResult.Failed -> {
-            BitwardenRepository.SyncResult.Error(error.message ?: "同步失败")
+            BitwardenRepository.SyncResult.Error(error.message ?: strings.get(R.string.bitwarden_message_sync_failed))
         }
     }
 }

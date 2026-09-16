@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.components
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -148,8 +150,8 @@ private fun QuickStatusTransferSuccessStatus(
     modifier: Modifier
 ) {
     val actionText = when (state.action) {
-        UnifiedMoveAction.MOVE -> "移动"
-        UnifiedMoveAction.COPY -> "复制"
+        UnifiedMoveAction.MOVE -> stringResource(R.string.move)
+        UnifiedMoveAction.COPY -> stringResource(R.string.copy)
     }
     val count = state.successCount ?: state.processed
     Surface(
@@ -166,7 +168,7 @@ private fun QuickStatusTransferSuccessStatus(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "${actionText}成功，已${actionText}${count}条",
+                text = stringResource(R.string.legacy_ui_transfer_success, actionText, count),
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

@@ -97,7 +97,7 @@ fun QrCodeDialog(
                 if (qrBitmap != null) {
                     Image(
                         bitmap = qrBitmap!!.asImageBitmap(),
-                        contentDescription = "QR Code",
+                        contentDescription = stringResource(R.string.legacy_ui_qr_code),
                         modifier = Modifier
                             .size(240.dp)
                             .background(Color.White)
@@ -283,7 +283,7 @@ fun TextQrCodeDialog(
                 if (qrBitmap != null) {
                     Image(
                         bitmap = qrBitmap!!.asImageBitmap(),
-                        contentDescription = "QR Code",
+                        contentDescription = stringResource(R.string.legacy_ui_qr_code),
                         modifier = Modifier
                             .size(240.dp)
                             .background(Color.White)

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="wallet_stack_loop_title">Loop card stacks</string>
+    <string name="wallet_stack_loop_desc">Swipe through a card stack in either direction. The last card connects to the first.</string>
     <string name="page_adjustment_preview_games">Games</string>
     <string name="page_adjustment_preview_folder">Folder 1</string>
     <string name="page_adjustment_preview_subfolder">Subfolder</string>

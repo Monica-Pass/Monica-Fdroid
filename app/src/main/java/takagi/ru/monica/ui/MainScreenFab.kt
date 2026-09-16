@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,6 +66,7 @@ internal fun BoxScope.MainScreenFabOverlay(
     vaultV2HasWideDetail: Boolean,
     appSettings: takagi.ru.monica.data.AppSettings,
     passwordHistoryPageMode: PasswordHistoryPageMode,
+    onNavigateBackFromHistory: () -> Unit,
     isAnySelectionMode: Boolean,
     isAddingPasswordInline: Boolean,
     inlinePasswordEditorId: Long?,
@@ -156,6 +158,8 @@ internal fun BoxScope.MainScreenFabOverlay(
         else -> false
     }
 
+    val isVaultLikeTab = currentTab == BottomNavItem.Passwords || currentTab == BottomNavItem.VaultV2
+    val isHistoryPage = isVaultLikeTab && passwordHistoryPageMode.isVisible
     val showFab = (
         currentTab == BottomNavItem.VaultV2 ||
             currentTab == BottomNavItem.Passwords ||
@@ -165,11 +169,10 @@ internal fun BoxScope.MainScreenFabOverlay(
             currentTab == BottomNavItem.Notes ||
             currentTab == BottomNavItem.Send
         ) &&
-        !(currentTab == BottomNavItem.Passwords && passwordHistoryPageMode.isVisible) &&
+        !isHistoryPage &&
         !isAnySelectionMode &&
         !hasWideDetailSelection
 
-    val isVaultLikeTab = currentTab == BottomNavItem.Passwords || currentTab == BottomNavItem.VaultV2
     val hideForVaultFastScroll = shouldHideVaultFloatingActionsForFastScroll(
         isVaultV2Tab = currentTab == BottomNavItem.VaultV2,
         isScrollbarInteracting = vaultV2FastScrollbarInteracting,
@@ -234,6 +237,26 @@ internal fun BoxScope.MainScreenFabOverlay(
 
     BackHandler(enabled = fastScrollStripVisible) {
         onFastScrollStripVisibleChange(false)
+    }
+
+    AnimatedVisibility(
+        visible = isHistoryPage && !isAnySelectionMode,
+        enter = fadeIn(animationSpec = tween(160)),
+        exit = fadeOut(animationSpec = tween(120)),
+        modifier = fabOverlayModifier
+    ) {
+        SwipeableAddFab(
+            fabBottomOffset = fabBottomOffset,
+            fabContainerColor = fabContainerColor,
+            onClick = onNavigateBackFromHistory,
+            fabContent = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    tint = fabIconTint
+                )
+            }
+        )
     }
 
     AnimatedVisibility(

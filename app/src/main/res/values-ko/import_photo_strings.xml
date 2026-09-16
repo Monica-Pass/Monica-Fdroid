@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">내보낸 백업 파일이 비어 있습니다</string>
+    <string name="export_message_empty_zip">ZIP 백업에 내용이 없습니다</string>
+    <string name="export_message_open_failed">내보내기 대상 위치를 열 수 없습니다</string>
+    <string name="export_message_incomplete">내보내기가 완전하지 않습니다: %1$d/%2$d바이트</string>
+    <string name="export_message_invalid_encrypted">기록된 백업의 암호화 형식이 잘못되었습니다</string>
+    <string name="export_message_verify_failed">내보낸 파일을 검증할 수 없습니다</string>
+    <string name="export_message_backup_summary">백업을 내보냈습니다: 비밀번호 %1$d개, 이미지 %2$d개</string>
+    <string name="import_message_aegis_unencrypted">가져오려면 암호화되지 않은 Aegis JSON 내보내기 파일이 필요합니다</string>
+    <string name="import_message_aegis_missing">잘못된 Aegis 파일: %1$s 누락</string>
+    <string name="import_message_aegis_empty_slots">잘못된 Aegis 파일: slots가 비어 있습니다</string>
+    <string name="import_message_aegis_slot_type">지원되지 않는 Aegis 슬롯 유형: %1$s</string>
+    <string name="import_message_aegis_no_totp">Aegis 파일에 유효한 TOTP 항목이 없습니다</string>
+    <string name="import_message_aegis_failed">Aegis 파일을 가져올 수 없습니다: %1$s</string>
+    <string name="import_message_key_length">복호화된 키의 길이가 잘못되었습니다</string>
+    <string name="import_message_steam_missing">잘못된 Steam Guard 데이터: %1$s 누락</string>
+    <string name="import_message_steam_device_id">기기 ID가 잘못되었습니다. 필요한 형식: android:xxxx</string>
+    <string name="import_message_steam_secret">Steam shared_secret 형식이 잘못되었습니다</string>
+    <string name="import_message_steam_exists">이 Steam Guard 인증기가 이미 있습니다</string>
+    <string name="export_message_empty_mafile">내보낸 maFile이 비어 있습니다</string>
+    <string name="crypto_message_encrypt_failed">암호화에 실패했습니다: %1$s</string>
+    <string name="crypto_message_decrypt_failed">복호화에 실패했습니다: %1$s</string>
+    <string name="crypto_message_file_too_small">암호화된 파일이 너무 작아 손상되었을 수 있습니다</string>
+    <string name="crypto_message_invalid_file">암호화된 파일 형식이 잘못되었습니다</string>
+    <string name="crypto_message_password_or_corrupt">비밀번호가 올바르지 않거나 암호화된 데이터가 손상되었습니다</string>
+    <string name="crypto_message_invalid_text">암호화된 텍스트 형식이 잘못되었습니다</string>
+    <string name="photo_message_camera_failed">카메라를 열 수 없습니다: %1$s</string>
+    <string name="photo_message_gallery_missing">사용 가능한 갤러리 앱이 없습니다</string>
+    <string name="photo_message_gallery_failed">갤러리를 열 수 없습니다: %1$s</string>
+    <string name="photo_message_data_failed">반환된 이미지를 읽을 수 없습니다: %1$s</string>
+    <string name="photo_message_file_missing">사진 파일이 비어 있거나 없습니다</string>
+    <string name="photo_message_not_selected">선택한 이미지가 없습니다</string>
+</resources>

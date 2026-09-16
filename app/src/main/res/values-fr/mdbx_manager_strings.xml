@@ -514,4 +514,11 @@
   <string name="mdbx_ui_repair_no_changes">Aucune modification de la base ne doit être écrite</string>
   <string name="mdbx_ui_manager_entry_title">Gestion des bases MDBX</string>
   <string name="mdbx_ui_manager_entry_description">Gérez les bases locales, WebDAV et OneDrive MDBX, y compris les bases d\'anciennes versions de test.</string>
+    <string name="mdbx_ui_database_count">%1$s bases de données</string>
+    <string name="mdbx_ui_source_count">%1$s bases connectées</string>
+    <string name="mdbx_ui_structure_removed">Supprimé</string>
+    <string name="mdbx_ui_dangling_head_counts">%1$s branches · %2$s appareils</string>
+    <string name="mdbx_ui_show_details">Afficher les détails</string>
+    <string name="mdbx_ui_compare_versions">Comparer les versions</string>
+    <string name="mdbx_ui_exit_comparison">Quitter la comparaison</string>
 </resources>

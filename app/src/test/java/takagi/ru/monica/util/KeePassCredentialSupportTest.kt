@@ -1,5 +1,7 @@
 package takagi.ru.monica.util
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import takagi.ru.monica.utils.KeePassCredentialSupport
@@ -48,7 +50,8 @@ class KeePassCredentialSupportTest {
     @Test
     fun invalidCredentialMessage_containsAttemptSummary() {
         val message = KeePassCredentialSupport.buildInvalidCredentialMessage(
-            listOf("raw/password+key", "xml-data/password+key")
+            listOf("raw/password+key", "xml-data/password+key"),
+            strings = xmlTestStrings("zh"),
         )
         assertTrue(message.contains("已尝试"))
         assertTrue(message.contains("raw/password+key"))

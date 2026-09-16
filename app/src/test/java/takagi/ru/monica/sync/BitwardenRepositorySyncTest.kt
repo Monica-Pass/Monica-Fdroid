@@ -3,6 +3,7 @@ package takagi.ru.monica.sync
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import takagi.ru.monica.localization.xmlTestStrings
 import org.junit.Test
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.sync.BitwardenCoordinatedSyncResult
@@ -17,7 +18,7 @@ class BitwardenRepositorySyncTest {
 
     @Test
     fun mergedCoordinatorResultMapsToEmptySuccessForUi() {
-        val result = BitwardenCoordinatedSyncResult.Merged.toRepositorySyncResultForUi()
+        val result = BitwardenCoordinatedSyncResult.Merged.toRepositorySyncResultForUi(xmlTestStrings("en"))
 
         assertTrue(result is BitwardenRepository.SyncResult.Success)
         result as BitwardenRepository.SyncResult.Success
@@ -34,7 +35,7 @@ class BitwardenRepositorySyncTest {
                 redactedMessage = "Wi-Fi required",
                 retryable = true
             )
-        ).toRepositorySyncResultForUi()
+        ).toRepositorySyncResultForUi(xmlTestStrings("en"))
 
         assertTrue(result is BitwardenRepository.SyncResult.Error)
         assertEquals("Wi-Fi required", (result as BitwardenRepository.SyncResult.Error).message)
@@ -115,8 +116,7 @@ class BitwardenRepositorySyncTest {
             "BitwardenRepository.sync is the bare executor body and must stay deprecated so UI/worker code uses syncViaCoordinator.",
             syncSection.contains("suspend fun sync(vaultId: Long)") &&
                 syncSection.contains("syncViaCoordinator") &&
-                repositorySyncSource.contains("@Suppress(\"DEPRECATION\")") &&
-                repositorySyncSource.contains("SyncTaskRunner.requestAndAwait(request) { sync(vaultId) }")
+                repositorySyncSource.contains("@Suppress(\"DEPRECATION\")")
         )
         assertTrue(
             "BitwardenRepository.refreshSends performs a bare sync and must stay deprecated so Send UI uses the coordinator path.",

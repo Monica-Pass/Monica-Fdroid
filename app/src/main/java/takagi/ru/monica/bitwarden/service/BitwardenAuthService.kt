@@ -1,5 +1,7 @@
 package takagi.ru.monica.bitwarden.service
 
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import android.content.Context
 import android.os.Build
 import android.util.Base64
@@ -33,6 +35,8 @@ class BitwardenAuthService(
     private val context: Context,
     private val apiManager: BitwardenApiManager = BitwardenApiManager()
 ) {
+    private val strings = AppLocaleStringResolver(context)
+
     init {
         BitwardenDiagLogger.initialize(context.applicationContext)
     }
@@ -436,7 +440,7 @@ class BitwardenAuthService(
                 if (isCaptchaRequired(errorResponse, errorBody)) {
                     val message = errorResponse?.errorDescription
                         ?: errorResponse?.errorModel?.message
-                        ?: "需要验证码，请输入 Captcha response 后重试"
+                        ?: strings.get(R.string.legacy_ui_captcha_needed)
                     logDiag(
                         flow = "primary",
                         attemptId = attemptId,
@@ -614,7 +618,7 @@ class BitwardenAuthService(
                             if (isCaptchaRequired(retryErrorResponse, retryErrorBody)) {
                                 val retryMessage = retryErrorResponse?.errorDescription
                                     ?: retryErrorResponse?.errorModel?.message
-                                    ?: "需要验证码，请输入 Captcha response 后重试"
+                                    ?: strings.get(R.string.legacy_ui_captcha_needed)
                                 logDiag(
                                     flow = "primary",
                                     attemptId = attemptId,
@@ -783,7 +787,7 @@ class BitwardenAuthService(
                 if (isCaptchaRequired(errorResponse, errorBody)) {
                     val message = errorResponse?.errorDescription
                         ?: errorResponse?.errorModel?.message
-                        ?: "需要验证码，请输入 Captcha response 后重试"
+                        ?: strings.get(R.string.legacy_ui_captcha_needed)
                     logDiag(
                         flow = "two_factor",
                         attemptId = attemptId,
@@ -913,7 +917,7 @@ class BitwardenAuthService(
                 if (isCaptchaRequired(errorResponse, errorBody)) {
                     val message = errorResponse?.errorDescription
                         ?: errorResponse?.errorModel?.message
-                        ?: "需要验证码，请输入 Captcha response 后重试"
+                        ?: strings.get(R.string.legacy_ui_captcha_needed)
                     logDiag(
                         flow = "new_device",
                         attemptId = attemptId,

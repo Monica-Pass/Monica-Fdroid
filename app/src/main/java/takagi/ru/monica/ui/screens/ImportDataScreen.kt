@@ -1,7 +1,13 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
+import takagi.ru.monica.credentialexchange.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.BackHandler
 import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
@@ -93,6 +99,10 @@ internal fun fallbackImportFileDisplayName(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportDataScreen(
+    destination: ImportDestination = ImportDestination.Local,
+    onDestinationChange: (ImportDestination) -> Unit = {},
+    importSummary: ImportResultSummary? = null,
+    onResetSummary: () -> Unit = {},
     onNavigateBack: () -> Unit,
     onImport: suspend (Uri) -> Result<Int>,  // 普通数据导入
     onImportAegis: suspend (Uri) -> Result<Int>,  // Aegis JSON导入
@@ -106,6 +116,7 @@ fun ImportDataScreen(
         DataExportImportViewModel.SteamLoginImportState.Failure("Not implemented")
     }, // Steam 登录导入（提交验证码）
     onClearSteamLoginImportSession: (String) -> Unit = {}, // 清理 Steam 登录会话
+    importProgress: takagi.ru.monica.transfer.TransferProgress? = null,
     onImportZip: suspend (Uri, String?) -> Result<Int>,  // Monica ZIP导入
     onImportKdbx: suspend (Uri, String, Uri?) -> Result<Int> = { _, _, _ -> Result.failure(Exception("Not implemented")) },  // KDBX导入
     onImportKeePassCsv: suspend (Uri) -> Result<Int> = onImport,  // KeePass CSV导入
@@ -118,7 +129,7 @@ fun ImportDataScreen(
     ) -> Result<Int> = { _, _ -> Result.failure(Exception("Not implemented")) } // 密码键盘软件 CSV导入
 ) {
     val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = context.findImportActivity()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
@@ -126,6 +137,10 @@ fun ImportDataScreen(
     var selectedFileName by remember { mutableStateOf<String?>(null) }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var isImporting by remember { mutableStateOf(false) }
+    LaunchedEffect(isImporting) { if (isImporting) scrollState.animateScrollTo(0) }
+    var showFormatChooser by remember { mutableStateOf(false) }
+    var choosingCsvFormat by remember { mutableStateOf(false) }
+    BackHandler(enabled = isImporting) { /* Keep a single write session attached to its UI. */ }
     var importType by remember { mutableStateOf("monica_zip") } // 默认选择 ZIP 备份
     var csvImportType by remember { mutableStateOf("normal") } // CSV子类型
     var showPasswordDialog by remember { mutableStateOf(false) }
@@ -166,8 +181,8 @@ fun ImportDataScreen(
 
     val pickerSecurityManager = remember { takagi.ru.monica.security.SecurityManager(context) }
     val passwordDatabase = remember(context) { PasswordDatabase.getDatabase(context) }
-    val passwordEntriesForPicker by passwordDatabase.passwordEntryDao()
-        .getAllPasswordEntries()
+    val passwordEntriesForPicker by remember(passwordDatabase) { passwordDatabase.passwordEntryDao()
+        .getAllPasswordEntries() }
         .collectAsState(initial = emptyList())
     
     val importTypes = importTypeOptions()
@@ -183,8 +198,8 @@ fun ImportDataScreen(
     }
     
     // 设置文件操作回调
-    LaunchedEffect(Unit) {
-        FileOperationHelper.setCallback(object : FileOperationHelper.FileOperationCallback {
+    DisposableEffect(context) {
+        val fileCallback = object : FileOperationHelper.FileOperationCallback {
             override fun onExportFileSelected(uri: Uri?) {
                 // 导入界面不需要处理导出文件选择
             }
@@ -214,7 +229,9 @@ fun ImportDataScreen(
                                 )
                             }
                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                             android.util.Log.e("ImportDataScreen", "文件选择异常", e)
+                            isImporting = false
                             snackbarHostState.showSnackbar(
                                 context.getString(
                                     R.string.import_data_file_select_failed,
@@ -225,7 +242,9 @@ fun ImportDataScreen(
                     }
                 }
             }
-        })
+        }
+        FileOperationHelper.setCallback(fileCallback)
+        onDispose { FileOperationHelper.clearCallback(fileCallback) }
     }
     
     Scaffold(
@@ -233,7 +252,7 @@ fun ImportDataScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.import_data_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = onNavigateBack, enabled = !isImporting) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.go_back))
                     }
                 },
@@ -246,12 +265,11 @@ fun ImportDataScreen(
         bottomBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                tonalElevation = 3.dp,
-                shadowElevation = 8.dp
+                color = MaterialTheme.colorScheme.surface,
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .padding(12.dp)
                         .navigationBarsPadding(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -285,6 +303,7 @@ fun ImportDataScreen(
                                                 steamLoginChallengeHint = loginState.challenges.firstOrNull()?.associatedMessage.orEmpty()
                                                 // 每次进入挑战阶段都清空输入框，避免二次提交用到旧验证码
                                                 steamLoginChallengeCodeInput = ""
+                                                isImporting = false
                                                 snackbarHostState.showSnackbar(
                                                     loginState.message
                                                         ?: context.getString(R.string.import_type_steam_login_challenge_required)
@@ -296,6 +315,7 @@ fun ImportDataScreen(
                                                 steamLoginChallengeType = 0
                                                 steamLoginChallengeCodeInput = ""
                                                 steamLoginChallengeHint = ""
+                                                isImporting = false
                                                 handleImportResult(
                                                     Result.success(loginState.count),
                                                     context,
@@ -306,11 +326,14 @@ fun ImportDataScreen(
                                             }
 
                                             is DataExportImportViewModel.SteamLoginImportState.Failure -> {
+                                                isImporting = false
                                                 snackbarHostState.showSnackbar(loginState.message)
                                             }
                                         }
                                     } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                                         android.util.Log.e("ImportDataScreen", "导入异常", e)
+                                        isImporting = false
                                         snackbarHostState.showSnackbar(
                                             context.getString(
                                                 R.string.import_data_error_exception,
@@ -346,21 +369,25 @@ fun ImportDataScreen(
                                                     } else {
                                                         // 不是加密文件，直接导入
                                                         val result = onImportAegis(uri)
+                                                        isImporting = false
                                                         handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                     }
                                                 }
                                                 "stratum" -> {
                                                     val result = onImportStratum(uri, null)
-                                                    result.onSuccess { count ->
+                                                    isImporting = false
+                                result.onSuccess { count ->
+                                                        isImporting = false
                                                         handleImportResult(Result.success(count), context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                     }.onFailure { error ->
                                                         val errorMsg = error.message ?: ""
-                                                        if (isPasswordRequiredError(errorMsg)) {
+                                                        if (isPasswordRequiredError(errorMsg, AppLocaleStringResolver(context))) {
                                                             isImporting = false
                                                             showPasswordDialog = true
                                                             passwordError = null
                                                             aegisPassword = ""
                                                         } else {
+                                                            isImporting = false
                                                             handleImportResult(Result.failure(error), context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                         }
                                                     }
@@ -368,11 +395,13 @@ fun ImportDataScreen(
                                                 "steam" -> {
                                                     // Steam maFile导入
                                                     val result = onImportSteamMaFile(uri)
+                                                    isImporting = false
                                                     handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                 }
                                                 "kdbx" -> {
                                                     // KDBX 导入需要密码
                                                     if (isLikelyLegacyKdbFile(selectedFileName, uri)) {
+                                                        isImporting = false
                                                         snackbarHostState.showSnackbar(
                                                             context.getString(R.string.import_data_keepass_legacy_kdb_unsupported)
                                                         )
@@ -386,18 +415,22 @@ fun ImportDataScreen(
                                                 }
                                                 "keepass_csv" -> {
                                                     val result = onImportKeePassCsv(uri)
+                                                    isImporting = false
                                                     handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                 }
                                                 "bitwarden_csv" -> {
                                                     val result = onImportBitwardenCsv(uri)
+                                                    isImporting = false
                                                     handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                 }
                                                 "proton_pass_csv" -> {
                                                     val result = onImportProtonPassCsv(uri)
+                                                    isImporting = false
                                                     handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                 }
                                                 "chrome_csv" -> {
                                                     val result = onImportChromeCsv(uri)
+                                                    isImporting = false
                                                     handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                 }
                                                 "password_keyboard_csv" -> {
@@ -412,6 +445,7 @@ fun ImportDataScreen(
                                                         uri,
                                                         DataExportImportManager.PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD
                                                     )
+                                                    isImporting = false
                                                     handleImportResult(
                                                         result,
                                                         context,
@@ -423,11 +457,14 @@ fun ImportDataScreen(
                                                 else -> {
                                                     // 普通CSV导入
                                                     val result = onImport(uri)
+                                                    isImporting = false
                                                     handleImportResult(result, context, snackbarHostState, effectiveImportType, onNavigateBack)
                                                 }
                                             }
                                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                                             android.util.Log.e("ImportDataScreen", "导入异常", e)
+                                            isImporting = false
                                             snackbarHostState.showSnackbar(
                                                 context.getString(
                                                     R.string.import_data_error_exception,
@@ -443,7 +480,7 @@ fun ImportDataScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .heightIn(min = 56.dp),
                         enabled = if (isSteamLoginMode) {
                             if (steamLoginPendingSessionId.isNullOrBlank()) {
                                 steamLoginUserNameInput.isNotBlank() &&
@@ -455,7 +492,7 @@ fun ImportDataScreen(
                         } else {
                             selectedFileUri != null && !isImporting
                         },
-                        shape = MaterialTheme.shapes.large
+                        shape = RoundedCornerShape(28.dp)
                     ) {
                         if (isImporting) {
                             CircularProgressIndicator(
@@ -478,25 +515,7 @@ fun ImportDataScreen(
                         }
                     }
                     
-                    // 说明文字
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            stringResource(R.string.import_data_notice),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+
                 }
             }
         }
@@ -506,74 +525,28 @@ fun ImportDataScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // 选择导入类型标题
-            Text(
-                stringResource(R.string.import_data_select_type),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+            if (effectiveImportType !in listOf("kdbx", "steam")) {
+                TransferDestinationField(destination, onDestinationChange, enabled = !isImporting)
+                if (isImporting) {
+                    takagi.ru.monica.transfer.TransferProgressCard(
+                        importProgress ?: takagi.ru.monica.transfer.TransferProgress())
+                }
+            }
+            importSummary?.let { TransferSummary(it) }
+
+            TransferChoiceRow(
+                title = currentTypeInfo.title, subtitle = currentTypeInfo.description, icon = currentTypeInfo.icon,
+                enabled = !isImporting,
+                onClick = { choosingCsvFormat = false; showFormatChooser = true },
             )
-            
-            // 导入类型卡片列表 - 垂直排列，适配各种屏幕尺寸
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                importTypes.forEach { typeInfo ->
-                    ImportTypeCard(
-                        info = typeInfo,
-                        selected = importType == typeInfo.key,
-                        onClick = { 
-                            if (steamLoginPendingSessionId != null) {
-                                onClearSteamLoginImportSession(steamLoginPendingSessionId.orEmpty())
-                            }
-                            importType = typeInfo.key
-                            // 切换类型时清除已选文件
-                            selectedFileUri = null
-                            selectedFileName = null
-                            steamLoginPendingSessionId = null
-                            steamLoginChallengeType = 0
-                            steamLoginChallengeCodeInput = ""
-                            steamLoginChallengeHint = ""
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            if (effectiveImportType == "monica_zip" || effectiveImportType == "kdbx") {
+                Text(stringResource(if (effectiveImportType == "kdbx") R.string.exchange_native_kdbx_notice
+                    else R.string.exchange_zip_target_notice), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
             }
-
-            if (importType == "csv_group") {
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.import_type_csv_source_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        csvImportTypes.forEach { csvTypeInfo ->
-                            ImportTypeCard(
-                                info = csvTypeInfo,
-                                selected = csvImportType == csvTypeInfo.key,
-                                onClick = {
-                                    csvImportType = csvTypeInfo.key
-                                    selectedFileUri = null
-                                    selectedFileName = null
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-            }
-
             if (effectiveImportType == "steam") {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -717,9 +690,13 @@ fun ImportDataScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                // 选择文件卡片
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
+                TransferChoiceRow(
+                    title = stringResource(if (selectedFileUri != null) R.string.import_data_file_selected
+                        else R.string.import_data_tap_to_select_file),
+                    subtitle = selectedFileName ?: currentTypeInfo.fileHint,
+                    icon = if (selectedFileUri != null) Icons.Default.InsertDriveFile else Icons.Default.FileOpen,
+                    selected = selectedFileUri != null,
+                    enabled = !isImporting,
                     onClick = {
                         activity?.let { act ->
                             // 根据导入类型选择不同的文件过滤器
@@ -738,6 +715,7 @@ fun ImportDataScreen(
                             }
                         } ?: run {
                             scope.launch {
+                                isImporting = false
                                 snackbarHostState.showSnackbar(
                                     context.getString(
                                         R.string.error_launch_export,
@@ -747,86 +725,51 @@ fun ImportDataScreen(
                             }
                         }
                     },
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = if (selectedFileUri != null)
-                            MaterialTheme.colorScheme.secondaryContainer
-                        else
-                            MaterialTheme.colorScheme.surfaceContainerHigh
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 文件图标
-                        Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = if (selectedFileUri != null)
-                                MaterialTheme.colorScheme.secondary
-                            else
-                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    if (selectedFileUri != null) Icons.Default.InsertDriveFile else Icons.Default.FileOpen,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = if (selectedFileUri != null)
-                                        MaterialTheme.colorScheme.onSecondary
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                if (selectedFileUri != null) {
-                                    stringResource(R.string.import_data_file_selected)
-                                } else {
-                                    stringResource(R.string.import_data_tap_to_select_file)
-                                },
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = if (selectedFileUri != null)
-                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                else
-                                    MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                selectedFileName ?: currentTypeInfo.fileHint,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (selectedFileUri != null)
-                                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = if (selectedFileUri != null)
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                )
+                Text(
+                    stringResource(R.string.import_data_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
             }
             
-            // 底部留白，避免被底部栏遮挡
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 
+    if (showFormatChooser) {
+        ModalBottomSheet(onDismissRequest = { showFormatChooser = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (choosingCsvFormat) TextButton(onClick = { choosingCsvFormat = false }) {
+                    Icon(Icons.Default.ArrowBack, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.import_data_select_type))
+                }
+                Text(stringResource(if (choosingCsvFormat) R.string.import_type_csv_source_title else R.string.import_data_select_type),
+                    style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(8.dp, 16.dp))
+                val formats = if (choosingCsvFormat) csvImportTypes else importTypes
+                formats.forEachIndexed { index, format ->
+                    TransferChoiceRow(format.title, format.fileHint, format.icon, index = index, count = formats.size,
+                        selected = if (choosingCsvFormat) importType == "csv_group" && csvImportType == format.key else importType == format.key,
+                        onClick = {
+                            if (format.key == "csv_group") choosingCsvFormat = true else {
+                                steamLoginPendingSessionId?.let(onClearSteamLoginImportSession)
+                                steamLoginPendingSessionId = null
+                                if (choosingCsvFormat) { importType = "csv_group"; csvImportType = format.key }
+                                else importType = format.key
+                                selectedFileUri = null
+                                selectedFileName = null
+                                onResetSummary()
+                                showFormatChooser = false
+                            }
+                        })
+                }
+            }
+        }
+    }
     if (showSteamPasswordPicker) {
         PasswordEntryPickerBottomSheet(
             visible = true,
@@ -873,6 +816,7 @@ fun ImportDataScreen(
                                 uri,
                                 DataExportImportManager.PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD
                             )
+                            isImporting = false
                             handleImportResult(
                                 result,
                                 context,
@@ -881,7 +825,9 @@ fun ImportDataScreen(
                                 onNavigateBack
                             )
                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                             android.util.Log.e("ImportDataScreen", "密码键盘 CSV 导入异常", e)
+                            isImporting = false
                             snackbarHostState.showSnackbar(
                                 context.getString(
                                     R.string.import_data_error_exception,
@@ -907,6 +853,7 @@ fun ImportDataScreen(
                                 uri,
                                 DataExportImportManager.PasswordKeyboardTagHandling.DROP
                             )
+                            isImporting = false
                             handleImportResult(
                                 result,
                                 context,
@@ -915,7 +862,9 @@ fun ImportDataScreen(
                                 onNavigateBack
                             )
                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                             android.util.Log.e("ImportDataScreen", "密码键盘 CSV 导入异常", e)
+                            isImporting = false
                             snackbarHostState.showSnackbar(
                                 context.getString(
                                     R.string.import_data_error_exception,
@@ -944,7 +893,9 @@ fun ImportDataScreen(
                         isImporting = true
                         try {
                             val result = onImportZip(uri, null)
+                            isImporting = false
                             result.onSuccess { count ->
+                                isImporting = false
                                 handleImportResult(
                                     Result.success(count),
                                     context,
@@ -959,6 +910,7 @@ fun ImportDataScreen(
                                     passwordError = null
                                     aegisPassword = ""
                                 } else {
+                                    isImporting = false
                                     handleImportResult(
                                         Result.failure(error),
                                         context,
@@ -969,7 +921,9 @@ fun ImportDataScreen(
                                 }
                             }
                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                             android.util.Log.e("ImportDataScreen", "ZIP导入异常", e)
+                            isImporting = false
                             snackbarHostState.showSnackbar(
                                 context.getString(
                                     R.string.import_data_error_exception,
@@ -998,10 +952,11 @@ fun ImportDataScreen(
             },
             onDismiss = {
                 showPasswordDialog = false
+                aegisPassword = ""
                 passwordError = null
             },
             onConfirm = {
-                if (aegisPassword.isBlank()) {
+                if (aegisPassword.isEmpty()) {
                     passwordError = context.getString(R.string.import_data_password_cannot_be_empty)
                 } else {
                     scope.launch {
@@ -1016,6 +971,7 @@ fun ImportDataScreen(
                                     else -> onImportEncryptedAegis(uri, aegisPassword)
                                 }
 
+                                isImporting = false
                                 result.onSuccess { count ->
                                     val message = if (importType == "monica_zip") {
                                         context.getString(R.string.import_data_zip_restore_success_count, count)
@@ -1024,14 +980,15 @@ fun ImportDataScreen(
                                     } else {
                                         context.getString(R.string.import_data_aegis_import_success_count, count)
                                     }
+                                    isImporting = false
                                     snackbarHostState.showSnackbar(message)
-                                    onNavigateBack()
                                 }.onFailure { error ->
                                     val errorMsg = error.message ?: context.getString(R.string.import_data_unknown_error)
-                                    if (isPasswordDecryptError(errorMsg)) {
+                                    if ((error.cause is javax.crypto.AEADBadTagException || isPasswordDecryptError(errorMsg, AppLocaleStringResolver(context)))) {
                                         passwordError = context.getString(R.string.import_data_password_incorrect_retry)
                                         showPasswordDialog = true
                                     } else {
+                                        isImporting = false
                                         snackbarHostState.showSnackbar(
                                             context.getString(R.string.import_data_failed_with_reason, errorMsg)
                                         )
@@ -1039,7 +996,9 @@ fun ImportDataScreen(
                                 }
                             }
                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                             android.util.Log.e("ImportDataScreen", "加密导入异常", e)
+                            isImporting = false
                             snackbarHostState.showSnackbar(
                                 context.getString(
                                     R.string.import_data_failed_with_reason,
@@ -1080,15 +1039,16 @@ fun ImportDataScreen(
                         try {
                             val result = onImportKdbx(uri, kdbxPassword, kdbxKeyFileUri)
                             result.onSuccess { count ->
+                                isImporting = false
                                 snackbarHostState.showSnackbar(
                                     context.getString(R.string.import_data_kdbx_import_success_count, count)
                                 )
-                                onNavigateBack()
                             }.onFailure { error ->
                                 if (error is KeePassOperationException) {
                                     keepassImportError = error
                                     showKeepassImportErrorDialog = true
                                 } else {
+                                    isImporting = false
                                     snackbarHostState.showSnackbar(
                                         formatImportErrorMessage(
                                             error,
@@ -1098,10 +1058,12 @@ fun ImportDataScreen(
                                 }
                             }
                         } catch (e: Exception) {
+                            if (e is CancellationException) throw e
                             if (e is KeePassOperationException) {
                                 keepassImportError = e
                                 showKeepassImportErrorDialog = true
                             } else {
+                                isImporting = false
                                 snackbarHostState.showSnackbar(
                                     formatImportErrorMessage(
                                         e,
@@ -1145,7 +1107,6 @@ private suspend fun handleImportResult(
     onNavigateBack: () -> Unit
 ) {
     result.onSuccess { count ->
-        val shouldStayOnImportScreen = importType == "normal" || importType.endsWith("_csv")
         val message = when (importType) {
             "aegis" -> context.getString(R.string.import_data_aegis_import_success_count, count)
             "stratum" -> context.getString(R.string.import_data_stratum_import_success_count, count)
@@ -1153,12 +1114,16 @@ private suspend fun handleImportResult(
             else -> context.getString(R.string.import_data_success_normal, count)
         }
         snackbarHostState.showSnackbar(message)
-        if (!shouldStayOnImportScreen) {
-            onNavigateBack()
-        }
+
     }.onFailure { error ->
         snackbarHostState.showSnackbar(
             formatImportErrorMessage(error, context.getString(R.string.import_data_error))
         )
     }
+}
+
+private tailrec fun Context.findImportActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findImportActivity()
+    else -> null
 }

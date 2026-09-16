@@ -417,12 +417,20 @@ class SecureItemRepository(
         itemType: ItemType,
         itemData: String,
         title: String,
-        localOnly: Boolean = false
+        localOnly: Boolean = false,
+        includeCandidate: (SecureItem) -> Boolean = { true },
+        requireSamePayload: Boolean = false,
+        deletedOnly: Boolean = false
     ): takagi.ru.monica.data.SecureItem? {
-        val existingItems = if (localOnly) {
+        val existingItems = (if (deletedOnly) {
+            secureItemDao.getDeletedItemsSync().filter { it.itemType == itemType &&
+                (!localOnly || it.resolveOwnership() is SecureItemOwnership.MonicaLocal) }
+        } else if (localOnly) {
             secureItemDao.getActiveLocalItemsByTypeSync(itemType)
         } else {
             secureItemDao.getActiveItemsByTypeSync(itemType)
+        }).filter(includeCandidate).filter { candidate ->
+            !requireSamePayload || sameImportedPayload(candidate.itemData, itemData)
         }
         
         return when (itemType) {
@@ -624,6 +632,17 @@ class SecureItemRepository(
             legacyRepairCompleted = true
             staleIds.size
         }
+    }
+
+    private fun sameImportedPayload(left: String, right: String): Boolean {
+        val plainLeft = runCatching { decryptSensitiveValue?.invoke(left) ?: left }.getOrNull() ?: return false
+        val plainRight = runCatching { decryptSensitiveValue?.invoke(right) ?: right }.getOrNull() ?: return false
+        if (plainLeft == plainRight) return true
+        return runCatching {
+            val bindingFields = setOf("boundPasswordId", "categoryId", "keepassDatabaseId")
+            Json.parseToJsonElement(plainLeft).jsonObject.filterKeys { it !in bindingFields } ==
+                Json.parseToJsonElement(plainRight).jsonObject.filterKeys { it !in bindingFields }
+        }.getOrDefault(false)
     }
 
     private suspend fun isLegacyDetachedKeePassItem(

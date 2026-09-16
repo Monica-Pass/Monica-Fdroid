@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">ZIP-Sicherung</string>
+    <string name="transfer_zip_description">Nur die ausgewählte Datenbank sichern.</string>
+    <string name="transfer_contents">Inhalt</string>
+    <string name="transfer_images_attachments">Bilder und Anhänge</string>
+    <string name="transfer_encrypt_backup">Sicherung verschlüsseln</string>
+    <string name="transfer_encryption_hint">Passkeys und Anhänge benötigen eine verschlüsselte Sicherung.</string>
+    <string name="transfer_choose_location">Speicherort wählen</string>
+    <string name="transfer_background_continue">Im Hintergrund fortsetzen</string>
+    <string name="transfer_background_hint">Du kannst diese Seite verlassen. Der Fortschritt erscheint in einer Benachrichtigung.</string>
+    <string name="transfer_reading">Datei wird gelesen…</string>
+    <string name="transfer_decrypting">Sicherung wird entschlüsselt…</string>
+    <string name="transfer_preparing">Einträge werden vorbereitet…</string>
+    <string name="transfer_writing">Datenbank wird beschrieben…</string>
+    <string name="transfer_attachments">Anhänge werden kopiert…</string>
+    <string name="transfer_packing">Archiv wird erstellt…</string>
+    <string name="transfer_encrypting">Datei wird verschlüsselt…</string>
+    <string name="transfer_saving">Datei wird gespeichert…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">%1$d Einträge exportiert.</string>
+    <string name="transfer_export_done">Export abgeschlossen</string>
+    <string name="transfer_channel">Import und Export</string>
+    <string name="transfer_open_result">Öffne Monica, um das Ergebnis zu sehen.</string>
+    <string name="transfer_background_start_failed">Export konnte nicht gestartet werden. Versuche es bei geöffneter App erneut.</string>
+    <string name="transfer_cancelled">Export abgebrochen.</string>
+    <string name="transfer_attachment_encryption">Verschlüssle die Sicherung, um Anhänge einzuschließen.</string>
+    <string name="transfer_password_mismatch">Die Passwörter stimmen nicht überein.</string>
+    <string name="transfer_kdbx_password_description">Lege ein Passwort für die exportierte KDBX-Datenbank fest.</string>
+    <string name="transfer_unsupported_token">Dieses Tokenformat lässt sich nicht umwandeln. Nutze eine ZIP-Sicherung.</string>
+    <string name="steam_mafile_export_title">Steam-maFile</string>
+    <string name="steam_mafile_export_desc">Ausgewählte Steam-Konten dieser Datenbank exportieren.</string>
+    <string name="transfer_kdbx_description">Passwörter, Authentifikatoren, Passkeys und Anhänge im KeePass-Format.</string>
+    <string name="transfer_unsupported_records">Diese Datenbank enthält nicht unterstützte Eintragstypen. Speichere eine Kopie im Originalformat.</string>
+    <string name="transfer_zip_password_title">ZIP-Sicherung entsperren</string>
+    <string name="transfer_zip_password_description">Gib das Passwort ein, mit dem diese ZIP-Sicherung erstellt wurde.</string>
+</resources>

@@ -166,6 +166,35 @@ interface KeePassPendingChangeDao {
     @Query(
         """
         SELECT * FROM keepass_pending_changes
+        WHERE database_id = :databaseId
+          AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED', 'BLOCKED')
+        ORDER BY created_at ASC, id ASC
+        """
+    )
+    suspend fun getUnfinishedChangesByDatabase(databaseId: Long): List<KeePassPendingChange>
+
+    @Query(
+        """
+        UPDATE keepass_pending_changes
+        SET status = CASE WHEN :discardLocalChanges THEN 'CANCELLED' ELSE 'COMPLETED' END,
+            completed_at = :now,
+            updated_at = :now,
+            next_attempt_at = NULL,
+            last_error = NULL
+        WHERE database_id = :databaseId AND id IN (:changeIds)
+          AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED', 'BLOCKED')
+        """
+    )
+    suspend fun settleConflictChanges(
+        databaseId: Long,
+        changeIds: List<Long>,
+        discardLocalChanges: Boolean,
+        now: Long = System.currentTimeMillis()
+    )
+
+    @Query(
+        """
+        SELECT * FROM keepass_pending_changes
         WHERE status IN ('PENDING', 'FAILED')
         ORDER BY created_at ASC, id ASC
         """
@@ -365,6 +394,21 @@ interface KeePassPendingChangeDao {
 class KeePassPendingChangeRepository(
     private val dao: KeePassPendingChangeDao
 ) {
+    suspend fun getUnfinishedChangesByDatabase(databaseId: Long): List<KeePassPendingChange> =
+        dao.getUnfinishedChangesByDatabase(databaseId)
+
+    suspend fun settleConflictChanges(
+        databaseId: Long,
+        changeIds: List<Long>,
+        discardLocalChanges: Boolean,
+        now: Long = System.currentTimeMillis()
+    ) {
+        // Leave room for the other parameters under older Android SQLite bind limits.
+        changeIds.chunked(900).forEach { batch ->
+            dao.settleConflictChanges(databaseId, batch, discardLocalChanges, now)
+        }
+    }
+
     fun getRunnableChangesFlow(): Flow<List<KeePassPendingChange>> = dao.getRunnableChangesFlow()
 
     fun getRunnableChangesByDatabaseFlow(databaseId: Long): Flow<List<KeePassPendingChange>> {

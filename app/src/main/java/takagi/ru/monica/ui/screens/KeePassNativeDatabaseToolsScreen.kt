@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
@@ -36,7 +38,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -45,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -53,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,14 +74,9 @@ import kotlinx.coroutines.launch
 import takagi.ru.monica.R
 import takagi.ru.monica.data.LocalKeePassDatabase
 import takagi.ru.monica.data.isRemoteSource
-import takagi.ru.monica.keepass.KeePassConflictDecision
-import takagi.ru.monica.keepass.KeePassConflictItem
-import takagi.ru.monica.keepass.KeePassConflictDetailKind
-import takagi.ru.monica.keepass.KeePassConflictResolutionSide
 import takagi.ru.monica.keepass.KeePassIntegrityReport
 import takagi.ru.monica.keepass.KeePassNativeBrowserSnapshot
 import takagi.ru.monica.keepass.KeePassRecoveryRecord
-import takagi.ru.monica.keepass.KeePassRemoteConflictPreview
 import takagi.ru.monica.utils.KEEPASS_KDBX_MIME_TYPE
 import takagi.ru.monica.viewmodel.LocalKeePassViewModel
 import java.text.DateFormat
@@ -94,6 +92,7 @@ internal fun KeePassNativeDatabaseToolsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val conflictResolutionVersion by viewModel.conflictResolution.resolutionVersion.collectAsStateWithLifecycle()
     var browser by remember(database.id) { mutableStateOf<KeePassNativeBrowserSnapshot?>(null) }
     var integrityReport by remember(database.id) { mutableStateOf<KeePassIntegrityReport?>(null) }
     var recoveryCopies by remember(database.id) { mutableStateOf<List<KeePassRecoveryRecord>>(emptyList()) }
@@ -102,7 +101,6 @@ internal fun KeePassNativeDatabaseToolsScreen(
     var pendingRecoveryRestore by remember { mutableStateOf<KeePassRecoveryRecord?>(null) }
     var pendingRecoveryDelete by remember { mutableStateOf<KeePassRecoveryRecord?>(null) }
     var showRepairConfirmation by remember { mutableStateOf(false) }
-    var conflictPreview by remember(database.id) { mutableStateOf<KeePassRemoteConflictPreview?>(null) }
     var mergeSourceUri by remember { mutableStateOf<Uri?>(null) }
     var mergePassword by remember { mutableStateOf("") }
     var mergeKeyFileUri by remember { mutableStateOf<Uri?>(null) }
@@ -127,7 +125,7 @@ internal fun KeePassNativeDatabaseToolsScreen(
         scope.launch { recoveryCopies = viewModel.listRecoveryCopies(database.id) }
     }
 
-    LaunchedEffect(database.id) {
+    LaunchedEffect(database.id, conflictResolutionVersion) {
         refreshBrowser()
         refreshRecoveryCopies()
     }
@@ -199,21 +197,13 @@ internal fun KeePassNativeDatabaseToolsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 36.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(DatabaseManagementGroupSpacing)
         ) {
             item {
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Text(
-                            stringResource(R.string.keepass_database_tools_summary),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                Column(Modifier.padding(horizontal = 4.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(database.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.keepass_database_tools_summary), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             message?.let { value ->
@@ -224,6 +214,7 @@ internal fun KeePassNativeDatabaseToolsScreen(
             }
             item {
                 DatabaseToolCard(
+                    index = 0, count = 2,
                     icon = Icons.Default.CheckCircle,
                     title = stringResource(R.string.keepass_integrity_check),
                     summary = stringResource(R.string.keepass_integrity_check_summary),
@@ -243,6 +234,7 @@ internal fun KeePassNativeDatabaseToolsScreen(
             }
             item {
                 DatabaseToolCard(
+                    index = 1, count = 2,
                     icon = Icons.Default.Build,
                     title = stringResource(R.string.keepass_database_repair),
                     summary = stringResource(R.string.keepass_database_repair_summary),
@@ -251,8 +243,10 @@ internal fun KeePassNativeDatabaseToolsScreen(
                     onClick = { showRepairConfirmation = true }
                 )
             }
+            item { Spacer(Modifier.height(12.dp)) }
             item {
                 DatabaseToolCard(
+                    index = 0, count = 3,
                     icon = Icons.Default.Download,
                     title = stringResource(R.string.keepass_recovery_copies),
                     summary = stringResource(R.string.keepass_recovery_copies_summary, recoveryCopies.size),
@@ -266,6 +260,7 @@ internal fun KeePassNativeDatabaseToolsScreen(
             }
             item {
                 DatabaseToolCard(
+                    index = 1, count = 3,
                     icon = Icons.Default.SaveAlt,
                     title = stringResource(R.string.keepass_save_copy),
                     summary = stringResource(R.string.keepass_save_copy_summary),
@@ -276,6 +271,7 @@ internal fun KeePassNativeDatabaseToolsScreen(
             }
             item {
                 DatabaseToolCard(
+                    index = 2, count = 3,
                     icon = Icons.Default.Merge,
                     title = stringResource(R.string.keepass_merge_from),
                     summary = stringResource(R.string.keepass_merge_from_summary),
@@ -287,21 +283,13 @@ internal fun KeePassNativeDatabaseToolsScreen(
             if (database.isRemoteSource()) {
                 item {
                     DatabaseToolCard(
+                        index = 0, count = 1,
                         icon = Icons.Default.CloudSync,
                         title = stringResource(R.string.keepass_conflict_center),
                         summary = stringResource(R.string.keepass_conflict_center_summary),
-                        busy = busyAction == "conflict",
+                        busy = false,
                         enabled = busyAction == null,
-                        onClick = {
-                            scope.launch {
-                                busyAction = "conflict"
-                                error = null
-                                viewModel.inspectCurrentRemoteConflict(database.id)
-                                    .onSuccess { conflictPreview = it }
-                                    .onFailure { failure -> error = failure.message ?: failure.javaClass.simpleName }
-                                busyAction = null
-                            }
-                        }
+                        onClick = { viewModel.conflictResolution.open(database.id, database.name) }
                     )
                 }
             }
@@ -365,10 +353,11 @@ internal fun KeePassNativeDatabaseToolsScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
                     contentPadding = PaddingValues(12.dp, 4.dp, 12.dp, 28.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(DatabaseManagementGroupSpacing)
                 ) {
-                    items(recoveryCopies, key = { it.file.absolutePath }) { record ->
+                    itemsIndexed(recoveryCopies, key = { _, record -> record.file.absolutePath }) { index, record ->
                         RecoveryCopyCard(
+                            index = index, count = recoveryCopies.size,
                             record = record,
                             enabled = busyAction == null,
                             onRestore = { pendingRecoveryRestore = record },
@@ -523,74 +512,22 @@ internal fun KeePassNativeDatabaseToolsScreen(
         )
     }
 
-    conflictPreview?.let { preview ->
-        ConflictCenterSheet(
-            preview = preview,
-            busy = busyAction == "conflict-resolve",
-            onDismiss = { conflictPreview = null },
-            onDecision = { decision, selections ->
-                if (decision == KeePassConflictDecision.CANCEL) {
-                    conflictPreview = null
-                } else {
-                    scope.launch {
-                        busyAction = "conflict-resolve"
-                        error = null
-                        viewModel.resolveCurrentRemoteConflict(
-                            databaseId = database.id,
-                            decision = decision,
-                            expectedLocalRevision = preview.localRevision.sha256,
-                            expectedRemoteRevision = preview.remoteRevision.sha256,
-                            selections = selections
-                        ).onSuccess { resolution ->
-                            conflictPreview = null
-                            message = if (resolution.conflictCopyCount > 0) {
-                                context.getString(
-                                    R.string.keepass_conflict_resolved_with_copies,
-                                    resolution.conflictCopyCount
-                                )
-                            } else {
-                                context.getString(R.string.keepass_conflict_resolved)
-                            }
-                            refreshBrowser()
-                            refreshRecoveryCopies()
-                            onDatabaseChanged()
-                        }.onFailure { failure -> error = failure.message ?: failure.javaClass.simpleName }
-                        busyAction = null
-                    }
-                }
-            }
-        )
-    }
+
 }
 
 @Composable
-private fun DatabaseToolCard(
+internal fun DatabaseToolCard(
     icon: ImageVector,
     title: String,
     summary: String,
     busy: Boolean,
     enabled: Boolean,
+    index: Int = 0,
+    count: Int = 1,
     onClick: () -> Unit
 ) {
-    OutlinedCard(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
-        ListItem(
-            headlineContent = { Text(title, fontWeight = FontWeight.SemiBold) },
-            supportingContent = { Text(summary) },
-            leadingContent = {
-                Surface(
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(46.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        if (busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                        else Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            },
-            colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-        )
-    }
+    DatabaseManagementActionRow(DatabaseManagementAction(icon, title, onClick,
+        subtitle = summary, enabled = enabled, busy = busy), index, count)
 }
 
 @Composable
@@ -643,226 +580,45 @@ private fun IntegrityReportDialog(report: KeePassIntegrityReport, onDismiss: () 
 @Composable
 private fun IntegrityLine(label: String, count: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(count.toString(), fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
-private fun RecoveryCopyCard(
+internal fun RecoveryCopyCard(
     record: KeePassRecoveryRecord,
     enabled: Boolean,
+    index: Int = 0,
+    count: Int = 1,
     onRestore: () -> Unit,
     onExport: () -> Unit,
     onDelete: () -> Unit
 ) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    if (record.verified) Icons.Default.CheckCircle else Icons.Default.Build,
-                    contentDescription = null,
-                    tint = if (record.verified) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                )
-                Spacer(Modifier.width(8.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(DateFormat.getDateTimeInstance().format(Date(record.createdAt.toEpochMilli())), fontWeight = FontWeight.SemiBold)
-                    Text(
-                        stringResource(R.string.keepass_recovery_size, record.revision.sizeBytes / 1024L),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    var menuExpanded by remember(record) { mutableStateOf(false) }
+    DatabaseManagementCard(modifier = Modifier.fillMaxWidth(), shape = settingsSectionItemShape(index, count)) {
+        Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (record.verified) Icons.Default.CheckCircle else Icons.Default.Build, contentDescription = null,
+                tint = if (record.verified) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(DateFormat.getDateTimeInstance().format(Date(record.createdAt.toEpochMilli())), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.keepass_recovery_size, record.revision.sizeBytes / 1024L),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box {
+                IconButton(onClick = { menuExpanded = true }, enabled = enabled) {
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.restore)) }, enabled = enabled && record.verified,
+                        onClick = { menuExpanded = false; onRestore() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.export)) }, enabled = enabled && record.verified,
+                        onClick = { menuExpanded = false; onExport() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, enabled = enabled,
+                        onClick = { menuExpanded = false; onDelete() })
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = onRestore, enabled = enabled && record.verified) {
-                    Text(stringResource(R.string.restore))
-                }
-                OutlinedButton(onClick = onExport, enabled = enabled && record.verified) {
-                    Text(stringResource(R.string.export))
-                }
-                IconButton(onClick = onDelete, enabled = enabled) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ConflictCenterSheet(
-    preview: KeePassRemoteConflictPreview,
-    busy: Boolean,
-    onDismiss: () -> Unit,
-    onDecision: (KeePassConflictDecision, Map<String, KeePassConflictResolutionSide>) -> Unit
-) {
-    var selections by remember(preview.localRevision.sha256, preview.remoteRevision.sha256) {
-        mutableStateOf<Map<String, KeePassConflictResolutionSide>>(emptyMap())
-    }
-    val requiredDetails = remember(preview.snapshot) {
-        preview.snapshot.items.flatMap { item -> item.details }
-    }
-    val visibleItems = remember(preview.snapshot) {
-        preview.snapshot.items.filter { it.details.isNotEmpty() } +
-            preview.snapshot.items.filter { it.details.isEmpty() }.take(50)
-    }
-    val allDetailsSelected = requiredDetails.all { selections.containsKey(it.id) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(stringResource(R.string.keepass_conflict_center), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(
-                stringResource(
-                    R.string.keepass_conflict_summary,
-                    preview.snapshot.localChangeCount,
-                    preview.snapshot.remoteChangeCount,
-                    preview.snapshot.ambiguousCount
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(visibleItems, key = { "${it.objectType}:${it.id}" }) { item ->
-                    ConflictItemRow(
-                        item = item,
-                        selections = selections,
-                        onSelect = { detailId, side ->
-                            selections = selections + (detailId to side)
-                        }
-                    )
-                }
-            }
-            HorizontalDivider()
-            if (busy) {
-                CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-            } else {
-                Button(
-                    onClick = { onDecision(KeePassConflictDecision.MERGE, selections) },
-                    enabled = allDetailsSelected,
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.keepass_conflict_merge)) }
-                OutlinedButton(
-                    onClick = { onDecision(KeePassConflictDecision.KEEP_LOCAL, emptyMap()) },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.keepass_conflict_keep_local)) }
-                OutlinedButton(
-                    onClick = { onDecision(KeePassConflictDecision.USE_REMOTE, emptyMap()) },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.keepass_conflict_use_remote)) }
-                TextButton(
-                    onClick = { onDecision(KeePassConflictDecision.CANCEL, emptyMap()) },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.cancel)) }
-                if (requiredDetails.isNotEmpty() && !allDetailsSelected) {
-                    Text(
-                        stringResource(R.string.keepass_conflict_selection_required),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-            Spacer(Modifier.padding(bottom = 8.dp))
-        }
-    }
-}
-
-@Composable
-private fun ConflictItemRow(
-    item: KeePassConflictItem,
-    selections: Map<String, KeePassConflictResolutionSide>,
-    onSelect: (String, KeePassConflictResolutionSide) -> Unit
-) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = if (item.ambiguous) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
-        else MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(item.label, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                "${item.objectType.name.lowercase()} · local ${item.localChange?.name?.lowercase() ?: "unchanged"} · remote ${item.remoteChange?.name?.lowercase() ?: "unchanged"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            item.details.forEach { detail ->
-                ConflictDetailRow(detail, selections[detail.id], onSelect)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ConflictDetailRow(
-    detail: takagi.ru.monica.keepass.KeePassConflictDetail,
-    selectedSide: KeePassConflictResolutionSide?,
-    onSelect: (String, KeePassConflictResolutionSide) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = when (detail.kind) {
-                KeePassConflictDetailKind.FIELD -> stringResource(R.string.keepass_conflict_detail_field, detail.label)
-                KeePassConflictDetailKind.LOCATION -> stringResource(R.string.keepass_conflict_detail_location)
-                KeePassConflictDetailKind.EXISTENCE -> stringResource(R.string.keepass_conflict_detail_existence)
-                KeePassConflictDetailKind.PROPERTIES -> stringResource(R.string.keepass_conflict_detail_properties)
-            },
-            fontWeight = FontWeight.Medium
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (selectedSide == KeePassConflictResolutionSide.LOCAL) {
-                FilledTonalButton(
-                    onClick = { onSelect(detail.id, KeePassConflictResolutionSide.LOCAL) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.keepass_conflict_choose_local))
-                }
-            } else {
-                OutlinedButton(
-                    onClick = { onSelect(detail.id, KeePassConflictResolutionSide.LOCAL) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.keepass_conflict_choose_local))
-                }
-            }
-            if (selectedSide == KeePassConflictResolutionSide.REMOTE) {
-                FilledTonalButton(
-                    onClick = { onSelect(detail.id, KeePassConflictResolutionSide.REMOTE) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.keepass_conflict_choose_remote))
-                }
-            } else {
-                OutlinedButton(
-                    onClick = { onSelect(detail.id, KeePassConflictResolutionSide.REMOTE) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.keepass_conflict_choose_remote))
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "L: ${detail.localSummary ?: "—"}",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "R: ${detail.remoteSummary ?: "—"}",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

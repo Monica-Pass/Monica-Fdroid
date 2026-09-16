@@ -69,6 +69,7 @@ import takagi.ru.monica.steam.network.SteamPendingLogin
 import takagi.ru.monica.steam.network.SteamQrChallenge
 import takagi.ru.monica.steam.network.SteamSessionRefreshService
 import takagi.ru.monica.steam.service.SteamLoginImportService
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import takagi.ru.monica.utils.KeePassKdbxService
 
 enum class SteamMarketActionType {
@@ -186,7 +187,7 @@ class SteamViewModel(
     private val authorizedDeviceService: SteamAuthorizedDeviceService = SteamAuthorizedDeviceService(),
     private val loginApprovalService: SteamLoginApprovalService = SteamLoginApprovalService(),
     private val sessionRefreshService: SteamSessionRefreshService = SteamSessionRefreshService(),
-    private val loginImportService: SteamLoginImportService = SteamLoginImportService(),
+    private val loginImportService: SteamLoginImportService = SteamLoginImportService(AppLocaleStringResolver(appContext)),
     private val inventoryService: SteamInventoryService = SteamInventoryService(),
     private val marketService: SteamMarketService = SteamMarketService()
 ) : ViewModel() {

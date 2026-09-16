@@ -1,5 +1,7 @@
 package takagi.ru.monica.keepass
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import app.keemobile.kotpass.constants.GroupOverride
 import app.keemobile.kotpass.cryptography.EncryptedValue
 import app.keemobile.kotpass.database.Credentials
@@ -83,13 +85,13 @@ class KeePassNativeManagementTest {
             )
         }
 
-        val moved = KeePassNativeManagement.moveGroups(database, setOf(first, second), target)
+        val moved = KeePassNativeManagement.moveGroups(database, setOf(first, second), target, strings = xmlTestStrings("en"))
         val targetGroup = findGroup(moved, target)!!
         assertEquals(setOf(first, second), targetGroup.groups.map { it.uuid }.toSet())
         assertEquals(2, moved.content.group.groups.size)
 
         try {
-            KeePassNativeManagement.moveGroups(database, setOf(nested, leaf), target)
+            KeePassNativeManagement.moveGroups(database, setOf(nested, leaf), target, strings = xmlTestStrings("en"))
             fail("parent and child folders should not be moved together")
         } catch (_: IllegalArgumentException) {
             // expected

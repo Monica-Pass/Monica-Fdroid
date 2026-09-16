@@ -22,8 +22,10 @@ internal class Mdbx2RepositorySyncSessionProvider(
     override suspend fun <T> withSession(
         databaseId: Long,
         block: suspend (Mdbx2SyncEngine) -> T
-    ): T = repository.withVaultForSync(databaseId) { _, vault ->
-        block(NativeMdbx2SyncEngine(vault))
+    ): T {
+        val info = repository.withReadVaultForSync(databaseId) { _, vault -> vault.info() }
+        // A sync session identifies the vault; it does not borrow its lock across network I/O.
+        return block(NativeMdbx2SyncEngine(repository, databaseId, info.vaultId, info.deviceId))
     }
 }
 
@@ -31,23 +33,30 @@ internal interface Mdbx2SyncEngine {
     val vaultId: String
     val deviceId: String
 
-    fun checkpoint(): MdbxSyncCheckpointState
-    fun createBootstrap(destination: File): Mdbx2BootstrapInfo
-    fun exportSegment(
+    suspend fun checkpoint(): MdbxSyncCheckpointState
+    suspend fun createBootstrap(destination: File): Mdbx2BootstrapInfo
+    suspend fun exportSegment(
         destination: File,
         base: MdbxSyncCheckpointState,
         resume: MdbxSyncResumeState?,
         pageSize: UInt
     ): Mdbx2SegmentInfo
 
-    fun inspectSegment(source: File): Mdbx2SegmentInfo
-    fun applySegment(
+    suspend fun inspectSegment(source: File): Mdbx2SegmentInfo
+    suspend fun applySegment(
         source: File,
         expectedBase: MdbxSyncCheckpointState,
         expectedResume: MdbxSyncResumeState?
     ): Mdbx2SegmentApplyResult
 
-    fun listBlobReferences(cursor: String?, pageSize: UInt): Mdbx2BlobReferencePage
+    suspend fun listBlobReferences(cursor: String?, pageSize: UInt): Mdbx2BlobReferencePage
+    suspend fun hasBlob(blobId: String, totalSize: ULong): Boolean
+
+    /** One local file batch shares an unlock. The block must not perform network I/O. */
+    suspend fun <T> withBlobTransfer(block: suspend (Mdbx2BlobTransferSession) -> T): T
+}
+
+internal interface Mdbx2BlobTransferSession {
     fun hasBlob(blobId: String, totalSize: ULong): Boolean
     fun readBlobChunk(blobId: String, totalSize: ULong, offset: ULong, maxBytes: UInt): Mdbx2BlobChunk
     fun writeBlobChunk(
@@ -90,7 +99,10 @@ internal data class Mdbx2SegmentApplyResult(
     val appliedCommits: UInt,
     val skippedCommits: UInt,
     val conflictCount: UInt,
-    val missingParentCount: UInt
+    val missingParentCount: UInt,
+    // Both snapshots are captured under the same local lock as the Rust apply.
+    val localCheckpointBefore: MdbxSyncCheckpointState,
+    val localCheckpointAfter: MdbxSyncCheckpointState
 )
 
 internal enum class Mdbx2BlobAvailability {
@@ -119,62 +131,87 @@ internal data class Mdbx2BlobChunk(
 )
 
 private class NativeMdbx2SyncEngine(
-    private val vault: MdbxVault
+    private val repository: Mdbx2Repository,
+    private val databaseId: Long,
+    override val vaultId: String,
+    override val deviceId: String
 ) : Mdbx2SyncEngine {
-    private val info by lazy(vault::info)
+    private fun checkIdentity(vault: MdbxVault) {
+        val info = vault.info()
+        require(info.vaultId == vaultId && info.deviceId == deviceId) {
+            "MDBX2 vault identity changed during synchronization"
+        }
+    }
 
-    override val vaultId: String get() = info.vaultId
-    override val deviceId: String get() = info.deviceId
+    private suspend fun <T> read(block: (MdbxVault) -> T): T =
+        repository.withReadVaultForSync(databaseId) { _, vault ->
+            checkIdentity(vault)
+            block(vault)
+        }
 
-    override fun checkpoint(): MdbxSyncCheckpointState = vault.incrementalSyncCheckpoint().toState()
+    private suspend fun <T> mutate(block: suspend (MdbxVault) -> T): T =
+        repository.withVaultForSync(databaseId) { _, vault ->
+            checkIdentity(vault)
+            block(vault)
+        }
 
-    override fun createBootstrap(destination: File): Mdbx2BootstrapInfo {
+    override suspend fun checkpoint(): MdbxSyncCheckpointState = read { vault ->
+        vault.incrementalSyncCheckpoint().toState()
+    }
+
+    override suspend fun createBootstrap(destination: File): Mdbx2BootstrapInfo = read { vault ->
         val result = vault.createIncrementalSyncBootstrap(destination.absolutePath)
-        return Mdbx2BootstrapInfo(
+        Mdbx2BootstrapInfo(
             vaultId = result.backup.vaultId,
             checkpoint = result.checkpoint.toState(),
             fileSizeBytes = result.backup.fileSizeBytes
         )
     }
 
-    override fun exportSegment(
+    override suspend fun exportSegment(
         destination: File,
         base: MdbxSyncCheckpointState,
         resume: MdbxSyncResumeState?,
         pageSize: UInt
-    ): Mdbx2SegmentInfo = vault.exportIncrementalSyncSegment(
-        destination = destination.absolutePath,
-        base = base.toFfi(),
-        resume = resume?.toFfi(),
-        pageSize = pageSize
-    ).toEngineInfo()
+    ): Mdbx2SegmentInfo = read { vault ->
+        vault.exportIncrementalSyncSegment(
+            destination = destination.absolutePath,
+            base = base.toFfi(),
+            resume = resume?.toFfi(),
+            pageSize = pageSize
+        ).toEngineInfo()
+    }
 
-    override fun inspectSegment(source: File): Mdbx2SegmentInfo =
+    override suspend fun inspectSegment(source: File): Mdbx2SegmentInfo = read { vault ->
         vault.inspectIncrementalSyncSegment(source.absolutePath).toEngineInfo()
+    }
 
-    override fun applySegment(
+    override suspend fun applySegment(
         source: File,
         expectedBase: MdbxSyncCheckpointState,
         expectedResume: MdbxSyncResumeState?
-    ): Mdbx2SegmentApplyResult {
+    ): Mdbx2SegmentApplyResult = mutate { vault ->
+        val before = vault.incrementalSyncCheckpoint().toState()
         val result = vault.applyIncrementalSyncSegment(
             source = source.absolutePath,
             expectedBase = expectedBase.toFfi(),
             expectedResume = expectedResume?.toFfi()
         )
-        return Mdbx2SegmentApplyResult(
+        Mdbx2SegmentApplyResult(
             result = result.result.toState(),
             nextResume = result.nextResume?.toState(),
             appliedCommits = result.appliedCommits,
             skippedCommits = result.skippedCommits,
             conflictCount = result.conflictCount,
-            missingParentCount = result.missingParentCount
+            missingParentCount = result.missingParentCount,
+            localCheckpointBefore = before,
+            localCheckpointAfter = vault.incrementalSyncCheckpoint().toState()
         )
     }
 
-    override fun listBlobReferences(cursor: String?, pageSize: UInt): Mdbx2BlobReferencePage {
+    override suspend fun listBlobReferences(cursor: String?, pageSize: UInt): Mdbx2BlobReferencePage = read { vault ->
         val page = vault.listExternalBlobReferences(cursor, pageSize)
-        return Mdbx2BlobReferencePage(
+        Mdbx2BlobReferencePage(
             items = page.items.map { item ->
                 Mdbx2BlobReference(
                     blobId = item.blobId,
@@ -190,6 +227,17 @@ private class NativeMdbx2SyncEngine(
         )
     }
 
+    override suspend fun hasBlob(blobId: String, totalSize: ULong): Boolean = read { vault ->
+        vault.hasExternalBlob(blobId, totalSize)
+    }
+
+    override suspend fun <T> withBlobTransfer(block: suspend (Mdbx2BlobTransferSession) -> T): T =
+        mutate { vault -> block(NativeMdbx2BlobTransferSession(vault)) }
+}
+
+private class NativeMdbx2BlobTransferSession(
+    private val vault: MdbxVault
+) : Mdbx2BlobTransferSession {
     override fun hasBlob(blobId: String, totalSize: ULong): Boolean =
         vault.hasExternalBlob(blobId, totalSize)
 

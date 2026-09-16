@@ -1,9 +1,17 @@
 package takagi.ru.monica.ui.vaultv2
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
+import takagi.ru.monica.ui.screens.NativeTokenListUi
+import takagi.ru.monica.ui.screens.NativeTokenFilterChip
+import takagi.ru.monica.ui.screens.rememberNativeTokenList
+
+
 import android.icu.text.Transliterator
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -106,6 +114,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.screens.key
+import takagi.ru.monica.ui.screens.toTrashScopeFilter
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
 import takagi.ru.monica.bitwarden.ui.BitwardenAutoSyncEffect
@@ -260,6 +270,8 @@ internal data class VaultV2Item(
 	val secureItem: SecureItem? = null,
 	val passkeyEntry: PasskeyEntry? = null,
 	val boundPasswordId: Long? = null,
+	val nativeToken: takagi.ru.monica.data.NativeApiTokenSummary? = null,
+	val stackedItems: List<VaultV2Item> = emptyList(),
 )
 
 internal fun buildVaultV2PasswordItems(entries: List<PasswordEntry>): List<VaultV2Item> {
@@ -405,6 +417,7 @@ internal data class VaultV2VisibleSnapshotKey(
 	val normalizedQuery: String,
 	val isArchiveView: Boolean,
 	val overviewItemType: VaultV2ItemType? = null,
+	val nativeOnly: Boolean = false,
 )
 
 private data class VaultV2SecondaryLists(
@@ -438,6 +451,7 @@ internal data class VaultV2VisibleListConfig(
 	val normalizedQuery: String,
 	val isArchiveView: Boolean,
 	val overviewItemType: VaultV2ItemType? = null,
+	val nativeOnly: Boolean = false,
 )
 
 private const val VAULT_V2_FAST_SCROLL_LOG_TAG = "VaultV2FastScroll"
@@ -1005,6 +1019,7 @@ private fun rememberVaultV2StorageFilterLabel(
 	mdbxFolders: List<MdbxStoredFolderEntry>,
 ): String {
 	val monica = stringResource(R.string.filter_monica)
+	val context = LocalContext.current
 	val bitwarden = stringResource(R.string.filter_bitwarden)
 	val keepass = stringResource(R.string.filter_keepass)
 	val starred = stringResource(R.string.filter_starred)
@@ -1056,7 +1071,7 @@ private fun rememberVaultV2StorageFilterLabel(
 		}
 		is UnifiedCategoryFilterSelection.MdbxFolderFilter -> {
 			val databaseLabel = mdbxDatabases.find { it.id == selected.databaseId }?.name ?: "MDBX"
-			val folderLabel = buildMdbxFolderPathLabel(selected.folderId, mdbxFolders)
+			val folderLabel = buildMdbxFolderPathLabel(context, selected.folderId, mdbxFolders)
 			if (folderLabel.isNullOrBlank()) databaseLabel else "$databaseLabel · $folderLabel"
 		}
 	}
@@ -1384,7 +1399,7 @@ internal fun buildVaultV2VisibleListState(
 	allItems: List<VaultV2Item>,
 	config: VaultV2VisibleListConfig,
 ): VaultV2VisibleListState {
-	val filteredItems = allItems.asSequence().filter { item ->
+	val filteredItems = allItems.asSequence().filter { !config.nativeOnly || it.nativeToken != null }.filter { item ->
 		item.matchesStorageFilter(
 			selection = config.storageSelection,
 			localCategoryIdsInScope = config.localCategoryIdsInScope,
@@ -1537,6 +1552,7 @@ fun VaultV2Pane(
 	onOpenBillingAddress: (Long) -> Unit,
 	onOpenNote: (Long) -> Unit,
 	onOpenPasskey: (Long) -> Unit,
+	onOpenApiTokens: (Long?, String?) -> Unit = { _, _ -> },
 	onOpenMdbxCommitHistory: (Long) -> Unit,
 	onOpenHistory: () -> Unit,
 	onOpenTrashPage: () -> Unit,
@@ -1592,11 +1608,11 @@ fun VaultV2Pane(
 	}
 	val handleOpenTrashPage: () -> Unit = if (useEmbeddedHistoryPages) {
 		{
-			vaultHistoryTrashScope = state.toUnifiedCategoryFilterSelection().overviewScope().replace(':', '_')
+			vaultHistoryTrashScope = state.toUnifiedCategoryFilterSelection().toTrashScopeFilter().key
 			vaultHistoryPageMode = 2
 		}
 	} else {
-		{ onOpenScopedTrashPage?.invoke(state.toUnifiedCategoryFilterSelection().overviewScope().replace(':', '_')) ?: onOpenTrashPage() }
+		{ onOpenScopedTrashPage?.invoke(state.toUnifiedCategoryFilterSelection().toTrashScopeFilter().key) ?: onOpenTrashPage() }
 	}
 	val handleOpenArchivePage: () -> Unit = { state.openArchiveView() }
 
@@ -1606,6 +1622,7 @@ fun VaultV2Pane(
 	var isTopActionsMenuExpanded by rememberSaveable { mutableStateOf(false) }
 	var showBitwardenUnlockDialog by rememberSaveable { mutableStateOf(false) }
 	var showClearBitwardenCacheDialog by rememberSaveable { mutableStateOf(false) }
+	var nativeOnly by rememberSaveable { mutableStateOf(false) }
 	var quickFilterFavorite by rememberSaveable { mutableStateOf(state.overviewFavorites) }
 	var quickFilter2fa by rememberSaveable { mutableStateOf(false) }
 	var quickFilterNotes by rememberSaveable { mutableStateOf(false) }
@@ -1693,6 +1710,12 @@ fun VaultV2Pane(
 	val activeAttachmentParentIds = remember(attachmentParentIds) { attachmentParentIds.toSet() }
 	val density = LocalDensity.current
 	val scope = rememberCoroutineScope()
+    val aggregateStackRepository = remember(database) {
+        takagi.ru.monica.repository.PasswordPageAggregateStackRepository(database.passwordPageAggregateStackDao())
+    }
+    val aggregateStackEntries by aggregateStackRepository.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    var showStackDialog by remember { mutableStateOf(false) }
+    var selectedStackMode by remember { mutableStateOf(takagi.ru.monica.ui.ManualStackDialogMode.STACK) }
 	val bitwardenViewModel: BitwardenViewModel = viewModel()
 	val bitwardenRepository = remember(context) {
 		takagi.ru.monica.bitwarden.repository.BitwardenRepository.getInstance(context)
@@ -1995,8 +2018,7 @@ fun VaultV2Pane(
             database.supports(MdbxCapability.REMOTE_SYNC)
         ) {
 			MdbxPathSyncState(
-				pendingCount = mdbxPendingSyncCounts[database.id]
-					?: database.mdbxPathPendingSyncCount(),
+				pendingCount = database.mdbxPathPendingSyncCount(mdbxPendingSyncCounts[database.id]),
 				isSyncing = mdbxOperationState is MdbxViewModel.OperationState.Loading,
 				onSync = {
 					if (database.mdbxPathShouldFlushPendingUpload()) {
@@ -2198,11 +2220,13 @@ fun VaultV2Pane(
 		}
 	}
 	val shouldLoadManualStackMetadata = remember(
+		showOverview, appSettings.stackCardMode,
 		quickFilterManualStackOnly,
 		quickFilterNeverStack,
 		quickFilterUnstacked,
 		configuredQuickFilterItems
 	) {
+		(!showOverview && appSettings.stackCardMode != "ALWAYS_EXPANDED") ||
 		(quickFilterManualStackOnly && PasswordListQuickFilterItem.MANUAL_STACK_ONLY in configuredQuickFilterItems) ||
 			(quickFilterNeverStack && PasswordListQuickFilterItem.NEVER_STACK in configuredQuickFilterItems) ||
 			(quickFilterUnstacked && PasswordListQuickFilterItem.UNSTACKED in configuredQuickFilterItems)
@@ -2287,6 +2311,16 @@ fun VaultV2Pane(
 			)
 		)
 	}
+    val effectiveStackGroups = remember(manualStackGroupByEntryId, aggregateStackEntries) {
+        manualStackGroupByEntryId + aggregateStackEntries.filter { it.stackOrder >= 0 }.mapNotNull {
+            takagi.ru.monica.ui.password.passwordIdFromSelectionKey(it.itemKey)?.let { id -> id to it.stackGroupId }
+        }.toMap()
+    }
+    val effectiveNoStackIds = remember(noStackEntryIds, aggregateStackEntries) {
+        noStackEntryIds + aggregateStackEntries.filter { it.stackOrder < 0 }.mapNotNull {
+            takagi.ru.monica.ui.password.passwordIdFromSelectionKey(it.itemKey)
+        }
+    }
 	val baseQuickFolderPasswordCountByCategoryId = rememberVaultV2AsyncComputed(
 		visiblePasswordEntries,
 		categories,
@@ -2388,6 +2422,21 @@ fun VaultV2Pane(
 		)
 	}
 
+    val nativeTokens = rememberNativeTokenList(
+        if (showOverview) null else mdbxViewModel,
+        if (state.isArchiveView) CategoryFilter.Archived else categoryMenuFilter, searchQuery,
+        nativeOnly, { nativeOnly = !nativeOnly; selectedKeys.clear() }, onOpenApiTokens,
+        includeTokens = !quickFilter2fa && !quickFilterNotes && !quickFilterPasskey &&
+            !quickFilterBoundNote && !quickFilterAttachments && !quickFilterLocalOnly &&
+            !quickFilterUncategorized &&
+            (state.overviewItemType == null || state.overviewItemType == VaultV2ItemType.PASSWORD.name),
+        favoritesOnly = quickFilterFavorite || state.overviewFavorites
+    )
+    val nativeTypeLabel = stringResource(R.string.entry_type_api_token)
+    val nativePasswordCards = remember(nativeTokens.entries, nativeTypeLabel) {
+        nativeTokens.entries.map { it.asPasswordCard(nativeTypeLabel) }
+    }
+
 	val computedSnapshotKey = remember(state.isArchiveView, showOnlyLocalData) {
 		VaultV2ComputedSnapshotKey(
 			isArchiveView = state.isArchiveView,
@@ -2395,6 +2444,7 @@ fun VaultV2Pane(
 		)
 	}
 	val computedSources = remember(
+		nativePasswordCards,
 		sourcePasswordEntries,
 		totpItems,
 		bankCardItems,
@@ -2404,7 +2454,7 @@ fun VaultV2Pane(
 		passkeyItems,
 	) {
 		VaultV2ComputedSources(
-			passwords = sourcePasswordEntries,
+			passwords = sourcePasswordEntries + nativePasswordCards,
 			totpItems = totpItems,
 			bankCardItems = bankCardItems,
 			documentItems = documentItems,
@@ -2413,9 +2463,9 @@ fun VaultV2Pane(
 			passkeyItems = passkeyItems,
 		)
 	}
-	val currentPasswordItems = remember(visiblePasswordEntries) {
+	val currentPasswordItems = remember(visiblePasswordEntries, nativeTokens.entries, nativeTypeLabel) {
 		lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-			buildVaultV2PasswordItems(visiblePasswordEntries)
+			buildVaultV2PasswordItems(visiblePasswordEntries) + buildVaultV2NativeTokenItems(nativeTokens.entries, nativeTypeLabel)
 		}
 	}
 	val computedSnapshotSeed = remember(computedSnapshotKey, computedSources) {
@@ -2716,6 +2766,7 @@ fun VaultV2Pane(
 	val overviewItemType = state.overviewItemType?.let { runCatching { VaultV2ItemType.valueOf(it) }.getOrNull() }
 	val visibleSnapshotKey = remember(
 		overviewItemType,
+		nativeTokens.onlyTokens,
 		storageSelection,
 		localCategoryIdsInScope,
 		displayedContentTypes,
@@ -2732,13 +2783,14 @@ fun VaultV2Pane(
 		quickFilterManualStackOnly,
 		quickFilterNeverStack,
 		quickFilterUnstacked,
-		manualStackGroupByEntryId,
-		noStackEntryIds,
+		effectiveStackGroups,
+		effectiveNoStackIds,
 		normalizedQuery,
 		state.isArchiveView,
 	) {
 		VaultV2VisibleSnapshotKey(
 			overviewItemType = overviewItemType,
+			nativeOnly = nativeTokens.onlyTokens,
 			storageSelection = storageSelection,
 			localCategoryIdsInScope = localCategoryIdsInScope,
 			displayedContentTypes = displayedContentTypes,
@@ -2757,8 +2809,8 @@ fun VaultV2Pane(
 				quickFilterUnstacked,
 			),
 			activeAttachmentParentIds = activeAttachmentParentIds,
-			manualStackGroupByEntryId = manualStackGroupByEntryId,
-			noStackEntryIds = noStackEntryIds,
+			manualStackGroupByEntryId = effectiveStackGroups,
+			noStackEntryIds = effectiveNoStackIds,
 			normalizedQuery = normalizedQuery,
 			isArchiveView = state.isArchiveView,
 		)
@@ -2778,6 +2830,7 @@ fun VaultV2Pane(
 	}
 	val visibleListConfig = remember(
 		overviewItemType,
+		nativeTokens.onlyTokens,
 		storageSelection,
 		localCategoryIdsInScope,
 		displayedContentTypes,
@@ -2794,13 +2847,14 @@ fun VaultV2Pane(
 		quickFilterManualStackOnly,
 		quickFilterNeverStack,
 		quickFilterUnstacked,
-		manualStackGroupByEntryId,
-		noStackEntryIds,
+		effectiveStackGroups,
+		effectiveNoStackIds,
 		normalizedQuery,
 		state.isArchiveView,
 	) {
 		VaultV2VisibleListConfig(
 			overviewItemType = overviewItemType,
+			nativeOnly = nativeTokens.onlyTokens,
 			storageSelection = storageSelection,
 			localCategoryIdsInScope = localCategoryIdsInScope,
 			displayedContentTypes = displayedContentTypes,
@@ -2817,8 +2871,8 @@ fun VaultV2Pane(
 			quickFilterManualStackOnly = quickFilterManualStackOnly,
 			quickFilterNeverStack = quickFilterNeverStack,
 			quickFilterUnstacked = quickFilterUnstacked,
-			manualStackGroupByEntryId = manualStackGroupByEntryId,
-			noStackEntryIds = noStackEntryIds,
+			manualStackGroupByEntryId = effectiveStackGroups,
+			noStackEntryIds = effectiveNoStackIds,
 			normalizedQuery = normalizedQuery,
 			isArchiveView = state.isArchiveView,
 		)
@@ -2904,7 +2958,6 @@ fun VaultV2Pane(
 	}
 	val baseFilteredItems = visibleListState.filteredItems
 	val baseSectionedItems = visibleListState.sectionedItems
-	val baseSectionLayouts = visibleListState.sectionLayouts
 	val hierarchyLocalSourceTitle = stringResource(R.string.vault_v2_hierarchy_local_source)
 	val hierarchicalContent = remember(
 		useHierarchicalLayout,
@@ -2944,12 +2997,13 @@ fun VaultV2Pane(
 	} else {
 		baseFilteredItems
 	}
-	val sectionedItems = if (useHierarchicalLayout) {
-		hierarchicalContent.sections
-	} else {
-		baseSectionedItems
-	}
-	val showQuickFiltersInList = !state.isArchiveView && hasVisibleQuickFilters
+	val sectionedItems = remember(showOverview, filteredItems, aggregateStackEntries, manualStackGroupByEntryId,
+        effectiveNoStackIds, appSettings.passwordGroupMode, appSettings.passwordWebsiteStackMatchMode, appSettings.stackCardMode) {
+        if (showOverview) emptyList() else buildVaultV2StackedSections(filteredItems, aggregateStackEntries, manualStackGroupByEntryId,
+            effectiveNoStackIds, appSettings.passwordGroupMode, appSettings.passwordWebsiteStackMatchMode,
+            appSettings.stackCardMode == "ALWAYS_EXPANDED")
+    }
+	val showQuickFiltersInList = !state.isArchiveView && (hasVisibleQuickFilters || nativeTokens.visible)
 	val showCategoryQuickFiltersInList =
 		!state.isArchiveView && !useHierarchicalLayout && categoryMenuQuickFolderShortcuts.isNotEmpty()
 	val hierarchyLeadingItemCount = if (useHierarchicalLayout) {
@@ -2959,14 +3013,13 @@ fun VaultV2Pane(
 	} else {
 		0
 	}
-	val sectionLayouts = if (useHierarchicalLayout) {
-		buildVaultV2SectionLayouts(
-			sections = sectionedItems,
-			leadingItemCount = hierarchyLeadingItemCount,
-		)
-	} else {
-		baseSectionLayouts
-	}
+    val sectionLayouts = remember(sectionedItems, hierarchyLeadingItemCount, useHierarchicalLayout,
+        showQuickFiltersInList, showCategoryQuickFiltersInList, nativeTokens.failed) {
+        buildVaultV2SectionLayouts(sectionedItems,
+            (if (useHierarchicalLayout) hierarchyLeadingItemCount else
+                if (showQuickFiltersInList || showCategoryQuickFiltersInList) 1 else 0) +
+                if (nativeTokens.failed) 1 else 0)
+    }
 	val hasDisplayedContent = folderRows.isNotEmpty() || sectionedItems.isNotEmpty()
 	val isVaultListLoading = remember(
 		displayListStateAsync.isComputing,
@@ -3022,6 +3075,19 @@ fun VaultV2Pane(
 			selectionCandidates.filter { it.key in keySet }
 		}
 	}
+    if (showStackDialog) takagi.ru.monica.ui.PasswordStackModeDialog(
+        selectedCount, selectedStackMode, { selectedStackMode = it },
+        onDismiss = { showStackDialog = false },
+        onConfirm = { scope.launch {
+            try {
+                takagi.ru.monica.ui.applySharedPasswordStackMode(selectedStackMode,
+                    selectedItems.map { it.key }, aggregateStackRepository, passwordViewModel)
+                selectedKeys.clear()
+                showStackDialog = false
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { Toast.makeText(context, R.string.api_token_load_error, Toast.LENGTH_LONG).show() }
+        } },
+    )
 	val currentSectionIndicatorLabel by remember(
 		listState,
 		sectionLayouts,
@@ -3229,7 +3295,11 @@ fun VaultV2Pane(
 				},
 				onOpenSource = { openOverviewList(overviewScopeSelection(it)) },
 				onOpenItem = { item -> when (item.type) {
-					VaultV2ItemType.PASSWORD -> item.passwordEntry?.id?.let(onOpenPassword)
+					VaultV2ItemType.PASSWORD -> {
+                            val token = item.nativeToken
+                            if (token != null) onOpenApiTokens(token.databaseId, token.entryId)
+                            else item.passwordEntry?.id?.let(onOpenPassword)
+                        }
 					VaultV2ItemType.AUTHENTICATOR -> item.totpItem?.id?.let(onOpenTotp)
 						?: item.boundPasswordId?.let(onOpenPassword)
 					VaultV2ItemType.NOTE -> item.secureItem?.id?.let(onOpenNote)
@@ -3359,7 +3429,8 @@ fun VaultV2Pane(
 											planLocalCategoryMove(
 												categories = categories,
 												sourceCategory = category,
-												targetParentCategory = categories.find { it.id == targetParentCategoryId }
+												targetParentCategory = categories.find { it.id == targetParentCategoryId },
+												strings = AppLocaleStringResolver(context),
 											)
 										}.onSuccess { plan ->
 											plan.updatedCategories.forEach(passwordViewModel::updateCategory)
@@ -3378,7 +3449,8 @@ fun VaultV2Pane(
 													planLocalCategoryMove(
 														categories = categories,
 														sourceCategory = category,
-														targetParentCategory = categories.find { it.id == target.categoryId }
+														targetParentCategory = categories.find { it.id == target.categoryId },
+														strings = AppLocaleStringResolver(context),
 													)
 												}.onSuccess { plan ->
 													plan.updatedCategories.forEach(passwordViewModel::updateCategory)
@@ -3401,14 +3473,14 @@ fun VaultV2Pane(
 											is StorageTarget.KeePass -> {
 												Toast.makeText(
 													context,
-													context.getString(R.string.save_failed_with_error, "当前暂不支持将分类移动到 KeePass 数据库"),
+													context.getString(R.string.save_failed_with_error, context.getString(R.string.legacy_ui_move_category_keepass_unsupported)),
 													Toast.LENGTH_SHORT
 												).show()
 											}
 											is StorageTarget.Mdbx -> {
 												Toast.makeText(
 													context,
-													context.getString(R.string.save_failed_with_error, "当前暂不支持将分类移动到 MDBX 数据库"),
+													context.getString(R.string.save_failed_with_error, context.getString(R.string.legacy_ui_move_category_mdbx_unsupported)),
 													Toast.LENGTH_SHORT
 												).show()
 											}
@@ -3421,6 +3493,7 @@ fun VaultV2Pane(
 												categories = categories,
 												sourceCategory = category,
 												newLeafName = newLeafName,
+												strings = AppLocaleStringResolver(context),
 											)
 										}.onSuccess { plan ->
 											plan.updatedCategories.forEach(passwordViewModel::updateCategory)
@@ -3669,7 +3742,8 @@ fun VaultV2Pane(
 				modifier = Modifier.offset { IntOffset(0, -contentPullOffset) },
 			)
 			VaultV2List(
-				hasVisibleQuickFilters = showQuickFiltersInList,
+                nativeTokens = nativeTokens,
+				hasVisibleQuickFilters = showQuickFiltersInList || nativeTokens.visible,
 				hasVisibleCategoryQuickFilters = showCategoryQuickFiltersInList,
 				configuredQuickFilterItems = configuredQuickFilterItems,
 				quickFilterChipState = quickFilterBindings.state,
@@ -3708,23 +3782,32 @@ fun VaultV2Pane(
 					showFolderActionDialog = row.kind == VaultV2FolderRowKind.FOLDER
 				},
 				sections = sectionedItems,
-				showLoadingIndicator = showVaultLoadingIndicator,
-				showEmptyState = showVaultEmptyState,
+				showLoadingIndicator = showVaultLoadingIndicator || (nativeTokens.loading && !hasDisplayedContent),
+				showEmptyState = showVaultEmptyState && nativeTokens.entries.isEmpty() && !nativeTokens.loading && !nativeTokens.failed,
 				emptyStateText = emptyStateText,
 				listState = listState,
 				passwordById = passwordById,
 				appSettings = appSettings,
 				securityManager = securityManager,
 				selectedKeys = selectedKeys,
-				onRequestDeleteItem = { item ->
+				onRequestDeleteItems = { items ->
 					selectedKeys.clear()
-					selectedKeys.add(item.key)
+					selectedKeys.addAll(items.map { it.key })
 					showDeleteConfirmDialog = true
 				},
+                onFavoriteItem = { item ->
+                    if (item.nativeToken != null) nativeTokens.onFavorite(item.nativeToken, !item.isFavorite)
+                    else item.passwordEntry?.let { passwordViewModel.toggleFavorite(it.id, !it.isFavorite) }
+                },
+                onReorderStack = { items -> scope.launch { aggregateStackRepository.applyManualStack(items.map { it.key }) } },
 				modifier = Modifier.fillMaxSize(),
 				onOpenItem = { item ->
 					when (item.type) {
-						VaultV2ItemType.PASSWORD -> item.passwordEntry?.id?.let(onOpenPassword)
+						VaultV2ItemType.PASSWORD -> {
+                            val token = item.nativeToken
+                            if (token != null) onOpenApiTokens(token.databaseId, token.entryId)
+                            else item.passwordEntry?.id?.let(onOpenPassword)
+                        }
 						VaultV2ItemType.AUTHENTICATOR -> {
 							val totp = item.totpItem ?: return@VaultV2List
 							if (totp.id > 0) {
@@ -4119,6 +4202,10 @@ fun VaultV2Pane(
 					}
 				},
 				onMoveToCategory = { showVaultMoveSheet = true },
+                onStack = if (!showOverview && selectedItems.size >= 2 && selectedItems.all { it.type == VaultV2ItemType.PASSWORD }) ({
+                    selectedStackMode = takagi.ru.monica.ui.ManualStackDialogMode.STACK
+                    showStackDialog = true
+                }) else null,
 				onFavorite = {
 					// 全部异步执行，避免主线程卡顿
 					scope.launch {
@@ -4126,7 +4213,11 @@ fun VaultV2Pane(
 							when (item.type) {
 								VaultV2ItemType.PASSWORD -> {
 									item.passwordEntry?.let { entry ->
-										passwordViewModel.toggleFavorite(entry.id, !entry.isFavorite)
+										if (item.nativeToken != null) {
+                                            try { mdbxViewModel?.setNativeApiTokenFavorite(item.nativeToken, !item.isFavorite) }
+                                            catch (cancelled: CancellationException) { throw cancelled }
+                                            catch (_: Exception) { Toast.makeText(context, R.string.api_token_load_error, Toast.LENGTH_LONG).show() }
+                                        } else passwordViewModel.toggleFavorite(entry.id, !entry.isFavorite)
 									}
 								}
 
@@ -4194,7 +4285,13 @@ fun VaultV2Pane(
 					selectedItems.forEach { item ->
 						when (item.type) {
 							VaultV2ItemType.PASSWORD -> {
-								item.passwordEntry?.let(passwordViewModel::deletePasswordEntry)
+								if (item.nativeToken != null) scope.launch {
+                                    try {
+                                        checkNotNull(mdbxViewModel).deleteNativeApiToken(item.nativeToken)
+                                        aggregateStackRepository.clearManualStack(listOf(item.key))
+                                    } catch (cancelled: CancellationException) { throw cancelled }
+                                    catch (_: Exception) { Toast.makeText(context, R.string.api_token_load_error, Toast.LENGTH_LONG).show() }
+                                } else item.passwordEntry?.let(passwordViewModel::deletePasswordEntry)
 							}
 							VaultV2ItemType.AUTHENTICATOR -> {
 								item.totpItem?.let { totp ->
@@ -4245,9 +4342,24 @@ fun VaultV2Pane(
 				)
 			}
 
+            val selectedNativeTokens = selectedItems.mapNotNull { it.nativeToken }
+            if (mdbxViewModel != null) {
+                takagi.ru.monica.ui.screens.NativeTokenBatchMoveSheet(
+                    visible = showVaultMoveSheet && selectedNativeTokens.isNotEmpty(), viewModel = mdbxViewModel, entries = selectedNativeTokens,
+                    onDismiss = { showVaultMoveSheet = false }, onCompleted = { selectedKeys.clear() },
+                    onTransferOther = { target, action ->
+                        val plan = buildVaultV2BatchMovePlan(selectedItems.filter { it.nativeToken == null })
+                        val result = executeMixedPasswordBatchMove(context, action, target,
+                            plan.passwordEntries, plan.aggregateSelection, categories, keepassDatabases,
+                            localKeePassViewModel, securityManager, passwordViewModel,
+                            PasswordBatchMoveViewModels(totpViewModel, bankCardViewModel, documentViewModel,
+                                billingAddressViewModel, noteViewModel, passkeyViewModel), bitwardenRepository)
+                        result.successCount to result.failedCount
+                    })
+            }
 			// 移动/复制到其他文件夹/数据库
 			UnifiedMoveToCategoryBottomSheet(
-				visible = showVaultMoveSheet,
+				visible = showVaultMoveSheet && selectedNativeTokens.isEmpty(),
 				onDismiss = { showVaultMoveSheet = false },
 				initialSource = storageSelection.toUnifiedMoveInitialSource(),
 				categories = categories,
@@ -4324,7 +4436,7 @@ fun VaultV2Pane(
 							runCatching {
 								executeMixedPasswordBatchMove(
 									context = context,
-									action = UnifiedMoveAction.MOVE,
+									action = effectiveAction,
 									target = target,
 									selectedEntries = movePlan.passwordEntries,
 									aggregateSelection = movePlan.aggregateSelection,
@@ -4474,6 +4586,7 @@ fun VaultV2Pane(
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 private fun VaultV2List(
+    nativeTokens: NativeTokenListUi? = null,
 	hasVisibleQuickFilters: Boolean,
 	hasVisibleCategoryQuickFilters: Boolean,
 	configuredQuickFilterItems: List<PasswordListQuickFilterItem>,
@@ -4496,7 +4609,9 @@ private fun VaultV2List(
 	appSettings: AppSettings,
 	securityManager: SecurityManager,
 	selectedKeys: MutableList<String>,
-	onRequestDeleteItem: (VaultV2Item) -> Unit,
+	onRequestDeleteItems: (List<VaultV2Item>) -> Unit,
+    onFavoriteItem: (VaultV2Item) -> Unit,
+    onReorderStack: (List<VaultV2Item>) -> Unit,
 	modifier: Modifier = Modifier,
 	onOpenItem: (VaultV2Item) -> Unit,
 ) {
@@ -4518,6 +4633,7 @@ private fun VaultV2List(
 				) {
 					if (hasVisibleQuickFilters) {
 						VaultV2QuickFilterRow(
+                            nativeTokens = nativeTokens,
 							configuredQuickFilterItems = configuredQuickFilterItems,
 							chipState = quickFilterChipState,
 							chipCallbacks = quickFilterChipCallbacks,
@@ -4538,6 +4654,9 @@ private fun VaultV2List(
 			}
 		}
 
+        if (nativeTokens?.failed == true) item("native_token_error") {
+            TextButton(onClick = nativeTokens.onRetry) { Text(stringResource(R.string.api_token_reload)) }
+        }
 		itemsIndexed(
 			items = folderRows,
 			key = { _, row -> row.key },
@@ -4612,10 +4731,15 @@ private fun VaultV2List(
 				key = { _, item -> item.key },
 				contentType = { _, item -> item.type },
 			) { index, item ->
+                if (item.stackedItems.isNotEmpty()) {
+                    VaultV2PasswordStackCard(item, appSettings, securityManager, selectedKeys, onOpenItem,
+                        onRequestDeleteItems, onFavoriteItem, onReorderStack)
+                    return@itemsIndexed
+                }
 				val selected = item.key in selectedKeys
 				val cardShape = GroupedItemDefaults.shape(index, itemsInSection.size)
 				SwipeActions(
-					onSwipeLeft = { onRequestDeleteItem(item) },
+					onSwipeLeft = { onRequestDeleteItems(listOf(item)) },
 					onSwipeRight = {
 						if (selected) {
 							selectedKeys.remove(item.key)
@@ -4776,7 +4900,7 @@ private fun VaultV2BreadcrumbPath(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun VaultV2ItemCard(
+internal fun VaultV2ItemCard(
 	item: VaultV2Item,
 	boundPassword: PasswordEntry?,
 	appSettings: AppSettings,

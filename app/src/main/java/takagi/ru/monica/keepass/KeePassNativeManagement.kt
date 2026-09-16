@@ -1,5 +1,9 @@
 package takagi.ru.monica.keepass
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
 import app.keemobile.kotpass.constants.GroupOverride
 import app.keemobile.kotpass.constants.PredefinedIcon
 import app.keemobile.kotpass.database.KeePassDatabase
@@ -160,7 +164,8 @@ internal object KeePassNativeManagement {
     fun moveGroups(
         database: KeePassDatabase,
         groupUuids: Set<UUID>,
-        targetParentGroupUuid: UUID
+        targetParentGroupUuid: UUID,
+        strings: StringResolver
     ): KeePassDatabase {
         require(groupUuids.isNotEmpty()) { "KeePass folder move requires at least one source" }
         require(findGroup(database.content.group, targetParentGroupUuid) != null) {
@@ -197,7 +202,7 @@ internal object KeePassNativeManagement {
             val removed = removeGroupWithValue(updated.content.group, uuid)
             val group = removed.second
                 ?: throw IllegalStateException("KeePass group disappeared during batch move: $uuid")
-            val inserted = addGroupToParentUuid(removed.first, targetParentGroupUuid, group)
+            val inserted = addGroupToParentUuid(removed.first, targetParentGroupUuid, group, strings = strings)
             require(inserted.inserted) { "KeePass target group not found: $targetParentGroupUuid" }
             updated = updated.modifyParentGroup { inserted.root }
                 .modifyParentGroup {
@@ -490,18 +495,19 @@ internal object KeePassNativeManagement {
     private fun addGroupToParentUuid(
         root: Group,
         parentUuid: UUID,
-        groupToInsert: Group
+        groupToInsert: Group,
+        strings: StringResolver
     ): InsertedGroup {
         if (root.uuid == parentUuid) {
             if (root.groups.any { child ->
                     child.uuid != groupToInsert.uuid && child.name.equals(groupToInsert.name, ignoreCase = true)
                 }) {
-                throw IllegalArgumentException("同级已存在同名分组")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_folder_exists))
             }
             return InsertedGroup(root.copy(groups = root.groups + groupToInsert), true)
         }
         root.groups.forEachIndexed { index, child ->
-            val result = addGroupToParentUuid(child, parentUuid, groupToInsert)
+            val result = addGroupToParentUuid(child, parentUuid, groupToInsert, strings = strings)
             if (result.inserted) {
                 val groups = root.groups.toMutableList()
                 groups[index] = result.root

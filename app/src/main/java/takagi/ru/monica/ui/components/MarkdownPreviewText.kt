@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.components
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -214,16 +216,28 @@ fun MarkdownPreviewText(
                 }
 
                 is MarkdownElement.CodeBlock -> {
-                    val lineCount = remember(element.code) { element.code.lineSequence().count() }
+                    val codeLines = remember(element.code) { element.code.lines() }
+                    val lineCount = codeLines.size
                     val shouldCollapse = lineCount > collapseLineThreshold(codeBlockCollapseMode) ||
                         element.code.length > collapseCharThreshold(codeBlockCollapseMode)
                     val expanded = expandedCodeBlocks[index] == true
                     val previewLines = previewLines(codeBlockCollapseMode)
-                    val visibleCode = if (shouldCollapse && !expanded) {
-                        element.code.lineSequence().take(previewLines).joinToString("\n")
-                    } else {
-                        element.code
+                    val previewCode = remember(element.code, shouldCollapse, previewLines) {
+                        if (shouldCollapse) codeLines.take(previewLines).joinToString("\n") else element.code
                     }
+                    val remainingCode = remember(element.code, shouldCollapse, previewLines) {
+                        if (shouldCollapse && codeLines.size > previewLines) {
+                            codeLines.drop(previewLines).joinToString("\n")
+                        } else null
+                    }
+                    val highlightedCode = remember(element.code, elementHighlightQuery, showSearchHighlight) {
+                        buildSearchHighlightedText(element.code, elementHighlightQuery, showSearchHighlight)
+                    }
+                    val codeTextStyle = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
                     Box(
                         modifier = Modifier
@@ -233,20 +247,22 @@ fun MarkdownPreviewText(
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .padding(12.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "代码块 ${lineCount}行",
+                                    text = stringResource(R.string.legacy_ui_code_block_lines, lineCount),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Text(
-                                        text = "复制",
+                                        text = stringResource(R.string.copy),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.clickable {
@@ -255,7 +271,7 @@ fun MarkdownPreviewText(
                                     )
                                     if (shouldCollapse) {
                                         Text(
-                                            text = if (expanded) "收起" else "展开",
+                                            text = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.clickable {
@@ -266,25 +282,34 @@ fun MarkdownPreviewText(
                                 }
                             }
 
-                            Text(
-                                text = buildSearchHighlightedText(
-                                    input = visibleCode,
-                                    searchQuery = elementHighlightQuery,
-                                    showSearchHighlight = showSearchHighlight
-                                ),
-                                style = TextStyle(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-
-                            if (shouldCollapse && !expanded) {
+                            Column {
                                 Text(
-                                    text = "...",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = highlightedCode.subSequence(0, previewCode.length),
+                                    style = codeTextStyle
                                 )
+                                // Keep the remaining lines composed until the closing motion ends.
+                                // Replacing the full text with its preview first would leave a blank card.
+                                if (remainingCode != null) {
+                                    MonicaExpandableContent(expanded = expanded) {
+                                        Text(
+                                            text = highlightedCode.subSequence(
+                                                highlightedCode.length - remainingCode.length,
+                                                highlightedCode.length
+                                            ),
+                                            style = codeTextStyle
+                                        )
+                                    }
+                                }
+                                if (shouldCollapse) {
+                                    MonicaExpandableContent(expanded = !expanded) {
+                                        Text(
+                                            text = "...",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = 8.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

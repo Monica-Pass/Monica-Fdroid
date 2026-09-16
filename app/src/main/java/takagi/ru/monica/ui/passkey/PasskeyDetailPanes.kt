@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui
 
+import takagi.ru.monica.ui.components.formatRelativeTime
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -136,9 +138,7 @@ internal fun PasskeyDetailPane(
     val createdTime = remember(passkey.createdAt) {
         DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(passkey.createdAt))
     }
-    val lastUsedTime = remember(passkey.lastUsedAt, passkey.useCount) {
-        passkey.getLastUsedFormatted()
-    }
+    val lastUsedTime = formatRelativeTime(passkey.lastUsedAt)
     val transports = remember(passkey.transports) {
         passkey.getTransportsList().joinToString(", ").ifBlank { "-" }
     }
@@ -219,12 +219,12 @@ internal fun PasskeyDetailPane(
                 InfoField(label = stringResource(R.string.passkey_detail_algorithm), value = passkey.getAlgorithmName())
                 InfoField(label = stringResource(R.string.passkey_detail_transports), value = transports)
                 InfoFieldWithCopy(
-                    label = "User ID",
+                    label = stringResource(R.string.legacy_ui_passkey_user_id),
                     value = passkey.userId.ifBlank { "-" },
                     context = context
                 )
                 InfoFieldWithCopy(
-                    label = "Credential ID",
+                    label = stringResource(R.string.legacy_ui_passkey_credential_id),
                     value = passkey.credentialId,
                     context = context
                 )
@@ -237,11 +237,11 @@ internal fun PasskeyDetailPane(
                 }
                 if (passkey.privateKeyAlias.isNotBlank()) {
                     InfoField(
-                        label = "Private key",
+                        label = stringResource(R.string.legacy_ui_passkey_private_key),
                         value = if (PasskeyPrivateKeyStore.isProtectedReference(passkey.privateKeyAlias)) {
-                            "Protected storage"
+                            stringResource(R.string.legacy_ui_passkey_protected_storage)
                         } else {
-                            "Legacy key material"
+                            stringResource(R.string.legacy_ui_passkey_legacy_material)
                         }
                     )
                 }
@@ -556,18 +556,20 @@ private fun PasskeyMetaPill(label: String) {
     }
 }
 
+@Composable
 private fun String.toReadableSyncLabel(): String = when (this) {
-    "SYNCED" -> "Synced"
-    "SYNCING" -> "Syncing"
-    "PENDING" -> "Pending"
-    "FAILED" -> "Sync failed"
-    "CONFLICT" -> "Conflict"
-    "REFERENCE" -> "Reference"
-    else -> "Local only"
+    "SYNCED" -> stringResource(R.string.sync_status_synced_short)
+    "SYNCING" -> stringResource(R.string.sync_status_syncing_short)
+    "PENDING" -> stringResource(R.string.sync_status_pending_short)
+    "FAILED" -> stringResource(R.string.sync_status_failed_short)
+    "CONFLICT" -> stringResource(R.string.sync_conflict)
+    "REFERENCE" -> stringResource(R.string.legacy_ui_passkey_reference)
+    else -> stringResource(R.string.sync_status_local_short)
 }
 
+@Composable
 private fun String.toReadableModeLabel(): String = when (this) {
     PasskeyEntry.MODE_BW_COMPAT -> "Bitwarden"
     PasskeyEntry.MODE_KEEPASS_COMPAT -> "KeePass"
-    else -> "Local"
+    else -> stringResource(R.string.legacy_ui_local)
 }

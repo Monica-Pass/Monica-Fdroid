@@ -5,8 +5,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import takagi.ru.monica.localization.xmlTestStrings
 
 class WebDavKeePassBackupPolicyTest {
+    private val strings = xmlTestStrings("zh")
 
     @Test
     fun parsesKeepassEntriesRegardlessOfZipDirectoryPrefix() {
@@ -41,6 +43,7 @@ class WebDavKeePassBackupPolicyTest {
     @Test
     fun legacyDatabaseWithoutKeyMetadataRemainsRestorable() {
         val result = KeePassBackupEntryPolicy.validateRestoreSet(
+            strings = strings,
             databaseId = 7L,
             hasMetadata = true,
             hasDatabase = true,
@@ -57,6 +60,7 @@ class WebDavKeePassBackupPolicyTest {
     @Test
     fun declaredKeyRequiresMatchingEncryptedEntry() {
         val mismatched = KeePassBackupEntryPolicy.validateRestoreSet(
+            strings = strings,
             databaseId = 7L,
             hasMetadata = true,
             hasDatabase = true,
@@ -67,6 +71,7 @@ class WebDavKeePassBackupPolicyTest {
         assertFalse(mismatched.canRestore)
 
         val missing = KeePassBackupEntryPolicy.validateRestoreSet(
+            strings = strings,
             databaseId = 7L,
             hasMetadata = true,
             hasDatabase = true,
@@ -77,6 +82,7 @@ class WebDavKeePassBackupPolicyTest {
         assertFalse(missing.canRestore)
 
         val plaintext = KeePassBackupEntryPolicy.validateRestoreSet(
+            strings = strings,
             databaseId = 7L,
             hasMetadata = true,
             hasDatabase = true,
@@ -87,6 +93,7 @@ class WebDavKeePassBackupPolicyTest {
         assertFalse(plaintext.canRestore)
 
         val ready = KeePassBackupEntryPolicy.validateRestoreSet(
+            strings = strings,
             databaseId = 7L,
             hasMetadata = true,
             hasDatabase = true,
@@ -101,6 +108,7 @@ class WebDavKeePassBackupPolicyTest {
     @Test
     fun undeclaredKeyIsIgnoredInsteadOfBindingAnUnknownCredential() {
         val result = KeePassBackupEntryPolicy.validateRestoreSet(
+            strings = strings,
             databaseId = 7L,
             hasMetadata = true,
             hasDatabase = true,

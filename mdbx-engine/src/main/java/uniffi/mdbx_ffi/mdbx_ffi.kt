@@ -658,6 +658,8 @@ external fun uniffi_mdbx_ffi_checksum_func_default_object_disclosure_limits(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_func_default_object_metadata_disclosure_limits(
 ): Short
+external fun uniffi_mdbx_ffi_checksum_func_mdbx_runtime_manifest(
+): Short
 external fun uniffi_mdbx_ffi_checksum_func_default_snapshot_lifecycle_limits(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_func_default_snapshot_management_limits(
@@ -935,6 +937,8 @@ external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_list_security_audit_event
 external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_list_security_audit_events_v2(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_list_unlock_methods(
+): Short
+external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_read_session_remaining_secs(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_remove_unlock_method(
 ): Short
@@ -1378,6 +1382,8 @@ external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_security_audit_events_v2(`
 ): RustBuffer.ByValue
 external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unlock_methods(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_session_remaining_secs(`ptr`: Long,`scope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+): Long
 external fun uniffi_mdbx_ffi_fn_method_mdbxvault_remove_unlock_method(`ptr`: Long,`methodId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
 ): Unit
 external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password(`ptr`: Long,`newPassword`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
@@ -1586,6 +1592,8 @@ external fun uniffi_mdbx_ffi_fn_func_default_object_disclosure_limits(uniffi_out
 ): RustBuffer.ByValue
 external fun uniffi_mdbx_ffi_fn_func_default_object_metadata_disclosure_limits(uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
+external fun uniffi_mdbx_ffi_fn_func_mdbx_runtime_manifest(uniffi_out_err: UniffiRustCallStatus,
+): RustBuffer.ByValue
 external fun uniffi_mdbx_ffi_fn_func_default_snapshot_lifecycle_limits(uniffi_out_err: UniffiRustCallStatus,
 ): RustBuffer.ByValue
 external fun uniffi_mdbx_ffi_fn_func_default_snapshot_management_limits(uniffi_out_err: UniffiRustCallStatus,
@@ -1767,6 +1775,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mdbx_ffi_checksum_func_default_object_metadata_disclosure_limits() != 53558.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mdbx_ffi_checksum_func_mdbx_runtime_manifest() != 61128.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mdbx_ffi_checksum_func_default_snapshot_lifecycle_limits() != 18211.toShort()) {
@@ -2184,6 +2195,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mdbx_ffi_checksum_method_mdbxvault_list_unlock_methods() != 42444.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mdbx_ffi_checksum_method_mdbxvault_read_session_remaining_secs() != 27089.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mdbx_ffi_checksum_method_mdbxvault_remove_unlock_method() != 1858.toShort()) {
@@ -4590,6 +4604,12 @@ public interface MdbxVaultInterface {
 
     fun `listUnlockMethods`(): List<MdbxUnlockMethod>
 
+    /**
+     * Remaining reuse window for a disclosure reader. This never authorizes
+     * disclosure or renews the session; normal reveal APIs remain mandatory.
+     */
+    fun `readSessionRemainingSecs`(`scope`: MdbxTigaScope): kotlin.ULong
+
     fun `removeUnlockMethod`(`methodId`: kotlin.String, `device`: MdbxDeviceContext)
 
     fun `resetMasterPassword`(`newPassword`: kotlin.String)
@@ -6635,6 +6655,24 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_list_unlock_methods(
         it,
         _status)
+}
+    }
+    )
+    }
+
+
+
+    /**
+     * Remaining reuse window for a disclosure reader. This never authorizes
+     * disclosure or renews the session; normal reveal APIs remain mandatory.
+     */
+    @Throws(MdbxFfiException::class)override fun `readSessionRemainingSecs`(`scope`: MdbxTigaScope): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MdbxFfiException) { _status ->
+    UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_read_session_remaining_secs(
+        it,
+        FfiConverterTypeMdbxTigaScope.lower(`scope`),_status)
 }
     }
     )
@@ -12580,6 +12618,104 @@ public object FfiConverterTypeMdbxRollbackAnchorVerification: FfiConverterRustBu
             FfiConverterULong.write(value.`currentCommitInventorySeq`, buf)
             FfiConverterOptionalULong.write(value.`anchoredSyncDeltaBatchSeq`, buf)
             FfiConverterOptionalULong.write(value.`currentSyncDeltaBatchSeq`, buf)
+    }
+}
+
+
+
+data class MdbxRuntimeManifest (
+    var `profile`: kotlin.String
+    ,
+    var `runtimeName`: kotlin.String
+    ,
+    var `runtimeVersion`: kotlin.String
+    ,
+    var `implementationVersion`: kotlin.String
+    ,
+    var `buildProfile`: kotlin.String
+    ,
+    var `storageFormat`: kotlin.String
+    ,
+    var `currentSchemaVersion`: kotlin.UInt
+    ,
+    var `readableStorageFormats`: List<kotlin.String>
+    ,
+    var `writableStorageFormat`: kotlin.String
+    ,
+    var `ffiAbiProfile`: kotlin.String
+    ,
+    var `ffiNamespace`: kotlin.String
+    ,
+    var `nativeLibraryName`: kotlin.String
+    ,
+    var `androidSharedObjectName`: kotlin.String
+    ,
+    var `compatibilityProfile`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMdbxRuntimeManifest: FfiConverterRustBuffer<MdbxRuntimeManifest> {
+    override fun read(buf: ByteBuffer): MdbxRuntimeManifest {
+        return MdbxRuntimeManifest(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: MdbxRuntimeManifest) = (
+            FfiConverterString.allocationSize(value.`profile`) +
+            FfiConverterString.allocationSize(value.`runtimeName`) +
+            FfiConverterString.allocationSize(value.`runtimeVersion`) +
+            FfiConverterString.allocationSize(value.`implementationVersion`) +
+            FfiConverterString.allocationSize(value.`buildProfile`) +
+            FfiConverterString.allocationSize(value.`storageFormat`) +
+            FfiConverterUInt.allocationSize(value.`currentSchemaVersion`) +
+            FfiConverterSequenceString.allocationSize(value.`readableStorageFormats`) +
+            FfiConverterString.allocationSize(value.`writableStorageFormat`) +
+            FfiConverterString.allocationSize(value.`ffiAbiProfile`) +
+            FfiConverterString.allocationSize(value.`ffiNamespace`) +
+            FfiConverterString.allocationSize(value.`nativeLibraryName`) +
+            FfiConverterString.allocationSize(value.`androidSharedObjectName`) +
+            FfiConverterString.allocationSize(value.`compatibilityProfile`)
+    )
+
+    override fun write(value: MdbxRuntimeManifest, buf: ByteBuffer) {
+            FfiConverterString.write(value.`profile`, buf)
+            FfiConverterString.write(value.`runtimeName`, buf)
+            FfiConverterString.write(value.`runtimeVersion`, buf)
+            FfiConverterString.write(value.`implementationVersion`, buf)
+            FfiConverterString.write(value.`buildProfile`, buf)
+            FfiConverterString.write(value.`storageFormat`, buf)
+            FfiConverterUInt.write(value.`currentSchemaVersion`, buf)
+            FfiConverterSequenceString.write(value.`readableStorageFormats`, buf)
+            FfiConverterString.write(value.`writableStorageFormat`, buf)
+            FfiConverterString.write(value.`ffiAbiProfile`, buf)
+            FfiConverterString.write(value.`ffiNamespace`, buf)
+            FfiConverterString.write(value.`nativeLibraryName`, buf)
+            FfiConverterString.write(value.`androidSharedObjectName`, buf)
+            FfiConverterString.write(value.`compatibilityProfile`, buf)
     }
 }
 
@@ -18660,6 +18796,20 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxObjectMetadataDisclosureLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_object_metadata_disclosure_limits(
+
+        _status)
+}
+    )
+    }
+
+
+        /**
+         * Describes the MDBX3 runtime identity without opening or modifying a vault.
+         * Existing MDBX2 bindings do not depend on this additive discovery method.
+         */ fun `mdbxRuntimeManifest`(): MdbxRuntimeManifest {
+            return FfiConverterTypeMdbxRuntimeManifest.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mdbx_ffi_fn_func_mdbx_runtime_manifest(
 
         _status)
 }

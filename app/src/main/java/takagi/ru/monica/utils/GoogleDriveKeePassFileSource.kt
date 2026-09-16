@@ -1,5 +1,9 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.keepass.KeePassSourceChangedException
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +52,7 @@ class GoogleDriveKeePassFileSource(
     private val itemId: String? = null,
     private val remotePath: String? = null
 ) : KeePassFileSource {
+    private val strings = AppLocaleStringResolver(context)
     private val appContext = context.applicationContext
     private val authManager = GoogleDriveAuthManager(appContext)
     private val normalizedRemotePath = normalizeOptionalRemotePath(remotePath)
@@ -77,7 +82,7 @@ class GoogleDriveKeePassFileSource(
                 etag = fileItem.md5Checksum
             )
         ) {
-            throw IOException("远端文件已变化，请先重新同步")
+            throw KeePassSourceChangedException(strings.get(R.string.cloud_message_remote_changed))
         }
         val payload = executeJsonRequest(
             absoluteUrl = "$DRIVE_UPLOAD_BASE/files/${Uri.encode(fileItem.id)}?uploadType=media&fields=$FILE_FIELDS",
@@ -99,14 +104,14 @@ class GoogleDriveKeePassFileSource(
         val targetPath = when {
             currentItem == null -> normalizedRemotePath
             currentItem.isDirectory() -> normalizedRemotePath
-            else -> parentPathOf(normalizedRemotePath)
+            else -> parentPathOf(normalizedRemotePath, strings = strings)
         }
         listDirectory(targetPath, targetId)
     }
 
     override suspend fun createFile(name: String): FileSourceEntry = withContext(Dispatchers.IO) {
         createFileInDirectory(
-            parentPath = parentPathOf(normalizedRemotePath),
+            parentPath = parentPathOf(normalizedRemotePath, strings = strings),
             name = name
         )
     }
@@ -160,7 +165,7 @@ class GoogleDriveKeePassFileSource(
             FileSourceEntry(
                 id = item.id,
                 name = item.name,
-                path = buildChildPath(normalizedDirectoryPath, item.name),
+                path = buildChildPath(normalizedDirectoryPath, item.name, strings = strings),
                 isDirectory = item.isDirectory(),
                 versionToken = item.versionToken(),
                 lastModified = item.modifiedTime?.toEpochMillis(),
@@ -197,7 +202,7 @@ class GoogleDriveKeePassFileSource(
         FileSourceEntry(
             id = item.id,
             name = item.name,
-            path = buildChildPath(normalizedParentPath, item.name),
+            path = buildChildPath(normalizedParentPath, item.name, strings = strings),
             isDirectory = true,
             versionToken = item.versionToken(),
             lastModified = item.modifiedTime?.toEpochMillis(),
@@ -234,7 +239,7 @@ class GoogleDriveKeePassFileSource(
         FileSourceEntry(
             id = item.id,
             name = item.name,
-            path = buildChildPath(normalizedParentPath, item.name),
+            path = buildChildPath(normalizedParentPath, item.name, strings = strings),
             isDirectory = false,
             versionToken = item.versionToken(),
             lastModified = item.modifiedTime?.toEpochMillis(),
@@ -273,13 +278,13 @@ class GoogleDriveKeePassFileSource(
                 val child = findChildByName(
                     parentId = currentParentId,
                     name = segment
-                ) ?: throw IOException("Google Drive 路径不存在: $path")
+                ) ?: throw IOException(strings.get(R.string.cloud_message_remote_file_missing, path))
                 val isLast = index == path.split('/').filter { it.isNotBlank() }.lastIndex
                 if (!isLast && !child.isDirectory()) {
-                    throw IOException("Google Drive 路径无效: $currentPath/$segment 不是文件夹")
+                    throw IOException(strings.get(R.string.cloud_message_not_directory, "$currentPath/$segment"))
                 }
                 currentParentId = child.id
-                currentPath = buildChildPath(currentPath, segment)
+                currentPath = buildChildPath(currentPath, segment, strings = strings)
             }
         return resolveItemById(currentParentId)
     }
@@ -299,7 +304,7 @@ class GoogleDriveKeePassFileSource(
 
     private suspend fun ensureChildDoesNotExist(parentId: String, name: String) {
         if (findChildByName(parentId, name) != null) {
-            throw IOException("同名文件或目录已存在")
+            throw IOException(strings.get(R.string.cloud_message_item_exists))
         }
     }
 
@@ -312,14 +317,14 @@ class GoogleDriveKeePassFileSource(
         }
         val item = resolveItemByPath(parentPath)
         if (!item.isDirectory()) {
-            throw IOException("Google Drive 目标目录无效")
+            throw IOException(strings.get(R.string.cloud_message_target_directory_invalid))
         }
         return item.id
     }
 
     private suspend fun requireAccessToken(): String {
         return authManager.acquireAccessToken(accountIdentifier).accessToken
-            ?: throw IOException("Google Drive 访问令牌为空")
+            ?: throw IOException(strings.get(R.string.cloud_message_provider_token_missing, "Google Drive"))
     }
 
     private suspend fun executeJsonRequest(
@@ -343,7 +348,7 @@ class GoogleDriveKeePassFileSource(
                     runCatching { authManager.clearAccessToken(accessToken) }
                 }
                 throw IOException(
-                    responseBody.ifBlank { "Google Drive 请求失败: HTTP ${response.code}" }
+                    responseBody.ifBlank { strings.get(R.string.cloud_message_request_http, "Google Drive", response.code) }
                 )
             }
             return responseBody
@@ -365,10 +370,10 @@ class GoogleDriveKeePassFileSource(
                     runCatching { authManager.clearAccessToken(accessToken) }
                 }
                 throw IOException(response.body?.string().orEmpty().ifBlank {
-                    "Google Drive 下载失败: HTTP ${response.code}"
+                    strings.get(R.string.cloud_message_download_http, "Google Drive", response.code)
                 })
             }
-            return response.body?.bytes() ?: throw IOException("Google Drive 返回了空内容")
+            return response.body?.bytes() ?: throw IOException(strings.get(R.string.cloud_message_provider_empty_content, "Google Drive"))
         }
     }
 
@@ -439,14 +444,14 @@ class GoogleDriveKeePassFileSource(
         private const val FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
         private const val ROOT_ID = "root"
 
-        fun normalizeRemotePath(remotePath: String): String {
+        internal fun normalizeRemotePath(remotePath: String, strings: StringResolver): String {
             val normalized = remotePath
                 .trim()
                 .replace('\\', '/')
                 .trimStart('/')
                 .replace(Regex("/+"), "/")
             if (normalized.isBlank()) {
-                throw IllegalArgumentException("远端文件路径不能为空")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_path_required))
             }
             return normalized
         }
@@ -460,20 +465,20 @@ class GoogleDriveKeePassFileSource(
                 .orEmpty()
         }
 
-        fun parentPathOf(remotePath: String): String {
+        internal fun parentPathOf(remotePath: String, strings: StringResolver): String {
             if (remotePath.isBlank()) {
                 return ""
             }
-            val normalized = normalizeRemotePath(remotePath)
+            val normalized = normalizeRemotePath(remotePath, strings = strings)
             val index = normalized.lastIndexOf('/')
             return if (index <= 0) "" else normalized.substring(0, index)
         }
 
-        fun buildChildPath(parentPath: String, name: String): String {
+        internal fun buildChildPath(parentPath: String, name: String, strings: StringResolver): String {
             val sanitizedName = name.trim().trim('/').ifBlank {
-                throw IllegalArgumentException("文件名不能为空")
+                throw IllegalArgumentException(strings.get(R.string.cloud_message_filename_required))
             }
-            require('/' !in sanitizedName) { "文件名不能包含路径分隔符" }
+            require('/' !in sanitizedName) { strings.get(R.string.cloud_message_filename_separator) }
             return if (parentPath.isBlank()) sanitizedName else "$parentPath/$sanitizedName"
         }
     }
@@ -486,8 +491,9 @@ object GoogleDriveKeePassSupport {
         context: Context,
         source: KeepassRemoteSource
     ): GoogleDriveKeePassFileSource {
+        val strings = AppLocaleStringResolver(context)
         val accountIdentifier = source.tokenRef?.takeIf { it.isNotBlank() }
-            ?: throw IllegalArgumentException("Google Drive 账户引用不能为空")
+            ?: throw IllegalArgumentException(strings.get(R.string.cloud_message_provider_account_required, "Google Drive"))
         return GoogleDriveKeePassFileSource(
             context = context,
             accountIdentifier = accountIdentifier,
@@ -496,8 +502,8 @@ object GoogleDriveKeePassSupport {
         )
     }
 
-    fun buildLocalMirrorPaths(sourceId: Long, remotePath: String): KeePassLocalMirrorPaths {
-        val fileName = displayNameFromRemotePath(remotePath)
+    internal fun buildLocalMirrorPaths(sourceId: Long, remotePath: String, strings: StringResolver): KeePassLocalMirrorPaths {
+        val fileName = displayNameFromRemotePath(remotePath, strings = strings)
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
             .ifBlank { "remote.kdbx" }
         val baseDir = "keepass_remote/gdrive_$sourceId"
@@ -507,8 +513,8 @@ object GoogleDriveKeePassSupport {
         )
     }
 
-    fun displayNameFromRemotePath(remotePath: String): String {
-        val normalized = GoogleDriveKeePassFileSource.normalizeRemotePath(remotePath)
+    internal fun displayNameFromRemotePath(remotePath: String, strings: StringResolver): String {
+        val normalized = GoogleDriveKeePassFileSource.normalizeRemotePath(remotePath, strings = strings)
         return normalized.substringAfterLast('/').ifBlank { "remote.kdbx" }
     }
 

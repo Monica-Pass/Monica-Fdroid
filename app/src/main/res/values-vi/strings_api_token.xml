@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_type_api_token">Mã API</string>
+    <string name="api_token_no_database">Mở cơ sở dữ liệu MDBX gốc để xem hoặc tạo mã API.</string>
+    <string name="api_token_load_error">Không thể tải hoặc lưu mã. Hãy mở lại hoặc đồng bộ cơ sở dữ liệu rồi tải lại. Dữ liệu hiện có đã được giữ lại.</string>
+    <string name="api_token_reload">Tải lại</string>
+    <string name="api_token_root_collection">Gốc cơ sở dữ liệu</string>
+    <string name="api_token_database">Cơ sở dữ liệu</string>
+    <string name="api_token_collection">Danh mục</string>
+    <string name="api_token_complete_payload">Dữ liệu mã đầy đủ (JSON)</string>
+    <string name="api_token_empty">Chưa có mã API trong cơ sở dữ liệu này.</string>
+    <string name="api_token_native_hint">Được lưu dưới dạng mã API gốc của MDBX, tương thích với Monica CLI.</string>
+    <string name="api_token_toggle_visibility">Hiện hoặc ẩn giá trị</string>
+    <string name="api_token_validation">Nhập nhà cung cấp và mã. Địa chỉ API tùy chọn phải là URL HTTP hoặc HTTPS.</string>
+    <string name="api_token_fields_limit">Dùng tối đa 128 trường tùy chỉnh. Tổng ghi chú và giá trị trường không được vượt quá 64 KB.</string>
+    <string name="api_token_import_json">Dán JSON của mã</string>
+    <string name="api_token_parse">Phân tích</string>
+    <string name="api_token_delete_confirmation">Xóa mã API này khỏi cơ sở dữ liệu?</string>
+    <string name="api_token_entry_id">ID mục</string>
+    <string name="api_token_collection_id">ID bộ sưu tập</string>
+    <string name="api_token_provider">Nhà cung cấp</string>
+    <string name="api_token_api_base">URL gốc API</string>
+    <string name="api_token_note">Ghi chú</string>
+    <string name="api_token_schema">Lược đồ dữ liệu</string>
+    <string name="api_token_name">Tên mã</string>
+    <string name="api_token_add">Thêm mã API</string>
+    <string name="api_token_edit">Sửa mã API</string>
+    <string name="api_token_credentials">Chi tiết mã</string>
+    <string name="api_token_manage_databases">Quản lý cơ sở dữ liệu</string>
+    <string name="api_token_folder_error">Không thể tải danh mục. Hãy mở lại bộ chọn nơi lưu trữ để thử lại.</string>
+    <string name="api_token_storage">Vị trí lưu trữ</string>
+    <string name="api_token_advanced">Thông tin thêm</string>
+    <string name="api_token_unknown_schema">Mã này dùng định dạng khác. Bạn có thể xem và sao chép dữ liệu đầy đủ bên dưới.</string>
+    <string name="api_token_discard_title">Bỏ thay đổi?</string>
+    <string name="api_token_discard_message">Các thay đổi chưa lưu sẽ bị mất.</string>
+    <string name="api_token_discard">Bỏ</string>
+    <string name="api_token_name_hint">1–64 chữ cái, chữ số, - hoặc _</string>
+</resources>

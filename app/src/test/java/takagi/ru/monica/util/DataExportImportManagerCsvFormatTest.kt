@@ -45,7 +45,11 @@ class DataExportImportManagerCsvFormatTest {
         requireNotNull(item)
         assertEquals("PASSWORD", item.itemType)
         assertEquals("标题", item.title)
-        assertEquals("username:用户名或者邮箱;password:password;website:https://website;email:user@example.com", item.itemData)
+        val credentials = CsvPasswordData.decode(item.itemData)
+        assertEquals("用户名或者邮箱", credentials["username"])
+        assertEquals("password", credentials["password"])
+        assertEquals("https://website", credentials["website"])
+        assertEquals("user@example.com", credentials["email"])
         assertEquals("note", item.notes)
         assertEquals("otpauth://totp/?secret=2fa&algorithm=SHA1&digits=6&period=30", item.importedAuthenticatorKey)
         assertEquals(1_780_131_342_000L, item.createdAt)
@@ -80,7 +84,11 @@ class DataExportImportManagerCsvFormatTest {
 
         assertNotNull(item)
         requireNotNull(item)
-        assertEquals("username:email@example.com;password:secret;website:https://example.com;email:email@example.com", item.itemData)
+        val credentials = CsvPasswordData.decode(item.itemData)
+        assertEquals("email@example.com", credentials["username"])
+        assertEquals("secret", credentials["password"])
+        assertEquals("https://example.com", credentials["website"])
+        assertEquals("email@example.com", credentials["email"])
         assertFalse(item.importedCustomFields.any { it.title == "Proton Vault" })
     }
 

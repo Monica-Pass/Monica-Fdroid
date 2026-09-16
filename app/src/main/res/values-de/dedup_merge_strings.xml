@@ -71,7 +71,7 @@
     <string name="dedup_merge_write">Schreiben</string>
     <string name="dedup_merge_copies_count">Kopien: %1$d</string>
     <string name="dedup_merge_conflict_fields">Felder mit Konflikten: %1$s</string>
-    <string name="dedup_merge_list_separator">", "</string>
+    <string name="dedup_merge_list_separator">\u002c\u0020</string>
     <string name="dedup_merge_password_count">Passwörter: %1$d</string>
     <string name="dedup_merge_secure_item_count">Sichere Einträge: %1$d</string>
     <string name="dedup_merge_passkey_count">Passkeys: %1$d</string>

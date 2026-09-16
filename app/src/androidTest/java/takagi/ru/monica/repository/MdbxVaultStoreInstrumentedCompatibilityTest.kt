@@ -580,6 +580,12 @@ class MdbxVaultStoreInstrumentedCompatibilityTest {
             }
         }
 
+        override suspend fun updateRemoteSyncSuccess(databaseId: Long, status: String, time: Long) {
+            mutate(databaseId) {
+                it.copy(lastSyncedAt = time, lastSyncStatus = status, lastSyncError = null, isOfflineAvailable = true)
+            }
+        }
+
         private fun mutate(id: Long, block: (LocalMdbxDatabase) -> LocalMdbxDatabase) {
             databases[id]?.let { databases[id] = block(it) }
             publish()

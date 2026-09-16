@@ -1,5 +1,7 @@
 package takagi.ru.monica.repository
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -52,7 +54,7 @@ class Mdbx2RealWebDavInstrumentedTest {
                 providerName = "WebDAV",
                 remoteRoot = "monica-mdbx2-real-webdav",
                 runId = runId,
-                transport = WebDavMdbxRemoteTransport(serverUrl, username, password),
+                transport = WebDavMdbxRemoteTransport(serverUrl, username, password, strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext)),
                 sourceType = MdbxSourceType.REMOTE_WEBDAV,
                 sourceFactory = { remoteSourceDao, securityManager, displayName, remotePath ->
                     insertWebDavRemoteSource(

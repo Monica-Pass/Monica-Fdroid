@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">Allow HTTP</string>
+    <string name="webdav_allow_insecure_http_description">Off by default. Enable only for a trusted HTTP server, such as a local NAS without HTTPS. WebDAV blocks HTTP connections while this is off.</string>
+    <string name="fdroid_cloud_provider_unavailable">%1$s is unavailable in the F-Droid build. Use WebDAV.</string>
+</resources>

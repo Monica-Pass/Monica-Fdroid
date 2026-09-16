@@ -33,7 +33,7 @@ class SecurityAnalysisUiRegressionGuardTest {
 
         assertTrue(source.contains("CollapsibleSecurityGroupCard"))
         assertTrue(source.contains("initiallyExpanded = false"))
-        assertTrue(source.contains("AnimatedVisibility(visible = expanded)"))
+        assertTrue(source.contains("MonicaExpandableContent(expanded = expanded)"))
         assertTrue(source.contains("SecurityDetailEntryRow"))
         assertFalse(source.contains("private fun SecurityDetailEntryCard"))
     }

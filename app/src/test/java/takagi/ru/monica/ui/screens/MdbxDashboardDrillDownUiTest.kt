@@ -7,22 +7,22 @@ import java.io.File
 class MdbxDashboardDrillDownUiTest {
 
     @Test
-    fun databaseDashboardRoutesAllFourTilesToDetails() {
+    fun databaseDashboardRetainsEachDestinationWithoutDuplicateActions() {
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
         ).readText()
         val detailPageBody = managerSource
-            .substringAfter("private fun MdbxVaultDetailPage(")
-            .substringBefore("@Composable\nprivate fun MdbxDetailActionList(")
+            .substringAfter("fun MdbxVaultDetailPage(")
+            .substringBefore("@Composable\nprivate fun MdbxSyncOverview(")
 
         assertTrue(managerSource.contains("data class Health("))
         assertTrue(managerSource.contains("data class Attachments("))
-        assertTrue(detailPageBody.contains("onClick = if (supportsConflicts) onShowConflicts else null"))
-        assertTrue(detailPageBody.contains("onClick = onShowHealth"))
-        assertTrue(detailPageBody.contains("onClick = if (supportsHistory) onShowCommitHistory else null"))
-        assertTrue(detailPageBody.contains("onClick = onShowAttachments"))
-        assertTrue(managerSource.contains("onClick: (() -> Unit)? = null"))
-        assertTrue(managerSource.contains("Icons.AutoMirrored.Filled.KeyboardArrowRight"))
+        listOf("onShowConflicts", "onShowHealth", "onShowSnapshots", "onShowCommitHistory", "onShowAttachments").forEach { callback ->
+            assertTrue("$callback must have exactly one destination", detailPageBody.split("onClick = $callback").size == 2)
+        }
+        assertTrue(detailPageBody.contains("if (supportsConflicts)"))
+        assertTrue(detailPageBody.contains("if (supportsHistory)"))
+        assertTrue(detailPageBody.contains("if (supportsSnapshots)"))
     }
 
     @Test

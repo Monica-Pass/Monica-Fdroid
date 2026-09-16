@@ -1,6 +1,7 @@
 package takagi.ru.monica.ime
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +14,8 @@ import kotlinx.coroutines.withContext
 import takagi.ru.monica.R
 import takagi.ru.monica.utils.BiometricAuthHelper
 import takagi.ru.monica.utils.SettingsManager
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import takagi.ru.monica.security.DeveloperVerificationPolicy
 
 class ImeBiometricAuthActivity : AppCompatActivity() {
@@ -22,6 +25,10 @@ class ImeBiometricAuthActivity : AppCompatActivity() {
     private var promptReady = false
     private var promptShown = false
     private var resultPublished = false
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -53,6 +53,8 @@ internal fun PasswordTabPane(
     visibleContentTypes: List<PasswordPageContentType>,
     selectedContentTypes: Set<PasswordPageContentType>,
     onToggleContentType: (PasswordPageContentType) -> Unit,
+    onCreateApiToken: (takagi.ru.monica.data.model.StorageTarget.Mdbx?) -> Unit = {},
+    onOpenApiTokens: (Long?, String?) -> Unit = { _, _ -> },
     onPasswordOpen: (Long) -> Unit,
     onNavigateToAddTotp: (Long?) -> Unit,
     onNavigateToBankCardDetail: (Long) -> Unit,
@@ -104,12 +106,14 @@ internal fun PasswordTabPane(
     onClearSelectedPassword: () -> Unit,
     onEditPassword: (Long) -> Unit,
     showStandaloneSettingsEntry: Boolean,
-    onOpenStandaloneSettings: () -> Unit
+    onOpenStandaloneSettings: () -> Unit,
+    onTrashSelectionModeChange: (Boolean) -> Unit = {}
 ) {
     val appSettings by settingsViewModel.settings.collectAsState()
 
     val listPaneContent: @Composable ColumnScope.() -> Unit = {
         PasswordListContent(
+            onOpenApiTokens = onOpenApiTokens,
             viewModel = passwordViewModel,
             settingsViewModel = settingsViewModel,
             securityManager = securityManager,
@@ -168,7 +172,9 @@ internal fun PasswordTabPane(
             initialTrashScopeKey = passwordHistoryInitialTrashScopeKey,
             enableTabSwitch = false,
             showBackButton = true,
-            onNavigateBack = onCloseHistoryPage
+            onNavigateBack = onCloseHistoryPage,
+            showReturnFab = false,
+            onTrashSelectionModeChange = onTrashSelectionModeChange
         )
         return
     }
@@ -192,6 +198,7 @@ internal fun PasswordTabPane(
                     .fillMaxHeight()
             ) {
                 PasswordDetailPaneContent(
+                    onCreateApiToken = onCreateApiToken,
                     isAddingPasswordInline = isAddingPasswordInline,
                     inlinePasswordEditorId = inlinePasswordEditorId,
                     selectedPasswordId = selectedPasswordId,
@@ -223,6 +230,7 @@ internal fun PasswordTabPane(
 
 @Composable
 internal fun PasswordDetailPaneContent(
+    onCreateApiToken: (takagi.ru.monica.data.model.StorageTarget.Mdbx?) -> Unit = {},
     isAddingPasswordInline: Boolean,
     inlinePasswordEditorId: Long?,
     selectedPasswordId: Long?,
@@ -277,6 +285,7 @@ internal fun PasswordDetailPaneContent(
             val editorId = (content as? PasswordDetailContent.Edit)?.passwordId
             key(content) {
                 AddEditPasswordScreen(
+                    onSwitchToApiToken = { target -> onInlinePasswordEditorBack(); onCreateApiToken(target) },
                     viewModel = passwordViewModel,
                     totpViewModel = totpViewModel,
                     bankCardViewModel = bankCardViewModel,

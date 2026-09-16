@@ -787,13 +787,13 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
         
         // ============ 头部信息 ============
         sb.appendLine("╔════════════════════════════════════════════════════════╗")
-        sb.appendLine("║           Monica 应用列表诊断报告                      ║")
+        sb.appendLine(context.getString(R.string.app_report_title))
         sb.appendLine("╚════════════════════════════════════════════════════════╝")
         sb.appendLine()
-        sb.appendLine("📅 生成时间: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}")
-        sb.appendLine("📱 设备品牌: ${android.os.Build.BRAND}")
-        sb.appendLine("📱 设备型号: ${android.os.Build.MODEL}")
-        sb.appendLine("🤖 Android版本: ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})")
+        sb.appendLine(context.getString(R.string.app_report_generated, java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())))
+        sb.appendLine(context.getString(R.string.app_report_brand, android.os.Build.BRAND))
+        sb.appendLine(context.getString(R.string.app_report_model, android.os.Build.MODEL))
+        sb.appendLine(context.getString(R.string.app_report_android, android.os.Build.VERSION.RELEASE, android.os.Build.VERSION.SDK_INT))
         sb.appendLine()
         sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         sb.appendLine()
@@ -806,27 +806,27 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
         val userApps = totalApps - systemApps
         val updatedSystemApps = allPackages.count { (it.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0 }
         
-        sb.appendLine("【📊 统计摘要】")
-        sb.appendLine("  • 总应用数量: $totalApps")
-        sb.appendLine("  • 用户应用: $userApps")
-        sb.appendLine("  • 系统应用: $systemApps (已更新: $updatedSystemApps)")
-        sb.appendLine("  • ✅ 当前显示: $visibleCount (${String.format("%.1f", visibleCount * 100.0 / totalApps)}%)")
-        sb.appendLine("  • ❌ 被隐藏: $hiddenCount (${String.format("%.1f", hiddenCount * 100.0 / totalApps)}%)")
+        sb.appendLine(context.getString(R.string.app_report_summary))
+        sb.appendLine(context.getString(R.string.app_report_total, totalApps))
+        sb.appendLine(context.getString(R.string.app_report_user_count, userApps))
+        sb.appendLine(context.getString(R.string.app_report_system_count, systemApps, updatedSystemApps))
+        sb.appendLine(context.getString(R.string.app_report_visible_percent, visibleCount, String.format("%.1f", visibleCount * 100.0 / totalApps)))
+        sb.appendLine(context.getString(R.string.app_report_hidden_percent, hiddenCount, String.format("%.1f", hiddenCount * 100.0 / totalApps)))
         sb.appendLine()
         
         // 健康度评估
         val healthScore = when {
-            hiddenCount < 30 -> "Warning: blacklist may be too loose"
-            hiddenCount > 100 -> "Warning: blacklist may be too strict"
-            else -> "Blacklist health looks good"
+            hiddenCount < 30 -> context.getString(R.string.app_report_filter_loose)
+            hiddenCount > 100 -> context.getString(R.string.app_report_filter_strict)
+            else -> context.getString(R.string.app_report_filter_good)
         }
-        sb.appendLine("  💡 健康度评估: $healthScore")
+        sb.appendLine(context.getString(R.string.app_report_filter_health, healthScore))
         sb.appendLine()
         sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         sb.appendLine()
         
         // ============ 当前显示的应用 ============
-        sb.appendLine("【✅ 当前显示的应用 ($visibleCount 个)】")
+        sb.appendLine(context.getString(R.string.app_report_visible_apps, visibleCount))
         sb.appendLine()
         
         // 按类型分组显示
@@ -837,25 +837,25 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
         }
         
         if (userVisibleApps.isNotEmpty()) {
-            sb.appendLine("┌─ 用户安装的应用 (${userVisibleApps.size} 个) ─┐")
+            sb.appendLine(context.getString(R.string.app_report_user_apps, userVisibleApps.size))
             userVisibleApps.take(20).forEach { app ->
                 sb.appendLine("  📱 ${app.appName}")
                 sb.appendLine("     ${app.packageName}")
             }
             if (userVisibleApps.size > 20) {
-                sb.appendLine("  ... 还有 ${userVisibleApps.size - 20} 个应用")
+                sb.appendLine(context.getString(R.string.app_report_more_apps, userVisibleApps.size - 20))
             }
             sb.appendLine()
         }
         
         if (systemVisibleApps.isNotEmpty()) {
-            sb.appendLine("┌─ 系统应用 (${systemVisibleApps.size} 个) ─┐")
+            sb.appendLine(context.getString(R.string.app_report_system_apps, systemVisibleApps.size))
             systemVisibleApps.take(20).forEach { app ->
                 sb.appendLine("  ⚙️ ${app.appName}")
                 sb.appendLine("     ${app.packageName}")
             }
             if (systemVisibleApps.size > 20) {
-                sb.appendLine("  ... 还有 ${systemVisibleApps.size - 20} 个应用")
+                sb.appendLine(context.getString(R.string.app_report_more_apps, systemVisibleApps.size - 20))
             }
             sb.appendLine()
         }
@@ -864,35 +864,35 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
         sb.appendLine()
         
         // ============ 被隐藏的系统组件 ============
-        sb.appendLine("【❌ 被隐藏的系统组件 ($hiddenCount 个)】")
-        sb.appendLine("💡 如果发现有用的应用被误隐藏，请记录包名并反馈")
+        sb.appendLine(context.getString(R.string.app_report_hidden_components, hiddenCount))
+        sb.appendLine(context.getString(R.string.app_report_hidden_feedback))
         sb.appendLine()
         
         // 按包名前缀分组
         val hiddenByPrefix = hiddenPackages
             .groupBy { 
                 when {
-                    it.packageName.startsWith("android") -> "Android core"
-                    it.packageName.startsWith("com.android.") -> "Android system"
-                    it.packageName.startsWith("com.google.android.") -> "Google services"
-                    it.packageName.startsWith("com.qualcomm.") || it.packageName.startsWith("com.qti.") -> "Chip vendor"
-                    else -> "Other"
+                    it.packageName.startsWith("android") -> context.getString(R.string.app_report_android_core)
+                    it.packageName.startsWith("com.android.") -> context.getString(R.string.app_report_android_system)
+                    it.packageName.startsWith("com.google.android.") -> context.getString(R.string.app_report_google_services)
+                    it.packageName.startsWith("com.qualcomm.") || it.packageName.startsWith("com.qti.") -> context.getString(R.string.app_report_chip_vendor)
+                    else -> context.getString(R.string.app_report_other)
                 }
             }
         
         hiddenByPrefix.forEach { (category, apps) ->
-            sb.appendLine("┌─ $category (${apps.size} 个) ─┐")
+            sb.appendLine("┌─ $category (${apps.size}) ─┐")
             apps.sortedBy { it.packageName }.take(10).forEach { app ->
                 val appName = try {
                     packageManager.getApplicationLabel(app).toString()
                 } catch (e: Exception) {
-                    "Unknown"
+                    context.getString(R.string.app_report_unknown_app)
                 }
                 sb.appendLine("  🚫 $appName")
                 sb.appendLine("     ${app.packageName}")
             }
             if (apps.size > 10) {
-                sb.appendLine("  ... 还有 ${apps.size - 10} 个组件")
+                sb.appendLine(context.getString(R.string.app_report_more_components, apps.size - 10))
             }
             sb.appendLine()
         }
@@ -901,16 +901,16 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
         sb.appendLine()
         
         // ============ 完整应用列表 ============
-        sb.appendLine("【📋 完整应用列表（所有 $totalApps 个应用）】")
-        sb.appendLine("💡 格式: [状态] 应用名称")
-        sb.appendLine("       包名 | 类型")
+        sb.appendLine(context.getString(R.string.app_report_all_apps, totalApps))
+        sb.appendLine(context.getString(R.string.app_report_format))
+        sb.appendLine(context.getString(R.string.app_report_package_type))
         sb.appendLine()
         
         allPackages.sortedBy { it.packageName }.forEach { app ->
             val appName = try {
                 packageManager.getApplicationLabel(app).toString()
             } catch (e: Exception) {
-                "Unknown app"
+                context.getString(R.string.app_report_unknown_app)
             }
             
             val isSystem = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0
@@ -919,9 +919,9 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
             
             val statusIcon = if (isHidden) "❌" else "✅"
             val typeLabel = when {
-                !isSystem -> "User app"
-                isUpdated -> "Updated system app"
-                else -> "System app"
+                !isSystem -> context.getString(R.string.app_report_user_app)
+                isUpdated -> context.getString(R.string.app_report_updated_system_app)
+                else -> context.getString(R.string.app_report_system_app)
             }
             
             sb.appendLine("$statusIcon $appName")
@@ -931,15 +931,15 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
         sb.appendLine()
         sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         sb.appendLine()
-        sb.appendLine("【🔧 黑名单规则信息】")
-        sb.appendLine("当前黑名单规则数量: ${getBlacklistPatterns().size}")
+        sb.appendLine(context.getString(R.string.app_report_filter_rules))
+        sb.appendLine(context.getString(R.string.app_report_rule_count, getBlacklistPatterns().size))
         sb.appendLine()
-        sb.appendLine("如需调整黑名单，请访问:")
+        sb.appendLine(context.getString(R.string.app_report_rules_feedback))
         sb.appendLine("https://github.com/Monica-Pass/Monica-for-Android/issues")
         sb.appendLine()
         sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         sb.appendLine()
-        sb.appendLine("报告生成完成 ✅")
+        sb.appendLine(context.getString(R.string.app_report_complete))
         
         // ============ 保存文件 ============
         val dateStr = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
@@ -954,9 +954,9 @@ private suspend fun exportAppListToFile(context: Context, currentList: List<AppI
                 appendLine()
                 appendLine(context.getString(R.string.app_selector_total_apps, totalApps))
                 appendLine(context.getString(R.string.app_selector_found_apps, visibleCount))
-                appendLine("Hidden: $hiddenCount")
+                appendLine(context.getString(R.string.app_report_hidden_count, hiddenCount))
                 appendLine()
-                appendLine("Path:")
+                appendLine(context.getString(R.string.app_report_path))
                 appendLine(file.absolutePath)
             }
             

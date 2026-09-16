@@ -1,6 +1,7 @@
 package takagi.ru.monica.autofill_ng
 
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.rustcore.RustAutofillCore
 import java.net.URL
 import java.util.Locale
 
@@ -9,7 +10,85 @@ import java.util.Locale
  * - Prefer exact package/domain matches.
  * - Keep matching deterministic and conservative to reduce false positives.
  */
-class BitwardenLikeAutofillMatcherNg {
+class BitwardenLikeAutofillMatcherNg internal constructor(
+    private val useNativeIndex: Boolean = true,
+    private val cacheMetadata: Boolean = true,
+) {
+    private class Metadata(entry: PasswordEntry, val row: RustAutofillCore.Row) {
+        val id = entry.id
+        val title = entry.title
+        val appName = entry.appName
+        val website = entry.website
+        val packageName = entry.appPackageName
+        fun matches(entry: PasswordEntry) = id == entry.id && title == entry.title && appName == entry.appName &&
+            website == entry.website && packageName == entry.appPackageName
+    }
+
+    private data class IndexSnapshot(val metadata: List<Metadata>, val nativeHandle: Long = 0L)
+
+    private val cacheLock = Any()
+    private var snapshot = IndexSnapshot(emptyList())
+    private var generation = 0L
+    internal var metadataBuildCount = 0
+        private set
+    internal var nativeQueryCount = 0
+        private set
+
+    fun clear() {
+        // Clearing must not wait for a large, in-flight match on the UI thread.
+        val previous = synchronized(cacheLock) {
+            generation++
+            snapshot.also { snapshot = IndexSnapshot(emptyList()) }
+        }
+        RustAutofillCore.close(previous.nativeHandle)
+    }
+
+    private fun prepare(entry: PasswordEntry): Metadata {
+        metadataBuildCount++
+        val packages = linkedSetOf<String>().apply {
+            addAll(extractNormalizedPackages(entry.appPackageName))
+            extractWebsiteTokens(entry.website).mapNotNull(::extractAndroidAppPackage).forEach(::add)
+        }
+        val hosts = extractNormalizedHosts(entry.website)
+        return Metadata(
+            entry,
+            RustAutofillCore.Row(
+                packages, hosts, hosts.map(::extractBaseDomain).toSet(),
+                setOf(normalizeLabel(entry.title), normalizeLabel(entry.appName)),
+            ),
+        )
+    }
+
+    private fun updateMetadata(entries: List<PasswordEntry>): IndexSnapshot {
+        val (previous, revision) = synchronized(cacheLock) { snapshot to generation }
+        if (entries.size == previous.metadata.size &&
+            entries.indices.all { previous.metadata[it].matches(entries[it]) }
+        ) return previous
+
+        // Room can reorder all rows after an edit. Reuse parsed values by identity,
+        // but rebuild native positions so results always address the current list.
+        val previousById = previous.metadata.associateBy { it.id }
+        val next = ArrayList<Metadata>(entries.size)
+        entries.forEachIndexed { index, entry ->
+            val cached = previous.metadata.getOrNull(index)?.takeIf { it.matches(entry) }
+                ?: previousById[entry.id]?.takeIf { it.matches(entry) }
+            next.add(cached ?: prepare(entry))
+        }
+        val handle = if (useNativeIndex && entries.size >= 256) {
+            RustAutofillCore.open(next.map { it.row }) ?: 0L
+        } else 0L
+        val updated = IndexSnapshot(next, handle)
+        val retained = synchronized(cacheLock) {
+            if (generation == revision) {
+                snapshot = updated
+                true
+            } else false
+        }
+        RustAutofillCore.close(previous.nativeHandle)
+        if (!retained) RustAutofillCore.close(handle)
+        // A clear during preparation must not repopulate the service cache.
+        return if (retained) updated else updated.copy(nativeHandle = 0L)
+    }
     data class Config(
         val strictOnly: Boolean = true,
         val allowSubdomainMatch: Boolean = true,
@@ -45,6 +124,7 @@ class BitwardenLikeAutofillMatcherNg {
         )
     }
 
+    @Synchronized
     fun match(
         entries: List<PasswordEntry>,
         packageName: String,
@@ -52,7 +132,11 @@ class BitwardenLikeAutofillMatcherNg {
         appDisplayName: String? = null,
         config: Config = Config(),
     ): List<PasswordEntry> {
-        if (entries.isEmpty()) return emptyList()
+        if (entries.isEmpty()) {
+            clear()
+            return emptyList()
+        }
+        val prepared = if (cacheMetadata) updateMetadata(entries) else null
 
         val targetPackage = normalizePackageName(packageName)
         val targetPackageTokens = targetPackage
@@ -66,9 +150,24 @@ class BitwardenLikeAutofillMatcherNg {
         val targetRoot = targetHost?.let(::extractBaseDomain)
         val targetAppDisplayName = normalizeLabel(appDisplayName)
 
-        val candidates = entries.mapNotNull { entry ->
+        // Strict matching always requires a domain, package or exact label signal.
+        // Non-strict fallback deliberately scans all rows to preserve substring heuristics.
+        val nativeIndices = if (config.strictOnly && prepared != null && prepared.nativeHandle > 0) {
+            RustAutofillCore.query(
+                prepared.nativeHandle, targetPackage.orEmpty(), targetHost.orEmpty(),
+                targetRoot.orEmpty(), targetAppDisplayName,
+            ).also { if (it != null) nativeQueryCount++ }
+        } else null
+        val validIndices = nativeIndices?.takeIf { indices ->
+            var last = -1
+            indices.all { index -> (index in entries.indices && index > last).also { last = index } }
+        }
+        val candidateIndices: Iterable<Int> = validIndices?.asIterable() ?: entries.indices
+        val candidates = candidateIndices.mapNotNull { index ->
+            val entry = entries[index]
             scoreEntry(
                 entry = entry,
+                prepared = prepared?.metadata?.get(index)?.row,
                 targetPackage = targetPackage,
                 targetPackageTokens = targetPackageTokens,
                 targetHost = targetHost,
@@ -102,6 +201,7 @@ class BitwardenLikeAutofillMatcherNg {
 
     private fun scoreEntry(
         entry: PasswordEntry,
+        prepared: RustAutofillCore.Row?,
         targetPackage: String?,
         targetPackageTokens: List<String>,
         targetHost: String?,
@@ -113,14 +213,14 @@ class BitwardenLikeAutofillMatcherNg {
         val reasons = linkedSetOf<Reason>()
         var score = 0
 
-        val entryPackages = linkedSetOf<String>().apply {
+        val entryPackages = prepared?.packages ?: linkedSetOf<String>().apply {
             extractNormalizedPackages(entry.appPackageName).forEach(::add)
             extractWebsiteTokens(entry.website)
                 .mapNotNull(::extractAndroidAppPackage)
                 .forEach(::add)
         }
-        val entryHosts = extractNormalizedHosts(entry.website)
-        val entryRoots = entryHosts.map(::extractBaseDomain).toSet()
+        val entryHosts = prepared?.hosts ?: extractNormalizedHosts(entry.website)
+        val entryRoots = prepared?.roots ?: entryHosts.map(::extractBaseDomain).toSet()
 
         if (!preferDomainSignals &&
             config.allowPackageMatch &&
@@ -131,15 +231,12 @@ class BitwardenLikeAutofillMatcherNg {
             reasons += Reason.EXACT_PACKAGE
         }
 
-        val entryTitle = normalizeLabel(entry.title)
-        val entryAppName = normalizeLabel(entry.appName)
+        val entryLabels = prepared?.labels
+            ?: setOf(normalizeLabel(entry.title), normalizeLabel(entry.appName))
         if (!preferDomainSignals &&
             config.allowPackageMatch &&
             !targetAppDisplayName.isNullOrBlank() &&
-            (
-                entryTitle == targetAppDisplayName ||
-                    entryAppName == targetAppDisplayName
-                )
+            targetAppDisplayName in entryLabels
         ) {
             score += 95
             reasons += Reason.EXACT_APP_TITLE
@@ -147,7 +244,7 @@ class BitwardenLikeAutofillMatcherNg {
 
         if (!preferDomainSignals && config.allowPackageMatch && targetPackageTokens.isNotEmpty()) {
             val tokenMatched = targetPackageTokens.any { token ->
-                entryTitle.contains(token) || entryAppName.contains(token)
+                entryLabels.any { it.contains(token) }
             }
             if (tokenMatched) {
                 score += 70

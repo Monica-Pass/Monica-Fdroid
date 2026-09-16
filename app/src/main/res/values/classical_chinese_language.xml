@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- A language's own name remains recognizable from every existing locale. -->
+    <string name="language_classical_chinese" translatable="false">文言文（华夏） · Classical Chinese (Huaxia)</string>
+    <string name="language_classical_chinese_native" translatable="false">文言文（华夏）</string>
+    <string name="language_classical_chinese_english" translatable="false">Classical Chinese (Huaxia)</string>
+</resources>

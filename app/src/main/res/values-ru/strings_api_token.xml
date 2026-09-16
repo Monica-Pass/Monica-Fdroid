@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_type_api_token">Токен API</string>
+    <string name="api_token_no_database">Откройте базу в формате MDBX для просмотра или создания токенов API.</string>
+    <string name="api_token_load_error">Не удалось загрузить или сохранить токен. Откройте базу заново или синхронизируйте её, затем обновите данные. Существующие данные сохранены.</string>
+    <string name="api_token_reload">Обновить</string>
+    <string name="api_token_root_collection">Корень базы</string>
+    <string name="api_token_database">База данных</string>
+    <string name="api_token_collection">Категория</string>
+    <string name="api_token_complete_payload">Полные данные токена (JSON)</string>
+    <string name="api_token_empty">В этой базе нет токенов API.</string>
+    <string name="api_token_native_hint">Сохраняется как токен API в формате MDBX, совместимом с Monica CLI.</string>
+    <string name="api_token_toggle_visibility">Показать или скрыть значение</string>
+    <string name="api_token_validation">Введите поставщика и токен. Необязательный адрес API должен быть URL HTTP или HTTPS.</string>
+    <string name="api_token_fields_limit">Можно добавить до 128 своих полей. Общий объём заметок и значений полей не должен превышать 64 КБ.</string>
+    <string name="api_token_import_json">Вставить JSON токена</string>
+    <string name="api_token_parse">Разобрать</string>
+    <string name="api_token_delete_confirmation">Удалить этот токен API из базы?</string>
+    <string name="api_token_entry_id">ID записи</string>
+    <string name="api_token_collection_id">ID коллекции</string>
+    <string name="api_token_provider">Поставщик</string>
+    <string name="api_token_api_base">Базовый URL API</string>
+    <string name="api_token_note">Заметка</string>
+    <string name="api_token_schema">Схема данных</string>
+    <string name="api_token_name">Имя токена</string>
+    <string name="api_token_add">Добавить токен API</string>
+    <string name="api_token_edit">Изменить токен API</string>
+    <string name="api_token_credentials">Сведения о токене</string>
+    <string name="api_token_manage_databases">Управление базами данных</string>
+    <string name="api_token_folder_error">Не удалось загрузить категории. Откройте выбор хранилища заново для повторной попытки.</string>
+    <string name="api_token_storage">Место хранения</string>
+    <string name="api_token_advanced">Подробнее</string>
+    <string name="api_token_unknown_schema">Этот токен использует другой формат. Ниже можно просмотреть и скопировать его полные данные.</string>
+    <string name="api_token_discard_title">Отменить изменения?</string>
+    <string name="api_token_discard_message">Несохранённые изменения будут потеряны.</string>
+    <string name="api_token_discard">Отменить</string>
+    <string name="api_token_name_hint">1–64 буквы, цифры, - или _</string>
+</resources>

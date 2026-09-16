@@ -1,5 +1,9 @@
 package takagi.ru.monica.keepass
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -14,6 +18,11 @@ internal data class KeePassSourceRevision(
 )
 
 internal class KeePassSourceChangedException(message: String) : IOException(message)
+
+/** Error text follows the UI locale; sync decisions follow the exception type. */
+internal fun Throwable.hasKeePassSourceChangedCause(): Boolean =
+    generateSequence(this) { current -> current.cause?.takeUnless { it === current } }
+        .any { it is KeePassSourceChangedException }
 
 internal object KeePassSourceSafety {
     fun revisionOf(bytes: ByteArray): KeePassSourceRevision {
@@ -73,23 +82,26 @@ internal object KeePassSourceSafety {
     fun requireUnchanged(
         expectedRevision: KeePassSourceRevision,
         currentBytes: ByteArray,
-        sourceLabel: String
+        sourceLabel: String,
+        strings: StringResolver
     ) {
         requireUnchanged(
             expectedRevision = expectedRevision,
             currentRevision = revisionOf(currentBytes),
-            sourceLabel = sourceLabel
+            sourceLabel = sourceLabel,
+            strings = strings,
         )
     }
 
     fun requireUnchanged(
         expectedRevision: KeePassSourceRevision,
         currentRevision: KeePassSourceRevision,
-        sourceLabel: String
+        sourceLabel: String,
+        strings: StringResolver
     ) {
         if (currentRevision != expectedRevision) {
             throw KeePassSourceChangedException(
-                "数据库文件已被其他应用修改，请重新加载后再保存：$sourceLabel"
+                strings.get(R.string.cloud_message_local_source_changed, sourceLabel)
             )
         }
     }
@@ -133,6 +145,7 @@ internal data class KeePassRecoveryRecord(
 
 internal class KeePassRecoveryStore(
     private val rootDir: File,
+    private val strings: StringResolver,
     private val nowProvider: () -> Instant = Instant::now
 ) {
     fun create(
@@ -143,7 +156,7 @@ internal class KeePassRecoveryStore(
         require(databaseId > 0) { "Recovery copy requires a database id" }
         val databaseDir = File(rootDir, databaseId.toString())
         if (!databaseDir.exists() && !databaseDir.mkdirs()) {
-            throw IOException("无法创建 KeePass 恢复目录")
+            throw IOException(strings.get(R.string.cloud_message_recovery_directory_create))
         }
 
         val timestamp = nowProvider().toEpochMilli()
@@ -154,7 +167,7 @@ internal class KeePassRecoveryStore(
         if (!temporary.renameTo(destination)) {
             writeSynced(destination, bytes)
             if (!temporary.delete() && temporary.exists()) {
-                throw IOException("无法清理 KeePass 恢复临时文件")
+                throw IOException(strings.get(R.string.cloud_message_recovery_temp_cleanup))
             }
         }
 
@@ -166,7 +179,7 @@ internal class KeePassRecoveryStore(
             createdAt = Instant.ofEpochMilli(timestamp)
         )
         if (!verify(copy)) {
-            throw IOException("KeePass 恢复副本校验失败")
+            throw IOException(strings.get(R.string.cloud_message_recovery_verification))
         }
         return copy
     }
@@ -175,7 +188,7 @@ internal class KeePassRecoveryStore(
         require(databaseId > 0) { "Recovery copy requires a database id" }
         val databaseDir = File(rootDir, databaseId.toString())
         if (!databaseDir.exists() && !databaseDir.mkdirs()) {
-            throw IOException("无法创建 KeePass 恢复目录")
+            throw IOException(strings.get(R.string.cloud_message_recovery_directory_create))
         }
         val timestamp = nowProvider().toEpochMilli()
         val staging = File(databaseDir, ".recovery-$timestamp-${System.nanoTime()}.tmp")
@@ -224,7 +237,7 @@ internal class KeePassRecoveryStore(
                 databaseId = databaseId,
                 createdAt = Instant.ofEpochMilli(timestamp),
             ).also { copy ->
-                if (!verify(copy)) throw IOException("KeePass 恢复副本校验失败")
+                if (!verify(copy)) throw IOException(strings.get(R.string.cloud_message_recovery_verification))
             }
         } finally {
             if (staging.exists()) staging.delete()

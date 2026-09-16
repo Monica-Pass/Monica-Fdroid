@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_message_credentials_required">请入名籍与密钥</string>
+    <string name="steam_message_rsa_failed">Steam RSA 之钥未能取</string>
+    <string name="steam_message_rsa_incomplete">Steam 所返 RSA 之数不全</string>
+    <string name="steam_message_password_encrypt">Steam 密钥未能加密</string>
+    <string name="steam_message_login_request">Steam 登录之请未能发</string>
+    <string name="steam_message_login_failed">Steam 登录未成</string>
+    <string name="steam_message_login_rejected">Steam 拒登录（EResult=%1$s，interval=%2$s）</string>
+    <string name="steam_message_login_incomplete">Steam 登录之应不全，或须加验。</string>
+    <string name="steam_message_session_invalid">登录会话无效</string>
+    <string name="steam_message_code_required">请入验码</string>
+    <string name="steam_message_session_expired">登录会话已逾期，请重始。</string>
+    <string name="steam_message_verification_failed">Steam 验之未成</string>
+    <string name="steam_message_qr_create">Steam 二维码登录会话未能建</string>
+    <string name="steam_message_qr_failed">Steam 二维码登录未成</string>
+    <string name="steam_message_code_submit">Steam 验码未能递</string>
+    <string name="steam_message_session_needs_code">此登录会话须入验码</string>
+    <string name="steam_message_qr_expired">二维码登录会话已逾期，请重始。</string>
+    <string name="steam_message_not_qr">此会话非二维码登录</string>
+    <string name="steam_message_poll_failed">Steam 登录之况未能察</string>
+    <string name="steam_message_steamid_missing">Steam 已登，然未得 SteamID，不能续。</string>
+    <string name="steam_message_token_missing">Steam 已登，然未得 access token，不能续纳。</string>
+    <string name="steam_message_login_timeout">候 Steam 登录逾时，请稍候重试。</string>
+    <string name="steam_message_qr_parameters">二维码登录会话之参无效，请重始。</string>
+    <string name="steam_message_replacement_code">此名籍已联验器，请入验码以易之。</string>
+    <string name="steam_message_steamid_invalid">SteamID 无效，不能设 Steam Guard。</string>
+    <string name="steam_message_account_restricted">Steam 名籍受限，不能增 Steam Guard</string>
+    <string name="steam_message_rate_limited">请于 Steam 过频，请稍候重试。</string>
+    <string name="steam_message_add_failed">Steam Guard 未能增</string>
+    <string name="steam_message_phone_required">欲增 Steam Guard，须先为此 Steam 名籍联手机号</string>
+    <string name="steam_message_response_missing">Steam 所返验器之数不全：缺 %1$s</string>
+    <string name="steam_message_activation_expired">Steam Guard 启用之期已过，请重登。</string>
+    <string name="steam_message_activation_data">Steam Guard 之数不全，不能造启用验码。</string>
+    <string name="steam_message_activation_failed">Steam Guard 启用未成</string>
+    <string name="steam_message_activation_code_invalid">Steam 启用验码无效或逾期</string>
+    <string name="steam_message_activation_status">Steam Guard 启用未成（status=%1$d）</string>
+    <string name="steam_message_sequential_codes">Steam Guard 启用未成：未能造 Steam 所需连续验码</string>
+    <string name="steam_message_replace_start">未能始易验器</string>
+    <string name="steam_message_replace_sms">请入短信验码，以易今之验器</string>
+    <string name="steam_message_replace_denied">Steam 已登，然拒迁验器（EResult=2）。名籍或无可用手机号，或暂禁迁移。请纳 maFile，或于 Steam 联手机号而再试。</string>
+    <string name="steam_message_replace_forbidden">Steam 已登，然拒访验器迁移之口（EResult=15）。请纳 maFile，或稍候重登再试。</string>
+    <string name="steam_message_replace_limited">Steam 已登，然暂限验器迁移（EResult=84），请稍候重试。</string>
+    <string name="steam_message_replace_result">Steam 已登，然验器未能迁（EResult=%1$d）</string>
+    <string name="steam_message_replace_session">替换会话无效，请重登而纳。</string>
+    <string name="steam_message_replace_failed">验器未能易</string>
+    <string name="steam_message_session_state">登录会话之况有异，请重始。</string>
+    <string name="steam_message_oauth_missing">Steam 已登，然未返 OAuth token，不能续纳。</string>
+    <string name="steam_message_captcha_unsupported">Steam 须图形之验，此版尚不能行。请先于 Steam 客户端登一次，再试。</string>
+    <string name="steam_message_enter_token_code">请入 Steam Guard 验码</string>
+    <string name="steam_message_enter_email_code">请入电邮验码</string>
+    <string name="steam_message_invalid_parameters">Steam 拒所请：参数无效</string>
+    <string name="steam_message_access_denied">Steam 拒访</string>
+    <string name="steam_message_already_bound">此名籍已联 Steam 验器，请循替换之法。</string>
+    <string name="steam_message_operation_disallowed">Steam 今之况不许此事</string>
+    <string name="steam_message_confirmation_required">Steam 须另加确认</string>
+    <string name="steam_message_code_invalid">Steam 验码无效或逾期</string>
+    <string name="steam_message_request_status">Steam 所请未成（status=%1$d）</string>
+    <string name="steam_message_bad_credentials">Steam 名籍或密钥有误</string>
+    <string name="steam_message_duplicate_request">Steam 报重请（EResult=29），名籍或已联验器。</string>
+    <string name="steam_message_session_conflict">Steam 登录会话相争，请稍候重试。</string>
+    <string name="steam_message_extra_verification">Steam 登录须加验（EResult=63）</string>
+    <string name="steam_message_login_result">Steam 登录未成（EResult=%1$d）</string>
+    <string name="steam_message_token_code_invalid">Steam Guard 验码无效或逾期</string>
+    <string name="steam_message_sms_email_code_invalid">短信或电邮验码无效或逾期</string>
+</resources>

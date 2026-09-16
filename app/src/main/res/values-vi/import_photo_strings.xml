@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">Tệp sao lưu đã xuất trống</string>
+    <string name="export_message_empty_zip">Bản sao lưu ZIP không có nội dung</string>
+    <string name="export_message_open_failed">Không thể mở đích xuất</string>
+    <string name="export_message_incomplete">Xuất chưa hoàn tất: %1$d/%2$d byte</string>
+    <string name="export_message_invalid_encrypted">Bản sao lưu đã ghi có định dạng mã hóa không hợp lệ</string>
+    <string name="export_message_verify_failed">Không thể xác minh tệp đã xuất</string>
+    <string name="export_message_backup_summary">Đã xuất bản sao lưu: %1$d mật khẩu và %2$d ảnh</string>
+    <string name="import_message_aegis_unencrypted">Lần nhập này cần bản xuất JSON Aegis không mã hóa</string>
+    <string name="import_message_aegis_missing">Tệp Aegis không hợp lệ: thiếu %1$s</string>
+    <string name="import_message_aegis_empty_slots">Tệp Aegis không hợp lệ: slots trống</string>
+    <string name="import_message_aegis_slot_type">Loại slot Aegis không được hỗ trợ: %1$s</string>
+    <string name="import_message_aegis_no_totp">Không tìm thấy mục TOTP hợp lệ trong tệp Aegis</string>
+    <string name="import_message_aegis_failed">Không thể nhập tệp Aegis: %1$s</string>
+    <string name="import_message_key_length">Khóa đã giải mã có độ dài không hợp lệ</string>
+    <string name="import_message_steam_missing">Dữ liệu Steam Guard không hợp lệ: thiếu %1$s</string>
+    <string name="import_message_steam_device_id">ID thiết bị không hợp lệ. Định dạng yêu cầu: android:xxxx</string>
+    <string name="import_message_steam_secret">Định dạng shared_secret Steam không hợp lệ</string>
+    <string name="import_message_steam_exists">Trình xác thực Steam Guard này đã tồn tại</string>
+    <string name="export_message_empty_mafile">Tệp maFile đã xuất trống</string>
+    <string name="crypto_message_encrypt_failed">Mã hóa thất bại: %1$s</string>
+    <string name="crypto_message_decrypt_failed">Giải mã thất bại: %1$s</string>
+    <string name="crypto_message_file_too_small">Tệp mã hóa quá nhỏ và có thể bị hỏng</string>
+    <string name="crypto_message_invalid_file">Định dạng tệp mã hóa không hợp lệ</string>
+    <string name="crypto_message_password_or_corrupt">Sai mật khẩu hoặc dữ liệu mã hóa bị hỏng</string>
+    <string name="crypto_message_invalid_text">Định dạng văn bản mã hóa không hợp lệ</string>
+    <string name="photo_message_camera_failed">Không thể mở máy ảnh: %1$s</string>
+    <string name="photo_message_gallery_missing">Không có ứng dụng thư viện ảnh</string>
+    <string name="photo_message_gallery_failed">Không thể mở thư viện ảnh: %1$s</string>
+    <string name="photo_message_data_failed">Không thể đọc ảnh được trả về: %1$s</string>
+    <string name="photo_message_file_missing">Tệp ảnh trống hoặc không tồn tại</string>
+    <string name="photo_message_not_selected">Chưa chọn ảnh</string>
+</resources>

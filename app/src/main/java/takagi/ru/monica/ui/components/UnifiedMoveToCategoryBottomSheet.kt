@@ -147,6 +147,7 @@ fun UnifiedMoveToCategoryBottomSheet(
     allowCopy: Boolean = false,
     allowMove: Boolean = true,
     allowArchiveTarget: Boolean = false,
+    allowLocalTarget: Boolean = true,
     onBeforeTargetSelected: ((
         target: UnifiedMoveCategoryTarget,
         action: UnifiedMoveAction,
@@ -166,9 +167,9 @@ fun UnifiedMoveToCategoryBottomSheet(
         }
     }
 
-    val sources = remember(keepassDatabases, mdbxDatabases, bitwardenVaults) {
+    val sources = remember(keepassDatabases, mdbxDatabases, bitwardenVaults, allowLocalTarget) {
         buildList {
-            add(MovePickerSource.MonicaLocal)
+            if (allowLocalTarget) add(MovePickerSource.MonicaLocal)
             keepassDatabases.forEach { add(MovePickerSource.KeePassDatabase(it)) }
             mdbxDatabases.forEach { add(MovePickerSource.MdbxDatabase(it)) }
             bitwardenVaults.forEach { add(MovePickerSource.BitwardenVaultSource(it)) }
@@ -186,7 +187,7 @@ fun UnifiedMoveToCategoryBottomSheet(
             selectedTarget.value = null
             selectedTargetLabel.value = null
         } else if (activeSourceKey.value !in sourceKeys) {
-            activeSourceKey.value = MovePickerSource.MonicaLocal.key
+            activeSourceKey.value = sources.firstOrNull()?.key ?: MovePickerSource.MonicaLocal.key
             selectedTarget.value = null
             selectedTargetLabel.value = null
         }
@@ -327,6 +328,7 @@ fun UnifiedMoveToCategoryBottomSheet(
     }
 
     val activeSource = sources.firstOrNull { it.key == activeSourceKey.value }
+        ?: sources.firstOrNull()
         ?: MovePickerSource.MonicaLocal
     val activeMdbxDatabaseId = (activeSource as? MovePickerSource.MdbxDatabase)?.database?.id
     LaunchedEffect(activeMdbxDatabaseId) {
@@ -635,7 +637,7 @@ fun UnifiedMoveToCategoryBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "目标：${selectedTargetLabel.value ?: "请选择分类或文件夹"}",
+                        text = stringResource(R.string.legacy_ui_target_label, selectedTargetLabel.value ?: stringResource(R.string.legacy_ui_choose_folder)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (selectedTarget.value == null) {
                             MaterialTheme.colorScheme.onSurfaceVariant

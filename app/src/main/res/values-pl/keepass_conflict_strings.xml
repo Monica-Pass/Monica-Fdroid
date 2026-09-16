@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Sprawdź i scal</string>
+    <string name="keepass_conflict_banner_title">Zmiany wymagają scalenia</string>
+    <string name="keepass_conflict_banner_summary">Sprawdź obie wersje, aby wznowić synchronizację.</string>
+    <string name="keepass_conflict_merge_sync">Scal i synchronizuj</string>
+    <string name="keepass_conflict_comparing">Porównywanie wersji…</string>
+    <string name="keepass_conflict_merging">Scalanie i synchronizacja…</string>
+    <string name="keepass_conflict_refresh">Odśwież porównanie</string>
+    <string name="keepass_conflict_merge_help">Zmiany w różnych wpisach lub polach są łączone. Gdy to samo pole zmieniono po obu stronach, wybierz wersję.</string>
+    <string name="keepass_conflict_auto_merge">Gotowe do scalenia</string>
+    <string name="keepass_conflict_other_options">Inne opcje</string>
+    <string name="keepass_conflict_recovery_hint">Oryginalne wersje są zachowane w kopiach odzyskiwania bazy.</string>
+    <string name="keepass_conflict_keep_local_confirm">Zastąpić zdalną bazę całą wersją lokalną? Zmiany istniejące tylko zdalnie pozostaną w kopii odzyskiwania.</string>
+    <string name="keepass_conflict_use_remote_confirm">Zastąpić lokalną bazę całą wersją zdalną? Zmiany istniejące tylko lokalnie pozostaną w kopii odzyskiwania.</string>
+    <string name="keepass_conflict_selected_count">Rozstrzygnięte konflikty: %1$d z %2$d</string>
+    <string name="keepass_conflict_no_changes">Obie wersje zawierają te same dane.</string>
+    <string name="keepass_conflict_protected_value">Wartość chroniona</string>
+    <string name="keepass_conflict_properties_value">Właściwości z tej wersji</string>
+    <string name="keepass_conflict_kind_entry">Wpis</string>
+    <string name="keepass_conflict_kind_group">Folder</string>
+    <string name="keepass_conflict_kind_metadata">Ustawienia bazy</string>
+    <string name="keepass_conflict_kind_deleted_object">Znacznik usunięcia</string>
+    <string name="keepass_conflict_kind_binary">Załącznik</string>
+    <string name="keepass_conflict_kind_icon">Własna ikona</string>
+    <string name="keepass_conflict_change_added">Dodano</string>
+    <string name="keepass_conflict_change_modified">Zmieniono</string>
+    <string name="keepass_conflict_change_moved">Przeniesiono</string>
+    <string name="keepass_conflict_change_deleted">Usunięto</string>
+    <string name="keepass_conflict_change_unchanged">Bez zmian</string>
+</resources>

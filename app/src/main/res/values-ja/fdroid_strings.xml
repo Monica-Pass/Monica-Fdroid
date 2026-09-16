@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">HTTP 接続を許可</string>
+    <string name="webdav_allow_insecure_http_description">初期設定では無効です。HTTPS 非対応のローカル NAS など、信頼できる HTTP サーバーでのみ有効にしてください。無効時は WebDAV の HTTP 接続をブロックします。</string>
+    <string name="fdroid_cloud_provider_unavailable">F-Droid 版は %1$s に対応していません。WebDAV をご利用ください。</string>
+    <string name="qr_image_read_failed">画像を読み込めません。別の画像をお試しください。</string>
+</resources>

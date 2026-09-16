@@ -10,18 +10,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** Shared two-column layout used by compact vault tiles. */
+/** Shared compact tile layout. Existing vault pages retain their two-column defaults. */
 @Composable
 fun MonicaTileGrid(
     state: LazyGridState,
     modifier: Modifier = Modifier,
+    columns: GridCells = GridCells.Fixed(2),
+    contentPadding: PaddingValues = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 96.dp),
     content: LazyGridScope.() -> Unit
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = columns,
         state = state,
         modifier = modifier,
-        contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 96.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         content = content

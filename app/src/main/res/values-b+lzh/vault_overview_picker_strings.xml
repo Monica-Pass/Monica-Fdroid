@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="vault_overview_picker_search_cards">寻卡片、银行或尾号</string>
+    <string name="vault_overview_picker_search_items">寻题名或名籍</string>
+    <string name="vault_overview_picker_selected">已择 %1$d 项</string>
+    <string name="vault_overview_picker_results">得 %1$d 项</string>
+    <string name="vault_overview_picker_no_account">未填名籍</string>
+    <string name="vault_overview_picker_empty_hint">请另换寻词或数据库，再试之。</string>
+    <string name="vault_overview_picker_limit">至多置顶 %1$d 项</string>
+</resources>

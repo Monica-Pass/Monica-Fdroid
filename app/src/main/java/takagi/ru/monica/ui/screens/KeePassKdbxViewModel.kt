@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -89,7 +91,7 @@ class KeePassKdbxViewModel {
             Result.success(totalCount)
         } catch (e: Exception) {
             Log.e(TAG, "Local KDBX export failed", e)
-            Result.failure(e.toKeePassOperationException())
+            Result.failure(e.toKeePassOperationException(AppLocaleStringResolver(context)))
         }
     }
     
@@ -123,7 +125,7 @@ class KeePassKdbxViewModel {
             Result.success(importedCount)
         } catch (e: Exception) {
             Log.e(TAG, "Local KDBX import failed", e)
-            Result.failure(e.toKeePassOperationException())
+            Result.failure(e.toKeePassOperationException(AppLocaleStringResolver(context)))
         }
     }
     
@@ -432,7 +434,8 @@ class KeePassKdbxViewModel {
             val kdbxBytes = inputStream.readBytes()
             KeePassFormatInspector.ensureKdbxSupported(
                 bytes = kdbxBytes,
-                sourceName = sourceUri.lastPathSegment ?: sourceUri.toString()
+                sourceName = sourceUri.lastPathSegment ?: sourceUri.toString(),
+                strings = AppLocaleStringResolver(context),
             )
             val keyFileBytes = keyFileUri?.let { uri ->
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
@@ -461,7 +464,7 @@ class KeePassKdbxViewModel {
                         }
                         return@withGlobalDecodeLock decoded
                     } catch (decodeError: Throwable) {
-                        val mapped = decodeError.toKeePassOperationException()
+                        val mapped = decodeError.toKeePassOperationException(AppLocaleStringResolver(context))
                         lastError = mapped
                         val isInvalidCredential = mapped.code == KeePassErrorCode.INVALID_CREDENTIAL
                         if (!isInvalidCredential || isLast) {
@@ -474,11 +477,11 @@ class KeePassKdbxViewModel {
                 if (allInvalidCredential) {
                     throw KeePassOperationException(
                         code = KeePassErrorCode.INVALID_CREDENTIAL,
-                        message = KeePassCredentialSupport.buildInvalidCredentialMessage(attemptedLabels),
+                        message = KeePassCredentialSupport.buildInvalidCredentialMessage(attemptedLabels, strings = AppLocaleStringResolver(context)),
                         cause = lastError
                     )
                 }
-                throw (lastError ?: IllegalStateException("KDBX 解码失败"))
+                throw (lastError ?: IllegalStateException(context.getString(R.string.runtime_kdbx_decode_failed)))
             }
             
             // 3. 获取所有条目（保留分组路径）
@@ -743,7 +746,7 @@ class KeePassKdbxViewModel {
             totalImported
         } catch (e: Exception) {
             Log.e(TAG, "KDBX parsing failed", e)
-            throw e.toKeePassOperationException()
+            throw e.toKeePassOperationException(AppLocaleStringResolver(context))
         }
     }
     

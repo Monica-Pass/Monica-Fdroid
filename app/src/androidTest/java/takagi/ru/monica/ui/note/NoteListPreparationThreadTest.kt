@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.note
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.os.Looper
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,7 +64,7 @@ class NoteListPreparationThreadTest {
                 else -> error("Unexpected DAO call: ${method.name}")
             }
         } as SecureItemDao
-        val viewModel = NoteViewModel(SecureItemRepository(dao))
+        val viewModel = NoteViewModel(SecureItemRepository(dao), strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext))
         val rendered = AtomicReference<NoteListProjection>()
         viewModel.updateNoteListQuery(NoteListQuery(NoteCategoryFilter.Local))
         try {

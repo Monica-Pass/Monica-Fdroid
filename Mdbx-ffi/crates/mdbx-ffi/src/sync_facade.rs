@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -1294,7 +1294,13 @@ impl MdbxVault {
         )?;
         let integrity_key = sync_integrity_key(&conn)?;
         let mut temporary = NamedTempFile::new_in(parent).map_err(StorageError::from)?;
-        write_incremental_bundle_authenticated(&bundle, &mut temporary, integrity_key.as_slice())?;
+        {
+            // Bincode emits many small writes for byte arrays. Bound memory while
+            // coalescing them, and surface flush errors before publishing the file.
+            let mut writer = BufWriter::with_capacity(64 * 1024, &mut temporary);
+            write_incremental_bundle_authenticated(&bundle, &mut writer, integrity_key.as_slice())?;
+            writer.flush().map_err(StorageError::from)?;
+        }
         temporary
             .as_file_mut()
             .sync_all()

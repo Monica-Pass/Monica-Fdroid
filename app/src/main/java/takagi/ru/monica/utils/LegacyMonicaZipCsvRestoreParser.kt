@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import takagi.ru.monica.util.DataExportImportManager
 import java.io.BufferedReader
 import java.io.File
@@ -21,7 +23,8 @@ internal data class LegacyMonicaCsvParseResult(
 internal object LegacyMonicaZipCsvRestoreParser {
     fun parseSecureItems(
         file: File,
-        role: LegacyMonicaSecureCsvRole
+        role: LegacyMonicaSecureCsvRole,
+        strings: StringResolver
     ): LegacyMonicaCsvParseResult {
         val items = mutableListOf<DataExportImportManager.ExportItem>()
         val warnings = mutableListOf<String>()
@@ -44,7 +47,7 @@ internal object LegacyMonicaZipCsvRestoreParser {
                 hasConsumedHeader = true
 
                 if (fields.size < 9) {
-                    warnings += "${file.name} 第${recordIndex}行字段不足，已跳过"
+                    warnings += strings.get(R.string.backup_legacy_csv_missing_fields, file.name, recordIndex)
                     currentRecord = readCsvRecord(reader)
                     continue
                 }
@@ -86,7 +89,7 @@ internal object LegacyMonicaZipCsvRestoreParser {
                         ) {
                             baseItem.copy(itemType = resolved.name)
                         } else {
-                            warnings += "${file.name} 第${recordIndex}行无法识别为卡片或证件，已跳过"
+                            warnings += strings.get(R.string.backup_legacy_csv_unrecognized_card, file.name, recordIndex)
                             null
                         }
                     }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_selection_stack_title">Pila · %1$s</string>
+    <string name="wallet_selection_unstacked">Tarjetas individuales</string>
+    <string name="wallet_selection_group_count">%1$d de %2$d seleccionadas</string>
+    <string name="wallet_selection_visible_group_count">%1$d de %2$d tarjetas visibles seleccionadas</string>
+</resources>

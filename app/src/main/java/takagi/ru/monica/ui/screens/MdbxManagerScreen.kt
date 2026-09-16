@@ -17,11 +17,17 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -67,6 +73,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -81,6 +89,8 @@ import takagi.ru.monica.data.MdbxCapability
 import takagi.ru.monica.data.MdbxEngineType
 import takagi.ru.monica.data.MdbxSourceType
 import takagi.ru.monica.data.MdbxTigaMode
+import takagi.ru.monica.data.MdbxSyncStatus
+import takagi.ru.monica.data.isRemoteSource
 import takagi.ru.monica.data.supports
 import takagi.ru.monica.repository.MdbxConflictResolution
 import takagi.ru.monica.repository.MdbxConflictSummary
@@ -96,6 +106,9 @@ import takagi.ru.monica.repository.MdbxStructureNodeType
 import takagi.ru.monica.repository.MdbxStructurePreview
 import takagi.ru.monica.repository.MdbxVaultDiagnostics
 import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
+import takagi.ru.monica.ui.components.MonicaTileGrid
 import takagi.ru.monica.utils.ClipboardUtils
 import takagi.ru.monica.utils.BiometricHelper
 import takagi.ru.monica.viewmodel.MdbxViewModel
@@ -137,6 +150,10 @@ fun MdbxManagerScreen(
     val deltaDialogState by viewModel.deltaDialogState.collectAsState()
     val healthRepairState by viewModel.healthRepairState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    // Keep each source's scroll position when visiting a database or returning from a form.
+    val localGridState = rememberLazyGridState()
+    val webDavGridState = rememberLazyGridState()
+    val oneDriveGridState = rememberLazyGridState()
     var showDeleteDialog by remember { mutableStateOf<LocalMdbxDatabase?>(null) }
     var showHealthRepairDeleteVerification by rememberSaveable { mutableStateOf(false) }
     var healthRepairMasterPassword by rememberSaveable { mutableStateOf("") }
@@ -323,7 +340,7 @@ fun MdbxManagerScreen(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            TopAppBar(
+            MdbxTopAppBar(
                 title = {
                     if (snapshotPage != null && snapshotTopBarName != null) {
                         Column {
@@ -342,7 +359,7 @@ fun MdbxManagerScreen(
                             )
                         }
                     } else {
-                        Text(page.title(strings, selectedDatabase))
+                        Text(page.title(strings), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 },
                 navigationIcon = {
@@ -355,39 +372,12 @@ fun MdbxManagerScreen(
                         IconButton(onClick = { snapshotCompareMode = !snapshotCompareMode }) {
                             Icon(
                                 if (snapshotCompareMode) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                                contentDescription = null
+                                contentDescription = stringResource(if (snapshotCompareMode) R.string.mdbx_ui_exit_comparison else R.string.mdbx_ui_compare_versions)
                             )
-                        }
-                    } else if (page is MdbxManagerPage.Source) {
-                        val current = page as MdbxManagerPage.Source
-                        IconButton(onClick = {
-                            when (current.source) {
-                                MdbxManagerSource.LOCAL -> onNavigateToLocalOpen()
-                                MdbxManagerSource.WEBDAV -> onNavigateToWebDavOpen()
-                                MdbxManagerSource.ONEDRIVE -> onNavigateToOneDriveOpen()
-                            }
-                        }) {
-                            Icon(Icons.Default.Folder, contentDescription = strings.get(R.string.mdbx_ui_open_existing_database))
                         }
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            if (page is MdbxManagerPage.Source) {
-                val current = page as MdbxManagerPage.Source
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        when (current.source) {
-                            MdbxManagerSource.LOCAL -> onNavigateToLocalCreate()
-                            MdbxManagerSource.WEBDAV -> onNavigateToWebDavCreate()
-                            MdbxManagerSource.ONEDRIVE -> onNavigateToOneDriveCreate()
-                        }
-                    },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.mdbx_create_new_vault_button)) }
-                )
-            }
         }
     ) { padding ->
         Box(
@@ -432,6 +422,11 @@ fun MdbxManagerScreen(
                         databases = sourceDatabases,
                         conflictCounts = conflictCounts,
                         diagnostics = vaultDiagnostics,
+                        gridState = when (current.source) {
+                            MdbxManagerSource.LOCAL -> localGridState
+                            MdbxManagerSource.WEBDAV -> webDavGridState
+                            MdbxManagerSource.ONEDRIVE -> oneDriveGridState
+                        },
                         onCreateClick = {
                             when (current.source) {
                                 MdbxManagerSource.LOCAL -> onNavigateToLocalCreate()
@@ -869,6 +864,7 @@ private fun MdbxMigrationDialog(
                             )
                         }
                         OutlinedTextField(
+                            shape = MdbxFieldShape,
                             value = targetName,
                             onValueChange = { targetName = it },
                             label = { Text(strings.get(R.string.mdbx_ui_new_database_name)) },
@@ -876,6 +872,7 @@ private fun MdbxMigrationDialog(
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
+                            shape = MdbxFieldShape,
                             value = password,
                             onValueChange = { password = it },
                             label = { Text(strings.get(R.string.mdbx_ui_new_database_password)) },
@@ -893,6 +890,7 @@ private fun MdbxMigrationDialog(
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
+                            shape = MdbxFieldShape,
                             value = confirmPassword,
                             onValueChange = { confirmPassword = it },
                             label = { Text(strings.get(R.string.confirm_password)) },
@@ -1041,7 +1039,7 @@ private fun migrationStageText(strings: StringResolver, stage: MdbxViewModel.Mdb
     MdbxViewModel.MdbxMigrationStage.IMPORTING -> strings.get(R.string.mdbx_ui_migration_stage_index)
 }
 
-private enum class MdbxManagerSource {
+internal enum class MdbxManagerSource {
     LOCAL,
     WEBDAV,
     ONEDRIVE
@@ -1139,14 +1137,14 @@ private val MdbxManagerPageSaver: Saver<MdbxManagerPage, Any> = Saver(
 private fun parseMdbxManagerSourceOrNull(raw: String): MdbxManagerSource? =
     raw.takeIf { it.isNotBlank() }?.let { runCatching { MdbxManagerSource.valueOf(it) }.getOrNull() }
 
-private fun MdbxManagerPage.title(strings: StringResolver, database: LocalMdbxDatabase?): String = when (this) {
+private fun MdbxManagerPage.title(strings: StringResolver): String = when (this) {
     MdbxManagerPage.Hub -> "MDBX"
     is MdbxManagerPage.Source -> when (source) {
-        MdbxManagerSource.LOCAL -> strings.get(R.string.mdbx_ui_manager_local_title)
-        MdbxManagerSource.WEBDAV -> strings.get(R.string.mdbx_ui_manager_webdav_title)
-        MdbxManagerSource.ONEDRIVE -> strings.get(R.string.mdbx_ui_manager_onedrive_title)
+        MdbxManagerSource.LOCAL -> strings.get(R.string.mdbx_ui_local_databases)
+        MdbxManagerSource.WEBDAV -> "WebDAV"
+        MdbxManagerSource.ONEDRIVE -> "OneDrive"
     }
-    is MdbxManagerPage.Detail -> database?.name ?: strings.get(R.string.mdbx_ui_manager_details_title)
+    is MdbxManagerPage.Detail -> strings.get(R.string.mdbx_ui_database_information)
     is MdbxManagerPage.Conflict -> strings.get(R.string.mdbx_ui_manager_conflicts_title)
     is MdbxManagerPage.Snapshots -> strings.get(R.string.mdbx_ui_object_snapshot)
     is MdbxManagerPage.SnapshotStructure -> strings.get(R.string.mdbx_ui_manager_snapshot_details)
@@ -1157,7 +1155,7 @@ private fun MdbxManagerPage.title(strings: StringResolver, database: LocalMdbxDa
 }
 
 @Composable
-private fun MdbxManagerHubPage(
+internal fun MdbxManagerHubPage(
     localCount: Int,
     webDavCount: Int,
     oneDriveCount: Int,
@@ -1168,223 +1166,104 @@ private fun MdbxManagerHubPage(
     val strings = rememberScreenStrings()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Text(
-                "MDBX",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                strings.get(R.string.mdbx_ui_manager_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(stringResource(R.string.mdbx_ui_database_count, localCount + webDavCount + oneDriveCount),
+                modifier = Modifier.padding(horizontal = 4.dp),
+                style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
         }
         item {
-            MdbxManagerEntryCard(
-                icon = Icons.Default.Storage,
-                title = strings.get(R.string.mdbx_ui_manager_local_title),
-                subtitle = strings.get(R.string.mdbx_ui_manager_local_description),
-                count = localCount,
-                color = MaterialTheme.colorScheme.primary,
-                onClick = onOpenLocal
-            )
-        }
-        item {
-            MdbxManagerEntryCard(
-                icon = Icons.Default.CloudSync,
-                title = strings.get(R.string.mdbx_ui_manager_webdav_title),
-                subtitle = strings.get(R.string.mdbx_ui_manager_webdav_description),
-                count = webDavCount,
-                color = MaterialTheme.colorScheme.tertiary,
-                onClick = onOpenWebDav
-            )
-        }
-        // F-Droid build: OneDrive MDBX entry removed (MSAL stripped).
-    }
-}
-
-@Composable
-private fun MdbxManagerEntryCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    count: Int,
-    color: Color,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = color.copy(alpha = 0.14f),
-                modifier = Modifier.size(52.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(26.dp))
-                }
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surfaceVariant
-                    ) {
-                        Text(
-                            "$count",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+            MdbxActionGroup(
+                title = strings.get(R.string.storage_location),
+                actions = listOf(
+                    MdbxAction(Icons.Default.Storage, strings.get(R.string.mdbx_ui_local_databases),
+                        onOpenLocal, strings.get(R.string.mdbx_ui_database_count, localCount)),
+                    MdbxAction(Icons.Default.CloudSync, "WebDAV",
+                        onOpenWebDav, strings.get(R.string.mdbx_ui_database_count, webDavCount)),
                 )
-            }
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-private fun MdbxSourceManagementPage(
+internal fun MdbxSourceManagementPage(
     source: MdbxManagerSource,
     databases: List<LocalMdbxDatabase>,
     conflictCounts: Map<Long, Int>,
     diagnostics: Map<Long, MdbxVaultDiagnostics>,
     onCreateClick: () -> Unit,
     onOpenClick: () -> Unit,
-    onOpenDatabase: (LocalMdbxDatabase) -> Unit
+    onOpenDatabase: (LocalMdbxDatabase) -> Unit,
+    gridState: LazyGridState = rememberLazyGridState()
 ) {
-    val strings = rememberScreenStrings()
-    val header = when (source) {
-        MdbxManagerSource.LOCAL -> Triple(Icons.Default.Storage, strings.get(R.string.mdbx_ui_local_databases), strings.get(R.string.mdbx_ui_local_connected_description))
-        MdbxManagerSource.WEBDAV -> Triple(Icons.Default.CloudSync, strings.get(R.string.mdbx_ui_webdav_working_copies), strings.get(R.string.mdbx_ui_webdav_working_description))
-        MdbxManagerSource.ONEDRIVE -> Triple(Icons.Default.Cloud, strings.get(R.string.mdbx_ui_onedrive_working_copies), strings.get(R.string.mdbx_ui_onedrive_working_description))
-    }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            MdbxSectionHeader(
-                icon = header.first,
-                title = header.second,
-                subtitle = header.third,
-                color = when (source) {
-                    MdbxManagerSource.LOCAL -> MaterialTheme.colorScheme.primary
-                    MdbxManagerSource.WEBDAV -> MaterialTheme.colorScheme.tertiary
-                    MdbxManagerSource.ONEDRIVE -> MaterialTheme.colorScheme.secondary
-                }
-            )
-        }
+    val minimumTileWidth = 156.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val tileMetrics = rememberDatabaseManagementTileMetrics()
+    Column(modifier = Modifier.fillMaxSize()) {
         if (databases.isEmpty()) {
-            item {
-                MdbxSourceEmptyCard(source = source, onCreateClick = onCreateClick, onOpenClick = onOpenClick)
-            }
+            MdbxSourceEmptyState(source, Modifier.weight(1f))
         } else {
-            items(items = databases, key = { it.id }) { db ->
-                MdbxVaultSmallCard(
-                    database = db,
-                    isDefault = db.isDefault,
-                    conflictCount = conflictCounts[db.id] ?: 0,
-                    diagnostics = diagnostics[db.id],
-                    onOpen = { onOpenDatabase(db) }
-                )
-            }
-            item {
-                MdbxQuickActionsCard(onCreateClick = onCreateClick, onOpenClick = onOpenClick)
+            MonicaTileGrid(
+                state = gridState,
+                columns = GridCells.Adaptive(minimumTileWidth),
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().testTag("mdbx_database_grid")
+            ) {
+                item(key = "database-count", span = { GridItemSpan(maxLineSpan) }) {
+                    Text(stringResource(R.string.mdbx_ui_database_count, databases.size),
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 8.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                gridItems(items = databases, key = { it.id }, contentType = { "database" }) { db ->
+                    MdbxVaultTile(
+                        database = db,
+                        isDefault = db.isDefault,
+                        conflictCount = conflictCounts[db.id] ?: 0,
+                        diagnostics = diagnostics[db.id],
+                        metrics = tileMetrics,
+                        onOpen = { onOpenDatabase(db) }
+                    )
+                }
             }
         }
+        MdbxCreateOpenActions(onCreateClick = onCreateClick, onOpenClick = onOpenClick)
     }
 }
 
 @Composable
-private fun MdbxSourceEmptyCard(
-    source: MdbxManagerSource,
-    onCreateClick: () -> Unit,
-    onOpenClick: () -> Unit
-) {
+private fun MdbxSourceEmptyState(source: MdbxManagerSource, modifier: Modifier = Modifier) {
     val strings = rememberScreenStrings()
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                when (source) {
-                    MdbxManagerSource.LOCAL -> strings.get(R.string.mdbx_ui_local_databases_empty)
-                    MdbxManagerSource.WEBDAV -> strings.get(R.string.mdbx_ui_webdav_databases_empty)
-                    MdbxManagerSource.ONEDRIVE -> strings.get(R.string.mdbx_ui_onedrive_databases_empty)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                when (source) {
-                    MdbxManagerSource.LOCAL -> strings.get(R.string.mdbx_ui_local_empty_description)
-                    MdbxManagerSource.WEBDAV -> strings.get(R.string.mdbx_ui_webdav_empty_description)
-                    MdbxManagerSource.ONEDRIVE -> strings.get(R.string.mdbx_ui_onedrive_empty_description)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                    OutlinedButton(
-                        onClick = onOpenClick,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.attachment_open))
-                    }
-                    Button(
-                        onClick = onCreateClick,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.mdbx_create_new_vault_button))
-                    }
-                }
-            }
-        }
+    Column(
+        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+    ) {
+        MdbxIconBadge(when (source) {
+            MdbxManagerSource.LOCAL -> Icons.Default.Storage
+            MdbxManagerSource.WEBDAV -> Icons.Default.CloudSync
+            MdbxManagerSource.ONEDRIVE -> Icons.Default.Cloud
+        })
+        Text(strings.get(when (source) {
+            MdbxManagerSource.LOCAL -> R.string.mdbx_ui_local_databases_empty
+            MdbxManagerSource.WEBDAV -> R.string.mdbx_ui_webdav_databases_empty
+            MdbxManagerSource.ONEDRIVE -> R.string.mdbx_ui_onedrive_databases_empty
+        }), style = MaterialTheme.typography.titleMedium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(strings.get(when (source) {
+            MdbxManagerSource.LOCAL -> R.string.mdbx_ui_local_empty_description
+            MdbxManagerSource.WEBDAV -> R.string.mdbx_ui_webdav_empty_description
+            MdbxManagerSource.ONEDRIVE -> R.string.mdbx_ui_onedrive_empty_description
+        }), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
+}
 
 @Composable
-private fun MdbxVaultDetailPage(
+internal fun MdbxVaultDetailPage(
     database: LocalMdbxDatabase,
     isDefault: Boolean,
     conflictCount: Int,
@@ -1402,228 +1281,166 @@ private fun MdbxVaultDetailPage(
 ) {
     val strings = rememberScreenStrings()
     val context = LocalContext.current
-    val tigaLabel = runCatching { MdbxTigaMode.valueOf(database.tigaMode).label }.getOrDefault(database.tigaMode)
     val supportsSync = database.supports(MdbxCapability.REMOTE_SYNC)
     val supportsConflicts = database.supports(MdbxCapability.CONFLICTS)
     val supportsSnapshots = database.supports(MdbxCapability.SNAPSHOTS)
     val supportsHistory = database.supports(MdbxCapability.DELTA_HISTORY)
     val healthIssueCount = diagnostics?.healthIssueCount ?: 0
-    val hasUnavailableCopy = diagnostics?.isReadable == false
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = sourceColor(database).copy(alpha = 0.12f),
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                sourceIcon(database),
-                                contentDescription = null,
-                                tint = sourceColor(database),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                database.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                            if (isDefault) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    Icons.Default.Star,
-                                    contentDescription = stringResource(R.string.mdbx_default_badge),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        Text(
-                            "${database.engineTypeEnum.displayName()} · Tiga: $tigaLabel · ${mdbxSourceLabel(strings, database)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            database.displayPath(context, strings),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
+            MdbxSyncOverview(database, isDefault, diagnostics, supportsSync, onSync)
         }
-
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = if (!supportsConflicts) {
-                        Icons.Default.Info
-                    } else if (conflictCount > 0) {
-                        Icons.AutoMirrored.Filled.CallMerge
-                    } else {
-                        Icons.Default.CheckCircle
+            MdbxActionGroup(buildList {
+                if (supportsConflicts) add(MdbxAction(
+                    icon = Icons.AutoMirrored.Filled.CallMerge,
+                    title = strings.get(R.string.mdbx_ui_manager_conflicts_title),
+                    subtitle = if (conflictCount > 0) strings.get(R.string.mdbx_conflict_count_short, conflictCount)
+                        else strings.get(R.string.mdbx_no_conflicts_short),
+                    warning = conflictCount > 0,
+                    onClick = onShowConflicts
+                ))
+                add(MdbxAction(
+                    icon = if (healthIssueCount > 0) Icons.Default.Warning else Icons.Default.Security,
+                    title = strings.get(R.string.mdbx_ui_manager_health_title),
+                    subtitle = when {
+                        diagnostics == null -> strings.get(R.string.mdbx_status_loading)
+                        healthIssueCount > 0 -> strings.get(R.string.mdbx_health_issues_short, healthIssueCount)
+                        else -> strings.get(R.string.mdbx_health_ok_short)
                     },
-                    label = stringResource(R.string.mdbx_status_conflicts),
-                    value = if (!supportsConflicts) {
-                        strings.get(R.string.passkey_settings_unsupported_title)
-                    } else if (conflictCount > 0) {
-                        stringResource(R.string.mdbx_conflict_count_short, conflictCount)
-                    } else {
-                        stringResource(R.string.mdbx_no_conflicts_short)
-                    },
-                    isWarning = conflictCount > 0,
-                    onClick = if (supportsConflicts) onShowConflicts else null
-                )
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = if (healthIssueCount > 0) Icons.Default.Warning else Icons.Default.CheckCircle,
-                    label = stringResource(R.string.mdbx_status_health),
-                    value = if (healthIssueCount > 0) {
-                        stringResource(R.string.mdbx_health_issues_short, healthIssueCount)
-                    } else {
-                        stringResource(R.string.mdbx_health_ok_short)
-                    },
-                    isWarning = healthIssueCount > 0,
+                    warning = healthIssueCount > 0,
                     onClick = onShowHealth
-                )
-            }
+                ))
+            })
         }
-
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = if (supportsHistory) Icons.Default.History else Icons.Default.Info,
-                    label = stringResource(R.string.mdbx_status_delta),
-                    value = if (!supportsHistory) {
-                        strings.get(R.string.passkey_settings_unsupported_title)
-                    } else diagnostics?.let {
-                        stringResource(R.string.mdbx_commit_tombstone_short, it.commitCount, it.tombstoneCount)
-                    } ?: stringResource(R.string.mdbx_status_loading),
-                    isWarning = false,
-                    onClick = if (supportsHistory) onShowCommitHistory else null
-                )
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Storage,
-                    label = stringResource(R.string.mdbx_status_attachments),
-                    value = diagnostics?.let {
-                        stringResource(
-                            R.string.mdbx_attachment_short,
-                            it.attachmentCount,
-                            it.externalAttachmentCount,
-                            formatBytes(it.storedAttachmentBytes)
-                        )
-                    } ?: stringResource(R.string.mdbx_status_loading),
-                    isWarning = false,
+            MdbxActionGroup(title = strings.get(R.string.settings_data_management), actions = buildList {
+                if (supportsSnapshots) add(MdbxAction(
+                    icon = Icons.Default.Restore,
+                    title = strings.get(R.string.mdbx_ui_object_snapshot),
+                    subtitle = diagnostics?.let { strings.get(R.string.mdbx_ui_snapshots_saved_count, it.snapshotCount) },
+                    onClick = onShowSnapshots
+                ))
+                if (supportsHistory) add(MdbxAction(
+                    icon = Icons.Default.History,
+                    title = strings.get(R.string.mdbx_ui_manager_history_title),
+                    subtitle = diagnostics?.let { strings.get(R.string.mdbx_ui_history_record_count, it.commitCount) },
+                    onClick = onShowCommitHistory
+                ))
+                add(MdbxAction(
+                    icon = Icons.Default.Folder,
+                    title = strings.get(R.string.mdbx_status_attachments),
+                    subtitle = diagnostics?.let {
+                        strings.get(R.string.mdbx_ui_attachment_count_and_size, it.attachmentCount, formatBytes(it.storedAttachmentBytes))
+                    },
                     onClick = onShowAttachments
-                )
+                ))
+            })
+        }
+        item {
+            MdbxExpandableSection(
+                title = strings.get(R.string.advanced_options),
+                subtitle = database.engineTypeEnum.displayName()
+            ) {
+                MdbxActionGroup(listOf(MdbxAction(Icons.Default.Speed,
+                    strings.get(R.string.mdbx_ui_manager_maintenance_title), onShowMaintenance)))
+                Text(strings.get(R.string.mdbx_ui_technical_details),
+                    style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                DiagnosticLine(Icons.Default.Folder, strings.get(R.string.storage_location), database.displayPath(context, strings))
+                diagnostics?.let { diagnostic ->
+                    DiagnosticLine(Icons.Default.Security, strings.get(R.string.mdbx_compatibility_label), mdbxCompatibilityValue(diagnostic, database))
+                    DiagnosticLine(Icons.Default.Info, strings.get(R.string.mdbx_file_size_label), formatBytes(diagnostic.fileSizeBytes))
+                    DiagnosticLine(Icons.Default.Storage, strings.get(R.string.mdbx_ui_client), diagnostic.currentDeviceId ?: "–")
+                    DiagnosticLine(Icons.Default.Folder, strings.get(R.string.mdbx_ui_entries_and_folders), "${diagnostic.entryCount} / ${diagnostic.folderCount}")
+                }
+                MdbxDetailActionList(isDefault, onMigrate, onSetDefault, onDelete)
             }
         }
+    }
+}
 
-        diagnostics?.let { diagnostic ->
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        DiagnosticLine(
-                            icon = if (diagnostic.isReadable) Icons.Default.CloudSync else Icons.Default.CloudOff,
-                            label = stringResource(R.string.mdbx_sync_status_label),
-                            value = diagnostic.lastSyncStatus
-                        )
-                        DiagnosticLine(
-                            icon = Icons.Default.Security,
-                            label = stringResource(R.string.mdbx_compatibility_label),
-                            value = mdbxCompatibilityValue(diagnostic, database)
-                        )
-                        DiagnosticLine(
-                            icon = Icons.Default.Sync,
-                            label = stringResource(R.string.mdbx_recovery_label),
-                            value = if (diagnostic.structuralIssueCount == 0 && diagnostic.integrityOk) {
-                                stringResource(R.string.mdbx_recovery_clean)
-                            } else {
-                                stringResource(
-                                    R.string.mdbx_recovery_issue_value,
-                                    diagnostic.structuralIssueCount,
-                                    diagnostic.integrityMessage ?: "-"
-                                )
-                            }
-                        )
-                        DiagnosticLine(
-                            icon = Icons.Default.Info,
-                            label = stringResource(R.string.mdbx_file_size_label),
-                            value = formatBytes(diagnostic.fileSizeBytes)
-                        )
-                        DiagnosticLine(
-                            icon = Icons.Default.Storage,
-                            label = strings.get(R.string.mdbx_ui_client),
-                            value = diagnostic.currentDeviceId ?: "-"
-                        )
-                        DiagnosticLine(
-                            icon = Icons.Default.Folder,
-                            label = strings.get(R.string.mdbx_ui_catalog_index),
-                            value = "${diagnostic.folderCount} folders · ${diagnostic.indexedObjectCount} indexed"
-                        )
+@Composable
+private fun MdbxSyncOverview(
+    database: LocalMdbxDatabase,
+    isDefault: Boolean,
+    diagnostics: MdbxVaultDiagnostics?,
+    allowSync: Boolean,
+    onSync: () -> Unit
+) {
+    val strings = rememberScreenStrings()
+    val status = diagnostics?.lastSyncStatus ?: database.lastSyncStatus
+    val syncing = status == MdbxSyncStatus.SYNCING.name
+    val syncProblem = status == MdbxSyncStatus.FAILED.name || status == MdbxSyncStatus.CONFLICT.name
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            MdbxIconBadge(sourceIcon(database))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(database.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                Text(mdbxSourceLabel(strings, database), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (isDefault) Icon(Icons.Default.Star, stringResource(R.string.mdbx_default_badge),
+                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        }
+        MdbxCard(modifier = Modifier.fillMaxWidth()) {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                val stacked = maxWidth / LocalDensity.current.fontScale < 280.dp
+                val statusContent: @Composable () -> Unit = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(when {
+                                syncProblem -> Icons.Default.Warning
+                                syncing -> Icons.Default.Sync
+                                database.isRemoteSource() -> Icons.Default.CloudSync
+                                else -> Icons.Default.CheckCircle
+                            }, contentDescription = null, modifier = Modifier.size(18.dp),
+                                tint = if (syncProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                            Text(strings.get(mdbxSyncStatusLabel(status)), style = MaterialTheme.typography.titleSmall,
+                                color = if (syncProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+                        }
+                        database.lastSyncedAt?.let { time ->
+                            Text(strings.get(R.string.sync_last_sync, formatMdbxHistoryTime(Instant.ofEpochMilli(time).toString())),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                val syncAction: @Composable () -> Unit = {
+                    FilledTonalButton(onClick = onSync, enabled = !syncing,
+                        modifier = (if (stacked) Modifier.fillMaxWidth() else Modifier).heightIn(min = 48.dp)) {
+                        Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(strings.get(R.string.mdbx_sync_status_label))
+                    }
+                }
+                if (stacked) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        statusContent()
+                        if (allowSync) syncAction()
+                    }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) { statusContent() }
+                        if (allowSync) syncAction()
                     }
                 }
             }
-            if (hasUnavailableCopy) {
-                item {
-                    Text(
-                        diagnostic.unavailableReason ?: stringResource(R.string.mdbx_unavailable_local_copy),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+            if (syncing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            val error = diagnostics?.lastSyncError ?: database.lastSyncError
+            if (!error.isNullOrBlank()) {
+                Text(error, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             }
-        }
-
-        item {
-            MdbxDetailActionList(
-                isDefault = isDefault,
-                conflictCount = conflictCount,
-                allowSync = supportsSync,
-                allowConflicts = supportsConflicts,
-                allowSnapshots = supportsSnapshots,
-                allowCommitHistory = supportsHistory,
-                onSync = onSync,
-                onShowConflicts = onShowConflicts,
-                onShowSnapshots = onShowSnapshots,
-                onShowCommitHistory = onShowCommitHistory,
-                onShowMaintenance = onShowMaintenance,
-                onMigrate = onMigrate,
-                onSetDefault = onSetDefault,
-                onDelete = onDelete
-            )
+            if (diagnostics?.isReadable == false) {
+                Text(diagnostics.unavailableReason ?: strings.get(R.string.mdbx_unavailable_local_copy),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            }
         }
     }
 }
@@ -1631,100 +1448,20 @@ private fun MdbxVaultDetailPage(
 @Composable
 private fun MdbxDetailActionList(
     isDefault: Boolean,
-    conflictCount: Int,
-    allowSync: Boolean,
-    allowConflicts: Boolean,
-    allowSnapshots: Boolean,
-    allowCommitHistory: Boolean,
-    onSync: () -> Unit,
-    onShowConflicts: () -> Unit,
-    onShowSnapshots: () -> Unit,
-    onShowCommitHistory: () -> Unit,
-    onShowMaintenance: () -> Unit,
     onMigrate: (() -> Unit)?,
     onSetDefault: () -> Unit,
     onDelete: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column {
-            if (!isDefault) {
-                MdbxNavigationActionRow(Icons.Default.Star, stringResource(R.string.mdbx_set_default), onSetDefault)
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            }
-            if (allowSync) {
-                MdbxNavigationActionRow(Icons.Default.Sync, strings.get(R.string.mdbx_sync_status_label), onSync)
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            }
-            if (allowConflicts) {
-                MdbxNavigationActionRow(
-                    Icons.AutoMirrored.Filled.CallMerge,
-                    if (conflictCount > 0) strings.get(R.string.mdbx_ui_conflict_management_count, conflictCount) else strings.get(R.string.mdbx_ui_manager_conflicts_title),
-                    onShowConflicts
-                )
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            }
-            if (allowSnapshots) {
-                MdbxNavigationActionRow(Icons.Default.Restore, strings.get(R.string.mdbx_ui_object_snapshot), onShowSnapshots)
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            }
-            if (allowCommitHistory) {
-                MdbxNavigationActionRow(Icons.Default.History, strings.get(R.string.mdbx_ui_manager_history_title), onShowCommitHistory)
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            }
-            onMigrate?.let { migrate ->
-                MdbxNavigationActionRow(Icons.Default.SwapHoriz, strings.get(R.string.mdbx_ui_migrate_to_mdbx2), migrate)
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            }
-            MdbxNavigationActionRow(Icons.Default.ReportProblem, strings.get(R.string.mdbx_ui_manager_maintenance_title), onShowMaintenance)
-            HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-            MdbxNavigationActionRow(
-                icon = Icons.Default.Delete,
-                title = stringResource(R.string.mdbx_delete),
-                onClick = onDelete,
-                isDestructive = true,
-                showChevron = false
-            )
-        }
-    }
+    MdbxActionGroup(buildList {
+        if (!isDefault) add(MdbxAction(Icons.Default.Star, strings.get(R.string.mdbx_set_default), onSetDefault, showChevron = false))
+        onMigrate?.let { add(MdbxAction(Icons.Default.SwapHoriz, strings.get(R.string.mdbx_ui_migrate_to_mdbx2), it)) }
+        add(MdbxAction(Icons.Default.Delete, strings.get(R.string.mdbx_delete), onDelete, warning = true, showChevron = false))
+    })
 }
 
 @Composable
-private fun MdbxNavigationActionRow(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false,
-    showChevron: Boolean = true
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
-        Spacer(modifier = Modifier.width(18.dp))
-        Text(
-            title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        if (showChevron) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun MdbxConflictPage(
+internal fun MdbxConflictPage(
     state: MdbxViewModel.MdbxConflictDialogState.Visible?,
     databaseName: String,
     onResolve: (String, MdbxConflictResolution) -> Unit
@@ -1735,7 +1472,7 @@ private fun MdbxConflictPage(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(MdbxGroupSpacing)
     ) {
         item {
             if (selectedConflict != null) {
@@ -1778,9 +1515,11 @@ private fun MdbxConflictPage(
                 )
             }
         } else if (state != null && state.conflicts.isNotEmpty()) {
-            items(items = state.conflicts, key = { it.conflictId }) { conflict ->
+            itemsIndexed(items = state.conflicts, key = { _, conflict -> conflict.conflictId }) { index, conflict ->
                 ConflictSummaryRow(
                     conflict = conflict,
+                    index = index,
+                    count = state.conflicts.size,
                     onOpen = { selectedConflictId = conflict.conflictId }
                 )
             }
@@ -1789,57 +1528,17 @@ private fun MdbxConflictPage(
 }
 
 @Composable
-private fun ConflictSummaryRow(
-    conflict: MdbxConflictSummary,
-    onOpen: () -> Unit
-) {
+private fun ConflictSummaryRow(conflict: MdbxConflictSummary, index: Int, count: Int, onOpen: () -> Unit) {
     val strings = rememberScreenStrings()
-    OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onOpen)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.CallMerge,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(
-                    "${objectTypeLabel(strings, conflict.objectType)} · ${shortId(conflict.objectId)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    stringResource(R.string.mdbx_conflict_fields_value, conflict.conflictingFields),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    strings.get(R.string.mdbx_ui_conflict_commit_ids, shortId(conflict.localCommitId), shortId(conflict.incomingCommitId), conflict.createdAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    MdbxActionRow(MdbxAction(
+        icon = Icons.AutoMirrored.Filled.CallMerge,
+        title = conflict.localTitle?.takeIf { it.isNotBlank() }
+            ?: conflict.incomingTitle?.takeIf { it.isNotBlank() }
+            ?: "${objectTypeLabel(strings, conflict.objectType)} · ${shortId(conflict.objectId)}",
+        subtitle = objectTypeLabel(strings, conflict.objectType) + " · " + formatMdbxHistoryTime(conflict.createdAt),
+        warning = true,
+        onClick = onOpen
+    ), index = index, count = count)
 }
 
 @Composable
@@ -1849,40 +1548,47 @@ private fun ConflictDiffDetail(
     onResolve: (String, MdbxConflictResolution) -> Unit
 ) {
     val strings = rememberScreenStrings()
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FieldDiffPanel(
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        MdbxDetailHeroCard(
+            icon = Icons.AutoMirrored.Filled.CallMerge,
             title = strings.get(R.string.mdbx_ui_conflict_details),
-            subtitle = strings.get(R.string.mdbx_ui_conflict_object_baseline, objectTypeLabel(strings, conflict.objectType), shortId(conflict.objectId), shortId(conflict.baseCommitId)),
-            changes = conflict.toFieldChanges(strings)
+            subtitle = strings.get(R.string.mdbx_ui_conflicts_review_description),
+            warning = true
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = { onResolve(conflict.conflictId, MdbxConflictResolution.LOCAL_WINS) },
-                enabled = enabled,
-                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-            ) {
-                Text(stringResource(R.string.mdbx_conflict_local_wins))
-            }
-            Button(
-                onClick = { onResolve(conflict.conflictId, MdbxConflictResolution.INCOMING_WINS) },
-                enabled = enabled,
-                modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-            ) {
-                Text(stringResource(R.string.mdbx_conflict_incoming_wins))
+        FieldDiffPanel(title = "", subtitle = "", changes = conflict.toFieldChanges(strings))
+        MdbxCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(
+                    onClick = { onResolve(conflict.conflictId, MdbxConflictResolution.LOCAL_WINS) },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                ) { Text(stringResource(R.string.mdbx_conflict_local_wins)) }
+                FilledTonalButton(
+                    onClick = { onResolve(conflict.conflictId, MdbxConflictResolution.INCOMING_WINS) },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                ) { Text(stringResource(R.string.mdbx_conflict_incoming_wins)) }
+                TextButton(
+                    onClick = { onResolve(conflict.conflictId, MdbxConflictResolution.MARK_RESOLVED) },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                ) { Text(stringResource(R.string.mdbx_conflict_mark_resolved)) }
             }
         }
-        TextButton(
-            onClick = { onResolve(conflict.conflictId, MdbxConflictResolution.MARK_RESOLVED) },
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-        ) {
-            Text(stringResource(R.string.mdbx_conflict_mark_resolved))
+        MdbxExpandableSection(title = strings.get(R.string.mdbx_ui_technical_details)) {
+            if (conflict.conflictingFields.isNotBlank()) {
+                DiagnosticLine(Icons.Default.Info, strings.get(R.string.mdbx_ui_conflicting_fields), conflict.conflictingFields)
+            }
+            Text(strings.get(R.string.mdbx_ui_conflict_object_baseline, objectTypeLabel(strings, conflict.objectType),
+                shortId(conflict.objectId), shortId(conflict.baseCommitId)), style = MaterialTheme.typography.bodySmall)
+            Text(strings.get(R.string.mdbx_ui_conflict_commit_ids, shortId(conflict.localCommitId),
+                shortId(conflict.incomingCommitId), conflict.createdAt), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
 
 @Composable
-private fun MdbxSnapshotPage(
+internal fun MdbxSnapshotPage(
     state: MdbxViewModel.MdbxDeltaDialogState.Visible?,
     engineAlwaysCreatesFullSnapshots: Boolean,
     onShowDiff: (String) -> Unit,
@@ -2028,7 +1734,9 @@ private fun MdbxSnapshotPage(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(
+            if (state?.selectedDiffCommitId == null) MdbxGroupSpacing else 12.dp
+        )
     ) {
         if (
             state == null ||
@@ -2109,12 +1817,14 @@ private fun MdbxSnapshotPage(
                 if (visibleState.snapshots.isEmpty() && !visibleState.isSnapshotLoading) {
                     item { SnapshotEmptyState() }
                 } else {
-                    items(
+                    itemsIndexed(
                         items = visibleState.snapshots.take(30),
-                        key = MdbxSnapshotSummary::snapshotId
-                    ) { snapshot ->
+                        key = { _, snapshot -> snapshot.snapshotId }
+                    ) { index, snapshot ->
                         SnapshotRow(
                             snapshot = snapshot,
+                            index = index,
+                            count = minOf(30, visibleState.snapshots.size),
                             enabled = !visibleState.isLoading && !visibleState.isSnapshotLoading,
                             onShowDiff = { onShowDiff(snapshot.baseCommitId) },
                             onOpenStructure = { onShowSnapshotStructure(snapshot.snapshotId) },
@@ -2129,7 +1839,7 @@ private fun MdbxSnapshotPage(
 }
 
 @Composable
-private fun MdbxCommitHistoryPage(
+internal fun MdbxCommitHistoryPage(
     state: MdbxViewModel.MdbxDeltaDialogState.Visible?,
     onShowDiff: (String) -> Unit,
     onRevert: (String) -> Unit
@@ -2187,7 +1897,7 @@ private fun MdbxCommitHistoryPage(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(if (selectedCommitId == null) MdbxGroupSpacing else 12.dp)
     ) {
         if (state == null || state.isLoading) {
             item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
@@ -2268,9 +1978,11 @@ private fun MdbxCommitHistoryPage(
                 if (visibleState.deltas.isEmpty() && !visibleState.isLoading) {
                     item { CommitHistoryEmptyState() }
                 }
-                items(items = visibleState.deltas, key = { it.commitId }) { delta ->
+                itemsIndexed(items = visibleState.deltas, key = { _, delta -> delta.commitId }) { index, delta ->
                     DeltaRow(
                         delta = delta,
+                        index = index,
+                        count = visibleState.deltas.size,
                         onShowDiff = { onShowDiff(delta.commitId) }
                     )
                 }
@@ -2285,7 +1997,7 @@ private fun CommitHistoryListHeader(commitCount: Int) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 4.dp, top = 4.dp, bottom = 2.dp),
+            .padding(start = 4.dp, top = 4.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
@@ -2304,7 +2016,7 @@ private fun CommitHistoryListHeader(commitCount: Int) {
 @Composable
 private fun CommitHistoryEmptyState() {
     val strings = rememberScreenStrings()
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -2338,172 +2050,7 @@ private fun CommitHistoryEmptyState() {
 }
 
 @Composable
-private fun MdbxAdvancedToolsPage(
-    state: MdbxViewModel.MdbxAdvancedDialogState.Visible?,
-    databaseName: String,
-    onExportBundle: (String?) -> Unit,
-    onImportBundle: (String) -> Unit,
-    onFlushPendingUpload: () -> Unit,
-    onRunBenchmark: (Int) -> Unit
-) {
-    val strings = rememberScreenStrings()
-    val context = LocalContext.current
-    var baseCommitId by rememberSaveable(state?.databaseId ?: -1L) { mutableStateOf("") }
-    var importJson by rememberSaveable(state?.databaseId ?: -1L) { mutableStateOf("") }
-    var benchmarkCountText by rememberSaveable(state?.databaseId ?: -1L) { mutableStateOf("10") }
-    val benchmarkCount = benchmarkCountText.toIntOrNull()?.coerceIn(1, 500) ?: 10
-    val diagnostics = state?.diagnostics
-    val isLoading = state?.isLoading == true
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Text(
-                strings.get(R.string.mdbx_ui_advanced_tools_title, state?.databaseName ?: databaseName),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-        if (state == null || isLoading) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
-        }
-        state?.message?.takeIf { it.isNotBlank() }?.let { message ->
-            item {
-                Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-        item {
-            AdvancedToolSection(title = "Oplog / Sync bundle") {
-                OutlinedTextField(
-                    value = baseCommitId,
-                    onValueChange = { baseCommitId = it },
-                    label = { Text(strings.get(R.string.mdbx_ui_base_commit_optional)) },
-                    singleLine = true,
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { onExportBundle(baseCommitId.trim().takeIf { it.isNotBlank() }) },
-                        enabled = !isLoading,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Download, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.export))
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            state?.exportedBundleJson?.let {
-                                ClipboardUtils.copyToClipboard(context, it, "MDBX sync bundle")
-                            }
-                        },
-                        enabled = !state?.exportedBundleJson.isNullOrBlank(),
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.copy))
-                    }
-                }
-                state?.lastExportedBundle?.let { bundle ->
-                    Text(
-                        "head ${shortId(bundle.headCommitId)} · ${bundle.commitCount} commits · ${bundle.payloadHash.take(12)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                OutlinedTextField(
-                    value = importJson,
-                    onValueChange = { importJson = it },
-                    label = { Text(strings.get(R.string.mdbx_ui_bundle_paste)) },
-                    minLines = 3,
-                    maxLines = 6,
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Button(
-                    onClick = { onImportBundle(importJson) },
-                    enabled = !isLoading && importJson.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.Upload, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_bundle_import))
-                }
-            }
-        }
-        item {
-            AdvancedToolSection(title = strings.get(R.string.mdbx_ui_background_upload)) {
-                DiagnosticLine(Icons.Default.Sync, strings.get(R.string.keepass_remote_sync_status), diagnostics?.lastSyncStatus ?: "-")
-                Button(
-                    onClick = onFlushPendingUpload,
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.CloudSync, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_upload_pending_now))
-                }
-            }
-        }
-        item {
-            AdvancedToolSection(title = strings.get(R.string.mdbx_ui_attachment_storage_format)) {
-                DiagnosticLine(
-                    Icons.Default.Storage,
-                    strings.get(R.string.attachments),
-                    diagnostics?.let { "${it.attachmentCount} total · ${it.externalAttachmentCount} external" } ?: "-"
-                )
-                DiagnosticLine(
-                    Icons.Default.Folder,
-                    strings.get(R.string.mdbx_ui_storage),
-                    diagnostics?.let {
-                        "${formatBytes(it.originalAttachmentBytes)} original · ${formatBytes(it.storedAttachmentBytes)} stored"
-                    } ?: "-"
-                )
-                DiagnosticLine(
-                    if ((diagnostics?.attachmentChunkMismatchCount ?: 0) > 0) Icons.Default.Warning else Icons.Default.CheckCircle,
-                    strings.get(R.string.mdbx_ui_chunk_verification),
-                    diagnostics?.let { "${it.attachmentChunkMismatchCount} mismatch" } ?: "-"
-                )
-            }
-        }
-        item {
-            AdvancedToolSection(title = strings.get(R.string.mdbx_ui_performance_benchmark)) {
-                OutlinedTextField(
-                    value = benchmarkCountText,
-                    onValueChange = { value -> benchmarkCountText = value.filter { it.isDigit() }.take(3) },
-                    label = { Text(strings.get(R.string.mdbx_ui_benchmark_commit_count)) },
-                    singleLine = true,
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Button(
-                    onClick = { onRunBenchmark(benchmarkCount) },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.Speed, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_benchmark_run))
-                }
-                state?.lastBenchmarkResult?.let { result ->
-                    Text(
-                        "${result.operationCount} commits · ${result.elapsedMs} ms · ${formatBytes(result.fileDeltaBytes)} file delta",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MdbxMaintenancePage(
+internal fun MdbxMaintenancePage(
     database: LocalMdbxDatabase,
     diagnostics: MdbxVaultDiagnostics?,
     allowSync: Boolean,
@@ -2519,17 +2066,7 @@ private fun MdbxMaintenancePage(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text(
-                strings.get(R.string.mdbx_ui_maintenance_database_title, database.name),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                strings.get(R.string.mdbx_ui_maintenance_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            MdbxDiagnosticOverviewCard(database = database, diagnostics = diagnostics)
         }
 
         item {
@@ -2542,9 +2079,6 @@ private fun MdbxMaintenancePage(
             )
         }
 
-        item {
-            MdbxDiagnosticOverviewCard(database = database, diagnostics = diagnostics)
-        }
 
         diagnostics?.let { diagnostic ->
             item {
@@ -2557,7 +2091,7 @@ private fun MdbxMaintenancePage(
                 }
             }
             item {
-                MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_advanced_details)) {
+                MdbxExpandableSection(title = strings.get(R.string.mdbx_ui_advanced_details)) {
                     DiagnosticLine(Icons.Default.Security, strings.get(R.string.mdbx_ui_format_and_tiga), mdbxCompatibilityValue(diagnostic, database))
                     DiagnosticLine(Icons.Default.Storage, strings.get(R.string.mdbx_ui_branches_and_devices), "${diagnostic.branchCount} / ${diagnostic.deviceCount}")
                     DiagnosticLine(Icons.Default.Delete, strings.get(R.string.mdbx_ui_deletion_markers), diagnostic.tombstoneCount.toString())
@@ -2569,17 +2103,17 @@ private fun MdbxMaintenancePage(
                         diagnostic.attachmentChunkMismatchCount.toString()
                     )
                     DiagnosticLine(Icons.Default.Warning, strings.get(R.string.mdbx_ui_dangling_parents), diagnostic.danglingParentCount.toString())
-                    DiagnosticLine(Icons.Default.Warning, strings.get(R.string.mdbx_ui_dangling_heads), "${diagnostic.danglingBranchHeadCount} branch · ${diagnostic.danglingDeviceHeadCount} device")
+                    DiagnosticLine(Icons.Default.Warning, strings.get(R.string.mdbx_ui_dangling_heads), strings.get(R.string.mdbx_ui_dangling_head_counts, diagnostic.danglingBranchHeadCount, diagnostic.danglingDeviceHeadCount))
                     DiagnosticLine(
                         if (diagnostic.isReadable) Icons.Default.CheckCircle else Icons.Default.CloudOff,
                         strings.get(R.string.mdbx_ui_readable),
                         if (diagnostic.isReadable) strings.get(R.string.yes) else (diagnostic.unavailableReason ?: strings.get(R.string.no))
                     )
-                    DiagnosticLine(Icons.Default.Folder, strings.get(R.string.mdbx_file_size_label), diagnostic.filePath ?: "-")
+                    DiagnosticLine(Icons.Default.Folder, strings.get(R.string.mdbx_ui_file_location), diagnostic.filePath ?: "-")
                 }
             }
         } ?: item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            MdbxCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     Text(strings.get(R.string.mdbx_ui_diagnostics_waiting), style = MaterialTheme.typography.bodyMedium)
@@ -2598,41 +2132,11 @@ private fun MaintenanceActionPanel(
     onFlushPendingUpload: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(strings.get(R.string.mdbx_ui_maintenance_actions), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = onRefreshDiagnostics,
-                    modifier = Modifier.weight(1f).heightIn(min = 44.dp)
-                ) {
-                    Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.refresh))
-                }
-                if (allowSync) {
-                    OutlinedButton(
-                        onClick = onSync,
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp)
-                    ) {
-                        Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.mdbx_sync_status_label))
-                    }
-                }
-            }
-            if (allowPendingUpload) {
-                FilledTonalButton(
-                    onClick = onFlushPendingUpload,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)
-                ) {
-                    Icon(Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_upload_pending))
-                }
-            }
-        }
-    }
+    MdbxActionGroup(buildList {
+        add(MdbxAction(Icons.Default.Visibility, strings.get(R.string.refresh), onRefreshDiagnostics, showChevron = false))
+        if (allowSync) add(MdbxAction(Icons.Default.Sync, strings.get(R.string.mdbx_sync_status_label), onSync, showChevron = false))
+        if (allowPendingUpload) add(MdbxAction(Icons.Default.CloudSync, strings.get(R.string.mdbx_ui_upload_pending), onFlushPendingUpload, showChevron = false))
+    })
 }
 
 private fun MdbxEngineType.displayName(): String = when (this) {
@@ -2641,10 +2145,7 @@ private fun MdbxEngineType.displayName(): String = when (this) {
 }
 
 @Composable
-private fun MdbxDiagnosticOverviewCard(
-    database: LocalMdbxDatabase,
-    diagnostics: MdbxVaultDiagnostics?
-) {
+private fun MdbxDiagnosticOverviewCard(database: LocalMdbxDatabase, diagnostics: MdbxVaultDiagnostics?) {
     val strings = rememberScreenStrings()
     val healthIssueCount = diagnostics?.healthIssueCount ?: 0
     val healthText = when {
@@ -2652,51 +2153,32 @@ private fun MdbxDiagnosticOverviewCard(
         healthIssueCount > 0 -> strings.get(R.string.mdbx_ui_health_needs_action_count, healthIssueCount)
         else -> strings.get(R.string.mdbx_health_ok_short)
     }
-    val syncText = diagnostics?.let { diagnostic ->
-        if (diagnostic.pendingSyncCount > 0) {
-            strings.get(R.string.mdbx_ui_sync_pending_summary, diagnostic.lastSyncStatus, diagnostic.pendingSyncCount)
-        } else {
-            diagnostic.lastSyncStatus
-        }
-    } ?: database.lastSyncStatus
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = sourceColor(database).copy(alpha = 0.12f),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(sourceIcon(database), contentDescription = null, tint = sourceColor(database))
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(database.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "${mdbxSourceLabel(strings, database)} · ${diagnostics?.lastSyncStatus ?: database.lastSyncStatus}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    val status = diagnostics?.lastSyncStatus ?: database.lastSyncStatus
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                MdbxIconBadge(sourceIcon(database))
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(database.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                    Text(mdbxSourceLabel(strings, database), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            HorizontalDivider()
-            DiagnosticLine(
-                icon = if (healthIssueCount > 0) Icons.Default.Warning else Icons.Default.CheckCircle,
-                label = strings.get(R.string.mdbx_status_health),
-                value = healthText
-            )
-            DiagnosticLine(Icons.Default.Sync, strings.get(R.string.mdbx_sync_status_label), syncText)
-            DiagnosticLine(
-                icon = if (diagnostics?.isReadable == false) Icons.Default.CloudOff else Icons.Default.Storage,
-                label = strings.get(R.string.mdbx_file_size_label),
-                value = diagnostics?.let { "${formatBytes(it.fileSizeBytes)} · ${it.filePath ?: "-"}" } ?: "-"
-            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                MdbxStatusPill(healthText, Icons.Default.Security, warning = healthIssueCount > 0)
+                MdbxStatusPill(strings.get(mdbxSyncStatusLabel(status)), Icons.Default.Sync,
+                    warning = status == MdbxSyncStatus.FAILED.name || status == MdbxSyncStatus.CONFLICT.name)
+                diagnostics?.let { MdbxStatusPill(formatBytes(it.fileSizeBytes)) }
+            }
+            Text(strings.get(R.string.mdbx_ui_maintenance_description), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             diagnostics?.lastSyncError?.takeIf { it.isNotBlank() }?.let { error ->
-                DiagnosticLine(Icons.Default.Warning, strings.get(R.string.mdbx_ui_latest_error), error)
+                Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             }
-        }
+            if (diagnostics?.isReadable == false) {
+                Text(diagnostics.unavailableReason ?: strings.get(R.string.mdbx_unavailable_local_copy),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            }
     }
 }
 
@@ -2705,7 +2187,7 @@ private fun MdbxDiagnosticSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    MdbxCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             content()
@@ -2778,129 +2260,18 @@ private fun EmptyMdbxState(
 }
 
 @Composable
-private fun MdbxSectionHeader(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    color: Color
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            color = color.copy(alpha = 0.12f),
-            modifier = Modifier.size(32.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = color
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+private fun MdbxSectionHeader(icon: ImageVector, title: String, subtitle: String, color: Color) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+        MdbxIconBadge(icon, color, color.copy(alpha = 0.12f))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
-@Composable
-private fun MdbxQuickActionsCard(
-    onCreateClick: () -> Unit,
-    onOpenClick: () -> Unit
-) {
-    val strings = rememberScreenStrings()
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onCreateClick)
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.mdbx_create_new_vault_button),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        strings.get(R.string.mdbx_ui_create_database_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpenClick)
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Folder,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        strings.get(R.string.mdbx_ui_open_existing_database),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        strings.get(R.string.mdbx_ui_open_database_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
+
 
 @Composable
 private fun sourceColor(database: LocalMdbxDatabase): Color =
@@ -2935,795 +2306,60 @@ private fun LocalMdbxDatabase.managerSource(): MdbxManagerSource =
         MdbxSourceType.REMOTE_ONEDRIVE -> MdbxManagerSource.ONEDRIVE
     }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MdbxVaultSmallCard(
+private fun MdbxVaultTile(
     database: LocalMdbxDatabase,
     isDefault: Boolean,
     conflictCount: Int,
     diagnostics: MdbxVaultDiagnostics?,
+    metrics: DatabaseManagementTileMetrics,
     onOpen: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    val context = LocalContext.current
+    val status = diagnostics?.lastSyncStatus ?: database.lastSyncStatus
     val healthIssueCount = diagnostics?.healthIssueCount ?: 0
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onOpen)
+    val warning = conflictCount > 0 || healthIssueCount > 0 || diagnostics?.isReadable == false ||
+        status == MdbxSyncStatus.FAILED.name || status == MdbxSyncStatus.CONFLICT.name
+    val statusText = when {
+        conflictCount > 0 -> strings.get(R.string.mdbx_ui_conflict_count_badge, conflictCount)
+        healthIssueCount > 0 -> strings.get(R.string.mdbx_ui_health_count_badge, healthIssueCount)
+        diagnostics?.isReadable == false -> strings.get(R.string.mdbx_ui_details_unavailable)
+        else -> strings.get(mdbxSyncStatusLabel(status))
+    }
+    MdbxCard(
+        onClick = onOpen,
+        modifier = Modifier.fillMaxWidth().testTag("mdbx_database_${database.id}"),
+        colors = CardDefaults.cardColors(containerColor = if (isDefault)
+            MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        DatabaseManagementTileContent(
+            name = database.name,
+            status = statusText,
+            warning = warning,
+            metrics = metrics,
+            titleColor = if (isDefault) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+            statusColor = if (isDefault) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = sourceColor(database).copy(alpha = 0.12f),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            sourceIcon(database),
-                            contentDescription = null,
-                            tint = sourceColor(database),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            database.name,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        if (isDefault) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = stringResource(R.string.mdbx_default_badge),
-                                modifier = Modifier.size(15.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    Text(
-                        "${mdbxSourceLabel(strings, database)} · ${diagnostics?.lastSyncStatus ?: database.lastSyncStatus}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        database.displayPath(context, strings),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AssistChip(
-                    onClick = onOpen,
-                    label = {
-                        Text(if (conflictCount > 0) strings.get(R.string.mdbx_ui_conflict_count_badge, conflictCount) else strings.get(R.string.mdbx_ui_conflicts_clean))
-                    },
-                    leadingIcon = {
-                        Icon(
-                            if (conflictCount > 0) Icons.AutoMirrored.Filled.CallMerge else Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                )
-                AssistChip(
-                    onClick = onOpen,
-                    label = {
-                        Text(if (healthIssueCount > 0) strings.get(R.string.mdbx_ui_health_count_badge, healthIssueCount) else strings.get(R.string.mdbx_ui_health_clean))
-                    },
-                    leadingIcon = {
-                        Icon(
-                            if (healthIssueCount > 0) Icons.Default.Warning else Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MdbxVaultDetailBottomSheet(
-    database: LocalMdbxDatabase,
-    isDefault: Boolean,
-    conflictCount: Int,
-    diagnostics: MdbxVaultDiagnostics?,
-    onDismiss: () -> Unit,
-    onSync: () -> Unit,
-    onShowConflicts: () -> Unit,
-    onShowSnapshots: () -> Unit,
-    onShowCommitHistory: () -> Unit,
-    onSetDefault: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val strings = rememberScreenStrings()
-    val context = LocalContext.current
-    val tigaLabel = try {
-        MdbxTigaMode.valueOf(database.tigaMode).label
-    } catch (_: IllegalArgumentException) {
-        database.tigaMode
-    }
-
-    val healthIssueCount = diagnostics?.healthIssueCount ?: 0
-    val hasUnavailableCopy = diagnostics?.isReadable == false
-
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = MaterialTheme.shapes.large,
-                    color = sourceColor(database).copy(alpha = 0.12f),
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            sourceIcon(database),
-                            contentDescription = null,
-                            tint = sourceColor(database),
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            database.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (isDefault) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = stringResource(R.string.mdbx_default_badge),
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Tiga: $tigaLabel · ${mdbxSourceLabel(strings, database)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (database.filePath.isNotBlank()) {
-                        Text(
-                            database.displayPath(context, strings),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = if (conflictCount > 0) Icons.AutoMirrored.Filled.CallMerge else Icons.Default.CheckCircle,
-                    label = stringResource(R.string.mdbx_status_conflicts),
-                    value = if (conflictCount > 0) {
-                        stringResource(R.string.mdbx_conflict_count_short, conflictCount)
-                    } else {
-                        stringResource(R.string.mdbx_no_conflicts_short)
-                    },
-                    isWarning = conflictCount > 0
-                )
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = if (healthIssueCount > 0) Icons.Default.Warning else Icons.Default.CheckCircle,
-                    label = stringResource(R.string.mdbx_status_health),
-                    value = if (healthIssueCount > 0) {
-                        stringResource(R.string.mdbx_health_issues_short, healthIssueCount)
-                    } else {
-                        stringResource(R.string.mdbx_health_ok_short)
-                    },
-                    isWarning = healthIssueCount > 0
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.History,
-                    label = stringResource(R.string.mdbx_status_delta),
-                    value = diagnostics?.let {
-                        stringResource(R.string.mdbx_commit_tombstone_short, it.commitCount, it.tombstoneCount)
-                    } ?: stringResource(R.string.mdbx_status_loading),
-                    isWarning = false
-                )
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Storage,
-                    label = stringResource(R.string.mdbx_status_attachments),
-                    value = diagnostics?.let {
-                        stringResource(
-                            R.string.mdbx_attachment_short,
-                            it.attachmentCount,
-                            it.externalAttachmentCount,
-                            formatBytes(it.storedAttachmentBytes)
-                        )
-                    } ?: stringResource(R.string.mdbx_status_loading),
-                    isWarning = false
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            diagnostics?.let { diagnostic ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    tonalElevation = 1.dp,
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                    DiagnosticLine(
-                        icon = if (diagnostic.isReadable) Icons.Default.CloudSync else Icons.Default.CloudOff,
-                        label = stringResource(R.string.mdbx_sync_status_label),
-                        value = diagnostic.lastSyncStatus
-                    )
-                    DiagnosticLine(
-                        icon = Icons.Default.Security,
-                        label = stringResource(R.string.mdbx_compatibility_label),
-                        value = mdbxCompatibilityValue(diagnostic, database)
-                    )
-                    DiagnosticLine(
-                        icon = Icons.Default.Sync,
-                        label = stringResource(R.string.mdbx_recovery_label),
-                        value = if (diagnostic.structuralIssueCount == 0 && diagnostic.integrityOk) {
-                            stringResource(R.string.mdbx_recovery_clean)
-                        } else {
-                            stringResource(
-                                R.string.mdbx_recovery_issue_value,
-                                diagnostic.structuralIssueCount,
-                                diagnostic.integrityMessage ?: "-"
-                            )
-                        }
-                    )
-                    DiagnosticLine(
-                        icon = Icons.Default.Info,
-                        label = stringResource(R.string.mdbx_file_size_label),
-                        value = formatBytes(diagnostic.fileSizeBytes)
-                    )
-                    DiagnosticLine(
-                        icon = Icons.Default.Storage,
-                        label = strings.get(R.string.mdbx_ui_client),
-                        value = diagnostic.currentDeviceId ?: "-"
-                    )
-                    DiagnosticLine(
-                        icon = Icons.Default.Folder,
-                        label = strings.get(R.string.mdbx_ui_catalog_index),
-                        value = "${diagnostic.folderCount} folders · ${diagnostic.indexedObjectCount} indexed"
-                    )
-                    }
-                }
-                if (hasUnavailableCopy) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        diagnostic.unavailableReason
-                            ?: stringResource(R.string.mdbx_unavailable_local_copy),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                stringResource(R.string.actions),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (!isDefault) {
-                    OutlinedButton(
-                        onClick = onSetDefault,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Star, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.mdbx_set_default))
-                    }
-                }
-                OutlinedButton(
-                    onClick = onSync,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.Sync, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_sync_status_label))
-                }
-                OutlinedButton(
-                    onClick = onShowConflicts,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.CallMerge, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (conflictCount > 0) strings.get(R.string.mdbx_ui_conflict_management_count, conflictCount) else strings.get(R.string.mdbx_ui_manager_conflicts_title))
-                }
-                OutlinedButton(
-                    onClick = onShowSnapshots,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.Restore, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_object_snapshot))
-                }
-                OutlinedButton(
-                    onClick = onShowCommitHistory,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.History, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_manager_history_title))
-                }
-                OutlinedButton(
-                    onClick = onDelete,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.mdbx_delete))
-                }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(sourceIcon(database), contentDescription = null, modifier = Modifier.size(28.dp),
+                    tint = if (isDefault) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.weight(1f))
+                if (isDefault) Icon(Icons.Default.Star, stringResource(R.string.mdbx_default_badge),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp))
             }
         }
     }
 }
 
 @Composable
-private fun MdbxOperationsDashboard(
-    databases: List<LocalMdbxDatabase>,
-    diagnostics: Map<Long, MdbxVaultDiagnostics>
-) {
-    val totalConflicts = diagnostics.values.sumOf { it.unresolvedConflictCount }
-    val totalHealthIssues = diagnostics.values.sumOf { it.healthIssueCount }
-    val totalCommits = diagnostics.values.sumOf { it.commitCount }
-    val externalAttachments = diagnostics.values.sumOf { it.externalAttachmentCount }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Science,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.mdbx_operations_dashboard_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.AutoMirrored.Filled.CallMerge,
-                    label = stringResource(R.string.mdbx_status_conflicts),
-                    value = totalConflicts.toString(),
-                    isWarning = totalConflicts > 0
-                )
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Warning,
-                    label = stringResource(R.string.mdbx_status_health),
-                    value = totalHealthIssues.toString(),
-                    isWarning = totalHealthIssues > 0
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.History,
-                    label = stringResource(R.string.mdbx_status_delta),
-                    value = totalCommits.toString(),
-                    isWarning = false
-                )
-                StatusTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Storage,
-                    label = stringResource(R.string.mdbx_status_attachments),
-                    value = stringResource(
-                        R.string.mdbx_dashboard_attachment_value,
-                        externalAttachments
-                    ),
-                    isWarning = false
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.mdbx_dashboard_vault_count, databases.size),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatusTile(
-    modifier: Modifier,
-    icon: ImageVector,
-    label: String,
-    value: String,
-    isWarning: Boolean,
-    onClick: (() -> Unit)? = null
-) {
-    val strings = rememberScreenStrings()
-    val accentColor = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val containerColor = if (isWarning) {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.58f)
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-    val interactionModifier = if (onClick != null) {
-        Modifier.clickable(
-            onClickLabel = strings.get(R.string.mdbx_ui_view_named_details, label),
-            onClick = onClick
-        )
-    } else {
-        Modifier
-    }
-    Surface(
-        modifier = modifier
-            .then(interactionModifier)
-            .heightIn(min = 88.dp),
-        shape = MaterialTheme.shapes.medium,
-        tonalElevation = if (onClick != null) 2.dp else 1.dp,
-        color = containerColor
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.weight(1f))
-                if (onClick != null) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun DiagnosticLine(
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            "$label: ",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodySmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun MdbxAdvancedToolsDialog(
-    state: MdbxViewModel.MdbxAdvancedDialogState.Visible,
-    onDismiss: () -> Unit,
-    onExportBundle: (String?) -> Unit,
-    onImportBundle: (String) -> Unit,
-    onFlushPendingUpload: () -> Unit,
-    onRunBenchmark: (Int) -> Unit
-) {
-    val strings = rememberScreenStrings()
-    val context = LocalContext.current
-    var baseCommitId by rememberSaveable(state.databaseId) { mutableStateOf("") }
-    var importJson by rememberSaveable(state.databaseId) { mutableStateOf("") }
-    var benchmarkCountText by rememberSaveable(state.databaseId) { mutableStateOf("10") }
-    val benchmarkCount = benchmarkCountText.toIntOrNull()?.coerceIn(1, 500) ?: 10
-    val diagnostics = state.diagnostics
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(strings.get(R.string.mdbx_ui_advanced_tools_title, state.databaseName)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 520.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (state.isLoading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-                state.message?.takeIf { it.isNotBlank() }?.let { message ->
-                    Text(
-                        message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                AdvancedToolSection(title = "Oplog / Sync bundle") {
-                    OutlinedTextField(
-                        value = baseCommitId,
-                        onValueChange = { baseCommitId = it },
-                        label = { Text(strings.get(R.string.mdbx_ui_base_commit_optional)) },
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { onExportBundle(baseCommitId.trim().takeIf { it.isNotBlank() }) },
-                            enabled = !state.isLoading,
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(strings.get(R.string.export))
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                state.exportedBundleJson?.let {
-                                    ClipboardUtils.copyToClipboard(context, it, "MDBX sync bundle")
-                                }
-                            },
-                            enabled = !state.exportedBundleJson.isNullOrBlank(),
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(strings.get(R.string.copy))
-                        }
-                    }
-                    state.lastExportedBundle?.let { bundle ->
-                        Text(
-                            "head ${shortId(bundle.headCommitId)} · ${bundle.commitCount} commits · ${bundle.payloadHash.take(12)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    OutlinedTextField(
-                        value = importJson,
-                        onValueChange = { importJson = it },
-                        label = { Text(strings.get(R.string.mdbx_ui_bundle_paste)) },
-                        minLines = 3,
-                        maxLines = 6,
-                        enabled = !state.isLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Button(
-                        onClick = { onImportBundle(importJson) },
-                        enabled = !state.isLoading && importJson.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Upload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.mdbx_ui_bundle_import))
-                    }
-                    state.lastImportResult?.let { result ->
-                        Text(
-                            strings.get(R.string.mdbx_ui_bundle_import_result, result.appliedObjectCount, result.keptLocalObjectCount, result.conflictCount, result.tombstoneCount),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                AdvancedToolSection(title = strings.get(R.string.mdbx_ui_background_upload)) {
-                    DiagnosticLine(
-                        icon = Icons.Default.Sync,
-                        label = strings.get(R.string.keepass_remote_sync_status),
-                        value = diagnostics?.lastSyncStatus ?: "-"
-                    )
-                    Button(
-                        onClick = onFlushPendingUpload,
-                        enabled = !state.isLoading,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.CloudSync, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.mdbx_ui_upload_pending_now))
-                    }
-                }
-
-                AdvancedToolSection(title = strings.get(R.string.mdbx_ui_attachment_storage_format)) {
-                    DiagnosticLine(
-                        icon = Icons.Default.Storage,
-                        label = strings.get(R.string.attachments),
-                        value = diagnostics?.let {
-                            "${it.attachmentCount} total · ${it.externalAttachmentCount} external"
-                        } ?: "-"
-                    )
-                    DiagnosticLine(
-                        icon = Icons.Default.Folder,
-                        label = strings.get(R.string.mdbx_ui_storage),
-                        value = diagnostics?.let {
-                            "${formatBytes(it.originalAttachmentBytes)} original · ${formatBytes(it.storedAttachmentBytes)} stored"
-                        } ?: "-"
-                    )
-                    DiagnosticLine(
-                        icon = if ((diagnostics?.attachmentChunkMismatchCount ?: 0) > 0) {
-                            Icons.Default.Warning
-                        } else {
-                            Icons.Default.CheckCircle
-                        },
-                        label = strings.get(R.string.mdbx_ui_chunk_verification),
-                        value = diagnostics?.let { "${it.attachmentChunkMismatchCount} mismatch" } ?: "-"
-                    )
-                }
-
-                AdvancedToolSection(title = strings.get(R.string.mdbx_ui_performance_benchmark)) {
-                    OutlinedTextField(
-                        value = benchmarkCountText,
-                        onValueChange = { value ->
-                            benchmarkCountText = value.filter { it.isDigit() }.take(3)
-                        },
-                        label = { Text(strings.get(R.string.mdbx_ui_benchmark_commit_count)) },
-                        singleLine = true,
-                        enabled = !state.isLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Button(
-                        onClick = { onRunBenchmark(benchmarkCount) },
-                        enabled = !state.isLoading,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                    ) {
-                        Icon(Icons.Default.Speed, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(strings.get(R.string.mdbx_ui_benchmark_run))
-                    }
-                    state.lastBenchmarkResult?.let { result ->
-                        Text(
-                            "${result.operationCount} commits · ${result.elapsedMs} ms · ${formatBytes(result.fileDeltaBytes)} file delta",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.mdbx_close))
-            }
-        }
-    )
-}
-
-@Composable
-private fun AdvancedToolSection(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small,
-        tonalElevation = 1.dp,
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            content()
+private fun DiagnosticLine(icon: ImageVector, label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp).size(18.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -3739,7 +2375,7 @@ private fun SnapshotCreationCard(
     onCreateSnapshot: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -3778,6 +2414,7 @@ private fun SnapshotCreationCard(
                 }
             }
             OutlinedTextField(
+                shape = MdbxFieldShape,
                 value = snapshotName,
                 onValueChange = onSnapshotNameChange,
                 enabled = enabled,
@@ -3865,7 +2502,7 @@ private fun SnapshotListHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 4.dp, top = 4.dp),
+            .padding(start = 4.dp, top = 16.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -3900,7 +2537,7 @@ private fun SnapshotListHeader(
 @Composable
 private fun SnapshotEmptyState() {
     val strings = rememberScreenStrings()
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -3961,8 +2598,8 @@ private fun MdbxSnapshotStructurePage(
         modifier = Modifier
             .fillMaxSize()
             .padding(
-                horizontal = if (compareMode) 0.dp else 8.dp,
-                vertical = if (compareMode) 0.dp else 8.dp
+                horizontal = 16.dp,
+                vertical = 8.dp
             ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -3978,7 +2615,7 @@ private fun MdbxSnapshotStructurePage(
 }
 
 @Composable
-private fun SnapshotStructurePreviewPage(
+internal fun SnapshotStructurePreviewPage(
     preview: MdbxStructurePreview?,
     compareMode: Boolean,
     modifier: Modifier = Modifier
@@ -3999,20 +2636,19 @@ private fun SnapshotStructurePreviewPage(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(0.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StructureTreePanel(
                     title = strings.get(R.string.mdbx_ui_current_version),
                     nodes = preview.currentNodes,
                     modifier = Modifier.weight(1f),
-                    framed = false
+                    framed = true
                 )
-                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 StructureTreePanel(
                     title = strings.get(R.string.mdbx_ui_snapshot_version),
                     nodes = preview.snapshotNodes,
                     modifier = Modifier.weight(1f),
-                    framed = false
+                    framed = true
                 )
             }
         } else {
@@ -4025,7 +2661,7 @@ private fun SnapshotStructurePreviewPage(
                     title = "",
                     nodes = preview.snapshotNodes,
                     modifier = Modifier.fillMaxWidth(),
-                    framed = false
+                    framed = true
                 )
             }
         }
@@ -4033,7 +2669,7 @@ private fun SnapshotStructurePreviewPage(
 }
 
 @Composable
-private fun StructureTreePanel(
+internal fun StructureTreePanel(
     title: String,
     nodes: List<MdbxStructureNode>,
     modifier: Modifier = Modifier,
@@ -4076,14 +2712,16 @@ private fun StructureTreePanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                val visibleNodes = visibleStructureNodes(nodes, expandedIds)
+                val visibleNodes = remember(nodes, expandedIds) { visibleStructureNodes(nodes, expandedIds) }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(vertical = 4.dp)
+                        .width(IntrinsicSize.Max)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     visibleNodes.forEach { item ->
+                        key(item.node.id) {
                         StructureTreeRow(
                             node = item.node,
                             depth = item.depth,
@@ -4097,13 +2735,14 @@ private fun StructureTreePanel(
                                 }
                             }
                         )
+                        }
                     }
                 }
             }
         }
     }
     if (framed) {
-        OutlinedCard(modifier = modifier) { content() }
+        MdbxCard(modifier = modifier) { content() }
     } else {
         Surface(modifier = modifier, color = Color.Transparent) { content() }
     }
@@ -4145,82 +2784,39 @@ private fun StructureTreeRow(
     onToggle: () -> Unit
 ) {
     val statusColor = structureStatusColor(node.status)
-    Row(
-        modifier = Modifier
-            .widthIn(min = 260.dp)
-            .height(34.dp)
-            .clickable(enabled = hasChildren, onClick = onToggle)
-            .padding(start = 8.dp, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        color = if (node.type == MdbxStructureNodeType.FOLDER) MaterialTheme.colorScheme.surfaceContainer
+            else MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MdbxFieldShape,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
     ) {
-        StructureIndentLines(depth)
-        if (hasChildren) {
-            Icon(
-                if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            Spacer(modifier = Modifier.width(16.dp))
-        }
-        Spacer(modifier = Modifier.width(4.dp))
-        Icon(
-            if (node.type == MdbxStructureNodeType.FOLDER) Icons.Default.Folder else Icons.Default.Description,
-            contentDescription = null,
-            modifier = Modifier.size(17.dp),
-            tint = if (node.type == MdbxStructureNodeType.FOLDER) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
+        Row(
+            modifier = Modifier.fillMaxWidth().widthIn(min = 280.dp).heightIn(min = 64.dp)
+                .then(if (hasChildren) Modifier.mdbxClickable(onClick = onToggle) else Modifier)
+                .padding(start = 12.dp + 20.dp * depth, end = 12.dp, top = 10.dp, bottom = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (hasChildren) {
+                Icon(if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = stringResource(if (isExpanded) R.string.mdbx_ui_collapse_details else R.string.mdbx_ui_show_details),
+                    modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else Spacer(modifier = Modifier.width(20.dp))
+            Icon(if (node.type == MdbxStructureNodeType.FOLDER) Icons.Default.Folder else Icons.Default.Description,
+                contentDescription = null, modifier = Modifier.size(22.dp),
+                tint = if (node.type == MdbxStructureNodeType.FOLDER) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(modifier = Modifier.widthIn(min = 120.dp, max = 240.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(node.name, style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (node.type == MdbxStructureNodeType.FOLDER) FontWeight.SemiBold else FontWeight.Normal)
+                if (node.metadata.isNotBlank()) Text(node.metadata, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        )
-        Spacer(modifier = Modifier.width(7.dp))
-        Text(
-            node.name,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (node.type == MdbxStructureNodeType.FOLDER) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 190.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        if (node.status != MdbxStructureNodeStatus.UNCHANGED) {
-            Text(
-                structureStatusLabel(node.status),
-                style = MaterialTheme.typography.labelSmall,
-                color = statusColor,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        Text(
-            node.metadata,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun StructureIndentLines(depth: Int) {
-    if (depth <= 0) return
-    Row {
-        repeat(depth) {
-            Box(
-                modifier = Modifier
-                    .width(18.dp)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.outlineVariant)
-                )
+            if (node.status != MdbxStructureNodeStatus.UNCHANGED) {
+                Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f)) {
+                    Text(structureStatusLabel(node.status), modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium, color = statusColor)
+                }
             }
         }
     }
@@ -4235,17 +2831,19 @@ private fun structureStatusColor(status: MdbxStructureNodeStatus): Color =
         MdbxStructureNodeStatus.UNCHANGED -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-private fun structureStatusLabel(status: MdbxStructureNodeStatus): String =
-    when (status) {
-        MdbxStructureNodeStatus.ADDED -> "A"
-        MdbxStructureNodeStatus.REMOVED -> "D"
-        MdbxStructureNodeStatus.MODIFIED -> "M"
-        MdbxStructureNodeStatus.UNCHANGED -> ""
-    }
+@Composable
+private fun structureStatusLabel(status: MdbxStructureNodeStatus): String = when (status) {
+    MdbxStructureNodeStatus.ADDED -> stringResource(R.string.mdbx_ui_action_created)
+    MdbxStructureNodeStatus.REMOVED -> stringResource(R.string.mdbx_ui_structure_removed)
+    MdbxStructureNodeStatus.MODIFIED -> stringResource(R.string.mdbx_ui_action_modified)
+    MdbxStructureNodeStatus.UNCHANGED -> ""
+}
 
 @Composable
 private fun SnapshotRow(
     snapshot: MdbxSnapshotSummary,
+    index: Int,
+    count: Int,
     enabled: Boolean,
     onShowDiff: () -> Unit,
     onOpenStructure: () -> Unit,
@@ -4254,143 +2852,68 @@ private fun SnapshotRow(
 ) {
     val strings = rememberScreenStrings()
     var actionMenuExpanded by remember { mutableStateOf(false) }
-    Card(
+    MdbxCard(
         onClick = onOpenStructure,
         enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+        shape = settingsSectionItemShape(index, count),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = if (snapshot.integrityOk) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.errorContainer
-                    }
-                ) {
-                    Icon(
-                        if (snapshot.autoPrune) Icons.Default.History else Icons.Default.Restore,
-                        contentDescription = null,
-                        tint = if (snapshot.integrityOk) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onErrorContainer
-                        },
-                        modifier = Modifier.padding(10.dp).size(21.dp)
-                    )
+        Column(modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (snapshot.autoPrune) Icons.Default.History else Icons.Default.Restore,
+                    contentDescription = null, modifier = Modifier.size(24.dp),
+                    tint = if (snapshot.integrityOk) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(snapshot.displayName(strings), style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(formatMdbxHistoryTime(snapshot.createdAt), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Text(
-                        snapshot.displayName(strings),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        formatMdbxHistoryTime(snapshot.createdAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = strings.get(R.string.mdbx_ui_snapshot_view_structure),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                SnapshotInfoPill(if (snapshot.autoPrune) strings.get(R.string.mdbx_ui_automatic) else strings.get(R.string.mdbx_ui_manual))
-                SnapshotInfoPill(if (snapshot.isFull) strings.get(R.string.mdbx_ui_full) else strings.get(R.string.mdbx_status_delta))
-                SnapshotInfoPill(formatBytes(snapshot.payloadBytes))
-                SnapshotInfoPill(
-                    label = if (snapshot.integrityOk) strings.get(R.string.mdbx_ui_verification_ok) else strings.get(R.string.mdbx_ui_verification_failed),
-                    emphasized = true,
-                    error = !snapshot.integrityOk
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    onClick = onShowDiff,
-                    enabled = enabled,
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_changes))
-                }
-                TextButton(
-                    onClick = onOpenStructure,
-                    enabled = enabled,
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(strings.get(R.string.mdbx_ui_structure))
-                }
-                Spacer(modifier = Modifier.weight(1f))
                 Box {
-                    IconButton(
-                        onClick = { actionMenuExpanded = true },
-                        enabled = enabled
-                    ) {
+                    IconButton(onClick = { actionMenuExpanded = true }, enabled = enabled) {
                         Icon(Icons.Default.MoreVert, contentDescription = strings.get(R.string.mdbx_ui_snapshot_more_actions))
                     }
-                    DropdownMenu(
-                        expanded = actionMenuExpanded,
-                        onDismissRequest = { actionMenuExpanded = false }
-                    ) {
+                    DropdownMenu(expanded = actionMenuExpanded, onDismissRequest = { actionMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text(strings.get(R.string.mdbx_ui_structure)) },
+                            leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null) },
+                            enabled = enabled,
+                            onClick = { actionMenuExpanded = false; onOpenStructure() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.get(R.string.mdbx_ui_changes)) },
+                            leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
+                            enabled = enabled,
+                            onClick = { actionMenuExpanded = false; onShowDiff() }
+                        )
                         DropdownMenuItem(
                             text = { Text(strings.get(R.string.mdbx_ui_snapshot_restore)) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Restore, contentDescription = null)
-                            },
+                            leadingIcon = { Icon(Icons.Default.Restore, contentDescription = null) },
                             enabled = enabled && snapshot.integrityOk,
-                            onClick = {
-                                actionMenuExpanded = false
-                                onRevert()
-                            }
+                            onClick = { actionMenuExpanded = false; onRevert() }
                         )
                         DropdownMenuItem(
-                            text = {
-                                Text(strings.get(R.string.mdbx_ui_snapshot_delete), color = MaterialTheme.colorScheme.error)
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            },
+                            text = { Text(strings.get(R.string.mdbx_ui_snapshot_delete), color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                             enabled = enabled,
-                            onClick = {
-                                actionMenuExpanded = false
-                                onDelete()
-                            }
+                            onClick = { actionMenuExpanded = false; onDelete() }
                         )
                     }
+                }
+            }
+            FlowRow(modifier = Modifier.padding(start = 36.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(listOf(
+                    if (snapshot.autoPrune) strings.get(R.string.mdbx_ui_automatic) else strings.get(R.string.mdbx_ui_manual),
+                    if (snapshot.isFull) strings.get(R.string.mdbx_ui_full) else strings.get(R.string.mdbx_status_delta),
+                    formatBytes(snapshot.payloadBytes)
+                ).joinToString(" · "), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!snapshot.integrityOk) {
+                    Text(strings.get(R.string.mdbx_ui_verification_failed), style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -4434,7 +2957,7 @@ private fun CommitDetailHeader(
 ) {
     val strings = rememberScreenStrings()
     val presentation = delta?.toHistoryPresentation(strings)
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -4512,7 +3035,7 @@ private fun CommitEventExplanationCard(
     commitId: String
 ) {
     val strings = rememberScreenStrings()
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (presentation?.isSystemCommit == true) {
@@ -4561,7 +3084,7 @@ private fun CommitEventExplanationCard(
 @Composable
 private fun CommitDiffErrorCard(message: String) {
     val strings = rememberScreenStrings()
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.48f)
@@ -4604,13 +3127,13 @@ private fun CommitChangeGroupHeader(
 ) {
     val strings = rememberScreenStrings()
     val tone = kind.groupTone()
-    Surface(
+    MdbxCard(
+        onClick = onToggle,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 52.dp)
-            .clickable(onClick = onToggle),
-        shape = MaterialTheme.shapes.medium,
-        color = tone.containerColor
+            .heightIn(min = 52.dp),
+        shape = MdbxFieldShape,
+        colors = CardDefaults.cardColors(containerColor = tone.containerColor)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -4646,15 +3169,14 @@ private fun CommitTechnicalInfoCard(
 ) {
     val strings = rememberScreenStrings()
     var expanded by rememberSaveable(commitId) { mutableStateOf(false) }
-    OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = !expanded }
+    MdbxCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .mdbxClickable(shape = MdbxPanelShape) { expanded = !expanded }
                     .heightIn(min = 52.dp)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -4671,31 +3193,33 @@ private fun CommitTechnicalInfoCard(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                MonicaExpansionChevron(
+                    expanded = expanded,
                     contentDescription = if (expanded) strings.get(R.string.mdbx_ui_collapse_technical_info) else strings.get(R.string.mdbx_ui_expand_technical_info)
                 )
             }
-            if (expanded) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    TechnicalInfoLine("Commit ID", commitId)
-                    delta?.operationId?.takeIf { it.isNotBlank() }?.let {
-                        TechnicalInfoLine(strings.get(R.string.mdbx_ui_operation_id), it)
-                    }
-                    delta?.operationKind?.takeIf { it.isNotBlank() }?.let {
-                        TechnicalInfoLine(strings.get(R.string.mdbx_ui_operation_type), it)
-                    }
-                    delta?.let {
-                        TechnicalInfoLine(strings.get(R.string.mdbx_ui_commit_type), "${it.commitKind} / ${it.changeScope}")
-                        TechnicalInfoLine(strings.get(R.string.steam_device_label), it.deviceId)
-                        TechnicalInfoLine(strings.get(R.string.mdbx_ui_sequence), it.localSeq.toString())
-                        TechnicalInfoLine(strings.get(R.string.mdbx_ui_parent_commits), it.parentCount.toString())
-                        it.branchName?.takeIf(String::isNotBlank)?.let { branch ->
-                            TechnicalInfoLine(strings.get(R.string.mdbx_ui_branch), branch)
+            MonicaExpandableContent(expanded = expanded) {
+                Column {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        TechnicalInfoLine("Commit ID", commitId)
+                        delta?.operationId?.takeIf { it.isNotBlank() }?.let {
+                            TechnicalInfoLine(strings.get(R.string.mdbx_ui_operation_id), it)
+                        }
+                        delta?.operationKind?.takeIf { it.isNotBlank() }?.let {
+                            TechnicalInfoLine(strings.get(R.string.mdbx_ui_operation_type), it)
+                        }
+                        delta?.let {
+                            TechnicalInfoLine(strings.get(R.string.mdbx_ui_commit_type), "${it.commitKind} / ${it.changeScope}")
+                            TechnicalInfoLine(strings.get(R.string.steam_device_label), it.deviceId)
+                            TechnicalInfoLine(strings.get(R.string.mdbx_ui_sequence), it.localSeq.toString())
+                            TechnicalInfoLine(strings.get(R.string.mdbx_ui_parent_commits), it.parentCount.toString())
+                            it.branchName?.takeIf(String::isNotBlank)?.let { branch ->
+                                TechnicalInfoLine(strings.get(R.string.mdbx_ui_branch), branch)
+                            }
                         }
                     }
                 }
@@ -4728,7 +3252,7 @@ private fun CommitObjectChangeCard(
     val strings = rememberScreenStrings()
     val fieldChanges = diff.toFieldChanges(strings)
     val actionTone = diff.objectChangeTone()
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -4738,7 +3262,7 @@ private fun CommitObjectChangeCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top
             ) {
@@ -4781,22 +3305,18 @@ private fun CommitObjectChangeCard(
                 }
             }
             if (fieldChanges.isNotEmpty()) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                     Text(
                         strings.get(R.string.mdbx_ui_field_changes),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                }
-                fieldChanges.forEachIndexed { index, change ->
-                    if (index > 0) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    fieldChanges.forEach { change ->
+                        FieldChangeRow(change)
                     }
-                    FieldChangeRow(change)
                 }
             }
         }
@@ -4887,52 +3407,16 @@ private fun FieldDiffPanel(
 }
 
 @Composable
-private fun FieldChangeGroupBlock(
-    group: FieldChangeGroup
-) {
-    val strings = rememberScreenStrings()
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column {
-            Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        group.displayPath(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+private fun FieldChangeGroupBlock(group: FieldChangeGroup) {
+    MdbxCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp))
+                Text(group.displayPath(), style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             }
-            Surface(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f)) {
-                Text(
-                    strings.get(R.string.mdbx_ui_field_changes),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            group.changes.forEachIndexed { index, change ->
-                if (index > 0) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
-                FieldChangeRow(change)
-            }
+            group.changes.forEach { change -> FieldChangeRow(change) }
         }
     }
 }
@@ -4940,82 +3424,35 @@ private fun FieldChangeGroupBlock(
 @Composable
 private fun FieldChangeRow(change: FieldChange) {
     val strings = rememberScreenStrings()
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
-    ) {
-        Text(
-            "${change.fieldLabel}:",
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(change.fieldLabel, style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
         if (change.sensitive) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.42f))
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Security,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    strings.get(R.string.mdbx_ui_sensitive_changes_hidden),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+            Surface(shape = MdbxFieldShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+                Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Security, contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp))
+                    Text(strings.get(R.string.mdbx_ui_sensitive_changes_hidden), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                }
             }
         } else {
-            VersionValueRow(
-                marker = "-",
-                value = change.before,
-                color = MaterialTheme.colorScheme.error,
-                backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.28f)
-            )
-            VersionValueRow(
-                marker = "+",
-                value = change.after,
-                color = MaterialTheme.colorScheme.primary,
-                backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
-            )
+            VersionValueRow("−", change.before, MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
+            VersionValueRow("+", change.after, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
         }
     }
 }
 
 @Composable
-private fun VersionValueRow(
-    marker: String,
-    value: String,
-    color: Color,
-    backgroundColor: Color
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            marker,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            modifier = Modifier.width(18.dp)
-        )
-        Text(
-            value.ifBlank { "null" },
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
+private fun VersionValueRow(marker: String, value: String, color: Color, backgroundColor: Color) {
+    Surface(shape = MdbxFieldShape, color = backgroundColor) {
+        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top) {
+            Text(marker, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold,
+                color = color, modifier = Modifier.width(18.dp))
+            Text(value.ifBlank { "null" }, style = MaterialTheme.typography.bodyMedium, maxLines = 4,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        }
     }
 }
 
@@ -5203,9 +3640,6 @@ private fun MdbxConflictSummary.toFieldChanges(strings: StringResolver): List<Fi
         if (localPayloadPreview != incomingPayloadPreview) {
             add(FieldChange(objectTitle, null, strings.get(R.string.mdbx_ui_content_summary), localPayloadPreview.orEmpty(), incomingPayloadPreview.orEmpty()))
         }
-        if (conflictingFields.isNotBlank()) {
-            add(FieldChange(objectTitle, null, strings.get(R.string.mdbx_ui_conflicting_fields), conflictingFields, conflictingFields))
-        }
     }
 }
 
@@ -5221,13 +3655,16 @@ private fun objectTypeLabel(strings: StringResolver, type: String): String =
 @Composable
 private fun DeltaRow(
     delta: MdbxDeltaSummary,
+    index: Int,
+    count: Int,
     onShowDiff: () -> Unit
 ) {
     val strings = rememberScreenStrings()
     val presentation = remember(delta, strings) { delta.toHistoryPresentation(strings) }
-    Card(
+    MdbxCard(
         onClick = onShowDiff,
         modifier = Modifier.fillMaxWidth(),
+        shape = settingsSectionItemShape(index, count),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -5237,17 +3674,12 @@ private fun DeltaRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = presentation.primaryAction.historyContainerColor()
-            ) {
-                Icon(
-                    presentation.primaryAction.historyIcon(),
-                    contentDescription = null,
-                    tint = presentation.primaryAction.historyContentColor(),
-                    modifier = Modifier.padding(10.dp).size(21.dp)
-                )
-            }
+            Icon(
+                presentation.primaryAction.historyIcon(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -5268,18 +3700,16 @@ private fun DeltaRow(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
                         formatMdbxHistoryTime(delta.createdAt),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.align(Alignment.CenterVertically)
                     )
                     if (presentation.objectCount > 0) {
                         HistoryStatusPill(strings.get(R.string.mdbx_ui_item_count, presentation.objectCount))
@@ -5291,9 +3721,9 @@ private fun DeltaRow(
             }
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = strings.get(R.string.mdbx_ui_view_commit_details),
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }

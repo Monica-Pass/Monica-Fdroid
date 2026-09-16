@@ -3,6 +3,7 @@ package takagi.ru.monica.utils
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import takagi.ru.monica.R
 
 data class GoogleDriveAccountSession(
     val accountId: String,
@@ -17,17 +18,18 @@ sealed interface GoogleDriveAuthorizationStep {
 }
 
 class GoogleDriveNotSupportedException(
-    message: String = "此构建（F-Droid 版）不包含 Google Drive 支持，请使用 WebDAV 同步。"
+    message: String = "Google Drive is unavailable in the F-Droid build. Use WebDAV."
 ) : UnsupportedOperationException(message)
 
-class GoogleDriveAuthManager(@Suppress("UNUSED_PARAMETER") context: Context) {
+class GoogleDriveAuthManager(context: Context) {
+    private val strings = AppLocaleStringResolver(context)
 
     suspend fun beginAuthorization(@Suppress("UNUSED_PARAMETER") expectedAccountId: String? = null): GoogleDriveAuthorizationStep {
-        throw GoogleDriveNotSupportedException()
+        throw GoogleDriveNotSupportedException(strings.get(R.string.fdroid_cloud_provider_unavailable, "Google Drive"))
     }
 
     suspend fun completeAuthorization(@Suppress("UNUSED_PARAMETER") data: Intent?, @Suppress("UNUSED_PARAMETER") expectedAccountId: String? = null): GoogleDriveAccountSession {
-        throw GoogleDriveNotSupportedException()
+        throw GoogleDriveNotSupportedException(strings.get(R.string.fdroid_cloud_provider_unavailable, "Google Drive"))
     }
 
     suspend fun getCachedSession(@Suppress("UNUSED_PARAMETER") expectedAccountId: String? = null): GoogleDriveAccountSession? {
@@ -35,7 +37,7 @@ class GoogleDriveAuthManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     suspend fun acquireAccessToken(@Suppress("UNUSED_PARAMETER") accountId: String): GoogleDriveAccountSession {
-        throw GoogleDriveNotSupportedException()
+        throw GoogleDriveNotSupportedException(strings.get(R.string.fdroid_cloud_provider_unavailable, "Google Drive"))
     }
 
     suspend fun revokeAccess(@Suppress("UNUSED_PARAMETER") accountId: String) {

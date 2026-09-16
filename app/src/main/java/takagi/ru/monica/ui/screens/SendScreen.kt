@@ -1025,7 +1025,7 @@ fun AddEditSendScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (isSubmitting) {
-                    StateBanner("正在创建 Send，请稍候…")
+                    StateBanner(stringResource(R.string.legacy_ui_send_creating))
                 }
 
                 SendFormSectionCard(title = stringResource(R.string.send_account_section_title)) {

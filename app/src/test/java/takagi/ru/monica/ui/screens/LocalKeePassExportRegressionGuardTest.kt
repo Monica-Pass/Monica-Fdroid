@@ -27,7 +27,7 @@ class LocalKeePassExportRegressionGuardTest {
         ).readText()
 
         assertTrue(viewModel.contains("openOutputStream(destinationUri)"))
-        assertTrue(viewModel.contains("?: throw IOException(\"无法打开目标文件\")"))
+        assertTrue(viewModel.contains("?: throw IOException(strings.get(R.string.keepass_operation_target_unavailable))"))
     }
 
     private fun projectFile(relativePath: String): File {

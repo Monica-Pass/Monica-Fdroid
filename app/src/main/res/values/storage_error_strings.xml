@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">This database is read-only. Turn off read-only mode in its settings before editing.</string>
+    <string name="keepass_error_write_permission">KDBX write access is missing. Grant access again in database settings before saving or deleting.</string>
+    <string name="keepass_error_memory">The KDF settings require more memory than this device can provide. Reduce memory use or parallelism.</string>
+    <string name="keepass_error_credentials">Incorrect database password or key file</string>
+    <string name="keepass_error_legacy">Legacy .kdb (KeePass 1.x) databases are not supported. Save the database as .kdbx in KeePassDX or KeePassXC, then import it.</string>
+    <string name="keepass_error_format">Unsupported database format or damaged file</string>
+    <string name="keepass_error_io">Could not read or write the KeePass file</string>
+    <string name="keepass_error_operation">KeePass operation failed</string>
+    <string name="onedrive_error_redirect">An older Monica Steam version is intercepting OneDrive sign-in. Update Monica Steam and try again. The database file is not damaged.</string>
+    <string name="onedrive_error_power">OneDrive cannot refresh the login session right now. Disable battery optimization, or turn on the screen and reopen Monica before retrying.</string>
+    <string name="onedrive_error_operation">OneDrive operation failed</string>
+    <string name="keepass_error_not_remote">This database has no remote source</string>
+    <string name="keepass_error_remote_source_missing">Remote source not found</string>
+    <string name="keepass_error_working_copy_missing">Local working copy not found</string>
+    <string name="keepass_sync_pulled">Downloaded the latest remote version</string>
+    <string name="keepass_sync_both_changed">The remote file and local working copy both changed. Resolve the conflict before syncing.</string>
+    <string name="keepass_sync_up_to_date">The remote database is up to date</string>
+    <string name="keepass_sync_remote_changed">The remote file changed. Sync again before continuing.</string>
+    <string name="keepass_sync_complete">Remote sync complete</string>
+    <string name="keepass_error_group_name_required">Enter a group name</string>
+    <string name="keepass_error_group_path">Invalid group path</string>
+    <string name="keepass_error_group_missing">Group not found: %1$s</string>
+    <string name="keepass_error_group_child">A group cannot be moved into itself or one of its subgroups</string>
+    <string name="keepass_error_group_uuid">The destination already has a different group with the same UUID: %1$s</string>
+    <string name="keepass_error_select_folder">Select at least one folder</string>
+    <string name="keepass_group_unnamed">Unnamed group</string>
+    <string name="keepass_error_parent_group">Parent group not found: %1$s</string>
+    <string name="keepass_error_group_exists">A group with this name already exists here</string>
+    <string name="keepass_error_no_credentials">No database credentials are available</string>
+    <string name="keepass_error_source_type">Unsupported remote source type: %1$s</string>
+    <string name="keepass_error_upload_verification">Remote verification failed: uploaded content differs (%1$d/%2$d bytes)</string>
+    <string name="storage_error_invalid_path">Invalid file path</string>
+    <string name="storage_error_create_directory">Could not create the database directory</string>
+    <string name="storage_error_read_database">Could not read the database file</string>
+    <string name="storage_error_open_database">Could not open the database file</string>
+    <string name="storage_error_recovery_copy">Could not create a KeePass recovery copy</string>
+    <string name="storage_error_verify_database">Could not verify the database file</string>
+    <string name="storage_error_write_verification">Verification failed after writing the external KeePass file</string>
+    <string name="storage_error_rollback_verification">Verification failed after restoring the external KeePass file</string>
+    <string name="storage_error_write_database">Could not write the database file</string>
+    <string name="keepass_error_conflict_cache_missing">The cached copy needed to resolve conflicts is missing</string>
+    <string name="onedrive_error_session_expired">The OneDrive account session expired. Sign in again.</string>
+</resources>

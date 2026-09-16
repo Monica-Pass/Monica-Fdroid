@@ -84,6 +84,15 @@ class WalletStackPerformanceTest {
 
     @Test
     fun benchmarkBrowserMemberReads() {
+        checkBrowserMemberReads(looping = false)
+    }
+
+    @Test
+    fun loopingBrowserDoesNotScanMembersWhenCrossingTheSeam() {
+        checkBrowserMemberReads(looping = true)
+    }
+
+    private fun checkBrowserMemberReads(looping: Boolean) {
         val backing = cards(5_000)
         val reads = AtomicInteger()
         val countedCards = object : AbstractList<WalletListItem>() {
@@ -94,14 +103,14 @@ class WalletStackPerformanceTest {
             }
         }
         val entry = WalletStackListEntry.Stack(WalletStack("large", backing.map { it.id }), countedCards)
-        var focused by mutableLongStateOf(1L)
+        var focused by mutableLongStateOf(if (looping) 5_000L else 1L)
         compose.setContent {
             MaterialTheme {
                 WalletStackOverlayHost {
                     WalletStackBrowser(entry, null, focused, false,
                         onOpened = {}, onFocusedCardChanged = { focused = it },
                         onCollapseStart = {}, onRevealCover = {}, onDismiss = {},
-                        onOpenCard = {}, onManage = {})
+                        onOpenCard = {}, onManage = {}, loopEnabled = looping)
                 }
             }
         }
@@ -112,7 +121,8 @@ class WalletStackPerformanceTest {
             compose.waitForIdle()
         }
         assertTrue(focused > 1)
-        save("browser-optimized.json", JSONObject().put("cards", backing.size)
+        if (looping) assertTrue("The swipe must cross the last card", focused < 5_000L)
+        save(if (looping) "browser-loop.json" else "browser-optimized.json", JSONObject().put("cards", backing.size)
             .put("swipes", 3).put("memberReads", reads.get() - before).put("focusedCard", focused))
         assertTrue("Swiping must not repeatedly scan all 5,000 members", reads.get() - before < 2_000)
     }

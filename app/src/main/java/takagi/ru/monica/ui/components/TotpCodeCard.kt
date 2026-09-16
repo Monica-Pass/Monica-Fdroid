@@ -864,6 +864,7 @@ fun TotpCodeCard(
                 // 下一次验证码预览
                 if (totpData.otpType != OtpType.HOTP) {
                     Column(horizontalAlignment = Alignment.End) {
+                        // Keep this badge in English for both 2FA and Steam cards.
                         Text(
                             text = "Next",
                             style = MaterialTheme.typography.labelMedium,

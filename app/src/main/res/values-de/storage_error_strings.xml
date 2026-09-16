@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">Diese Datenbank ist schreibgeschützt. Schalten Sie den Schreibschutz vor der Bearbeitung in ihren Einstellungen aus.</string>
+    <string name="keepass_error_write_permission">KDBX-Schreibzugriff fehlt. Erteilen Sie vor dem Speichern oder Löschen erneut Zugriff in den Datenbankeinstellungen.</string>
+    <string name="keepass_error_memory">Die KDF-Einstellungen benötigen mehr Speicher, als dieses Gerät bereitstellen kann. Verringern Sie Speicherbedarf oder Parallelität.</string>
+    <string name="keepass_error_credentials">Falsches Datenbankpasswort oder falsche Schlüsseldatei</string>
+    <string name="keepass_error_legacy">Alte .kdb-Datenbanken (KeePass 1.x) werden nicht unterstützt. Speichern Sie die Datenbank in KeePassDX oder KeePassXC als .kdbx und importieren Sie sie dann.</string>
+    <string name="keepass_error_format">Nicht unterstütztes Datenbankformat oder beschädigte Datei</string>
+    <string name="keepass_error_io">Die KeePass-Datei konnte nicht gelesen oder geschrieben werden</string>
+    <string name="keepass_error_operation">KeePass-Vorgang fehlgeschlagen</string>
+    <string name="onedrive_error_redirect">Eine ältere Version von Monica Steam fängt die OneDrive-Anmeldung ab. Aktualisieren Sie Monica Steam und versuchen Sie es erneut. Die Datenbankdatei ist nicht beschädigt.</string>
+    <string name="onedrive_error_power">OneDrive kann die Sitzung derzeit nicht erneuern. Deaktivieren Sie die Akkuoptimierung oder schalten Sie den Bildschirm ein und öffnen Sie Monica erneut, bevor Sie es wieder versuchen.</string>
+    <string name="onedrive_error_operation">OneDrive-Vorgang fehlgeschlagen</string>
+    <string name="keepass_error_not_remote">Diese Datenbank hat keine entfernte Quelle</string>
+    <string name="keepass_error_remote_source_missing">Entfernte Quelle nicht gefunden</string>
+    <string name="keepass_error_working_copy_missing">Lokale Arbeitskopie nicht gefunden</string>
+    <string name="keepass_sync_pulled">Neueste entfernte Version heruntergeladen</string>
+    <string name="keepass_sync_both_changed">Entfernte Datei und lokale Arbeitskopie wurden beide geändert. Lösen Sie den Konflikt vor der Synchronisierung.</string>
+    <string name="keepass_sync_up_to_date">Die entfernte Datenbank ist aktuell</string>
+    <string name="keepass_sync_remote_changed">Die entfernte Datei wurde geändert. Synchronisieren Sie vor dem Fortfahren erneut.</string>
+    <string name="keepass_sync_complete">Entfernte Synchronisierung abgeschlossen</string>
+    <string name="keepass_error_group_name_required">Geben Sie einen Gruppennamen ein</string>
+    <string name="keepass_error_group_path">Ungültiger Gruppenpfad</string>
+    <string name="keepass_error_group_missing">Gruppe nicht gefunden: %1$s</string>
+    <string name="keepass_error_group_child">Eine Gruppe kann nicht in sich selbst oder eine ihrer Untergruppen verschoben werden</string>
+    <string name="keepass_error_group_uuid">Am Ziel existiert bereits eine andere Gruppe mit derselben UUID: %1$s</string>
+    <string name="keepass_error_select_folder">Wählen Sie mindestens einen Ordner aus</string>
+    <string name="keepass_group_unnamed">Unbenannte Gruppe</string>
+    <string name="keepass_error_parent_group">Übergeordnete Gruppe nicht gefunden: %1$s</string>
+    <string name="keepass_error_group_exists">Hier existiert bereits eine Gruppe mit diesem Namen</string>
+    <string name="keepass_error_no_credentials">Keine Datenbank-Zugangsdaten verfügbar</string>
+    <string name="keepass_error_source_type">Nicht unterstützter Typ der entfernten Quelle: %1$s</string>
+    <string name="keepass_error_upload_verification">Entfernte Prüfung fehlgeschlagen: Hochgeladener Inhalt weicht ab (%1$d/%2$d Bytes)</string>
+    <string name="storage_error_invalid_path">Ungültiger Dateipfad</string>
+    <string name="storage_error_create_directory">Datenbankverzeichnis konnte nicht erstellt werden</string>
+    <string name="storage_error_read_database">Datenbankdatei konnte nicht gelesen werden</string>
+    <string name="storage_error_open_database">Datenbankdatei konnte nicht geöffnet werden</string>
+    <string name="storage_error_recovery_copy">KeePass-Wiederherstellungskopie konnte nicht erstellt werden</string>
+    <string name="storage_error_verify_database">Datenbankdatei konnte nicht geprüft werden</string>
+    <string name="storage_error_write_verification">Prüfung nach dem Schreiben der externen KeePass-Datei fehlgeschlagen</string>
+    <string name="storage_error_rollback_verification">Prüfung nach Wiederherstellung der externen KeePass-Datei fehlgeschlagen</string>
+    <string name="storage_error_write_database">Datenbankdatei konnte nicht geschrieben werden</string>
+    <string name="keepass_error_conflict_cache_missing">Die zwischengespeicherte Kopie zur Konfliktlösung fehlt</string>
+    <string name="onedrive_error_session_expired">Die OneDrive-Kontositzung ist abgelaufen. Melden Sie sich erneut an.</string>
+</resources>

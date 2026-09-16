@@ -1,5 +1,6 @@
 package takagi.ru.monica.steam.ui
 
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -2948,8 +2949,8 @@ private fun SteamSensitiveInfoRow(
 ) {
     val hasValue = value.isNotBlank()
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().animateMonicaContentSize(),
+        verticalAlignment = Alignment.Top
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -2964,7 +2965,7 @@ private fun SteamSensitiveInfoRow(
                     else -> "•".repeat(8)
                 },
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
+                maxLines = if (visible) Int.MAX_VALUE else 1,
                 overflow = TextOverflow.Ellipsis
             )
         }

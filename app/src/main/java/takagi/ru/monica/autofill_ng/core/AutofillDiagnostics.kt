@@ -1,5 +1,7 @@
 package takagi.ru.monica.autofill_ng.core
 
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.os.Build
 import takagi.ru.monica.utils.DeviceUtils
@@ -23,6 +25,7 @@ import java.util.*
  * @since 2.0
  */
 class AutofillDiagnostics(private val context: Context) {
+    private val strings = takagi.ru.monica.utils.AppLocaleStringResolver(context)
     
     companion object {
         private const val TAG = "AutofillDiagnostics"
@@ -364,8 +367,8 @@ class AutofillDiagnostics(private val context: Context) {
                 issues.add(
                     Issue(
                         severity = Severity.HIGH,
-                        category = "字段解析",
-                        description = "检测到 $parsingErrors 次字段解析失败",
+                        category = strings.get(R.string.autofill_report_parsing),
+                        description = strings.get(R.string.autofill_report_parsing_failures, parsingErrors),
                         affectedRequests = parsingErrors
                     )
                 )
@@ -379,8 +382,8 @@ class AutofillDiagnostics(private val context: Context) {
                 issues.add(
                     Issue(
                         severity = Severity.MEDIUM,
-                        category = "密码匹配",
-                        description = "有 $matchingWarnings 次请求未找到匹配的密码",
+                        category = strings.get(R.string.autofill_report_matching),
+                        description = strings.get(R.string.autofill_report_matching_failures, matchingWarnings),
                         affectedRequests = matchingWarnings
                     )
                 )
@@ -394,8 +397,8 @@ class AutofillDiagnostics(private val context: Context) {
                 issues.add(
                     Issue(
                         severity = Severity.HIGH,
-                        category = "响应构建",
-                        description = "有 $buildingErrors 次响应构建失败",
+                        category = strings.get(R.string.autofill_report_building),
+                        description = strings.get(R.string.autofill_report_building_failures, buildingErrors),
                         affectedRequests = buildingErrors
                     )
                 )
@@ -407,8 +410,8 @@ class AutofillDiagnostics(private val context: Context) {
                 issues.add(
                     Issue(
                         severity = Severity.MEDIUM,
-                        category = "性能",
-                        description = "平均响应时间过长: ${avgTime.toInt()}ms",
+                        category = strings.get(R.string.autofill_report_performance),
+                        description = strings.get(R.string.autofill_report_slow, avgTime.toInt()),
                         affectedRequests = requestTimes.size
                     )
                 )
@@ -426,46 +429,46 @@ class AutofillDiagnostics(private val context: Context) {
         
         issues.forEach { issue ->
             when (issue.category) {
-                "字段解析" -> {
+                strings.get(R.string.autofill_report_parsing) -> {
                     recommendations.add(
                         Recommendation(
                             priority = 1,
-                            title = "改进字段识别",
-                            description = "某些应用的表单字段无法正确识别，建议检查字段解析器配置",
-                            actionLabel = "查看日志",
+                            title = strings.get(R.string.autofill_report_improve_recognition),
+                            description = strings.get(R.string.autofill_report_recognition_hint),
+                            actionLabel = strings.get(R.string.developer_view_logs),
                             action = null
                         )
                     )
                 }
-                "密码匹配" -> {
+                strings.get(R.string.autofill_report_matching) -> {
                     recommendations.add(
                         Recommendation(
                             priority = 2,
-                            title = "添加密码条目",
-                            description = "未找到匹配的密码，请为这些应用添加密码条目",
-                            actionLabel = "添加密码",
+                            title = strings.get(R.string.autofill_report_add_passwords),
+                            description = strings.get(R.string.autofill_report_add_passwords_hint),
+                            actionLabel = strings.get(R.string.add_password),
                             action = null
                         )
                     )
                 }
-                "响应构建" -> {
+                strings.get(R.string.autofill_report_building) -> {
                     recommendations.add(
                         Recommendation(
                             priority = 1,
-                            title = "检查数据完整性",
-                            description = "响应构建失败可能是由于数据不完整，请检查密码条目",
-                            actionLabel = "查看详情",
+                            title = strings.get(R.string.autofill_report_integrity),
+                            description = strings.get(R.string.autofill_report_integrity_hint),
+                            actionLabel = strings.get(R.string.passkey_view_details),
                             action = null
                         )
                     )
                 }
-                "性能" -> {
+                strings.get(R.string.autofill_report_performance) -> {
                     recommendations.add(
                         Recommendation(
                             priority = 3,
-                            title = "优化性能",
-                            description = "响应时间较长，建议清理缓存或减少密码条目数量",
-                            actionLabel = "清理缓存",
+                            title = strings.get(R.string.autofill_report_optimize),
+                            description = strings.get(R.string.autofill_report_optimize_hint),
+                            actionLabel = strings.get(R.string.bitwarden_clear_cache_action),
                             action = null
                         )
                     )
@@ -510,28 +513,28 @@ class AutofillDiagnostics(private val context: Context) {
      */
     fun exportLogs(): String {
         return buildString {
-            appendLine("=== Monica 自动填充诊断日志 ===")
-            appendLine("导出时间: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}")
+            appendLine(strings.get(R.string.autofill_report_title))
+            appendLine(strings.get(R.string.autofill_report_exported_at, SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())))
             appendLine()
             
             // 设备信息
-            appendLine("【设备信息】")
-            appendLine("制造商: ${Build.MANUFACTURER}")
-            appendLine("型号: ${Build.MODEL}")
-            appendLine("Android 版本: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
-            appendLine("ROM 类型: ${DeviceUtils.getROMType()}")
-            appendLine("支持内联建议: ${DeviceUtils.supportsInlineSuggestions()}")
+            appendLine(strings.get(R.string.autofill_report_device))
+            appendLine(strings.get(R.string.autofill_report_manufacturer, Build.MANUFACTURER))
+            appendLine(strings.get(R.string.autofill_report_model, Build.MODEL))
+            appendLine(strings.get(R.string.autofill_report_android, Build.VERSION.RELEASE, Build.VERSION.SDK_INT))
+            appendLine(strings.get(R.string.autofill_report_rom, DeviceUtils.getROMType()))
+            appendLine(strings.get(R.string.autofill_report_inline, strings.get(if (DeviceUtils.supportsInlineSuggestions()) R.string.yes else R.string.no)))
             appendLine()
             
             // 统计信息
-            appendLine("【统计信息】")
+            appendLine(strings.get(R.string.autofill_report_statistics))
             getStatistics().forEach { (key, value) ->
                 appendLine("$key: $value")
             }
             appendLine()
             
             // 日志条目
-            appendLine("【日志详情】")
+            appendLine(strings.get(R.string.autofill_report_log_details))
             appendLine("=".repeat(60))
             synchronized(logEntries) {
                 logEntries.forEach { entry ->
@@ -541,7 +544,7 @@ class AutofillDiagnostics(private val context: Context) {
             appendLine("=".repeat(60))
             
             appendLine()
-            appendLine("=== 日志结束 ===")
+            appendLine(strings.get(R.string.autofill_report_end))
         }
     }
     

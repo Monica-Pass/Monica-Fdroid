@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="wallet_stack_loop_title">卡叠循环</string>
+    <string name="wallet_stack_loop_desc">上下翻叠，首尾相续，往复无尽。</string>
+    <string name="page_adjustment_preview_games">游艺</string>
+    <string name="page_adjustment_preview_folder">卷夹 1</string>
+    <string name="page_adjustment_preview_subfolder">子卷夹</string>
+</resources>

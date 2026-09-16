@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Examiner et fusionner</string>
+    <string name="keepass_conflict_banner_title">Des modifications sont à fusionner</string>
+    <string name="keepass_conflict_banner_summary">Comparez les versions locale et distante pour reprendre la synchronisation.</string>
+    <string name="keepass_conflict_merge_sync">Fusionner et synchroniser</string>
+    <string name="keepass_conflict_comparing">Comparaison des deux versions…</string>
+    <string name="keepass_conflict_merging">Fusion et synchronisation…</string>
+    <string name="keepass_conflict_refresh">Actualiser la comparaison</string>
+    <string name="keepass_conflict_merge_help">Les modifications de champs ou d’entrées différents sont combinées. Si un même champ a changé des deux côtés, choisissez la version à conserver.</string>
+    <string name="keepass_conflict_auto_merge">Fusion automatique</string>
+    <string name="keepass_conflict_other_options">Autres options</string>
+    <string name="keepass_conflict_recovery_hint">Les versions originales sont conservées dans les copies de récupération.</string>
+    <string name="keepass_conflict_keep_local_confirm">Remplacer toute la base distante par la version locale ? Les modifications propres à la version distante resteront dans une copie de récupération.</string>
+    <string name="keepass_conflict_use_remote_confirm">Remplacer toute la base locale par la version distante ? Les modifications propres à la version locale resteront dans une copie de récupération.</string>
+    <string name="keepass_conflict_selected_count">%1$d conflits résolus sur %2$d</string>
+    <string name="keepass_conflict_no_changes">Les deux versions contiennent les mêmes données.</string>
+    <string name="keepass_conflict_protected_value">Valeur protégée</string>
+    <string name="keepass_conflict_properties_value">Propriétés de cette version</string>
+    <string name="keepass_conflict_kind_entry">Entrée</string>
+    <string name="keepass_conflict_kind_group">Dossier</string>
+    <string name="keepass_conflict_kind_metadata">Paramètres de la base</string>
+    <string name="keepass_conflict_kind_deleted_object">Trace de suppression</string>
+    <string name="keepass_conflict_kind_binary">Pièce jointe</string>
+    <string name="keepass_conflict_kind_icon">Icône personnalisée</string>
+    <string name="keepass_conflict_change_added">Ajouté</string>
+    <string name="keepass_conflict_change_modified">Modifié</string>
+    <string name="keepass_conflict_change_moved">Déplacé</string>
+    <string name="keepass_conflict_change_deleted">Supprimé</string>
+    <string name="keepass_conflict_change_unchanged">Inchangé</string>
+</resources>

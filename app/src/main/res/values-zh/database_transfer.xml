@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">ZIP 备份</string>
+    <string name="transfer_zip_description">仅备份所选数据库。</string>
+    <string name="transfer_contents">导出内容</string>
+    <string name="transfer_images_attachments">图片与附件</string>
+    <string name="transfer_encrypt_backup">加密备份</string>
+    <string name="transfer_encryption_hint">导出 Passkey 或附件时需要加密备份。</string>
+    <string name="transfer_choose_location">选择保存位置</string>
+    <string name="transfer_background_continue">在后台继续</string>
+    <string name="transfer_background_hint">可以离开此页面，通知中会显示进度。</string>
+    <string name="transfer_reading">正在读取文件…</string>
+    <string name="transfer_decrypting">正在解密备份…</string>
+    <string name="transfer_preparing">正在整理条目…</string>
+    <string name="transfer_writing">正在写入数据库…</string>
+    <string name="transfer_attachments">正在复制附件…</string>
+    <string name="transfer_packing">正在打包…</string>
+    <string name="transfer_encrypting">正在加密文件…</string>
+    <string name="transfer_saving">正在保存文件…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">已导出 %1$d 项。</string>
+    <string name="transfer_export_done">导出完成</string>
+    <string name="transfer_channel">导入与导出</string>
+    <string name="transfer_open_result">打开 Monica 查看结果。</string>
+    <string name="transfer_background_start_failed">无法启动导出，请保持 Monica 打开后重试。</string>
+    <string name="transfer_cancelled">已取消导出。</string>
+    <string name="transfer_attachment_encryption">请加密备份以包含附件。</string>
+    <string name="transfer_password_mismatch">两次输入的密码不一致。</string>
+    <string name="transfer_kdbx_password_description">设置密码以保护导出的 KDBX 数据库。</string>
+    <string name="transfer_unsupported_token">此令牌格式无法转换，请使用 ZIP 备份。</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">导出此数据库中选中的 Steam 账号。</string>
+    <string name="transfer_kdbx_description">以 KeePass 格式导出密码、验证器、Passkey 和附件。</string>
+    <string name="transfer_unsupported_records">此库包含暂不支持的项目类型，请另存原生数据库副本。</string>
+    <string name="transfer_zip_password_title">解密 ZIP 备份</string>
+    <string name="transfer_zip_password_description">请输入创建这份 ZIP 备份时设置的密码。</string>
+</resources>

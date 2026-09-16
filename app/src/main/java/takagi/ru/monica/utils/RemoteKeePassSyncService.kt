@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import takagi.ru.monica.data.KeePassDatabaseSourceType
 import takagi.ru.monica.data.KeePassOpenMode
 import takagi.ru.monica.data.KeePassSyncPhase
@@ -14,10 +16,11 @@ import takagi.ru.monica.data.LocalKeePassDatabaseDao
  *
  * 当前阶段仅负责为后续 WebDAV / OneDrive 接入提供状态落盘与来源绑定能力。
  */
-class RemoteKeePassSyncService(
+class RemoteKeePassSyncService internal constructor(
     private val databaseDao: LocalKeePassDatabaseDao,
     private val remoteSourceDao: KeepassRemoteSourceDao,
-    private val syncStateDao: KeepassRemoteSyncStateDao
+    private val syncStateDao: KeepassRemoteSyncStateDao,
+    private val strings: StringResolver
 ) {
     suspend fun ensureSyncState(databaseId: Long): KeepassRemoteSyncState {
         return syncStateDao.getState(databaseId) ?: KeepassRemoteSyncState(databaseId = databaseId).also {
@@ -30,7 +33,7 @@ class RemoteKeePassSyncService(
         sourceId: Long,
         sourceType: KeePassDatabaseSourceType
     ) {
-        remoteSourceDao.getSourceById(sourceId) ?: throw IllegalArgumentException("远端来源不存在: $sourceId")
+        remoteSourceDao.getSourceById(sourceId) ?: throw IllegalArgumentException(strings.get(R.string.keepass_error_remote_source_missing))
         databaseDao.updateSourceBinding(
             id = databaseId,
             sourceType = sourceType,

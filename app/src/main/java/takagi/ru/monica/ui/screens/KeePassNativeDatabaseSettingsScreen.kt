@@ -154,41 +154,46 @@ internal fun KeePassNativeDatabaseSettingsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.go_back))
                     }
                 },
-                actions = {
-                    if (currentSnapshot != null && form != null) {
-                        IconButton(
-                            onClick = {
-                                val update = form!!.toUpdateOrNull()
-                                if (update == null) {
-                                    error = invalidSettingsMessage
-                                } else {
-                                    scope.launch {
-                                        saving = true
-                                        error = null
-                                        viewModel.updateKeePassDatabaseSettings(database.id, update)
-                                            .onSuccess { updated ->
-                                                snapshot = updated
-                                                onDatabaseChanged()
-                                            }
-                                            .onFailure { failure ->
-                                                error = failure.message ?: failure.javaClass.simpleName
-                                            }
-                                        saving = false
-                                    }
-                                }
-                            },
-                            enabled = !saving && currentSnapshot.readOnly.not()
-                        ) {
-                            if (saving) {
-                                CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.save))
-                            }
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
+        },
+        bottomBar = {
+            if (currentSnapshot != null && form != null) {
+                DatabaseManagementFormActionBar(testTagPrefix = "keepass_settings") {
+                    Button(
+                        onClick = {
+                            val update = form!!.toUpdateOrNull()
+                            if (update == null) {
+                                error = invalidSettingsMessage
+                            } else {
+                                scope.launch {
+                                    saving = true
+                                    error = null
+                                    viewModel.updateKeePassDatabaseSettings(database.id, update)
+                                        .onSuccess { updated ->
+                                            snapshot = updated
+                                            onDatabaseChanged()
+                                        }
+                                        .onFailure { failure ->
+                                            error = failure.message ?: failure.javaClass.simpleName
+                                        }
+                                    saving = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !saving && currentSnapshot.readOnly.not()
+                    ) {
+                        if (saving) {
+                            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Check, contentDescription = null)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.save))
+                    }
+                }
+            }
         }
     ) { padding ->
         when {
@@ -255,6 +260,7 @@ internal fun KeePassNativeDatabaseSettingsScreen(
                         title = stringResource(R.string.keepass_database_settings_general)
                     ) {
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = form!!.name,
                             onValueChange = { form = form!!.copy(name = it) },
                             label = { Text(stringResource(R.string.database_name)) },
@@ -263,6 +269,7 @@ internal fun KeePassNativeDatabaseSettingsScreen(
                             enabled = !currentSnapshot.readOnly
                         )
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = form!!.description,
                             onValueChange = { form = form!!.copy(description = it) },
                             label = { Text(stringResource(R.string.keepass_database_description)) },
@@ -271,6 +278,7 @@ internal fun KeePassNativeDatabaseSettingsScreen(
                             enabled = !currentSnapshot.readOnly
                         )
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = form!!.defaultUsername,
                             onValueChange = { form = form!!.copy(defaultUsername = it) },
                             label = { Text(stringResource(R.string.keepass_database_default_username)) },
@@ -279,6 +287,7 @@ internal fun KeePassNativeDatabaseSettingsScreen(
                             enabled = !currentSnapshot.readOnly
                         )
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = form!!.color,
                             onValueChange = { form = form!!.copy(color = it) },
                             label = { Text(stringResource(R.string.keepass_database_color)) },
@@ -543,72 +552,24 @@ private fun KeePassSettingsLoadError(
 }
 
 @Composable
-private fun KeePassSettingsSummaryCard(snapshot: KeePassDatabaseSettingsSnapshot) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = if (snapshot.readOnly) {
-                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f)
-            } else {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-            }
-        )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                if (snapshot.readOnly) Icons.Default.Lock else Icons.Default.Storage,
-                contentDescription = null,
-                tint = if (snapshot.readOnly) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(snapshot.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "${formatLabel(snapshot.formatVersion)} · ${cipherLabel(snapshot.cipherAlgorithm)} · ${kdfLabel(snapshot.kdfAlgorithm)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Surface(
-                shape = MaterialTheme.shapes.extraLarge,
-                color = if (snapshot.readOnly) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-            ) {
-                Text(
-                    stringResource(
-                        if (snapshot.readOnly) R.string.keepass_database_read_only_short
-                        else R.string.keepass_database_writable_short
-                    ),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    color = if (snapshot.readOnly) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-        }
+internal fun KeePassSettingsSummaryCard(snapshot: KeePassDatabaseSettingsSnapshot) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(snapshot.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Text("${formatLabel(snapshot.formatVersion)} · ${cipherLabel(snapshot.cipherAlgorithm)} · ${kdfLabel(snapshot.kdfAlgorithm)}",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        DatabaseManagementStatusPill(stringResource(if (snapshot.readOnly) R.string.keepass_database_read_only_short
+            else R.string.keepass_database_writable_short), icon = if (snapshot.readOnly) Icons.Default.Lock else Icons.Default.LockOpen)
     }
 }
 
 @Composable
-private fun KeePassSettingsSection(
+internal fun KeePassSettingsSection(
     icon: ImageVector,
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(10.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            }
-            content()
-        }
-    }
+    DatabaseManagementExpandableSection(title = title, icon = icon,
+        initiallyExpanded = icon == Icons.Default.Storage, content = content)
 }
 
 @Composable
@@ -640,6 +601,7 @@ private fun KeePassNumberField(
     enabled: Boolean
 ) {
     OutlinedTextField(
+        shape = DatabaseManagementFieldShape,
         value = value,
         onValueChange = { next ->
             if (next.isEmpty() || next == "-" || next.all { it.isDigit() } ||
@@ -667,7 +629,7 @@ private fun <T> KeePassChoiceField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth()) {
-        OutlinedCard(
+        DatabaseManagementCard(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             onClick = { expanded = true }
@@ -704,7 +666,7 @@ private fun KeePassGroupChoice(
     val selected = groups.firstOrNull { it.uuid == selectedUuid }
     var expanded by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth()) {
-        OutlinedCard(
+        DatabaseManagementCard(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             onClick = { expanded = true }
@@ -795,6 +757,7 @@ private fun KeePassMasterCredentialDialog(
                 }
                 item {
                     OutlinedTextField(
+                        shape = DatabaseManagementFieldShape,
                         value = password,
                         onValueChange = { password = it },
                         label = { Text(stringResource(R.string.keepass_database_new_master_password)) },
@@ -813,6 +776,7 @@ private fun KeePassMasterCredentialDialog(
                 }
                 item {
                     OutlinedTextField(
+                        shape = DatabaseManagementFieldShape,
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
                         label = { Text(stringResource(R.string.confirm_password)) },

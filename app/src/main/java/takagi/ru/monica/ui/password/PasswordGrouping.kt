@@ -30,6 +30,9 @@ private fun parseWebsiteStackMatchMode(mode: String): WebsiteStackMatchMode {
 
 fun getPasswordInfoKey(entry: PasswordEntry): String {
     val sourceKey = buildPasswordSourceKey(entry)
+    // Native objects have no credential in the list model: matching titles do not
+    // establish identical passwords and must never merge them into one detail link.
+    if (entry.loginType == "API_TOKEN") return "$sourceKey|api-token:${entry.id}"
     val title = entry.title.trim().lowercase(Locale.ROOT)
     val username = entry.username.trim().lowercase(Locale.ROOT)
     val website = normalizeWebsiteForInfoKey(entry.website)

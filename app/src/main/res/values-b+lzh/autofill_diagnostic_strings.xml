@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">自填须 Android 8.0 或更新之版</string>
+    <string name="autofill_compat_huawei">华为设备用 Android 10 或更新之版，自填或受限</string>
+    <string name="autofill_compat_xiaomi">小米设备或须于 MIUI 安全中心许自填</string>
+    <string name="autofill_compat_oppo">OPPO/Realme 设备或须于权限之设许自填</string>
+    <string name="autofill_compat_vivo">Vivo 设备或须于 i 管家许自填</string>
+    <string name="autofill_compat_android12_rom">部分 Android 12 ROM 或不相容，自填时有不应</string>
+    <string name="autofill_compat_inline">此设备不容键盘内列之荐，自填改列于下拉单。</string>
+    <string name="autofill_compat_emulator">模拟器中自填或不稳</string>
+    <string name="autofill_compat_unsupported">此设备不容自填之制</string>
+    <string name="autofill_compat_check_failed">未能察相容与否</string>
+    <string name="autofill_check_manifest">请察 AndroidManifest.xml 是否已列 MonicaAutofillServiceNg</string>
+    <string name="autofill_check_permission_manifest">服务须列 BIND_AUTOFILL_SERVICE 之权及 autofill intent-filter</string>
+    <string name="autofill_check_enable_system">请于系统之设择 Monica 为自填之役</string>
+    <string name="autofill_check_path_system">循此而入：设置 → 系统 → 语言和输入法 → 自动填充服务</string>
+    <string name="autofill_check_path_xiaomi">小米循此：设置 → 更多设置 → 语言和输入法 → 自动填充服务</string>
+    <string name="autofill_check_miui_permission">亦须于 MIUI 安全中心授所需之权</string>
+    <string name="autofill_check_path_huawei">华为循此：设置 → 系统和更新 → 语言和输入法 → 自动填充服务</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme 循此：设置 → 其他设置 → 键盘与输入法 → 自动填充服务</string>
+    <string name="autofill_check_path_vivo">Vivo 循此：设置 → 更多设置 → 输入法 → 自动填充服务</string>
+    <string name="autofill_check_path_samsung">三星循此：设置 → 常规管理 → 语言和输入 → 自动填充服务</string>
+    <string name="autofill_check_enable_app">请于 Monica 之设启自填</string>
+    <string name="autofill_check_app_permissions">请察 Monica 已获所需之权否</string>
+    <string name="autofill_check_issue_count">察得相容之患 %1$d，请阅下文。</string>
+    <string name="autofill_check_xiaomi_permission">小米循此：安全中心 → 应用管理 → Monica → 权限管理 → 允许自动填充</string>
+    <string name="autofill_check_huawei_autostart">华为设备或须于手机管家许 Monica 自启</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme 循此：设置 → 应用管理 → Monica → 权限 → 允许自动填充</string>
+    <string name="autofill_check_vivo_permission">Vivo 循此：i 管家 → 应用管理 → 权限管理 → Monica → 允许自动填充</string>
+    <string name="autofill_check_background">请解 Monica 省电之限，许其自启及后台运行</string>
+    <string name="autofill_check_trigger_manually">若仍不稳，请于登录栏手动唤自填一次</string>
+    <string name="autofill_check_configured">服务之设无误；若患犹在，请重启 Monica。</string>
+    <string name="autofill_check_view_logs">可用排障之具阅详志</string>
+    <string name="autofill_check_restart">改毕，请重启 Monica</string>
+    <string name="autofill_check_recommendations_failed">未能献策，请询援助者。</string>
+    <string name="autofill_report_parsing">辨栏</string>
+    <string name="autofill_report_matching">密钥相配</string>
+    <string name="autofill_report_building">作应答</string>
+    <string name="autofill_report_performance">效能</string>
+    <string name="autofill_report_parsing_failures">辨栏未成：%1$d 次</string>
+    <string name="autofill_report_matching_failures">未得相配密钥之请：%1$d 次</string>
+    <string name="autofill_report_building_failures">作应答未成：%1$d 次</string>
+    <string name="autofill_report_slow">应答均时过长：%1$d ms</string>
+    <string name="autofill_report_improve_recognition">善辨栏</string>
+    <string name="autofill_report_recognition_hint">部分应用之栏未能辨，请察辨栏之设。</string>
+    <string name="autofill_report_add_passwords">增密钥条目</string>
+    <string name="autofill_report_add_passwords_hint">未得相配密钥，请为此等应用增密钥条目。</string>
+    <string name="autofill_report_integrity">察数之全</string>
+    <string name="autofill_report_integrity_hint">数据不全，应答或未成。请察密钥条目。</string>
+    <string name="autofill_report_optimize">增效</string>
+    <string name="autofill_report_optimize_hint">应答迟缓，可试清缓存或减密钥条目之数。</string>
+    <string name="autofill_report_title">=== Monica 自填诊察 ===</string>
+    <string name="autofill_report_exported_at">出于：%1$s</string>
+    <string name="autofill_report_device">设备之讯</string>
+    <string name="autofill_report_manufacturer">制者：%1$s</string>
+    <string name="autofill_report_model">型号：%1$s</string>
+    <string name="autofill_report_android">Android：%1$s（API %2$d）</string>
+    <string name="autofill_report_rom">ROM：%1$s</string>
+    <string name="autofill_report_inline">容键盘内列之荐：%1$s</string>
+    <string name="autofill_report_statistics">计数</string>
+    <string name="autofill_report_log_details">详志</string>
+    <string name="autofill_report_end">=== 志终 ===</string>
+</resources>

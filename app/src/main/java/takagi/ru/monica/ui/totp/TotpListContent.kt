@@ -235,33 +235,27 @@ fun TotpListContent(
     onOpenStandaloneSettings: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val securityManager = remember(context) { SecurityManager(context.applicationContext) }
-    val bitwardenRepository = remember { takagi.ru.monica.bitwarden.repository.BitwardenRepository.getInstance(context) }
-    val database = remember { takagi.ru.monica.data.PasswordDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
-    val keepassDatabases by database.localKeePassDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
-    val mdbxDatabases by database.localMdbxDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
-    val bitwardenVaults by database.bitwardenVaultDao().getAllVaultsFlow().collectAsState(initial = emptyList())
-    val keepassBridge = remember {
-        KeePassCompatibilityBridge(
-            KeePassWorkspaceRepository(
-                context,
-                database.localKeePassDatabaseDao(),
-                securityManager
-            )
+    val lifecycleOwner = LocalLifecycleOwner.current
+    // 集中未带 key 的状态，减小 Compose 生成的方法。
+    // 旧的超大方法曾在部分设备的 Debug 构建中触发 ART VerifyError。
+    val ui = remember {
+        TotpListUiState(
+            context = context,
+            initialResumed = lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
         )
     }
-    val keepassGroupFlows = remember {
-        mutableMapOf<Long, kotlinx.coroutines.flow.MutableStateFlow<List<takagi.ru.monica.utils.KeePassGroupInfo>>>()
-    }
-    val getKeePassGroups: (Long) -> kotlinx.coroutines.flow.Flow<List<takagi.ru.monica.utils.KeePassGroupInfo>> = remember {
+    val keepassDatabases by ui.database.localKeePassDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
+    val mdbxDatabases by ui.database.localMdbxDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
+    val bitwardenVaults by ui.database.bitwardenVaultDao().getAllVaultsFlow().collectAsState(initial = emptyList())
+    val getKeePassGroups: (Long) -> kotlinx.coroutines.flow.Flow<List<takagi.ru.monica.utils.KeePassGroupInfo>> = remember(ui) {
         { databaseId ->
-            val flow = keepassGroupFlows.getOrPut(databaseId) {
+            val flow = ui.keepassGroupFlows.getOrPut(databaseId) {
                 kotlinx.coroutines.flow.MutableStateFlow(emptyList())
             }
             if (flow.value.isEmpty()) {
                 scope.launch {
-                    flow.value = keepassBridge.listLegacyGroups(databaseId).getOrDefault(emptyList())
+                    flow.value = ui.keepassBridge.listLegacyGroups(databaseId).getOrDefault(emptyList())
                 }
             }
             flow
@@ -279,11 +273,11 @@ fun TotpListContent(
     val passwordMap = remember(passwords) { passwords.associateBy { it.id } }
     val haptic = rememberHapticFeedback()
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
-    var showTopActionsMenu by remember { mutableStateOf(false) }
+    var showTopActionsMenu by ui.showTopActionsMenu
 
     // 分类选择状态
     var isCategorySheetVisible by rememberSaveable { mutableStateOf(false) }
-    var categoryPillBoundsInWindow by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var categoryPillBoundsInWindow by ui.categoryPillBoundsInWindow
     val categories by viewModel.categories.collectAsState()
     val categoryMgmt = rememberCategoryManagementState()
     val currentFilter by viewModel.categoryFilter.collectAsState()
@@ -386,17 +380,15 @@ fun TotpListContent(
         searchTriggerDistance = searchTriggerDistance,
         syncTriggerDistance = syncTriggerDistance,
         maxDragDistance = maxDragDistance,
-        bitwardenRepository = bitwardenRepository,
+        bitwardenRepository = ui.bitwardenRepository,
         onSearchTriggered = { isSearchExpanded = true }
     )
     
     // 选择模式状态
-    var isSelectionMode by remember { mutableStateOf(false) }
-    var selectedItems by remember { mutableStateOf(setOf<Long>()) }
-    var showBatchDeleteDialog by remember { mutableStateOf(false) }
-    var showMoveToCategoryDialog by remember { mutableStateOf(false) }
-    var passwordInput by remember { mutableStateOf("") }
-    var passwordError by remember { mutableStateOf(false) }
+    // 状态统一存进 ui（TotpListUiState）：低频状态直接经 ui 访问，压缩本地寄存器占用。
+    var isSelectionMode by ui.isSelectionMode
+    var selectedItems by ui.selectedItems
+    var showMoveToCategoryDialog by ui.showMoveToCategoryDialog
     val coroutineScope = rememberCoroutineScope()
     val activity = context as? FragmentActivity
     val biometricHelper = remember { BiometricHelper(context) }
@@ -407,35 +399,17 @@ fun TotpListContent(
             iconCardsEnabled = appSettings.iconCardsEnabled && appSettings.authenticatorPageIconEnabled
         )
     }
-    
-    // 添加单项删除对话框状态
-    var itemToDelete by remember { mutableStateOf<takagi.ru.monica.data.SecureItem?>(null) }
-    var singleItemPasswordInput by remember { mutableStateOf("") }
-    var showSingleItemPasswordVerify by remember { mutableStateOf(false) }
-    var pendingBoundSingleDelete by remember { mutableStateOf<SecureItem?>(null) }
-    var pendingBoundBatchDelete by remember { mutableStateOf<List<SecureItem>>(emptyList()) }
-    
-    // 待删除项ID集合（用于隐藏即将删除的项）
-    var deletedItemIds by remember { mutableStateOf(setOf<Long>()) }
-    
-    // QR码显示状态
-    var itemToShowQr by remember { mutableStateOf<takagi.ru.monica.data.SecureItem?>(null) }
-    
+
     // 过滤掉待删除的项
-    val filteredTotpItems = remember(totpItems, deletedItemIds) {
-        totpItems.filter { it.id !in deletedItemIds }
+    val filteredTotpItems = remember(totpItems, ui.deletedItemIds.value) {
+        totpItems.filter { it.id !in ui.deletedItemIds.value }
     }
 
-    val vibrationGate = remember { TotpCountdownVibrationGate() }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var isScreenResumed by remember {
-        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
-    }
     DisposableEffect(lifecycleOwner, haptic) {
         val lifecycle = lifecycleOwner.lifecycle
         val observer = LifecycleEventObserver { _, _ ->
-            isScreenResumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
-            if (!isScreenResumed) haptic.cancel()
+            ui.isScreenResumed.value = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+            if (!ui.isScreenResumed.value) haptic.cancel()
         }
         lifecycle.addObserver(observer)
         onDispose {
@@ -462,15 +436,15 @@ fun TotpListContent(
     LaunchedEffect(
         sharedTickSeconds,
         expiringRemainingSeconds,
-        isScreenResumed,
+        ui.isScreenResumed.value,
         appSettings.isPlusActivated,
         appSettings.validatorVibrationEnabled
     ) {
         if (
-            isScreenResumed &&
+            ui.isScreenResumed.value &&
             appSettings.isPlusActivated &&
             appSettings.validatorVibrationEnabled &&
-            vibrationGate.shouldVibrate(sharedTickSeconds, expiringRemainingSeconds)
+            ui.vibrationGate.shouldVibrate(sharedTickSeconds, expiringRemainingSeconds)
         ) {
             haptic.performCountdownTick()
         }
@@ -482,12 +456,12 @@ fun TotpListContent(
 
     fun requestDeleteItem(item: SecureItem) {
         if (boundPasswordIdFor(item) != null) {
-            pendingBoundSingleDelete = item
+            ui.pendingBoundSingleDelete.value = item
             return
         }
 
-        itemToDelete = item
-        deletedItemIds = deletedItemIds + item.id
+        ui.itemToDelete.value = item
+        ui.deletedItemIds.value = ui.deletedItemIds.value + item.id
     }
 
     fun requestBatchDelete() {
@@ -496,9 +470,9 @@ fun TotpListContent(
 
         val boundItems = toDelete.filter { boundPasswordIdFor(it) != null }
         if (boundItems.isNotEmpty()) {
-            pendingBoundBatchDelete = boundItems
+            ui.pendingBoundBatchDelete.value = boundItems
         } else {
-            showBatchDeleteDialog = true
+            ui.showBatchDeleteDialog.value = true
         }
     }
 
@@ -558,7 +532,7 @@ fun TotpListContent(
         keepassDatabases = keepassDatabases,
         mdbxDatabases = mdbxDatabases,
         bitwardenVaults = bitwardenVaults,
-        getBitwardenFolders = { vaultId -> database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
+        getBitwardenFolders = { vaultId -> ui.database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
         getKeePassGroups = getKeePassGroups,
         getMdbxFolders = passwordViewModel::getMdbxFolders,
         allowCopy = true,
@@ -596,7 +570,7 @@ fun TotpListContent(
                         val totpData = TotpDataResolver.parseStoredItemData(
                             itemData = item.itemData,
                             fallbackIssuer = item.title,
-                            decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
+                            decryptIfNeeded = ui.securityManager::decryptDataIfMonicaCiphertext
                         ) ?: return@forEach
                         val detachedTotpData = totpData.copy(
                             boundPasswordId = null,
@@ -745,7 +719,7 @@ fun TotpListContent(
             isSearchExpanded = isSearchExpanded,
             onSearchExpandedChange = { isSearchExpanded = it },
             searchHint = stringResource(R.string.search_authenticator),
-            onActionPillBoundsChanged = { bounds -> categoryPillBoundsInWindow = bounds },
+            onActionPillBoundsChanged = { bounds -> ui.categoryPillBoundsInWindow.value = bounds },
             actions = {
                 // 分类选择按钮
                 if (appSettings.categorySelectionUiMode == takagi.ru.monica.data.CategorySelectionUiMode.CHIP_MENU) {
@@ -796,7 +770,7 @@ fun TotpListContent(
                                 keepassDatabases = keepassDatabases,
                                 mdbxDatabases = mdbxDatabases,
                                 bitwardenVaults = bitwardenVaults,
-                                getBitwardenFolders = { vaultId -> database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
+                                getBitwardenFolders = { vaultId -> ui.database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
                                 getKeePassGroups = getKeePassGroups,
                                 categoryEditMode = categoryMgmt.categoryEditMode,
                                 onRequestCategoryAction = { categoryMgmt.categoryActionTarget = it },
@@ -806,7 +780,7 @@ fun TotpListContent(
                                         categories = categories,
                                         keepassDatabases = keepassDatabases,
                                         bitwardenVaults = bitwardenVaults,
-                                        getBitwardenFolders = { vaultId -> database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
+                                        getBitwardenFolders = { vaultId -> ui.database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
                                         getKeePassGroups = getKeePassGroups,
                                         passwordViewModel = passwordViewModel,
                                         onDismissFilterSheet = { isCategorySheetVisible = false }
@@ -1040,296 +1014,451 @@ fun TotpListContent(
                     }
                 }
             } else {
-                // 可拖动排序的列表状态
-                // 用于拖动排序的本地列表状态
-                var localTotpItems by remember(filteredTotpItems) {
-                    mutableStateOf(filteredTotpItems)
-                }
-
-                // 当筛选后的列表变化时同步
-                LaunchedEffect(filteredTotpItems) {
-                    localTotpItems = filteredTotpItems
-                }
-
-                if (appSettings.authenticatorLayoutMode == AuthenticatorLayoutMode.TILE) {
-                    val lazyGridState = rememberLazyGridState()
-                    val reorderableLazyGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
-                        if (isSelectionMode) {
-                            localTotpItems = localTotpItems.toMutableList().apply {
-                                add(to.index, removeAt(from.index))
-                            }
-                        }
-                    }
-                    var gridWasDragging by remember { mutableStateOf(false) }
-                    LaunchedEffect(reorderableLazyGridState.isAnyItemDragging) {
-                        if (reorderableLazyGridState.isAnyItemDragging) {
-                            gridWasDragging = true
-                        } else if (gridWasDragging && isSelectionMode) {
-                            gridWasDragging = false
-                            val newOrders = localTotpItems.mapIndexed { index, item -> item.id to index }
-                            if (newOrders.isNotEmpty()) viewModel.updateSortOrders(newOrders)
-                        }
-                    }
-
-                    MonicaTileGrid(
-                        state = lazyGridState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
-                            .then(pullAction.gestureModifier)
-                    ) {
-                        items(
-                            items = localTotpItems,
-                            key = { it.id }
-                        ) { item ->
-                            ReorderableItem(
-                                reorderableLazyGridState,
-                                key = item.id,
-                                enabled = isSelectionMode
-                            ) { isDragging ->
-                                val elevation by animateDpAsState(
-                                    if (isDragging) 8.dp else 0.dp,
-                                    label = "tile_drag_elevation"
-                                )
-                                val dragModifier = if (isSelectionMode) {
-                                    Modifier.longPressDraggableHandle(
-                                        onDragStarted = { haptic.performLongPress() },
-                                        onDragStopped = { haptic.performSuccess() }
-                                    )
-                                } else {
-                                    Modifier
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .graphicsLayer { shadowElevation = elevation.toPx() }
-                                        .then(dragModifier)
-                                ) {
-                                    TotpItemCard(
-                                        item = item,
-                                        onEdit = { onTotpClick(item.id) },
-                                        onToggleSelect = {
-                                            selectedItems = if (selectedItems.contains(item.id)) {
-                                                selectedItems - item.id
-                                            } else {
-                                                selectedItems + item.id
-                                            }
-                                        },
-                                        onDelete = {
-                                            haptic.performWarning()
-                                            requestDeleteItem(item)
-                                        },
-                                        onToggleFavorite = { id, isFavorite ->
-                                            viewModel.toggleFavorite(id, isFavorite)
-                                        },
-                                        onGenerateNext = { id -> viewModel.incrementHotpCounter(id) },
-                                        onShowQrCode = { itemToShowQr = item },
-                                        onLongClick = {
-                                            haptic.performLongPress()
-                                            if (!isSelectionMode) {
-                                                isSelectionMode = true
-                                                selectedItems = setOf(item.id)
-                                            }
-                                        },
-                                        isSelectionMode = isSelectionMode,
-                                        isSelected = selectedItems.contains(item.id),
-                                        sharedTickSeconds = sharedTickSeconds,
-                                        appSettings = totpCardSettings,
-                                        parsedTotpData = totpDataById[item.id],
-                                        compactTile = true
-                                    )
-                                }
-                            }
-                        }
-                    }
-                } else {
-                // Standard authenticator layout
-                val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                    // 只在多选模式下允许排序
-                    if (isSelectionMode) {
-                        localTotpItems = localTotpItems.toMutableList().apply {
-                            add(to.index, removeAt(from.index))
-                        }
-                    }
-                }
-
-                // 当拖动结束时保存新顺序
-                LaunchedEffect(reorderableLazyListState.isAnyItemDragging) {
-                    if (!reorderableLazyListState.isAnyItemDragging && isSelectionMode) {
-                        // 拖动结束，保存新顺序到数据库
-                        val newOrders = localTotpItems.mapIndexed { index, item ->
-                            item.id to index
-                        }
-                        if (newOrders.isNotEmpty()) {
-                            viewModel.updateSortOrders(newOrders)
-                        }
-                    }
-                }
-
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
-                        .then(pullAction.gestureModifier),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        items = localTotpItems,
-                        key = { it.id }
-                    ) { item ->
-                        ReorderableItem(
-                            reorderableLazyListState,
-                            key = item.id,
-                            enabled = isSelectionMode
-                        ) { isDragging ->
-                            val elevation by animateDpAsState(
-                                if (isDragging) 8.dp else 0.dp,
-                                label = "drag_elevation"
-                            )
-
-                            // 在多选模式下使用拖动手柄
-                            val dragModifier = if (isSelectionMode) {
-                                Modifier.longPressDraggableHandle(
-                                    onDragStarted = {
-                                        haptic.performLongPress()
-                                    },
-                                    onDragStopped = {
-                                        haptic.performSuccess()
-                                    }
-                                )
-                            } else {
-                                Modifier
-                            }
-
-                            // Keep right-swipe selection available in selection mode; only disable delete swipe there.
-                            takagi.ru.monica.ui.gestures.SwipeActions(
-                                onSwipeLeft = {
-                                    // 左滑删除
-                                    haptic.performWarning()
-                                    requestDeleteItem(item)
-                                },
-                                onSwipeRight = {
-                                    // 右滑选择
-                                    haptic.performSuccess()
-                                    if (!isSelectionMode) {
-                                        isSelectionMode = true
-                                    }
-                                    selectedItems = if (selectedItems.contains(item.id)) {
-                                        selectedItems - item.id
-                                    } else {
-                                        selectedItems + item.id
-                                    }
-                                },
-                                isSwiped = itemToDelete?.id == item.id,
-                                enabled = !isDragging,
-                                allowSwipeLeft = !isSelectionMode,
-                                allowSwipeRight = true,
-                                cardShape = MonicaItemCardShape
-                            ) {
-                                // 包装卡片以支持拖动
-                                Box(
-                                    modifier = Modifier
-                                        .graphicsLayer {
-                                            shadowElevation = elevation.toPx()
-                                        }
-                                        .then(dragModifier)
-                                ) {
-                                    TotpItemCard(
-                                        item = item,
-                                        onEdit = { onTotpClick(item.id) },
-                                        onToggleSelect = {
-                                            selectedItems = if (selectedItems.contains(item.id)) {
-                                                selectedItems - item.id
-                                            } else {
-                                                selectedItems + item.id
-                                            }
-                                        },
-                                        onDelete = {
-                                            haptic.performWarning()
-                                            requestDeleteItem(item)
-                                        },
-                                        onToggleFavorite = { id, isFavorite ->
-                                            viewModel.toggleFavorite(id, isFavorite)
-                                        },
-                                        onGenerateNext = { id ->
-                                            viewModel.incrementHotpCounter(id)
-                                        },
-                                        onMoveUp = null, // 使用拖动排序替代
-                                        onMoveDown = null, // 使用拖动排序替代
-                                        onShowQrCode = {
-                                            itemToShowQr = item
-                                        },
-                                        onLongClick = {
-                                            // 长按进入多选模式
-                                            haptic.performLongPress()
-                                            if (!isSelectionMode) {
-                                                isSelectionMode = true
-                                                selectedItems = setOf(item.id)
-                                            }
-                                        },
-                                        isSelectionMode = isSelectionMode,
-                                        isSelected = selectedItems.contains(item.id),
-                                        sharedTickSeconds = sharedTickSeconds,
-                                        appSettings = totpCardSettings,
-                                        parsedTotpData = totpDataById[item.id]
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
-                    }
-                }
-                }
+                TotpItemsPane(
+                    filteredTotpItems = filteredTotpItems,
+                    appSettings = appSettings,
+                    isSelectionModeState = ui.isSelectionMode,
+                    selectedItemsState = ui.selectedItems,
+                    itemToDeleteState = ui.itemToDelete,
+                    itemToShowQrState = ui.itemToShowQr,
+                    viewModel = viewModel,
+                    haptic = haptic,
+                    requestDeleteItem = ::requestDeleteItem,
+                    onTotpClick = onTotpClick,
+                    sharedTickSeconds = sharedTickSeconds,
+                    totpCardSettings = totpCardSettings,
+                    totpDataById = totpDataById,
+                    pullAction = pullAction,
+                    lazyListState = lazyListState,
+                    contentPullOffset = contentPullOffset
+                )
             }
         }
     }
 
+    // 保持对话框组独立，避免将生成代码重新集中到同一个大方法中。
+    TotpDeleteConfirmDialogs(
+        itemToShowQrState = ui.itemToShowQr,
+        pendingBoundSingleDeleteState = ui.pendingBoundSingleDelete,
+        pendingBoundBatchDeleteState = ui.pendingBoundBatchDelete,
+        itemToDeleteState = ui.itemToDelete,
+        deletedItemIdsState = ui.deletedItemIds,
+        showBatchDeleteDialogState = ui.showBatchDeleteDialog,
+        singleItemPasswordInputState = ui.singleItemPasswordInput,
+        showSingleItemPasswordVerifyState = ui.showSingleItemPasswordVerify,
+        passwordInputState = ui.passwordInput,
+        passwordErrorState = ui.passwordError,
+        selectedItemsState = ui.selectedItems,
+        isSelectionModeState = ui.isSelectionMode,
+        appSettings = appSettings,
+        totpItems = totpItems,
+        viewModel = viewModel,
+        onDeleteTotp = onDeleteTotp,
+        buildImpacts = ::buildBoundDeleteImpacts,
+        context = context,
+        coroutineScope = coroutineScope,
+        biometricHelper = biometricHelper,
+        activity = activity,
+        canUseBiometric = canUseBiometric
+    )
+
+    CategoryManagementCreateDialog(
+        state = categoryMgmt,
+        currentFilter = totpSelectedFilter,
+        categories = categories,
+        keepassDatabases = keepassDatabases,
+        mdbxDatabases = mdbxDatabases,
+        bitwardenVaults = bitwardenVaults,
+        getKeePassGroups = getKeePassGroups,
+        passwordViewModel = passwordViewModel,
+        bitwardenRepository = ui.bitwardenRepository,
+        keepassBridge = ui.keepassBridge,
+        scope = scope
+    )
+}
+
+/**
+ * TotpListContent 的非键控状态集合。
+ *
+ * 单独保存这些状态以减少主 Composable 的生成代码，规避旧构建的 VerifyError。
+ * 255 并非 ART 的方法寄存器硬上限；是否修复须通过设备上的类加载和界面测试验证。
+ */
+private class TotpListUiState(
+    context: android.content.Context,
+    initialResumed: Boolean
+) {
+    val securityManager = SecurityManager(context.applicationContext)
+    val bitwardenRepository = takagi.ru.monica.bitwarden.repository.BitwardenRepository.getInstance(context)
+    val database = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
+    val keepassBridge = KeePassCompatibilityBridge(
+        KeePassWorkspaceRepository(
+            context,
+            database.localKeePassDatabaseDao(),
+            securityManager
+        )
+    )
+    val keepassGroupFlows = mutableMapOf<Long, kotlinx.coroutines.flow.MutableStateFlow<List<takagi.ru.monica.utils.KeePassGroupInfo>>>()
+    val isSelectionMode = mutableStateOf(false)
+    val selectedItems = mutableStateOf<Set<Long>>(emptySet())
+    val showBatchDeleteDialog = mutableStateOf(false)
+    val showMoveToCategoryDialog = mutableStateOf(false)
+    val passwordInput = mutableStateOf("")
+    val passwordError = mutableStateOf(false)
+    val itemToDelete = mutableStateOf<takagi.ru.monica.data.SecureItem?>(null)
+    val singleItemPasswordInput = mutableStateOf("")
+    val showSingleItemPasswordVerify = mutableStateOf(false)
+    val pendingBoundSingleDelete = mutableStateOf<SecureItem?>(null)
+    val pendingBoundBatchDelete = mutableStateOf<List<SecureItem>>(emptyList())
+    val deletedItemIds = mutableStateOf<Set<Long>>(emptySet())
+    val itemToShowQr = mutableStateOf<takagi.ru.monica.data.SecureItem?>(null)
+    val showTopActionsMenu = mutableStateOf(false)
+    val categoryPillBoundsInWindow = mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)
+    val vibrationGate = TotpCountdownVibrationGate()
+    val isScreenResumed = mutableStateOf(initialResumed)
+}
+
+/**
+ * 验证器网格/列表面板。
+ *
+ * 将两个布局分支单独编译，减小 TotpListContent 的生成方法。
+ */
+@Composable
+private fun TotpItemsPane(
+    filteredTotpItems: List<SecureItem>,
+    appSettings: AppSettings,
+    isSelectionModeState: MutableState<Boolean>,
+    selectedItemsState: MutableState<Set<Long>>,
+    itemToDeleteState: MutableState<takagi.ru.monica.data.SecureItem?>,
+    itemToShowQrState: MutableState<takagi.ru.monica.data.SecureItem?>,
+    viewModel: takagi.ru.monica.viewmodel.TotpViewModel,
+    haptic: takagi.ru.monica.ui.haptic.HapticFeedbackHelper,
+    requestDeleteItem: (takagi.ru.monica.data.SecureItem) -> Unit,
+    onTotpClick: (Long) -> Unit,
+    sharedTickSeconds: Long,
+    totpCardSettings: AppSettings,
+    totpDataById: Map<Long, TotpData>,
+    pullAction: takagi.ru.monica.ui.common.pull.PullActionStateHandle,
+    lazyListState: androidx.compose.foundation.lazy.LazyListState,
+    contentPullOffset: Int
+) {
+    // 可拖动排序的列表状态
+    // 用于拖动排序的本地列表状态
+    var localTotpItems by remember(filteredTotpItems) {
+        mutableStateOf(filteredTotpItems)
+    }
+
+    // 当筛选后的列表变化时同步
+    LaunchedEffect(filteredTotpItems) {
+        localTotpItems = filteredTotpItems
+    }
+
+    if (appSettings.authenticatorLayoutMode == AuthenticatorLayoutMode.TILE) {
+        val lazyGridState = rememberLazyGridState()
+        val reorderableLazyGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
+            if (isSelectionModeState.value) {
+                localTotpItems = localTotpItems.toMutableList().apply {
+                    add(to.index, removeAt(from.index))
+                }
+            }
+        }
+        var gridWasDragging by remember { mutableStateOf(false) }
+        LaunchedEffect(reorderableLazyGridState.isAnyItemDragging) {
+            if (reorderableLazyGridState.isAnyItemDragging) {
+                gridWasDragging = true
+            } else if (gridWasDragging && isSelectionModeState.value) {
+                gridWasDragging = false
+                val newOrders = localTotpItems.mapIndexed { index, item -> item.id to index }
+                if (newOrders.isNotEmpty()) viewModel.updateSortOrders(newOrders)
+            }
+        }
+
+        MonicaTileGrid(
+            state = lazyGridState,
+            modifier = Modifier
+                .fillMaxSize()
+                .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
+                .then(pullAction.gestureModifier)
+        ) {
+            items(
+                items = localTotpItems,
+                key = { it.id }
+            ) { item ->
+                ReorderableItem(
+                    reorderableLazyGridState,
+                    key = item.id,
+                    enabled = isSelectionModeState.value
+                ) { isDragging ->
+                    val elevation by animateDpAsState(
+                        if (isDragging) 8.dp else 0.dp,
+                        label = "tile_drag_elevation"
+                    )
+                    val dragModifier = if (isSelectionModeState.value) {
+                        Modifier.longPressDraggableHandle(
+                            onDragStarted = { haptic.performLongPress() },
+                            onDragStopped = { haptic.performSuccess() }
+                        )
+                    } else {
+                        Modifier
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer { shadowElevation = elevation.toPx() }
+                            .then(dragModifier)
+                    ) {
+                        TotpItemCard(
+                            item = item,
+                            onEdit = { onTotpClick(item.id) },
+                            onToggleSelect = {
+                                selectedItemsState.value = if (selectedItemsState.value.contains(item.id)) {
+                                    selectedItemsState.value - item.id
+                                } else {
+                                    selectedItemsState.value + item.id
+                                }
+                            },
+                            onDelete = {
+                                haptic.performWarning()
+                                requestDeleteItem(item)
+                            },
+                            onToggleFavorite = { id, isFavorite ->
+                                viewModel.toggleFavorite(id, isFavorite)
+                            },
+                            onGenerateNext = { id -> viewModel.incrementHotpCounter(id) },
+                            onShowQrCode = { itemToShowQrState.value = item },
+                            onLongClick = {
+                                haptic.performLongPress()
+                                if (!isSelectionModeState.value) {
+                                    isSelectionModeState.value = true
+                                    selectedItemsState.value = setOf(item.id)
+                                }
+                            },
+                            isSelectionMode = isSelectionModeState.value,
+                            isSelected = selectedItemsState.value.contains(item.id),
+                            sharedTickSeconds = sharedTickSeconds,
+                            appSettings = totpCardSettings,
+                            parsedTotpData = totpDataById[item.id],
+                            compactTile = true
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        // Standard authenticator layout
+        val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+            // 只在多选模式下允许排序
+            if (isSelectionModeState.value) {
+                localTotpItems = localTotpItems.toMutableList().apply {
+                    add(to.index, removeAt(from.index))
+                }
+            }
+        }
+
+        // 当拖动结束时保存新顺序
+        LaunchedEffect(reorderableLazyListState.isAnyItemDragging) {
+            if (!reorderableLazyListState.isAnyItemDragging && isSelectionModeState.value) {
+                // 拖动结束，保存新顺序到数据库
+                val newOrders = localTotpItems.mapIndexed { index, item ->
+                    item.id to index
+                }
+                if (newOrders.isNotEmpty()) {
+                    viewModel.updateSortOrders(newOrders)
+                }
+            }
+        }
+
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
+                .then(pullAction.gestureModifier),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(
+                items = localTotpItems,
+                key = { it.id }
+            ) { item ->
+                ReorderableItem(
+                    reorderableLazyListState,
+                    key = item.id,
+                    enabled = isSelectionModeState.value
+                ) { isDragging ->
+                    val elevation by animateDpAsState(
+                        if (isDragging) 8.dp else 0.dp,
+                        label = "drag_elevation"
+                    )
+
+                    // 在多选模式下使用拖动手柄
+                    val dragModifier = if (isSelectionModeState.value) {
+                        Modifier.longPressDraggableHandle(
+                            onDragStarted = {
+                                haptic.performLongPress()
+                            },
+                            onDragStopped = {
+                                haptic.performSuccess()
+                            }
+                        )
+                    } else {
+                        Modifier
+                    }
+
+                    // Keep right-swipe selection available in selection mode; only disable delete swipe there.
+                    takagi.ru.monica.ui.gestures.SwipeActions(
+                        onSwipeLeft = {
+                            // 左滑删除
+                            haptic.performWarning()
+                            requestDeleteItem(item)
+                        },
+                        onSwipeRight = {
+                            // 右滑选择
+                            haptic.performSuccess()
+                            if (!isSelectionModeState.value) {
+                                isSelectionModeState.value = true
+                            }
+                            selectedItemsState.value = if (selectedItemsState.value.contains(item.id)) {
+                                selectedItemsState.value - item.id
+                            } else {
+                                selectedItemsState.value + item.id
+                            }
+                        },
+                        isSwiped = itemToDeleteState.value?.id == item.id,
+                        enabled = !isDragging,
+                        allowSwipeLeft = !isSelectionModeState.value,
+                        allowSwipeRight = true,
+                        cardShape = MonicaItemCardShape
+                    ) {
+                        // 包装卡片以支持拖动
+                        Box(
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    shadowElevation = elevation.toPx()
+                                }
+                                .then(dragModifier)
+                        ) {
+                            TotpItemCard(
+                                item = item,
+                                onEdit = { onTotpClick(item.id) },
+                                onToggleSelect = {
+                                    selectedItemsState.value = if (selectedItemsState.value.contains(item.id)) {
+                                        selectedItemsState.value - item.id
+                                    } else {
+                                        selectedItemsState.value + item.id
+                                    }
+                                },
+                                onDelete = {
+                                    haptic.performWarning()
+                                    requestDeleteItem(item)
+                                },
+                                onToggleFavorite = { id, isFavorite ->
+                                    viewModel.toggleFavorite(id, isFavorite)
+                                },
+                                onGenerateNext = { id ->
+                                    viewModel.incrementHotpCounter(id)
+                                },
+                                onMoveUp = null, // 使用拖动排序替代
+                                onMoveDown = null, // 使用拖动排序替代
+                                onShowQrCode = {
+                                    itemToShowQrState.value = item
+                                },
+                                onLongClick = {
+                                    // 长按进入多选模式
+                                    haptic.performLongPress()
+                                    if (!isSelectionModeState.value) {
+                                        isSelectionModeState.value = true
+                                        selectedItemsState.value = setOf(item.id)
+                                    }
+                                },
+                                isSelectionMode = isSelectionModeState.value,
+                                isSelected = selectedItemsState.value.contains(item.id),
+                                sharedTickSeconds = sharedTickSeconds,
+                                appSettings = totpCardSettings,
+                                parsedTotpData = totpDataById[item.id]
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+/**
+ * 删除确认与 QR 码对话框组。
+ *
+ * 将对话框单独编译，减小 TotpListContent 的生成方法。
+ */
+@Composable
+private fun TotpDeleteConfirmDialogs(
+    itemToShowQrState: MutableState<takagi.ru.monica.data.SecureItem?>,
+    pendingBoundSingleDeleteState: MutableState<SecureItem?>,
+    pendingBoundBatchDeleteState: MutableState<List<SecureItem>>,
+    itemToDeleteState: MutableState<takagi.ru.monica.data.SecureItem?>,
+    deletedItemIdsState: MutableState<Set<Long>>,
+    showBatchDeleteDialogState: MutableState<Boolean>,
+    singleItemPasswordInputState: MutableState<String>,
+    showSingleItemPasswordVerifyState: MutableState<Boolean>,
+    passwordInputState: MutableState<String>,
+    passwordErrorState: MutableState<Boolean>,
+    selectedItemsState: MutableState<Set<Long>>,
+    isSelectionModeState: MutableState<Boolean>,
+    appSettings: AppSettings,
+    totpItems: List<SecureItem>,
+    viewModel: takagi.ru.monica.viewmodel.TotpViewModel,
+    onDeleteTotp: (takagi.ru.monica.data.SecureItem) -> Unit,
+    buildImpacts: (List<SecureItem>) -> List<BoundTotpDeleteImpact>,
+    context: android.content.Context,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    biometricHelper: BiometricHelper,
+    activity: FragmentActivity?,
+    canUseBiometric: Boolean
+) {
     // QR码对话框
-    itemToShowQr?.let { item ->
+    itemToShowQrState.value?.let { item ->
         QrCodeDialog(
             item = item,
-            onDismiss = { itemToShowQr = null }
+            onDismiss = { itemToShowQrState.value = null }
         )
     }
 
-    pendingBoundSingleDelete?.let { item ->
+    pendingBoundSingleDeleteState.value?.let { item ->
         BoundTotpDeleteWarningDialog(
-            impacts = buildBoundDeleteImpacts(listOf(item)),
+            impacts = buildImpacts(listOf(item)),
             isBatch = false,
             onDismiss = {
-                pendingBoundSingleDelete = null
+                pendingBoundSingleDeleteState.value = null
             },
             onConfirm = {
-                pendingBoundSingleDelete = null
-                itemToDelete = item
-                deletedItemIds = deletedItemIds + item.id
+                pendingBoundSingleDeleteState.value = null
+                itemToDeleteState.value = item
+                deletedItemIdsState.value = deletedItemIdsState.value + item.id
             }
         )
     }
 
-    if (pendingBoundBatchDelete.isNotEmpty()) {
-        val pendingItems = pendingBoundBatchDelete
+    if (pendingBoundBatchDeleteState.value.isNotEmpty()) {
+        val pendingItems = pendingBoundBatchDeleteState.value
         BoundTotpDeleteWarningDialog(
-            impacts = buildBoundDeleteImpacts(pendingItems),
+            impacts = buildImpacts(pendingItems),
             isBatch = true,
             onDismiss = {
-                pendingBoundBatchDelete = emptyList()
+                pendingBoundBatchDeleteState.value = emptyList()
             },
             onConfirm = {
-                pendingBoundBatchDelete = emptyList()
-                showBatchDeleteDialog = true
+                pendingBoundBatchDeleteState.value = emptyList()
+                showBatchDeleteDialogState.value = true
             }
         )
     }
-    
+
     // 单项删除确认对话框(支持指纹和密码验证)
-    itemToDelete?.let { item ->
+    itemToDeleteState.value?.let { item ->
         DeleteConfirmDialog(
             itemTitle = item.title,
             itemType = stringResource(R.string.item_type_authenticator),
@@ -1337,17 +1466,17 @@ fun TotpListContent(
             skipIdentityVerification = appSettings.disablePasswordVerification,
             onDismiss = {
                 // 取消删除，恢复卡片显示
-                deletedItemIds = deletedItemIds - item.id
-                itemToDelete = null
+                deletedItemIdsState.value = deletedItemIdsState.value - item.id
+                itemToDeleteState.value = null
             },
             onConfirmWithoutVerification = {
                 onDeleteTotp(item)
                 Toast.makeText(context, context.getString(R.string.deleted), Toast.LENGTH_SHORT).show()
-                itemToDelete = null
+                itemToDeleteState.value = null
             },
             onConfirmWithPassword = { password ->
-                singleItemPasswordInput = password
-                showSingleItemPasswordVerify = true
+                singleItemPasswordInputState.value = password
+                showSingleItemPasswordVerifyState.value = true
             },
             onConfirmWithBiometric = {
                 // 指纹验证成功，直接删除
@@ -1357,49 +1486,49 @@ fun TotpListContent(
                     context.getString(R.string.deleted),
                     Toast.LENGTH_SHORT
                 ).show()
-                itemToDelete = null
+                itemToDeleteState.value = null
             }
         )
     }
-    
+
     // 单项删除密码验证
-    if (showSingleItemPasswordVerify && itemToDelete != null) {
+    if (showSingleItemPasswordVerifyState.value && itemToDeleteState.value != null) {
         LaunchedEffect(Unit) {
             val securityManager = takagi.ru.monica.security.SecurityManager(context)
-            if (securityManager.verifyMasterPassword(singleItemPasswordInput)) {
+            if (securityManager.verifyMasterPassword(singleItemPasswordInputState.value)) {
                 // 密码正确，删除 TOTP
-                onDeleteTotp(itemToDelete!!)
-                
+                onDeleteTotp(itemToDeleteState.value!!)
+
                 Toast.makeText(
                     context,
                     context.getString(R.string.deleted),
                     Toast.LENGTH_SHORT
                 ).show()
-                
+
                 // 清理状态（保持在 deletedItemIds 中，因为已真实删除）
-                itemToDelete = null
-                singleItemPasswordInput = ""
-                showSingleItemPasswordVerify = false
+                itemToDeleteState.value = null
+                singleItemPasswordInputState.value = ""
+                showSingleItemPasswordVerifyState.value = false
             } else {
                 // 密码错误，恢复卡片显示
-                deletedItemIds = deletedItemIds - itemToDelete!!.id
-                
+                deletedItemIdsState.value = deletedItemIdsState.value - itemToDeleteState.value!!.id
+
                 Toast.makeText(
                     context,
                     context.getString(R.string.current_password_incorrect),
                     Toast.LENGTH_SHORT
                 ).show()
-                
+
                 // 重置状态
-                itemToDelete = null
-                singleItemPasswordInput = ""
-                showSingleItemPasswordVerify = false
+                itemToDeleteState.value = null
+                singleItemPasswordInputState.value = ""
+                showSingleItemPasswordVerifyState.value = false
             }
         }
     }
-    
+
     // 批量删除验证对话框（统一 M3 身份验证弹窗）
-    if (showBatchDeleteDialog) {
+    if (showBatchDeleteDialogState.value) {
         val skipIdentityVerification = appSettings.disablePasswordVerification
         val biometricAction = if (!skipIdentityVerification && canUseBiometric) {
             {
@@ -1409,18 +1538,18 @@ fun TotpListContent(
                     subtitle = context.getString(R.string.verify_to_delete),
                     onSuccess = {
                         coroutineScope.launch {
-                            val toDelete = totpItems.filter { selectedItems.contains(it.id) }
+                            val toDelete = totpItems.filter { selectedItemsState.value.contains(it.id) }
                             viewModel.deleteTotpItems(toDelete)
                             android.widget.Toast.makeText(
                                 context,
                                 context.getString(R.string.deleted_items, toDelete.size),
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
-                            isSelectionMode = false
-                            selectedItems = setOf()
-                            passwordInput = ""
-                            passwordError = false
-                            showBatchDeleteDialog = false
+                            isSelectionModeState.value = false
+                            selectedItemsState.value = setOf()
+                            passwordInputState.value = ""
+                            passwordErrorState.value = false
+                            showBatchDeleteDialogState.value = false
                         }
                     },
                     onError = { error ->
@@ -1434,41 +1563,41 @@ fun TotpListContent(
         }
         M3IdentityVerifyDialog(
             title = stringResource(R.string.verify_identity),
-            message = stringResource(R.string.batch_delete_totp_message, selectedItems.size),
-            passwordValue = passwordInput,
+            message = stringResource(R.string.batch_delete_totp_message, selectedItemsState.value.size),
+            passwordValue = passwordInputState.value,
             onPasswordChange = {
-                passwordInput = it
-                passwordError = false
+                passwordInputState.value = it
+                passwordErrorState.value = false
             },
             onDismiss = {
-                showBatchDeleteDialog = false
-                passwordInput = ""
-                passwordError = false
+                showBatchDeleteDialogState.value = false
+                passwordInputState.value = ""
+                passwordErrorState.value = false
             },
             onConfirm = {
-                if (skipIdentityVerification || SecurityManager(context).verifyMasterPassword(passwordInput)) {
+                if (skipIdentityVerification || SecurityManager(context).verifyMasterPassword(passwordInputState.value)) {
                     coroutineScope.launch {
-                        val toDelete = totpItems.filter { selectedItems.contains(it.id) }
+                        val toDelete = totpItems.filter { selectedItemsState.value.contains(it.id) }
                         viewModel.deleteTotpItems(toDelete)
                         android.widget.Toast.makeText(
                             context,
                             context.getString(R.string.deleted_items, toDelete.size),
                             android.widget.Toast.LENGTH_SHORT
                         ).show()
-                        isSelectionMode = false
-                        selectedItems = setOf()
-                        passwordInput = ""
-                        passwordError = false
-                        showBatchDeleteDialog = false
+                        isSelectionModeState.value = false
+                        selectedItemsState.value = setOf()
+                        passwordInputState.value = ""
+                        passwordErrorState.value = false
+                        showBatchDeleteDialogState.value = false
                     }
                 } else {
-                    passwordError = true
+                    passwordErrorState.value = true
                 }
             },
             confirmText = stringResource(R.string.delete),
             destructiveConfirm = true,
             requireIdentityVerification = !skipIdentityVerification,
-            isPasswordError = passwordError,
+            isPasswordError = passwordErrorState.value,
             passwordErrorText = stringResource(R.string.current_password_incorrect),
             onBiometricClick = biometricAction,
             biometricHintText = if (biometricAction == null) {
@@ -1478,20 +1607,6 @@ fun TotpListContent(
             }
         )
     }
-
-    CategoryManagementCreateDialog(
-        state = categoryMgmt,
-        currentFilter = totpSelectedFilter,
-        categories = categories,
-        keepassDatabases = keepassDatabases,
-        mdbxDatabases = mdbxDatabases,
-        bitwardenVaults = bitwardenVaults,
-        getKeePassGroups = getKeePassGroups,
-        passwordViewModel = passwordViewModel,
-        bitwardenRepository = bitwardenRepository,
-        keepassBridge = keepassBridge,
-        scope = scope
-    )
 }
 
 private data class BoundTotpDeleteImpact(

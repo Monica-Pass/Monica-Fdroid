@@ -36,7 +36,7 @@ class WebDavSecurityStorageGuardTest {
         val source = projectFile("app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt")
 
         assertTrue(source.contains("val backupEncryptPassword = BackupEncryptionPolicy.resolvePassword("))
-        assertTrue(source.contains("未启用备份加密，已跳过 WebDAV 连接凭证和 Bitwarden Vault 密钥材料"))
+        assertTrue(source.contains("warnings.add(strings.get(R.string.backup_credentials_skipped))"))
         assertFalse(source.contains("val backupEncryptPassword = if (enableEncryption && encryptionPassword.isNotEmpty())"))
     }
 

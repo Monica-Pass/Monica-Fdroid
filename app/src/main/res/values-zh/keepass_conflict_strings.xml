@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">查看并合并</string>
+    <string name="keepass_conflict_banner_title">两边都有更改</string>
+    <string name="keepass_conflict_banner_summary">比较本机与云端的更改，合并后继续同步。</string>
+    <string name="keepass_conflict_merge_sync">合并并同步</string>
+    <string name="keepass_conflict_comparing">正在比较两边的更改…</string>
+    <string name="keepass_conflict_merging">正在合并并同步…</string>
+    <string name="keepass_conflict_refresh">重新比较</string>
+    <string name="keepass_conflict_merge_help">不同项目、不同字段的更改会一起保留。同一字段被两边修改时，请选择要保留的版本。</string>
+    <string name="keepass_conflict_auto_merge">可直接合并</string>
+    <string name="keepass_conflict_other_options">其他处理方式</string>
+    <string name="keepass_conflict_recovery_hint">合并前的两份数据库会保存在恢复副本中。</string>
+    <string name="keepass_conflict_keep_local_confirm">用本机整库替换云端？仅云端拥有的更改将只保留在恢复副本中。</string>
+    <string name="keepass_conflict_use_remote_confirm">用云端整库替换本机？仅本机拥有的更改将只保留在恢复副本中。</string>
+    <string name="keepass_conflict_selected_count">已选择 %1$d / %2$d 处冲突</string>
+    <string name="keepass_conflict_no_changes">两边的内容已一致。</string>
+    <string name="keepass_conflict_protected_value">受保护的内容</string>
+    <string name="keepass_conflict_properties_value">此版本的其他属性</string>
+    <string name="keepass_conflict_kind_entry">项目</string>
+    <string name="keepass_conflict_kind_group">目录</string>
+    <string name="keepass_conflict_kind_metadata">数据库设置</string>
+    <string name="keepass_conflict_kind_deleted_object">删除记录</string>
+    <string name="keepass_conflict_kind_binary">附件</string>
+    <string name="keepass_conflict_kind_icon">自定义图标</string>
+    <string name="keepass_conflict_change_added">新增</string>
+    <string name="keepass_conflict_change_modified">已修改</string>
+    <string name="keepass_conflict_change_moved">已移动</string>
+    <string name="keepass_conflict_change_deleted">已删除</string>
+    <string name="keepass_conflict_change_unchanged">未修改</string>
+</resources>

@@ -12,7 +12,9 @@ internal fun xmlTestStrings(language: String): StringResolver {
         it.parentFile
     }.map { File(it, "app/src/main/res") }.first { it.isDirectory }
     val values = mutableMapOf<String, String>()
-    listOf("values", "values-$language").forEach { directory ->
+    val directories = if (language == "lzh") listOf("values", "values-zh", "values-b+lzh")
+        else listOf("values", "values-$language")
+    directories.forEach { directory ->
         File(resourceDirectory, directory).listFiles { file -> file.extension == "xml" }
             .orEmpty().forEach { file ->
                 val nodes = DocumentBuilderFactory.newInstance().newDocumentBuilder()

@@ -3,6 +3,7 @@ package takagi.ru.monica.utils
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.LocaleList
 import androidx.annotation.StringRes
 import java.util.Locale
 
@@ -19,7 +20,13 @@ internal class AppLocaleStringResolver(context: Context) : StringResolver {
         val locale = Locale.getDefault()
         val resources = cachedResources?.takeIf { it.locale == locale }?.resources
             ?: applicationContext.createConfigurationContext(
-                Configuration(applicationContext.resources.configuration).apply { setLocale(locale) }
+                Configuration(applicationContext.resources.configuration).apply {
+                    if (locale.language == "lzh") {
+                        setLocales(LocaleList(locale, Locale.SIMPLIFIED_CHINESE, Locale.ENGLISH))
+                    } else {
+                        setLocale(locale)
+                    }
+                }
             ).resources.also { cachedResources = LocalizedResources(locale, it) }
         return if (arguments.isEmpty()) resources.getString(resourceId)
         else resources.getString(resourceId, *arguments)

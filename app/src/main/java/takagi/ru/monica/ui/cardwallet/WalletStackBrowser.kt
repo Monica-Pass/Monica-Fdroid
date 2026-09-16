@@ -49,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +74,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.ScrollAxisRange
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.paneTitle
@@ -84,7 +86,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import kotlin.math.abs
-import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -109,9 +110,11 @@ internal fun WalletStackBrowser(
     title: String? = null,
     reduceAnimations: Boolean = false,
     sourceName: (WalletListItem) -> String? = { null },
+    loopEnabled: Boolean = false,
 ) {
     val cards = entry.cards
     if (cards.isEmpty()) return
+    val looping = loopEnabled && cards.size > 1
     val navigation = LocalAnimatedVisibilityScope.current?.transition
     // Overlay callbacks can outlive the navigation frame that created them. Read the
     // transition when an action runs instead of capturing its returning/exiting state.
@@ -125,18 +128,21 @@ internal fun WalletStackBrowser(
     var position by rememberSaveable(entry.stack.id) {
         mutableFloatStateOf(cards.indexOfFirst { it.id == initialCardId }.coerceAtLeast(0).toFloat())
     }
+    var focusedCardId by rememberSaveable(entry.stack.id) {
+        mutableLongStateOf(cards[walletStackFocusIndex(position, cards.size, looping)].id)
+    }
     var stepPx by remember { mutableFloatStateOf(1f) }
     var closing by remember(entry.stack.id) { mutableStateOf(false) }
     var closingIndex by remember(entry.stack.id) { mutableIntStateOf(-1) }
     val expansion = remember(entry.stack.id) { Animatable(if (animateEntrance) 0f else 1f) }
-    val focusIndex by remember(cards.size) {
-        derivedStateOf { position.roundToInt().coerceIn(0, cards.lastIndex) }
+    val focusIndex by remember(cards.size, looping) {
+        derivedStateOf { walletStackFocusIndex(position, cards.size, looping) }
     }
-    val visibleRange by remember(cards.size) {
-        derivedStateOf {
-            val center = floor(position).toInt()
-            (center - 3).coerceAtLeast(0)..(center + 4).coerceAtMost(cards.lastIndex)
-        }
+    val focusSlot by remember(cards.size, looping) {
+        derivedStateOf { if (looping) position.roundToInt() else focusIndex }
+    }
+    val visibleRange by remember(cards.size, looping) {
+        derivedStateOf { walletStackVisibleRange(position, cards.size, looping) }
     }
     val latestOnOpened by rememberUpdatedState(onOpened)
     val latestOnFocus by rememberUpdatedState(onFocusedCardChanged)
@@ -144,8 +150,12 @@ internal fun WalletStackBrowser(
     val latestOnRevealCover by rememberUpdatedState(onRevealCover)
     val latestOnDismiss by rememberUpdatedState(onDismiss)
     val scroll = rememberScrollableState { delta ->
-        if (closing || !isNavigationActive) return@rememberScrollableState 0f
+        if (closing || !isNavigationActive || cards.size <= 1) return@rememberScrollableState 0f
         val old = position
+        if (looping) {
+            position = walletStackLoopPosition(old - delta / stepPx * WALLET_STACK_DRAG_RESISTANCE, cards.size)
+            return@rememberScrollableState delta
+        }
         val pullingPastEnd = old <= 0f && delta > 0f || old >= cards.lastIndex && delta < 0f
         val overpull = abs(old - old.coerceIn(0f, cards.lastIndex.toFloat()))
         val resistance = WALLET_STACK_DRAG_RESISTANCE *
@@ -156,27 +166,32 @@ internal fun WalletStackBrowser(
     val settleSpring = remember {
         spring<Float>(dampingRatio = 1f, stiffness = 380f, visibilityThreshold = 0.0005f)
     }
-    val fling = remember(cards.lastIndex) {
+    val fling = remember(cards.lastIndex, looping) {
         object : FlingBehavior {
             override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
                 if (closing) return 0f
                 val velocity = walletStackReleaseVelocity(initialVelocity, stepPx)
-                val target = walletStackSettleTarget(position, velocity, cards.lastIndex)
+                val target = walletStackSettleTarget(position, velocity, cards.lastIndex, looping)
                 // This animation remains inside scrollable's mutation, so a new drag or
                 // collapse cancels it immediately. No second idle-time snap is scheduled.
                 animate(position, target, initialVelocity = velocity, animationSpec = settleSpring) { value, _ ->
-                    position = value.coerceIn(-0.2f, cards.lastIndex + 0.2f)
+                    position = if (looping) walletStackLoopPosition(value, cards.size)
+                    else value.coerceIn(-0.2f, cards.lastIndex + 0.2f)
                 }
                 return 0f
             }
         }
     }
     fun moveFocusBy(offset: Int): Boolean {
-        if (closing || !isNavigationActive) return false
+        if (closing || !isNavigationActive || cards.size <= 1) return false
+        if (!looping && focusIndex + offset !in cards.indices) return false
         scope.launch {
             scroll.scroll {
-                val target = (focusIndex + offset).coerceIn(0, cards.lastIndex).toFloat()
-                animate(position, target, animationSpec = settleSpring) { value, _ -> position = value }
+                val target = if (looping) (position.roundToInt() + offset).toFloat()
+                else (focusIndex + offset).coerceIn(0, cards.lastIndex).toFloat()
+                animate(position, target, animationSpec = settleSpring) { value, _ ->
+                    position = if (looping) walletStackLoopPosition(value, cards.size) else value
+                }
             }
         }
         return true
@@ -203,9 +218,16 @@ internal fun WalletStackBrowser(
         latestOnOpened()
     }
     val cardIds = remember(cards) { cards.map(WalletListItem::id) }
-    LaunchedEffect(cardIds) {
-        position = position.coerceIn(0f, cards.lastIndex.toFloat())
-        snapshotFlow { focusIndex }.distinctUntilChanged().collect { latestOnFocus(cards[it].id) }
+    LaunchedEffect(cardIds, looping) {
+        scroll.stopScroll(MutatePriority.PreventUserInput)
+        // Member changes and mode switches preserve the card, not its old numeric slot.
+        val restoredIndex = cardIds.indexOf(focusedCardId).takeIf { it >= 0 } ?: focusIndex
+        position = restoredIndex.toFloat()
+        if (closing) closingIndex = restoredIndex
+        snapshotFlow { focusIndex }.distinctUntilChanged().collect {
+            focusedCardId = cards[it].id
+            latestOnFocus(focusedCardId)
+        }
     }
     val stackName = title ?: stringResource(R.string.wallet_stack_default_name)
     val nextLabel = stringResource(R.string.wallet_stack_next)
@@ -242,6 +264,7 @@ internal fun WalletStackBrowser(
                     (widthPx + cardWidthPx) / 2, centerY + cardHeightPx / 2)
             SideEffect { stepPx = cardHeightPx * 0.9f }
             val anchorIndex = if (closingIndex >= 0) closingIndex.coerceAtMost(cards.lastIndex) else focusIndex
+            val anchorSlot = walletStackNearestSlot(anchorIndex, focusSlot, cards.size, looping)
 
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = expansion.value }.background(background))
             Box(
@@ -249,7 +272,10 @@ internal fun WalletStackBrowser(
                     .scrollable(scroll, Orientation.Vertical, flingBehavior = fling,
                         enabled = isNavigationActive && !closing && expansion.value > 0.95f)
                     .semantics {
-                        verticalScrollAxisRange = ScrollAxisRange({ position }, { cards.lastIndex.toFloat() })
+                        verticalScrollAxisRange = ScrollAxisRange(
+                            { if (looping) focusIndex.toFloat() else position.coerceIn(0f, cards.lastIndex.toFloat()) },
+                            { cards.lastIndex.toFloat() }
+                        )
                         customActions = listOf(
                             CustomAccessibilityAction(nextLabel) { moveFocusBy(1) },
                             CustomAccessibilityAction(previousLabel) { moveFocusBy(-1) }
@@ -258,39 +284,48 @@ internal fun WalletStackBrowser(
             ) {
                 // Only the neighbourhood is composed; transformations read scroll state during
                 // drawing, so an entire wallet or all its bitmaps are never animated per frame.
-                visibleRange.forEach { index ->
+                visibleRange.forEach { slot ->
+                    val index = if (looping) Math.floorMod(slot, cards.size) else slot
                     val card = cards[index]
-                    key(card.id) {
+                    val primarySlot = walletStackNearestSlot(index, anchorSlot, cards.size, looping)
+                    // Preserve the real card's remembered artwork when loop coordinates wrap.
+                    key(card.id, slot - primarySlot) {
                         Box(
                             Modifier.size(faceWidth, faceHeight)
-                                .zIndex(if (index == anchorIndex) 30f else 20f - abs(index - anchorIndex))
+                                .zIndex(if (slot == anchorSlot) 30f else 20f - abs(slot - anchorSlot))
                                 .graphicsLayer {
                                     val progress = expansion.value
                                     val travel = smoothStackProgress(progress / 0.65f)
                                     val spread = smoothStackProgress((progress - 0.32f) / 0.68f)
-                                    val anchor = walletStackPose(anchorIndex, position, cardWidthPx, cardHeightPx, widthPx, centerY)
-                                    val pose = walletStackPose(index, position, cardWidthPx, cardHeightPx, widthPx, centerY)
-                                    transformOrigin = TransformOrigin(0f, 0f)
-                                    translationX = lerp(source.left, anchor.x, travel) + (pose.x - anchor.x) * spread
-                                    translationY = lerp(source.top, anchor.y, travel) + (pose.y - anchor.y) * spread
+                                    val anchor = walletStackPose(anchorSlot, position, cardWidthPx, cardHeightPx, widthPx, centerY)
+                                    val pose = walletStackPose(slot, position, cardWidthPx, cardHeightPx, widthPx, centerY)
                                     val scale = lerp(source.width / cardWidthPx, anchor.scale, travel) +
                                         (pose.scale - anchor.scale) * spread
                                     scaleX = scale * cardWidthPx / faceWidthPx
                                     scaleY = scale * cardWidthPx / faceWidthPx
-                                    alpha = if (index == anchorIndex) 1f else spread
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                    translationX = lerp(source.left, anchor.x, travel) + (pose.x - anchor.x) * spread
+                                    translationY = lerp(source.top, anchor.y, travel) + (pose.y - anchor.y) * spread
+                                    alpha = if (slot == anchorSlot) 1f else spread * pose.alpha
                                 }
-                                .testTag("wallet_stack_card_${card.id}")
                                 .clickable(enabled = isNavigationActive && !closing && expansion.value > 0.95f) {
                                     scope.launch {
                                         scroll.stopScroll(MutatePriority.PreventUserInput)
                                         position = index.toFloat()
+                                        focusedCardId = card.id
                                         latestOnFocus(card.id)
                                         onOpenCard(card)
                                     }
                                 }
-                                .semantics(mergeDescendants = true) { contentDescription = card.item.title }
+                                .then(
+                                    if (slot == primarySlot) Modifier.testTag("wallet_stack_card_${card.id}")
+                                        .semantics(mergeDescendants = true) { contentDescription = card.item.title }
+                                    // Small stacks repeat visually across the seam, but assistive
+                                    // technology should still encounter each real card only once.
+                                    else Modifier.clearAndSetSemantics { }
+                                )
                         ) {
-                            if (index == anchorIndex) {
+                            if (slot == anchorSlot) {
                                 WalletStackBackplates(
                                     (cards.size - 1).coerceAtMost(3),
                                     Modifier.fillMaxSize().graphicsLayer {
@@ -303,7 +338,7 @@ internal fun WalletStackBrowser(
                             // entire card would let text from cards behind it show through.
                             Box(
                                 Modifier.fillMaxSize().clip(BankCardShape).graphicsLayer {
-                                    alpha = (abs(index - position) * 0.15f).coerceIn(0f, 0.8f) *
+                                    alpha = (abs(slot - position) * 0.15f).coerceIn(0f, 0.8f) *
                                         smoothStackProgress((expansion.value - 0.32f) / 0.68f)
                                 }.background(background)
                             )

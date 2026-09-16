@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden is unavailable</string>
+    <string name="entry_message_unsupported_type">This operation does not support this item type</string>
+    <string name="entry_message_ownership_conflict">Resolve the conflicting storage bindings before moving this item to Monica</string>
+    <string name="entry_message_local_copy_failed">Could not create a local copy in Monica</string>
+    <string name="entry_message_attachments_incomplete">Not all attachments were copied</string>
+    <string name="entry_message_bitwarden_sync_id_missing">The Bitwarden item has no sync ID</string>
+    <string name="entry_message_keepass_source_delete_failed">Could not delete the original KeePass item</string>
+    <string name="entry_message_source_delete_failed">Could not delete the original item</string>
+    <string name="entry_message_storage_save_failed">Could not save to the selected location</string>
+    <string name="entry_message_from_password">From password: %1$s</string>
+    <string name="entry_message_passkey_android_required">Full Passkey support requires Android 14 or later. This device: %1$s</string>
+    <string name="entry_message_passkey_save_failed">Could not save Passkey: %1$s</string>
+    <string name="entry_message_passkey_missing">Passkey not found</string>
+    <string name="entry_message_passkey_update_failed">Could not update Passkey: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">Could not update the MDBX Passkey binding: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">Could not update the binding: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">Could not update usage history: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">Could not delete Passkey: %1$s</string>
+    <string name="entry_message_category_path_invalid">Invalid folder path</string>
+    <string name="entry_message_category_move_into_self">A folder cannot be moved into itself or one of its subfolders</string>
+    <string name="entry_message_category_missing">Folder not found</string>
+    <string name="entry_message_category_exists">A folder with this name already exists at the destination</string>
+    <string name="entry_message_category_move_conflict">Moving would conflict with an existing folder</string>
+    <string name="entry_message_category_name_required">Enter a folder name</string>
+    <string name="entry_message_category_name_separator">A folder name cannot contain /</string>
+    <string name="entry_message_category_rename_conflict">Renaming would conflict with an existing folder</string>
+    <string name="entry_message_saved">Saved</string>
+</resources>

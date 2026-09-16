@@ -1,6 +1,9 @@
 package takagi.ru.monica.sync
 
+import takagi.ru.monica.keepass.hasKeePassSourceChangedCause
+
 import java.net.ConnectException
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.Locale
@@ -13,7 +16,8 @@ internal fun classifySyncFailure(error: Throwable): SyncError {
         .toList()
     val combined = messages.joinToString(" | ").lowercase(Locale.ROOT)
     val kind = when {
-        combined.contains("远端文件已变化") ||
+        error.hasKeePassSourceChangedCause() ||
+            combined.contains("远端文件已变化") ||
             combined.contains("remote conflict") ||
             combined.contains("precondition failed") ||
             combined.contains("http 412") -> SyncErrorKind.CONFLICT
@@ -27,8 +31,11 @@ internal fun classifySyncFailure(error: Throwable): SyncError {
         error.hasCause<UnknownHostException>() ||
             error.hasCause<SocketTimeoutException>() ||
             error.hasCause<ConnectException>() ||
+            error.hasCause<SocketException>() ||
             combined.contains("unable to resolve host") ||
             combined.contains("failed to connect") ||
+            combined.contains("connection reset") ||
+            combined.contains("connection closed") ||
             combined.contains("network is unreachable") ||
             combined.contains("timeout") -> SyncErrorKind.NETWORK_UNAVAILABLE
 

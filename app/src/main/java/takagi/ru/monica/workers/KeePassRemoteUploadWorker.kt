@@ -1,5 +1,7 @@
 package takagi.ru.monica.workers
 
+import takagi.ru.monica.keepass.hasKeePassSourceChangedCause
+
 import android.content.Context
 import android.util.Log
 import androidx.work.BackoffPolicy
@@ -279,7 +281,8 @@ class KeePassRemoteUploadWorker(
 
         private fun isRemoteConflict(error: Throwable): Boolean {
             val message = error.message.orEmpty()
-            return message.contains("远端文件已变化", ignoreCase = true) ||
+            return error.hasKeePassSourceChangedCause() ||
+                message.contains("远端文件已变化", ignoreCase = true) ||
                 message.contains("conflict", ignoreCase = true)
         }
     }

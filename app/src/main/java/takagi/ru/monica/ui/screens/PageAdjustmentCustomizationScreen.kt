@@ -92,6 +92,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -190,6 +191,14 @@ fun PageAdjustmentCustomizationScreen(
                 subtitle = stringResource(R.string.vault_overview_enabled_desc),
                 checked = settings.vaultOverviewEnabled,
                 onCheckedChange = viewModel::updateVaultOverviewEnabled
+            )
+
+            SwitchSettingsCard(
+                title = stringResource(R.string.wallet_stack_loop_title),
+                subtitle = stringResource(R.string.wallet_stack_loop_desc),
+                checked = settings.walletStackLoopEnabled,
+                onCheckedChange = viewModel::updateWalletStackLoopEnabled,
+                modifier = Modifier.testTag("wallet_stack_loop_setting")
             )
 
             PageAdjustmentEntryCard(
@@ -2695,10 +2704,11 @@ private fun SwitchSettingsCard(
     title: String,
     subtitle: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f)
         )

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">Для автозаполнения нужен Android 8.0 или новее</string>
+    <string name="autofill_compat_huawei">Устройства Huawei могут ограничивать автозаполнение на Android 10 и новее</string>
+    <string name="autofill_compat_xiaomi">На устройствах Xiaomi может потребоваться разрешение на автозаполнение в приложении «Безопасность» MIUI</string>
+    <string name="autofill_compat_oppo">На устройствах OPPO/Realme может потребоваться разрешение на автозаполнение в настройках разрешений</string>
+    <string name="autofill_compat_vivo">На устройствах Vivo может потребоваться разрешение на автозаполнение в iManager</string>
+    <string name="autofill_compat_android12_rom">В некоторых прошивках Android 12 автозаполнение может работать нестабильно из-за проблем совместимости системы</string>
+    <string name="autofill_compat_inline">Устройство не поддерживает подсказки на клавиатуре. Для автозаполнения будет использоваться выпадающий список.</string>
+    <string name="autofill_compat_emulator">В этом эмуляторе автозаполнение может работать нестабильно</string>
+    <string name="autofill_compat_unsupported">Устройство не поддерживает механизм автозаполнения</string>
+    <string name="autofill_compat_check_failed">Не удалось завершить проверку совместимости</string>
+    <string name="autofill_check_manifest">Убедитесь, что MonicaAutofillServiceNg объявлен в AndroidManifest.xml</string>
+    <string name="autofill_check_permission_manifest">Служба должна объявлять BIND_AUTOFILL_SERVICE и intent-filter для автозаполнения</string>
+    <string name="autofill_check_enable_system">Выберите Monica в качестве службы автозаполнения в настройках системы</string>
+    <string name="autofill_check_path_system">Настройки → Система → Язык и ввод → Служба автозаполнения</string>
+    <string name="autofill_check_path_xiaomi">Xiaomi: Настройки → Расширенные настройки → Язык и ввод → Служба автозаполнения</string>
+    <string name="autofill_check_miui_permission">Также предоставьте необходимые разрешения в приложении «Безопасность» MIUI</string>
+    <string name="autofill_check_path_huawei">Huawei: Настройки → Система и обновления → Язык и ввод → Служба автозаполнения</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme: Настройки → Дополнительные настройки → Клавиатура и способ ввода → Служба автозаполнения</string>
+    <string name="autofill_check_path_vivo">Vivo: Настройки → Дополнительные настройки → Способ ввода → Служба автозаполнения</string>
+    <string name="autofill_check_path_samsung">Samsung: Настройки → Общие настройки → Язык и ввод → Служба автозаполнения</string>
+    <string name="autofill_check_enable_app">Включите автозаполнение в настройках Monica</string>
+    <string name="autofill_check_app_permissions">Убедитесь, что у Monica есть необходимые разрешения</string>
+    <string name="autofill_check_issue_count">Проблем совместимости: %1$d. Подробности ниже.</string>
+    <string name="autofill_check_xiaomi_permission">Xiaomi: Безопасность → Управление приложениями → Monica → Разрешения → Разрешить автозаполнение</string>
+    <string name="autofill_check_huawei_autostart">Huawei: возможно, нужно разрешить автозапуск Monica в «Диспетчере телефона»</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme: Настройки → Управление приложениями → Monica → Разрешения → Разрешить автозаполнение</string>
+    <string name="autofill_check_vivo_permission">Vivo: iManager → Управление приложениями → Управление разрешениями → Monica → Разрешить автозаполнение</string>
+    <string name="autofill_check_background">Отключите ограничения батареи для Monica и разрешите автозапуск и работу в фоне</string>
+    <string name="autofill_check_trigger_manually">Если автозаполнение всё ещё работает нестабильно, запустите его вручную из поля входа, чтобы начать сеанс</string>
+    <string name="autofill_check_configured">Служба настроена правильно. Если проблема сохраняется, перезапустите Monica.</string>
+    <string name="autofill_check_view_logs">Используйте средства устранения неполадок для просмотра подробных журналов</string>
+    <string name="autofill_check_restart">Перезапустите Monica после применения этих изменений</string>
+    <string name="autofill_check_recommendations_failed">Не удалось сформировать рекомендации. Обратитесь в поддержку.</string>
+    <string name="autofill_report_parsing">Распознавание полей</string>
+    <string name="autofill_report_matching">Подбор паролей</string>
+    <string name="autofill_report_building">Формирование ответа</string>
+    <string name="autofill_report_performance">Производительность</string>
+    <string name="autofill_report_parsing_failures">Ошибок распознавания полей: %1$d</string>
+    <string name="autofill_report_matching_failures">Запросов без подходящего пароля: %1$d</string>
+    <string name="autofill_report_building_failures">Ошибок формирования ответа: %1$d</string>
+    <string name="autofill_report_slow">Среднее время ответа слишком велико: %1$d мс</string>
+    <string name="autofill_report_improve_recognition">Улучшить распознавание полей</string>
+    <string name="autofill_report_recognition_hint">Некоторые поля приложений не распознаны. Проверьте настройки анализатора полей.</string>
+    <string name="autofill_report_add_passwords">Добавьте записи паролей</string>
+    <string name="autofill_report_add_passwords_hint">Подходящие пароли не найдены. Добавьте записи паролей для этих приложений.</string>
+    <string name="autofill_report_integrity">Проверьте полноту данных</string>
+    <string name="autofill_report_integrity_hint">При неполных данных формирование ответа может завершиться ошибкой. Проверьте записи паролей.</string>
+    <string name="autofill_report_optimize">Улучшить производительность</string>
+    <string name="autofill_report_optimize_hint">Ответы поступают медленно. Попробуйте очистить кэш или уменьшить число записей паролей.</string>
+    <string name="autofill_report_title">=== Диагностика автозаполнения Monica ===</string>
+    <string name="autofill_report_exported_at">Время экспорта: %1$s</string>
+    <string name="autofill_report_device">Информация об устройстве</string>
+    <string name="autofill_report_manufacturer">Производитель: %1$s</string>
+    <string name="autofill_report_model">Модель: %1$s</string>
+    <string name="autofill_report_android">Android: %1$s (API %2$d)</string>
+    <string name="autofill_report_rom">ROM: %1$s</string>
+    <string name="autofill_report_inline">Поддержка подсказок на клавиатуре: %1$s</string>
+    <string name="autofill_report_statistics">Статистика</string>
+    <string name="autofill_report_log_details">Подробный журнал</string>
+    <string name="autofill_report_end">=== Конец журнала ===</string>
+</resources>

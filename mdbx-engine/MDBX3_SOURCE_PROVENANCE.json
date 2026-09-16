@@ -1,0 +1,60 @@
+{
+  "schema": "monica-mdbx3-source-provenance-v1",
+  "upstream_android_commit": "cc9ecaaa1a2cb10d55e0d4506a8c824386b96452",
+  "source": {
+    "repository": "https://github.com/Monica-Pass/Mdbx",
+    "commit": "d1d3cc4fdff4e33fcb70099b3e7df36eeae43ba4",
+    "tree": "15559f82628560cb4020a2b54aa9aa16651add9e",
+    "build_script_fix": "90005c8c608c952093a4522ffa507a562e2e39a4",
+    "local_overlay": {
+      "base_commit": "90005c8c608c952093a4522ffa507a562e2e39a4",
+      "patch": "patches/90005c8-read-session-lifetime.patch",
+      "patch_sha256": "1790361321be909a7f176ae705e25511ee6f001a163d2a5c91f918aaccb44882",
+      "files": {
+        "crates/mdbx-storage/src/tiga_policy.rs": "d8be71de5d7d82bda6a2ee1655de78b6bdfaed4931786088ea1c29f1b14abf2a",
+        "crates/mdbx-ffi/src/security_facade.rs": "86b94d1bba13201c5df6759e4ccc59ac6b6999b8504c015bf2f20a316277af77"
+      },
+      "description": "Policy-bounded disclosure read-session reuse; no storage or payload format changes",
+      "upstream_file_hashes": {
+        "crates/mdbx-storage/src/tiga_policy.rs": "d8be71de5d7d82bda6a2ee1655de78b6bdfaed4931786088ea1c29f1b14abf2a",
+        "crates/mdbx-ffi/src/security_facade.rs": "5862f92dfaa120b9c30805ff5919e684955e2903a5b78d97e63c180a4feb8c01"
+      }
+    },
+    "additional_overlays": [
+      {
+        "base_commit": "90005c8c608c952093a4522ffa507a562e2e39a4",
+        "patch": "patches/90005c8-sync-delta-limits.patch",
+        "patch_sha256": "d47d75cf49ed6d19870e8c61984ff642e906c7cc956fd03a1bfa8fb52d02e7bf",
+        "files": {
+          "crates/mdbx-storage/src/sync_delta.rs": "e942ce267cc54a392b79d5ec3fc4f7d137a7133b9d4cdc7e448fb91b03573415",
+          "crates/mdbx-storage/src/repo/operation_coordinator.rs": "0f4613571ac70e936f953abc387cbc78a1008d8c32d51134784bf35e6e7e2ce4",
+          "crates/mdbx-ffi/src/sync_facade.rs": "4f9c26be3da688e1851fac01685bef236a8e6275bdf7511a19142c6d1283cd35"
+        },
+        "description": "Check encoded sync-delta limits before commit using a bounded counting writer; buffer incremental file exports in 64 KiB and flush before fsync/publish; preserve rollback, storage format and FFI contracts",
+        "upstream_file_hashes": {
+          "crates/mdbx-storage/src/sync_delta.rs": "8a57347af5016c990ecafa076f459ac2d1de269df3b292231245564c2d8ade33",
+          "crates/mdbx-storage/src/repo/operation_coordinator.rs": "1e729e00255f030ea201556029ae7d1427faf4c9aa1ea8f259001d94d164fe73",
+          "crates/mdbx-ffi/src/sync_facade.rs": "2c4db43550b8f3b81cc4d16c733fc635013e8b9d070b1bfaf17f6b40695fbfc3"
+        }
+      }
+    ]
+  },
+  "runtime": {
+    "name": "MDBX3",
+    "version": "3.0.0-alpha.1",
+    "storage_format": "MDBX-2",
+    "writable_storage_format": "MDBX-2",
+    "ffi_namespace": "mdbx_ffi",
+    "native_library": "libmdbx_ffi.so",
+    "compatibility_profile": "mdbx3-mdbx2-drop-in-v1"
+  },
+  "build": {
+    "method": "cargo-ndk from vendored Mdbx-ffi sources",
+    "profile": "mdbx3-release",
+    "prebuilt_libraries": false
+  },
+  "verification": {
+    "source_hashes": "Vendored files use LF-normalized SHA-256; upstream_file_hashes retain the original Android working-tree hashes. Source content matches after newline normalization.",
+    "fdroid_build": "Not run; user requested source changes and submission only."
+  }
+}

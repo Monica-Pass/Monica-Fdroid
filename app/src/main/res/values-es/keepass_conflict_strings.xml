@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">Revisar y combinar</string>
+    <string name="keepass_conflict_banner_title">Hay cambios por combinar</string>
+    <string name="keepass_conflict_banner_summary">Revisa ambas versiones para continuar la sincronización.</string>
+    <string name="keepass_conflict_merge_sync">Combinar y sincronizar</string>
+    <string name="keepass_conflict_comparing">Comparando ambas versiones…</string>
+    <string name="keepass_conflict_merging">Combinando y sincronizando…</string>
+    <string name="keepass_conflict_refresh">Actualizar comparación</string>
+    <string name="keepass_conflict_merge_help">Se combinan los cambios en entradas o campos distintos. Elige una versión cuando el mismo campo haya cambiado en ambos lados.</string>
+    <string name="keepass_conflict_auto_merge">Listo para combinar</string>
+    <string name="keepass_conflict_other_options">Otras opciones</string>
+    <string name="keepass_conflict_recovery_hint">Las versiones originales se conservan en copias de recuperación de la base de datos.</string>
+    <string name="keepass_conflict_keep_local_confirm">¿Reemplazar toda la base de datos remota por la versión local? Los cambios exclusivos de la versión remota se conservarán en una copia de recuperación.</string>
+    <string name="keepass_conflict_use_remote_confirm">¿Reemplazar toda la base de datos local por la versión remota? Los cambios exclusivos de la versión local se conservarán en una copia de recuperación.</string>
+    <string name="keepass_conflict_selected_count">%1$d de %2$d conflictos seleccionados</string>
+    <string name="keepass_conflict_no_changes">Ambas versiones contienen los mismos datos.</string>
+    <string name="keepass_conflict_protected_value">Valor protegido</string>
+    <string name="keepass_conflict_properties_value">Propiedades de esta versión</string>
+    <string name="keepass_conflict_kind_entry">Entrada</string>
+    <string name="keepass_conflict_kind_group">Carpeta</string>
+    <string name="keepass_conflict_kind_metadata">Configuración de la base de datos</string>
+    <string name="keepass_conflict_kind_deleted_object">Registro de eliminación</string>
+    <string name="keepass_conflict_kind_binary">Adjunto</string>
+    <string name="keepass_conflict_kind_icon">Icono personalizado</string>
+    <string name="keepass_conflict_change_added">Añadido</string>
+    <string name="keepass_conflict_change_modified">Modificado</string>
+    <string name="keepass_conflict_change_moved">Movido</string>
+    <string name="keepass_conflict_change_deleted">Eliminado</string>
+    <string name="keepass_conflict_change_unchanged">Sin cambios</string>
+</resources>

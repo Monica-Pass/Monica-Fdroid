@@ -1961,7 +1961,7 @@ private fun ResultCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "安全程度",
+                            text = stringResource(R.string.legacy_ui_security_level),
                             style = if (isCompact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
                             color = if (isCompact) {
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)

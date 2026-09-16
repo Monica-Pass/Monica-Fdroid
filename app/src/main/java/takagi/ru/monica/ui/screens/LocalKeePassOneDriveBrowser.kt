@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -82,6 +84,7 @@ private enum class KeepassOneDriveConnectionState {
 @Composable
 fun KeepassOneDriveBrowserBottomSheet(
     viewModel: LocalKeePassViewModel,
+    startWithCreate: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -99,6 +102,14 @@ fun KeepassOneDriveBrowserBottomSheet(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var showCreateDatabaseDialog by remember { mutableStateOf(false) }
     var connectionState by remember { mutableStateOf(KeepassOneDriveConnectionState.NotConnected) }
+    var initialCreatePending by remember { mutableStateOf(startWithCreate) }
+    LaunchedEffect(connectionState) {
+        if (initialCreatePending && connectionState == KeepassOneDriveConnectionState.Connected) {
+            initialCreatePending = false
+            showCreateDatabaseDialog = true
+        }
+    }
+
 
     fun loadDirectory(targetPath: String = currentPath) {
         val activeSession = session ?: return
@@ -116,7 +127,7 @@ fun KeepassOneDriveBrowserBottomSheet(
                     connectionState = KeepassOneDriveConnectionState.Connected
                 },
                 onFailure = { error ->
-                    browserError = error.toOneDriveUserMessage(context.getString(R.string.keepass_onedrive_load_files_failed))
+                    browserError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.keepass_onedrive_load_files_failed))
                     connectionState = KeepassOneDriveConnectionState.Failed
                 }
             )
@@ -160,73 +171,18 @@ fun KeepassOneDriveBrowserBottomSheet(
                 .onFailure { error ->
                     isConnecting = false
                     connectionState = KeepassOneDriveConnectionState.Failed
-                    browserError = error.toOneDriveUserMessage(
+                    browserError = error.toOneDriveUserMessage(AppLocaleStringResolver(context),
                         context.getString(R.string.keepass_onedrive_sign_in_failed)
                     )
                 }
         }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                stringResource(R.string.keepass_onedrive_attach_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                stringResource(R.string.keepass_onedrive_browser_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            OneDriveLocationPanel(
-                session = session,
-                isConnecting = isConnecting,
-                accountActionLabel = if (session == null) {
-                    stringResource(R.string.keepass_onedrive_sign_in_action)
-                } else {
-                    stringResource(R.string.keepass_onedrive_switch_account)
-                },
-                connectionLabel = when (connectionState) {
-                    KeepassOneDriveConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
-                    KeepassOneDriveConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
-                    KeepassOneDriveConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
-                    KeepassOneDriveConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
-                },
-                connectionFailed = connectionState == KeepassOneDriveConnectionState.Failed,
-                errorMessage = browserError,
-                onAccountAction = ::signInOrSwitchAccount,
-                browserTitle = stringResource(R.string.v2_select_database),
-                currentPath = currentPath,
-                isLoadingEntries = isLoadingEntries,
-                entries = entries,
-                emptyMessage = stringResource(R.string.keepass_onedrive_empty_directory),
-                onNavigateUp = {
-                    loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath))
-                },
-                onRefresh = { loadDirectory(currentPath) },
-                onCreateFolder = { showCreateFolderDialog = true },
-                entryIcon = { entry ->
-                    if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Link
-                },
-                entrySupportingText = { entry -> entry.path.toOneDriveDisplayPath() },
-                onEntryClick = { entry ->
-                    if (entry.isDirectory) loadDirectory(entry.path)
-                    else selectedDatabaseEntry = entry
-                }
-            ) {
+    DatabaseManagementFormSheet(
+        onDismiss = onDismiss,
+        testTagPrefix = "keepass_onedrive",
+        actions = {
+            if (session != null) {
                 Button(
                     onClick = { showCreateDatabaseDialog = true },
                     enabled = session != null && !isLoadingEntries,
@@ -238,6 +194,55 @@ fun KeepassOneDriveBrowserBottomSheet(
                 }
             }
         }
+    ) {
+        Text(
+            stringResource(R.string.keepass_onedrive_attach_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            stringResource(R.string.keepass_onedrive_browser_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        OneDriveLocationPanel(
+            session = session,
+            isConnecting = isConnecting,
+            accountActionLabel = if (session == null) {
+                stringResource(R.string.keepass_onedrive_sign_in_action)
+            } else {
+                stringResource(R.string.keepass_onedrive_switch_account)
+            },
+            connectionLabel = when (connectionState) {
+                KeepassOneDriveConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
+                KeepassOneDriveConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
+                KeepassOneDriveConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
+                KeepassOneDriveConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
+            },
+            connectionFailed = connectionState == KeepassOneDriveConnectionState.Failed,
+            errorMessage = browserError,
+            onAccountAction = ::signInOrSwitchAccount,
+            browserTitle = stringResource(R.string.v2_select_database),
+            currentPath = currentPath,
+            isLoadingEntries = isLoadingEntries,
+            entries = entries,
+            emptyMessage = stringResource(R.string.keepass_onedrive_empty_directory),
+            onNavigateUp = {
+                loadDirectory(OneDriveKeePassFileSource.parentPathOf(currentPath, strings = AppLocaleStringResolver(context)))
+            },
+            onRefresh = { loadDirectory(currentPath) },
+            onCreateFolder = { showCreateFolderDialog = true },
+            entryIcon = { entry ->
+                if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Link
+            },
+            entrySupportingText = { entry -> entry.path.toOneDriveDisplayPath() },
+            onEntryClick = { entry ->
+                if (entry.isDirectory) loadDirectory(entry.path)
+                else selectedDatabaseEntry = entry
+            }
+        )
     }
 
     if (showCreateFolderDialog && session != null) {
@@ -257,7 +262,7 @@ fun KeepassOneDriveBrowserBottomSheet(
                             showCreateFolderDialog = false
                         },
                         onFailure = { error ->
-                            browserError = error.toOneDriveUserMessage(context.getString(R.string.keepass_webdav_create_folder_failed))
+                            browserError = error.toOneDriveUserMessage(AppLocaleStringResolver(context), context.getString(R.string.keepass_webdav_create_folder_failed))
                         }
                     )
                 }
@@ -330,6 +335,7 @@ private fun CreateOneDriveFolderDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.keepass_onedrive_create_folder_message))
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = folderName,
                     onValueChange = { folderName = it },
                     label = { Text(stringResource(R.string.folder_name_label)) },
@@ -380,6 +386,7 @@ private fun AttachExistingOneDriveDatabaseDialog(
             ) {
                 Text(entry.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text(stringResource(R.string.database_name)) },
@@ -387,6 +394,7 @@ private fun AttachExistingOneDriveDatabaseDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = databasePassword,
                     onValueChange = { databasePassword = it },
                     label = { Text(stringResource(R.string.keepass_webdav_database_password)) },
@@ -405,6 +413,7 @@ private fun AttachExistingOneDriveDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = keyFileName,
                     onValueChange = {},
                     readOnly = true,
@@ -441,6 +450,7 @@ private fun AttachExistingOneDriveDatabaseDialog(
                     }
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description_optional)) },
@@ -583,6 +593,7 @@ private fun CreateOneDriveDatabaseDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.keepass_webdav_create_name_label)) },
@@ -591,6 +602,7 @@ private fun CreateOneDriveDatabaseDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(stringResource(R.string.database_password)) },
@@ -608,6 +620,7 @@ private fun CreateOneDriveDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text(stringResource(R.string.confirm_password)) },
@@ -643,6 +656,7 @@ private fun CreateOneDriveDatabaseDialog(
                 AnimatedVisibility(visible = useKeyFile) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = keyFileName,
                             onValueChange = {},
                             readOnly = true,
@@ -752,6 +766,7 @@ private fun CreateOneDriveDatabaseDialog(
                             }
                         )
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = transformRounds,
                             onValueChange = { transformRounds = it.filter(Char::isDigit) },
                             label = { Text(stringResource(R.string.local_keepass_transform_rounds)) },
@@ -762,6 +777,7 @@ private fun CreateOneDriveDatabaseDialog(
                         AnimatedVisibility(visible = kdfAlgorithm != KeePassKdfAlgorithm.AES_KDF) {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 OutlinedTextField(
+                                    shape = DatabaseManagementFieldShape,
                                     value = memoryMb,
                                     onValueChange = { memoryMb = it.filter(Char::isDigit) },
                                     label = { Text(stringResource(R.string.local_keepass_kdf_memory_mb)) },
@@ -770,6 +786,7 @@ private fun CreateOneDriveDatabaseDialog(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                                 )
                                 OutlinedTextField(
+                                    shape = DatabaseManagementFieldShape,
                                     value = parallelism,
                                     onValueChange = { parallelism = it.filter(Char::isDigit) },
                                     label = { Text(stringResource(R.string.local_keepass_kdf_parallelism)) },
@@ -782,6 +799,7 @@ private fun CreateOneDriveDatabaseDialog(
                     }
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description_optional)) },
@@ -836,6 +854,7 @@ private fun <T> KeepassOneDriveOptionDropdown(
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
+            shape = DatabaseManagementFieldShape,
             value = selectedText,
             onValueChange = {},
             readOnly = true,

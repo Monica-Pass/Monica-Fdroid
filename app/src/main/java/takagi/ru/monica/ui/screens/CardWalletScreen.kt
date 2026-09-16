@@ -667,7 +667,7 @@ fun CardWalletScreen(
             }.forEach(bitwardenRepository::requestLocalMutationSync)
 
             val baseMessage = context.getString(R.string.selected_items, successCount)
-            val toastMessage = if (failedCount > 0) "$baseMessage，失败$failedCount" else baseMessage
+            val toastMessage = if (failedCount > 0) context.getString(R.string.legacy_ui_result_with_failed, baseMessage, failedCount) else baseMessage
             android.widget.Toast.makeText(
                 context,
                 toastMessage,
@@ -1427,6 +1427,8 @@ fun CardWalletScreen(
             originBounds = expandedStackPreview?.originBounds,
             initialCardId = focusedStackCardId ?: expandedStack.cover.id,
             animateEntrance = animateStackEntrance,
+            loopEnabled = appSettings.walletStackLoopEnabled,
+            reduceAnimations = appSettings.reduceAnimations,
             onOpened = { animateStackEntrance = false },
             onFocusedCardChanged = { focusedStackCardId = it },
             onCollapseStart = { cardId ->

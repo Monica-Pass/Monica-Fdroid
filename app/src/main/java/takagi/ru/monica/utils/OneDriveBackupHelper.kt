@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +18,7 @@ data class OneDriveBackupConfig(
 )
 
 class OneDriveBackupHelper(context: Context) {
+    private val strings = AppLocaleStringResolver(context)
     private val appContext = context.applicationContext
     private val authManager = OneDriveAuthManager(appContext)
     private val securityManager = SecurityManager(appContext)
@@ -82,7 +85,7 @@ class OneDriveBackupHelper(context: Context) {
 
     suspend fun listBackups(): Result<List<BackupFile>> = withContext(Dispatchers.IO) {
         runCatching {
-            val config = getConfig() ?: throw IllegalStateException("尚未配置 OneDrive 备份目录")
+            val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val backups = OneDriveKeePassFileSource(
                 context = appContext,
                 accountIdentifier = config.accountId
@@ -104,7 +107,7 @@ class OneDriveBackupHelper(context: Context) {
 
     suspend fun uploadBackup(file: File, isPermanent: Boolean): Result<BackupFile> = withContext(Dispatchers.IO) {
         runCatching {
-            val config = getConfig() ?: throw IllegalStateException("尚未配置 OneDrive 备份目录")
+            val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val targetName = if (isPermanent) {
                 file.name.replace(".zip", "_permanent.zip")
             } else {
@@ -140,7 +143,7 @@ class OneDriveBackupHelper(context: Context) {
 
     suspend fun downloadBackup(backupFile: BackupFile, destFile: File): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
-            val config = getConfig() ?: throw IllegalStateException("尚未配置 OneDrive 备份目录")
+            val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val bytes = OneDriveKeePassFileSource(
                 context = appContext,
                 accountIdentifier = config.accountId,
@@ -153,7 +156,7 @@ class OneDriveBackupHelper(context: Context) {
 
     suspend fun deleteBackup(backupFile: BackupFile): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
-            val config = getConfig() ?: throw IllegalStateException("尚未配置 OneDrive 备份目录")
+            val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             OneDriveKeePassFileSource(
                 context = appContext,
                 accountIdentifier = config.accountId
@@ -165,7 +168,7 @@ class OneDriveBackupHelper(context: Context) {
     suspend fun markBackupAsPermanent(backupFile: BackupFile): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             if (backupFile.isPermanent) return@runCatching true
-            val config = getConfig() ?: throw IllegalStateException("尚未配置 OneDrive 备份目录")
+            val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val newName = backupFile.name.replace(".zip", "_permanent.zip")
             OneDriveKeePassFileSource(
                 context = appContext,
@@ -178,7 +181,7 @@ class OneDriveBackupHelper(context: Context) {
     suspend fun unmarkPermanent(backupFile: BackupFile): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             if (!backupFile.isPermanent) return@runCatching true
-            val config = getConfig() ?: throw IllegalStateException("尚未配置 OneDrive 备份目录")
+            val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val newName = backupFile.name.replace("_permanent", "")
             OneDriveKeePassFileSource(
                 context = appContext,

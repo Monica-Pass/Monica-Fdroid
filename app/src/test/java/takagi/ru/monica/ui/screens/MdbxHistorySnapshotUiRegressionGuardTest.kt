@@ -11,10 +11,10 @@ class MdbxHistorySnapshotUiRegressionGuardTest {
     fun pageContentDoesNotRepeatTopAppBarTitles() {
         val source = managerSource()
         val snapshotPage = source
-            .substringAfter("private fun MdbxSnapshotPage(")
-            .substringBefore("private fun MdbxCommitHistoryPage(")
+            .substringAfter("fun MdbxSnapshotPage(")
+            .substringBefore("fun MdbxCommitHistoryPage(")
         val historyPage = source
-            .substringAfter("private fun MdbxCommitHistoryPage(")
+            .substringAfter("fun MdbxCommitHistoryPage(")
             .substringBefore("private fun CommitHistoryListHeader(")
 
         assertFalse(
@@ -33,8 +33,8 @@ class MdbxHistorySnapshotUiRegressionGuardTest {
     fun snapshotContentUsesSingleLevelCardsAndProtectedDangerActions() {
         val source = managerSource()
         val snapshotPage = source
-            .substringAfter("private fun MdbxSnapshotPage(")
-            .substringBefore("private fun MdbxCommitHistoryPage(")
+            .substringAfter("fun MdbxSnapshotPage(")
+            .substringBefore("fun MdbxCommitHistoryPage(")
         val snapshotRow = source
             .substringAfter("private fun SnapshotRow(")
             .substringBefore("private fun SnapshotInfoPill(")
@@ -53,8 +53,8 @@ class MdbxHistorySnapshotUiRegressionGuardTest {
     fun snapshotCreationExplainsMdbx2AndConfirmsUnchangedRequests() {
         val source = managerSource()
         val snapshotPage = source
-            .substringAfter("private fun MdbxSnapshotPage(")
-            .substringBefore("private fun MdbxCommitHistoryPage(")
+            .substringAfter("fun MdbxSnapshotPage(")
+            .substringBefore("fun MdbxCommitHistoryPage(")
         val creationCard = source
             .substringAfter("private fun SnapshotCreationCard(")
             .substringBefore("private fun SnapshotListHeader(")

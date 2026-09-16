@@ -246,7 +246,7 @@ class AutoBackupWorker(
                     WebDavBackoffState.recordSuccess(host)
                 }
                 val report = backupResult.getOrNull()
-                android.util.Log.d(TAG, "Auto backup completed: ${report?.getSummary()}")
+                android.util.Log.d(TAG, "Auto backup completed: ${report?.getSummary(applicationContext)}")
                 if (report != null && report.hasIssues()) {
                     android.util.Log.w(TAG, "Backup has issues but completed")
                 }

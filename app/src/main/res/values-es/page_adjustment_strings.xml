@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_stack_loop_title">Recorrer las tarjetas en bucle</string>
+    <string name="wallet_stack_loop_desc">Desliza una pila de tarjetas en ambas direcciones. La última tarjeta enlaza con la primera.</string>
+    <string name="page_adjustment_preview_games">Juegos</string>
+    <string name="page_adjustment_preview_folder">Carpeta 1</string>
+    <string name="page_adjustment_preview_subfolder">Subcarpeta</string>
+</resources>

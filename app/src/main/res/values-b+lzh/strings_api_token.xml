@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="entry_type_api_token">API 令牌</string>
+    <string name="api_token_no_database">请先开原生 MDBX 数据库，乃可阅或造 API 令牌。</string>
+    <string name="api_token_load_error">令牌读取或存储未成。请重开或同步数据库，再取之。原有数据尚存。</string>
+    <string name="api_token_reload">重取</string>
+    <string name="api_token_root_collection">数据库根目录</string>
+    <string name="api_token_database">数据库</string>
+    <string name="api_token_collection">分类</string>
+    <string name="api_token_complete_payload">令牌全数数据（JSON）</string>
+    <string name="api_token_empty">此库尚无 API 令牌。</string>
+    <string name="api_token_native_hint">以 MDBX 原生 API 令牌存之，可与 Monica CLI 通用。</string>
+    <string name="api_token_toggle_visibility">显隐其值</string>
+    <string name="api_token_validation">请入服务商及令牌。API 地址可空；若填，须为 HTTP 或 HTTPS URL。</string>
+    <string name="api_token_fields_limit">自定之栏至多 128 个；附记与栏中所载合计不得逾 64 KB。</string>
+    <string name="api_token_import_json">贴令牌 JSON</string>
+    <string name="api_token_parse">析</string>
+    <string name="api_token_delete_confirmation">果欲自库中删此 API 令牌乎？</string>
+    <string name="api_token_entry_id">条目 ID</string>
+    <string name="api_token_collection_id">分类 ID</string>
+    <string name="api_token_provider">服务商</string>
+    <string name="api_token_api_base">API 基础 URL</string>
+    <string name="api_token_note">附记</string>
+    <string name="api_token_schema">载荷格式</string>
+    <string name="api_token_name">令牌之名</string>
+    <string name="api_token_add">增 API 令牌</string>
+    <string name="api_token_edit">修 API 令牌</string>
+    <string name="api_token_credentials">令牌详录</string>
+    <string name="api_token_manage_databases">理诸库</string>
+    <string name="api_token_folder_error">未能取分类，请重开存放之处选择器而再试。</string>
+    <string name="api_token_storage">存放之处</string>
+    <string name="api_token_advanced">余下详录</string>
+    <string name="api_token_unknown_schema">此令牌用他种格式，可于下方阅并摹其全数数据。</string>
+    <string name="api_token_discard_title">欲弃所改乎？</string>
+    <string name="api_token_discard_message">未存之改将失。</string>
+    <string name="api_token_discard">弃</string>
+    <string name="api_token_name_hint">1–64 个字母、数字、- 或 _</string>
+</resources>

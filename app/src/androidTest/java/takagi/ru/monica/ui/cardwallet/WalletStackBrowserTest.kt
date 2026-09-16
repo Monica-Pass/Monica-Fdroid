@@ -55,7 +55,8 @@ class WalletStackBrowserTest {
     private val reveals = AtomicInteger(0)
     private val managementRequests = AtomicInteger(0)
 
-    private fun showBrowser(count: Int = 8, enterAnimated: Boolean = false) {
+    private fun showBrowser(count: Int = 8, enterAnimated: Boolean = false, loopEnabled: Boolean = false) {
+        if (loopEnabled) focused.set(count.toLong())
         val cards = (1L..count.toLong()).map { id ->
             WalletListItem(
                 id, WalletListItemType.BANK_CARD,
@@ -71,7 +72,7 @@ class WalletStackBrowserTest {
         var visible by mutableStateOf(true)
         var detailId by mutableStateOf<Long?>(null)
         var animateEntrance by mutableStateOf(enterAnimated)
-        var coverId by mutableStateOf(1L)
+        var coverId by mutableStateOf(focused.get())
         var coverRevealed by mutableStateOf(false)
         var origin by mutableStateOf<Rect?>(null)
         compose.setContent {
@@ -102,7 +103,8 @@ class WalletStackBrowserTest {
                             onRevealCover = { coverRevealed = true; reveals.incrementAndGet() },
                             onDismiss = { dismissals.incrementAndGet(); visible = false },
                             onOpenCard = { detailId = it.id },
-                            onManage = {}
+                            onManage = {},
+                            loopEnabled = loopEnabled,
                         )
                     }
                 }
@@ -207,7 +209,15 @@ class WalletStackBrowserTest {
     }
 
     @Test fun collapseHandsOffTheSameCardBeforeRemovingTheOverlay() {
-        showBrowser(enterAnimated = true)
+        assertCollapseHandoff(loopEnabled = false)
+    }
+
+    @Test fun loopingCollapseHandsOffTheWrappedCardWithMatchingPixelsAndBounds() {
+        assertCollapseHandoff(loopEnabled = true)
+    }
+
+    private fun assertCollapseHandoff(loopEnabled: Boolean) {
+        showBrowser(enterAnimated = true, loopEnabled = loopEnabled)
         compose.waitForIdle()
         compose.onNodeWithTag("wallet_stack_scroll").performTouchInput { swipeUp(durationMillis = 600) }
         compose.waitForIdle()

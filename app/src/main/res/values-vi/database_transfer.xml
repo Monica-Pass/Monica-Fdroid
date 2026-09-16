@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_zip_title">Bản sao ZIP</string>
+    <string name="transfer_zip_description">Chỉ sao lưu cơ sở dữ liệu đã chọn.</string>
+    <string name="transfer_contents">Nội dung</string>
+    <string name="transfer_images_attachments">Ảnh và tệp đính kèm</string>
+    <string name="transfer_encrypt_backup">Mã hóa bản sao</string>
+    <string name="transfer_encryption_hint">Passkey và tệp đính kèm cần được sao lưu có mã hóa.</string>
+    <string name="transfer_choose_location">Chọn nơi lưu</string>
+    <string name="transfer_background_continue">Tiếp tục trong nền</string>
+    <string name="transfer_background_hint">Bạn có thể rời trang này. Tiến độ sẽ hiển thị trong thông báo.</string>
+    <string name="transfer_reading">Đang đọc tệp…</string>
+    <string name="transfer_decrypting">Đang giải mã…</string>
+    <string name="transfer_preparing">Đang chuẩn bị mục…</string>
+    <string name="transfer_writing">Đang ghi vào cơ sở dữ liệu…</string>
+    <string name="transfer_attachments">Đang sao chép tệp đính kèm…</string>
+    <string name="transfer_packing">Đang tạo tệp nén…</string>
+    <string name="transfer_encrypting">Đang mã hóa tệp…</string>
+    <string name="transfer_saving">Đang lưu tệp…</string>
+    <string name="transfer_items_progress">%1$d / %2$d</string>
+    <string name="transfer_export_complete">Đã xuất %1$d mục.</string>
+    <string name="transfer_export_done">Xuất xong</string>
+    <string name="transfer_channel">Nhập và xuất</string>
+    <string name="transfer_open_result">Mở Monica để xem kết quả.</string>
+    <string name="transfer_background_start_failed">Không thể bắt đầu xuất. Hãy mở Monica và thử lại.</string>
+    <string name="transfer_cancelled">Đã hủy xuất.</string>
+    <string name="transfer_attachment_encryption">Hãy mã hóa bản sao để kèm theo tệp đính kèm.</string>
+    <string name="transfer_password_mismatch">Mật khẩu không khớp.</string>
+    <string name="transfer_kdbx_password_description">Đặt mật khẩu bảo vệ cơ sở dữ liệu KDBX được xuất.</string>
+    <string name="transfer_unsupported_token">Không thể chuyển đổi định dạng token này. Hãy dùng bản sao ZIP.</string>
+    <string name="steam_mafile_export_title">Steam maFile</string>
+    <string name="steam_mafile_export_desc">Xuất các tài khoản Steam đã chọn từ cơ sở dữ liệu này.</string>
+    <string name="transfer_kdbx_description">Mật khẩu, mã xác thực, Passkey và tệp đính kèm ở định dạng KeePass.</string>
+    <string name="transfer_unsupported_records">Cơ sở dữ liệu có loại mục chưa được hỗ trợ. Hãy lưu bản sao ở định dạng gốc.</string>
+    <string name="transfer_zip_password_title">Giải mã bản sao ZIP</string>
+    <string name="transfer_zip_password_description">Nhập mật khẩu đã đặt khi tạo bản sao ZIP này.</string>
+</resources>

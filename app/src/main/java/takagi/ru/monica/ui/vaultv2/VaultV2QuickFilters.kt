@@ -1,5 +1,10 @@
 package takagi.ru.monica.ui.vaultv2
 
+import takagi.ru.monica.ui.screens.NativeTokenListUi
+import takagi.ru.monica.ui.screens.NativeTokenFilterChip
+import takagi.ru.monica.ui.screens.rememberNativeTokenList
+
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +24,7 @@ import takagi.ru.monica.ui.shouldShowQuickFilterItem
 
 @Composable
 internal fun VaultV2QuickFilterRow(
+    nativeTokens: NativeTokenListUi? = null,
     configuredQuickFilterItems: List<PasswordListQuickFilterItem>,
     chipState: PasswordQuickFilterChipState,
     chipCallbacks: PasswordQuickFilterChipCallbacks,
@@ -31,6 +37,7 @@ internal fun VaultV2QuickFilterRow(
             .padding(top = 2.dp, bottom = 0.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        NativeTokenFilterChip(nativeTokens)
         VaultV2QuickFilterChips(
             configuredQuickFilterItems = configuredQuickFilterItems,
             chipState = chipState,

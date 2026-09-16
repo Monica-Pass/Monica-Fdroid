@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Classical Chinese (Huaxia) / 文言文（华夏） — lzh. See docs/localization/classical-chinese.md. -->
+    <string name="bitwarden_error_certificate_expired">证书已逾期。请察设备日期时刻，并请服务器管理员续其证书。</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">证书尚未生效，请察设备日期时刻及证书有效之期。</string>
+    <string name="bitwarden_error_certificate_hostname">服务器证书不合所入域名，请察自建地址及反向代理所回证书。</string>
+    <string name="bitwarden_error_certificate_untrusted">服务器证书未能验明。请察证书链是否完整、设备是否信任其 CA，及代理是否替换 HTTPS 证书；自签者请于证书之设配其 CA。</string>
+    <string name="bitwarden_error_tls_handshake">未能建立安全 TLS 连接。请察服务器或反向代理所用 TLS 之设及协议版本；若启 mTLS，亦须察客户端证书。</string>
+    <string name="bitwarden_error_dns">服务器域名不可解析，请察自建地址、DNS、VPN 与代理之设。</string>
+    <string name="bitwarden_error_timeout">连接服务器逾时，请察其在线与否，及端口、网络、VPN、代理之设。</string>
+    <string name="bitwarden_error_connection">服务器未能连通，请察地址端口、服务运行、防火墙与代理之设。</string>
+    <string name="bitwarden_error_proxy">代理拒连，或须验身。请察代理地址、端口及名籍之设。</string>
+    <string name="bitwarden_error_cleartext">服务器地址用 HTTP，今之安全规则不许明文连接。请改 HTTPS，并察反向代理所用 HTTPS 之设。</string>
+    <string name="bitwarden_error_network_io">网络有误，与服务器通信已断。请察网络、VPN、代理之设，再试之。</string>
+</resources>

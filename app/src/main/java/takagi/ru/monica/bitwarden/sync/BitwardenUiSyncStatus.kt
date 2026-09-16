@@ -23,6 +23,17 @@ private fun VaultSyncStatus?.mergeCoordinatorStatus(status: SyncTaskStatus): Vau
     val coordinatorRunning = status.phase == SyncPhase.RUNNING
     val coordinatorQueued = status.queuedCount > 0
     val lastSuccessAt = listOfNotNull(existing.lastSuccessAt, status.lastSuccessAtMillis).maxOrNull()
+    val coordinatorOutcomeAt = status.lastFinishedAtMillis
+
+    // A cached terminal status must not replace a newer result or a preflight block.
+    // On equal timestamps the orchestrator, which consumes coordinator results, wins.
+    if (
+        status.phase != SyncPhase.RUNNING && status.phase != SyncPhase.QUEUED &&
+        existing.lastOutcomeAt != null &&
+        (coordinatorOutcomeAt == null || coordinatorOutcomeAt <= existing.lastOutcomeAt)
+    ) {
+        return existing.copy(lastSuccessAt = lastSuccessAt)
+    }
 
     return when (status.phase) {
         SyncPhase.RUNNING,
@@ -44,7 +55,11 @@ private fun VaultSyncStatus?.mergeCoordinatorStatus(status: SyncTaskStatus): Vau
         SyncPhase.SUCCESS -> existing.copy(
             isRunning = existing.isRunning,
             queuedReason = existing.queuedReason,
+            blockedReason = null,
+            lastError = null,
+            lastTriggerReason = coordinatorTrigger ?: existing.lastTriggerReason,
             lastSuccessAt = lastSuccessAt,
+            lastOutcomeAt = coordinatorOutcomeAt ?: existing.lastOutcomeAt,
             nextRetryAt = existing.nextRetryAt
         )
 
@@ -54,6 +69,7 @@ private fun VaultSyncStatus?.mergeCoordinatorStatus(status: SyncTaskStatus): Vau
             blockedReason = status.lastError?.toBitwardenBlockReason() ?: existing.blockedReason,
             lastError = status.lastError?.redactedMessage ?: existing.lastError,
             lastTriggerReason = coordinatorTrigger ?: existing.lastTriggerReason,
+            lastOutcomeAt = coordinatorOutcomeAt ?: existing.lastOutcomeAt,
             lastSuccessAt = lastSuccessAt
         )
 
@@ -61,8 +77,10 @@ private fun VaultSyncStatus?.mergeCoordinatorStatus(status: SyncTaskStatus): Vau
         SyncPhase.CONFLICT -> existing.copy(
             isRunning = existing.isRunning,
             queuedReason = existing.queuedReason,
+            blockedReason = null,
             lastError = status.lastError?.redactedMessage ?: existing.lastError,
             lastTriggerReason = coordinatorTrigger ?: existing.lastTriggerReason,
+            lastOutcomeAt = coordinatorOutcomeAt ?: existing.lastOutcomeAt,
             lastSuccessAt = lastSuccessAt
         )
 

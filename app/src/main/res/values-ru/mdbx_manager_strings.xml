@@ -514,4 +514,11 @@
     <string name="mdbx_ui_repair_no_changes">Нет изменений базы, требующих записи</string>
     <string name="mdbx_ui_manager_entry_title">Управление базами MDBX</string>
     <string name="mdbx_ui_manager_entry_description">Управление локальными базами MDBX и базами в WebDAV и OneDrive, включая базы из старых тестовых версий.</string>
+    <string name="mdbx_ui_database_count">Баз данных: %1$s</string>
+    <string name="mdbx_ui_source_count">Подключено баз: %1$s</string>
+    <string name="mdbx_ui_structure_removed">Удалено</string>
+    <string name="mdbx_ui_dangling_head_counts">Ветвей: %1$s · Устройств: %2$s</string>
+    <string name="mdbx_ui_show_details">Показать подробности</string>
+    <string name="mdbx_ui_compare_versions">Сравнить версии</string>
+    <string name="mdbx_ui_exit_comparison">Закрыть сравнение</string>
 </resources>

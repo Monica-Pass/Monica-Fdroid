@@ -5,12 +5,15 @@ import android.net.Uri
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import takagi.ru.monica.R
+import takagi.ru.monica.utils.StringResolver
 import takagi.ru.monica.utils.KeePassErrorCode
 import takagi.ru.monica.utils.KeePassOperationException
 
-fun isPasswordDecryptError(errorMessage: String): Boolean {
+internal fun isPasswordDecryptError(errorMessage: String, strings: StringResolver): Boolean {
     val normalized = errorMessage.lowercase()
-    return normalized.contains("wrong password") ||
+    return errorMessage.contains(strings.get(R.string.crypto_message_password_or_corrupt), ignoreCase = true) ||
+        errorMessage.contains(strings.get(R.string.crypto_message_decrypt_failed, "").trim(), ignoreCase = true) ||
+        normalized.contains("wrong password") ||
         normalized.contains("password incorrect") ||
         normalized.contains("decrypt") ||
         normalized.contains("invalid credentials") ||
@@ -18,9 +21,10 @@ fun isPasswordDecryptError(errorMessage: String): Boolean {
         normalized.contains("解密失败")
 }
 
-fun isPasswordRequiredError(errorMessage: String): Boolean {
+internal fun isPasswordRequiredError(errorMessage: String, strings: StringResolver): Boolean {
     val normalized = errorMessage.lowercase()
-    return normalized.contains("password required") ||
+    return errorMessage.contains(strings.get(R.string.backup_password_required), ignoreCase = true) ||
+        normalized.contains("password required") ||
         normalized.contains("password needed") ||
         normalized.contains("need password")
 }

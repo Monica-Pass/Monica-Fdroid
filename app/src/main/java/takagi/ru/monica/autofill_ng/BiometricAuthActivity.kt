@@ -1,5 +1,8 @@
 package takagi.ru.monica.autofill_ng
 
+import android.content.Context
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.Activity
 import android.app.assist.AssistStructure
 import android.content.Intent
@@ -43,6 +46,10 @@ class BiometricAuthActivity : AppCompatActivity() {
     
     private lateinit var biometricHelper: BiometricHelper
     
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         

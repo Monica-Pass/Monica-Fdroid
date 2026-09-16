@@ -21,7 +21,7 @@ internal fun buildVaultV2BatchMovePlan(
     selectedItems: List<VaultV2Item>,
 ): VaultV2BatchMovePlan = VaultV2BatchMovePlan(
     passwordEntries = selectedItems.mapNotNull { item ->
-        item.passwordEntry.takeIf { item.type == VaultV2ItemType.PASSWORD }
+        item.passwordEntry.takeIf { item.type == VaultV2ItemType.PASSWORD && item.nativeToken == null }
     },
     aggregateSelection = PasswordBatchAggregateSelection(
         bankCards = selectedItems.mapNotNull { item ->

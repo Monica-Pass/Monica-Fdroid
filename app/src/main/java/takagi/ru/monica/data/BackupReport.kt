@@ -1,5 +1,7 @@
 package takagi.ru.monica.data
 
+import takagi.ru.monica.R
+import android.content.Context
 /**
  * 备份报告 - 用于向用户展示备份结果的详细信息
  */
@@ -8,7 +10,9 @@ data class BackupReport(
     val totalItems: ItemCounts,
     val successItems: ItemCounts,
     val failedItems: List<FailedItem>,
-    val warnings: List<String>
+    val warnings: List<String>,
+    /** Records the warning independently of the language used while exporting. */
+    val connectionCredentialsSkipped: Boolean = false
 ) {
     /**
      * 是否有警告或失败
@@ -18,30 +22,30 @@ data class BackupReport(
     /**
      * 获取可读的报告摘要
      */
-    fun getSummary(): String {
+    fun getSummary(context: Context): String {
         return buildString {
             if (success) {
-                appendLine("✅ 备份成功")
+                appendLine(context.getString(R.string.legacy_ui_report_backup_success))
             } else {
-                appendLine("❌ 备份失败")
+                appendLine(context.getString(R.string.legacy_ui_report_backup_failed))
             }
             
             appendLine()
-            appendLine("📊 数据统计:")
-            appendLine("  密码: ${successItems.passwords}/${totalItems.passwords}")
-            appendLine("  笔记: ${successItems.notes}/${totalItems.notes}")
-            appendLine("  验证器: ${successItems.totp}/${totalItems.totp}")
-            appendLine("  银行卡: ${successItems.bankCards}/${totalItems.bankCards}")
-            appendLine("  证件: ${successItems.documents}/${totalItems.documents}")
-            appendLine("  账单地址: ${successItems.billingAddresses}/${totalItems.billingAddresses}")
-            appendLine("  支付方式: ${successItems.paymentAccounts}/${totalItems.paymentAccounts}")
-            appendLine("  通行密钥: ${successItems.passkeys}/${totalItems.passkeys}")
-            appendLine("  Steam maFile: ${successItems.steamMaFiles}/${totalItems.steamMaFiles}")
-            appendLine("  图片: ${successItems.images}/${totalItems.images}")
+            appendLine(context.getString(R.string.legacy_ui_report_counts))
+            appendLine(context.getString(R.string.legacy_ui_report_count_passwords, successItems.passwords, totalItems.passwords))
+            appendLine(context.getString(R.string.legacy_ui_report_count_notes, successItems.notes, totalItems.notes))
+            appendLine(context.getString(R.string.legacy_ui_report_count_totp, successItems.totp, totalItems.totp))
+            appendLine(context.getString(R.string.legacy_ui_report_count_bankcards, successItems.bankCards, totalItems.bankCards))
+            appendLine(context.getString(R.string.legacy_ui_report_count_documents, successItems.documents, totalItems.documents))
+            appendLine(context.getString(R.string.legacy_ui_report_count_billingaddresses, successItems.billingAddresses, totalItems.billingAddresses))
+            appendLine(context.getString(R.string.legacy_ui_report_count_paymentaccounts, successItems.paymentAccounts, totalItems.paymentAccounts))
+            appendLine(context.getString(R.string.legacy_ui_report_count_passkeys, successItems.passkeys, totalItems.passkeys))
+            appendLine(context.getString(R.string.legacy_ui_report_count_steammafiles, successItems.steamMaFiles, totalItems.steamMaFiles))
+            appendLine(context.getString(R.string.legacy_ui_report_count_images, successItems.images, totalItems.images))
             
             if (failedItems.isNotEmpty()) {
                 appendLine()
-                appendLine("⚠️ 失败的项目:")
+                appendLine(context.getString(R.string.legacy_ui_report_failed_items))
                 failedItems.forEach { item ->
                     appendLine("  [${item.type}] ${item.title} - ${item.reason}")
                 }
@@ -49,7 +53,7 @@ data class BackupReport(
             
             if (warnings.isNotEmpty()) {
                 appendLine()
-                appendLine("⚠️ 警告:")
+                appendLine(context.getString(R.string.legacy_ui_report_warnings))
                 warnings.forEach { warning ->
                     appendLine("  • $warning")
                 }
@@ -76,30 +80,30 @@ data class RestoreReport(
     /**
      * 获取可读的报告摘要
      */
-    fun getSummary(): String {
+    fun getSummary(context: Context): String {
         return buildString {
             if (success) {
-                appendLine("✅ 恢复成功")
+                appendLine(context.getString(R.string.legacy_ui_report_restore_success))
             } else {
-                appendLine("❌ 恢复失败")
+                appendLine(context.getString(R.string.legacy_ui_report_restore_failed))
             }
             
             appendLine()
-            appendLine("📊 数据统计:")
-            appendLine("  密码: ${restoredSuccessfully.passwords}/${backupContains.passwords}")
-            appendLine("  笔记: ${restoredSuccessfully.notes}/${backupContains.notes}")
-            appendLine("  验证器: ${restoredSuccessfully.totp}/${backupContains.totp}")
-            appendLine("  银行卡: ${restoredSuccessfully.bankCards}/${backupContains.bankCards}")
-            appendLine("  证件: ${restoredSuccessfully.documents}/${backupContains.documents}")
-            appendLine("  账单地址: ${restoredSuccessfully.billingAddresses}/${backupContains.billingAddresses}")
-            appendLine("  支付方式: ${restoredSuccessfully.paymentAccounts}/${backupContains.paymentAccounts}")
-            appendLine("  通行密钥: ${restoredSuccessfully.passkeys}/${backupContains.passkeys}")
-            appendLine("  Steam maFile: ${restoredSuccessfully.steamMaFiles}/${backupContains.steamMaFiles}")
-            appendLine("  图片: ${restoredSuccessfully.images}/${backupContains.images}")
+            appendLine(context.getString(R.string.legacy_ui_report_counts))
+            appendLine(context.getString(R.string.legacy_ui_report_count_passwords, restoredSuccessfully.passwords, backupContains.passwords))
+            appendLine(context.getString(R.string.legacy_ui_report_count_notes, restoredSuccessfully.notes, backupContains.notes))
+            appendLine(context.getString(R.string.legacy_ui_report_count_totp, restoredSuccessfully.totp, backupContains.totp))
+            appendLine(context.getString(R.string.legacy_ui_report_count_bankcards, restoredSuccessfully.bankCards, backupContains.bankCards))
+            appendLine(context.getString(R.string.legacy_ui_report_count_documents, restoredSuccessfully.documents, backupContains.documents))
+            appendLine(context.getString(R.string.legacy_ui_report_count_billingaddresses, restoredSuccessfully.billingAddresses, backupContains.billingAddresses))
+            appendLine(context.getString(R.string.legacy_ui_report_count_paymentaccounts, restoredSuccessfully.paymentAccounts, backupContains.paymentAccounts))
+            appendLine(context.getString(R.string.legacy_ui_report_count_passkeys, restoredSuccessfully.passkeys, backupContains.passkeys))
+            appendLine(context.getString(R.string.legacy_ui_report_count_steammafiles, restoredSuccessfully.steamMaFiles, backupContains.steamMaFiles))
+            appendLine(context.getString(R.string.legacy_ui_report_count_images, restoredSuccessfully.images, backupContains.images))
             
             if (failedItems.isNotEmpty()) {
                 appendLine()
-                appendLine("⚠️ 恢复失败的项目:")
+                appendLine(context.getString(R.string.legacy_ui_report_restore_failed_items))
                 failedItems.forEach { item ->
                     appendLine("  [${item.type}] ${item.title} - ${item.reason}")
                 }
@@ -107,7 +111,7 @@ data class RestoreReport(
             
             if (warnings.isNotEmpty()) {
                 appendLine()
-                appendLine("⚠️ 警告:")
+                appendLine(context.getString(R.string.legacy_ui_report_warnings))
                 warnings.forEach { warning ->
                     appendLine("  • $warning")
                 }

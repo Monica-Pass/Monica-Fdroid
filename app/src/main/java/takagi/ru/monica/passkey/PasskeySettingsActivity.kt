@@ -1,5 +1,8 @@
 package takagi.ru.monica.passkey
 
+import android.content.Context
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.fragment.app.FragmentActivity
@@ -11,6 +14,10 @@ import takagi.ru.monica.ui.theme.MonicaTheme
  * 用于系统设置中的 Credential Provider 页面跳转
  */
 class PasskeySettingsActivity : FragmentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

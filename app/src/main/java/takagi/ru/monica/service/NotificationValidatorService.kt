@@ -1,5 +1,8 @@
 package takagi.ru.monica.service
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -57,6 +60,12 @@ class NotificationValidatorService : Service() {
         private const val EXTRA_CODE = "extra_code"
     }
 
+    private val strings by lazy { AppLocaleStringResolver(this) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
+
     override fun onCreate() {
         super.onCreate()
         settingsManager = SettingsManager(this)
@@ -85,7 +94,7 @@ class NotificationValidatorService : Service() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("TOTP Code", code)
         clipboard.setPrimaryClip(clip)
-        Toast.makeText(this, getString(R.string.generator_copied), Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, strings.get(R.string.generator_copied), Toast.LENGTH_SHORT).show()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -287,8 +296,8 @@ class NotificationValidatorService : Service() {
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(R.drawable.ic_copy, getString(R.string.copy), copyPendingIntent)
-            .addAction(R.drawable.ic_copy, getString(R.string.notification_validator_switch), switchPendingIntent)
+            .addAction(R.drawable.ic_copy, strings.get(R.string.copy), copyPendingIntent)
+            .addAction(R.drawable.ic_copy, strings.get(R.string.notification_validator_switch), switchPendingIntent)
             .build()
 
         ensureForeground(notification)
@@ -297,8 +306,8 @@ class NotificationValidatorService : Service() {
     private fun startPlaceholderNotification() {
         serviceScope.launch {
             val notification = NotificationCompat.Builder(this@NotificationValidatorService, CHANNEL_ID)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText(getString(R.string.notification_validator_ready))
+                .setContentTitle(strings.get(R.string.app_name))
+                .setContentText(strings.get(R.string.notification_validator_ready))
                 .setSmallIcon(AppLauncherIconManager.resolveBrandingIconRes(this@NotificationValidatorService))
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
@@ -316,8 +325,8 @@ class NotificationValidatorService : Service() {
 
         serviceScope.launch {
             val notification = NotificationCompat.Builder(this@NotificationValidatorService, CHANNEL_ID)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText(getString(R.string.notification_validator_no_match))
+                .setContentTitle(strings.get(R.string.app_name))
+                .setContentText(strings.get(R.string.notification_validator_no_match))
                 .setSmallIcon(AppLauncherIconManager.resolveBrandingIconRes(this@NotificationValidatorService))
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
@@ -336,10 +345,10 @@ class NotificationValidatorService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Notification Validator",
+                strings.get(R.string.legacy_ui_notification_validator_channel),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows the current TOTP code in the notification bar"
+                description = strings.get(R.string.legacy_ui_notification_validator_channel_desc)
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)

@@ -1,5 +1,8 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.data.ApiTokenPayload
+import takagi.ru.monica.data.NativeApiToken
+import takagi.ru.monica.data.NativeApiTokenSummary
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -188,6 +191,57 @@ class MdbxViewModel(
         secureItemDao = secureItemDao,
         customFieldDao = customFieldDao
     )
+    suspend fun listNativeApiTokens(databaseId: Long) = mdbx2Repository.listNativeApiTokens(databaseId)
+
+    internal val nativeApiTokenList by lazy {
+        NativeApiTokenListStore(viewModelScope, mdbx2Repository::listNativeApiTokens)
+    }
+
+    /** Existing list metadata can paint the destination before authorized payload disclosure. */
+    internal fun cachedNativeApiTokenSummary(databaseId: Long, entryId: String): NativeApiTokenSummary? {
+        if (!takagi.ru.monica.security.SessionManager.isUnlocked.value) return null
+        val source = allDatabases.value.firstOrNull { it.id == databaseId }?.nativeApiTokenSource()
+            ?: return null
+        return nativeApiTokenList.state.value.rowsFor(source).firstOrNull { it.entryId == entryId }
+    }
+
+    suspend fun readNativeApiToken(summary: NativeApiTokenSummary) = mdbx2Repository.readNativeApiToken(summary)
+
+    suspend fun readNativeApiToken(databaseId: Long, entryId: String) =
+        mdbx2Repository.readNativeApiToken(databaseId, entryId)
+
+    suspend fun deleteNativeApiToken(original: NativeApiToken) {
+        mdbx2Repository.deleteNativeApiToken(original)
+        nativeApiTokenList.invalidate(original.summary.databaseId)
+    }
+
+    suspend fun deleteNativeApiToken(summary: NativeApiTokenSummary) {
+        deleteNativeApiToken(readNativeApiToken(summary.databaseId, summary.entryId))
+    }
+
+    suspend fun setNativeApiTokenFavorite(summary: NativeApiTokenSummary, favorite: Boolean) {
+        val current = readNativeApiToken(summary.databaseId, summary.entryId)
+        saveNativeApiToken(summary.databaseId, current, current.summary.title, current.payload,
+            current.summary.collectionId, isFavorite = favorite)
+    }
+
+    suspend fun nativeApiTokenFolders(databaseId: Long) = mdbx2Repository.listFolders(databaseId)
+
+    suspend fun transferNativeApiToken(summary: NativeApiTokenSummary, targetDatabaseId: Long,
+        targetFolderId: String?, copy: Boolean): NativeApiTokenSummary = try {
+        mdbx2Repository.transferNativeApiToken(summary, targetDatabaseId, targetFolderId, copy)
+    } finally {
+        nativeApiTokenList.invalidate(summary.databaseId)
+        nativeApiTokenList.invalidate(targetDatabaseId)
+    }
+
+    suspend fun saveNativeApiToken(
+        databaseId: Long, original: NativeApiToken?, title: String, payload: String, collectionId: String?,
+        isFavorite: Boolean = original?.summary?.isFavorite ?: false,
+        metadata: String = original?.extras?.payload ?: takagi.ru.monica.data.ApiTokenMetadata.empty()
+    ): NativeApiTokenSummary = mdbx2Repository.saveNativeApiToken(databaseId, original, title, payload, collectionId, isFavorite, metadata)
+        .also { nativeApiTokenList.invalidate(databaseId) }
+
     private val vaultStore: MdbxRepository = MdbxRepositoryRouter(
         databaseDao = databaseDao,
         legacyRepository = legacyVaultStore,
@@ -375,7 +429,7 @@ class MdbxViewModel(
         username: String,
         password: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        val source = WebDavMdbxFileSource(serverUrl, username, password)
+        val source = WebDavMdbxFileSource(serverUrl, username, password, strings = strings)
         source.testConnection()
     }
 
@@ -386,7 +440,7 @@ class MdbxViewModel(
         path: String? = null
     ): Result<List<FileSourceEntry>> = withContext(Dispatchers.IO) {
         runCatching {
-            val source = WebDavMdbxFileSource(serverUrl, username, password)
+            val source = WebDavMdbxFileSource(serverUrl, username, password, strings = strings)
             source.listDirectory(path)
         }
     }
@@ -980,7 +1034,7 @@ class MdbxViewModel(
                     val normalizedDir = WebDavKeePassFileSource.normalizeOptionalRemotePath(
                         remoteDirectoryPath
                     )
-                    val fileSource = WebDavMdbxFileSource(serverUrl, username, webDavPassword)
+                    val fileSource = WebDavMdbxFileSource(serverUrl, username, webDavPassword, strings = strings)
 
                     fileSource.testConnection().getOrThrow()
 
@@ -1008,7 +1062,8 @@ class MdbxViewModel(
                     )
 
                     val remotePath = WebDavKeePassFileSource.buildChildPath(
-                        normalizedDir, remoteFileName
+                        normalizedDir, remoteFileName,
+                        strings = strings,
                     )
 
                     // Encrypt credentials
@@ -1100,7 +1155,7 @@ class MdbxViewModel(
                         )
                         return@withContext
                     }
-                    val fileSource = WebDavMdbxFileSource(serverUrl, username, webDavPassword)
+                    val fileSource = WebDavMdbxFileSource(serverUrl, username, webDavPassword, strings = strings)
                     fileSource.testConnection().getOrThrow()
 
                     val remoteBytes = fileSource.readFile(remoteFilePath)
@@ -1119,7 +1174,7 @@ class MdbxViewModel(
                     legacyVaultStore.validateVaultCredentialFile(localFile, credential)
                     legacyVaultStore.prepareVaultForOfficialMdbx1(localFile, credential, detectedMode)
 
-                    val remoteParentPath = WebDavKeePassFileSource.parentPathOf(remoteFilePath)
+                    val remoteParentPath = WebDavKeePassFileSource.parentPathOf(remoteFilePath, strings = strings)
 
                     val encryptedUsername = securityManager.encryptData(username)
                     val encryptedPassword = securityManager.encryptData(webDavPassword)
@@ -1289,7 +1344,7 @@ class MdbxViewModel(
                         bytes = localVaultFile.readBytes()
                     )
 
-                    val remotePath = OneDriveKeePassFileSource.buildChildPath(normalizedDir, remoteFileName)
+                    val remotePath = OneDriveKeePassFileSource.buildChildPath(normalizedDir, remoteFileName, strings = strings)
 
                     val encryptedAccountId = securityManager.encryptData(accountId)
                     val accessTokenSession = OneDriveAuthManager(context).acquireAccessToken(accountId)
@@ -1395,7 +1450,7 @@ class MdbxViewModel(
                     legacyVaultStore.validateVaultCredentialFile(localFile, credential)
                     legacyVaultStore.prepareVaultForOfficialMdbx1(localFile, credential, detectedMode)
 
-                    val remoteParentPath = OneDriveKeePassFileSource.parentPathOf(remoteFilePath)
+                    val remoteParentPath = OneDriveKeePassFileSource.parentPathOf(remoteFilePath, strings = strings)
 
                     val encryptedAccountId = securityManager.encryptData(accountId)
                     val accessTokenSession = OneDriveAuthManager(context).acquireAccessToken(accountId)
@@ -1474,9 +1529,9 @@ class MdbxViewModel(
             "$displayName.mdbx"
         }
         val remotePath = MdbxRemoteSyncPaths.normalizePath(
-            WebDavKeePassFileSource.buildChildPath(normalizedDir, remoteFileName)
+            WebDavKeePassFileSource.buildChildPath(normalizedDir, remoteFileName, strings = strings)
         )
-        val transport = WebDavMdbxRemoteTransport(serverUrl, username, webDavPassword)
+        val transport = WebDavMdbxRemoteTransport(serverUrl, username, webDavPassword, strings = strings)
         transport.testConnection()
         val localVaultFile = mdbx2Repository.createInitializedVaultFile(tigaMode, masterPassword)
         val sourceId = remoteSourceDao.insertSource(
@@ -1533,7 +1588,7 @@ class MdbxViewModel(
         require(masterPassword.isNotBlank()) { "MDBX2 requires a master password" }
         val displayName = name.trim().ifBlank { throw IllegalArgumentException("Vault name cannot be empty") }
         val normalizedRemotePath = MdbxRemoteSyncPaths.normalizePath(remoteFilePath)
-        val transport = WebDavMdbxRemoteTransport(serverUrl, username, webDavPassword)
+        val transport = WebDavMdbxRemoteTransport(serverUrl, username, webDavPassword, strings = strings)
         transport.testConnection()
         val localVaultFile = File(
             File(context.filesDir, "mdbx2").also { check(it.exists() || it.mkdirs()) },
@@ -1598,7 +1653,7 @@ class MdbxViewModel(
         val displayName = name.trim().ifBlank { throw IllegalArgumentException("Vault name cannot be empty") }
         val remoteFileName = if (displayName.endsWith(".mdbx", ignoreCase = true)) displayName else "$displayName.mdbx"
         val remotePath = MdbxRemoteSyncPaths.normalizePath(
-            OneDriveKeePassFileSource.buildChildPath(normalizedDir, remoteFileName)
+            OneDriveKeePassFileSource.buildChildPath(normalizedDir, remoteFileName, strings = strings)
         )
         val transport = OneDriveMdbxRemoteTransport(context, accountId)
         transport.testConnection()
@@ -4516,20 +4571,7 @@ class MdbxViewModel(
             transport = transport
         )
         importEntriesFromVault(database.id)
-        val latest = databaseDao.getDatabaseById(database.id) ?: database
-        val status = when {
-            report.conflicts > 0 -> MdbxSyncStatus.CONFLICT
-            report.blockedStreams > 0 -> MdbxSyncStatus.REMOTE_CHANGED
-            else -> MdbxSyncStatus.IN_SYNC
-        }
-        databaseDao.updateDatabase(
-            latest.copy(
-                lastSyncedAt = System.currentTimeMillis(),
-                lastSyncStatus = status.name,
-                lastSyncError = null,
-                isOfflineAvailable = true
-            )
-        )
+        mdbx2Repository.completeRemoteSync(database.id, report)
     }
 
     private suspend fun createMdbx2Transport(
@@ -4546,7 +4588,7 @@ class MdbxViewModel(
                     ?: throw IllegalStateException("MDBX WebDAV username missing")
                 val password = source.passwordEncrypted?.let(securityManager::decryptData)
                     ?: throw IllegalStateException("MDBX WebDAV password missing")
-                WebDavMdbxRemoteTransport(baseUrl, username, password)
+                WebDavMdbxRemoteTransport(baseUrl, username, password, strings = strings)
             }
             MdbxSourceType.REMOTE_ONEDRIVE -> {
                 val accountId = source.usernameEncrypted?.let(securityManager::decryptData)
@@ -4573,7 +4615,7 @@ class MdbxViewModel(
             ?: throw IllegalStateException("MDBX remote password missing")
         val remotePath = source.remotePath.takeIf { it.isNotBlank() }
             ?: throw IllegalStateException("MDBX remote path missing")
-        val fileSource = WebDavMdbxFileSource(baseUrl, username, password)
+        val fileSource = WebDavMdbxFileSource(baseUrl, username, password, strings = strings)
         return fileSource.readFile(remotePath)
     }
 

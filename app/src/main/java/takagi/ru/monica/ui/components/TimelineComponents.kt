@@ -1,5 +1,8 @@
 package takagi.ru.monica.ui.components
 
+import takagi.ru.monica.ui.screens.timelineFieldLabel
+import takagi.ru.monica.ui.screens.timelineFieldValue
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -130,6 +133,8 @@ fun DiffComparisonSheet(
 @Composable
 private fun DiffChangeItem(change: DiffChange) {
     val colorScheme = MaterialTheme.colorScheme
+    val oldValue = timelineFieldValue(change.fieldName, change.oldValue)
+    val newValue = timelineFieldValue(change.fieldName, change.newValue)
     
     // 使用 M3E 主题颜色构建删除/添加效果
     val deleteBackground = colorScheme.errorContainer
@@ -146,7 +151,7 @@ private fun DiffChangeItem(change: DiffChange) {
             color = colorScheme.primary.copy(alpha = 0.2f)
         ) {
             Text(
-                text = change.fieldName,
+                text = timelineFieldLabel(change.fieldName),
                 style = MaterialTheme.typography.labelSmall,
                 color = colorScheme.primary,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -165,7 +170,7 @@ private fun DiffChangeItem(change: DiffChange) {
                             textDecoration = TextDecoration.LineThrough
                         )
                     ) {
-                        append(" ${change.oldValue} ")
+                        append(" $oldValue ")
                     }
                     append("  ")
                 }
@@ -178,7 +183,7 @@ private fun DiffChangeItem(change: DiffChange) {
                             color = addText
                         )
                     ) {
-                        append(" ${change.newValue} ")
+                        append(" $newValue ")
                     }
                 }
             },

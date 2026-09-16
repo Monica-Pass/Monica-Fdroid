@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Could not queue the Bitwarden deletion</string>
+    <string name="bitwarden_message_conflict_detail">This entry changed both locally and on the server</string>
+    <string name="bitwarden_message_empty_vault">The server returned no data, but %1$d local entries remain. Sync is paused to protect your data. Check the server and account before continuing.</string>
+    <string name="runtime_kdbx_decode_failed">Could not read the KDBX database</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_conflict_review">察异而合</string>
+    <string name="keepass_conflict_banner_title">两端皆有更易</string>
+    <string name="keepass_conflict_banner_summary">察本机与云端之异，合而续同。</string>
+    <string name="keepass_conflict_merge_sync">合而同之</string>
+    <string name="keepass_conflict_comparing">正察两端之异…</string>
+    <string name="keepass_conflict_merging">正合而同之…</string>
+    <string name="keepass_conflict_refresh">复察</string>
+    <string name="keepass_conflict_merge_help">条目异、字段异者，皆可并存；同处两改者，请择所存。</string>
+    <string name="keepass_conflict_auto_merge">可合</string>
+    <string name="keepass_conflict_other_options">别择</string>
+    <string name="keepass_conflict_recovery_hint">合前两库，皆留副本以备复原。</string>
+    <string name="keepass_conflict_keep_local_confirm">欲以本机全库代云端乎？云端独有之更易，仅存于复原副本。</string>
+    <string name="keepass_conflict_use_remote_confirm">欲以云端全库代本机乎？本机独有之更易，仅存于复原副本。</string>
+    <string name="keepass_conflict_selected_count">已择 %1$d 处，共 %2$d 处</string>
+    <string name="keepass_conflict_no_changes">两端之文已同。</string>
+    <string name="keepass_conflict_protected_value">密文</string>
+    <string name="keepass_conflict_properties_value">此本诸性</string>
+    <string name="keepass_conflict_kind_entry">条目</string>
+    <string name="keepass_conflict_kind_group">目</string>
+    <string name="keepass_conflict_kind_metadata">库设</string>
+    <string name="keepass_conflict_kind_deleted_object">删录</string>
+    <string name="keepass_conflict_kind_binary">附牍</string>
+    <string name="keepass_conflict_kind_icon">自定图徽</string>
+    <string name="keepass_conflict_change_added">新增</string>
+    <string name="keepass_conflict_change_modified">已更</string>
+    <string name="keepass_conflict_change_moved">已迁</string>
+    <string name="keepass_conflict_change_deleted">已删</string>
+    <string name="keepass_conflict_change_unchanged">未更</string>
+</resources>

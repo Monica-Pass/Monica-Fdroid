@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">Cơ sở dữ liệu này chỉ đọc. Hãy tắt chế độ chỉ đọc trong cài đặt trước khi sửa.</string>
+    <string name="keepass_error_write_permission">Thiếu quyền ghi KDBX. Hãy cấp lại quyền trong cài đặt cơ sở dữ liệu trước khi lưu hoặc xóa.</string>
+    <string name="keepass_error_memory">Cài đặt KDF yêu cầu nhiều bộ nhớ hơn thiết bị có thể cung cấp. Hãy giảm mức dùng bộ nhớ hoặc độ song song.</string>
+    <string name="keepass_error_credentials">Sai mật khẩu cơ sở dữ liệu hoặc tệp khóa</string>
+    <string name="keepass_error_legacy">Không hỗ trợ cơ sở dữ liệu .kdb cũ (KeePass 1.x). Hãy lưu thành .kdbx trong KeePassDX hoặc KeePassXC rồi nhập lại.</string>
+    <string name="keepass_error_format">Định dạng cơ sở dữ liệu không được hỗ trợ hoặc tệp bị hỏng</string>
+    <string name="keepass_error_io">Không thể đọc hoặc ghi tệp KeePass</string>
+    <string name="keepass_error_operation">Thao tác KeePass thất bại</string>
+    <string name="onedrive_error_redirect">Phiên bản Monica Steam cũ đang chặn đăng nhập OneDrive. Hãy cập nhật Monica Steam và thử lại. Tệp cơ sở dữ liệu không bị hỏng.</string>
+    <string name="onedrive_error_power">OneDrive hiện không thể làm mới phiên đăng nhập. Hãy tắt tối ưu hóa pin hoặc bật màn hình và mở lại Monica rồi thử lại.</string>
+    <string name="onedrive_error_operation">Thao tác OneDrive thất bại</string>
+    <string name="keepass_error_not_remote">Cơ sở dữ liệu này không có nguồn từ xa</string>
+    <string name="keepass_error_remote_source_missing">Không tìm thấy nguồn từ xa</string>
+    <string name="keepass_error_working_copy_missing">Không tìm thấy bản làm việc cục bộ</string>
+    <string name="keepass_sync_pulled">Đã tải phiên bản từ xa mới nhất</string>
+    <string name="keepass_sync_both_changed">Tệp từ xa và bản làm việc cục bộ đều thay đổi. Hãy giải quyết xung đột trước khi đồng bộ.</string>
+    <string name="keepass_sync_up_to_date">Cơ sở dữ liệu từ xa đã cập nhật</string>
+    <string name="keepass_sync_remote_changed">Tệp từ xa đã thay đổi. Hãy đồng bộ lại trước khi tiếp tục.</string>
+    <string name="keepass_sync_complete">Đã hoàn tất đồng bộ từ xa</string>
+    <string name="keepass_error_group_name_required">Nhập tên nhóm</string>
+    <string name="keepass_error_group_path">Đường dẫn nhóm không hợp lệ</string>
+    <string name="keepass_error_group_missing">Không tìm thấy nhóm: %1$s</string>
+    <string name="keepass_error_group_child">Không thể chuyển nhóm vào chính nó hoặc nhóm con của nó</string>
+    <string name="keepass_error_group_uuid">Đích đã có nhóm khác cùng UUID: %1$s</string>
+    <string name="keepass_error_select_folder">Chọn ít nhất một thư mục</string>
+    <string name="keepass_group_unnamed">Nhóm chưa đặt tên</string>
+    <string name="keepass_error_parent_group">Không tìm thấy nhóm cha: %1$s</string>
+    <string name="keepass_error_group_exists">Đã có nhóm trùng tên tại đây</string>
+    <string name="keepass_error_no_credentials">Không có thông tin đăng nhập cơ sở dữ liệu</string>
+    <string name="keepass_error_source_type">Loại nguồn từ xa không được hỗ trợ: %1$s</string>
+    <string name="keepass_error_upload_verification">Xác minh từ xa thất bại: nội dung tải lên khác nhau (%1$d/%2$d byte)</string>
+    <string name="storage_error_invalid_path">Đường dẫn tệp không hợp lệ</string>
+    <string name="storage_error_create_directory">Không thể tạo thư mục cơ sở dữ liệu</string>
+    <string name="storage_error_read_database">Không thể đọc tệp cơ sở dữ liệu</string>
+    <string name="storage_error_open_database">Không thể mở tệp cơ sở dữ liệu</string>
+    <string name="storage_error_recovery_copy">Không thể tạo bản sao khôi phục KeePass</string>
+    <string name="storage_error_verify_database">Không thể xác minh tệp cơ sở dữ liệu</string>
+    <string name="storage_error_write_verification">Xác minh thất bại sau khi ghi tệp KeePass bên ngoài</string>
+    <string name="storage_error_rollback_verification">Xác minh thất bại sau khi khôi phục tệp KeePass bên ngoài</string>
+    <string name="storage_error_write_database">Không thể ghi tệp cơ sở dữ liệu</string>
+    <string name="keepass_error_conflict_cache_missing">Thiếu bản sao trong bộ nhớ đệm cần để giải quyết xung đột</string>
+    <string name="onedrive_error_session_expired">Phiên tài khoản OneDrive đã hết hạn. Hãy đăng nhập lại.</string>
+</resources>

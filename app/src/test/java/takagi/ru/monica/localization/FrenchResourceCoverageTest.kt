@@ -36,7 +36,7 @@ class FrenchResourceCoverageTest {
     private fun resources(directory: String): Map<String, Resource> {
         var root = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
         while (root.parentFile != null && !File(root, "settings.gradle.kts").exists() && !File(root, "settings.gradle").exists()) {
-            root = root.parentFile.canonicalFile
+            root = root.parentFile!!.canonicalFile
         }
         val files = File(root, "app/src/main/res/$directory").listFiles { file -> file.extension == "xml" }.orEmpty()
         assertTrue("Missing $directory", files.isNotEmpty())

@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application>
+        <activity
+            android:name="takagi.ru.monica.localization.LocaleTestActivity"
+            android:exported="false" />
         <!--
           Work around emulator/runtime crashes in ProfileInstaller profile saving
           that currently surface around generated Compose / Kotlin serialization

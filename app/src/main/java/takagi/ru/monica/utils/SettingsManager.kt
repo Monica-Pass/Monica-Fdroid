@@ -112,6 +112,7 @@ data class PageAdjustmentSettingsSnapshot(
     val passwordCardShowAuthenticator: Boolean = false,
     val passwordCardHideOtherContentWhenAuthenticator: Boolean = false,
     val stackCardMode: String = "AUTO",
+    val walletStackLoopEnabled: Boolean = false,
     val passwordGroupMode: String = "smart",
     val passwordWebsiteStackMatchMode: String = "strict",
     val authenticatorCardDisplayFields: List<String> = emptyList(),
@@ -209,6 +210,7 @@ class SettingsManager(private val context: Context) {
         private val NOTIFICATION_VALIDATOR_ID_KEY = longPreferencesKey("notification_validator_id")
         private val IS_PLUS_ACTIVATED_KEY = booleanPreferencesKey("is_plus_activated")
         private val STACK_CARD_MODE_KEY = stringPreferencesKey("stack_card_mode")
+        private val WALLET_STACK_LOOP_ENABLED_KEY = booleanPreferencesKey("wallet_stack_loop_enabled")
         private val PASSWORD_GROUP_MODE_KEY = stringPreferencesKey("password_group_mode")
         private val PASSWORD_WEBSITE_STACK_MATCH_MODE_KEY =
             stringPreferencesKey("password_website_stack_match_mode")
@@ -592,6 +594,7 @@ class SettingsManager(private val context: Context) {
             notificationValidatorId = -1L,
             isPlusActivated = isPlusActivated,
             stackCardMode = preferences[STACK_CARD_MODE_KEY] ?: "AUTO",
+            walletStackLoopEnabled = preferences[WALLET_STACK_LOOP_ENABLED_KEY] ?: false,
             passwordGroupMode = preferences[PASSWORD_GROUP_MODE_KEY] ?: "smart",
             passwordWebsiteStackMatchMode =
                 preferences[PASSWORD_WEBSITE_STACK_MATCH_MODE_KEY] ?: "strict",
@@ -983,6 +986,12 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun updateWalletStackLoopEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[WALLET_STACK_LOOP_ENABLED_KEY] = enabled
+        }
+    }
+
     suspend fun updatePasswordGroupMode(mode: String) {
         dataStore.edit { preferences ->
             preferences[PASSWORD_GROUP_MODE_KEY] = mode
@@ -1328,6 +1337,7 @@ class SettingsManager(private val context: Context) {
             passwordCardHideOtherContentWhenAuthenticator =
                 settings.passwordCardHideOtherContentWhenAuthenticator,
             stackCardMode = settings.stackCardMode,
+            walletStackLoopEnabled = settings.walletStackLoopEnabled,
             passwordGroupMode = settings.passwordGroupMode,
             passwordWebsiteStackMatchMode = settings.passwordWebsiteStackMatchMode,
             authenticatorCardDisplayFields = settings.authenticatorCardDisplayFields.map { it.name },
@@ -1507,6 +1517,7 @@ class SettingsManager(private val context: Context) {
             preferences[PASSWORD_CARD_HIDE_OTHER_CONTENT_WHEN_AUTHENTICATOR_KEY] =
                 snapshot.passwordCardHideOtherContentWhenAuthenticator
             preferences[STACK_CARD_MODE_KEY] = snapshot.stackCardMode.ifBlank { "AUTO" }
+            preferences[WALLET_STACK_LOOP_ENABLED_KEY] = snapshot.walletStackLoopEnabled
             preferences[PASSWORD_GROUP_MODE_KEY] = snapshot.passwordGroupMode.ifBlank { "smart" }
             preferences[PASSWORD_WEBSITE_STACK_MATCH_MODE_KEY] =
                 snapshot.passwordWebsiteStackMatchMode.ifBlank { "strict" }

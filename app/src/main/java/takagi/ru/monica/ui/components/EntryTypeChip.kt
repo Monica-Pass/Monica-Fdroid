@@ -48,7 +48,7 @@ import takagi.ru.monica.R
  * Material 3 Expressive 风格：去掉 AssistChip 的描边，换成小圆角的 tonal pill，
  * 点击弹出 DropdownMenu 选类型。禁用时只做透明度淡出，保持形状一致。
  */
-enum class EntryTypeChipOption { PASSWORD, WIFI, SSH_KEY, BARCODE }
+enum class EntryTypeChipOption { PASSWORD, WIFI, SSH_KEY, BARCODE, API_TOKEN }
 
 @Composable
 fun EntryTypeChip(
@@ -56,6 +56,7 @@ fun EntryTypeChip(
     onSelect: (EntryTypeChipOption) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    showApiToken: Boolean = true,
     drawContainer: Boolean = true,
     contentColorOverride: Color? = null
 ) {
@@ -136,7 +137,7 @@ fun EntryTypeChip(
         shadowElevation = 0.dp,
         tonalElevation = 0.dp
     ) {
-        EntryTypeChipOption.entries.forEach { option ->
+        EntryTypeChipOption.entries.filter { showApiToken || it != EntryTypeChipOption.API_TOKEN }.forEach { option ->
             val label = stringResource(option.labelRes())
             val isCurrent = option == current
             DropdownMenuItem(
@@ -181,6 +182,7 @@ fun EntryTypeChip(
 }
 
 private fun EntryTypeChipOption.labelRes() = when (this) {
+    EntryTypeChipOption.API_TOKEN -> R.string.entry_type_api_token
     EntryTypeChipOption.PASSWORD -> R.string.entry_type_password
     EntryTypeChipOption.WIFI -> R.string.entry_type_wifi
     EntryTypeChipOption.SSH_KEY -> R.string.entry_type_ssh_key
@@ -188,6 +190,7 @@ private fun EntryTypeChipOption.labelRes() = when (this) {
 }
 
 private fun EntryTypeChipOption.icon(): ImageVector = when (this) {
+    EntryTypeChipOption.API_TOKEN -> Icons.Default.Key
     EntryTypeChipOption.PASSWORD -> Icons.Default.Password
     EntryTypeChipOption.WIFI -> Icons.Default.Wifi
     EntryTypeChipOption.SSH_KEY -> Icons.Default.Key

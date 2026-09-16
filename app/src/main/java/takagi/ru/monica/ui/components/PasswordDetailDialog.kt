@@ -391,14 +391,14 @@ private fun CollapsibleInfoSection(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                Icon(
-                    if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                MonicaExpansionChevron(
+                    expanded = expanded,
                     contentDescription = if (expanded) context.getString(R.string.collapse) else context.getString(R.string.expand)
                 )
             }
             
             // 内容
-            if (expanded) {
+            MonicaExpandableContent(expanded = expanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -503,16 +503,17 @@ private fun PasswordItem(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().animateMonicaContentSize(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             Text(
                 text = when {
                     !hasPasswordValue -> context.getString(R.string.permission_status_unavailable)
                     passwordVisible -> value
-                    else -> "•".repeat(value.length.coerceAtMost(12))
+                    else -> "••••••••"
                 },
+                maxLines = if (passwordVisible || !hasPasswordValue) Int.MAX_VALUE else 1,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f)
             )

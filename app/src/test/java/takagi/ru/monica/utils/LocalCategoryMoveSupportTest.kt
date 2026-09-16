@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -108,7 +110,7 @@ class LocalCategoryMoveSupportTest {
             Category(id = 4, name = "Personal")
         )
 
-        val plan = planLocalCategoryRename(categories, source, "Office")
+        val plan = planLocalCategoryRename(categories, source, "Office", strings = xmlTestStrings("en"))
 
         assertEquals("Accounts/Office", plan.destinationPath)
         assertEquals(
@@ -131,7 +133,8 @@ class LocalCategoryMoveSupportTest {
                     Category(id = 3, name = "Accounts/Personal")
                 ),
                 sourceCategory = source,
-                newLeafName = "Personal"
+                newLeafName = "Personal",
+                strings = xmlTestStrings("en"),
             )
         }.exceptionOrNull()
 

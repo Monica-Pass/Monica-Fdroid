@@ -3,6 +3,7 @@ package takagi.ru.monica.utils
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import takagi.ru.monica.R
 
 /**
  * Vivo 设备指纹优化帮助类
@@ -14,6 +15,7 @@ import android.util.Log
  * 这个类主要用于提供额外的设备信息和优化体验
  */
 class VivoFingerprintHelper(private val context: Context) {
+    private val strings = AppLocaleStringResolver(context)
     
     companion object {
         private const val TAG = "VivoFingerprintHelper"
@@ -129,12 +131,12 @@ class VivoFingerprintHelper(private val context: Context) {
         }
         
         if (hasUnderDisplayFingerprint()) {
-            tips.add("✓ 您的设备支持屏下指纹识别")
-            tips.add("提示: 请确保屏幕清洁,以获得最佳识别效果")
-            tips.add("提示: 在强光下可能需要调整屏幕亮度")
+            tips.add(strings.get(R.string.legacy_ui_fingerprint_under_display_tip))
+            tips.add(strings.get(R.string.legacy_ui_fingerprint_clean_screen_tip))
+            tips.add(strings.get(R.string.legacy_ui_fingerprint_brightness_tip))
         } else {
-            tips.add("您的设备支持传统指纹识别")
-            tips.add("提示: 请确保指纹传感器清洁")
+            tips.add(strings.get(R.string.legacy_ui_fingerprint_sensor_tip))
+            tips.add(strings.get(R.string.legacy_ui_fingerprint_clean_sensor_tip))
         }
         
         return tips

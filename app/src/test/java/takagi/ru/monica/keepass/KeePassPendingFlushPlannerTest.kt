@@ -134,6 +134,12 @@ class KeePassPendingFlushPlannerTest {
         var lastStaleError: String? = null
             private set
 
+        override suspend fun getUnfinishedChangesByDatabase(databaseId: Long): List<KeePassPendingChange> = emptyList()
+
+        override suspend fun settleConflictChanges(
+            databaseId: Long, changeIds: List<Long>, discardLocalChanges: Boolean, now: Long
+        ) = Unit
+
         override fun getRunnableChangesFlow(): Flow<List<KeePassPendingChange>> = flowOf(readyChanges)
 
         override fun getRunnableChangesByDatabaseFlow(databaseId: Long): Flow<List<KeePassPendingChange>> {

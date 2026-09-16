@@ -1,5 +1,7 @@
 package takagi.ru.monica.bitwarden.sync
 
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.StringResolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +70,9 @@ data class VaultSyncStatus(
     val lastError: String? = null,
     val lastSuccessAt: Long? = null,
     val nextRetryAt: Long? = null,
-    val retryAttempt: Int = 0
+    val retryAttempt: Int = 0,
+    // Includes preflight blocks, which may not enqueue a coordinator request.
+    val lastOutcomeAt: Long? = null
 )
 
 private data class VaultRuntime(
@@ -83,7 +87,8 @@ private data class VaultRuntime(
     var delayedRequestJob: Job? = null
 )
 
-class BitwardenSyncOrchestrator(
+internal class BitwardenSyncOrchestrator(
+    private val strings: StringResolver,
     private val scope: CoroutineScope,
     private val config: SyncManagerConfig = SyncManagerConfig(),
     private val isAutoSyncEnabled: () -> Boolean,
@@ -186,7 +191,7 @@ class BitwardenSyncOrchestrator(
 
             if (isAutoReason(reason) && !force) {
                 if (!isAutoSyncEnabled()) {
-                    setBlocked(vaultId, runtime, SyncBlockReason.AUTO_SYNC_DISABLED, "自动同步已关闭")
+                    setBlocked(vaultId, runtime, SyncBlockReason.AUTO_SYNC_DISABLED, strings.get(R.string.legacy_ui_auto_sync_disabled))
                     SyncDiagnostics.blocked(taskId, target, trigger, "auto_sync_disabled")
                     return
                 }
@@ -199,19 +204,19 @@ class BitwardenSyncOrchestrator(
             when (checkNetwork()) {
                 NetworkGateResult.ALLOWED -> Unit
                 NetworkGateResult.NETWORK_UNAVAILABLE -> {
-                    setBlocked(vaultId, runtime, SyncBlockReason.NETWORK_UNAVAILABLE, "网络不可用")
+                    setBlocked(vaultId, runtime, SyncBlockReason.NETWORK_UNAVAILABLE, strings.get(R.string.legacy_ui_network_unavailable))
                     SyncDiagnostics.blocked(taskId, target, trigger, "network_unavailable")
                     return
                 }
                 NetworkGateResult.WIFI_REQUIRED -> {
-                    setBlocked(vaultId, runtime, SyncBlockReason.WIFI_REQUIRED, "仅 Wi-Fi 同步")
+                    setBlocked(vaultId, runtime, SyncBlockReason.WIFI_REQUIRED, strings.get(R.string.legacy_ui_wifi_required))
                     SyncDiagnostics.blocked(taskId, target, trigger, "wifi_required")
                     return
                 }
             }
 
             if (!isVaultUnlocked(vaultId)) {
-                setBlocked(vaultId, runtime, SyncBlockReason.VAULT_LOCKED, "Vault 未解锁")
+                setBlocked(vaultId, runtime, SyncBlockReason.VAULT_LOCKED, strings.get(R.string.legacy_ui_vault_locked))
                 SyncDiagnostics.blocked(taskId, target, trigger, "vault_locked")
                 return
             }
@@ -256,9 +261,9 @@ class BitwardenSyncOrchestrator(
                 }
             }
         } catch (error: CancellationException) {
-            SyncExecutionOutcome.RetryableError(error.message ?: "同步被取消")
+            SyncExecutionOutcome.RetryableError(error.message ?: strings.get(R.string.legacy_ui_sync_cancelled))
         } catch (error: Exception) {
-            SyncExecutionOutcome.RetryableError(error.message ?: "同步失败")
+            SyncExecutionOutcome.RetryableError(error.message ?: strings.get(R.string.bitwarden_message_sync_failed))
         }
 
         var pendingReasonToReplay: SyncTriggerReason? = null
@@ -278,6 +283,7 @@ class BitwardenSyncOrchestrator(
                             blockedReason = null,
                             lastError = null,
                             lastSuccessAt = runtime.lastSuccessAt,
+                            lastOutcomeAt = runtime.lastSuccessAt,
                             retryAttempt = 0,
                             nextRetryAt = null
                         )
@@ -291,6 +297,7 @@ class BitwardenSyncOrchestrator(
                             isRunning = false,
                             blockedReason = outcome.reason,
                             lastError = outcome.message ?: existing.lastError,
+                            lastOutcomeAt = nowProvider(),
                             queuedReason = runtime.pendingReason
                         )
                     }
@@ -306,6 +313,7 @@ class BitwardenSyncOrchestrator(
                             existing.copy(
                                 isRunning = false,
                                 lastError = outcome.message,
+                                lastOutcomeAt = nowProvider(),
                                 nextRetryAt = null,
                                 retryAttempt = runtime.retryAttempt
                             )
@@ -320,6 +328,7 @@ class BitwardenSyncOrchestrator(
                         existing.copy(
                             isRunning = false,
                             lastError = outcome.message,
+                            lastOutcomeAt = nowProvider(),
                             blockedReason = null,
                             retryAttempt = 0,
                             nextRetryAt = null
@@ -493,6 +502,7 @@ class BitwardenSyncOrchestrator(
                 isRunning = false,
                 blockedReason = reason,
                 lastError = message,
+                lastOutcomeAt = nowProvider(),
                 queuedReason = runtime.pendingReason
             )
         }
@@ -503,7 +513,8 @@ class BitwardenSyncOrchestrator(
             config.retryMaxDelayMs,
             config.retryBaseDelayMs * (1L shl (runtime.retryAttempt - 1))
         )
-        val nextRetryAt = nowProvider() + delayMs
+        val failedAt = nowProvider()
+        val nextRetryAt = failedAt + delayMs
         runtime.retryJob?.cancel()
         runtime.retryJob = scope.launch {
             delay(delayMs)
@@ -514,6 +525,7 @@ class BitwardenSyncOrchestrator(
             existing.copy(
                 isRunning = false,
                 lastError = message,
+                lastOutcomeAt = failedAt,
                 nextRetryAt = nextRetryAt,
                 retryAttempt = runtime.retryAttempt
             )

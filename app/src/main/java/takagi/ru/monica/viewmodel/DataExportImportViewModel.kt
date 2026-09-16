@@ -1,14 +1,26 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.backupExportMessage
+
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import takagi.ru.monica.R
+import takagi.ru.monica.credentialexchange.ImportDestination
+import takagi.ru.monica.credentialexchange.ImportResultSummary
+import takagi.ru.monica.credentialexchange.TargetedImportCoordinator
+import takagi.ru.monica.utils.BackupContent
+import takagi.ru.monica.utils.CustomFieldBackupEntry
 import takagi.ru.monica.data.BackupReport
 import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.OperationLogItemType
@@ -31,6 +43,7 @@ import takagi.ru.monica.utils.FieldChange
 import takagi.ru.monica.utils.ImportedPasswordSnapshot
 import takagi.ru.monica.utils.OperationLogger
 import takagi.ru.monica.utils.PasswordImportDuplicateResolver
+import takagi.ru.monica.util.CsvPasswordData
 import takagi.ru.monica.util.DataExportImportManager
 import takagi.ru.monica.util.TotpDataResolver
 import takagi.ru.monica.util.TotpUriParser
@@ -52,6 +65,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import takagi.ru.monica.transfer.*
 
 /**
  * 数据导入导出ViewModel
@@ -59,17 +73,43 @@ import java.util.zip.ZipOutputStream
 class DataExportImportViewModel(
     private val secureItemRepository: SecureItemRepository,
     private val passwordRepository: PasswordRepository,
-    private val context: Context
+    context: Context
 ) : ViewModel() {
+    private val context = context.applicationContext
 
     private data class ImportedAuthenticatorDraft(
         val authenticatorKey: String,
         val totpData: TotpData?
     )
 
+    private val strings = AppLocaleStringResolver(context)
     private val exportManager = DataExportImportManager(context)
-    private val steamLoginImportService = SteamLoginImportService()
+    private val steamLoginImportService = SteamLoginImportService(strings)
     private val securityManager by lazy { SecurityManager(context) }
+    private val _importProgress = MutableStateFlow<TransferProgress?>(null)
+    val importProgress = _importProgress.asStateFlow()
+    private val importProgressReporter = TransferProgressReporter { _importProgress.value = it }
+    private val targetedImporter by lazy {
+        TargetedImportCoordinator(this.context, passwordRepository, secureItemRepository, importProgressReporter)
+    }
+    private val _lastImportSummary = MutableStateFlow<ImportResultSummary?>(null)
+    val lastImportSummary = _lastImportSummary.asStateFlow()
+    fun clearImportSummary() { _lastImportSummary.value = null }
+
+    private suspend fun targetedImport(block: suspend () -> ImportResultSummary): Result<Int> = withContext(Dispatchers.IO) {
+        _lastImportSummary.value = null
+        importProgressReporter.report(TransferProgress(TransferPhase.READING))
+        try {
+            val summary = block()
+            _lastImportSummary.value = summary
+            logImportSummary("TARGETED_IMPORT", summary.imported, summary.skipped, summary.failed)
+            Result.success(summary.imported)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
     private val customFieldRepository by lazy {
         CustomFieldRepository(PasswordDatabase.getDatabase(context).customFieldDao())
     }
@@ -116,11 +156,11 @@ class DataExportImportViewModel(
 
     private fun validatePlainZipFile(file: File) {
         if (!file.isFile || file.length() <= 0L) {
-            throw IOException("导出的备份文件为空")
+            throw IOException(strings.get(R.string.export_message_empty))
         }
         ZipFile(file).use { zip ->
             if (!zip.entries().hasMoreElements()) {
-                throw IOException("导出的ZIP备份没有内容")
+                throw IOException(strings.get(R.string.export_message_empty_zip))
             }
         }
     }
@@ -128,14 +168,14 @@ class DataExportImportViewModel(
     private fun validatePlainZipStream(input: InputStream) {
         ZipInputStream(input).use { zip ->
             if (zip.nextEntry == null) {
-                throw IOException("写入后的ZIP备份没有内容")
+                throw IOException(strings.get(R.string.export_message_empty_zip))
             }
         }
     }
 
     private fun validatePreparedBackupFile(file: File): Boolean {
         if (!file.isFile || file.length() <= 0L) {
-            throw IOException("导出的备份文件为空")
+            throw IOException(strings.get(R.string.export_message_empty))
         }
         val encrypted = EncryptionHelper.hasEncryptedFileHeader(file)
         if (!encrypted) {
@@ -168,77 +208,70 @@ class DataExportImportViewModel(
             lastError = error
             android.util.Log.w("DataExport", "openOutputStream(default) failed: ${error.message}")
         }
-        throw IOException("无法打开导出文件", lastError)
+        throw IOException(strings.get(R.string.export_message_open_failed), lastError)
     }
 
-    private suspend fun copyZipFileToOutputUri(zipFile: File, outputUri: Uri): Long = withContext(Dispatchers.IO) {
+    private suspend fun copyZipFileToOutputUri(zipFile: File, outputUri: Uri,
+        progress: TransferProgressReporter = TransferProgressReporter.None): Long = withContext(Dispatchers.IO) {
         val encrypted = validatePreparedBackupFile(zipFile)
         val expectedBytes = zipFile.length()
         val copiedBytes = openExportOutputStream(outputUri).use { output ->
             zipFile.inputStream().use { input ->
-                input.copyTo(output)
+                input.copyWithProgress(output, TransferPhase.SAVING, expectedBytes, progress)
             }.also {
                 output.flush()
             }
         }
         if (copiedBytes <= 0L) {
-            throw IOException("导出文件写入为空")
+            throw IOException(strings.get(R.string.export_message_empty))
         }
         if (expectedBytes > 0L && copiedBytes != expectedBytes) {
-            throw IOException("导出文件写入不完整：$copiedBytes/$expectedBytes")
+            throw IOException(strings.get(R.string.export_message_incomplete, copiedBytes, expectedBytes))
         }
         context.contentResolver.openInputStream(outputUri)?.use { input ->
             if (encrypted) {
                 if (!EncryptionHelper.hasEncryptedFileHeader(input)) {
-                    throw IOException("写入后的加密备份格式无效")
+                    throw IOException(strings.get(R.string.export_message_invalid_encrypted))
                 }
             } else {
                 validatePlainZipStream(input)
             }
-        } ?: throw IOException("无法校验导出的ZIP文件")
+        } ?: throw IOException(strings.get(R.string.export_message_verify_failed))
         copiedBytes
     }
 
     private suspend fun copyPlainFileToOutputUri(
         sourceFile: File,
         outputUri: Uri,
-        validateOutput: ((InputStream) -> Unit)? = null
+        validateOutput: ((InputStream) -> Unit)? = null,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
     ): Long = withContext(Dispatchers.IO) {
         if (!sourceFile.isFile || sourceFile.length() <= 0L) {
-            throw IOException("导出文件为空")
+            throw IOException(strings.get(R.string.export_message_empty))
         }
         val expectedBytes = sourceFile.length()
         val copiedBytes = openExportOutputStream(outputUri).use { output ->
             sourceFile.inputStream().use { input ->
-                input.copyTo(output)
+                input.copyWithProgress(output, TransferPhase.SAVING, expectedBytes, progress)
             }.also {
                 output.flush()
             }
         }
         if (copiedBytes <= 0L) {
-            throw IOException("导出文件写入为空")
+            throw IOException(strings.get(R.string.export_message_empty))
         }
         if (expectedBytes > 0L && copiedBytes != expectedBytes) {
-            throw IOException("导出文件写入不完整：$copiedBytes/$expectedBytes")
+            throw IOException(strings.get(R.string.export_message_incomplete, copiedBytes, expectedBytes))
         }
         validateOutput?.let { validator ->
             context.contentResolver.openInputStream(outputUri)?.use(validator)
-                ?: throw IOException("无法校验导出的文件")
+                ?: throw IOException(strings.get(R.string.export_message_verify_failed))
         }
         copiedBytes
     }
 
-    private fun zipBackupExportMessage(report: BackupReport): String {
-        val base = "成功导出备份，包含 ${report.successItems.passwords} 个密码和 ${report.successItems.images} 张图片"
-        val sensitiveConfigWarning = report.warnings.firstOrNull { warning ->
-            warning.contains("WebDAV 连接凭证")
-        }
-        return if (sensitiveConfigWarning != null) {
-            "$base\n$sensitiveConfigWarning"
-        } else {
-            base
-        }
-    }
+    private fun zipBackupExportMessage(report: BackupReport): String =
+        backupExportMessage(report, strings)
 
     sealed class SteamLoginImportState {
         data class ChallengeRequired(
@@ -264,8 +297,13 @@ class DataExportImportViewModel(
         inputUri: Uri,
         formatHint: DataExportImportManager.CsvFormat? = null,
         passwordKeyboardTagHandling: DataExportImportManager.PasswordKeyboardTagHandling =
-            DataExportImportManager.PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD
+            DataExportImportManager.PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD,
+        destination: ImportDestination? = null
     ): Result<Int> {
+        if (destination != null) return targetedImport {
+            val report = exportManager.importDataWithReport(inputUri, formatHint, passwordKeyboardTagHandling).getOrThrow()
+            targetedImporter.apply(csvImportContent(report.items), destination, parseFailures = report.rejectedCount)
+        }
         return try {
             // 导入数据
             val result = exportManager.importData(
@@ -475,29 +513,29 @@ class DataExportImportViewModel(
     /**
      * 导入KeePass CSV文件
      */
-    suspend fun importKeePassCsv(inputUri: Uri): Result<Int> {
-        return importData(inputUri, DataExportImportManager.CsvFormat.KEEPASS_PASSWORD)
+    suspend fun importKeePassCsv(inputUri: Uri, destination: ImportDestination? = null): Result<Int> {
+        return importData(inputUri, DataExportImportManager.CsvFormat.KEEPASS_PASSWORD, destination = destination)
     }
 
     /**
      * 导入Bitwarden CSV文件
      */
-    suspend fun importBitwardenCsv(inputUri: Uri): Result<Int> {
-        return importData(inputUri, DataExportImportManager.CsvFormat.BITWARDEN_PASSWORD)
+    suspend fun importBitwardenCsv(inputUri: Uri, destination: ImportDestination? = null): Result<Int> {
+        return importData(inputUri, DataExportImportManager.CsvFormat.BITWARDEN_PASSWORD, destination = destination)
     }
 
     /**
      * 导入 Proton Pass CSV 文件
      */
-    suspend fun importProtonPassCsv(inputUri: Uri): Result<Int> {
-        return importData(inputUri, DataExportImportManager.CsvFormat.PROTON_PASS_PASSWORD)
+    suspend fun importProtonPassCsv(inputUri: Uri, destination: ImportDestination? = null): Result<Int> {
+        return importData(inputUri, DataExportImportManager.CsvFormat.PROTON_PASS_PASSWORD, destination = destination)
     }
 
     /**
      * 导入Chrome CSV文件
      */
-    suspend fun importChromeCsv(inputUri: Uri): Result<Int> {
-        return importData(inputUri, DataExportImportManager.CsvFormat.CHROME_PASSWORD)
+    suspend fun importChromeCsv(inputUri: Uri, destination: ImportDestination? = null): Result<Int> {
+        return importData(inputUri, DataExportImportManager.CsvFormat.CHROME_PASSWORD, destination = destination)
     }
 
     /**
@@ -506,13 +544,64 @@ class DataExportImportViewModel(
     suspend fun importPasswordKeyboardCsv(
         inputUri: Uri,
         tagHandling: DataExportImportManager.PasswordKeyboardTagHandling =
-            DataExportImportManager.PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD
+            DataExportImportManager.PasswordKeyboardTagHandling.CONVERT_TO_CUSTOM_FIELD,
+        destination: ImportDestination? = null
     ): Result<Int> {
         return importData(
             inputUri = inputUri,
             formatHint = DataExportImportManager.CsvFormat.PASSWORD_KEYBOARD,
-            passwordKeyboardTagHandling = tagHandling
+            passwordKeyboardTagHandling = tagHandling,
+            destination = destination
         )
+    }
+
+    private fun csvImportContent(items: List<DataExportImportManager.ExportItem>): BackupContent {
+        val passwords = mutableListOf<PasswordEntry>()
+        val secureItems = mutableListOf<DataExportImportManager.ExportItem>()
+        val fields = mutableMapOf<Long, List<CustomFieldBackupEntry>>()
+        items.forEachIndexed { index, item ->
+            val id = item.id.takeIf { it > 0 } ?: -(index + 1L)
+            if (item.itemType != ItemType.PASSWORD.name) {
+                secureItems += item.copy(id = id, keepassDatabaseId = null, keepassGroupPath = null,
+                    bitwardenVaultId = null, bitwardenFolderId = null, categoryId = null)
+            } else {
+                val data = parsePasswordData(item.itemData)
+                val authenticator = parseImportedAuthenticatorDraft(item.importedAuthenticatorKey,
+                    item.title, data["website"].orEmpty(), data["username"].orEmpty())
+                passwords += PasswordEntry(
+                    id = id, title = item.title, website = data["website"].orEmpty(),
+                    username = data["username"].orEmpty(),
+                    password = data["password"].orEmpty().let { if (item.isFromAppExport) it else securityManager.encryptData(it) },
+                    email = data["email"].orEmpty(), phone = data["phone"].orEmpty(), notes = item.notes,
+                    isFavorite = item.isFavorite, createdAt = Date(item.createdAt), updatedAt = Date(item.updatedAt),
+                    authenticatorKey = authenticator?.authenticatorKey.orEmpty(),
+                )
+                fields[id] = item.importedCustomFields.map { CustomFieldBackupEntry(it.title, it.value, it.isProtected) }
+                authenticator?.totpData?.let { totp ->
+                    secureItems += DataExportImportManager.ExportItem(
+                        id = -(items.size + index + 1L), itemType = ItemType.TOTP.name,
+                        title = buildImportedAuthenticatorTitle(item.title, totp),
+                        itemData = Json.encodeToString(totp.copy(boundPasswordId = id, categoryId = null, keepassDatabaseId = null)),
+                        notes = "", isFavorite = item.isFavorite, imagePaths = "",
+                        createdAt = item.createdAt, updatedAt = item.updatedAt,
+                    )
+                }
+            }
+        }
+        return BackupContent(passwords, secureItems, customFieldsMap = fields)
+    }
+
+    private fun totpImportContent(entries: List<DataExportImportManager.AegisEntry>): BackupContent {
+        val now = System.currentTimeMillis()
+        return BackupContent(emptyList(), entries.mapIndexed { index, entry ->
+            val totp = TotpData(secret = entry.secret, issuer = entry.issuer, accountName = entry.name,
+                digits = entry.digits, period = entry.period, algorithm = entry.algorithm)
+            DataExportImportManager.ExportItem(
+                id = index + 1L, itemType = ItemType.TOTP.name,
+                title = buildImportedAuthenticatorTitle(entry.name, totp), itemData = Json.encodeToString(totp),
+                notes = entry.note, isFavorite = false, imagePaths = "", createdAt = now, updatedAt = now,
+            )
+        })
     }
 
     private suspend fun saveImportedCustomFields(
@@ -523,7 +612,7 @@ class DataExportImportViewModel(
             .map {
                 it.copy(
                     title = it.title.trim(),
-                    value = it.value.trim()
+                    value = it.value
                 )
             }
             .filter { it.title.isNotBlank() && it.value.isNotBlank() }
@@ -712,16 +801,7 @@ class DataExportImportViewModel(
      * 解析密码数据字符串
      * 格式: username:xxx;password:xxx;email:xxx;url:xxx
      */
-    private fun parsePasswordData(data: String): Map<String, String> {
-        val result = mutableMapOf<String, String>()
-        data.split(";").forEach { pair ->
-            val parts = pair.split(":", limit = 2)
-            if (parts.size == 2) {
-                result[parts[0].trim()] = parts[1].trim()
-            }
-        }
-        return result
-    }
+    private fun parsePasswordData(data: String): Map<String, String> = CsvPasswordData.decode(data)
 
     private fun prepareImportedPasswordForStorage(password: String): String {
         if (password.isBlank()) return password
@@ -739,13 +819,17 @@ class DataExportImportViewModel(
     /**
      * 导入Aegis JSON文件
      */
-    suspend fun importAegisJson(inputUri: Uri): Result<Int> {
+    suspend fun importAegisJson(inputUri: Uri, destination: ImportDestination? = null): Result<Int> {
+        if (destination != null) return targetedImport {
+            val entries = exportManager.importAegisJson(inputUri).getOrThrow()
+            targetedImporter.apply(totpImportContent(entries), destination)
+        }
         return try {
             // 首先检查是否为加密文件
             val isEncryptedResult = exportManager.isEncryptedAegisFile(inputUri)
             if (isEncryptedResult.getOrDefault(false)) {
                 // 如果是加密文件，返回错误提示
-                Result.failure(Exception("不支持导入加密的Aegis文件，请选择未加密的JSON文件"))
+                Result.failure(Exception(strings.get(R.string.import_message_aegis_unencrypted)))
             } else {
                 // 处理未加密的Aegis文件
                 val result = exportManager.importAegisJson(inputUri)
@@ -837,7 +921,11 @@ class DataExportImportViewModel(
     /**
      * 导入加密的Aegis JSON文件
      */
-    suspend fun importEncryptedAegisJson(inputUri: Uri, password: String): Result<Int> {
+    suspend fun importEncryptedAegisJson(inputUri: Uri, password: String, destination: ImportDestination? = null): Result<Int> {
+        if (destination != null) return targetedImport {
+            val entries = exportManager.importEncryptedAegisJson(inputUri, password).getOrThrow()
+            targetedImporter.apply(totpImportContent(entries), destination)
+        }
         return try {
             val result = exportManager.importEncryptedAegisJson(inputUri, password)
             
@@ -1026,7 +1114,7 @@ class DataExportImportViewModel(
                         SteamLoginImportState.Imported(count = count)
                     },
                     onFailure = { error ->
-                        SteamLoginImportState.Failure(error.message ?: "导入失败")
+                        SteamLoginImportState.Failure(error.message ?: strings.get(R.string.import_data_error))
                     }
                 )
             }
@@ -1065,7 +1153,7 @@ class DataExportImportViewModel(
 
         if (isDuplicate) {
             android.util.Log.d("SteamImport", "跳过重复条目")
-            return Result.failure(Exception("该Steam Guard验证器已存在"))
+            return Result.failure(Exception(strings.get(R.string.import_message_steam_exists)))
         }
 
         val totpData = TotpData(
@@ -1122,67 +1210,26 @@ class DataExportImportViewModel(
     suspend fun prepareZipBackup(
         preferences: takagi.ru.monica.data.BackupPreferences = takagi.ru.monica.data.BackupPreferences(),
         backupEncryptionPassword: String? = null,
-    ): Result<Pair<File, String>> {
-        return try {
-            val webDavHelper = takagi.ru.monica.utils.WebDavHelper(context)
-
-            // 获取所有数据
-            val passwordEntries = passwordRepository.getAllPasswordEntries().first()
-            val secureItems = secureItemRepository.getAllItems().first()
-            val exportedPasswords = passwordEntries.map { entry ->
-                val exportedPassword = takagi.ru.monica.utils.PortableSecretExportPolicy.resolve(
-                    storedValue = entry.password,
-                    entryTitle = entry.title,
-                    decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
-                )
-                entry.copy(password = exportedPassword)
-            }
-            
-            // 创建ZIP备份，使用传入的偏好设置
-            val result = webDavHelper.createBackupZip(
-                passwords = exportedPasswords,
-                secureItems = secureItems,
-                preferences = preferences,
-                contentScope = BackupContentScope.ALL_OFFLINE,
-                allowBackupEncryption = !backupEncryptionPassword.isNullOrBlank(),
-                backupEncryptionPassword = backupEncryptionPassword,
-            )
-
-            result.fold(
-                onSuccess = { pair ->
-                    val (zipFile, report) = pair
-                    try {
-                        if (!report.success) {
-                            android.util.Log.w("DataExport", "Backup report has failures: ${report.failedItems.size}")
-                            throw IllegalStateException(report.getSummary())
-                        }
-
-                        validatePreparedBackupFile(zipFile)
-                        Result.success(zipFile to zipBackupExportMessage(report))
-                    } catch (error: Throwable) {
-                        zipFile.delete()
-                        Result.failure(error)
-                    }
-                },
-                onFailure = { error ->
-                    Result.failure(error)
-                }
-            )
-        } catch (e: Exception) {
-            android.util.Log.e("DataExport", "创建ZIP失败: ${e.message}", e)
-            Result.failure(e)
-        }
+        source: ImportDestination = ImportDestination.Local,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
+    ): Result<Pair<File, String>> = withContext(Dispatchers.IO) {
+        try {
+            Result.success(DatabaseArchiveExporter(context).prepare(source, preferences, backupEncryptionPassword, progress))
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { Result.failure(error) }
     }
 
     suspend fun writePreparedZipBackup(
         outputUri: Uri,
         zipFile: File,
-        successMessage: String
+        successMessage: String,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
     ): Result<String> {
         return try {
-            copyZipFileToOutputUri(zipFile, outputUri)
+            copyZipFileToOutputUri(zipFile, outputUri, progress)
             Result.success(successMessage)
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (e: Exception) {
             android.util.Log.e("DataExport", "写入ZIP失败: ${e.message}", e)
             Result.failure(e)
         }
@@ -1192,16 +1239,21 @@ class DataExportImportViewModel(
         outputUri: Uri,
         preferences: takagi.ru.monica.data.BackupPreferences = takagi.ru.monica.data.BackupPreferences(),
         backupEncryptionPassword: String? = null,
+        source: ImportDestination = ImportDestination.Local,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
     ): Result<String> {
         var preparedFile: File? = null
         return try {
             val (zipFile, message) = prepareZipBackup(
                 preferences = preferences,
                 backupEncryptionPassword = backupEncryptionPassword,
+                source = source,
+                progress = progress,
             ).getOrThrow()
             preparedFile = zipFile
-            writePreparedZipBackup(outputUri, zipFile, message)
-        } catch (e: Exception) {
+            writePreparedZipBackup(outputUri, zipFile, message, progress)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (e: Exception) {
             android.util.Log.e("DataExport", "导出ZIP失败: ${e.message}", e)
             Result.failure(e)
         } finally {
@@ -1209,13 +1261,40 @@ class DataExportImportViewModel(
         }
     }
 
-    suspend fun loadSteamMaFileExportCandidates(): Result<List<SteamMaFileExportCandidate>> = withContext(Dispatchers.IO) {
+    suspend fun exportKdbxBackup(
+        uri: Uri, password: String, source: ImportDestination,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
+    ): Result<String> = withContext(Dispatchers.IO) {
+        var prepared: File? = null
         try {
-            val repository = SteamAccountRepository(
-                SteamDatabase.getDatabase(context).steamAccountDao(),
-                securityManager
-            )
-            val candidates = repository.getAccounts()
+            val (file, count) = takagi.ru.monica.transfer.DatabaseKdbxExporter(context).prepare(source, password, progress)
+            prepared = file
+            copyPlainFileToOutputUri(file, uri, progress = progress)
+            Result.success(context.getString(R.string.transfer_export_complete, count.toLong()))
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { Result.failure(error) }
+        finally { prepared?.delete() }
+    }
+
+    suspend fun exportSteamMaFile(
+        uri: Uri, accountIds: Set<Long>, source: ImportDestination,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
+    ): Result<String> {
+        var prepared: PreparedSteamMaFileExport? = null
+        return try {
+            progress.report(TransferProgress(TransferPhase.PREPARING))
+            val export = prepareSteamMaFileExport(accountIds, source).getOrThrow()
+            prepared = export
+            writePreparedSteamMaFileExport(uri, export, progress)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { Result.failure(error) }
+        finally { prepared?.file?.delete() }
+    }
+
+    suspend fun loadSteamMaFileExportCandidates(source: ImportDestination = ImportDestination.Local): Result<List<SteamMaFileExportCandidate>> = withContext(Dispatchers.IO) {
+        try {
+            val accounts = takagi.ru.monica.transfer.DatabaseExportSnapshotLoader(context).loadSteamAccounts(source)
+            val candidates = accounts
                 .filter { account -> account.sharedSecret.isNotBlank() }
                 .map { account ->
                     val title = account.displayName
@@ -1231,24 +1310,22 @@ class DataExportImportViewModel(
                     )
                 }
             Result.success(candidates)
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (e: Exception) {
             android.util.Log.e("DataExport", "加载Steam maFile导出账号失败: ${e.message}", e)
             Result.failure(e)
         }
     }
 
-    suspend fun prepareSteamMaFileExport(accountIds: Set<Long>): Result<PreparedSteamMaFileExport> = withContext(Dispatchers.IO) {
+    suspend fun prepareSteamMaFileExport(accountIds: Set<Long>, source: ImportDestination = ImportDestination.Local): Result<PreparedSteamMaFileExport> = withContext(Dispatchers.IO) {
         try {
-            val selectedIds = accountIds.filter { it > 0L }.toSet()
+            val selectedIds = accountIds
             if (selectedIds.isEmpty()) {
                 return@withContext Result.failure(Exception(context.getString(R.string.steam_mafile_export_no_selection)))
             }
 
-            val repository = SteamAccountRepository(
-                SteamDatabase.getDatabase(context).steamAccountDao(),
-                securityManager
-            )
-            val selectedAccounts = repository.getAccounts()
+            val accounts = takagi.ru.monica.transfer.DatabaseExportSnapshotLoader(context).loadSteamAccounts(source)
+            val selectedAccounts = accounts
                 .filter { account -> account.id in selectedIds && account.sharedSecret.isNotBlank() }
 
             if (selectedAccounts.isEmpty()) {
@@ -1262,7 +1339,7 @@ class DataExportImportViewModel(
                 val tempFile = File(context.cacheDir, "steam_mafile_export_${System.nanoTime()}_$fileName")
                 tempFile.writeText(SteamMaFileBackupCodec.encode(account), Charsets.UTF_8)
                 if (!tempFile.isFile || tempFile.length() <= 0L) {
-                    throw IOException("导出的 maFile 为空")
+                    throw IOException(strings.get(R.string.export_message_empty_mafile))
                 }
                 PreparedSteamMaFileExport(
                     file = tempFile,
@@ -1301,7 +1378,8 @@ class DataExportImportViewModel(
             }
 
             Result.success(prepared)
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (e: Exception) {
             android.util.Log.e("DataExport", "准备Steam maFile导出失败: ${e.message}", e)
             Result.failure(e)
         }
@@ -1309,7 +1387,8 @@ class DataExportImportViewModel(
 
     suspend fun writePreparedSteamMaFileExport(
         outputUri: Uri,
-        preparedExport: PreparedSteamMaFileExport
+        preparedExport: PreparedSteamMaFileExport,
+        progress: TransferProgressReporter = TransferProgressReporter.None,
     ): Result<String> {
         return try {
             val validator: ((InputStream) -> Unit)? = if (preparedExport.fileName.endsWith(".zip", ignoreCase = true)) {
@@ -1317,13 +1396,14 @@ class DataExportImportViewModel(
             } else {
                 { input ->
                     if (input.readBytes().isEmpty()) {
-                        throw IOException("导出的 maFile 为空")
+                        throw IOException(strings.get(R.string.export_message_empty_mafile))
                     }
                 }
             }
-            copyPlainFileToOutputUri(preparedExport.file, outputUri, validator)
+            copyPlainFileToOutputUri(preparedExport.file, outputUri, validator, progress)
             Result.success(preparedExport.successMessage)
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (e: Exception) {
             android.util.Log.e("DataExport", "写入Steam maFile导出失败: ${e.message}", e)
             Result.failure(e)
         }
@@ -1347,31 +1427,55 @@ class DataExportImportViewModel(
      * 导入完整备份 (ZIP格式)
      * @param inputUri 用户选择的ZIP文件URI
      */
-    suspend fun importZipBackup(inputUri: Uri, decryptPassword: String? = null): Result<Int> {
+    suspend fun importZipBackup(inputUri: Uri, decryptPassword: String? = null, destination: ImportDestination? = null): Result<Int> =
+        withContext(Dispatchers.IO) { importZipBackupOnIo(inputUri, decryptPassword, destination) }
+
+    private suspend fun importZipBackupOnIo(inputUri: Uri, decryptPassword: String?, destination: ImportDestination?): Result<Int> {
         return try {
+            // A file import must ask for this archive's password before copying a large file.
+            // The cloud-backup password is unrelated to the archive the user selected.
+            val encrypted = context.contentResolver.openInputStream(inputUri)?.use(EncryptionHelper::hasEncryptedFileHeader)
+                ?: throw IOException(strings.get(R.string.bitwarden_message_file_unreadable))
+            if (encrypted && decryptPassword.isNullOrEmpty()) {
+                _importProgress.value = null
+                return Result.failure(takagi.ru.monica.utils.WebDavHelper.PasswordRequiredException(
+                    strings.get(R.string.backup_password_required)))
+            }
+            importProgressReporter.report(TransferProgress(TransferPhase.READING))
             val webDavHelper = takagi.ru.monica.utils.WebDavHelper(context)
             
             // 1. 将Uri内容复制到临时文件
             val tempFile = java.io.File(context.cacheDir, "import_temp_${System.nanoTime()}.zip")
-            context.contentResolver.openInputStream(inputUri)?.use { input ->
-                tempFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            } ?: return Result.failure(Exception("无法读取选定的文件"))
-            
             try {
+                val length = runCatching { context.contentResolver.openFileDescriptor(inputUri, "r")?.use { it.statSize } }
+                    .getOrNull()?.takeIf { it > 0 }
+                context.contentResolver.openInputStream(inputUri)?.use { input ->
+                    tempFile.outputStream().buffered().use { output ->
+                        input.copyWithProgress(output, TransferPhase.READING, length, importProgressReporter)
+                    }
+                } ?: throw IOException(strings.get(R.string.bitwarden_message_file_unreadable))
                 // 2. 调用 restoreFromBackupFile 解析备份
-                val result = webDavHelper.restoreFromBackupFile(tempFile, decryptPassword)
+                val result = webDavHelper.restoreFromBackupFile(
+                    tempFile, decryptPassword, restoreMonicaConfig = destination == null, importDataOnly = destination != null,
+                    progress = importProgressReporter,
+                )
                 
                 result.fold(
                     onSuccess = { restoreResult ->
+                        if (destination != null) return targetedImport {
+                            targetedImporter.apply(
+                                restoreResult.content, destination,
+                                parseFailures = restoreResult.report.failedItems.size,
+                            )
+                        }
                         val stats = BackupRestoreApplier.applyRestoreResult(
                             context = context,
                             restoreResult = restoreResult,
                             passwordRepository = passwordRepository,
                             secureItemRepository = secureItemRepository,
                             localOnlyDedup = true,
-                            logTag = "DataImport"
+                            logTag = "DataImport",
+                            progress = importProgressReporter,
                         )
                         logImportSummary(
                             source = "ZIP_BACKUP",
@@ -1391,6 +1495,7 @@ class DataExportImportViewModel(
                 tempFile.delete()
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             android.util.Log.e("DataImport", "导入ZIP失败: ${e.message}", e)
             Result.failure(e)
         }
@@ -1402,7 +1507,7 @@ class DataExportImportViewModel(
         return exportManager.isStratumFileEncrypted(inputUri).getOrDefault(false)
     }
     
-    suspend fun importStratum(inputUri: Uri, password: String? = null): Result<Int> {
+    suspend fun importStratum(inputUri: Uri, password: String? = null, destination: ImportDestination? = null): Result<Int> {
         return try {
             val fileType = exportManager.detectStratumFileType(inputUri).getOrNull()
                 ?: return Result.failure(Exception("Cannot detect file type"))
@@ -1423,10 +1528,16 @@ class DataExportImportViewModel(
                 }
             }
             entriesResult.fold(
-                onSuccess = { list -> insertTotpEntries(list) },
+                onSuccess = { list ->
+                    if (destination == null) insertTotpEntries(list)
+                    else targetedImport { targetedImporter.apply(totpImportContent(list), destination) }
+                },
                 onFailure = { Result.failure(it) }
             )
-        } catch (e: Exception) { Result.failure(e) }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
     }
     
     suspend fun importStratumTxt(inputUri: Uri): Result<Int> {

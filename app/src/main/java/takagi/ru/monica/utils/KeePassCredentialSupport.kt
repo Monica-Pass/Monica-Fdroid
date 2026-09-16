@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import app.keemobile.kotpass.cryptography.EncryptedValue
 import app.keemobile.kotpass.database.Credentials
 import java.security.MessageDigest
@@ -71,14 +73,17 @@ object KeePassCredentialSupport {
         return candidates
     }
 
-    fun buildInvalidCredentialMessage(attemptedLabels: List<String>): String {
+    internal fun buildInvalidCredentialMessage(attemptedLabels: List<String>, strings: StringResolver): String {
         val distinct = attemptedLabels.distinct()
         if (distinct.isEmpty()) {
-            return "数据库密码或密钥文件不正确"
+            return strings.get(R.string.keepass_error_credentials)
         }
         val concise = distinct.take(4).joinToString(separator = ", ")
-        val suffix = if (distinct.size > 4) " 等${distinct.size}种组合" else ""
-        return "数据库密码或密钥文件不正确（已尝试: $concise$suffix）"
+        return if (distinct.size > 4) {
+            strings.get(R.string.cloud_message_credentials_tried_more, concise, distinct.size)
+        } else {
+            strings.get(R.string.cloud_message_credentials_tried, concise)
+        }
     }
 
     private fun buildKeyMaterialVariants(rawBytes: ByteArray): List<Pair<String, ByteArray>> {

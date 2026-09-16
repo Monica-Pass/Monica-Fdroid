@@ -514,4 +514,11 @@
     <string name="mdbx_ui_repair_no_changes">No database changes need to be written</string>
     <string name="mdbx_ui_manager_entry_title">MDBX database manager</string>
     <string name="mdbx_ui_manager_entry_description">Manage local, WebDAV, and OneDrive MDBX databases, including databases from older test versions.</string>
+    <string name="mdbx_ui_database_count">%1$s databases</string>
+    <string name="mdbx_ui_source_count">%1$s connected databases</string>
+    <string name="mdbx_ui_structure_removed">Deleted</string>
+    <string name="mdbx_ui_dangling_head_counts">%1$s branches · %2$s devices</string>
+    <string name="mdbx_ui_show_details">Show details</string>
+    <string name="mdbx_ui_compare_versions">Compare versions</string>
+    <string name="mdbx_ui_exit_comparison">Exit comparison</string>
 </resources>

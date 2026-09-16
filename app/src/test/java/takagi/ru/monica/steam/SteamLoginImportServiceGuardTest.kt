@@ -195,7 +195,7 @@ class SteamLoginImportServiceGuardTest {
         assertTrue(source.contains("writeVarint(4, confirmationType.toLong())"))
         assertTrue(source.contains("9 -> {"))
         assertTrue(source.contains("SteamGuardSubmitResult.UnsupportedSession"))
-        assertTrue(source.contains("88 -> \"Steam 登录失败：令牌验证码无效或已过期\""))
+        assertTrue(source.contains("88 -> strings.get(R.string.steam_message_token_code_invalid)"))
 
         assertTrue(source.contains("pollForTokenWithProtobuf"))
         assertTrue(source.contains("method = \"PollAuthSessionStatus\""))
@@ -276,8 +276,8 @@ class SteamLoginImportServiceGuardTest {
         ).readText()
 
         assertTrue(source.contains("mapReplaceStartEresultToMessage(error.eResult)"))
-        assertTrue(source.contains("Steam 登录已成功，但该账号已经绑定 Steam 验证器"))
-        assertTrue(source.contains("Steam 拒绝转移验证器（EResult=2）"))
+        assertTrue(source.contains("R.string.steam_message_replace_start"))
+        assertTrue(source.contains("2 -> strings.get(R.string.steam_message_replace_denied)"))
         assertFalse(
             source.contains(
                 "ReplaceAuthenticatorStartResult.Failure(\n                mapEresultToMessage(error.eResult)"

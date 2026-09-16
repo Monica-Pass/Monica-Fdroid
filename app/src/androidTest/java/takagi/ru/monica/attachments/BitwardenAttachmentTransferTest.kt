@@ -1,5 +1,7 @@
 package takagi.ru.monica.attachments
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import androidx.lifecycle.viewModelScope
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -230,7 +232,8 @@ class BitwardenAttachmentTransferTest {
         }
 
         fun viewModel(): PasswordViewModel = model ?: PasswordViewModel(
-            repository, SecurityManager(context), context = context
+            repository, SecurityManager(context), context = context,
+            strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext),
         ).also { model = it }
 
         suspend fun cleanup() {

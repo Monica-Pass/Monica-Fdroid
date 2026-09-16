@@ -1,5 +1,9 @@
 package takagi.ru.monica.autofill_ng
 
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.AppLocaleStringResolver
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.PendingIntent
 import android.app.assist.AssistStructure
 import android.content.BroadcastReceiver
@@ -108,6 +112,7 @@ class MonicaAutofillServiceNg : AutofillService() {
     private val screenOffReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                matcher.clear()
                 AutofillSessionGrants.clear()
                 AutofillUnlockRequests.clear()
                 AutofillLogger.i("AUTH", "Temporary autofill grant cleared on screen off")
@@ -117,6 +122,12 @@ class MonicaAutofillServiceNg : AutofillService() {
     private var screenOffReceiverRegistered = false
     @Volatile
     private var recentFillSuggestions: RecentFillSuggestions? = null
+
+    private val strings by lazy { AppLocaleStringResolver(this) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -138,11 +149,20 @@ class MonicaAutofillServiceNg : AutofillService() {
             runCatching { autofillPreferences.ensureBitwardenV2EngineMode() }
                 .onFailure { AutofillLogger.w("AF", "Failed to enforce V2 engine mode: ${it.message}") }
         }
+        scope.launch(Dispatchers.Default) {
+            takagi.ru.monica.security.SessionManager.isUnlocked.collect { unlocked ->
+                if (!unlocked) {
+                    matcher.clear()
+                    recentFillSuggestions = null
+                }
+            }
+        }
 
         AutofillLogger.i("AF", "MonicaAutofillServiceNg created")
     }
 
     override fun onDestroy() {
+        matcher.clear()
         AutofillSessionGrants.clear()
         if (screenOffReceiverRegistered) {
             runCatching { unregisterReceiver(screenOffReceiver) }
@@ -198,7 +218,7 @@ class MonicaAutofillServiceNg : AutofillService() {
                     )
                 )
                 diagnostics.logError("AF", "Fill request failed: ${e.message}", e)
-                callback.onFailure(e.message ?: "Autofill failed")
+                callback.onFailure(e.message ?: strings.get(R.string.legacy_ui_autofill_failed))
             }
         }
         cancellationSignal.setOnCancelListener {
@@ -1199,7 +1219,7 @@ class MonicaAutofillServiceNg : AutofillService() {
                 }
             } catch (e: Exception) {
                 AutofillLogger.e("AF", "onSaveRequest failed", e)
-                callback.onFailure(e.message ?: "Save failed")
+                callback.onFailure(e.message ?: strings.get(R.string.legacy_ui_autofill_save_failed))
             }
         }
     }
@@ -1445,6 +1465,7 @@ class MonicaAutofillServiceNg : AutofillService() {
     }
 
     override fun onDisconnected() {
+        matcher.clear()
         AutofillSessionGrants.clear()
         passwordMemoryByPackage.clear()
         super.onDisconnected()

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Monica-App-Liste: Diagnose</string>
+    <string name="app_report_generated">Erstellt: %1$s</string>
+    <string name="app_report_brand">Gerätemarke: %1$s</string>
+    <string name="app_report_model">Gerätemodell: %1$s</string>
+    <string name="app_report_android">Android-Version: %1$s (API %2$d)</string>
+    <string name="app_report_summary">Zusammenfassung</string>
+    <string name="app_report_total">Apps insgesamt: %1$d</string>
+    <string name="app_report_user_count">Benutzer-Apps: %1$d</string>
+    <string name="app_report_system_count">System-Apps: %1$d (aktualisiert: %2$d)</string>
+    <string name="app_report_visible_percent">Sichtbar: %1$d (%2$s%%)</string>
+    <string name="app_report_hidden_percent">Ausgeblendet: %1$d (%2$s%%)</string>
+    <string name="app_report_filter_health">Filterprüfung: %1$s</string>
+    <string name="app_report_filter_loose">Der Filter blendet möglicherweise zu wenige Systemkomponenten aus</string>
+    <string name="app_report_filter_strict">Der Filter blendet möglicherweise nützliche Apps aus</string>
+    <string name="app_report_filter_good">Der Filter scheint ausgewogen zu sein</string>
+    <string name="app_report_visible_apps">Sichtbare Apps: %1$d</string>
+    <string name="app_report_user_apps">Vom Benutzer installierte Apps: %1$d</string>
+    <string name="app_report_system_apps">System-Apps: %1$d</string>
+    <string name="app_report_more_apps">Weitere Apps: %1$d</string>
+    <string name="app_report_hidden_components">Ausgeblendete Systemkomponenten: %1$d</string>
+    <string name="app_report_hidden_feedback">Falls eine nützliche App ausgeblendet wird, geben Sie ihren Paketnamen in Ihrer Rückmeldung an.</string>
+    <string name="app_report_android_core">Android-Kern</string>
+    <string name="app_report_android_system">Android-System</string>
+    <string name="app_report_google_services">Google-Dienste</string>
+    <string name="app_report_chip_vendor">Komponenten des Chipherstellers</string>
+    <string name="app_report_other">Sonstige Komponenten</string>
+    <string name="app_report_more_components">Weitere Komponenten: %1$d</string>
+    <string name="app_report_all_apps">Vollständige App-Liste: %1$d</string>
+    <string name="app_report_format">Format: [Status] App-Name</string>
+    <string name="app_report_package_type">Paketname · Typ</string>
+    <string name="app_report_unknown_app">Unbekannte App</string>
+    <string name="app_report_user_app">Benutzer-App</string>
+    <string name="app_report_system_app">System-App</string>
+    <string name="app_report_updated_system_app">Aktualisierte System-App</string>
+    <string name="app_report_filter_rules">App-Filterregeln</string>
+    <string name="app_report_rule_count">Filterregeln: %1$d</string>
+    <string name="app_report_rules_feedback">Änderungen am Filter können Sie hier vorschlagen:</string>
+    <string name="app_report_complete">Bericht abgeschlossen</string>
+    <string name="app_report_hidden_count">Ausgeblendete Apps: %1$d</string>
+    <string name="app_report_path">Dateipfad:</string>
+</resources>

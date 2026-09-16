@@ -37,7 +37,9 @@ internal fun rememberPasswordListSelectionHandlers(
     onSelectedItemKeysChange: (Set<String>) -> Unit,
     onShowMoveToCategoryDialog: () -> Unit,
     onShowManualStackConfirmDialog: () -> Unit,
-    onShowBatchDeleteDialog: () -> Unit
+    onShowBatchDeleteDialog: () -> Unit,
+    nativeEntries: List<takagi.ru.monica.data.NativeApiTokenSummary> = emptyList(),
+    nativeViewModel: takagi.ru.monica.viewmodel.MdbxViewModel? = null,
 ): PasswordListSelectionHandlers {
     return PasswordListSelectionHandlers(
         onExitSelection = onClearSelection,
@@ -52,6 +54,7 @@ internal fun rememberPasswordListSelectionHandlers(
         },
         onFavoriteSelected = {
             coroutineScope.launch {
+                try {
                 val toggledCount = applyFavoriteSelectionToggle(
                     FavoriteSelectionToggleRequest(
                         context = context,
@@ -59,11 +62,18 @@ internal fun rememberPasswordListSelectionHandlers(
                         selectedPasswords = selectedPasswords,
                         passwordEntries = passwordEntries,
                         selectedSupplementaryItems = selectedSupplementaryItems,
-                        aggregateUiState = aggregateUiState
+                        aggregateUiState = aggregateUiState,
+                        nativeEntries = nativeEntries,
+                        nativeViewModel = nativeViewModel,
                     )
                 )
                 if (toggledCount <= 0) return@launch
                 onClearSelection()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    Toast.makeText(context, R.string.api_token_load_error, Toast.LENGTH_LONG).show()
+                }
             }
             Unit
         },

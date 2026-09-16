@@ -22,6 +22,109 @@ import takagi.ru.monica.utils.MdbxRemoteWriteMode
 class Mdbx2RemoteSyncCoordinatorTest {
 
     @Test
+    fun localChangesDuringDirectoryListingRemainPendingForNextSync() = runBlocking {
+        val root = tempDirectory("mdbx2-coordinator-edit-during-list")
+        try {
+            val transport = MemoryTransport()
+            val engine = FakeEngine("vault-a", "device-a")
+            val dao = FakeStateDao()
+            val sync = coordinator(root, engine, dao)
+            val remotePath = "vaults/main.mdbx"
+            sync.publishBootstrap(1L, remotePath, transport)
+            val published = engine.checkpoint()
+            val editingTransport = object : MdbxRemoteTransport by transport {
+                override suspend fun stat(path: String): MdbxRemoteObject? {
+                    if (path == MdbxRemoteSyncPaths.streamsRoot(remotePath)) {
+                        engine.advance("local-during-list")
+                    }
+                    return transport.stat(path)
+                }
+            }
+
+            val report = sync.synchronize(1L, remotePath, editingTransport)
+            assertEquals(published, report.publishedCheckpoint)
+            assertEquals(published.commitInventory, report.syncedCommitInventory)
+            assertEquals(published, MdbxSyncStateStore(dao).read(1L).exportCheckpoint)
+            assertTrue(engine.checkpoint() != published)
+            assertEquals(1, sync.synchronize(1L, remotePath, transport).uploadedSegments)
+            assertEquals(engine.checkpoint(), MdbxSyncStateStore(dao).read(1L).exportCheckpoint)
+            assertEquals(0, sync.synchronize(1L, remotePath, transport).uploadedSegments)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun localChangesDuringRemoteDownloadAreNotSkippedByApply() = runBlocking {
+        val root = tempDirectory("mdbx2-coordinator-edit-during-download")
+        try {
+            val transport = MemoryTransport()
+            val source = FakeEngine("vault-a", "device-a")
+            val target = FakeEngine("vault-a", "device-b")
+            val targetDao = FakeStateDao()
+            val sourceSync = coordinator(root, source, FakeStateDao())
+            val targetSync = coordinator(root, target, targetDao)
+            val remotePath = "vaults/main.mdbx"
+            sourceSync.publishBootstrap(1L, remotePath, transport)
+            targetSync.registerDownloadedBootstrap(2L, remotePath)
+            val published = target.checkpoint()
+            source.advance("remote-change")
+            sourceSync.synchronize(1L, remotePath, transport)
+            val editingTransport = object : MdbxRemoteTransport by transport {
+                override suspend fun readTo(path: String, destination: File) {
+                    if (path.endsWith(".mdbxsync")) target.advance("local-during-download")
+                    transport.readTo(path, destination)
+                }
+            }
+
+            val report = targetSync.synchronize(2L, remotePath, editingTransport)
+            assertEquals(1, report.appliedCommits)
+            assertEquals(published, report.publishedCheckpoint)
+            assertEquals(published.commitInventory, report.syncedCommitInventory)
+            assertEquals(published, MdbxSyncStateStore(targetDao).read(2L).exportCheckpoint)
+            assertEquals(1, targetSync.synchronize(2L, remotePath, transport).uploadedSegments)
+            assertEquals(0, targetSync.synchronize(2L, remotePath, transport).uploadedSegments)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun readOnlyAuditDuringDownloadDoesNotMakeReceivedCommitsLookUnsynced() = runBlocking {
+        val root = tempDirectory("mdbx2-coordinator-audit-during-download")
+        try {
+            val transport = MemoryTransport()
+            val source = FakeEngine("vault-a", "device-a")
+            val target = FakeEngine("vault-a", "device-b")
+            val targetDao = FakeStateDao()
+            val sourceSync = coordinator(root, source, FakeStateDao())
+            val targetSync = coordinator(root, target, targetDao)
+            val remotePath = "vaults/main.mdbx"
+            sourceSync.publishBootstrap(1L, remotePath, transport)
+            targetSync.registerDownloadedBootstrap(2L, remotePath)
+            val published = target.checkpoint()
+            source.advance("remote-change")
+            sourceSync.synchronize(1L, remotePath, transport)
+            val readingTransport = object : MdbxRemoteTransport by transport {
+                override suspend fun readTo(path: String, destination: File) {
+                    if (path.endsWith(".mdbxsync")) target.recordReadAudit()
+                    transport.readTo(path, destination)
+                }
+            }
+
+            val report = targetSync.synchronize(2L, remotePath, readingTransport)
+            assertEquals(1, report.appliedCommits)
+            assertEquals(target.checkpoint().commitInventory, report.syncedCommitInventory)
+            assertEquals(published, report.publishedCheckpoint)
+            assertEquals(published, MdbxSyncStateStore(targetDao).read(2L).exportCheckpoint)
+            assertEquals(1, targetSync.synchronize(2L, remotePath, transport).uploadedSegments)
+            assertEquals(0, targetSync.synchronize(2L, remotePath, transport).uploadedSegments)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun bootstrapFastForwardAndDuplicatePublicationAreIdempotent() = runBlocking {
         val root = tempDirectory("mdbx2-coordinator-fast-forward")
         try {
@@ -364,6 +467,7 @@ class Mdbx2RemoteSyncCoordinatorTest {
         override val deviceId: String
     ) : Mdbx2SyncEngine {
         private var token = "c0"
+        private var auditRevision = 0
         private var nextIndex = 0u
         private val transferId = "transfer-$deviceId"
         private val blobSizes = linkedMapOf<String, ULong>()
@@ -371,6 +475,8 @@ class Mdbx2RemoteSyncCoordinatorTest {
         private val blobWrites = linkedMapOf<String, ByteArrayOutputStream>()
 
         fun advance(nextToken: String) { token = nextToken }
+
+        fun recordReadAudit() { auditRevision++ }
 
         fun addAvailableBlob(bytes: ByteArray): String {
             val blobId = sha256Hex(bytes)
@@ -384,16 +490,16 @@ class Mdbx2RemoteSyncCoordinatorTest {
             blobContents.remove(blobId)
         }
 
-        override fun checkpoint(): MdbxSyncCheckpointState =
-            MdbxSyncCheckpointState(token, "d$token")
+        override suspend fun checkpoint(): MdbxSyncCheckpointState =
+            MdbxSyncCheckpointState(token, if (auditRevision == 0) "d$token" else "d$token-audit-$auditRevision")
 
-        override fun createBootstrap(destination: File): Mdbx2BootstrapInfo {
+        override suspend fun createBootstrap(destination: File): Mdbx2BootstrapInfo {
             check(!destination.exists()) { "Bootstrap destination must be unpublished" }
             destination.writeText("bootstrap:$vaultId:$token")
             return Mdbx2BootstrapInfo(vaultId, checkpoint(), destination.length().toULong())
         }
 
-        override fun exportSegment(
+        override suspend fun exportSegment(
             destination: File,
             base: MdbxSyncCheckpointState,
             resume: takagi.ru.monica.data.MdbxSyncResumeState?,
@@ -411,21 +517,22 @@ class Mdbx2RemoteSyncCoordinatorTest {
             return segmentInfo(destination, payload)
         }
 
-        override fun inspectSegment(source: File): Mdbx2SegmentInfo =
+        override suspend fun inspectSegment(source: File): Mdbx2SegmentInfo =
             segmentInfo(source, source.readText())
 
-        override fun applySegment(
+        override suspend fun applySegment(
             source: File,
             expectedBase: MdbxSyncCheckpointState,
             expectedResume: takagi.ru.monica.data.MdbxSyncResumeState?
         ): Mdbx2SegmentApplyResult {
+            val before = checkpoint()
             val info = inspectSegment(source)
             require(info.base == expectedBase)
             token = info.result.commitInventory
-            return Mdbx2SegmentApplyResult(info.result, null, 1u, 0u, 0u, 0u)
+            return Mdbx2SegmentApplyResult(info.result, null, 1u, 0u, 0u, 0u, before, checkpoint())
         }
 
-        override fun listBlobReferences(cursor: String?, pageSize: UInt) =
+        override suspend fun listBlobReferences(cursor: String?, pageSize: UInt) =
             Mdbx2BlobReferencePage(
                 items = blobSizes.entries.sortedBy { it.key }.map { (blobId, _) ->
                     Mdbx2BlobReference(
@@ -440,48 +547,54 @@ class Mdbx2RemoteSyncCoordinatorTest {
                 },
                 nextCursor = null
             )
-        override fun hasBlob(blobId: String, totalSize: ULong) =
-            blobContents[blobId]?.size?.toULong() == totalSize
-        override fun readBlobChunk(
-            blobId: String,
-            totalSize: ULong,
-            offset: ULong,
-            maxBytes: UInt
-        ): Mdbx2BlobChunk {
-            val bytes = blobContents[blobId] ?: error("missing fake Blob")
-            require(bytes.size.toULong() == totalSize)
-            val start = offset.toInt()
-            val end = minOf(bytes.size, start + maxBytes.toInt())
-            return Mdbx2BlobChunk(
-                blobId = blobId,
-                totalSize = totalSize,
-                offset = offset,
-                ciphertext = bytes.copyOfRange(start, end),
-                isLast = end == bytes.size
-            )
-        }
-        override fun writeBlobChunk(
-            blobId: String,
-            totalSize: ULong,
-            offset: ULong,
-            ciphertext: ByteArray,
-            finalize: Boolean
-        ) {
-            val output = blobWrites.getOrPut(blobId) { ByteArrayOutputStream() }
-            require(output.size().toULong() == offset)
-            output.write(ciphertext)
-            if (finalize) {
-                val bytes = output.toByteArray()
+        override suspend fun hasBlob(blobId: String, totalSize: ULong) = blobSession.hasBlob(blobId, totalSize)
+
+        override suspend fun <T> withBlobTransfer(block: suspend (Mdbx2BlobTransferSession) -> T): T = block(blobSession)
+
+        private val blobSession = object : Mdbx2BlobTransferSession {
+            override fun hasBlob(blobId: String, totalSize: ULong) =
+                blobContents[blobId]?.size?.toULong() == totalSize
+            override fun readBlobChunk(
+                blobId: String,
+                totalSize: ULong,
+                offset: ULong,
+                maxBytes: UInt
+            ): Mdbx2BlobChunk {
+                val bytes = blobContents[blobId] ?: error("missing fake Blob")
                 require(bytes.size.toULong() == totalSize)
-                require(sha256Hex(bytes) == blobId)
-                blobContents[blobId] = bytes
+                val start = offset.toInt()
+                val end = minOf(bytes.size, start + maxBytes.toInt())
+                return Mdbx2BlobChunk(
+                    blobId = blobId,
+                    totalSize = totalSize,
+                    offset = offset,
+                    ciphertext = bytes.copyOfRange(start, end),
+                    isLast = end == bytes.size
+                )
+            }
+            override fun writeBlobChunk(
+                blobId: String,
+                totalSize: ULong,
+                offset: ULong,
+                ciphertext: ByteArray,
+                finalize: Boolean
+            ) {
+                val output = blobWrites.getOrPut(blobId) { ByteArrayOutputStream() }
+                require(output.size().toULong() == offset)
+                output.write(ciphertext)
+                if (finalize) {
+                    val bytes = output.toByteArray()
+                    require(bytes.size.toULong() == totalSize)
+                    require(sha256Hex(bytes) == blobId)
+                    blobContents[blobId] = bytes
+                    blobWrites.remove(blobId)
+                }
+            }
+            override fun acquireBlobLease(blobId: String, ownerId: String, nowUnixSecs: Long, ttlSecs: Long) = Unit
+            override fun releaseBlobLease(blobId: String, ownerId: String) = Unit
+            override fun abortBlobTransfer(blobId: String, ownerId: String) {
                 blobWrites.remove(blobId)
             }
-        }
-        override fun acquireBlobLease(blobId: String, ownerId: String, nowUnixSecs: Long, ttlSecs: Long) = Unit
-        override fun releaseBlobLease(blobId: String, ownerId: String) = Unit
-        override fun abortBlobTransfer(blobId: String, ownerId: String) {
-            blobWrites.remove(blobId)
         }
 
         private fun segmentInfo(file: File, payload: String): Mdbx2SegmentInfo {

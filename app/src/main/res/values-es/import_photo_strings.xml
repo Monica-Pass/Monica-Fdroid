@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">El archivo de copia de seguridad exportado está vacío</string>
+    <string name="export_message_empty_zip">La copia de seguridad ZIP no tiene contenido</string>
+    <string name="export_message_open_failed">No se puede abrir el destino de exportación</string>
+    <string name="export_message_incomplete">La exportación está incompleta: %1$d/%2$d bytes</string>
+    <string name="export_message_invalid_encrypted">La copia guardada tiene un formato cifrado no válido</string>
+    <string name="export_message_verify_failed">No se pudo verificar el archivo exportado</string>
+    <string name="export_message_backup_summary">Copia de seguridad exportada: %1$d contraseñas y %2$d imágenes</string>
+    <string name="import_message_aegis_unencrypted">Esta importación requiere una exportación JSON de Aegis sin cifrar</string>
+    <string name="import_message_aegis_missing">Archivo Aegis no válido: falta %1$s</string>
+    <string name="import_message_aegis_empty_slots">Archivo Aegis no válido: slots está vacío</string>
+    <string name="import_message_aegis_slot_type">Tipo de slot de Aegis no compatible: %1$s</string>
+    <string name="import_message_aegis_no_totp">No se encontraron entradas TOTP válidas en el archivo Aegis</string>
+    <string name="import_message_aegis_failed">No se pudo importar el archivo Aegis: %1$s</string>
+    <string name="import_message_key_length">La clave descifrada tiene una longitud no válida</string>
+    <string name="import_message_steam_missing">Datos de Steam Guard no válidos: falta %1$s</string>
+    <string name="import_message_steam_device_id">ID de dispositivo no válido. Formato esperado: android:xxxx</string>
+    <string name="import_message_steam_secret">Formato de shared_secret de Steam no válido</string>
+    <string name="import_message_steam_exists">Este autenticador de Steam Guard ya existe</string>
+    <string name="export_message_empty_mafile">El maFile exportado está vacío</string>
+    <string name="crypto_message_encrypt_failed">Error de cifrado: %1$s</string>
+    <string name="crypto_message_decrypt_failed">Error de descifrado: %1$s</string>
+    <string name="crypto_message_file_too_small">El archivo cifrado es demasiado pequeño y podría estar dañado</string>
+    <string name="crypto_message_invalid_file">Formato de archivo cifrado no válido</string>
+    <string name="crypto_message_password_or_corrupt">Contraseña incorrecta o datos cifrados dañados</string>
+    <string name="crypto_message_invalid_text">Formato de texto cifrado no válido</string>
+    <string name="photo_message_camera_failed">No se pudo abrir la cámara: %1$s</string>
+    <string name="photo_message_gallery_missing">No hay ninguna aplicación de galería disponible</string>
+    <string name="photo_message_gallery_failed">No se pudo abrir la galería: %1$s</string>
+    <string name="photo_message_data_failed">No se pudo leer la imagen recibida: %1$s</string>
+    <string name="photo_message_file_missing">El archivo de foto está vacío o no existe</string>
+    <string name="photo_message_not_selected">No se seleccionó ninguna imagen</string>
+</resources>

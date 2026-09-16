@@ -1,5 +1,7 @@
 package takagi.ru.monica.util
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import java.io.ByteArrayInputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,7 +18,7 @@ class KeePassKeyFileStorePolicyTest {
 
         assertEquals(
             "keepass_keyfiles/${"a".repeat(64)}.bin",
-            KeePassKeyFileStore.relativePathForFingerprint(fingerprint)
+            KeePassKeyFileStore.relativePathForFingerprint(fingerprint, strings = xmlTestStrings("en"))
         )
     }
 

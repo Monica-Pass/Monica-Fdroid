@@ -60,5 +60,6 @@ internal fun resolveUnifiedMoveInitialSourceKey(
     availableSourceKeys: Set<String>,
 ): String {
     return initialSource.sourceKey.takeIf(availableSourceKeys::contains)
+        ?: availableSourceKeys.firstOrNull()
         ?: UnifiedMoveInitialSource.MonicaLocal.sourceKey
 }

@@ -149,7 +149,8 @@ data class CustomFieldDraft(
         /**
          * 生成下一个临时ID（用于 UI 列表的 key）
          */
-        fun nextTempId(): Long {
+        fun nextTempId(existingIds: Collection<Long> = emptyList()): Long {
+            while (tempIdCounter in existingIds) tempIdCounter--
             return tempIdCounter--
         }
         

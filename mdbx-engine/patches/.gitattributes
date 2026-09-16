@@ -1,0 +1,3 @@
+# Preserve the exact patch bytes recorded in MDBX3_SOURCE_PROVENANCE.json.
+# Whitespace in unified-diff context lines is intentional.
+*.patch -text -whitespace

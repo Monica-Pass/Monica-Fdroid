@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden ist nicht verfügbar</string>
+    <string name="entry_message_unsupported_type">Dieser Vorgang unterstützt diesen Eintragstyp nicht</string>
+    <string name="entry_message_ownership_conflict">Lösen Sie die widersprüchlichen Speicherzuordnungen, bevor Sie diesen Eintrag nach Monica verschieben</string>
+    <string name="entry_message_local_copy_failed">In Monica konnte keine lokale Kopie erstellt werden</string>
+    <string name="entry_message_attachments_incomplete">Nicht alle Anhänge wurden kopiert</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Der Bitwarden-Eintrag hat keine Synchronisierungs-ID</string>
+    <string name="entry_message_keepass_source_delete_failed">Der ursprüngliche KeePass-Eintrag konnte nicht gelöscht werden</string>
+    <string name="entry_message_source_delete_failed">Der ursprüngliche Eintrag konnte nicht gelöscht werden</string>
+    <string name="entry_message_storage_save_failed">Am gewählten Speicherort konnte nicht gespeichert werden</string>
+    <string name="entry_message_from_password">Aus Passwort: %1$s</string>
+    <string name="entry_message_passkey_android_required">Vollständige Passkey-Unterstützung erfordert Android 14 oder neuer. Dieses Gerät: %1$s</string>
+    <string name="entry_message_passkey_save_failed">Passkey konnte nicht gespeichert werden: %1$s</string>
+    <string name="entry_message_passkey_missing">Passkey nicht gefunden</string>
+    <string name="entry_message_passkey_update_failed">Passkey konnte nicht aktualisiert werden: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">Die MDBX-Passkey-Zuordnung konnte nicht aktualisiert werden: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">Die Zuordnung konnte nicht aktualisiert werden: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">Der Nutzungsverlauf konnte nicht aktualisiert werden: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">Passkey konnte nicht gelöscht werden: %1$s</string>
+    <string name="entry_message_category_path_invalid">Ungültiger Ordnerpfad</string>
+    <string name="entry_message_category_move_into_self">Ein Ordner kann nicht in sich selbst oder einen seiner Unterordner verschoben werden</string>
+    <string name="entry_message_category_missing">Ordner nicht gefunden</string>
+    <string name="entry_message_category_exists">Am Ziel existiert bereits ein Ordner mit diesem Namen</string>
+    <string name="entry_message_category_move_conflict">Beim Verschieben entsteht ein Konflikt mit einem vorhandenen Ordner</string>
+    <string name="entry_message_category_name_required">Geben Sie einen Ordnernamen ein</string>
+    <string name="entry_message_category_name_separator">Ein Ordnername darf keinen / enthalten</string>
+    <string name="entry_message_category_rename_conflict">Beim Umbenennen entsteht ein Konflikt mit einem vorhandenen Ordner</string>
+    <string name="entry_message_saved">Gespeichert</string>
+</resources>

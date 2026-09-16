@@ -302,7 +302,9 @@ fun UnifiedCategoryFilterChipMenu(
     val mdbxFolders by remember(selectedMdbxDatabaseId, getMdbxFolders) {
         selectedMdbxDatabaseId?.let(getMdbxFolders) ?: flowOf(emptyList())
     }.collectAsState(initial = emptyList())
+    val backLabel = stringResource(R.string.back)
     val folderChips = remember(
+        backLabel,
         selected,
         localNodes,
         localCurrentPath,
@@ -311,6 +313,7 @@ fun UnifiedCategoryFilterChipMenu(
         mdbxFolders
     ) {
         buildFolderChips(
+            backLabel = backLabel,
             selected = selected,
             localNodes = localNodes,
             localNodeByPath = localNodeByPath,
@@ -677,6 +680,7 @@ private fun BitwardenVault.hasHealthyConnection(): Boolean {
 }
 
 private fun buildFolderChips(
+    backLabel: String,
     selected: UnifiedCategoryFilterSelection,
     localNodes: List<ChipMenuLocalCategoryNode>,
     localNodeByPath: Map<String, ChipMenuLocalCategoryNode>,
@@ -704,7 +708,7 @@ private fun buildFolderChips(
                 chips += FolderChipItem(
                     label = localNodeByPath[parentPath ?: ""]?.displayName
                         ?: localNodeByPath[currentPath]?.parentPath?.substringAfterLast('/')
-                        ?: "返回",
+                        ?: backLabel,
                     selection = parentSelection,
                     isBack = true
                 )
@@ -750,7 +754,7 @@ private fun buildFolderChips(
             if (!currentPath.isNullOrBlank()) {
                 val parentPath = currentPath.substringBeforeLast('/', "").takeIf { it.isNotBlank() }
                 chips += FolderChipItem(
-                    label = "返回",
+                    label = backLabel,
                     selection = parentPath?.let {
                         UnifiedCategoryFilterSelection.KeePassGroupFilter(databaseId, it)
                     } ?: UnifiedCategoryFilterSelection.KeePassDatabaseFilter(databaseId),

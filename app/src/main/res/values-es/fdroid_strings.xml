@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">Permitir HTTP</string>
+    <string name="webdav_allow_insecure_http_description">Desactivado por defecto. Actívalo solo para servidores HTTP de confianza, como un NAS local sin HTTPS. Si está desactivado, WebDAV bloquea las conexiones HTTP.</string>
+    <string name="fdroid_cloud_provider_unavailable">La versión de F-Droid no admite %1$s. Usa WebDAV.</string>
+    <string name="qr_image_read_failed">No se puede leer la imagen. Prueba con otra.</string>
+</resources>

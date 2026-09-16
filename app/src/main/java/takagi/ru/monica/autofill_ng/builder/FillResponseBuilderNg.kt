@@ -1,5 +1,6 @@
 package takagi.ru.monica.autofill_ng.builder
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -34,6 +35,8 @@ import kotlin.random.Random
 class FillResponseBuilderNg(
     private val context: Context,
 ) {
+    private val strings = AppLocaleStringResolver(context)
+
     private companion object {
         private const val TAG = "MonicaAutofillBwCompat"
         private const val MANUAL_PLACEHOLDER_VALUE = "PLACEHOLDER"
@@ -191,7 +194,7 @@ class FillResponseBuilderNg(
                 PendingIntent.FLAG_CANCEL_CURRENT
             }
         )
-        val unlockTitle = context.getString(R.string.autofill_unlock_monica)
+        val unlockTitle = strings.get(R.string.autofill_unlock_monica)
         val menuPresentation = AutofillDatasetBuilder.RemoteViewsFactory.createUnlockPrompt(
             context = context,
             message = unlockTitle,
@@ -378,13 +381,13 @@ class FillResponseBuilderNg(
                     specs = request.inlinePresentationSpecs,
                     index = 0,
                     pendingIntent = pendingIntent,
-                    title = context.getString(R.string.password_suggestion_title),
-                    subtitle = context.getString(R.string.password_suggestion_subtitle),
+                    title = strings.get(R.string.password_suggestion_title),
+                    subtitle = strings.get(R.string.password_suggestion_subtitle),
                     icon = AutofillDatasetBuilder.InlinePresentationBuilder.createAppIcon(
                         context = context,
                         packageName = request.packageName
                     ),
-                    contentDescription = context.getString(R.string.password_suggestion_title)
+                    contentDescription = strings.get(R.string.password_suggestion_title)
                 )
             } else {
                 null
@@ -546,7 +549,7 @@ class FillResponseBuilderNg(
         val menuPresentation = if (filledData.isVaultLocked) {
             AutofillDatasetBuilder.RemoteViewsFactory.createUnlockPrompt(
                 context = context,
-                message = context.getString(R.string.autofill_manual_entry_title)
+                message = strings.get(R.string.autofill_manual_entry_title)
             )
         } else {
             AutofillDatasetBuilder.RemoteViewsFactory.createManualSelection(
@@ -564,13 +567,13 @@ class FillResponseBuilderNg(
                     specs = request.inlinePresentationSpecs,
                     index = request.inlinePresentationSpecs?.indexOf(spec) ?: 0,
                     pendingIntent = pendingIntent,
-                    title = context.getString(R.string.autofill_manual_entry_title),
+                    title = strings.get(R.string.autofill_manual_entry_title),
                     subtitle = webDomain?.takeIf { it.isNotBlank() } ?: request.packageName,
                     icon = AutofillDatasetBuilder.InlinePresentationBuilder.createAppIcon(
                         context = context,
                         packageName = request.packageName
                     ),
-                    contentDescription = context.getString(R.string.autofill_manual_entry_title)
+                    contentDescription = strings.get(R.string.autofill_manual_entry_title)
                 )
             }
         } else {

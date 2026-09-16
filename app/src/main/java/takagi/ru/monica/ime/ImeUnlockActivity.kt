@@ -1,5 +1,6 @@
 package takagi.ru.monica.ime
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -16,6 +17,8 @@ import takagi.ru.monica.security.DeveloperVerificationPolicy
 import takagi.ru.monica.ui.components.MonicaPasswordDialogAuthScreen
 import takagi.ru.monica.utils.BiometricAuthHelper
 import takagi.ru.monica.utils.SettingsManager
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 
 class ImeUnlockActivity : AppCompatActivity() {
 
@@ -26,6 +29,10 @@ class ImeUnlockActivity : AppCompatActivity() {
     private lateinit var securityManager: SecurityManager
     private lateinit var settingsManager: SettingsManager
     private lateinit var biometricAuthHelper: BiometricAuthHelper
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

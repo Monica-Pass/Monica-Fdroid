@@ -1,6 +1,8 @@
 package takagi.ru.monica.keepass
 
 import app.keemobile.kotpass.database.KeePassDatabase
+import app.keemobile.kotpass.database.header.DatabaseHeader
+import app.keemobile.kotpass.database.header.KdfParameters
 import app.keemobile.kotpass.database.modifiers.binaries
 import app.keemobile.kotpass.database.modifiers.modifyBinaries
 import app.keemobile.kotpass.database.modifiers.modifyContent
@@ -271,8 +273,23 @@ internal object KeePassConflictCenter {
             val base = baseGroups[uuid]
             val local = localGroups[uuid]
             val remote = remoteGroups[uuid]
+            // A folder's own properties can be unchanged while a device adds or
+            // edits descendants. Keep its shell so deleting the other copy cannot
+            // erase those new entries; entry deletions/choices are still applied below.
+            if (base != null && local != null && remote == null &&
+                groupTreeSignature(base.group) != groupTreeSignature(local.group)
+            ) {
+                mergedRoot = upsertGroup(
+                    mergedRoot, stripEntries(local.group),
+                    local.parentUuid?.takeIf { findGroup(mergedRoot, it) != null } ?: mergedRoot.uuid
+                )
+                return@forEach
+            }
             val localChange = changeOf(base?.groupState(), local?.groupState())
             if (localChange == null) return@forEach
+            if (base != null && local == null && remote != null &&
+                groupTreeSignature(base.group) != groupTreeSignature(remote.group)
+            ) return@forEach
             val remoteChange = changeOf(base?.groupState(), remote?.groupState())
             val divergent = remoteChange != null && local?.groupState() != remote?.groupState()
 
@@ -316,13 +333,19 @@ internal object KeePassConflictCenter {
             val localChange = changeOf(base?.entryState(), local?.entryState())
             if (localChange == null) return@forEach
 
-            if (entrySelections != null) {
+            // Two devices may edit different fields of the same entry. Merge those
+            // fields even when the caller chose automatic conflict preservation.
+            val hasIndependentFieldChanges = local != null && remote != null &&
+                buildEntryConflictDetails(
+                    uuid, base, local, remote, baseDatabase, localDatabase, remoteDatabase
+                ).isEmpty()
+            if (entrySelections != null || hasIndependentFieldChanges) {
                 val resolvedEntry = mergeSelectedEntry(
                     uuid = uuid,
                     base = base,
                     local = local,
                     remote = remote,
-                    selections = entrySelections
+                    selections = entrySelections.orEmpty()
                 )
                 mergedRoot = removeEntry(mergedRoot, uuid).group
                 if (resolvedEntry != null) {
@@ -382,13 +405,39 @@ internal object KeePassConflictCenter {
             localDatabase.content.meta.customIcons,
             remoteDatabase.content.meta.customIcons,
             ::customIconSignature
-        )
+        ).toMutableMap()
         val mergedBinaries = mergeMapBySignature(
             baseDatabase.binaries,
             localDatabase.binaries,
             remoteDatabase.binaries,
             ::binarySignature
-        )
+        ).toMutableMap()
+        // One device may remove an asset while the other reuses it in a new entry
+        // or history revision. No surviving reference may lose its original payload.
+        fun retainIcon(uuid: UUID?) {
+            if (uuid != null && uuid !in mergedIcons) {
+                (localDatabase.content.meta.customIcons[uuid]
+                    ?: remoteDatabase.content.meta.customIcons[uuid]
+                    ?: baseDatabase.content.meta.customIcons[uuid])?.let { mergedIcons[uuid] = it }
+            }
+        }
+        fun retainEntryAssets(entry: Entry) {
+            retainIcon(entry.customIconUuid)
+            entry.binaries.forEach { reference ->
+                if (reference.hash !in mergedBinaries) {
+                    (localDatabase.binaries[reference.hash]
+                        ?: remoteDatabase.binaries[reference.hash]
+                        ?: baseDatabase.binaries[reference.hash])?.let { mergedBinaries[reference.hash] = it }
+                }
+            }
+            entry.history.forEach(::retainEntryAssets)
+        }
+        fun retainGroupAssets(group: Group) {
+            retainIcon(group.customIconUuid)
+            group.entries.forEach(::retainEntryAssets)
+            group.groups.forEach(::retainGroupAssets)
+        }
+        retainGroupAssets(mergedRoot)
         val withContent = selectedShell.modifyContent {
             copy(
                 meta = mergedMeta.copy(customIcons = mergedIcons),
@@ -717,12 +766,7 @@ internal object KeePassConflictCenter {
     ): List<Entry> {
         val merged = linkedMapOf<String, Entry>()
         (base + local + remote).forEach { entry ->
-            val key = buildString {
-                append(KeePassEntryFingerprint.build(entry))
-                append('|')
-                append(entry.times?.lastModificationTime)
-            }
-            merged.putIfAbsent(key, entry)
+            merged.putIfAbsent(entryHistorySignature(entry), entry)
         }
         return merged.values.sortedBy { entry -> entry.times?.lastModificationTime ?: Instant.MIN }
     }
@@ -736,23 +780,13 @@ internal object KeePassConflictCenter {
     ): TimeData? {
         val candidates = listOfNotNull(base, local, remote)
         val template = candidates.maxByOrNull { value -> value.lastModificationTime ?: Instant.MIN } ?: return null
-        val expires = if (selections.containsKey(propertyDetailId)) {
-            selectThreeWay(base?.expires, local?.expires, remote?.expires, propertyDetailId, selections)
-                ?: template.expires
-        } else {
-            template.expires
-        }
-        val expiryTime = if (selections.containsKey(propertyDetailId)) {
-            selectThreeWay(
-                base?.expiryTime,
-                local?.expiryTime,
-                remote?.expiryTime,
-                propertyDetailId,
-                selections
-            ) ?: template.expiryTime
-        } else {
-            template.expiryTime
-        }
+        // Expiry is editable data, not a usage timestamp. Preserve independent changes
+        // even when a newer modification timestamp came from a different field.
+        val expires = selectThreeWay(base?.expires, local?.expires, remote?.expires, propertyDetailId, selections)
+            ?: template.expires
+        val expiryTime = selectThreeWay(
+            base?.expiryTime, local?.expiryTime, remote?.expiryTime, propertyDetailId, selections
+        )
         return template.copy(
             creationTime = candidates.mapNotNull(TimeData::creationTime).minOrNull() ?: template.creationTime,
             lastAccessTime = candidates.mapNotNull(TimeData::lastAccessTime).maxOrNull() ?: template.lastAccessTime,
@@ -973,10 +1007,59 @@ internal object KeePassConflictCenter {
     }
 
     private fun LocatedEntry.entryState(): ObjectState = ObjectState(
-        contentSignature = KeePassEntryFingerprint.build(entry),
+        contentSignature = entryContentSignature(entry),
         parentId = parentUuid.toString(),
         summary = entry.fields["Title"]?.content?.ifBlank { "Untitled entry" } ?: "Untitled entry"
     )
+
+    // Conflict comparison includes every editable property. The general projection
+    // fingerprint deliberately covers less and cannot detect attachment-only edits.
+    private fun entryContentSignature(entry: Entry): String = sha256(buildString {
+        fun part(value: Any?) {
+            val text = value?.toString()
+            if (text == null) append("-1:") else append(text.length).append(':').append(text)
+        }
+        part(entry.uuid)
+        part(entry.fields.size)
+        entry.fields.toSortedMap().forEach { (name, value) ->
+            part(name)
+            part(value is EntryValue.Encrypted)
+            part(value.content)
+        }
+        part(entry.icon)
+        part(entry.customIconUuid)
+        part(entry.foregroundColor)
+        part(entry.backgroundColor)
+        part(entry.overrideUrl)
+        // Reading/using an entry alone must not make it a conflicting edit.
+        part(entry.times?.expires)
+        part(entry.times?.expiryTime)
+        part(entry.autoType != null)
+        entry.autoType?.let { autoType ->
+            part(autoType.enabled)
+            part(autoType.obfuscation)
+            part(autoType.defaultSequence)
+            part(autoType.items.size)
+            autoType.items.forEach { part(it.window); part(it.keystrokeSequence) }
+        }
+        part(entry.tags.size)
+        entry.tags.forEach(::part)
+        part(entry.binaries.size)
+        entry.binaries.forEach { part(it.name); part(it.hash.hex()) }
+        part(entry.customData.size)
+        entry.customData.toSortedMap().forEach { (name, value) ->
+            part(name)
+            part(value.value)
+            part(value.lastModified)
+        }
+        part(entry.previousParentGroup)
+        part(entry.qualityCheck)
+        part(entry.history.size)
+        entry.history.map(::entryHistorySignature).sorted().forEach(::part)
+    }.toByteArray(Charsets.UTF_8))
+
+    private fun entryHistorySignature(entry: Entry): String =
+        "${entryContentSignature(entry)}|${entry.times?.lastModificationTime}"
 
     private fun LocatedGroup.groupState(): ObjectState = ObjectState(
         contentSignature = sha256(
@@ -990,10 +1073,25 @@ internal object KeePassConflictCenter {
         summary = group.name.ifBlank { "Unnamed group" }
     )
 
+    private fun groupTreeSignature(group: Group): String = sha256(buildString {
+        append(LocatedGroup(group, parentUuid = null, occurrence = 0).groupState().contentSignature)
+        append("|entries:").append(group.entries.size).append('|')
+        group.entries.map(::entryContentSignature).sorted().forEach(::append)
+        append("|groups:").append(group.groups.size).append('|')
+        group.groups.map(::groupTreeSignature).sorted().forEach(::append)
+    }.toByteArray(Charsets.UTF_8))
+
     private fun metadataState(database: KeePassDatabase): ObjectState {
-        val meta = database.content.meta.copy(customIcons = emptyMap())
+        // KDBX 3 stores binaries in Meta; both binaries and icons have separate diffs.
+        // HeaderHash is regenerated on save, not an editable database setting.
+        val meta = database.modifyBinaries { emptyMap() }.content.meta.copy(
+            headerHash = null,
+            customIcons = emptyMap(),
+            customData = database.content.meta.customData.toSortedMap(),
+            memoryProtection = database.content.meta.memoryProtection.sortedBy { it.name }.toSet()
+        )
         return ObjectState(
-            contentSignature = sha256((database.header.toString() + "|" + meta.toString()).toByteArray()),
+            contentSignature = sha256((headerSettingsSignature(database) + "|" + meta).toByteArray()),
             parentId = null,
             summary = meta.name.ifBlank { "Database settings" }
         )
@@ -1018,14 +1116,47 @@ internal object KeePassConflictCenter {
         local: KeePassDatabase,
         remote: KeePassDatabase
     ): KeePassDatabase {
-        val baseHeader = base.header.toString()
-        val localHeader = local.header.toString()
-        val remoteHeader = remote.header.toString()
+        val baseHeader = headerSettingsSignature(base)
+        val localHeader = headerSettingsSignature(local)
+        val remoteHeader = headerSettingsSignature(remote)
         return when {
             localHeader == baseHeader -> remote
             remoteHeader == baseHeader -> local
             localHeader == remoteHeader -> local
             else -> local
+        }
+    }
+
+    private fun headerSettingsSignature(database: KeePassDatabase): String {
+        // Every save regenerates the vectors. Also, Kotpass Signature.toString()
+        // is object identity, so compare its actual bytes instead of the header's toString().
+        val header = database.header
+        return buildString {
+            fun part(value: Any?) {
+                val text = value?.toString()
+                if (text == null) append("-1:") else append(text.length).append(':').append(text)
+            }
+            part(header.signature.base.hex())
+            part(header.signature.secondary.hex())
+            part(header.version)
+            part(header.cipherId)
+            part(header.compression)
+            when (header) {
+                is DatabaseHeader.Ver3x -> {
+                    part(header.transformRounds)
+                    part(header.innerRandomStreamId)
+                }
+                is DatabaseHeader.Ver4x -> {
+                    // The normalized KDF is only stringified for comparison, never encoded.
+                    part(when (val kdf = header.kdfParameters) {
+                        is KdfParameters.Aes -> kdf.copy(seed = ByteString.EMPTY)
+                        is KdfParameters.Argon2 -> kdf.copy(salt = ByteString.EMPTY)
+                    })
+                    part(header.publicCustomData.size)
+                    header.publicCustomData.toSortedMap().forEach { (name, value) -> part(name); part(value) }
+                    part((database as KeePassDatabase.Ver4x).innerHeader.randomStreamId)
+                }
+            }
         }
     }
 

@@ -18,6 +18,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import takagi.ru.monica.bitwarden.repository.BitwardenRepository
+import takagi.ru.monica.localization.xmlTestStrings
 
 class BitwardenLoginErrorTest {
     @Test
@@ -133,7 +134,7 @@ class BitwardenLoginErrorTest {
     fun serverResponseMentioningNetworkTermsStillUsesServerErrorHandling() {
         val error = Exception("PreLogin failed: 503 upstream connect timeout")
         assertNull(classifyBitwardenLoginError(error))
-        assertEquals("服务器暂时不可用，请稍后重试", BitwardenRepository.parseErrorMessage(error.message))
+        assertEquals("服务器暂时不可用，请稍后重试。", BitwardenRepository.parseErrorMessage(error.message, xmlTestStrings("zh")))
     }
 
     @Test
@@ -142,7 +143,7 @@ class BitwardenLoginErrorTest {
         val invalidCode = Exception("Two-step token is invalid")
         assertNull(classifyBitwardenLoginError(invalidPassword))
         assertNull(classifyBitwardenLoginError(invalidCode))
-        assertEquals("两步验证码错误，请检查后重试", BitwardenRepository.parseErrorMessage(invalidCode.message))
+        assertEquals("两步验证码错误，请检查后重试。", BitwardenRepository.parseErrorMessage(invalidCode.message, xmlTestStrings("zh")))
     }
 
     @Test(timeout = 1_000)

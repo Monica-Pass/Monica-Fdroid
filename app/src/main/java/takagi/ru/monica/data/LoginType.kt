@@ -22,10 +22,10 @@ enum class SsoProvider(val displayName: String, val icon: String) {
     MICROSOFT("Microsoft", "microsoft"),
     GITHUB("GitHub", "github"),
     TWITTER("Twitter/X", "twitter"),
-    WECHAT("微信", "wechat"),
+    WECHAT("WeChat", "wechat"),
     QQ("QQ", "qq"),
-    WEIBO("微博", "weibo"),
-    OTHER("其他", "other");
+    WEIBO("Weibo", "weibo"),
+    OTHER("Other", "other");
     
     companion object {
         fun fromName(name: String): SsoProvider {

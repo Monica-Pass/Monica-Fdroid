@@ -5,12 +5,13 @@ import java.io.File
 import takagi.ru.monica.webdav.WebDavErrorClassifier
 import takagi.ru.monica.webdav.WebDavErrorKind
 
-class WebDavMdbxRemoteTransport(
+class WebDavMdbxRemoteTransport internal constructor(
     serverUrl: String,
     username: String,
-    password: String
+    password: String,
+    strings: StringResolver
 ) : MdbxRemoteTransport {
-    private val source = WebDavMdbxFileSource(serverUrl, username, password)
+    private val source = WebDavMdbxFileSource(serverUrl, username, password, strings = strings)
 
     override suspend fun testConnection() {
         source.testConnection().getOrThrow()

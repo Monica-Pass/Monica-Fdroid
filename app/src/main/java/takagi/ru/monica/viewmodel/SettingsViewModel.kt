@@ -153,6 +153,12 @@ class SettingsViewModel(
         }
     }
 
+    fun updateWalletStackLoopEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsManager.updateWalletStackLoopEnabled(enabled)
+        }
+    }
+
     fun updatePasswordGroupMode(mode: String) {
         viewModelScope.launch {
             settingsManager.updatePasswordGroupMode(mode)

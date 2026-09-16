@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_message_credentials_required">アカウント名とパスワードを入力してください</string>
+    <string name="steam_message_rsa_failed">Steam の RSA キーを取得できませんでした</string>
+    <string name="steam_message_rsa_incomplete">Steam から不完全な RSA データが返されました</string>
+    <string name="steam_message_password_encrypt">Steam のパスワードを暗号化できませんでした</string>
+    <string name="steam_message_login_request">Steam のログインリクエストを送信できませんでした</string>
+    <string name="steam_message_login_failed">Steam へのログインに失敗しました</string>
+    <string name="steam_message_login_rejected">Steam がログインを拒否しました（EResult=%1$s, interval=%2$s）</string>
+    <string name="steam_message_login_incomplete">Steam から不完全なログイン応答が返されました。追加認証が必要な可能性があります。</string>
+    <string name="steam_message_session_invalid">ログインセッションが無効です</string>
+    <string name="steam_message_code_required">認証コードを入力してください</string>
+    <string name="steam_message_session_expired">ログインセッションの有効期限が切れました。やり直してください。</string>
+    <string name="steam_message_verification_failed">Steam の認証に失敗しました</string>
+    <string name="steam_message_qr_create">Steam の QR ログインを開始できませんでした</string>
+    <string name="steam_message_qr_failed">Steam の QR ログインに失敗しました</string>
+    <string name="steam_message_code_submit">Steam の認証コードを送信できませんでした</string>
+    <string name="steam_message_session_needs_code">このログインセッションには認証コードが必要です</string>
+    <string name="steam_message_qr_expired">QR ログインセッションの有効期限が切れました。やり直してください。</string>
+    <string name="steam_message_not_qr">このセッションは QR ログインを使用していません</string>
+    <string name="steam_message_poll_failed">Steam のログイン状態を確認できませんでした</string>
+    <string name="steam_message_steamid_missing">Steam にログインしましたが、SteamID がありません。続行できません。</string>
+    <string name="steam_message_token_missing">Steam にログインしましたが、アクセストークンを取得できませんでした。インポートを続行できません。</string>
+    <string name="steam_message_login_timeout">Steam ログインの待機がタイムアウトしました。後でもう一度お試しください。</string>
+    <string name="steam_message_qr_parameters">QR ログインセッションのデータが無効です。やり直してください。</string>
+    <string name="steam_message_replacement_code">このアカウントには認証器が設定済みです。コードを入力して置き換えてください。</string>
+    <string name="steam_message_steamid_invalid">SteamID が無効です。Steam Guard を設定できません。</string>
+    <string name="steam_message_account_restricted">この Steam アカウントは制限されているため、Steam Guard を追加できません</string>
+    <string name="steam_message_rate_limited">Steam へのリクエストが多すぎます。後でもう一度お試しください。</string>
+    <string name="steam_message_add_failed">Steam Guard を追加できませんでした</string>
+    <string name="steam_message_phone_required">Steam Guard を追加する前に、この Steam アカウントに電話番号を登録してください</string>
+    <string name="steam_message_response_missing">Steam から不完全な認証器データが返されました: %1$s がありません</string>
+    <string name="steam_message_activation_expired">Steam Guard の有効化期限が切れました。再度ログインしてください。</string>
+    <string name="steam_message_activation_data">Steam Guard のデータが不完全です。有効化コードを生成できません。</string>
+    <string name="steam_message_activation_failed">Steam Guard の有効化に失敗しました</string>
+    <string name="steam_message_activation_code_invalid">Steam の有効化コードが無効か、有効期限が切れています</string>
+    <string name="steam_message_activation_status">Steam Guard の有効化に失敗しました（status=%1$d）</string>
+    <string name="steam_message_sequential_codes">Steam Guard の有効化に失敗しました: Steam が要求する連続コードを生成できませんでした</string>
+    <string name="steam_message_replace_start">認証器の置き換えを開始できませんでした</string>
+    <string name="steam_message_replace_sms">SMS コードを入力して現在の認証器を置き換えてください</string>
+    <string name="steam_message_replace_denied">Steam へのログインは成功しましたが、認証器の移行が拒否されました（EResult=2）。利用可能な電話番号が登録されていないか、移行が制限されている可能性があります。maFile をインポートするか、Steam に電話番号を登録して再試行してください。</string>
+    <string name="steam_message_replace_forbidden">Steam へのログインは成功しましたが、認証器の移行へのアクセスが拒否されました（EResult=15）。maFile をインポートするか、後で再度ログインしてお試しください。</string>
+    <string name="steam_message_replace_limited">Steam へのログインは成功しましたが、認証器の移行が一時的に制限されています（EResult=84）。後でもう一度お試しください。</string>
+    <string name="steam_message_replace_result">Steam へのログインは成功しましたが、認証器の移行に失敗しました（EResult=%1$d）</string>
+    <string name="steam_message_replace_session">置き換えセッションが無効です。インポートするには再度ログインしてください。</string>
+    <string name="steam_message_replace_failed">認証器の置き換えに失敗しました</string>
+    <string name="steam_message_session_state">ログインセッションの状態が無効です。やり直してください。</string>
+    <string name="steam_message_oauth_missing">Steam へのログインは成功しましたが、OAuth トークンが返されませんでした。インポートを続行できません。</string>
+    <string name="steam_message_captcha_unsupported">Steam が要求する CAPTCHA にこのバージョンでは対応できません。Steam クライアントで一度ログインしてから再試行してください。</string>
+    <string name="steam_message_enter_token_code">Steam Guard コードを入力してください</string>
+    <string name="steam_message_enter_email_code">メールで届いたコードを入力してください</string>
+    <string name="steam_message_invalid_parameters">Steam がリクエストを拒否しました: パラメーターが無効です</string>
+    <string name="steam_message_access_denied">Steam がアクセスを拒否しました</string>
+    <string name="steam_message_already_bound">このアカウントには Steam 認証器が設定済みです。置き換えの手順を使用してください。</string>
+    <string name="steam_message_operation_disallowed">現在の状態では Steam がこの操作を許可していません</string>
+    <string name="steam_message_confirmation_required">Steam で追加の確認が必要です</string>
+    <string name="steam_message_code_invalid">Steam の認証コードが無効か、有効期限が切れています</string>
+    <string name="steam_message_request_status">Steam へのリクエストに失敗しました（status=%1$d）</string>
+    <string name="steam_message_bad_credentials">Steam のアカウント名またはパスワードが正しくありません</string>
+    <string name="steam_message_duplicate_request">Steam が重複リクエストを報告しました（EResult=29）。アカウントに認証器がすでに設定されている可能性があります。</string>
+    <string name="steam_message_session_conflict">Steam のログインセッションが競合しています。後でもう一度お試しください。</string>
+    <string name="steam_message_extra_verification">Steam で追加のログイン認証が必要です（EResult=63）</string>
+    <string name="steam_message_login_result">Steam へのログインに失敗しました（EResult=%1$d）</string>
+    <string name="steam_message_token_code_invalid">Steam Guard コードが無効か、有効期限が切れています</string>
+    <string name="steam_message_sms_email_code_invalid">SMS またはメールの認証コードが無効か、有効期限が切れています</string>
+</resources>

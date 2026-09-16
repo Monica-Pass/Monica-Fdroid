@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -368,7 +369,7 @@ private fun SecretRow(
     val actionMenuState = rememberPasswordFieldActionMenuState()
     val displayValue = if (revealed) value else "••••••••"
 
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier.fillMaxWidth().animateMonicaContentSize(), verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Box(
@@ -389,7 +390,7 @@ private fun SecretRow(
                     onToggleVisibility = { revealed = !revealed },
                     onCreateSend = onCreateSend
                 )
-                Text(displayValue, style = MaterialTheme.typography.bodyLarge)
+                Text(displayValue, style = MaterialTheme.typography.bodyLarge, maxLines = if (revealed) Int.MAX_VALUE else 1)
             }
         }
         IconButton(onClick = { revealed = !revealed }) {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">Wyeksportowany plik kopii jest pusty</string>
+    <string name="export_message_empty_zip">Kopia ZIP nie zawiera danych</string>
+    <string name="export_message_open_failed">Nie można otworzyć miejsca docelowego eksportu</string>
+    <string name="export_message_incomplete">Eksport jest niekompletny: %1$d/%2$d bajtów</string>
+    <string name="export_message_invalid_encrypted">Zapisana kopia ma nieprawidłowy format szyfrowania</string>
+    <string name="export_message_verify_failed">Nie udało się zweryfikować wyeksportowanego pliku</string>
+    <string name="export_message_backup_summary">Kopia wyeksportowana. Hasła: %1$d, obrazy: %2$d</string>
+    <string name="import_message_aegis_unencrypted">Ten sposób importu wymaga niezaszyfrowanego eksportu JSON z Aegis</string>
+    <string name="import_message_aegis_missing">Nieprawidłowy plik Aegis: brak %1$s</string>
+    <string name="import_message_aegis_empty_slots">Nieprawidłowy plik Aegis: slots jest puste</string>
+    <string name="import_message_aegis_slot_type">Nieobsługiwany typ slot Aegis: %1$s</string>
+    <string name="import_message_aegis_no_totp">W pliku Aegis nie znaleziono poprawnych wpisów TOTP</string>
+    <string name="import_message_aegis_failed">Nie udało się zaimportować pliku Aegis: %1$s</string>
+    <string name="import_message_key_length">Odszyfrowany klucz ma nieprawidłową długość</string>
+    <string name="import_message_steam_missing">Nieprawidłowe dane Steam Guard: brak %1$s</string>
+    <string name="import_message_steam_device_id">Nieprawidłowy ID urządzenia. Oczekiwany format: android:xxxx</string>
+    <string name="import_message_steam_secret">Nieprawidłowy format Steam shared_secret</string>
+    <string name="import_message_steam_exists">Ten token Steam Guard już istnieje</string>
+    <string name="export_message_empty_mafile">Wyeksportowany maFile jest pusty</string>
+    <string name="crypto_message_encrypt_failed">Błąd szyfrowania: %1$s</string>
+    <string name="crypto_message_decrypt_failed">Błąd odszyfrowania: %1$s</string>
+    <string name="crypto_message_file_too_small">Zaszyfrowany plik jest zbyt mały i może być uszkodzony</string>
+    <string name="crypto_message_invalid_file">Nieprawidłowy format zaszyfrowanego pliku</string>
+    <string name="crypto_message_password_or_corrupt">Błędne hasło lub uszkodzone zaszyfrowane dane</string>
+    <string name="crypto_message_invalid_text">Nieprawidłowy format zaszyfrowanego tekstu</string>
+    <string name="photo_message_camera_failed">Nie udało się otworzyć aparatu: %1$s</string>
+    <string name="photo_message_gallery_missing">Brak dostępnej aplikacji galerii</string>
+    <string name="photo_message_gallery_failed">Nie udało się otworzyć galerii: %1$s</string>
+    <string name="photo_message_data_failed">Nie udało się odczytać zwróconego obrazu: %1$s</string>
+    <string name="photo_message_file_missing">Plik zdjęcia jest pusty lub go brakuje</string>
+    <string name="photo_message_not_selected">Nie wybrano obrazu</string>
+</resources>

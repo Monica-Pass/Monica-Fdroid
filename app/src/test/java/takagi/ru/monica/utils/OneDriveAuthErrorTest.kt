@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,8 +17,8 @@ class OneDriveAuthErrorTest {
 
         assertTrue(error.isOneDriveAuthTemporarilyUnavailable())
         assertEquals(
-            "OneDrive 暂时无法刷新登录状态。请关闭系统电池优化，或点亮屏幕并重新打开 Monica 后再试。",
-            error.toOneDriveUserMessage("fallback")
+            "OneDrive 暂时无法刷新登录状态。请关闭电池优化，或点亮屏幕后重新打开 Monica 再试。",
+            error.toOneDriveUserMessage(xmlTestStrings("zh"), "fallback")
         )
     }
 }

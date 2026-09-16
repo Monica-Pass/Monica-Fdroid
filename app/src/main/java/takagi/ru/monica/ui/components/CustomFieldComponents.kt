@@ -90,11 +90,12 @@ fun CustomFieldEditCard(
     field: CustomFieldDraft,
     onFieldChange: (CustomFieldDraft) -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    saveTextState: Boolean = true
 ) {
     // 编辑模式：新字段（标题或值为空）默认编辑，已保存字段默认查看
     var isEditing by remember { mutableStateOf(field.title.isBlank() || field.value.isBlank()) }
-    var valueVisible by remember { mutableStateOf(!field.isProtected) }
+    var valueVisible by remember(field.id, field.isProtected) { mutableStateOf(!field.isProtected) }
     // 删除确认对话框状态
     var showDeleteConfirm by remember { mutableStateOf(false) }
     
@@ -156,6 +157,7 @@ fun CustomFieldEditCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     OutlinedTextField(
+                        saveTextState = saveTextState,
                         value = field.title,
                         onValueChange = {
                             if (!field.isPreset) {
@@ -204,6 +206,7 @@ fun CustomFieldEditCard(
 
                 // 字段值输入
                 OutlinedTextField(
+                    saveTextState = saveTextState,
                     value = field.value,
                     onValueChange = { onFieldChange(field.copy(value = it)) },
                     label = { Text(stringResource(R.string.custom_field_value)) },
@@ -546,7 +549,7 @@ fun CustomFieldDetailCard(
     onCopy: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var valueVisible by remember { mutableStateOf(!field.isProtected) }
+    var valueVisible by remember(field.id, field.isProtected) { mutableStateOf(!field.isProtected) }
     val clipboardManager = LocalClipboardManager.current
     
     ElevatedCard(
@@ -558,6 +561,7 @@ fun CustomFieldDetailCard(
     ) {
         Column(
             modifier = Modifier
+                .animateMonicaContentSize()
                 .clickable { 
                     clipboardManager.setText(AnnotatedString(field.value))
                     onCopy(field.title)
@@ -631,6 +635,7 @@ fun CustomFieldDetailCard(
                 } else {
                     "••••••••"
                 },
+                maxLines = if (valueVisible || !field.isProtected) Int.MAX_VALUE else 1,
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -674,11 +679,14 @@ fun CustomFieldEditorSection(
     onFieldsChange: (List<CustomFieldDraft>) -> Unit,
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
-    onExpandedChange: (Boolean) -> Unit = {}
+    onExpandedChange: (Boolean) -> Unit = {},
+    saveTextState: Boolean = true
 ) {
     Column(modifier = modifier) {
         fields.forEachIndexed { index, field ->
+            androidx.compose.runtime.key(field.id) {
             CustomFieldEditCard(
+                saveTextState = saveTextState,
                 index = index,
                 field = field,
                 onFieldChange = { updated ->
@@ -692,13 +700,14 @@ fun CustomFieldEditorSection(
                     onFieldsChange(newList)
                 }
             )
+            }
         }
         
         AddCustomFieldButton(
             onClick = {
                 val newList = fields.toMutableList()
                 newList.add(CustomFieldDraft(
-                    id = CustomFieldDraft.nextTempId(),
+                    id = CustomFieldDraft.nextTempId(fields.map { it.id }),
                     title = "",
                     value = "",
                     isProtected = false

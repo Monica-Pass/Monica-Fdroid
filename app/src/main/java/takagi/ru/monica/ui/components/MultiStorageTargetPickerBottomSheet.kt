@@ -133,7 +133,8 @@ fun MultiStorageTargetPickerBottomSheet(
     showSelectionModeToggle: Boolean = true,
     showBitwardenFolderTargets: Boolean = true,
     confirmButtonText: String? = null,
-    onConfirmSelection: ((List<StorageTarget>) -> Unit)? = null
+    onConfirmSelection: ((List<StorageTarget>) -> Unit)? = null,
+    showMonicaLocal: Boolean = true,
 ) {
     if (!visible) return
 
@@ -147,14 +148,15 @@ fun MultiStorageTargetPickerBottomSheet(
         minSheetHeight
     }
 
-    val sources = remember(keepassDatabases, mdbxDatabases, bitwardenVaults) {
+    val sources = remember(keepassDatabases, mdbxDatabases, bitwardenVaults, showMonicaLocal) {
         buildList {
-            add(StoragePickerSource.MonicaLocal)
+            if (showMonicaLocal) add(StoragePickerSource.MonicaLocal)
             keepassDatabases.forEach { add(StoragePickerSource.KeePassDatabase(it)) }
             mdbxDatabases.forEach { add(StoragePickerSource.MdbxDatabase(it)) }
             bitwardenVaults.forEach { add(StoragePickerSource.BitwardenVaultSource(it)) }
         }
     }
+    if (sources.isEmpty()) return
     val monicaOnlyLabel = stringResource(R.string.vault_monica_only)
     val categoryNoneLabel = stringResource(R.string.category_none)
     val bitwardenRootLabel = stringResource(R.string.folder_no_folder_root)
@@ -185,7 +187,8 @@ fun MultiStorageTargetPickerBottomSheet(
         mdbxFoldersByDatabase[database.id] = folders
     }
     val primaryTarget = selectedTargets.firstOrNull() ?: StorageTarget.MonicaLocal(null)
-    val primarySourceKey = primaryTarget.toSourceKey()
+    val primarySourceKey = primaryTarget.toSourceKey().takeIf { key -> sources.any { it.key == key } }
+        ?: sources.first().key
     // Existing targets are protected only while editing in multi-select mode.
     // Single-select is the explicit "move" workflow and replaces the target.
     val singleModeAllowed = true
@@ -256,7 +259,7 @@ fun MultiStorageTargetPickerBottomSheet(
     }
 
     fun sourceByKey(key: String): StoragePickerSource {
-        return sources.firstOrNull { it.key == key } ?: StoragePickerSource.MonicaLocal
+        return sources.firstOrNull { it.key == key } ?: sources.first()
     }
 
     fun buildTargetsForSource(source: StoragePickerSource): List<StorageTargetChip> {
@@ -392,7 +395,8 @@ fun MultiStorageTargetPickerBottomSheet(
         if (newMode == StoragePickerSelectionMode.SINGLE && !singleModeAllowed) return
         selectionMode = newMode
         if (newMode == StoragePickerSelectionMode.SINGLE) {
-            val retained = selectedTargets.firstOrNull() ?: StorageTarget.MonicaLocal(null)
+            val retained = selectedTargets.firstOrNull { target -> sources.any { it.key == target.toSourceKey() } }
+                ?: rootTargetForSource(sourceByKey(primarySourceKey))
             singleSourceKey = retained.toSourceKey()
             onSelectedTargetsChange(listOf(retained))
         } else {

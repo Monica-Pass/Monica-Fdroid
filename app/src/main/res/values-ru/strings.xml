@@ -149,7 +149,7 @@
     <string name="password_copied">Пароль скопирован</string>
 
     <!-- Quick Settings Tile & Smart Copy -->
-    <string name="tile_autofill_label">Monica Fill</string>
+    <string name="tile_autofill_label">Заполнение Monica</string>
     <string name="smart_copy_username_first">Скопировать логин (пароль следующим)</string>
     <string name="smart_copy_password_first">Скопировать пароль (логин следующим)</string>
     <string name="smart_copy_notification_title">Monica</string>
@@ -169,7 +169,7 @@
     <string name="notification_validator_switch">Переключить</string>
 
     <!-- Form Fields -->
-    <string name="field_email">Email</string>
+    <string name="field_email">Эл. почта</string>
     <string name="field_phone">Телефон</string>
     <string name="field_address">Адрес</string>
     <string name="field_address_placeholder">Улица, номер дома и т.д.</string>
@@ -702,28 +702,28 @@
     <string name="nav_ledger">Финансы</string>
     <string name="nav_generator">Генератор</string>
     <string name="nav_timeline">История</string>
-    <string name="nav_passkey">Passkey</string>
+    <string name="nav_passkey">Ключи доступа</string>
     <string name="nav_settings">Настройки</string>
     <string name="trash_bin">Корзина</string>
     <string name="trash_settings">Настройки корзины</string>
     <string name="add">Добавить</string>
 
     <!-- Main Screen Bottom Navigation (Short) -->
-    <string name="nav_passwords_short">Пар</string>
-    <string name="nav_authenticator_short">Аут</string>
-    <string name="nav_documents_short">Док</string>
-    <string name="nav_bank_cards_short">Карта</string>
-    <string name="nav_card_wallet_short">Кошел.</string>
+    <string name="nav_passwords_short">Пароли</string>
+    <string name="nav_authenticator_short">Коды</string>
+    <string name="nav_documents_short">Док.</string>
+    <string name="nav_bank_cards_short">Карты</string>
+    <string name="nav_card_wallet_short">Кошелёк</string>
     <string name="nav_notes_short">Заметки</string>
     <string name="nav_ledger_short">Фин.</string>
     <string name="nav_generator_short">Ген.</string>
     <string name="nav_timeline_short">История</string>
-    <string name="nav_passkey_short">Pass</string>
+    <string name="nav_passkey_short">Ключи</string>
     <string name="nav_settings_short">Настр.</string>
 
     <!-- V2 Multi-Source Vault Navigation -->
     <string name="nav_v2_vault">Хранилище (тест)</string>
-    <string name="nav_v2_vault_short">Хран.</string>
+    <string name="nav_v2_vault_short">Сейф</string>
     <string name="nav_v2_send">Send</string>
     <string name="nav_v2_send_short">Send</string>
     <string name="nav_v2_sync">Синхр.</string>
@@ -751,7 +751,7 @@
     <string name="v2_create_note">Заметка</string>
 
     <!-- Passkey Screen -->
-    <string name="passkey_title">Passkey</string>
+    <string name="passkey_title">Ключ доступа</string>
     <string name="passkey_count">%1$d passkey</string>
     <string name="passkey_view_only_mode">Только просмотр</string>
     <string name="passkey_search_placeholder">Поиск passkey…</string>
@@ -780,7 +780,7 @@
     <string name="passkey_qr_open_failed">Система не может обработать этот QR-код passkey.</string>
 
     <!-- Passkey Management -->
-    <string name="passkey">Passkey</string>
+    <string name="passkey">Ключ доступа</string>
     <string name="passkey_search_hint">Поиск passkey…</string>
     <string name="passkey_search_empty">Подходящих passkey нет</string>
     <string name="passkey_search_empty_hint">Попробуйте другой запрос</string>
@@ -1790,7 +1790,7 @@
     <!-- Password Detail Dialog -->
     <string name="basic_info">Основная информация</string>
     <string name="website">Сайт</string>
-    <string name="email">Email</string>
+    <string name="email">Эл. почта</string>
     <string name="phone">Телефон</string>
     <string name="personal_info">Личные данные</string>
     <string name="address_info">Адрес</string>
@@ -2200,7 +2200,7 @@
     <string name="common_account_template_delete_message">Удалить этот шаблон?</string>
     <string name="common_account_templates_count">%1$d шаблонов</string>
     <string name="common_account_templates_create_hint">Создайте многоразовые элементы для быстрого копирования и заполнения.</string>
-    <string name="common_account_type_email">Email</string>
+    <string name="common_account_type_email">Эл. почта</string>
     <string name="common_account_type_password">Пароль</string>
     <string name="common_account_type_account">Логин</string>
     <string name="common_account_type_phone">Телефон</string>
@@ -2449,7 +2449,7 @@
     <string name="sync_status_conflict_badge">Конфликт</string>
     <string name="sync_status_local_badge">Локально</string>
     <string name="bitwarden_synced_item">Синхронизировано с Bitwarden</string>
-    <string name="sync_status_with_vault"> · %1$s</string>
+    <string name="sync_status_with_vault">\u0020· %1$s</string>
     <string name="sync_last_sync">Последняя синхронизация: %1$s</string>
     <string name="sync_now">Синхронизировать</string>
     <string name="sync_status_synced_full">Синхронизировано с Bitwarden</string>
@@ -2920,7 +2920,7 @@
     <string name="password_field_customization_type_number">Число</string>
     <string name="password_field_customization_type_date">Дата</string>
     <string name="password_field_customization_type_url">URL</string>
-    <string name="password_field_customization_type_email">Email</string>
+    <string name="password_field_customization_type_email">Эл. почта</string>
     <string name="password_field_customization_type_phone">Телефон</string>
     <string name="import_type_monica_backup_title">Резервная копия Monica</string>
     <string name="import_type_monica_backup_desc">Восстановить полную ZIP-копию со всеми данными</string>
@@ -3423,7 +3423,7 @@
     <string name="repair_bitwarden_totp_nothing_to_fix">Проблем с устаревшими данными Bitwarden не найдено.</string>
     <string name="repair_bitwarden_totp_failed">Ошибка исправления данных Bitwarden: %1$s</string>
     <string name="repair_bitwarden_totp_failed_unknown">Неизвестная ошибка</string>
-    <string name="autofill_service_label">Monica Autofill</string>
+    <string name="autofill_service_label">Автозаполнение Monica</string>
     <string name="settings_search_hint">Поиск в настройках…</string>
     <string name="settings_search_empty_hint">Попробуйте другой запрос</string>
     <string name="quick_init_section_title">Быстрая настройка</string>
@@ -4017,7 +4017,7 @@
     <string name="keepass_native_kind_bank_card">Банковская карта</string>
     <string name="keepass_native_kind_document">Документ</string>
     <string name="keepass_native_kind_note">Заметка</string>
-    <string name="keepass_native_kind_passkey">Passkey</string>
+    <string name="keepass_native_kind_passkey">Ключ доступа</string>
     <string name="keepass_native_kind_password">Пароль</string>
     <string name="keepass_native_kind_template">Шаблон</string>
     <string name="keepass_native_kind_totp">Аутентификатор</string>
@@ -4614,4 +4614,43 @@
     <string name="zip_config_export_plain_title">Обычный ZIP</string>
     <string name="zip_config_export_security_desc">Этот выбор включает важные данные WebDAV и настройки Monica. Выберите способ защиты перед экспортом.</string>
     <string name="zip_config_export_security_title">Защита настроек Monica</string>
+    <string name="webdav_retention_title">Ограничить число копий</string>
+    <string name="webdav_retention_description">После успешной загрузки сохранять последние обычные копии и удалять старые</string>
+    <string name="webdav_retention_count">Сколько копий хранить</string>
+    <string name="webdav_retention_count_hint">Введите число от %1$d до %2$d</string>
+    <string name="webdav_retention_permanent_hint">Постоянные копии не учитываются в этом лимите и никогда не удаляются автоматически.</string>
+    <string name="webdav_retention_disabled_hint">При отключённом лимите удаляются только обычные копии старше %1$d дней, а последние %2$d копий как минимум сохраняются.</string>
+    <string name="webdav_cleanup_failed">Копия загружена, но старые копии удалить не удалось. Очистка повторится после следующего успешного копирования.</string>
+    <string name="webdav_backup_unknown_date">Дата неизвестна</string>
+    <string name="timeline_trash_delete_unknown_error">Произошла непредвиденная ошибка. Повторите попытку.</string>
+    <string name="bitwarden_trash_vault_missing">Хранилище Bitwarden не найдено.</string>
+    <string name="bitwarden_trash_delete_http_error">Bitwarden отклонил удаление (HTTP %1$d).</string>
+    <plurals name="vault_v2_hierarchy_item_count">
+        <item quantity="one">%1$d запись</item>
+        <item quantity="few">%1$d записи</item>
+        <item quantity="many">%1$d записей</item>
+        <item quantity="other">%1$d записи</item>
+    </plurals>
+    <string name="card_face_crop_title">Обрезать изображение карты</string>
+    <string name="card_face_crop_reset">Сбросить</string>
+    <string name="wallet_stack_default_name">Стопка карт</string>
+    <string name="wallet_stack_count">Карт: %1$d</string>
+    <string name="wallet_stack_create">Создать стопку</string>
+    <string name="wallet_stack_selected_count">Выбрано карт: %1$d</string>
+    <string name="wallet_stack_add_to_existing">Добавить в существующую стопку</string>
+    <string name="wallet_stack_manage">Управление стопкой</string>
+    <string name="wallet_stack_manage_hint">Меняйте порядок карт или убирайте их из стопки. Убранные карты будут показаны в кошельке отдельно.</string>
+    <string name="wallet_stack_unavailable_card">Карта недоступна</string>
+    <string name="wallet_stack_remove_card">Убрать из стопки</string>
+    <string name="wallet_stack_single_hint">Если сохранить меньше двух карт, стопка будет расформирована.</string>
+    <string name="wallet_stack_dissolve">Расформировать стопку</string>
+    <string name="wallet_stack_collapse">Свернуть стопку</string>
+    <string name="wallet_stack_browse_hint">Листайте вверх или вниз</string>
+    <string name="wallet_stack_position">%1$d / %2$d</string>
+    <string name="wallet_stack_save_error">Не удалось сохранить стопку карт. Повторите попытку.</string>
+    <string name="wallet_stack_next">Следующая карта</string>
+    <string name="wallet_stack_previous">Предыдущая карта</string>
+    <string name="wallet_stack_open_card">Открыть сведения о карте</string>
+    <string name="language_french">Français</string>
+    <string name="qs_lang_french">Français</string>
 </resources>

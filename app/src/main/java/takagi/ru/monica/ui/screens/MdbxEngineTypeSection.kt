@@ -1,16 +1,10 @@
 package takagi.ru.monica.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.data.MdbxEngineType
 import takagi.ru.monica.data.MdbxTigaMode
 
@@ -50,10 +46,10 @@ fun MdbxEngineTypeSection(
     val engineLabel = if (selectedEngine == MdbxEngineType.KOTLIN_MDBX1) "MDBX 1" else "MDBX 2"
     val summary = listOfNotNull(engineLabel, selectedTigaMode?.label).joinToString(" · ")
 
-    Card(
+    MdbxCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
@@ -65,21 +61,18 @@ fun MdbxEngineTypeSection(
                 },
                 supportingContent = { Text(summary) },
                 leadingContent = {
-                    Icon(Icons.Default.Tune, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    MdbxIconBadge(Icons.Default.Tune)
                 },
                 trailingContent = {
-                    Icon(
-                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    MonicaExpansionChevron(
+                        expanded = expanded,
                         contentDescription = if (expanded) strings.get(R.string.mdbx_ui_collapse_database_options) else strings.get(R.string.mdbx_ui_expand_database_options)
                     )
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+                modifier = Modifier.fillMaxWidth().mdbxClickable(shape = MdbxPanelShape) { expanded = !expanded }
             )
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn() + expandVertically()
-            ) {
+            MonicaExpandableContent(expanded = expanded) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)

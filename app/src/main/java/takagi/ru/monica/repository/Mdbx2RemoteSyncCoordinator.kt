@@ -193,9 +193,13 @@ internal class Mdbx2RemoteSyncCoordinator(
                 engine = engine,
                 initialState = state
             )
-            state = receive.state.copy(exportCheckpoint = engine.checkpoint())
-            stateStore.write(databaseId, state)
+            // Network waits allow local reads/edits to append new commits. Only the
+            // published segments and safe remote applies may advance this cursor.
+            state = receive.state
             report.copy(
+                vaultId = engine.vaultId,
+                publishedCheckpoint = state.exportCheckpoint,
+                syncedCommitInventory = receive.syncedCommitInventory,
                 downloadedSegments = receive.downloadedSegments,
                 downloadedBlobs = receive.downloadedBlobs,
                 appliedCommits = receive.appliedCommits,
@@ -269,7 +273,7 @@ internal class Mdbx2RemoteSyncCoordinator(
         throw IOException("MDBX2 generated too many incremental segments in one synchronization")
     }
 
-    private fun restoreOrCreatePendingSegment(
+    private suspend fun restoreOrCreatePendingSegment(
         databaseId: Long,
         engine: Mdbx2SyncEngine,
         state: MdbxSyncStateSnapshot,
@@ -375,26 +379,28 @@ internal class Mdbx2RemoteSyncCoordinator(
         return uploaded
     }
 
-    private fun writeLocalBlobToFile(
+    private suspend fun writeLocalBlobToFile(
         engine: Mdbx2SyncEngine,
         blobId: String,
         totalSize: ULong,
         destination: File
     ) {
-        destination.outputStream().buffered().use { output ->
-            var offset = 0uL
-            while (offset < totalSize) {
-                val chunk = engine.readBlobChunk(
-                    blobId = blobId,
-                    totalSize = totalSize,
-                    offset = offset,
-                    maxBytes = BLOB_CHUNK_SIZE
-                )
-                require(chunk.blobId == blobId && chunk.totalSize == totalSize && chunk.offset == offset)
-                require(chunk.ciphertext.isNotEmpty()) { "MDBX2 returned an empty Blob chunk" }
-                output.write(chunk.ciphertext)
-                offset += chunk.ciphertext.size.toULong()
-                require(chunk.isLast == (offset == totalSize)) { "MDBX2 Blob chunk boundary mismatch" }
+        engine.withBlobTransfer { local ->
+            destination.outputStream().buffered().use { output ->
+                var offset = 0uL
+                while (offset < totalSize) {
+                    val chunk = local.readBlobChunk(
+                        blobId = blobId,
+                        totalSize = totalSize,
+                        offset = offset,
+                        maxBytes = BLOB_CHUNK_SIZE
+                    )
+                    require(chunk.blobId == blobId && chunk.totalSize == totalSize && chunk.offset == offset)
+                    require(chunk.ciphertext.isNotEmpty()) { "MDBX2 returned an empty Blob chunk" }
+                    output.write(chunk.ciphertext)
+                    offset += chunk.ciphertext.size.toULong()
+                    require(chunk.isLast == (offset == totalSize)) { "MDBX2 Blob chunk boundary mismatch" }
+                }
             }
         }
         require(destination.length() == totalSize.toLong()) { "MDBX2 Blob export size mismatch" }
@@ -413,6 +419,7 @@ internal class Mdbx2RemoteSyncCoordinator(
         val descriptors = listRemoteSegments(remoteVaultPath, transport)
             .filterNot { it.deviceId == engine.deviceId }
         var state = initialState
+        var syncedCommitInventory = requireNotNull(initialState.exportCheckpoint).commitInventory
         var downloadedSegments = 0
         var downloadedBlobs = 0
         var appliedCommits = 0
@@ -475,12 +482,18 @@ internal class Mdbx2RemoteSyncCoordinator(
                             stateStore.write(databaseId, state)
                             break
                         }
-                        // The Rust apply already advanced the local engine.
-                        // Persist that checkpoint immediately so a later Blob
-                        // transfer failure cannot make the received change
-                        // look like a new local change and echo it back out.
-                        state = state.copy(exportCheckpoint = engine.checkpoint())
-                        stateStore.write(databaseId, state)
+                        // Remote commits are already synchronized when only local audit
+                        // deltas arrived during the download. A concurrent edit must still
+                        // prevent advancing the user-visible synchronized commit head.
+                        if (syncedCommitInventory == apply.localCheckpointBefore.commitInventory) {
+                            syncedCommitInventory = apply.localCheckpointAfter.commitInventory
+                        }
+                        // Preserve the full transport cursor whenever any local delta,
+                        // including an audit record, still needs uploading.
+                        if (state.exportCheckpoint == apply.localCheckpointBefore) {
+                            state = state.copy(exportCheckpoint = apply.localCheckpointAfter)
+                            stateStore.write(databaseId, state)
+                        }
                         val nextStream = currentStream.copy(
                             nextSequence = descriptor.sequence + 1,
                             checkpoint = apply.result,
@@ -514,6 +527,7 @@ internal class Mdbx2RemoteSyncCoordinator(
         }
         return ReceiveResult(
             state = state,
+            syncedCommitInventory = syncedCommitInventory,
             downloadedSegments = downloadedSegments,
             downloadedBlobs = downloadedBlobs,
             appliedCommits = appliedCommits,
@@ -567,49 +581,53 @@ internal class Mdbx2RemoteSyncCoordinator(
                     }
                     val ownerId = existingTransfer?.ownerId ?: "android-$databaseId-${UUID.randomUUID()}"
                     var offset = existingTransfer?.nextOffset?.coerceIn(0L, totalSize.toLong()) ?: 0L
-                    if (existingTransfer == null) {
-                        runCatching { engine.abortBlobTransfer(reference.blobId, ownerId) }
-                    }
-                    engine.acquireBlobLease(
-                        blobId = reference.blobId,
-                        ownerId = ownerId,
-                        nowUnixSecs = nowMillis() / 1000L,
-                        ttlSecs = BLOB_LEASE_TTL_SECONDS
-                    )
-                    try {
-                        RandomAccessFile(temporary, "r").use { input ->
-                            input.seek(offset)
-                            while (offset < totalSize.toLong()) {
-                                val count = minOf(BLOB_CHUNK_SIZE.toLong(), totalSize.toLong() - offset).toInt()
-                                val bytes = ByteArray(count)
-                                input.readFully(bytes)
-                                val nextOffset = offset + count
-                                engine.writeBlobChunk(
-                                    blobId = reference.blobId,
-                                    totalSize = totalSize,
-                                    offset = offset.toULong(),
-                                    ciphertext = bytes,
-                                    finalize = nextOffset == totalSize.toLong()
-                                )
-                                offset = nextOffset
-                                state = state.withBlobTransfer(
-                                    MdbxBlobTransferState(
-                                        blobId = reference.blobId,
-                                        totalSize = totalSize.toLong(),
-                                        ownerId = ownerId,
-                                        nextOffset = offset,
-                                        direction = DIRECTION_DOWNLOAD,
-                                        updatedAt = nowMillis()
-                                    )
-                                )
-                                stateStore.write(databaseId, state)
-                            }
+                    // The network download has finished. Keep one unlock for this
+                    // local file batch, including its durable resume updates.
+                    engine.withBlobTransfer { local ->
+                        if (existingTransfer == null) {
+                            runCatching { local.abortBlobTransfer(reference.blobId, ownerId) }
                         }
-                    } finally {
-                        runCatching { engine.releaseBlobLease(reference.blobId, ownerId) }
-                    }
-                    require(engine.hasBlob(reference.blobId, totalSize)) {
-                        "MDBX2 Blob transfer did not finalize"
+                        local.acquireBlobLease(
+                            blobId = reference.blobId,
+                            ownerId = ownerId,
+                            nowUnixSecs = nowMillis() / 1000L,
+                            ttlSecs = BLOB_LEASE_TTL_SECONDS
+                        )
+                        try {
+                            RandomAccessFile(temporary, "r").use { input ->
+                                input.seek(offset)
+                                while (offset < totalSize.toLong()) {
+                                    val count = minOf(BLOB_CHUNK_SIZE.toLong(), totalSize.toLong() - offset).toInt()
+                                    val bytes = ByteArray(count)
+                                    input.readFully(bytes)
+                                    val nextOffset = offset + count
+                                    local.writeBlobChunk(
+                                        blobId = reference.blobId,
+                                        totalSize = totalSize,
+                                        offset = offset.toULong(),
+                                        ciphertext = bytes,
+                                        finalize = nextOffset == totalSize.toLong()
+                                    )
+                                    offset = nextOffset
+                                    state = state.withBlobTransfer(
+                                        MdbxBlobTransferState(
+                                            blobId = reference.blobId,
+                                            totalSize = totalSize.toLong(),
+                                            ownerId = ownerId,
+                                            nextOffset = offset,
+                                            direction = DIRECTION_DOWNLOAD,
+                                            updatedAt = nowMillis()
+                                        )
+                                    )
+                                    stateStore.write(databaseId, state)
+                                }
+                            }
+                        } finally {
+                            runCatching { local.releaseBlobLease(reference.blobId, ownerId) }
+                        }
+                        require(local.hasBlob(reference.blobId, totalSize)) {
+                            "MDBX2 Blob transfer did not finalize"
+                        }
                     }
                     val sidecar = loadSidecar(
                         databaseId = databaseId,
@@ -837,6 +855,7 @@ internal class Mdbx2RemoteSyncCoordinator(
 
     private data class ReceiveResult(
         val state: MdbxSyncStateSnapshot,
+        val syncedCommitInventory: String,
         val downloadedSegments: Int,
         val downloadedBlobs: Int,
         val appliedCommits: Int,
@@ -882,6 +901,10 @@ internal data class Mdbx2RemoteBootstrapResult(
 )
 
 internal data class Mdbx2RemoteSyncReport(
+    val vaultId: String? = null,
+    val publishedCheckpoint: MdbxSyncCheckpointState? = null,
+    // May include received commits while the transport cursor retains local audit deltas.
+    val syncedCommitInventory: String? = null,
     val uploadedSegments: Int = 0,
     val downloadedSegments: Int = 0,
     val uploadedBlobs: Int = 0,

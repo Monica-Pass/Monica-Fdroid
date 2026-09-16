@@ -12,6 +12,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
@@ -87,6 +89,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.common.selection.SelectionActionBar
+import takagi.ru.monica.ui.components.SwipeableAddFab
 import takagi.ru.monica.data.LocalKeePassDatabase
 import takagi.ru.monica.data.LocalMdbxDatabase
 import takagi.ru.monica.data.PasswordDatabase
@@ -158,7 +162,9 @@ fun TimelineScreen(
     initialTrashScopeKey: String? = null,
     enableTabSwitch: Boolean = true,
     showBackButton: Boolean = false,
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    showReturnFab: Boolean = true,
+    onTrashSelectionModeChange: (Boolean) -> Unit = {}
 ) {
     if (splitPaneMode) {
         Row(
@@ -201,7 +207,8 @@ fun TimelineScreen(
                 TrashContent(
                     viewModel = trashViewModel,
                     embeddedInSplitPane = true,
-                    initialSelectedScopeKey = initialTrashScopeKey
+                    initialSelectedScopeKey = initialTrashScopeKey,
+                    onSelectionModeChange = onTrashSelectionModeChange
                 )
             }
         }
@@ -209,50 +216,66 @@ fun TimelineScreen(
     }
 
     var currentTab by rememberSaveable(initialTab) { mutableStateOf(initialTab) }
+    var isTrashSelectionMode by remember { mutableStateOf(false) }
     val hideLegacyTopBar = !enableTabSwitch
-    
-    Column(
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (!hideLegacyTopBar) {
-            // M3E 风格的顶部标题栏
-            HistoryTopBar(
-                currentTab = currentTab,
-                onTabSelected = { selectedTab ->
-                    if (enableTabSwitch) {
-                        currentTab = selectedTab
-                    }
-                },
-                enableTabSwitch = enableTabSwitch,
-                showBackButton = showBackButton,
-                onNavigateBack = onNavigateBack
-            )
-        }
-        
-        // 内容区域，带有切换动画
-        AnimatedContent(
-            targetState = currentTab,
-            label = "HistoryTabContent",
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(300))).togetherWith(fadeOut(animationSpec = tween(300)))
-            },
-            modifier = Modifier.weight(1f)
-        ) { targetTab ->
-            when (targetTab) {
-                HistoryTab.TIMELINE -> TimelineContent(
-                    viewModel = viewModel,
-                    onLogSelected = onLogSelected,
-                    onNavigateToPasswordPage = if (!enableTabSwitch) onNavigateBack else null
-                )
-                HistoryTab.TRASH -> TrashContent(
-                    viewModel = trashViewModel,
-                    onNavigateToPasswordPage = if (!enableTabSwitch) onNavigateBack else null,
-                    embeddedInSplitPane = false,
-                    initialSelectedScopeKey = initialTrashScopeKey
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!hideLegacyTopBar) {
+                // M3E 风格的顶部标题栏
+                HistoryTopBar(
+                    currentTab = currentTab,
+                    onTabSelected = { selectedTab ->
+                        if (enableTabSwitch) {
+                            currentTab = selectedTab
+                        }
+                    },
+                    enableTabSwitch = enableTabSwitch,
+                    showBackButton = showBackButton,
+                    onNavigateBack = onNavigateBack
                 )
             }
+
+            // 内容区域，带有切换动画
+            AnimatedContent(
+                targetState = currentTab,
+                label = "HistoryTabContent",
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(300))).togetherWith(fadeOut(animationSpec = tween(300)))
+                },
+                modifier = Modifier.weight(1f)
+            ) { targetTab ->
+                when (targetTab) {
+                    HistoryTab.TIMELINE -> TimelineContent(
+                        viewModel = viewModel,
+                        onLogSelected = onLogSelected,
+                        showStandaloneHeader = !enableTabSwitch
+                    )
+                    HistoryTab.TRASH -> TrashContent(
+                        viewModel = trashViewModel,
+                        embeddedInSplitPane = false,
+                        initialSelectedScopeKey = initialTrashScopeKey,
+                        hasReturnAction = !enableTabSwitch && showBackButton,
+                        onSelectionModeChange = { selecting ->
+                            isTrashSelectionMode = selecting
+                            onTrashSelectionModeChange(selecting)
+                        }
+                    )
+                }
+            }
+        }
+        if (showReturnFab && !enableTabSwitch && showBackButton && !isTrashSelectionMode) {
+            SwipeableAddFab(
+                fabBottomOffset = 24.dp,
+                onClick = onNavigateBack,
+                fabContent = {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                }
+            )
         }
     }
 }
@@ -526,7 +549,7 @@ private fun TimelineContent(
     viewModel: TimelineViewModel,
     onLogSelected: (TimelineEvent.StandardLog) -> Unit,
     embeddedInSplitPane: Boolean = false,
-    onNavigateToPasswordPage: (() -> Unit)? = null
+    showStandaloneHeader: Boolean = false
 ) {
     val timelineEvents by viewModel.timelineEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -788,7 +811,7 @@ private fun TimelineContent(
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        if (!embeddedInSplitPane && onNavigateToPasswordPage != null) {
+        if (!embeddedInSplitPane && showStandaloneHeader) {
             TimelineHeaderBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = { searchQuery = it },
@@ -800,7 +823,6 @@ private fun TimelineContent(
                     }
                 },
                 onOpenScopeSheet = { showScopeSelectionSheet = true },
-                onNavigateToPasswordPage = onNavigateToPasswordPage,
                 scopeMenu = {
                     TrashScopeFilterChipMenu(
                         expanded = showScopeSelectionSheet,
@@ -946,7 +968,6 @@ private fun TimelineHeaderBar(
     isSearchExpanded: Boolean,
     onSearchExpandedChange: (Boolean) -> Unit,
     onOpenScopeSheet: () -> Unit,
-    onNavigateToPasswordPage: (() -> Unit)?,
     scopeMenu: @Composable () -> Unit = {}
 ) {
     ExpressiveTopBar(
@@ -957,15 +978,6 @@ private fun TimelineHeaderBar(
         onSearchExpandedChange = onSearchExpandedChange,
         searchHint = stringResource(R.string.timeline_search_hint),
         actions = {
-            if (onNavigateToPasswordPage != null) {
-                IconButton(onClick = onNavigateToPasswordPage) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = stringResource(R.string.nav_passwords_short),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
             Box {
                 IconButton(onClick = onOpenScopeSheet) {
                     Icon(
@@ -1251,7 +1263,7 @@ private fun ModernLogItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = log.summary,
+                        text = timelineLogSummary(log),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color = colorScheme.onSurface,
@@ -1452,7 +1464,7 @@ private fun AggregatedLogItem(
                                         .background(colorScheme.primary, CircleShape)
                                 )
                                 Text(
-                                    text = event.summary,
+                                    text = timelineLogSummary(event),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = colorScheme.onSurface,
                                     maxLines = 1,
@@ -1577,7 +1589,7 @@ private fun StandardLogDetailSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = log.summary,
+                            text = timelineLogSummary(log),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = colorScheme.onSurface,
@@ -1703,7 +1715,7 @@ private fun StandardLogDetailSheet(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = change.fieldName,
+                                    text = timelineFieldLabel(change.fieldName),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = colorScheme.primary,
                                     fontWeight = FontWeight.Medium
@@ -1726,7 +1738,7 @@ private fun StandardLogDetailSheet(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         Text(
-                                            text = change.oldValue,
+                                            text = timelineFieldValue(change.fieldName, change.oldValue),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = colorScheme.onSurfaceVariant,
                                             modifier = Modifier.weight(1f, fill = false),
@@ -1739,7 +1751,7 @@ private fun StandardLogDetailSheet(
                                             color = colorScheme.primary
                                         )
                                         Text(
-                                            text = change.newValue,
+                                            text = timelineFieldValue(change.fieldName, change.newValue),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = colorScheme.onSurface,
                                             modifier = Modifier.weight(1f, fill = false),
@@ -1748,7 +1760,7 @@ private fun StandardLogDetailSheet(
                                         )
                                     }
                                     else -> Text(
-                                        text = change.newValue,
+                                        text = timelineFieldValue(change.fieldName, change.newValue),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = colorScheme.onSurface
                                     )
@@ -2025,7 +2037,7 @@ private fun BranchCard(
             if (branch.changes.isNotEmpty()) {
                 val firstChange = branch.changes.first()
                 Text(
-                    text = stringResource(R.string.modified_field, firstChange.fieldName),
+                    text = stringResource(R.string.modified_field, timelineFieldLabel(firstChange.fieldName)),
                     style = MaterialTheme.typography.bodySmall,
                     color = colorScheme.onSurfaceVariant
                 )
@@ -2100,28 +2112,11 @@ private fun TimelineAxis(
 
 // ================== 回收站相关组件 ==================
 
-private sealed interface TrashScopeFilter {
-    object All : TrashScopeFilter
-    object Local : TrashScopeFilter
-    data class BitwardenVaultScope(val vaultId: Long) : TrashScopeFilter
-    data class KeePassDatabaseScope(val databaseId: Long) : TrashScopeFilter
-    data class MdbxDatabaseScope(val databaseId: Long) : TrashScopeFilter
-}
-
 private data class TrashScopeFilterOption(
     val key: String,
     val label: String,
     val scope: TrashScopeFilter
 )
-
-private val TrashScopeFilter.key: String
-    get() = when (this) {
-        TrashScopeFilter.All -> "all"
-        TrashScopeFilter.Local -> "local"
-        is TrashScopeFilter.BitwardenVaultScope -> "bitwarden_${this.vaultId}"
-        is TrashScopeFilter.KeePassDatabaseScope -> "keepass_${this.databaseId}"
-        is TrashScopeFilter.MdbxDatabaseScope -> "mdbx_${this.databaseId}"
-    }
 
 private fun TrashScopeFilter.toUnifiedCategoryFilterSelection(): UnifiedCategoryFilterSelection {
     return when (this) {
@@ -2133,38 +2128,6 @@ private fun TrashScopeFilter.toUnifiedCategoryFilterSelection(): UnifiedCategory
             UnifiedCategoryFilterSelection.KeePassDatabaseFilter(databaseId)
         is TrashScopeFilter.MdbxDatabaseScope ->
             UnifiedCategoryFilterSelection.MdbxDatabaseFilter(databaseId)
-    }
-}
-
-private fun UnifiedCategoryFilterSelection.toTrashScopeFilter(
-    fallbackScope: TrashScopeFilter
-): TrashScopeFilter {
-    return when (this) {
-        UnifiedCategoryFilterSelection.Local,
-        UnifiedCategoryFilterSelection.LocalStarred,
-        UnifiedCategoryFilterSelection.LocalUncategorized,
-        is UnifiedCategoryFilterSelection.Custom -> TrashScopeFilter.Local
-        is UnifiedCategoryFilterSelection.BitwardenVaultFilter ->
-            TrashScopeFilter.BitwardenVaultScope(vaultId)
-        is UnifiedCategoryFilterSelection.BitwardenFolderFilter ->
-            TrashScopeFilter.BitwardenVaultScope(vaultId)
-        is UnifiedCategoryFilterSelection.BitwardenVaultStarredFilter ->
-            TrashScopeFilter.BitwardenVaultScope(vaultId)
-        is UnifiedCategoryFilterSelection.BitwardenVaultUncategorizedFilter ->
-            TrashScopeFilter.BitwardenVaultScope(vaultId)
-        is UnifiedCategoryFilterSelection.KeePassDatabaseFilter ->
-            TrashScopeFilter.KeePassDatabaseScope(databaseId)
-        is UnifiedCategoryFilterSelection.KeePassGroupFilter ->
-            TrashScopeFilter.KeePassDatabaseScope(databaseId)
-        is UnifiedCategoryFilterSelection.KeePassDatabaseStarredFilter ->
-            TrashScopeFilter.KeePassDatabaseScope(databaseId)
-        is UnifiedCategoryFilterSelection.KeePassDatabaseUncategorizedFilter ->
-            TrashScopeFilter.KeePassDatabaseScope(databaseId)
-        is UnifiedCategoryFilterSelection.MdbxDatabaseFilter ->
-            TrashScopeFilter.MdbxDatabaseScope(databaseId)
-        is UnifiedCategoryFilterSelection.MdbxFolderFilter ->
-            TrashScopeFilter.MdbxDatabaseScope(databaseId)
-        else -> fallbackScope
     }
 }
 
@@ -2323,8 +2286,9 @@ private fun matchesTimelineSearch(
 private fun TrashContent(
     viewModel: TrashViewModel,
     embeddedInSplitPane: Boolean = false,
-    onNavigateToPasswordPage: (() -> Unit)? = null,
-    initialSelectedScopeKey: String? = null
+    initialSelectedScopeKey: String? = null,
+    hasReturnAction: Boolean = false,
+    onSelectionModeChange: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val database = remember(context) { PasswordDatabase.getDatabase(context.applicationContext) }
@@ -2334,68 +2298,9 @@ private fun TrashContent(
 
     val trashCategories by viewModel.trashCategories.collectAsState()
     val trashSettings by viewModel.trashSettings.collectAsState()
-    val allLabel = stringResource(R.string.filter_all)
-    val localLabel = stringResource(R.string.filter_monica)
-    val bitwardenLabel = stringResource(R.string.filter_bitwarden)
-    val keepassLabel = stringResource(R.string.filter_keepass)
-
-    val scopeOptions = remember(
-        allLabel,
-        localLabel,
-        bitwardenLabel,
-        keepassLabel,
-        bitwardenVaults,
-        keepassDatabases,
-        mdbxDatabases
-    ) {
-        buildList {
-            add(
-                TrashScopeFilterOption(
-                    key = TrashScopeFilter.All.key,
-                    label = allLabel,
-                    scope = TrashScopeFilter.All
-                )
-            )
-            add(
-                TrashScopeFilterOption(
-                    key = TrashScopeFilter.Local.key,
-                    label = localLabel,
-                    scope = TrashScopeFilter.Local
-                )
-            )
-            bitwardenVaults.forEach { vault ->
-                val displayName = vault.displayName?.takeIf { it.isNotBlank() } ?: vault.email
-                add(
-                    TrashScopeFilterOption(
-                        key = TrashScopeFilter.BitwardenVaultScope(vault.id).key,
-                        label = "$bitwardenLabel · $displayName",
-                        scope = TrashScopeFilter.BitwardenVaultScope(vault.id)
-                    )
-                )
-            }
-            keepassDatabases.forEach { keepass ->
-                add(
-                    TrashScopeFilterOption(
-                        key = TrashScopeFilter.KeePassDatabaseScope(keepass.id).key,
-                        label = "$keepassLabel · ${keepass.name}",
-                        scope = TrashScopeFilter.KeePassDatabaseScope(keepass.id)
-                    )
-                )
-            }
-            mdbxDatabases.forEach { mdbx ->
-                add(
-                    TrashScopeFilterOption(
-                        key = TrashScopeFilter.MdbxDatabaseScope(mdbx.id).key,
-                        label = "MDBX · ${mdbx.name}",
-                        scope = TrashScopeFilter.MdbxDatabaseScope(mdbx.id)
-                    )
-                )
-            }
-        }
+    var selectedScopeKey by rememberSaveable(initialSelectedScopeKey) {
+        mutableStateOf(trashScopeFromKey(initialSelectedScopeKey).key)
     }
-
-    var selectedScopeKey by rememberSaveable { mutableStateOf(TrashScopeFilter.All.key) }
-    var initialScopeApplied by remember(initialSelectedScopeKey) { mutableStateOf(false) }
     var showScopeSelectionSheet by remember { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
@@ -2406,25 +2311,18 @@ private fun TrashContent(
     // 多选模式状态
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedItems by remember { mutableStateOf(setOf<String>()) }
+    val reportSelectionMode by rememberUpdatedState(onSelectionModeChange)
+
+    LaunchedEffect(isSelectionMode) {
+        reportSelectionMode(isSelectionMode)
+    }
+    DisposableEffect(Unit) {
+        onDispose { reportSelectionMode(false) }
+    }
 
     val colorScheme = MaterialTheme.colorScheme
 
-    val selectedScope = scopeOptions.firstOrNull { it.key == selectedScopeKey }?.scope ?: TrashScopeFilter.All
-
-    LaunchedEffect(scopeOptions, initialSelectedScopeKey, initialScopeApplied) {
-        val preferredScopeKey = initialSelectedScopeKey
-        if (!initialScopeApplied && !preferredScopeKey.isNullOrBlank()) {
-            val hasPreferredScope = scopeOptions.any { it.key == preferredScopeKey }
-            if (hasPreferredScope) {
-                selectedScopeKey = preferredScopeKey
-                initialScopeApplied = true
-                return@LaunchedEffect
-            }
-        }
-        if (scopeOptions.none { it.key == selectedScopeKey }) {
-            selectedScopeKey = scopeOptions.firstOrNull()?.key ?: TrashScopeFilter.All.key
-        }
-    }
+    val selectedScope = remember(selectedScopeKey) { trashScopeFromKey(selectedScopeKey) }
 
     // 扁平化所有条目，按删除时间排序
     val allItems = remember(trashCategories) {
@@ -2492,16 +2390,17 @@ private fun TrashContent(
         exitSelectionMode()
     }
     
+    fun showDeleteFailure(result: Result<Unit>) {
+        val failure = result.exceptionOrNull() ?: return
+        val reason = failure.localizedMessage?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.timeline_trash_delete_unknown_error)
+        Toast.makeText(context, context.getString(R.string.delete_failed, reason), Toast.LENGTH_LONG).show()
+    }
+
     fun deleteSelectedItems() {
         val itemsToDelete = visibleItems.filter { isItemSelected(it) }
-        viewModel.permanentlyDeleteItems(itemsToDelete) { success ->
-            if (!success) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.delete_failed, context.getString(R.string.timeline_permanent_delete_title)),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+        viewModel.permanentlyDeleteItems(itemsToDelete) { result ->
+            showDeleteFailure(result)
         }
         exitSelectionMode()
     }
@@ -2517,9 +2416,8 @@ private fun TrashContent(
             Column(modifier = Modifier.fillMaxSize()) {
                 // 顶部信息栏
                 TrashHeaderBar(
-                    isSelectionMode = isSelectionMode,
-                    selectedCount = selectedItems.size,
                     embeddedInSplitPane = embeddedInSplitPane,
+                    searchBackEnabled = !isSelectionMode,
                     searchQuery = searchQuery,
                     onSearchQueryChange = { searchQuery = it },
                     isSearchExpanded = isSearchExpanded,
@@ -2530,12 +2428,9 @@ private fun TrashContent(
                         }
                     },
                     onOpenScopeSheet = { showScopeSelectionSheet = true },
-                    onNavigateToPasswordPage = onNavigateToPasswordPage,
                     onSettingsClick = { showSettingsDialog = true },
                     onEmptyTrashClick = { showEmptyTrashDialog = true },
                     canEmptyTrash = scopedItems.isNotEmpty(),
-                    onSelectAll = { toggleSelectAll() },
-                    onExitSelection = { exitSelectionMode() },
                     scopeMenu = {
                         TrashScopeFilterChipMenu(
                             expanded = showScopeSelectionSheet,
@@ -2569,7 +2464,7 @@ private fun TrashContent(
                             start = 16.dp,
                             end = 16.dp,
                             top = 8.dp,
-                            bottom = if (isSelectionMode) 100.dp else 16.dp
+                            bottom = if (isSelectionMode || hasReturnAction) 100.dp else 16.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -2605,14 +2500,20 @@ private fun TrashContent(
         }
         
         // 底部浮动操作栏（选择模式）
-        if (isSelectionMode && selectedItems.isNotEmpty()) {
+        AnimatedVisibility(
+            visible = isSelectionMode && selectedItems.isNotEmpty(),
+            enter = fadeIn() + slideInVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, end = 16.dp, bottom = 20.dp)
+        ) {
             TrashSelectionBar(
                 selectedCount = selectedItems.size,
+                onExit = { exitSelectionMode() },
+                onSelectAll = { toggleSelectAll() },
                 onRestore = { restoreSelectedItems() },
-                onDelete = { deleteSelectedItems() },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
+                onDelete = { deleteSelectedItems() }
             )
         }
     }
@@ -2639,14 +2540,8 @@ private fun TrashContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.permanentlyDeleteItems(scopedItems) { success ->
-                            if (!success) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.delete_failed, context.getString(R.string.timeline_empty_trash_title)),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                        viewModel.permanentlyDeleteItems(scopedItems) { result ->
+                            showDeleteFailure(result)
                         }
                         showEmptyTrashDialog = false
                     },
@@ -2672,7 +2567,10 @@ private fun TrashContent(
                 viewModel.restoreItem(item) { _ -> selectedItem = null }
             },
             onPermanentDelete = {
-                viewModel.permanentlyDeleteItem(item) { _ -> selectedItem = null }
+                viewModel.permanentlyDeleteItem(item) { result ->
+                    showDeleteFailure(result)
+                    selectedItem = null
+                }
             }
         )
     }
@@ -2683,54 +2581,18 @@ private fun TrashContent(
  */
 @Composable
 private fun TrashHeaderBar(
-    isSelectionMode: Boolean,
-    selectedCount: Int,
     embeddedInSplitPane: Boolean,
+    searchBackEnabled: Boolean,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     isSearchExpanded: Boolean,
     onSearchExpandedChange: (Boolean) -> Unit,
     onOpenScopeSheet: () -> Unit,
-    onNavigateToPasswordPage: (() -> Unit)?,
     onSettingsClick: () -> Unit,
     onEmptyTrashClick: () -> Unit,
     canEmptyTrash: Boolean,
-    onSelectAll: () -> Unit,
-    onExitSelection: () -> Unit,
     scopeMenu: @Composable () -> Unit = {}
 ) {
-    if (isSelectionMode) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 16.dp,
-                    vertical = if (embeddedInSplitPane) 8.dp else 12.dp
-                ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                IconButton(onClick = onExitSelection) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.timeline_exit_selection))
-                }
-                Text(
-                    text = stringResource(R.string.selected_items, selectedCount),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            TextButton(onClick = onSelectAll) {
-                Text(stringResource(R.string.select_all))
-            }
-        }
-        return
-    }
-
     var topActionsMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -2740,21 +2602,13 @@ private fun TrashHeaderBar(
     ) {
         ExpressiveTopBar(
             title = stringResource(R.string.timeline_trash_title),
+            searchBackEnabled = searchBackEnabled,
             searchQuery = searchQuery,
             onSearchQueryChange = onSearchQueryChange,
             isSearchExpanded = isSearchExpanded,
             onSearchExpandedChange = onSearchExpandedChange,
             searchHint = stringResource(R.string.search_passwords_hint),
             actions = {
-                if (onNavigateToPasswordPage != null) {
-                    IconButton(onClick = onNavigateToPasswordPage) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = stringResource(R.string.nav_passwords_short),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
                 Box {
                     IconButton(onClick = onOpenScopeSheet) {
                         Icon(
@@ -3012,6 +2866,8 @@ private fun TrashItemCard(
 @Composable
 private fun TrashSelectionBar(
     selectedCount: Int,
+    onExit: () -> Unit,
+    onSelectAll: () -> Unit,
     onRestore: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -3019,42 +2875,14 @@ private fun TrashSelectionBar(
     val colorScheme = MaterialTheme.colorScheme
     var showDeleteConfirm by remember { mutableStateOf(false) }
     
-    Surface(
+    SelectionActionBar(
         modifier = modifier,
-        shape = RoundedCornerShape(28.dp),
-        color = colorScheme.primaryContainer,
-        shadowElevation = 8.dp,
-        tonalElevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            // 恢复按钮
-            FilledTonalButton(
-                onClick = onRestore,
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = colorScheme.primary,
-                    contentColor = colorScheme.onPrimary
-                )
-            ) {
-                Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.timeline_restore_selected, selectedCount))
-            }
-            
-            // 删除按钮
-            TextButton(
-                onClick = { showDeleteConfirm = true },
-                colors = ButtonDefaults.textButtonColors(contentColor = colorScheme.error)
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(stringResource(R.string.delete))
-            }
-        }
-    }
+        selectedCount = selectedCount,
+        onExit = onExit,
+        onSelectAll = onSelectAll,
+        onRestore = onRestore,
+        onDelete = { showDeleteConfirm = true }
+    )
     
     if (showDeleteConfirm) {
         AlertDialog(
@@ -3350,4 +3178,3 @@ private fun TrashEmptyView() {
         )
     }
 }
-

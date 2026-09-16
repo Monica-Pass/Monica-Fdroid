@@ -128,6 +128,7 @@ class SecurityManager(private val context: Context) {
 
         fun clearRuntimeUnlockCache() {
             processCachedMdk = null
+            takagi.ru.monica.repository.Mdbx2NativeReadSessions.clear()
         }
     }
     

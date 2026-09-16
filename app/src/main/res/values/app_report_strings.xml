@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Monica app list diagnostics</string>
+    <string name="app_report_generated">Generated: %1$s</string>
+    <string name="app_report_brand">Device brand: %1$s</string>
+    <string name="app_report_model">Device model: %1$s</string>
+    <string name="app_report_android">Android version: %1$s (API %2$d)</string>
+    <string name="app_report_summary">Summary</string>
+    <string name="app_report_total">Total apps: %1$d</string>
+    <string name="app_report_user_count">User apps: %1$d</string>
+    <string name="app_report_system_count">System apps: %1$d (updated: %2$d)</string>
+    <string name="app_report_visible_percent">Visible: %1$d (%2$s%%)</string>
+    <string name="app_report_hidden_percent">Hidden: %1$d (%2$s%%)</string>
+    <string name="app_report_filter_health">Filter check: %1$s</string>
+    <string name="app_report_filter_loose">The filter may hide too few system components</string>
+    <string name="app_report_filter_strict">The filter may hide useful apps</string>
+    <string name="app_report_filter_good">The filter appears balanced</string>
+    <string name="app_report_visible_apps">Visible apps: %1$d</string>
+    <string name="app_report_user_apps">User-installed apps: %1$d</string>
+    <string name="app_report_system_apps">System apps: %1$d</string>
+    <string name="app_report_more_apps">Additional apps: %1$d</string>
+    <string name="app_report_hidden_components">Hidden system components: %1$d</string>
+    <string name="app_report_hidden_feedback">If a useful app is hidden, include its package name in your feedback.</string>
+    <string name="app_report_android_core">Android core</string>
+    <string name="app_report_android_system">Android system</string>
+    <string name="app_report_google_services">Google services</string>
+    <string name="app_report_chip_vendor">Chip vendor components</string>
+    <string name="app_report_other">Other components</string>
+    <string name="app_report_more_components">Additional components: %1$d</string>
+    <string name="app_report_all_apps">Complete app list: %1$d</string>
+    <string name="app_report_format">Format: [status] app name</string>
+    <string name="app_report_package_type">Package name · Type</string>
+    <string name="app_report_unknown_app">Unknown app</string>
+    <string name="app_report_user_app">User app</string>
+    <string name="app_report_system_app">System app</string>
+    <string name="app_report_updated_system_app">Updated system app</string>
+    <string name="app_report_filter_rules">App filter rules</string>
+    <string name="app_report_rule_count">Filter rules: %1$d</string>
+    <string name="app_report_rules_feedback">To suggest changes to the filter, visit:</string>
+    <string name="app_report_complete">Report complete</string>
+    <string name="app_report_hidden_count">Hidden apps: %1$d</string>
+    <string name="app_report_path">File path:</string>
+</resources>

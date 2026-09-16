@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Bitwarden 삭제를 대기열에 추가할 수 없습니다</string>
+    <string name="bitwarden_message_conflict_detail">이 항목이 로컬과 서버 양쪽에서 변경되었습니다</string>
+    <string name="bitwarden_message_empty_vault">서버에서 데이터를 반환하지 않았지만 로컬 항목 %1$d개가 남아 있습니다. 데이터를 보호하기 위해 동기화를 일시 중지했습니다. 계속하기 전에 서버와 계정을 확인하세요.</string>
+    <string name="runtime_kdbx_decode_failed">KDBX 데이터베이스를 읽을 수 없습니다</string>
+</resources>

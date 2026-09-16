@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.content.Context
 import takagi.ru.monica.R
 import takagi.ru.monica.bitwarden.BitwardenVaultPremiumStore
@@ -257,7 +259,7 @@ internal suspend fun executePasswordCategoryFolderTransfer(
             val targetParent = (selectedTarget as? UnifiedMoveCategoryTarget.MonicaCategory)
                 ?.categoryId
                 ?.let { categoryId -> categories.firstOrNull { it.id == categoryId } }
-            val plan = planLocalCategoryMove(categories, sourceCategory, targetParent)
+            val plan = planLocalCategoryMove(categories, sourceCategory, targetParent, strings = AppLocaleStringResolver(context))
             if (plan.updatedCategories.isEmpty()) {
                 throw PasswordCategoryFolderTransferBlockedException(
                     context.getString(R.string.category_folder_transfer_no_change),

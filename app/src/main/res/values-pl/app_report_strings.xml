@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Diagnostyka listy aplikacji Monica</string>
+    <string name="app_report_generated">Utworzono: %1$s</string>
+    <string name="app_report_brand">Marka urządzenia: %1$s</string>
+    <string name="app_report_model">Model urządzenia: %1$s</string>
+    <string name="app_report_android">Wersja Androida: %1$s (API %2$d)</string>
+    <string name="app_report_summary">Podsumowanie</string>
+    <string name="app_report_total">Wszystkie aplikacje: %1$d</string>
+    <string name="app_report_user_count">Aplikacje użytkownika: %1$d</string>
+    <string name="app_report_system_count">Aplikacje systemowe: %1$d (zaktualizowane: %2$d)</string>
+    <string name="app_report_visible_percent">Widoczne: %1$d (%2$s%%)</string>
+    <string name="app_report_hidden_percent">Ukryte: %1$d (%2$s%%)</string>
+    <string name="app_report_filter_health">Ocena filtrowania: %1$s</string>
+    <string name="app_report_filter_loose">Filtr może ukrywać zbyt mało składników systemowych</string>
+    <string name="app_report_filter_strict">Filtr może ukrywać przydatne aplikacje</string>
+    <string name="app_report_filter_good">Filtrowanie wygląda poprawnie</string>
+    <string name="app_report_visible_apps">Widoczne aplikacje: %1$d</string>
+    <string name="app_report_user_apps">Aplikacje zainstalowane przez użytkownika: %1$d</string>
+    <string name="app_report_system_apps">Aplikacje systemowe: %1$d</string>
+    <string name="app_report_more_apps">Pozostałe aplikacje: %1$d</string>
+    <string name="app_report_hidden_components">Ukryte składniki systemowe: %1$d</string>
+    <string name="app_report_hidden_feedback">Jeśli filtr ukrył przydatną aplikację, podaj jej nazwę pakietu w zgłoszeniu.</string>
+    <string name="app_report_android_core">Rdzeń Androida</string>
+    <string name="app_report_android_system">System Android</string>
+    <string name="app_report_google_services">Usługi Google</string>
+    <string name="app_report_chip_vendor">Składniki producenta układu</string>
+    <string name="app_report_other">Pozostałe składniki</string>
+    <string name="app_report_more_components">Pozostałe składniki: %1$d</string>
+    <string name="app_report_all_apps">Pełna lista aplikacji: %1$d</string>
+    <string name="app_report_format">Format: [stan] nazwa aplikacji</string>
+    <string name="app_report_package_type">Nazwa pakietu · Typ</string>
+    <string name="app_report_unknown_app">Nieznana aplikacja</string>
+    <string name="app_report_user_app">Aplikacja użytkownika</string>
+    <string name="app_report_system_app">Aplikacja systemowa</string>
+    <string name="app_report_updated_system_app">Zaktualizowana aplikacja systemowa</string>
+    <string name="app_report_filter_rules">Reguły filtrowania aplikacji</string>
+    <string name="app_report_rule_count">Liczba reguł: %1$d</string>
+    <string name="app_report_rules_feedback">Propozycje zmian filtra można zgłaszać tutaj:</string>
+    <string name="app_report_complete">Raport gotowy</string>
+    <string name="app_report_hidden_count">Ukryte aplikacje: %1$d</string>
+    <string name="app_report_path">Ścieżka pliku:</string>
+</resources>

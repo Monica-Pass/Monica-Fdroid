@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden không khả dụng</string>
+    <string name="entry_message_unsupported_type">Thao tác này không hỗ trợ loại mục này</string>
+    <string name="entry_message_ownership_conflict">Giải quyết liên kết lưu trữ xung đột trước khi chuyển mục này sang Monica</string>
+    <string name="entry_message_local_copy_failed">Không thể tạo bản sao cục bộ trong Monica</string>
+    <string name="entry_message_attachments_incomplete">Chưa sao chép hết tệp đính kèm</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Mục Bitwarden không có ID đồng bộ</string>
+    <string name="entry_message_keepass_source_delete_failed">Không thể xóa mục KeePass gốc</string>
+    <string name="entry_message_source_delete_failed">Không thể xóa mục gốc</string>
+    <string name="entry_message_storage_save_failed">Không thể lưu vào vị trí đã chọn</string>
+    <string name="entry_message_from_password">Từ mật khẩu: %1$s</string>
+    <string name="entry_message_passkey_android_required">Hỗ trợ khóa truy cập đầy đủ yêu cầu Android 14 trở lên. Thiết bị này: %1$s</string>
+    <string name="entry_message_passkey_save_failed">Không thể lưu khóa truy cập: %1$s</string>
+    <string name="entry_message_passkey_missing">Không tìm thấy khóa truy cập</string>
+    <string name="entry_message_passkey_update_failed">Không thể cập nhật khóa truy cập: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">Không thể cập nhật liên kết khóa truy cập MDBX: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">Không thể cập nhật liên kết: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">Không thể cập nhật lịch sử sử dụng: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">Không thể xóa khóa truy cập: %1$s</string>
+    <string name="entry_message_category_path_invalid">Đường dẫn thư mục không hợp lệ</string>
+    <string name="entry_message_category_move_into_self">Không thể chuyển thư mục vào chính nó hoặc thư mục con của nó</string>
+    <string name="entry_message_category_missing">Không tìm thấy thư mục</string>
+    <string name="entry_message_category_exists">Đã có thư mục trùng tên ở đích</string>
+    <string name="entry_message_category_move_conflict">Việc di chuyển sẽ xung đột với thư mục hiện có</string>
+    <string name="entry_message_category_name_required">Nhập tên thư mục</string>
+    <string name="entry_message_category_name_separator">Tên thư mục không được chứa /</string>
+    <string name="entry_message_category_rename_conflict">Việc đổi tên sẽ xung đột với thư mục hiện có</string>
+    <string name="entry_message_saved">Đã lưu</string>
+</resources>

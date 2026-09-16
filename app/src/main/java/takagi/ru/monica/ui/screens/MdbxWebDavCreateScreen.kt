@@ -136,29 +136,79 @@ fun MdbxWebDavCreateScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.mdbx_create_vault_title)) },
+            MdbxTopAppBar(
+                title = { Text(stringResource(R.string.mdbx_create_vault_title), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
+        },
+        bottomBar = {
+            MdbxFormActionBar {
+                // === Submit Button ===
+                val isFormValid = connectionState is ConnectionState.Connected &&
+                    serverUrl.isNotBlank() &&
+                    username.isNotBlank() &&
+                    webDavPassword.isNotBlank() &&
+                    vaultName.isNotBlank() &&
+                    (!passwordRequired || (
+                        normalizedMasterPassword.isNotBlank() &&
+                            normalizedMasterPassword == normalizedConfirmPassword
+                        )) &&
+                    (!keyFileRequired || keyFile != null) &&
+                    operationState !is MdbxViewModel.OperationState.Loading
+
+                Button(
+                    onClick = {
+                        submitted = true
+                        viewModel.createWebDavVault(
+                            name = vaultName,
+                            masterPassword = masterPassword,
+                            unlockMethod = unlockMethod,
+                            keyFile = keyFile,
+                            tigaMode = selectedTigaMode,
+                            serverUrl = serverUrl,
+                            username = username,
+                            webDavPassword = webDavPassword,
+                            remoteDirectoryPath = remoteDirectory.ifBlank { null },
+                            description = null,
+                            engineType = selectedEngine
+                        )
+                    },
+                    enabled = isFormValid,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                ) {
+                    if (operationState is MdbxViewModel.OperationState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.mdbx_creating_vault))
+                    } else {
+                        Text(strings.get(R.string.mdbx_ui_remote_create_vault))
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // === Card: WebDAV Connection ===
-            Card(
+            MdbxCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -194,6 +244,7 @@ fun MdbxWebDavCreateScreen(
                         enter = expandVertically() + fadeIn()
                     ) {
                         OutlinedTextField(
+                            shape = MdbxFieldShape,
                             value = remoteDirectory,
                             onValueChange = { remoteDirectory = it },
                             label = { Text(stringResource(R.string.mdbx_webdav_directory)) },
@@ -221,9 +272,9 @@ fun MdbxWebDavCreateScreen(
                         onTigaModeChange = { selectedTigaMode = it }
                     )
 
-                    Card(
+                    MdbxCard(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -261,52 +312,6 @@ fun MdbxWebDavCreateScreen(
                             }
                         }
                     }
-                }
-            }
-
-            // === Submit Button ===
-            val isFormValid = connectionState is ConnectionState.Connected &&
-                serverUrl.isNotBlank() &&
-                username.isNotBlank() &&
-                webDavPassword.isNotBlank() &&
-                vaultName.isNotBlank() &&
-                (!passwordRequired || (
-                    normalizedMasterPassword.isNotBlank() &&
-                        normalizedMasterPassword == normalizedConfirmPassword
-                    )) &&
-                (!keyFileRequired || keyFile != null) &&
-                operationState !is MdbxViewModel.OperationState.Loading
-
-            Button(
-                onClick = {
-                    submitted = true
-                    viewModel.createWebDavVault(
-                        name = vaultName,
-                        masterPassword = masterPassword,
-                        unlockMethod = unlockMethod,
-                        keyFile = keyFile,
-                        tigaMode = selectedTigaMode,
-                        serverUrl = serverUrl,
-                        username = username,
-                        webDavPassword = webDavPassword,
-                        remoteDirectoryPath = remoteDirectory.ifBlank { null },
-                        description = null,
-                        engineType = selectedEngine
-                    )
-                },
-                enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                if (operationState is MdbxViewModel.OperationState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mdbx_creating_vault))
-                } else {
-                    Text(strings.get(R.string.mdbx_ui_remote_create_vault))
                 }
             }
 

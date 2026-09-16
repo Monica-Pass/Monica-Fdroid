@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_report_title">Monica 应用名录诊察</string>
+    <string name="app_report_generated">成于：%1$s</string>
+    <string name="app_report_brand">设备之牌：%1$s</string>
+    <string name="app_report_model">设备之型：%1$s</string>
+    <string name="app_report_android">Android 之版：%1$s（API %2$d）</string>
+    <string name="app_report_summary">统计之要</string>
+    <string name="app_report_total">应用凡 %1$d</string>
+    <string name="app_report_user_count">自装应用：%1$d</string>
+    <string name="app_report_system_count">系统应用：%1$d（已更：%2$d）</string>
+    <string name="app_report_visible_percent">所示：%1$d（%2$s%%）</string>
+    <string name="app_report_hidden_percent">所隐：%1$d（%2$s%%）</string>
+    <string name="app_report_filter_health">察过滤之规：%1$s</string>
+    <string name="app_report_filter_loose">规则或过宽，所隐系统组件甚少</string>
+    <string name="app_report_filter_strict">规则或过严，有用之应用亦恐被隐</string>
+    <string name="app_report_filter_good">过滤之规尚合宜</string>
+    <string name="app_report_visible_apps">所示应用：%1$d</string>
+    <string name="app_report_user_apps">自装应用：%1$d</string>
+    <string name="app_report_system_apps">系统应用：%1$d</string>
+    <string name="app_report_more_apps">余应用：%1$d</string>
+    <string name="app_report_hidden_components">所隐系统组件：%1$d</string>
+    <string name="app_report_hidden_feedback">若误隐有用之应用，请告其包名。</string>
+    <string name="app_report_android_core">Android 核心</string>
+    <string name="app_report_android_system">Android 系统</string>
+    <string name="app_report_google_services">Google 服务</string>
+    <string name="app_report_chip_vendor">芯片厂商之组件</string>
+    <string name="app_report_other">其余组件</string>
+    <string name="app_report_more_components">余组件：%1$d</string>
+    <string name="app_report_all_apps">应用全录：%1$d</string>
+    <string name="app_report_format">式：[状态] 应用之名</string>
+    <string name="app_report_package_type">包名 · 类</string>
+    <string name="app_report_unknown_app">未识之应用</string>
+    <string name="app_report_user_app">自装应用</string>
+    <string name="app_report_system_app">系统应用</string>
+    <string name="app_report_updated_system_app">已更之系统应用</string>
+    <string name="app_report_filter_rules">应用过滤之规</string>
+    <string name="app_report_rule_count">过滤之规：%1$d</string>
+    <string name="app_report_rules_feedback">欲改过滤之规，请访：</string>
+    <string name="app_report_complete">诊察之报已成</string>
+    <string name="app_report_hidden_count">所隐应用：%1$d</string>
+    <string name="app_report_path">文件之径：</string>
+</resources>

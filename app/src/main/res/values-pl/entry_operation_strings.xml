@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Magazyn Bitwarden jest niedostępny</string>
+    <string name="entry_message_unsupported_type">Ta operacja nie obsługuje tego typu wpisu</string>
+    <string name="entry_message_ownership_conflict">Rozwiąż konflikt powiązań z magazynami przed przeniesieniem wpisu do Monica</string>
+    <string name="entry_message_local_copy_failed">Nie można utworzyć lokalnej kopii w Monica</string>
+    <string name="entry_message_attachments_incomplete">Nie skopiowano wszystkich załączników</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Wpis Bitwarden nie ma identyfikatora synchronizacji</string>
+    <string name="entry_message_keepass_source_delete_failed">Nie można usunąć oryginalnego wpisu KeePass</string>
+    <string name="entry_message_source_delete_failed">Nie można usunąć oryginalnego wpisu</string>
+    <string name="entry_message_storage_save_failed">Nie można zapisać w wybranym miejscu</string>
+    <string name="entry_message_from_password">Z hasła: %1$s</string>
+    <string name="entry_message_passkey_android_required">Pełna obsługa Passkey wymaga Androida 14 lub nowszego. To urządzenie: %1$s</string>
+    <string name="entry_message_passkey_save_failed">Nie można zapisać Passkey: %1$s</string>
+    <string name="entry_message_passkey_missing">Nie znaleziono Passkey</string>
+    <string name="entry_message_passkey_update_failed">Nie można zaktualizować Passkey: %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">Nie można zmienić powiązania Passkey z MDBX: %1$s</string>
+    <string name="entry_message_passkey_binding_failed">Nie można zmienić powiązania: %1$s</string>
+    <string name="entry_message_passkey_usage_failed">Nie można zaktualizować historii użycia: %1$s</string>
+    <string name="entry_message_passkey_delete_failed">Nie można usunąć Passkey: %1$s</string>
+    <string name="entry_message_category_path_invalid">Nieprawidłowa ścieżka folderu</string>
+    <string name="entry_message_category_move_into_self">Nie można przenieść folderu do niego samego ani do jego podfolderu</string>
+    <string name="entry_message_category_missing">Nie znaleziono folderu</string>
+    <string name="entry_message_category_exists">W miejscu docelowym jest już folder o tej nazwie</string>
+    <string name="entry_message_category_move_conflict">Przeniesienie spowodowałoby konflikt z istniejącym folderem</string>
+    <string name="entry_message_category_name_required">Podaj nazwę folderu</string>
+    <string name="entry_message_category_name_separator">Nazwa folderu nie może zawierać /</string>
+    <string name="entry_message_category_rename_conflict">Zmiana nazwy spowodowałaby konflikt z istniejącym folderem</string>
+    <string name="entry_message_saved">Zapisano</string>
+</resources>

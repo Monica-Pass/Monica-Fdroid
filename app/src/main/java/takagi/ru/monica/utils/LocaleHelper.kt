@@ -3,6 +3,7 @@ package takagi.ru.monica.utils
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import android.os.LocaleList
 import java.util.Locale
 import takagi.ru.monica.data.Language
 
@@ -13,6 +14,7 @@ object LocaleHelper {
             Language.SYSTEM -> getSystemLocale()
             Language.ENGLISH -> Locale.ENGLISH
             Language.CHINESE -> Locale.CHINA
+            Language.CLASSICAL_CHINESE -> Locale.forLanguageTag("lzh")
             Language.VIETNAMESE -> Locale("vi", "VN")
             Language.JAPANESE -> Locale.JAPAN
             Language.RUSSIAN -> Locale("ru", "RU")
@@ -20,6 +22,8 @@ object LocaleHelper {
             Language.GERMAN -> Locale.GERMANY
             Language.SPANISH -> Locale("es", "ES")
             Language.FRENCH -> Locale.FRENCH
+            Language.POLISH -> Locale.forLanguageTag("pl")
+            Language.NYA -> Locale("zh", "NY")
         }
 
         return updateResources(context, locale)
@@ -38,6 +42,14 @@ object LocaleHelper {
     private fun updateResources(context: Context, locale: Locale): Context {
         Locale.setDefault(locale)
 
+        // lzh is a separate language, so Android does not infer a Chinese fallback.
+        // Keep platform/dependency resources readable when they have no lzh text.
+        val classicalLocales = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && locale.language == "lzh") {
+            LocaleList(locale, Locale.SIMPLIFIED_CHINESE, Locale.ENGLISH)
+        } else {
+            null
+        }
+
         // Most cold starts already have the requested locale (especially
         // Language.SYSTEM). Avoid cloning Configuration and creating another
         // Context in that common path while still resetting Locale.default.
@@ -47,12 +59,18 @@ object LocaleHelper {
             @Suppress("DEPRECATION")
             context.resources.configuration.locale
         }
-        if (currentLocale.language == locale.language && currentLocale.country == locale.country) {
+        if (currentLocale.language == locale.language && currentLocale.country == locale.country &&
+            (classicalLocales == null || context.resources.configuration.locales == classicalLocales)
+        ) {
             return context
         }
 
         val config = Configuration(context.resources.configuration)
-        config.setLocale(locale)
+        if (classicalLocales != null) {
+            config.setLocales(classicalLocales)
+        } else {
+            config.setLocale(locale)
+        }
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             context.createConfigurationContext(config)
@@ -72,7 +90,8 @@ object LocaleHelper {
         }
 
         return when (currentLocale.language) {
-            "zh" -> Language.CHINESE
+            "zh" -> if (currentLocale.country == "NY") Language.NYA else Language.CHINESE
+            "lzh" -> Language.CLASSICAL_CHINESE
             "en" -> Language.ENGLISH
             "vi" -> Language.VIETNAMESE
             "ja" -> Language.JAPANESE
@@ -81,6 +100,7 @@ object LocaleHelper {
             "de" -> Language.GERMAN
             "es" -> Language.SPANISH
             "fr" -> Language.FRENCH
+            "pl" -> Language.POLISH
             else -> Language.SYSTEM
         }
     }

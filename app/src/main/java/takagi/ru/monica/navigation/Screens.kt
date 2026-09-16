@@ -185,6 +185,21 @@ sealed class Screen(val route: String) {
             return "mdbx_manager?databaseId=${databaseId ?: -1L}&page=${Uri.encode(page)}"
         }
     }
+    object ApiTokens : Screen("api_tokens?databaseId={databaseId}") {
+        fun createRoute(databaseId: Long? = null, entryId: String? = null, create: Boolean = false): String = when {
+            create -> AddEditApiToken.createRoute(databaseId)
+            entryId != null && databaseId != null -> ApiTokenDetail.createRoute(databaseId, entryId)
+            else -> "api_tokens?databaseId=${databaseId ?: -1L}"
+        }
+    }
+    object ApiTokenDetail : Screen("api_token_detail/{databaseId}/{entryId}") {
+        fun createRoute(databaseId: Long, entryId: String) = "api_token_detail/$databaseId/${Uri.encode(entryId)}"
+    }
+    object AddEditApiToken : Screen("add_edit_api_token?databaseId={databaseId}&entryId={entryId}&folderId={folderId}") {
+        fun createRoute(databaseId: Long? = null, entryId: String? = null, folderId: String? = null) =
+            "add_edit_api_token?databaseId=${databaseId ?: -1L}&entryId=${Uri.encode(entryId.orEmpty())}&folderId=${Uri.encode(folderId.orEmpty())}"
+    }
+
     object MdbxLocalCreate : Screen("mdbx_local_create")
     object MdbxLocalOpen : Screen("mdbx_local_open")
     object MdbxWebDavCreate : Screen("mdbx_webdav_create")

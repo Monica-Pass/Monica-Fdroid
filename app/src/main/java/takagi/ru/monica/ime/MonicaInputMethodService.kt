@@ -1,5 +1,12 @@
 package takagi.ru.monica.ime
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import takagi.ru.monica.utils.AppLocaleStringResolver
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
@@ -122,10 +129,16 @@ class MonicaInputMethodService : InputMethodService() {
                     activePanel = targetPanel,
                     isAutofillPanelVisible = targetPanel != MonicaImePanel.KEYBOARD,
                     isAutofillLoading = false,
-                    errorMessage = errorMessage ?: getString(takagi.ru.monica.R.string.ime_unlock_required)
+                    errorMessage = errorMessage ?: strings.get(takagi.ru.monica.R.string.ime_unlock_required)
                 )
             }
         }
+    }
+
+    private val strings by lazy { AppLocaleStringResolver(this) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
     }
 
     override fun onCreate() {
@@ -171,51 +184,61 @@ class MonicaInputMethodService : InputMethodService() {
                 setParentCompositionContext(recomposer)
                 setContent {
                     val settings = settingsManager.settingsFlow.collectAsState(
-                        initial = AppSettings()
+                        initial = AppSettings(language = StartupLanguageCache.read(this@MonicaInputMethodService))
                     ).value
                     val state = uiState.collectAsState().value
+                    val language = StartupLanguageCache.languageFlow(this@MonicaInputMethodService)
+                        .collectAsState().value
 
-                    MonicaImeContent(
-                        settings = settings,
-                        uiState = state,
-                        onDatabaseScopeSelected = { scope ->
-                            uiState.update { it.copy(selectedDatabaseScope = scope) }
-                            requestRefreshVaultEntries()
-                        },
-                        onInsertPassword = { entry ->
-                            resolveFillableField(entry.password)?.let(::commitExternalText)
-                        },
-                        onInsertUsername = { entry ->
-                            resolveFillableField(entry.username)?.let(::commitExternalText)
-                        },
-                        onInsertWebsite = { entry ->
-                            resolveFillableField(entry.website)?.let(::commitExternalText)
-                        },
-                        onSmartFillPassword = ::handleSmartFillPassword,
-                        onInsertAuthenticatorCode = { commitExternalText(it.code) },
-                        onInsertCardWalletValue = { commitExternalText(it.value) },
-                        onSmartFillCardWallet = ::handleSmartFillCardWallet,
-                        onKeyPressed = ::handleKeyPress,
-                        onBackspace = ::handleBackspace,
-                        onDeleteAll = ::handleDeleteAll,
-                        onUndoDeleteAll = ::handleUndoDeleteAll,
-                        onEnter = ::handleEnter,
-                        onSpace = { handleKeyPress(" ") },
-                        onShiftToggle = {
-                            uiState.update { it.copy(isUppercase = !it.isUppercase) }
-                        },
-                        onKeyboardModeChange = { mode ->
-                            uiState.update { it.copy(keyboardMode = mode) }
-                        },
-                        onOpenUnlockApp = ::openMonicaAppForUnlock,
-                        onOpenAutofillSettings = ::openAutofillPickerPage,
-                        onSearchEditRequested = ::startImeSearchEditing,
-                        onSearchEditFinished = ::finishImeSearchEditing,
-                        onSearchCleared = ::clearImeSearchQuery,
-                        onSwitchInputMethod = ::switchToNextInputMethod,
-                        onPanelSelected = ::handlePanelSelection,
-                        onDismiss = { requestHideSelf(0) }
-                    )
+                    val localizedContext = remember(language, LocalConfiguration.current) {
+                        LocaleHelper.setLocale(this@MonicaInputMethodService, language)
+                    }
+                    CompositionLocalProvider(
+                        LocalContext provides localizedContext,
+                        LocalConfiguration provides localizedContext.resources.configuration
+                    ) {
+                        MonicaImeContent(
+                            settings = settings,
+                            uiState = state,
+                            onDatabaseScopeSelected = { scope ->
+                                uiState.update { it.copy(selectedDatabaseScope = scope) }
+                                requestRefreshVaultEntries()
+                            },
+                            onInsertPassword = { entry ->
+                                resolveFillableField(entry.password)?.let(::commitExternalText)
+                            },
+                            onInsertUsername = { entry ->
+                                resolveFillableField(entry.username)?.let(::commitExternalText)
+                            },
+                            onInsertWebsite = { entry ->
+                                resolveFillableField(entry.website)?.let(::commitExternalText)
+                            },
+                            onSmartFillPassword = ::handleSmartFillPassword,
+                            onInsertAuthenticatorCode = { commitExternalText(it.code) },
+                            onInsertCardWalletValue = { commitExternalText(it.value) },
+                            onSmartFillCardWallet = ::handleSmartFillCardWallet,
+                            onKeyPressed = ::handleKeyPress,
+                            onBackspace = ::handleBackspace,
+                            onDeleteAll = ::handleDeleteAll,
+                            onUndoDeleteAll = ::handleUndoDeleteAll,
+                            onEnter = ::handleEnter,
+                            onSpace = { handleKeyPress(" ") },
+                            onShiftToggle = {
+                                uiState.update { it.copy(isUppercase = !it.isUppercase) }
+                            },
+                            onKeyboardModeChange = { mode ->
+                                uiState.update { it.copy(keyboardMode = mode) }
+                            },
+                            onOpenUnlockApp = ::openMonicaAppForUnlock,
+                            onOpenAutofillSettings = ::openAutofillPickerPage,
+                            onSearchEditRequested = ::startImeSearchEditing,
+                            onSearchEditFinished = ::finishImeSearchEditing,
+                            onSearchCleared = ::clearImeSearchQuery,
+                            onSwitchInputMethod = ::switchToNextInputMethod,
+                            onPanelSelected = ::handlePanelSelection,
+                            onDismiss = { requestHideSelf(0) }
+                        )
+                    }
                 }
             }
         }
@@ -321,7 +344,7 @@ class MonicaInputMethodService : InputMethodService() {
         }.onFailure { error ->
             unlockFlowInProgress = false
             uiState.update {
-                it.copy(errorMessage = error.message ?: getString(takagi.ru.monica.R.string.ime_unlock_open_app_error))
+                it.copy(errorMessage = error.message ?: strings.get(takagi.ru.monica.R.string.ime_unlock_open_app_error))
             }
         }
     }
@@ -353,7 +376,7 @@ class MonicaInputMethodService : InputMethodService() {
             uiState.update {
                 it.copy(
                     errorMessage = error.message
-                        ?: getString(takagi.ru.monica.R.string.ime_unlock_open_app_error)
+                        ?: strings.get(takagi.ru.monica.R.string.ime_unlock_open_app_error)
                 )
             }
         }
@@ -503,7 +526,7 @@ class MonicaInputMethodService : InputMethodService() {
                         query = "",
                         passwordSortMode = MonicaImePasswordSortMode.ALPHABETICAL,
                         selectedDatabaseScope = MonicaImeDatabaseScope.All,
-                        errorMessage = getString(takagi.ru.monica.R.string.ime_unlock_required)
+                        errorMessage = strings.get(takagi.ru.monica.R.string.ime_unlock_required)
                     )
                 }
                 openMonicaAppForUnlock()
@@ -555,11 +578,11 @@ class MonicaInputMethodService : InputMethodService() {
         }
         val activePackage = currentState.activePackageName
         val query = currentState.query.trim()
-        val localLabel = getString(takagi.ru.monica.R.string.filter_monica)
-        val keepassLabel = getString(takagi.ru.monica.R.string.filter_keepass)
+        val localLabel = strings.get(takagi.ru.monica.R.string.filter_monica)
+        val keepassLabel = strings.get(takagi.ru.monica.R.string.filter_keepass)
         val mdbxLabel = "MDBX"
-        val bitwardenLabel = getString(takagi.ru.monica.R.string.filter_bitwarden)
-        val allDatabasesLabel = getString(takagi.ru.monica.R.string.password_picker_all_databases)
+        val bitwardenLabel = strings.get(takagi.ru.monica.R.string.filter_bitwarden)
+        val allDatabasesLabel = strings.get(takagi.ru.monica.R.string.password_picker_all_databases)
         val snapshot = withContext(Dispatchers.IO) {
             if (force) invalidateVaultSourceCache()
             val sources = vaultSourceCache ?: loadImeVaultSources(
@@ -729,7 +752,7 @@ class MonicaInputMethodService : InputMethodService() {
                     passwordSortMode = MonicaImePasswordSortMode.ALPHABETICAL,
                     selectedDatabaseScope = MonicaImeDatabaseScope.All,
                     errorMessage = if (panelStillVisible) {
-                        getString(takagi.ru.monica.R.string.ime_unlock_required)
+                        strings.get(takagi.ru.monica.R.string.ime_unlock_required)
                     } else {
                         null
                     }
@@ -937,7 +960,7 @@ class MonicaInputMethodService : InputMethodService() {
             id = id,
             title = title.ifBlank {
                 resolved.issuer.ifBlank {
-                    resolved.accountName.ifBlank { getString(takagi.ru.monica.R.string.authenticator) }
+                    resolved.accountName.ifBlank { strings.get(takagi.ru.monica.R.string.authenticator) }
                 }
             },
             issuer = resolved.issuer,
@@ -993,7 +1016,7 @@ class MonicaInputMethodService : InputMethodService() {
             id = -id,
             title = title.ifBlank {
                 resolved.issuer.ifBlank {
-                    resolved.accountName.ifBlank { getString(takagi.ru.monica.R.string.authenticator) }
+                    resolved.accountName.ifBlank { strings.get(takagi.ru.monica.R.string.authenticator) }
                 }
             },
             issuer = resolved.issuer,
@@ -1074,20 +1097,20 @@ class MonicaInputMethodService : InputMethodService() {
             decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
         ) ?: return null
         val fields = listOfNotNull(
-            fieldOrNull(getString(takagi.ru.monica.R.string.card_number), resolveSecretValue(data.cardNumber)),
-            fieldOrNull(getString(takagi.ru.monica.R.string.cardholder_name), data.cardholderName),
-            fieldOrNull(getString(takagi.ru.monica.R.string.expiry_date), formatExpiry(data.expiryMonth, data.expiryYear)),
-            fieldOrNull(getString(takagi.ru.monica.R.string.cvv), resolveSecretValue(data.cvv)),
-            fieldOrNull(getString(takagi.ru.monica.R.string.bank_card_pin_label), resolveSecretValue(data.pin)),
-            fieldOrNull(getString(takagi.ru.monica.R.string.bank_card_account_number_label), resolveSecretValue(data.accountNumber)),
-            fieldOrNull(getString(takagi.ru.monica.R.string.bank_card_routing_number_label), data.routingNumber),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.card_number), resolveSecretValue(data.cardNumber)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.cardholder_name), data.cardholderName),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.expiry_date), formatExpiry(data.expiryMonth, data.expiryYear)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.cvv), resolveSecretValue(data.cvv)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_pin_label), resolveSecretValue(data.pin)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_account_number_label), resolveSecretValue(data.accountNumber)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_routing_number_label), data.routingNumber),
             fieldOrNull("IBAN", data.iban),
             fieldOrNull("SWIFT/BIC", data.swiftBic)
         )
         if (fields.isEmpty()) return null
         val title = title.ifBlank {
             data.nickname.ifBlank {
-                data.bankName.ifBlank { getString(takagi.ru.monica.R.string.bank_card_default_title) }
+                data.bankName.ifBlank { strings.get(takagi.ru.monica.R.string.bank_card_default_title) }
             }
         }
         val subtitle = listOf(data.bankName, maskCardNumber(resolveSecretValue(data.cardNumber).orEmpty()))
@@ -1097,7 +1120,7 @@ class MonicaInputMethodService : InputMethodService() {
             id = id,
             title = title,
             subtitle = subtitle,
-            typeLabel = getString(takagi.ru.monica.R.string.item_type_bank_card),
+            typeLabel = strings.get(takagi.ru.monica.R.string.item_type_bank_card),
             isFavorite = isFavorite,
             sourceLabel = resolveSourceLabel(
                 item = this,
@@ -1131,20 +1154,20 @@ class MonicaInputMethodService : InputMethodService() {
         ) ?: return null
         val fullName = data.displayName()
         val fields = listOfNotNull(
-            fieldOrNull(getString(takagi.ru.monica.R.string.document_number), resolveSecretValue(data.documentNumber)),
-            fieldOrNull(getString(takagi.ru.monica.R.string.full_name), fullName),
-            fieldOrNull(getString(takagi.ru.monica.R.string.expiry_date_label), data.expiryDate),
-            fieldOrNull(getString(takagi.ru.monica.R.string.cardholder_label), data.username),
-            fieldOrNull(getString(takagi.ru.monica.R.string.email), data.email),
-            fieldOrNull(getString(takagi.ru.monica.R.string.phone), data.phone),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.document_number), resolveSecretValue(data.documentNumber)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.full_name), fullName),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.expiry_date_label), data.expiryDate),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.cardholder_label), data.username),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.email), data.email),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.phone), data.phone),
             fieldOrNull("SSN", resolveSecretValue(data.ssn))
         )
         if (fields.isEmpty()) return null
         return MonicaImeCardWalletEntry(
             id = id,
-            title = title.ifBlank { fullName.ifBlank { getString(takagi.ru.monica.R.string.documents) } },
+            title = title.ifBlank { fullName.ifBlank { strings.get(takagi.ru.monica.R.string.documents) } },
             subtitle = fullName,
-            typeLabel = getString(takagi.ru.monica.R.string.documents),
+            typeLabel = strings.get(takagi.ru.monica.R.string.documents),
             isFavorite = isFavorite,
             sourceLabel = resolveSourceLabel(
                 item = this,

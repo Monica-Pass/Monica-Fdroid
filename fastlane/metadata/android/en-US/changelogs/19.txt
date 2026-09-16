@@ -1,0 +1,6 @@
+Updated to Monica 1.0.312.
+- Classical Chinese, Polish and Nya; fuller translations.
+- M3E database and backup pages, smooth expansion and optional looping cards.
+- Choose databases for file imports/exports, with progress and background export.
+- KeePass conflict merging and MDBX token/sync improvements.
+- Credential Exchange omitted; existing passkeys and file migration remain available.

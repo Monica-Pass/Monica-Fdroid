@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -273,29 +275,29 @@ internal fun PasswordBatchPreserveCategoriesDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Folder, contentDescription = null) },
-        title = { Text("保留原分类？") },
+        title = { Text(stringResource(R.string.legacy_ui_transfer_keep_categories)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "选中的 ${prompt.classifiedItemCount} 个密码带有分类。目标中缺少的分类可以自动创建。",
+                    stringResource(R.string.legacy_ui_transfer_classified_count, prompt.classifiedItemCount),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 PasswordBatchCategoryChoice(
-                    title = "按原分类整理",
-                    supportingText = "复用同名分类，并自动创建缺少的文件夹",
+                    title = stringResource(R.string.legacy_ui_transfer_by_category),
+                    supportingText = stringResource(R.string.legacy_ui_transfer_by_category_hint),
                     icon = Icons.Default.Folder,
                     selected = preserveCategories,
                     onClick = { preserveCategories = true }
                 )
                 PasswordBatchCategoryChoice(
-                    title = "全部放入所选位置",
-                    supportingText = "忽略来源分类，维持原有批量传输方式",
+                    title = stringResource(R.string.legacy_ui_transfer_all_to_target),
+                    supportingText = stringResource(R.string.legacy_ui_transfer_all_to_target_hint),
                     icon = Icons.Default.FolderOff,
                     selected = !preserveCategories,
                     onClick = { preserveCategories = false }
                 )
                 Text(
-                    "没有分类的密码仍会放入所选位置。",
+                    stringResource(R.string.legacy_ui_transfer_uncategorized_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -303,12 +305,12 @@ internal fun PasswordBatchPreserveCategoriesDialog(
         },
         confirmButton = {
             TextButton(onClick = { prompt.proceed(preserveCategories) }) {
-                Text("继续")
+                Text(stringResource(R.string.legacy_ui_continue))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

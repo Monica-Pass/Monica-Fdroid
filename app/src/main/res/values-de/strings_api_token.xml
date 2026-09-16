@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_type_api_token">API-Token</string>
+    <string name="api_token_no_database">Öffnen Sie eine native MDBX-Datenbank, um API-Tokens anzuzeigen oder zu erstellen.</string>
+    <string name="api_token_load_error">Token konnte nicht geladen oder gespeichert werden. Öffnen oder synchronisieren Sie die Datenbank erneut und laden Sie dann neu. Vorhandene Daten wurden beibehalten.</string>
+    <string name="api_token_reload">Neu laden</string>
+    <string name="api_token_root_collection">Datenbankwurzel</string>
+    <string name="api_token_database">Datenbank</string>
+    <string name="api_token_collection">Kategorie</string>
+    <string name="api_token_complete_payload">Vollständige Token-Daten (JSON)</string>
+    <string name="api_token_empty">Keine API-Tokens in dieser Datenbank.</string>
+    <string name="api_token_native_hint">Als natives MDBX-API-Token gespeichert, kompatibel mit Monica CLI.</string>
+    <string name="api_token_toggle_visibility">Wert anzeigen oder ausblenden</string>
+    <string name="api_token_validation">Geben Sie Anbieter und Token ein. Die optionale API-Adresse muss eine HTTP- oder HTTPS-URL sein.</string>
+    <string name="api_token_fields_limit">Bis zu 128 eigene Felder. Notizen und Feldwerte dürfen zusammen höchstens 64 KB belegen.</string>
+    <string name="api_token_import_json">Token-JSON einfügen</string>
+    <string name="api_token_parse">Einlesen</string>
+    <string name="api_token_delete_confirmation">Dieses API-Token aus der Datenbank löschen?</string>
+    <string name="api_token_entry_id">Eintrags-ID</string>
+    <string name="api_token_collection_id">Sammlungs-ID</string>
+    <string name="api_token_provider">Anbieter</string>
+    <string name="api_token_api_base">API-Basis-URL</string>
+    <string name="api_token_note">Notiz</string>
+    <string name="api_token_schema">Datenschema</string>
+    <string name="api_token_name">Token-Name</string>
+    <string name="api_token_add">API-Token hinzufügen</string>
+    <string name="api_token_edit">API-Token bearbeiten</string>
+    <string name="api_token_credentials">Token-Details</string>
+    <string name="api_token_manage_databases">Datenbanken verwalten</string>
+    <string name="api_token_folder_error">Kategorien konnten nicht geladen werden. Öffnen Sie die Speicherauswahl erneut.</string>
+    <string name="api_token_storage">Speicherort</string>
+    <string name="api_token_advanced">Weitere Informationen</string>
+    <string name="api_token_unknown_schema">Dieses Token verwendet ein anderes Format. Unten können Sie seine vollständigen Daten anzeigen und kopieren.</string>
+    <string name="api_token_discard_title">Änderungen verwerfen?</string>
+    <string name="api_token_discard_message">Ihre ungespeicherten Änderungen gehen verloren.</string>
+    <string name="api_token_discard">Verwerfen</string>
+    <string name="api_token_name_hint">1–64 Buchstaben, Ziffern, - oder _</string>
+</resources>

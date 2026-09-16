@@ -1,5 +1,7 @@
 package takagi.ru.monica.util
 
+import takagi.ru.monica.localization.xmlTestStrings
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,7 +24,8 @@ class LegacyMonicaZipCsvRestoreParserTest {
 
         val result = LegacyMonicaZipCsvRestoreParser.parseSecureItems(
             file = file,
-            role = LegacyMonicaSecureCsvRole.CARDS_DOCS_ONLY
+            role = LegacyMonicaSecureCsvRole.CARDS_DOCS_ONLY,
+            strings = xmlTestStrings("en"),
         )
 
         assertEquals(listOf("BANK_CARD", "DOCUMENT"), result.items.map { it.itemType })
@@ -42,7 +45,8 @@ class LegacyMonicaZipCsvRestoreParserTest {
 
         val result = LegacyMonicaZipCsvRestoreParser.parseSecureItems(
             file = file,
-            role = LegacyMonicaSecureCsvRole.NOTES_ONLY
+            role = LegacyMonicaSecureCsvRole.NOTES_ONLY,
+            strings = xmlTestStrings("en"),
         )
 
         assertEquals(1, result.items.size)

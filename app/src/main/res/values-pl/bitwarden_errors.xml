@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">Certyfikat wygasł. Sprawdź datę i godzinę urządzenia i poproś administratora serwera o odnowienie certyfikatu.</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">Certyfikat nie jest jeszcze ważny. Sprawdź datę i godzinę urządzenia oraz okres ważności certyfikatu.</string>
+    <string name="bitwarden_error_certificate_hostname">Certyfikat serwera nie pasuje do podanej domeny. Sprawdź adres własnego serwera i certyfikat zwracany przez odwrotne proxy.</string>
+    <string name="bitwarden_error_certificate_untrusted">Nie można zweryfikować certyfikatu serwera. Sprawdź pełny łańcuch certyfikatów, zaufane urzędy CA urządzenia i czy proxy nie zastępuje certyfikatów HTTPS. Dla certyfikatu samopodpisanego dodaj jego CA w ustawieniach certyfikatów.</string>
+    <string name="bitwarden_error_tls_handshake">Nie można nawiązać bezpiecznego połączenia TLS. Sprawdź konfigurację TLS i wersje protokołów serwera lub odwrotnego proxy oraz certyfikat klienta, jeśli używasz mTLS.</string>
+    <string name="bitwarden_error_dns">Nie można rozpoznać domeny serwera. Sprawdź adres własnego serwera oraz ustawienia DNS, VPN i proxy.</string>
+    <string name="bitwarden_error_timeout">Upłynął czas połączenia z serwerem. Sprawdź dostępność serwera, port, sieć oraz ustawienia VPN i proxy.</string>
+    <string name="bitwarden_error_connection">Nie można połączyć się z serwerem. Sprawdź adres, port, działanie usługi oraz ustawienia zapory i proxy.</string>
+    <string name="bitwarden_error_proxy">Proxy odrzuciło połączenie lub wymaga uwierzytelnienia. Sprawdź adres, port i dane konta proxy.</string>
+    <string name="bitwarden_error_cleartext">Adres serwera używa HTTP, na co nie pozwalają obecne zasady bezpieczeństwa. Użyj HTTPS i sprawdź konfigurację HTTPS odwrotnego proxy.</string>
+    <string name="bitwarden_error_network_io">Błąd sieci przerwał komunikację z serwerem. Sprawdź sieć, VPN i proxy, a następnie spróbuj ponownie.</string>
+</resources>

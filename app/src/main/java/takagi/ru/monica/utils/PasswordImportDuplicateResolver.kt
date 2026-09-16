@@ -20,9 +20,13 @@ object PasswordImportDuplicateResolver {
         passwordRepository: PasswordRepository,
         securityManager: SecurityManager,
         snapshot: ImportedPasswordSnapshot,
-        localOnly: Boolean
+        localOnly: Boolean,
+        includeCandidate: suspend (PasswordEntry) -> Boolean = { true },
+        deletedOnly: Boolean = false
     ): PasswordEntry? {
-        val candidates = if (localOnly) {
+        val candidates = if (deletedOnly) {
+            passwordRepository.getDeletedEntries().filter { !localOnly || it.isLocalOnlyEntry() }
+        } else if (localOnly) {
             passwordRepository.getLocalDuplicateCandidates(
                 title = snapshot.title,
                 username = snapshot.username,
@@ -37,7 +41,7 @@ object PasswordImportDuplicateResolver {
         }
 
         return candidates.firstOrNull { candidate ->
-            matches(candidate, snapshot, securityManager)
+            matches(candidate, snapshot, securityManager) && includeCandidate(candidate)
         }
     }
 
@@ -52,7 +56,7 @@ object PasswordImportDuplicateResolver {
         if (!normalizedEquals(candidate.notes, snapshot.notes)) return false
         if (!normalizedEquals(candidate.email, snapshot.email)) return false
         if (!normalizedEquals(candidate.phone, snapshot.phone)) return false
-        if (!normalizedEquals(candidate.authenticatorKey, snapshot.authenticatorKey)) return false
+        if (!secretEquals(candidate.authenticatorKey, snapshot.authenticatorKey, securityManager)) return false
 
         if (candidate.password == snapshot.password) {
             return true
@@ -69,6 +73,13 @@ object PasswordImportDuplicateResolver {
 
     private fun normalizedEquals(left: String?, right: String?): Boolean {
         return normalize(left) == normalize(right)
+    }
+
+    private fun secretEquals(left: String, right: String, securityManager: SecurityManager): Boolean {
+        if (left == right) return true
+        val plainLeft = runCatching { securityManager.decryptDataIfMonicaCiphertext(left) }.getOrNull() ?: return false
+        val plainRight = runCatching { securityManager.decryptDataIfMonicaCiphertext(right) }.getOrNull() ?: return false
+        return plainLeft == plainRight
     }
 
     private fun normalize(value: String?): String {

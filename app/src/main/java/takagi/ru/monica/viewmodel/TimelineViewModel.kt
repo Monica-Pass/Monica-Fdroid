@@ -39,6 +39,7 @@ import java.util.Date
  * 从 OperationLogRepository 加载真实数据
  */
 class TimelineViewModel(application: Application) : AndroidViewModel(application) {
+    private val strings = takagi.ru.monica.utils.AppLocaleStringResolver(application)
     
     private val database = PasswordDatabase.getDatabase(application)
     private val repository = OperationLogRepository(database.operationLogDao())
@@ -662,7 +663,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                         // 创建新条目，使用旧值
                         var newEntry = entry.copy(
                             id = 0,  // 新ID
-                            title = "${entry.title} (旧版本)",
+                            title = strings.get(R.string.timeline_display_old_version, entry.title),
                             keepassDatabaseId = null,
                             keepassGroupPath = null,
                             keepassEntryUuid = null,
@@ -692,7 +693,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                                     }
                                 )
                                 "备注" -> newEntry.copy(notes = change.oldValue)
-                                "标题" -> newEntry.copy(title = "${change.oldValue} (旧版本)")
+                                "标题" -> newEntry.copy(title = strings.get(R.string.timeline_display_old_version, change.oldValue))
                                 else -> newEntry
                             }
                         }
@@ -705,7 +706,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                         
                         var newItem = item.copy(
                             id = 0,
-                            title = "${item.title} (旧版本)",
+                            title = strings.get(R.string.timeline_display_old_version, item.title),
                             keepassDatabaseId = null,
                             keepassGroupPath = null,
                             keepassEntryUuid = null,
@@ -725,7 +726,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                         
                         snapshotChanges.forEach { change ->
                             newItem = when (change.fieldName) {
-                                "标题" -> newItem.copy(title = "${change.oldValue} (旧版本)")
+                                "标题" -> newItem.copy(title = strings.get(R.string.timeline_display_old_version, change.oldValue))
                                 takagi.ru.monica.data.TIMELINE_SNAPSHOT_FIELD_ITEM_DATA ->
                                     newItem.copy(itemData = change.oldValue)
                                 takagi.ru.monica.data.TIMELINE_SNAPSHOT_FIELD_NOTES ->
@@ -742,7 +743,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                         
                         var newItem = item.copy(
                             id = 0,
-                            title = "${item.title} (旧版本)",
+                            title = strings.get(R.string.timeline_display_old_version, item.title),
                             keepassDatabaseId = null,
                             keepassGroupPath = null,
                             keepassEntryUuid = null,
@@ -762,7 +763,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                         
                         snapshotChanges.forEach { change ->
                             newItem = when (change.fieldName) {
-                                "标题" -> newItem.copy(title = "${change.oldValue} (旧版本)")
+                                "标题" -> newItem.copy(title = strings.get(R.string.timeline_display_old_version, change.oldValue))
                                 "备注" -> newItem.copy(notes = change.oldValue)
                                 takagi.ru.monica.data.TIMELINE_SNAPSHOT_FIELD_ITEM_DATA ->
                                     newItem.copy(itemData = change.oldValue)

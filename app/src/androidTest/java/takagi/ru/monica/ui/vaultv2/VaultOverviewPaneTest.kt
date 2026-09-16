@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.vaultv2
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.app.Application
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
@@ -34,6 +36,8 @@ import org.junit.runner.RunWith
 import java.io.File
 import takagi.ru.monica.R
 import takagi.ru.monica.data.*
+import takagi.ru.monica.data.bitwarden.BitwardenFolder
+import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.repository.*
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.utils.PageAdjustmentSettingsSnapshot
@@ -56,6 +60,7 @@ class VaultOverviewPaneTest {
     private var openedPassword: Long? = null
     private var darkTheme by mutableStateOf(false)
     private var keyboardVisible = false
+    private var testBitwardenVaults: List<BitwardenVault> = emptyList()
 
     @Before fun prepareVault(): Unit = runBlocking {
         originalSettings = settings.exportPageAdjustmentSettings()
@@ -79,20 +84,25 @@ class VaultOverviewPaneTest {
         database.close()
     }
 
-    private fun showPane(followOverviewSettings: Boolean = false) {
+    private fun showPane(followOverviewSettings: Boolean = false, expectedOverviewCount: Int = 24) {
         val security = SecurityManager(context)
         val passwords = PasswordRepository(database.passwordEntryDao(), categoryDao = database.categoryDao(),
             bitwardenFolderDao = database.bitwardenFolderDao(), passwordArchiveSyncMetaDao = database.passwordArchiveSyncMetaDao())
         val items = SecureItemRepository(database.secureItemDao())
         fun <T : ViewModel> keep(model: T): T = model.also { models += it }
-        val passwordModel = keep(PasswordViewModel(passwords, security)).also { it.restoreAuthenticatedUiState() }
-        val totp = keep(TotpViewModel(items, passwords))
-        val cards = keep(BankCardViewModel(items))
-        val documents = keep(DocumentViewModel(items))
+        val passwordModel = keep(PasswordViewModel(passwords, security, strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext))).also { it.restoreAuthenticatedUiState() }
+        val totp = keep(TotpViewModel(items, passwords, strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext)))
+        val cards = keep(BankCardViewModel(items, strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext)))
+        val documents = keep(DocumentViewModel(items, strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext)))
         val addresses = keep(BillingAddressViewModel(items))
-        val notes = keep(NoteViewModel(items))
-        val passkeys = keep(PasskeyViewModel(PasskeyRepository(database.passkeyDao())))
+        val notes = keep(NoteViewModel(items, strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext)))
+        val passkeys = keep(PasskeyViewModel(PasskeyRepository(database.passkeyDao()), strings = AppLocaleStringResolver(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext)))
         val keepass = keep(LocalKeePassViewModel(context.applicationContext as Application, database.localKeePassDatabaseDao(), security))
+        // The app always supplies this model, including when there are no MDBX vaults.
+        // Overview -> list navigation changes the native-token collector from null to this model.
+        val mdbx = keep(MdbxViewModel(context.applicationContext as Application,
+            database.localMdbxDatabaseDao(), database.mdbxRemoteSourceDao(), database.passwordEntryDao(),
+            database.secureItemDao(), database.passkeyDao(), database.attachmentDao(), database.customFieldDao(), security))
         val settingsModel = keep(SettingsViewModel(settings))
         compose.setContent {
             val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
@@ -105,8 +115,8 @@ class VaultOverviewPaneTest {
             MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
                 state = rememberVaultV2PaneState(remember { VaultV2RetainedState() })
                 VaultV2Pane(passwordModel, totp, cards, documents, addresses, notes, passkeys,
-                    keepassDatabases = emptyList(), mdbxDatabases = emptyList(), bitwardenVaults = emptyList(),
-                    localKeePassViewModel = keepass, settingsViewModel = settingsModel, state = state,
+                    keepassDatabases = emptyList(), mdbxDatabases = emptyList(), bitwardenVaults = testBitwardenVaults,
+                    localKeePassViewModel = keepass, mdbxViewModel = mdbx, settingsViewModel = settingsModel, state = state,
                     onOpenPassword = { openedPassword = it }, onOpenTotp = {}, onOpenBankCard = {}, onOpenDocument = {},
                     onOpenBillingAddress = {}, onOpenNote = {}, onOpenPasskey = {}, onOpenMdbxCommitHistory = {},
                     onOpenHistory = {}, onOpenTrashPage = {}, onOpenArchivePage = {}, onOpenCommonAccountTemplates = {},
@@ -114,7 +124,7 @@ class VaultOverviewPaneTest {
                     modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
             }
         }
-        compose.waitUntil(15_000) { state.overviewSnapshot?.items?.size == 24 }
+        compose.waitUntil(15_000) { state.overviewSnapshot?.items?.size == expectedOverviewCount }
         compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
     }
 
@@ -128,6 +138,80 @@ class VaultOverviewPaneTest {
         Espresso.pressBack()
         compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
         compose.runOnIdle { assertFalse(state.overviewListOpen); assertEquals("local", state.storageFilterType) }
+    }
+
+    @Test fun bitwardenOverviewNavigationUsesTheClassicList() = verifyBitwardenNavigation(VaultV2LayoutMode.CLASSIC)
+
+    @Test fun bitwardenOverviewNavigationUsesTheHierarchicalList() = verifyBitwardenNavigation(VaultV2LayoutMode.HIERARCHICAL)
+
+    private fun verifyBitwardenNavigation(layout: VaultV2LayoutMode) {
+        val vault = BitwardenVault(id = 136, email = "issue136@example.test", isLocked = false, syncEnabled = false)
+        val folder = BitwardenFolder(vaultId = vault.id, bitwardenFolderId = "issue136-folder",
+            name = "Issue 136 folder", revisionDate = "2026-09-14T00:00:00Z")
+        runBlocking {
+            database.bitwardenVaultDao().insert(vault)
+            database.bitwardenFolderDao().insert(folder)
+            listOf(
+                PasswordEntry(id = 1361, title = "Bitwarden folder login", website = "", username = "demo", password = "",
+                    bitwardenVaultId = vault.id, bitwardenCipherId = "issue136-folder-login", bitwardenFolderId = folder.bitwardenFolderId),
+                PasswordEntry(id = 1362, title = "Bitwarden unfiled favorite", website = "", username = "demo", password = "",
+                    bitwardenVaultId = vault.id, bitwardenCipherId = "issue136-favorite", isFavorite = true),
+                PasswordEntry(id = 1363, title = "Bitwarden archived login", website = "", username = "demo", password = "",
+                    bitwardenVaultId = vault.id, bitwardenCipherId = "issue136-archive", isArchived = true),
+            ).forEach { database.passwordEntryDao().insertPasswordEntry(it) }
+        }
+        testBitwardenVaults = listOf(vault)
+        appSettings = appSettings.copy(vaultV2LayoutMode = layout, vaultOverviewConfig = VaultOverviewConfig(scope = "bitwarden:${vault.id}"))
+        showPane(expectedOverviewCount = 2)
+        compose.waitUntil(10_000) { state.overviewSnapshot?.folders?.any { it.name == folder.name } == true }
+        val folderKey = state.overviewSnapshot!!.folders.first { it.name == folder.name }.key
+        openOverviewNode("overview_folder_$folderKey")
+        awaitListText("Bitwarden folder login")
+        compose.onNodeWithText("Overview password 1").assertDoesNotExist()
+        backToBitwardenOverview(vault.id)
+
+        openOverviewNode("overview_type_PASSWORD")
+        awaitListText("Bitwarden unfiled favorite")
+        compose.runOnIdle { assertEquals("PASSWORD", state.overviewItemType) }
+        backToBitwardenOverview(vault.id)
+
+        compose.onNodeWithTag("overview_modules").performScrollToNode(hasTestTag("overview_favorites"))
+        compose.onNode(hasText(context.getString(R.string.vault_overview_view_all)) and
+            hasAnyAncestor(hasTestTag("overview_favorites"))).performClick()
+        awaitListText("Bitwarden unfiled favorite")
+        compose.onNodeWithText("Bitwarden folder login").assertDoesNotExist()
+        backToBitwardenOverview(vault.id)
+
+        openOverviewNode("overview_archive")
+        awaitListText("Bitwarden archived login")
+        compose.onNodeWithText("Archived local").assertDoesNotExist()
+        backToBitwardenOverview(vault.id)
+
+        openOverviewNode("overview_all_items")
+        awaitListText("Bitwarden unfiled favorite")
+        compose.onNodeWithText("Overview password 1").assertDoesNotExist()
+        backToBitwardenOverview(vault.id)
+    }
+
+    private fun openOverviewNode(tag: String) {
+        compose.onNodeWithTag("overview_modules").performScrollToNode(hasTestTag(tag))
+        compose.onNodeWithTag(tag).performClick()
+    }
+
+    private fun awaitListText(text: String) {
+        compose.waitUntil(10_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText(text).assertIsDisplayed()
+        compose.runOnIdle { assertTrue(state.overviewListOpen) }
+    }
+
+    private fun backToBitwardenOverview(vaultId: Long) {
+        Espresso.pressBack()
+        compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
+        compose.runOnIdle {
+            assertFalse(state.overviewListOpen)
+            assertFalse(state.isArchiveView)
+            assertEquals("bitwarden:$vaultId", state.overviewScope)
+        }
     }
 
     @Test fun archiveBackKeepsScrollAndRestoresLiveItems() {

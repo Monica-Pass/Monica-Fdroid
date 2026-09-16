@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import takagi.ru.monica.data.Category
 
 data class LocalCategoryMovePlan(
@@ -16,14 +18,15 @@ data class LocalCategoryPathOption(
     val category: Category?
 )
 
-fun planLocalCategoryMove(
+internal fun planLocalCategoryMove(
     categories: List<Category>,
     sourceCategory: Category,
-    targetParentCategory: Category?
+    targetParentCategory: Category?,
+    strings: StringResolver
 ): LocalCategoryMovePlan {
     val sourcePath = normalizeLocalCategoryPath(sourceCategory.name)
     if (sourcePath.isBlank()) {
-        throw IllegalArgumentException("分类路径无效")
+        throw IllegalArgumentException(strings.get(R.string.entry_message_category_path_invalid))
     }
 
     val destinationParentPath = targetParentCategory
@@ -45,7 +48,7 @@ fun planLocalCategoryMove(
             candidatePath = destinationParentPath
         )
     ) {
-        throw IllegalArgumentException("不能移动到自身或子分类下")
+        throw IllegalArgumentException(strings.get(R.string.entry_message_category_move_into_self))
     }
 
     val movingCategories = categories.filter { category ->
@@ -53,7 +56,7 @@ fun planLocalCategoryMove(
         isLocalCategoryDescendantPath(sourcePath, path)
     }
     if (movingCategories.isEmpty()) {
-        throw IllegalArgumentException("分类不存在")
+        throw IllegalArgumentException(strings.get(R.string.entry_message_category_missing))
     }
 
     val remappedPaths = movingCategories.associate { category ->
@@ -75,10 +78,10 @@ fun planLocalCategoryMove(
         .keys
 
     if (destinationPath.lowercase() in conflicts || duplicatedTargets.isNotEmpty()) {
-        throw IllegalArgumentException("目标位置已存在同名分类")
+        throw IllegalArgumentException(strings.get(R.string.entry_message_category_exists))
     }
     if (remappedPaths.values.any { it.lowercase() in conflicts }) {
-        throw IllegalArgumentException("移动后会与现有分类冲突")
+        throw IllegalArgumentException(strings.get(R.string.entry_message_category_move_conflict))
     }
 
     val updatedCategories = categories.mapNotNull { category ->
@@ -130,17 +133,18 @@ fun isLocalCategoryDescendantPath(parentPath: String, candidatePath: String): Bo
         normalizedCandidate.startsWith("$normalizedParent/", ignoreCase = true)
 }
 
-fun planLocalCategoryRename(
+internal fun planLocalCategoryRename(
     categories: List<Category>,
     sourceCategory: Category,
     newLeafName: String,
+    strings: StringResolver,
 ): LocalCategoryMovePlan {
     val sourcePath = normalizeLocalCategoryPath(sourceCategory.name)
-    require(sourcePath.isNotBlank()) { "分类路径无效" }
+    require(sourcePath.isNotBlank()) { strings.get(R.string.entry_message_category_path_invalid) }
 
     val normalizedLeaf = normalizeLocalCategoryPath(newLeafName)
-    require(normalizedLeaf.isNotBlank()) { "分类名称不能为空" }
-    require('/' !in normalizedLeaf) { "分类名称不能包含 /" }
+    require(normalizedLeaf.isNotBlank()) { strings.get(R.string.entry_message_category_name_required) }
+    require('/' !in normalizedLeaf) { strings.get(R.string.entry_message_category_name_separator) }
 
     val sourceParentPath = getLocalCategoryParentPath(sourcePath)
     val destinationPath = buildLocalCategoryPath(sourceParentPath, normalizedLeaf)
@@ -151,7 +155,7 @@ fun planLocalCategoryRename(
     val movingCategories = categories.filter { category ->
         isLocalCategoryDescendantPath(sourcePath, normalizeLocalCategoryPath(category.name))
     }
-    require(movingCategories.isNotEmpty()) { "分类不存在" }
+    require(movingCategories.isNotEmpty()) { strings.get(R.string.entry_message_category_missing) }
 
     val remappedPaths = movingCategories.associate { category ->
         val oldPath = normalizeLocalCategoryPath(category.name)
@@ -165,7 +169,7 @@ fun planLocalCategoryRename(
         .map { normalizeLocalCategoryPath(it.name).lowercase() }
         .toSet()
     require(remappedPaths.values.none { it.lowercase() in existingPaths }) {
-        "重命名后会与现有分类冲突"
+        strings.get(R.string.entry_message_category_rename_conflict)
     }
 
     return LocalCategoryMovePlan(

@@ -105,6 +105,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ripple
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
@@ -127,6 +128,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.FocusRequester
@@ -147,6 +150,9 @@ import app.keemobile.kotpass.constants.PredefinedIcon
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
 import takagi.ru.monica.data.LocalKeePassDatabase
+import takagi.ru.monica.data.KeePassSyncStatus
+import takagi.ru.monica.data.isRemoteSource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import takagi.ru.monica.data.CustomFieldDraft
 import takagi.ru.monica.keepass.KeePassFieldChange
 import takagi.ru.monica.keepass.KeePassNativeAttachmentRecord
@@ -198,6 +204,7 @@ internal fun KeePassNativeManagerScreen(
     onNavigateSpecialized: (KeePassNativeResolvedRoute) -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val conflictResolutionVersion by viewModel.conflictResolution.resolutionVersion.collectAsStateWithLifecycle()
     val retainedState = remember(database.id) { viewModel.nativeManagerRetainedState(database.id) }
     var browser by remember(database.id) { mutableStateOf<KeePassNativeBrowserSnapshot?>(null) }
     var loading by remember(database.id) { mutableStateOf(true) }
@@ -265,7 +272,7 @@ internal fun KeePassNativeManagerScreen(
         }
     }
 
-    LaunchedEffect(database.id) { reload() }
+    LaunchedEffect(database.id, conflictResolutionVersion) { reload() }
     LaunchedEffect(currentGroupIdentity, searchQuery, searchOptions, searchCurrentFolderOnly) {
         viewModel.retainNativeManagerState(
             KeePassNativeManagerRetainedState(
@@ -542,6 +549,7 @@ internal fun KeePassNativeManagerScreen(
                     else onNavigateBack()
                 },
                 onRetry = { reload() },
+                onResolveConflict = { viewModel.conflictResolution.open(database.id, database.name) },
                 onSearchQueryChange = { searchQuery = it },
                 onSearchExpandedChange = { expanded ->
                     searchExpanded = expanded
@@ -1040,6 +1048,7 @@ private fun NativeBrowserPage(
     readOnly: Boolean,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onResolveConflict: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSearchExpandedChange: (Boolean) -> Unit,
     onOpenSearchOptions: () -> Unit,
@@ -1374,6 +1383,9 @@ private fun NativeBrowserPage(
                         readOnly = readOnly,
                     )
                 }
+                if (database.isRemoteSource() && database.lastSyncStatus == KeePassSyncStatus.CONFLICT) {
+                    KeePassConflictBanner(onReview = onResolveConflict)
+                }
                 if (error != null && browser != null) {
                     NativeManagerErrorRow(
                         text = error,
@@ -1416,11 +1428,12 @@ private fun NativeBrowserPage(
                             if (result?.entries.isNullOrEmpty()) {
                                 item { NativeEmptyState(stringResource(R.string.no_results)) }
                             } else {
-                                items(
+                                itemsIndexed(
                                     items = result?.entries.orEmpty(),
-                                    key = { entry -> "${entry.identity.entryUuid}:${entry.occurrenceIndex}" }
-                                ) { entry ->
+                                    key = { _, entry -> "${entry.identity.entryUuid}:${entry.occurrenceIndex}" }
+                                ) { index, entry ->
                                     NativeEntryCard(
+                                        shape = settingsSectionItemShape(index, result?.entries.orEmpty().size),
                                         entry = entry,
                                         showGroupPath = true,
                                         selected = entry.identity.entryUuid in selectedEntryUuids,
@@ -1448,11 +1461,12 @@ private fun NativeBrowserPage(
                         ) {
                             if (sortedChildren.groups.isNotEmpty()) {
                                 item { NativeSectionLabel(stringResource(R.string.keepass_native_groups)) }
-                                items(
+                                itemsIndexed(
                                     items = sortedChildren.groups,
-                                    key = { group -> "${group.identity.groupUuid}:${group.occurrenceIndex}" }
-                                ) { group ->
+                                    key = { _, group -> "${group.identity.groupUuid}:${group.occurrenceIndex}" }
+                                ) { index, group ->
                                     NativeGroupCard(
+                                        shape = settingsSectionItemShape(index, sortedChildren.groups.size),
                                         group = group,
                                         readOnly = readOnly,
                                         selected = group.identity.groupUuid in selectedGroupUuids,
@@ -1502,11 +1516,12 @@ private fun NativeBrowserPage(
                             }
                             if (sortedChildren.entries.isNotEmpty()) {
                                 item { NativeSectionLabel(stringResource(R.string.keepass_native_entries)) }
-                                items(
+                                itemsIndexed(
                                     items = sortedChildren.entries,
-                                    key = { entry -> "${entry.identity.entryUuid}:${entry.occurrenceIndex}" }
-                                ) { entry ->
+                                    key = { _, entry -> "${entry.identity.entryUuid}:${entry.occurrenceIndex}" }
+                                ) { index, entry ->
                                     NativeEntryCard(
+                                        shape = settingsSectionItemShape(index, sortedChildren.entries.size),
                                         entry = entry,
                                         showGroupPath = false,
                                         selected = entry.identity.entryUuid in selectedEntryUuids,
@@ -1704,7 +1719,8 @@ private fun NativeFolderDragModeBanner(
 }
 
 @Composable
-private fun NativeGroupCard(
+internal fun NativeGroupCard(
+    shape: Shape = DatabaseManagementPanelShape,
     group: KeePassNativeGroupRecord,
     readOnly: Boolean,
     selected: Boolean,
@@ -1721,8 +1737,9 @@ private fun NativeGroupCard(
 ) {
     var menuExpanded by remember(group.identity, group.occurrenceIndex) { mutableStateOf(false) }
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.combinedClickable(
+        shape = shape,
+        modifier = Modifier.fillMaxWidth().clip(shape).combinedClickable(
+            interactionSource = null, indication = ripple(color = MaterialTheme.colorScheme.primary),
             onClick = onOpen,
             onLongClick = onStartDrag,
         ),
@@ -1733,7 +1750,7 @@ private fun NativeGroupCard(
         } else if (dropTarget) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f)
         } else {
-            Color.Transparent
+            MaterialTheme.colorScheme.surfaceContainerLow
         },
     ) {
         ListItem(
@@ -1756,21 +1773,7 @@ private fun NativeGroupCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             },
-            leadingContent = {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.FolderOpen,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            },
+            leadingContent = { Icon(Icons.Default.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
             trailingContent = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (selected) {
@@ -1841,7 +1844,8 @@ private fun NativeGroupCard(
 }
 
 @Composable
-private fun NativeEntryCard(
+internal fun NativeEntryCard(
+    shape: Shape = DatabaseManagementPanelShape,
     entry: KeePassNativeEntryRecord,
     showGroupPath: Boolean,
     selected: Boolean,
@@ -1867,14 +1871,14 @@ private fun NativeEntryCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        shape = RoundedCornerShape(14.dp),
+            .clip(shape).combinedClickable(interactionSource = null, indication = ripple(color = MaterialTheme.colorScheme.primary), onClick = onClick, onLongClick = onLongClick),
+        shape = shape,
         color = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else if (entry.isInRecycleBin) {
             MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.22f)
         } else {
-            Color.Transparent
+            MaterialTheme.colorScheme.surfaceContainerLow
         },
     ) {
         ListItem(
@@ -1895,17 +1899,7 @@ private fun NativeEntryCard(
                     )
                 }
             },
-            leadingContent = {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = nativeKindColor(entry.kind).copy(alpha = 0.14f),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(nativeKindIcon(entry.kind), contentDescription = null, tint = nativeKindColor(entry.kind))
-                    }
-                }
-            },
+            leadingContent = { Icon(nativeKindIcon(entry.kind), contentDescription = null, tint = nativeKindColor(entry.kind)) },
             trailingContent = {
                 if (selectionMode) {
                     Checkbox(checked = selected, onCheckedChange = { onClick() })
@@ -2195,6 +2189,7 @@ private fun LegacyNativeEntryDetailScreen(
             title = { Text(stringResource(R.string.keepass_native_attachment_rename)) },
             text = {
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = renameAttachmentName,
                     onValueChange = { renameAttachmentName = it },
                     label = { Text(stringResource(R.string.keepass_native_attachment_name)) },
@@ -2552,6 +2547,7 @@ private fun LegacyNativeEntryEditorScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = field.name,
                             onValueChange = { fields[index] = field.copy(name = it) },
                             label = { Text(stringResource(R.string.keepass_native_field_name)) },
@@ -2559,6 +2555,7 @@ private fun LegacyNativeEntryEditorScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = field.value,
                             onValueChange = { fields[index] = field.copy(value = it) },
                             label = { Text(stringResource(R.string.keepass_native_field_value)) },
@@ -2877,6 +2874,7 @@ private fun NativeCreateGroupDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = name,
                     onValueChange = { name = it; error = null },
                     label = { Text(stringResource(R.string.folder_name)) },
@@ -2884,6 +2882,7 @@ private fun NativeCreateGroupDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text(stringResource(R.string.notes)) },
@@ -2891,6 +2890,7 @@ private fun NativeCreateGroupDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = tagsText,
                     onValueChange = { tagsText = it },
                     label = { Text(stringResource(R.string.keepass_native_tags)) },
@@ -2943,6 +2943,7 @@ private fun NativeCreateGroupDialog(
                     Text(stringResource(R.string.keepass_native_custom_icon_builtin, selectedPredefinedIcon.name))
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = defaultSequence,
                     onValueChange = { defaultSequence = it },
                     label = { Text(stringResource(R.string.keepass_native_default_auto_type_sequence)) },
@@ -3062,6 +3063,7 @@ private fun NativeGroupNameDialog(
         text = {
             Column {
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = name,
                     onValueChange = { name = it; error = null },
                     label = { Text(stringResource(R.string.folder_name)) },
@@ -3208,6 +3210,7 @@ private fun NativeTemplateTargetDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.title)) },
@@ -3362,6 +3365,7 @@ private fun NativeGroupPropertiesDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.folder_name)) },
@@ -3369,6 +3373,7 @@ private fun NativeGroupPropertiesDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text(stringResource(R.string.notes)) },
@@ -3376,6 +3381,7 @@ private fun NativeGroupPropertiesDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = tagsText,
                     onValueChange = { tagsText = it },
                     label = { Text(stringResource(R.string.keepass_native_tags)) },
@@ -3446,6 +3452,7 @@ private fun NativeGroupPropertiesDialog(
                     }
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = defaultSequence,
                     onValueChange = { defaultSequence = it },
                     label = { Text(stringResource(R.string.keepass_native_default_auto_type_sequence)) },

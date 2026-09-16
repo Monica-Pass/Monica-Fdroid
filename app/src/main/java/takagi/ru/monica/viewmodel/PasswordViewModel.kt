@@ -1,5 +1,9 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.utils.StringResolver
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -287,13 +291,14 @@ private const val PASSWORD_SCROLL_DEBUG_LOGS_ENABLED = false
 /**
  * ViewModel for password management
  */
-class PasswordViewModel(
+class PasswordViewModel internal constructor(
     private val repository: PasswordRepository,
     private val securityManager: SecurityManager,
     private val secureItemRepository: SecureItemRepository? = null,
     private val customFieldRepository: CustomFieldRepository? = null,
     context: Context? = null,
-    private val localKeePassDatabaseDao: LocalKeePassDatabaseDao? = null
+    private val localKeePassDatabaseDao: LocalKeePassDatabaseDao? = null,
+    private val strings: StringResolver
 ) : ViewModel() {
     private val decryptLock = Any()
     private val appContext: Context? = context?.applicationContext
@@ -2620,10 +2625,10 @@ class PasswordViewModel(
                     vaultId = vaultId,
                     cipherId = cipherId,
                     entryId = entry.id
-                ) ?: Result.failure(IllegalStateException("Bitwarden 仓库不可用"))
+                ) ?: Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_unavailable)))
                 if (queueResult.isFailure) {
                     throw queueResult.exceptionOrNull()
-                        ?: IllegalStateException("排队删除 Bitwarden 条目失败")
+                        ?: IllegalStateException(strings.get(R.string.bitwarden_message_delete_queue_failed))
                 }
             }
 
@@ -2793,10 +2798,10 @@ class PasswordViewModel(
                     vaultId = vaultId,
                     cipherId = cipherId,
                     entryId = entry.id
-                ) ?: Result.failure(IllegalStateException("Bitwarden 仓库不可用"))
+                ) ?: Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_unavailable)))
                 if (queueResult.isFailure) {
                     throw queueResult.exceptionOrNull()
-                        ?: IllegalStateException("排队删除 Bitwarden 条目失败")
+                        ?: IllegalStateException(strings.get(R.string.bitwarden_message_delete_queue_failed))
                 }
             }
             if (entry.mdbxDatabaseId != null) {
@@ -3155,7 +3160,7 @@ class PasswordViewModel(
         categoryId: Long?
     ): Result<Long> {
         val newId = copyPasswordToMonicaLocal(entry, categoryId)
-            ?: return Result.failure(IllegalStateException("创建 Monica 本地副本失败"))
+            ?: return Result.failure(IllegalStateException(strings.get(R.string.entry_message_local_copy_failed)))
 
         val facade = appContext?.let(AttachmentContainer::facade)
         if (facade != null) {
@@ -3171,7 +3176,7 @@ class PasswordViewModel(
                 if (copiedCount != attachmentCount) {
                     runCatching { facade.purgeByPassword(newId) }
                     repository.deletePasswordEntryById(newId)
-                    return Result.failure(IllegalStateException("附件复制数量不完整"))
+                    return Result.failure(IllegalStateException(strings.get(R.string.entry_message_attachments_incomplete)))
                 }
             }
         }
@@ -3183,12 +3188,12 @@ class PasswordViewModel(
                 vaultId = vaultId,
                 cipherId = cipherId,
                 entryId = entry.id
-            ) ?: Result.failure(IllegalStateException("Bitwarden 仓库不可用"))
+            ) ?: Result.failure(IllegalStateException(strings.get(R.string.entry_message_bitwarden_unavailable)))
             if (queueResult.isFailure) {
                 if (facade != null) runCatching { facade.purgeByPassword(newId) }
                 repository.deletePasswordEntryById(newId)
                 return Result.failure(
-                    queueResult.exceptionOrNull() ?: IllegalStateException("排队删除 Bitwarden 条目失败")
+                    queueResult.exceptionOrNull() ?: IllegalStateException(strings.get(R.string.bitwarden_message_delete_queue_failed))
                 )
             }
         }
@@ -4535,7 +4540,7 @@ class PasswordViewModel(
                 item = null,
                 data = data,
                 title = sourcePassword.title,
-                notes = "来自密码: ${sourcePassword.title}"
+                notes = strings.get(R.string.entry_message_from_password, sourcePassword.title)
             )
         }
     }

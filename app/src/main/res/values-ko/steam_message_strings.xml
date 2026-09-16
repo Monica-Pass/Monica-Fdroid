@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="steam_message_credentials_required">계정 이름과 비밀번호를 입력하세요</string>
+    <string name="steam_message_rsa_failed">Steam RSA 키를 가져올 수 없습니다</string>
+    <string name="steam_message_rsa_incomplete">Steam에서 불완전한 RSA 데이터를 반환했습니다</string>
+    <string name="steam_message_password_encrypt">Steam 비밀번호를 암호화할 수 없습니다</string>
+    <string name="steam_message_login_request">Steam 로그인 요청을 보낼 수 없습니다</string>
+    <string name="steam_message_login_failed">Steam 로그인에 실패했습니다</string>
+    <string name="steam_message_login_rejected">Steam에서 로그인을 거부했습니다(EResult=%1$s, interval=%2$s)</string>
+    <string name="steam_message_login_incomplete">Steam에서 불완전한 로그인 응답을 반환했습니다. 추가 인증이 필요할 수 있습니다.</string>
+    <string name="steam_message_session_invalid">로그인 세션이 유효하지 않습니다</string>
+    <string name="steam_message_code_required">인증 코드를 입력하세요</string>
+    <string name="steam_message_session_expired">로그인 세션이 만료되었습니다. 다시 시작하세요.</string>
+    <string name="steam_message_verification_failed">Steam 인증에 실패했습니다</string>
+    <string name="steam_message_qr_create">Steam QR 로그인을 시작할 수 없습니다</string>
+    <string name="steam_message_qr_failed">Steam QR 로그인에 실패했습니다</string>
+    <string name="steam_message_code_submit">Steam 인증 코드를 제출할 수 없습니다</string>
+    <string name="steam_message_session_needs_code">이 로그인 세션에는 인증 코드가 필요합니다</string>
+    <string name="steam_message_qr_expired">QR 로그인 세션이 만료되었습니다. 다시 시작하세요.</string>
+    <string name="steam_message_not_qr">이 세션은 QR 로그인을 사용하지 않습니다</string>
+    <string name="steam_message_poll_failed">Steam 로그인 상태를 확인할 수 없습니다</string>
+    <string name="steam_message_steamid_missing">Steam에 로그인했지만 SteamID가 없습니다. 계속할 수 없습니다.</string>
+    <string name="steam_message_token_missing">Steam에 로그인했지만 액세스 토큰을 가져오지 못했습니다. 가져오기를 계속할 수 없습니다.</string>
+    <string name="steam_message_login_timeout">Steam 로그인 대기 시간이 초과되었습니다. 나중에 다시 시도하세요.</string>
+    <string name="steam_message_qr_parameters">QR 로그인 세션 데이터가 잘못되었습니다. 다시 시작하세요.</string>
+    <string name="steam_message_replacement_code">이 계정에는 이미 인증기가 있습니다. 교체하려면 코드를 입력하세요.</string>
+    <string name="steam_message_steamid_invalid">SteamID가 유효하지 않습니다. Steam Guard를 설정할 수 없습니다.</string>
+    <string name="steam_message_account_restricted">이 Steam 계정은 제한되어 있어 Steam Guard를 추가할 수 없습니다</string>
+    <string name="steam_message_rate_limited">Steam 요청이 너무 많습니다. 나중에 다시 시도하세요.</string>
+    <string name="steam_message_add_failed">Steam Guard를 추가할 수 없습니다</string>
+    <string name="steam_message_phone_required">Steam Guard를 추가하기 전에 이 Steam 계정에 전화번호를 연결하세요</string>
+    <string name="steam_message_response_missing">Steam에서 불완전한 인증기 데이터를 반환했습니다: %1$s 누락</string>
+    <string name="steam_message_activation_expired">Steam Guard 활성화 시간이 만료되었습니다. 다시 로그인하세요.</string>
+    <string name="steam_message_activation_data">Steam Guard 데이터가 불완전합니다. 활성화 코드를 생성할 수 없습니다.</string>
+    <string name="steam_message_activation_failed">Steam Guard 활성화에 실패했습니다</string>
+    <string name="steam_message_activation_code_invalid">Steam 활성화 코드가 유효하지 않거나 만료되었습니다</string>
+    <string name="steam_message_activation_status">Steam Guard 활성화에 실패했습니다(status=%1$d)</string>
+    <string name="steam_message_sequential_codes">Steam Guard 활성화 실패: Steam에서 요구하는 연속 코드를 생성할 수 없습니다</string>
+    <string name="steam_message_replace_start">인증기 교체를 시작할 수 없습니다</string>
+    <string name="steam_message_replace_sms">현재 인증기를 교체하려면 SMS 코드를 입력하세요</string>
+    <string name="steam_message_replace_denied">Steam 로그인은 성공했지만 인증기 이전이 거부되었습니다(EResult=2). 계정에 사용 가능한 전화번호가 없거나 이전이 제한되었을 수 있습니다. maFile을 가져오거나 Steam에 전화번호를 연결한 후 다시 시도하세요.</string>
+    <string name="steam_message_replace_forbidden">Steam 로그인은 성공했지만 인증기 이전 접근이 거부되었습니다(EResult=15). maFile을 가져오거나 나중에 다시 로그인하여 재시도하세요.</string>
+    <string name="steam_message_replace_limited">Steam 로그인은 성공했지만 인증기 이전이 일시적으로 제한되었습니다(EResult=84). 나중에 다시 시도하세요.</string>
+    <string name="steam_message_replace_result">Steam 로그인은 성공했지만 인증기 이전에 실패했습니다(EResult=%1$d)</string>
+    <string name="steam_message_replace_session">교체 세션이 유효하지 않습니다. 가져오려면 다시 로그인하세요.</string>
+    <string name="steam_message_replace_failed">인증기 교체에 실패했습니다</string>
+    <string name="steam_message_session_state">로그인 세션 상태가 유효하지 않습니다. 다시 시작하세요.</string>
+    <string name="steam_message_oauth_missing">Steam 로그인은 성공했지만 OAuth 토큰이 반환되지 않았습니다. 가져오기를 계속할 수 없습니다.</string>
+    <string name="steam_message_captcha_unsupported">Steam에서 이 버전으로 완료할 수 없는 CAPTCHA를 요구합니다. Steam 클라이언트에서 한 번 로그인한 후 다시 시도하세요.</string>
+    <string name="steam_message_enter_token_code">Steam Guard 코드를 입력하세요</string>
+    <string name="steam_message_enter_email_code">이메일로 받은 코드를 입력하세요</string>
+    <string name="steam_message_invalid_parameters">Steam에서 요청을 거부했습니다: 잘못된 매개변수</string>
+    <string name="steam_message_access_denied">Steam에서 접근을 거부했습니다</string>
+    <string name="steam_message_already_bound">이 계정에는 Steam 인증기가 이미 있습니다. 교체 절차를 이용하세요.</string>
+    <string name="steam_message_operation_disallowed">현재 상태에서는 Steam이 이 작업을 허용하지 않습니다</string>
+    <string name="steam_message_confirmation_required">Steam에서 추가 확인을 요구합니다</string>
+    <string name="steam_message_code_invalid">Steam 인증 코드가 유효하지 않거나 만료되었습니다</string>
+    <string name="steam_message_request_status">Steam 요청에 실패했습니다(status=%1$d)</string>
+    <string name="steam_message_bad_credentials">Steam 계정 이름 또는 비밀번호가 올바르지 않습니다</string>
+    <string name="steam_message_duplicate_request">Steam에서 중복 요청을 보고했습니다(EResult=29). 계정에 인증기가 이미 있을 수 있습니다.</string>
+    <string name="steam_message_session_conflict">Steam 로그인 세션이 충돌했습니다. 나중에 다시 시도하세요.</string>
+    <string name="steam_message_extra_verification">Steam에서 추가 로그인 인증을 요구합니다(EResult=63)</string>
+    <string name="steam_message_login_result">Steam 로그인에 실패했습니다(EResult=%1$d)</string>
+    <string name="steam_message_token_code_invalid">Steam Guard 코드가 유효하지 않거나 만료되었습니다</string>
+    <string name="steam_message_sms_email_code_invalid">SMS 또는 이메일 인증 코드가 유효하지 않거나 만료되었습니다</string>
+</resources>

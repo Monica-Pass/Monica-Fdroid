@@ -1,5 +1,6 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
 import android.content.Context
 import android.os.Build
 import androidx.fragment.app.FragmentActivity
@@ -24,10 +25,10 @@ class BiometricHelper(context: Context) {
 
     fun authenticate(
         activity: FragmentActivity,
-        title: String = "验证身份",
-        subtitle: String? = "使用生物识别快速填充",
+        title: String = activity.getString(R.string.legacy_ui_verify_identity),
+        subtitle: String? = activity.getString(R.string.legacy_ui_biometric_fill),
         description: String? = null,
-        negativeButtonText: String = "取消",
+        negativeButtonText: String = activity.getString(R.string.cancel),
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
         onFailed: () -> Unit

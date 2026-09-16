@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">自動入力には Android 8.0 以降が必要です</string>
+    <string name="autofill_compat_huawei">Huawei 端末では Android 10 以降で自動入力が制限される場合があります</string>
+    <string name="autofill_compat_xiaomi">Xiaomi 端末では MIUI セキュリティで自動入力の許可が必要な場合があります</string>
+    <string name="autofill_compat_oppo">OPPO/Realme 端末では権限設定で自動入力の許可が必要な場合があります</string>
+    <string name="autofill_compat_vivo">Vivo 端末では iManager で自動入力の許可が必要な場合があります</string>
+    <string name="autofill_compat_android12_rom">一部の Android 12 ROM では、システムの互換性の問題により自動入力が不安定になる場合があります</string>
+    <string name="autofill_compat_inline">この端末はキーボード候補に対応していません。自動入力はドロップダウンで表示されます。</string>
+    <string name="autofill_compat_emulator">このエミュレーターでは自動入力が不安定になる場合があります</string>
+    <string name="autofill_compat_unsupported">この端末は自動入力フレームワークに対応していません</string>
+    <string name="autofill_compat_check_failed">互換性チェックを完了できませんでした</string>
+    <string name="autofill_check_manifest">AndroidManifest.xml に MonicaAutofillServiceNg が宣言されているか確認してください</string>
+    <string name="autofill_check_permission_manifest">サービスには BIND_AUTOFILL_SERVICE と自動入力の intent-filter の宣言が必要です</string>
+    <string name="autofill_check_enable_system">システム設定で自動入力サービスとして Monica を選択してください</string>
+    <string name="autofill_check_path_system">設定 → システム → 言語と入力 → 自動入力サービス</string>
+    <string name="autofill_check_path_xiaomi">Xiaomi: 設定 → 追加設定 → 言語と入力 → 自動入力サービス</string>
+    <string name="autofill_check_miui_permission">MIUI セキュリティでも必要な権限を許可してください</string>
+    <string name="autofill_check_path_huawei">Huawei: 設定 → システムと更新 → 言語と入力 → 自動入力サービス</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme: 設定 → 追加設定 → キーボードと入力方法 → 自動入力サービス</string>
+    <string name="autofill_check_path_vivo">Vivo: 設定 → その他の設定 → 入力方法 → 自動入力サービス</string>
+    <string name="autofill_check_path_samsung">Samsung: 設定 → 一般管理 → 言語と入力 → 自動入力サービス</string>
+    <string name="autofill_check_enable_app">Monica の設定で自動入力を有効にしてください</string>
+    <string name="autofill_check_app_permissions">Monica に必要なアプリ権限が付与されているか確認してください</string>
+    <string name="autofill_check_issue_count">互換性の問題: %1$d 件。以下の詳細を確認してください。</string>
+    <string name="autofill_check_xiaomi_permission">Xiaomi: セキュリティ → アプリを管理 → Monica → 権限 → 自動入力を許可</string>
+    <string name="autofill_check_huawei_autostart">Huawei: 端末管理で Monica の自動起動を許可する必要がある場合があります</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme: 設定 → アプリ管理 → Monica → 権限 → 自動入力を許可</string>
+    <string name="autofill_check_vivo_permission">Vivo: iManager → アプリ管理 → 権限管理 → Monica → 自動入力を許可</string>
+    <string name="autofill_check_background">Monica のバッテリー制限を解除し、自動起動とバックグラウンドでの動作を許可してください</string>
+    <string name="autofill_check_trigger_manually">自動入力が引き続き不安定な場合は、ログイン欄から手動で起動してセッションを開始してください</string>
+    <string name="autofill_check_configured">サービスは正しく設定されています。問題が続く場合は Monica を再起動してください。</string>
+    <string name="autofill_check_view_logs">トラブルシューティングツールで詳細ログを確認してください</string>
+    <string name="autofill_check_restart">変更を適用したら Monica を再起動してください</string>
+    <string name="autofill_check_recommendations_failed">提案を生成できませんでした。サポートにお問い合わせください。</string>
+    <string name="autofill_report_parsing">フィールド認識</string>
+    <string name="autofill_report_matching">パスワードの照合</string>
+    <string name="autofill_report_building">応答の構築</string>
+    <string name="autofill_report_performance">パフォーマンス</string>
+    <string name="autofill_report_parsing_failures">フィールド認識の失敗: %1$d 件</string>
+    <string name="autofill_report_matching_failures">一致するパスワードがないリクエスト: %1$d 件</string>
+    <string name="autofill_report_building_failures">応答の構築失敗: %1$d 件</string>
+    <string name="autofill_report_slow">平均応答時間が長すぎます: %1$d ms</string>
+    <string name="autofill_report_improve_recognition">フィールド認識を改善</string>
+    <string name="autofill_report_recognition_hint">一部のアプリのフィールドを認識できませんでした。フィールド解析の設定を確認してください。</string>
+    <string name="autofill_report_add_passwords">パスワードエントリーを追加</string>
+    <string name="autofill_report_add_passwords_hint">一致するパスワードが見つかりませんでした。これらのアプリのパスワードエントリーを追加してください。</string>
+    <string name="autofill_report_integrity">データの完全性を確認</string>
+    <string name="autofill_report_integrity_hint">データが不完全な場合、応答に失敗することがあります。パスワードエントリーを確認してください。</string>
+    <string name="autofill_report_optimize">パフォーマンスを改善</string>
+    <string name="autofill_report_optimize_hint">応答が遅くなっています。キャッシュの削除やパスワードエントリー数の削減をお試しください。</string>
+    <string name="autofill_report_title">=== Monica 自動入力診断 ===</string>
+    <string name="autofill_report_exported_at">エクスポート日時: %1$s</string>
+    <string name="autofill_report_device">端末情報</string>
+    <string name="autofill_report_manufacturer">メーカー: %1$s</string>
+    <string name="autofill_report_model">モデル: %1$s</string>
+    <string name="autofill_report_android">Android: %1$s（API %2$d）</string>
+    <string name="autofill_report_rom">ROM: %1$s</string>
+    <string name="autofill_report_inline">キーボード候補への対応: %1$s</string>
+    <string name="autofill_report_statistics">統計</string>
+    <string name="autofill_report_log_details">ログの詳細</string>
+    <string name="autofill_report_end">=== ログの終わり ===</string>
+</resources>

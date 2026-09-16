@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.animateMonicaContentSize
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -459,12 +460,18 @@ private fun NativeDetailFieldRow(
     val protected = field.protected || field.slot == NativeEntryStandardSlot.PASSWORD
     Surface(color = androidx.compose.ui.graphics.Color.Transparent) {
         ListItem(
+            modifier = Modifier.animateMonicaContentSize(),
             headlineContent = { Text(label, style = MaterialTheme.typography.labelLarge) },
             supportingContent = {
                 SelectionContainer {
                     Text(
                         if (protected && !revealed) "••••••••" else field.value.ifBlank { "—" },
-                        maxLines = if (field.slot == NativeEntryStandardSlot.NOTES) 4 else 2,
+                        maxLines = when {
+                            protected && !revealed -> 1
+                            protected -> Int.MAX_VALUE
+                            field.slot == NativeEntryStandardSlot.NOTES -> 4
+                            else -> 2
+                        },
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -488,7 +495,7 @@ private fun NativeDetailFieldRow(
                         IconButton(onClick = onReveal) {
                             Icon(
                                 if (revealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = null,
+                                contentDescription = stringResource(if (revealed) R.string.hide else R.string.show),
                             )
                         }
                     }

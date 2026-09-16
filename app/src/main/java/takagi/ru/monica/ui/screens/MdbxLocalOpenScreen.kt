@@ -100,29 +100,73 @@ fun MdbxLocalOpenScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.mdbx_open_vault_button)) },
+            MdbxTopAppBar(
+                title = { Text(stringResource(R.string.mdbx_open_vault_button), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
+        },
+        bottomBar = {
+            MdbxFormActionBar {
+                // === Submit Button ===
+                val isFormValid = selectedUri != null &&
+                    (!passwordRequired || (
+                        normalizedMasterPassword.isNotBlank() &&
+                            normalizedMasterPassword == normalizedConfirmPassword
+                        )) &&
+                    (!keyFileRequired || keyFile != null) &&
+                    operationState !is MdbxViewModel.OperationState.Loading
+
+                Button(
+                    onClick = {
+                        selectedUri?.let { uri ->
+                            submitted = true
+                            viewModel.importLocalVault(
+                                sourceUri = uri,
+                                name = null,
+                                masterPassword = masterPassword,
+                                unlockMethod = unlockMethod,
+                                keyFile = keyFile,
+                                tigaMode = MdbxTigaMode.MULTI,
+                                description = null
+                            )
+                        }
+                    },
+                    enabled = isFormValid,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                ) {
+                    if (operationState is MdbxViewModel.OperationState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.mdbx_creating_vault))
+                    } else {
+                        Text(stringResource(R.string.mdbx_open_vault_button))
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // === Card: Select File ===
-            Card(
+            MdbxCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -164,9 +208,9 @@ fun MdbxLocalOpenScreen(
             }
 
             // === Card: Vault Settings ===
-            Card(
+            MdbxCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -197,46 +241,6 @@ fun MdbxLocalOpenScreen(
                         onGenerateKeyFile = { keyFileCreateLauncher.launch("monica-mdbx.key") },
                         embedded = true
                     )
-                }
-            }
-
-            // === Submit Button ===
-            val isFormValid = selectedUri != null &&
-                (!passwordRequired || (
-                    normalizedMasterPassword.isNotBlank() &&
-                        normalizedMasterPassword == normalizedConfirmPassword
-                    )) &&
-                (!keyFileRequired || keyFile != null) &&
-                operationState !is MdbxViewModel.OperationState.Loading
-
-            Button(
-                onClick = {
-                    selectedUri?.let { uri ->
-                        submitted = true
-                        viewModel.importLocalVault(
-                            sourceUri = uri,
-                            name = null,
-                            masterPassword = masterPassword,
-                            unlockMethod = unlockMethod,
-                            keyFile = keyFile,
-                            tigaMode = MdbxTigaMode.MULTI,
-                            description = null
-                        )
-                    }
-                },
-                enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                if (operationState is MdbxViewModel.OperationState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.mdbx_creating_vault))
-                } else {
-                    Text(stringResource(R.string.mdbx_open_vault_button))
                 }
             }
 

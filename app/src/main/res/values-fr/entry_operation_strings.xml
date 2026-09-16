@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Le coffre Bitwarden est indisponible</string>
+    <string name="entry_message_unsupported_type">Cette opération ne prend pas en charge ce type d’élément</string>
+    <string name="entry_message_ownership_conflict">Résolvez le conflit d’emplacements avant de déplacer cet élément dans Monica</string>
+    <string name="entry_message_local_copy_failed">Impossible de créer une copie locale dans Monica</string>
+    <string name="entry_message_attachments_incomplete">Tous les fichiers joints n’ont pas pu être copiés</string>
+    <string name="entry_message_bitwarden_sync_id_missing">L’élément Bitwarden n’a pas d’identifiant de synchronisation</string>
+    <string name="entry_message_keepass_source_delete_failed">Impossible de supprimer l’élément KeePass d’origine</string>
+    <string name="entry_message_source_delete_failed">Impossible de supprimer l’élément d’origine</string>
+    <string name="entry_message_storage_save_failed">Impossible d’enregistrer à l’emplacement choisi</string>
+    <string name="entry_message_from_password">Issu du mot de passe : %1$s</string>
+    <string name="entry_message_passkey_android_required">La prise en charge complète des Passkeys nécessite Android 14 ou ultérieur. Cet appareil : %1$s</string>
+    <string name="entry_message_passkey_save_failed">Impossible d’enregistrer la Passkey : %1$s</string>
+    <string name="entry_message_passkey_missing">Passkey introuvable</string>
+    <string name="entry_message_passkey_update_failed">Impossible de mettre à jour la Passkey : %1$s</string>
+    <string name="entry_message_passkey_ownership_failed">Impossible de modifier le rattachement de la Passkey à MDBX : %1$s</string>
+    <string name="entry_message_passkey_binding_failed">Impossible de modifier l’association : %1$s</string>
+    <string name="entry_message_passkey_usage_failed">Impossible de mettre à jour l’historique d’utilisation : %1$s</string>
+    <string name="entry_message_passkey_delete_failed">Impossible de supprimer la Passkey : %1$s</string>
+    <string name="entry_message_category_path_invalid">Chemin du dossier non valide</string>
+    <string name="entry_message_category_move_into_self">Un dossier ne peut pas être déplacé dans lui-même ou dans un de ses sous-dossiers</string>
+    <string name="entry_message_category_missing">Dossier introuvable</string>
+    <string name="entry_message_category_exists">Un dossier porte déjà ce nom à l’emplacement de destination</string>
+    <string name="entry_message_category_move_conflict">Le déplacement créerait un conflit avec un dossier existant</string>
+    <string name="entry_message_category_name_required">Saisissez un nom de dossier</string>
+    <string name="entry_message_category_name_separator">Le nom du dossier ne peut pas contenir /</string>
+    <string name="entry_message_category_rename_conflict">Ce changement de nom créerait un conflit avec un dossier existant</string>
+    <string name="entry_message_saved">Enregistré</string>
+</resources>

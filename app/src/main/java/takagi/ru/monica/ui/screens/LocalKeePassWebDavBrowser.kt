@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -78,6 +80,7 @@ private enum class KeepassWebDavConnectionState {
 @Composable
 fun KeepassWebDavBrowserBottomSheet(
     viewModel: LocalKeePassViewModel,
+    startWithCreate: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -97,6 +100,14 @@ fun KeepassWebDavBrowserBottomSheet(
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var showCreateDatabaseDialog by remember { mutableStateOf(false) }
     var connectionState by remember { mutableStateOf(KeepassWebDavConnectionState.NotConnected) }
+    var initialCreatePending by remember { mutableStateOf(startWithCreate) }
+    LaunchedEffect(connectionState) {
+        if (initialCreatePending && connectionState == KeepassWebDavConnectionState.Connected) {
+            initialCreatePending = false
+            showCreateDatabaseDialog = true
+        }
+    }
+
 
     LaunchedEffect(Unit) {
         webDavHelper.getCurrentConfig()?.let { config ->
@@ -134,231 +145,283 @@ fun KeepassWebDavBrowserBottomSheet(
     val canConnect = serverUrl.isNotBlank()
     val currentPathLabel = if (currentPath.isBlank()) stringResource(R.string.keepass_webdav_root_path) else "/$currentPath"
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    val connectionControls: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                stringResource(R.string.keepass_webdav_attach_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.cancel))
+            }
+            Button(
+                onClick = {
+                    connectionState = KeepassWebDavConnectionState.Connecting
+                    isConnecting = true
+                    browserError = null
+                    coroutineScope.launch {
+                        val result = viewModel.testWebDavConnection(serverUrl, username, webDavPassword)
+                        result.fold(
+                            onSuccess = {
+                                currentPath = ""
+                                loadDirectory("")
+                            },
+                            onFailure = { error ->
+                                isConnecting = false
+                                connectionState = KeepassWebDavConnectionState.Failed
+                                browserError = error.message ?: context.getString(R.string.keepass_webdav_connection_test_failed)
+                            }
+                        )
+                    }
+                },
+                enabled = canConnect && !isConnecting && !isLoadingEntries,
+                modifier = Modifier.weight(1f)
+            ) {
+                if (isConnecting) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(stringResource(R.string.webdav_test_connection))
+            }
+        }
+    }
 
-            Text(
-                stringResource(R.string.keepass_webdav_browser_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+    DatabaseManagementFormSheet(
+        onDismiss = onDismiss,
+        testTagPrefix = "keepass_webdav",
+        actions = {
+            if (connectionState == KeepassWebDavConnectionState.Connected) {
+                Button(
+                    onClick = { showCreateDatabaseDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoadingEntries
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.keepass_webdav_create_action))
+                }
+            } else {
+                connectionControls()
+            }
+        }
+    ) {
+        Text(
+            stringResource(R.string.keepass_webdav_attach_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
 
-            OutlinedTextField(
-                value = serverUrl,
-                onValueChange = { serverUrl = it },
-                label = { Text(stringResource(R.string.webdav_server_url)) },
-                placeholder = { Text("https://example.com/webdav") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Cloud, contentDescription = null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
+        Text(
+            stringResource(R.string.keepass_webdav_browser_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text(stringResource(R.string.webdav_username_optional)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
-            )
+        OutlinedTextField(
+            shape = DatabaseManagementFieldShape,
+            value = serverUrl,
+            onValueChange = { serverUrl = it },
+            label = { Text(stringResource(R.string.webdav_server_url)) },
+            placeholder = { Text("https://example.com/webdav") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Cloud, contentDescription = null) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+        )
 
-            OutlinedTextField(
-                value = webDavPassword,
-                onValueChange = { webDavPassword = it },
-                label = { Text(stringResource(R.string.webdav_password_optional)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                visualTransformation = if (showWebDavPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                trailingIcon = {
-                    IconButton(onClick = { showWebDavPassword = !showWebDavPassword }) {
-                        Icon(
-                            if (showWebDavPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
+        OutlinedTextField(
+            shape = DatabaseManagementFieldShape,
+            value = username,
+            onValueChange = { username = it },
+            label = { Text(stringResource(R.string.webdav_username_optional)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }
+        )
+
+        OutlinedTextField(
+            shape = DatabaseManagementFieldShape,
+            value = webDavPassword,
+            onValueChange = { webDavPassword = it },
+            label = { Text(stringResource(R.string.webdav_password_optional)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+            visualTransformation = if (showWebDavPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                IconButton(onClick = { showWebDavPassword = !showWebDavPassword }) {
+                    Icon(
+                        if (showWebDavPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = null
+                    )
+                }
+            }
+        )
+
+        if (connectionState == KeepassWebDavConnectionState.Connected) {
+            connectionControls()
+        }
+
+        Surface(
+            shape = DatabaseManagementPanelShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    stringResource(R.string.keepass_webdav_status_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    when (connectionState) {
+                        KeepassWebDavConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
+                        KeepassWebDavConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
+                        KeepassWebDavConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
+                        KeepassWebDavConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
+                    },
+                    color = when (connectionState) {
+                        KeepassWebDavConnectionState.Connected -> MaterialTheme.colorScheme.primary
+                        KeepassWebDavConnectionState.Failed -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+                Text(
+                    stringResource(R.string.keepass_webdav_user_summary, username.ifBlank { "-" }),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        browserError?.takeIf { it.isNotBlank() }?.let { error ->
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = error,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = connectionState == KeepassWebDavConnectionState.Connected) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Surface(
+                    shape = DatabaseManagementPanelShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.keepass_webdav_current_path),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.78f)
+                        )
+                        Text(
+                            currentPathLabel,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
-            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.cancel))
-                }
-                Button(
-                    onClick = {
-                        connectionState = KeepassWebDavConnectionState.Connecting
-                        isConnecting = true
-                        browserError = null
-                        coroutineScope.launch {
-                            val result = viewModel.testWebDavConnection(serverUrl, username, webDavPassword)
-                            result.fold(
-                                onSuccess = {
-                                    currentPath = ""
-                                    loadDirectory("")
-                                },
-                                onFailure = { error ->
-                                    isConnecting = false
-                                    connectionState = KeepassWebDavConnectionState.Failed
-                                    browserError = error.message ?: context.getString(R.string.keepass_webdav_connection_test_failed)
-                                }
-                            )
-                        }
-                    },
-                    enabled = canConnect && !isConnecting && !isLoadingEntries,
-                    modifier = Modifier.weight(1f)
+                OutlinedButton(
+                    onClick = { loadDirectory(currentPath) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoadingEntries
                 ) {
-                    if (isConnecting) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(stringResource(R.string.webdav_test_connection))
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.refresh))
                 }
-            }
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                OutlinedButton(
+                    onClick = { showCreateFolderDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoadingEntries
                 ) {
-                    Text(
-                        stringResource(R.string.keepass_webdav_status_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        when (connectionState) {
-                            KeepassWebDavConnectionState.NotConnected -> stringResource(R.string.keepass_webdav_status_not_connected)
-                            KeepassWebDavConnectionState.Connecting -> stringResource(R.string.keepass_webdav_status_connecting)
-                            KeepassWebDavConnectionState.Connected -> stringResource(R.string.keepass_webdav_status_connected)
-                            KeepassWebDavConnectionState.Failed -> stringResource(R.string.keepass_webdav_status_failed)
-                        },
-                        color = when (connectionState) {
-                            KeepassWebDavConnectionState.Connected -> MaterialTheme.colorScheme.primary
-                            KeepassWebDavConnectionState.Failed -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                    Text(
-                        stringResource(R.string.keepass_webdav_user_summary, username.ifBlank { "-" }),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Icon(Icons.Default.CreateNewFolder, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.keepass_webdav_create_folder_action))
                 }
-            }
 
-            browserError?.takeIf { it.isNotBlank() }?.let { error ->
+
+
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = DatabaseManagementPanelShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = error,
+                    Column(
                         modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-
-            AnimatedVisibility(visible = connectionState == KeepassWebDavConnectionState.Connected) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.fillMaxWidth()
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                stringResource(R.string.keepass_webdav_current_path),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.78f)
-                            )
-                            Text(
-                                currentPathLabel,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                fontWeight = FontWeight.Medium
-                            )
+                        Text(
+                            stringResource(R.string.keepass_webdav_remote_files_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        if (currentPath.isNotBlank()) {
+                            Surface(
+                                onClick = { loadDirectory(WebDavKeePassFileSource.parentPathOf(currentPath, strings = AppLocaleStringResolver(context))) },
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.ArrowUpward, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(stringResource(R.string.keepass_webdav_go_parent))
+                                        Text(
+                                            stringResource(R.string.keepass_webdav_parent_hint),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    }
 
-                    OutlinedButton(
-                        onClick = { loadDirectory(currentPath) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoadingEntries
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.refresh))
-                    }
-
-                    OutlinedButton(
-                        onClick = { showCreateFolderDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoadingEntries
-                    ) {
-                        Icon(Icons.Default.CreateNewFolder, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.keepass_webdav_create_folder_action))
-                    }
-
-                    Button(
-                        onClick = { showCreateDatabaseDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoadingEntries
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.keepass_webdav_create_action))
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        if (isLoadingEntries) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        } else if (entries.isEmpty()) {
                             Text(
-                                stringResource(R.string.keepass_webdav_remote_files_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
+                                text = stringResource(R.string.keepass_webdav_browser_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
                             )
-
-                            if (currentPath.isNotBlank()) {
+                        } else {
+                            entries.forEachIndexed { index, entry ->
                                 Surface(
-                                    onClick = { loadDirectory(WebDavKeePassFileSource.parentPathOf(currentPath)) },
-                                    shape = RoundedCornerShape(12.dp),
+                                    onClick = {
+                                        if (entry.isDirectory) loadDirectory(entry.path) else selectedDatabaseEntry = entry
+                                    },
+                                    shape = settingsSectionItemShape(index, entries.size),
                                     color = MaterialTheme.colorScheme.surfaceContainer,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -366,75 +429,30 @@ fun KeepassWebDavBrowserBottomSheet(
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.ArrowUpward, contentDescription = null)
+                                        Icon(
+                                            imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Key,
+                                            contentDescription = null,
+                                            tint = if (entry.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                                        )
                                         Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(stringResource(R.string.keepass_webdav_go_parent))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(entry.name, fontWeight = FontWeight.Medium)
                                             Text(
-                                                stringResource(R.string.keepass_webdav_parent_hint),
+                                                text = if (entry.isDirectory) stringResource(R.string.folder_generic) else entry.path,
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
+                                        Icon(
+                                            imageVector = if (entry.isDirectory) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Default.Link,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
-                            }
-
-                            if (isLoadingEntries) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 24.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            } else if (entries.isEmpty()) {
-                                Text(
-                                    text = stringResource(R.string.keepass_webdav_browser_empty),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
-                                )
-                            } else {
-                                entries.forEachIndexed { index, entry ->
-                                    Surface(
-                                        onClick = {
-                                            if (entry.isDirectory) loadDirectory(entry.path) else selectedDatabaseEntry = entry
-                                        },
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.Default.Key,
-                                                contentDescription = null,
-                                                tint = if (entry.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
-                                            )
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(entry.name, fontWeight = FontWeight.Medium)
-                                                Text(
-                                                    text = if (entry.isDirectory) stringResource(R.string.folder_generic) else entry.path,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                            Icon(
-                                                imageVector = if (entry.isDirectory) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Default.Link,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                    if (index != entries.lastIndex) Spacer(modifier = Modifier.height(8.dp))
-                                }
+                                if (index != entries.lastIndex) Spacer(modifier = Modifier.height(DatabaseManagementGroupSpacing))
                             }
                         }
                     }
@@ -526,6 +544,7 @@ private fun CreateWebDavFolderDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.keepass_webdav_create_folder_message))
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = folderName,
                     onValueChange = { folderName = it },
                     label = { Text(stringResource(R.string.folder_name_label)) },
@@ -576,6 +595,7 @@ private fun AttachExistingWebDavDatabaseDialog(
             ) {
                 Text(entry.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text(stringResource(R.string.database_name)) },
@@ -583,6 +603,7 @@ private fun AttachExistingWebDavDatabaseDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = databasePassword,
                     onValueChange = { databasePassword = it },
                     label = { Text(stringResource(R.string.keepass_webdav_database_password)) },
@@ -601,6 +622,7 @@ private fun AttachExistingWebDavDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = keyFileName,
                     onValueChange = {},
                     readOnly = true,
@@ -637,6 +659,7 @@ private fun AttachExistingWebDavDatabaseDialog(
                     }
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description_optional)) },
@@ -779,6 +802,7 @@ private fun CreateWebDavDatabaseDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.keepass_webdav_create_name_label)) },
@@ -787,6 +811,7 @@ private fun CreateWebDavDatabaseDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(stringResource(R.string.database_password)) },
@@ -804,6 +829,7 @@ private fun CreateWebDavDatabaseDialog(
                     }
                 )
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text(stringResource(R.string.confirm_password)) },
@@ -840,6 +866,7 @@ private fun CreateWebDavDatabaseDialog(
                 AnimatedVisibility(visible = useKeyFile) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = keyFileName,
                             onValueChange = {},
                             readOnly = true,
@@ -949,6 +976,7 @@ private fun CreateWebDavDatabaseDialog(
                             }
                         )
                         OutlinedTextField(
+                            shape = DatabaseManagementFieldShape,
                             value = transformRounds,
                             onValueChange = { transformRounds = it.filter(Char::isDigit) },
                             label = { Text(stringResource(R.string.local_keepass_transform_rounds)) },
@@ -959,6 +987,7 @@ private fun CreateWebDavDatabaseDialog(
                         AnimatedVisibility(visible = kdfAlgorithm != KeePassKdfAlgorithm.AES_KDF) {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 OutlinedTextField(
+                                    shape = DatabaseManagementFieldShape,
                                     value = memoryMb,
                                     onValueChange = { memoryMb = it.filter(Char::isDigit) },
                                     label = { Text(stringResource(R.string.local_keepass_kdf_memory_mb)) },
@@ -967,6 +996,7 @@ private fun CreateWebDavDatabaseDialog(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                                 )
                                 OutlinedTextField(
+                                    shape = DatabaseManagementFieldShape,
                                     value = parallelism,
                                     onValueChange = { parallelism = it.filter(Char::isDigit) },
                                     label = { Text(stringResource(R.string.local_keepass_kdf_parallelism)) },
@@ -979,6 +1009,7 @@ private fun CreateWebDavDatabaseDialog(
                     }
                 }
                 OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description_optional)) },
@@ -1033,6 +1064,7 @@ private fun <T> KeepassWebDavOptionDropdown(
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
+            shape = DatabaseManagementFieldShape,
             value = selectedText,
             onValueChange = {},
             readOnly = true,

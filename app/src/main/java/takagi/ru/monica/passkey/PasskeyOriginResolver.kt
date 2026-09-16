@@ -62,9 +62,9 @@ object PasskeyOriginResolver {
             return ResolvedOrigin(requestOrigin, Source.REQUEST_JSON_ORIGIN)
         }
 
-        val callerOrigin = getOriginFromCallingAppInfo(callingAppInfo)
+        val callerOrigin = getOriginFromCallingAppInfo(context, callingAppInfo)
         if (!callerOrigin.isNullOrBlank()) {
-            val source = if (callingAppInfo?.origin.isNullOrBlank()) {
+            val source = if (PasskeyBrowserOrigin.read(context, callingAppInfo).isNullOrBlank()) {
                 Source.CALLING_APP_SIGNATURE
             } else {
                 Source.CALLING_APP_ORIGIN
@@ -93,10 +93,10 @@ object PasskeyOriginResolver {
         }.getOrNull()
     }
 
-    private fun getOriginFromCallingAppInfo(callingAppInfo: CallingAppInfo?): String? {
+    private fun getOriginFromCallingAppInfo(context: Context, callingAppInfo: CallingAppInfo?): String? {
         if (callingAppInfo == null) return null
         return try {
-            val origin = callingAppInfo.origin
+            val origin = PasskeyBrowserOrigin.read(context, callingAppInfo)
             if (!origin.isNullOrBlank()) {
                 origin
             } else {

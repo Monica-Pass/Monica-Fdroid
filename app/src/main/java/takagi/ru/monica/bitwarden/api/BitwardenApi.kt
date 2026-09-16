@@ -169,7 +169,7 @@ interface BitwardenVaultApi {
     /**
      * 删除 Cipher (软删除到回收站)
      */
-    @DELETE("ciphers/{id}")
+    @PUT("ciphers/{id}/delete")
     suspend fun deleteCipher(
         @Header("Authorization") authorization: String,
         @Path("id") cipherId: String
@@ -178,7 +178,7 @@ interface BitwardenVaultApi {
     /**
      * 永久删除 Cipher
      */
-    @DELETE("ciphers/{id}/delete")
+    @DELETE("ciphers/{id}")
     suspend fun permanentDeleteCipher(
         @Header("Authorization") authorization: String,
         @Path("id") cipherId: String

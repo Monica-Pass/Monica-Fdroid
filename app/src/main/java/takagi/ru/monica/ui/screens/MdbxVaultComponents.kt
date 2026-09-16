@@ -1,9 +1,7 @@
 package takagi.ru.monica.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,6 +32,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.data.MdbxUnlockMethod
 import takagi.ru.monica.viewmodel.MdbxKeyFileSelection
 import takagi.ru.monica.viewmodel.MdbxViewModel
@@ -53,6 +53,7 @@ internal fun MdbxVaultNameField(
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
+        shape = MdbxFieldShape,
         value = vaultName,
         onValueChange = onVaultNameChange,
         label = { Text(stringResource(R.string.mdbx_vault_name)) },
@@ -81,6 +82,7 @@ internal fun MdbxPasswordFieldSection(
     }
 
     OutlinedTextField(
+        shape = MdbxFieldShape,
         value = masterPassword,
         onValueChange = onMasterPasswordChange,
         label = { Text(stringResource(R.string.mdbx_master_password)) },
@@ -91,7 +93,7 @@ internal fun MdbxPasswordFieldSection(
                 Icon(
                     if (showMasterPassword) Icons.Default.VisibilityOff
                     else Icons.Default.Visibility,
-                    contentDescription = null
+                    contentDescription = stringResource(if (showMasterPassword) R.string.hide_password else R.string.show_password)
                 )
             }
         },
@@ -102,6 +104,7 @@ internal fun MdbxPasswordFieldSection(
     Spacer(modifier = Modifier.height(8.dp))
 
     OutlinedTextField(
+        shape = MdbxFieldShape,
         value = confirmPassword,
         onValueChange = onConfirmPasswordChange,
         label = { Text(stringResource(R.string.mdbx_confirm_password)) },
@@ -112,16 +115,14 @@ internal fun MdbxPasswordFieldSection(
                 Icon(
                     if (showConfirmPassword) Icons.Default.VisibilityOff
                     else Icons.Default.Visibility,
-                    contentDescription = null
+                    contentDescription = stringResource(if (showConfirmPassword) R.string.hide_password else R.string.show_password)
                 )
             }
         },
         isError = confirmPassword.isNotEmpty() && normalizedMasterPassword != normalizedConfirmPassword,
         supportingText = if (confirmPassword.isNotEmpty() && normalizedMasterPassword != normalizedConfirmPassword) {
             { Text(stringResource(R.string.mdbx_password_mismatch)) }
-        } else {
-            { Text(strings.get(R.string.mdbx_ui_unicode_password_hint)) }
-        },
+        } else null,
         singleLine = true,
         enabled = passwordRequired,
         modifier = Modifier.fillMaxWidth()
@@ -169,20 +170,21 @@ internal fun MdbxUnlockMethodSection(
                     Text("${titles[selected.first]} · ${selected.third}")
                 },
                 leadingContent = {
-                    Icon(selected.second, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    MdbxIconBadge(selected.second)
                 },
                 trailingContent = {
-                    Icon(
-                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    MonicaExpansionChevron(
+                        expanded = expanded,
                         contentDescription = if (expanded) strings.get(R.string.mdbx_ui_collapse_unlock_methods) else strings.get(R.string.mdbx_ui_expand_unlock_methods)
                     )
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+                modifier = Modifier.fillMaxWidth().mdbxClickable(
+                    shape = if (embedded) MdbxFieldShape else MdbxPanelShape
+                ) { expanded = !expanded }
             )
-            AnimatedVisibility(visible = expanded) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            MonicaExpandableContent(expanded = expanded) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     methods.forEach { (method, icon, description) ->
                         ListItem(
                             headlineContent = {
@@ -206,11 +208,20 @@ internal fun MdbxUnlockMethodSection(
                                     onClick = null
                                 )
                             },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                onUnlockMethodChange(method)
-                                expanded = false
-                            }
+                            colors = ListItemDefaults.colors(
+                                containerColor = if (unlockMethod == method) MaterialTheme.colorScheme.secondaryContainer
+                                    else MaterialTheme.colorScheme.surfaceContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth().clip(MdbxFieldShape).selectable(
+                                selected = unlockMethod == method,
+                                interactionSource = null,
+                                indication = ripple(color = MaterialTheme.colorScheme.primary),
+                                role = Role.RadioButton,
+                                onClick = {
+                                    onUnlockMethodChange(method)
+                                    expanded = false
+                                }
+                            )
                         )
                     }
                 }
@@ -221,13 +232,13 @@ internal fun MdbxUnlockMethodSection(
     if (embedded) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainerLow
+            shape = MdbxFieldShape,
+            color = MaterialTheme.colorScheme.surfaceContainer
         ) { Column(content = content) }
     } else {
-        Card(
+        MdbxCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             content = content
         )
     }
@@ -260,17 +271,7 @@ internal fun MdbxKeyFileSection(
                 },
                 supportingContent = {
                     if (keyFile != null) {
-                        AssistChip(
-                            onClick = {},
-                            label = { Text("SHA-256 ${keyFile.shortFingerprint}...") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Fingerprint,
-                                    null,
-                                    Modifier.size(16.dp)
-                                )
-                            }
-                        )
+                        MdbxStatusPill("SHA-256 ${keyFile.shortFingerprint}…", Icons.Default.Fingerprint)
                     } else {
                         Text(strings.get(R.string.mdbx_ui_keyfile_description))
                     }
@@ -316,40 +317,35 @@ internal fun MdbxKeyFileSection(
     if (embedded) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainerLow
+            shape = MdbxFieldShape,
+            color = MaterialTheme.colorScheme.surfaceContainer
         ) { Column(content = content) }
     } else {
-        Card(
+        MdbxCard(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             content = content
         )
     }
 }
 
 @Composable
-internal fun MdbxOperationFeedback(
-    operationState: MdbxViewModel.OperationState
-) {
-    when (operationState) {
-        is MdbxViewModel.OperationState.Success -> {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                operationState.message,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodyMedium
-            )
+internal fun MdbxOperationFeedback(operationState: MdbxViewModel.OperationState) {
+    val message = when (operationState) {
+        is MdbxViewModel.OperationState.Success -> operationState.message
+        is MdbxViewModel.OperationState.Error -> operationState.message
+        else -> return
+    }
+    val isError = operationState is MdbxViewModel.OperationState.Error
+    Surface(
+        modifier = Modifier.fillMaxWidth(), shape = MdbxFieldShape,
+        color = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(if (isError) Icons.Default.Error else Icons.Default.CheckCircle, contentDescription = null)
+            Text(message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         }
-        is MdbxViewModel.OperationState.Error -> {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                operationState.message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-        else -> {}
     }
 }
 
@@ -367,6 +363,7 @@ internal fun MdbxWebDavConnectionSection(
     onTestConnection: () -> Unit
 ) {
     OutlinedTextField(
+        shape = MdbxFieldShape,
         value = serverUrl,
         onValueChange = onServerUrlChange,
         label = { Text(stringResource(R.string.mdbx_webdav_url)) },
@@ -377,6 +374,7 @@ internal fun MdbxWebDavConnectionSection(
     )
 
     OutlinedTextField(
+        shape = MdbxFieldShape,
         value = username,
         onValueChange = onUsernameChange,
         label = { Text(stringResource(R.string.mdbx_webdav_username)) },
@@ -385,6 +383,7 @@ internal fun MdbxWebDavConnectionSection(
     )
 
     OutlinedTextField(
+        shape = MdbxFieldShape,
         value = password,
         onValueChange = onPasswordChange,
         label = { Text(stringResource(R.string.mdbx_webdav_password)) },
@@ -395,7 +394,7 @@ internal fun MdbxWebDavConnectionSection(
                 Icon(
                     if (showPassword) Icons.Default.VisibilityOff
                     else Icons.Default.Visibility,
-                    contentDescription = null
+                    contentDescription = stringResource(if (showPassword) R.string.hide_password else R.string.show_password)
                 )
             }
         },

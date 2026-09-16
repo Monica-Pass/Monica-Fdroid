@@ -294,4 +294,16 @@ interface LocalMdbxDatabaseDao {
         """
     )
     suspend fun updateSyncSuccess(databaseId: Long, status: String, time: Long)
+
+    @Query(
+        """
+        UPDATE local_mdbx_databases
+        SET last_synced_at = :time,
+            last_sync_status = :status,
+            last_sync_error = NULL,
+            is_offline_available = 1
+        WHERE id = :databaseId
+        """
+    )
+    suspend fun updateRemoteSyncSuccess(databaseId: Long, status: String, time: Long)
 }

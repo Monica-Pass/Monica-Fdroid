@@ -411,17 +411,20 @@ class MdbxAndroidIntegrationGuardTest {
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
         ).readText()
+        val databaseResolver = vaultV2Source.substringAfter(
+            "fun VaultV2Item.mdbxDatabaseId(): Long? {", missingDelimiterValue = ""
+        ).substringBefore("fun VaultV2Item.mdbxFolderId()")
 
         assertTrue(
             "VaultV2 MDBX database filters must include passkeys owned by that MDBX database.",
-            vaultV2Source.contains("VaultV2ItemType.PASSKEY -> passkeyEntry?.mdbxDatabaseId") &&
-                !vaultV2Source.contains("VaultV2ItemType.PASSKEY -> null")
+            databaseResolver.contains("VaultV2ItemType.PASSKEY -> passkeyEntry?.mdbxDatabaseId") &&
+                !databaseResolver.contains("VaultV2ItemType.PASSKEY -> null")
         )
         assertTrue(
             "VaultV2 MDBX folder filters must use folder/root semantics for passkeys as well as other vault items.",
-            vaultV2Source.contains("private fun VaultV2Item.mdbxFolderId(): String?") &&
+            vaultV2Source.contains("fun VaultV2Item.mdbxFolderId(): String?") &&
                 vaultV2Source.contains("VaultV2ItemType.PASSKEY -> passkeyEntry?.mdbxFolderId") &&
-                vaultV2Source.contains("private fun VaultV2Item.matchesMdbxFolder(databaseId: Long, folderId: String): Boolean") &&
+                vaultV2Source.contains("fun VaultV2Item.matchesMdbxFolder(databaseId: Long, folderId: String): Boolean") &&
                 vaultV2Source.contains("matchesMdbxFolder(selection.databaseId, selection.folderId)")
         )
     }
@@ -431,17 +434,26 @@ class MdbxAndroidIntegrationGuardTest {
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
         ).readText()
+        val planSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2BatchMoveSupport.kt"
+        ).readText()
+        val moveSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveMixedSupport.kt"
+        ).readText()
 
         assertTrue(
             "VaultV2 move sheet must collect selected passkeys instead of silently ignoring them.",
-            vaultV2Source.contains("val passkeyEntries = selectedItems") &&
-                vaultV2Source.contains(".filter { it.type == VaultV2ItemType.PASSKEY }") &&
-                vaultV2Source.contains(".mapNotNull { it.passkeyEntry }")
+            vaultV2Source.contains("buildVaultV2BatchMovePlan(selectedItems.toList())") &&
+                planSource.contains("passkeys = selectedItems.mapNotNull") &&
+                planSource.contains("item.passkeyEntry.takeIf { item.type == VaultV2ItemType.PASSKEY }")
         )
         assertTrue(
             "VaultV2 passkey moves must use PasskeyViewModel.updatePasskey so MDBX/KeePass/Bitwarden persistence stays aligned.",
-            vaultV2Source.contains("applyPasswordPagePasskeyStorageTarget(") &&
-                vaultV2Source.contains("passkeyViewModel.updatePasskey(updateResult.getOrThrow())")
+            vaultV2Source.contains("executeMixedPasswordBatchMove(") &&
+                vaultV2Source.contains("passkeyViewModel = passkeyViewModel") &&
+                moveSource.contains("applyPasswordPagePasskeyStorageTarget(") &&
+                moveSource.contains("aggregateViewModels.passkeyViewModel?.updatePasskey(updatedPasskey)") &&
+                moveSource.contains("aggregateViewModels.passkeyViewModel?.updateMdbxDatabaseForPasskeys(")
         )
     }
 
@@ -773,7 +785,7 @@ class MdbxAndroidIntegrationGuardTest {
         assertTrue(
             "MDBX vault storage must preserve billing addresses as first-class secure items instead of silently dropping them.",
             vaultStoreSource.contains("ItemType.BILLING_ADDRESS -> \"billing-address\"") &&
-                vaultStoreSource.contains("\"billing-address\" -> \"账单地址\"")
+                vaultStoreSource.contains("\"billing-address\" -> strings.get(R.string.billing_address)")
         )
         assertTrue(
             "MDBX import must include active billing-address entries and restore their Room item type.",
@@ -812,7 +824,7 @@ class MdbxAndroidIntegrationGuardTest {
             "Payment accounts must use an explicit MDBX entry type when a storage path later writes them to MDBX.",
             secureItemRepositorySource.contains("ItemType.PAYMENT_ACCOUNT -> \"payment-account\"") &&
                 vaultStoreSource.contains("ItemType.PAYMENT_ACCOUNT -> \"payment-account\"") &&
-                vaultStoreSource.contains("\"payment-account\" -> \"支付方式\"")
+                vaultStoreSource.contains("\"payment-account\" -> strings.get(R.string.payment_account)")
         )
         assertTrue(
             "MDBX import must recognize payment-account entries instead of treating them as orphans.",

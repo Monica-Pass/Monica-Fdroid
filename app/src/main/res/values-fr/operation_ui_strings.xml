@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Impossible de mettre la suppression Bitwarden en attente</string>
+    <string name="bitwarden_message_conflict_detail">Cette entrée a été modifiée localement et sur le serveur</string>
+    <string name="bitwarden_message_empty_vault">Le serveur n’a renvoyé aucune donnée, mais %1$d entrées locales subsistent. La synchronisation est suspendue pour les protéger. Vérifiez le serveur et le compte avant de continuer.</string>
+    <string name="runtime_kdbx_decode_failed">Impossible de lire la base KDBX</string>
+</resources>

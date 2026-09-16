@@ -1,5 +1,7 @@
 package takagi.ru.monica.bitwarden.service
 
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,6 +59,7 @@ class BitwardenSyncService(
             Regex("^[0-9]+\\.[A-Za-z0-9+/_=-]+\\|[A-Za-z0-9+/_=-]+(?:\\|[A-Za-z0-9+/_=-]+)?$")
     }
     
+    private val strings = AppLocaleStringResolver(context)
     private val database = PasswordDatabase.getDatabase(context)
     private val vaultDao = database.bitwardenVaultDao()
     private val folderDao = database.bitwardenFolderDao()
@@ -182,6 +185,7 @@ class BitwardenSyncService(
             val isFirstSync = vault.lastSyncAt == null
             
             val protectionResult = EmptyVaultProtection.checkSyncAllowed(
+                strings = strings,
                 vaultId = vault.id,
                 localCipherCount = localCipherCount,
                 serverCipherCount = serverCipherCount,
@@ -769,7 +773,7 @@ class BitwardenSyncService(
                     localRevisionDate = entry.bitwardenRevisionDate,
                     serverRevisionDate = serverCipher.revisionDate,
                     entryTitle = entry.title,
-                    description = "本地和服务器同时修改了此条目"
+                    description = strings.get(R.string.bitwarden_message_conflict_detail)
                 )
             )
             
@@ -1046,6 +1050,8 @@ class BitwardenSyncService(
         failed += passkeyResult.failed
 
         android.util.Log.i(TAG, "Modified upload complete: $uploaded uploaded, $failed failed")
+        failed += takagi.ru.monica.credentialexchange.BitwardenImportAttachmentQueue(context)
+            .flush(vault, accessToken, symmetricKey, apiManager)
         UploadResult.Success(
             uploaded = uploaded,
             failed = failed,

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
+import takagi.ru.monica.R
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -65,6 +66,7 @@ import takagi.ru.monica.keepass.KeePassDatabaseSettingsUpdate
 import takagi.ru.monica.keepass.KeePassKeyFileChangeMode
 import takagi.ru.monica.keepass.KeePassMasterCredentialChangeResult
 import takagi.ru.monica.keepass.KeePassConflictDecision
+import takagi.ru.monica.keepass.KeePassConflictResolutionController
 import takagi.ru.monica.keepass.KeePassConflictResolutionSide
 import takagi.ru.monica.keepass.KeePassRemoteConflictPreview
 import takagi.ru.monica.keepass.KeePassRemoteConflictResolution
@@ -94,6 +96,7 @@ import takagi.ru.monica.sync.SyncTarget
 import takagi.ru.monica.sync.SyncTaskAwaitResult
 import takagi.ru.monica.sync.SyncTaskRunner
 import takagi.ru.monica.sync.SyncTrigger
+import takagi.ru.monica.utils.AppLocaleStringResolver
 import takagi.ru.monica.utils.FieldChange
 import takagi.ru.monica.utils.FileSourceEntry
 import takagi.ru.monica.utils.GoogleDriveKeePassFileSource
@@ -151,6 +154,7 @@ class LocalKeePassViewModel(
     )
     
     private val context: Context get() = getApplication()
+    private val strings = AppLocaleStringResolver(application)
     private val visibleRemoteAutoSyncFailures = mutableMapOf<Long, VisibleRemoteAutoSyncFailure>()
     private val visibleRemoteAutoSyncFailureMutex = Mutex()
     
@@ -199,6 +203,24 @@ class LocalKeePassViewModel(
     private val kdbxService = KeePassKdbxService(context, dao, securityManager)
     private val keyFileStore by lazy { KeePassKeyFileStore(context) }
     private val workspaceRepository = KeePassWorkspaceRepository(kdbxService)
+    internal val conflictResolution by lazy {
+        KeePassConflictResolutionController(
+            scope = viewModelScope,
+            inspect = workspaceRepository::inspectCurrentRemoteConflict,
+            resolve = workspaceRepository::resolveCurrentRemoteConflict,
+            formatError = ::formatOperationError,
+            onResolved = { databaseId, resolution ->
+                clearVisibleRemoteAutoSyncFailure(databaseId)
+                _operationState.value = OperationState.Success(
+                    if (resolution.conflictCopyCount > 0) {
+                        context.getString(R.string.keepass_conflict_resolved_with_copies, resolution.conflictCopyCount)
+                    } else {
+                        context.getString(R.string.keepass_conflict_resolved)
+                    }
+                )
+            }
+        )
+    }
     private val compatibilityBridge = KeePassCompatibilityBridge(workspaceRepository)
     private val verificationMutex = Mutex()
     private val verificationJobs = mutableMapOf<Long, Job>()
@@ -209,7 +231,8 @@ class LocalKeePassViewModel(
         RemoteKeePassSyncService(
             databaseDao = dao,
             remoteSourceDao = appDatabase.keepassRemoteSourceDao(),
-            syncStateDao = appDatabase.keepassRemoteSyncStateDao()
+            syncStateDao = appDatabase.keepassRemoteSyncStateDao(),
+            strings = strings,
         )
     }
 
@@ -277,7 +300,7 @@ class LocalKeePassViewModel(
         closeNativeManager(databaseId, clearRetainedState = true)
         _groupsByDatabase.update { current -> current - databaseId }
         _verificationStates.update { current -> current - databaseId }
-        _operationState.value = OperationState.Success("数据库已锁定")
+        _operationState.value = OperationState.Success(strings.get(R.string.legacy_ui_database_locked))
     }
 
     internal fun nativeManagerRetainedState(databaseId: Long): KeePassNativeManagerRetainedState =
@@ -852,7 +875,7 @@ class LocalKeePassViewModel(
                 current + (databaseId to KeyFileAccessState.CHECKING)
             }
             val accessResult = runCatching {
-                keyFileStore.read(database) ?: error("密钥文件不可用")
+                keyFileStore.read(database) ?: error(strings.get(R.string.local_keepass_key_file_access_unavailable))
             }
             _keyFileAccessStates.update { current ->
                 current + (
@@ -879,11 +902,11 @@ class LocalKeePassViewModel(
 
     fun keepKeyFileCopy(databaseId: Long, sourceUri: Uri) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在保存密钥文件副本...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_save_key_copy))
             try {
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw IllegalArgumentException("数据库不存在")
+                        ?: throw IllegalArgumentException(strings.get(R.string.keepass_connection_status_missing))
                     workspaceRepository.inspectDatabase(
                         databaseId = databaseId,
                         keyFileUriOverride = sourceUri,
@@ -903,23 +926,23 @@ class LocalKeePassViewModel(
                     KeePassKdbxService.invalidateProcessCache(databaseId)
                 }
                 refreshKeyFileAccessState(databaseId)
-                _operationState.value = OperationState.Success("已在 Monica 中保留密钥文件副本，原文件未被修改")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_key_copy_saved))
             } catch (error: Exception) {
-                _operationState.value = OperationState.Error("保存密钥文件副本失败: ${formatOperationError(error)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_key_copy_save_failed, formatOperationError(error)))
             }
         }
     }
 
     fun exportKeyFileCopy(databaseId: Long, targetUri: Uri) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在导出密钥文件...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_export_key))
             try {
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw IllegalArgumentException("数据库不存在")
+                        ?: throw IllegalArgumentException(strings.get(R.string.keepass_connection_status_missing))
                     val relativePath = database.keyFileInternalPath
                         ?.takeIf { it.isNotBlank() }
-                        ?: throw IllegalStateException("没有可导出的内部密钥文件副本")
+                        ?: throw IllegalStateException(strings.get(R.string.keepass_operation_key_copy_missing))
                     keyFileStore.exportInternal(relativePath, targetUri)
                     context.contentResolver.persistKeePassKeyFileReadPermission(targetUri)
                     val exportedName = KeePassFileNameResolver.queryDisplayName(
@@ -938,30 +961,30 @@ class LocalKeePassViewModel(
                     KeePassKdbxService.invalidateProcessCache(databaseId)
                 }
                 refreshKeyFileAccessState(databaseId)
-                _operationState.value = OperationState.Success("密钥文件已导出，并保留为外部来源")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_key_exported))
             } catch (error: Exception) {
-                _operationState.value = OperationState.Error("导出密钥文件失败: ${formatOperationError(error)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_key_export_failed, formatOperationError(error)))
             }
         }
     }
 
     fun deleteKeyFileCopy(databaseId: Long) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在删除内部密钥文件副本...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_delete_key_copy))
             try {
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw IllegalArgumentException("数据库不存在")
+                        ?: throw IllegalArgumentException(strings.get(R.string.keepass_connection_status_missing))
                     val relativePath = database.keyFileInternalPath
                         ?.takeIf { it.isNotBlank() }
                         ?: return@withContext
                     val externalUri = database.keyFileUri
                         ?.takeIf { it.isNotBlank() }
                         ?.let(Uri::parse)
-                        ?: throw IllegalStateException("请先导出并重新选择外部密钥文件，再删除内部副本")
+                        ?: throw IllegalStateException(strings.get(R.string.keepass_operation_select_external_key_first))
                     val externalBytes = context.contentResolver.readKeePassKeyFileBytes(
                         uri = externalUri,
-                        unavailableMessage = "原密钥文件不可用，请先导出内部副本",
+                        unavailableMessage = strings.get(R.string.keepass_operation_export_private_key_first),
                     )
                     val internalFingerprint = KeePassKeyFileStore.fingerprint(
                         keyFileStore.readInternal(relativePath)
@@ -970,11 +993,11 @@ class LocalKeePassViewModel(
                         !database.keyFileFingerprint.isNullOrBlank() &&
                         !internalFingerprint.equals(database.keyFileFingerprint, ignoreCase = true)
                     ) {
-                        throw IllegalStateException("内部密钥文件校验失败，已取消删除")
+                        throw IllegalStateException(strings.get(R.string.keepass_operation_private_key_invalid))
                     }
                     val externalFingerprint = KeePassKeyFileStore.fingerprint(externalBytes)
                     if (!externalFingerprint.equals(internalFingerprint, ignoreCase = true)) {
-                        throw IllegalStateException("外部密钥文件与内部副本不一致，已取消删除")
+                        throw IllegalStateException(strings.get(R.string.keepass_operation_external_key_mismatch))
                     }
 
                     dao.updateDatabase(
@@ -989,13 +1012,13 @@ class LocalKeePassViewModel(
                         other.id != databaseId && other.keyFileInternalPath == relativePath
                     }
                     if (!stillReferenced && !keyFileStore.deleteInternal(relativePath)) {
-                        throw IllegalStateException("内部副本记录已移除，但文件清理失败")
+                        throw IllegalStateException(strings.get(R.string.keepass_operation_key_cleanup_failed))
                     }
                 }
                 refreshKeyFileAccessState(databaseId)
-                _operationState.value = OperationState.Success("内部副本已删除，原密钥文件仍保留")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_key_copy_deleted))
             } catch (error: Exception) {
-                _operationState.value = OperationState.Error("删除内部副本失败: ${formatOperationError(error)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_key_copy_delete_failed, formatOperationError(error)))
             }
         }
     }
@@ -1035,7 +1058,7 @@ class LocalKeePassViewModel(
                                 decryptTimeMs = elapsedMs
                             )
                         } else {
-                            VerificationState.Failed(verifyResult.exceptionOrNull()?.message ?: "验证失败")
+                            VerificationState.Failed(verifyResult.exceptionOrNull()?.message ?: strings.get(R.string.keepass_operation_verification_failed))
                         }
                     )
                 }
@@ -1076,20 +1099,20 @@ class LocalKeePassViewModel(
     /** Re-select and validate an external KDBX, restoring its persistent read/write grant. */
     fun reauthorizeExternalDatabase(databaseId: Long, uri: Uri, onSuccess: (() -> Unit)? = null) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在检查数据库权限...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_check_permissions))
             try {
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw IllegalArgumentException("数据库不存在")
+                        ?: throw IllegalArgumentException(strings.get(R.string.keepass_connection_status_missing))
                     if (database.resolvedActiveStorageLocation() == KeePassStorageLocation.INTERNAL) {
-                        throw IllegalArgumentException("内部数据库不需要文件授权")
+                        throw IllegalArgumentException(strings.get(R.string.keepass_operation_internal_no_permission_needed))
                     }
                     context.contentResolver.takePersistableUriPermission(
                         uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     )
                     if (context.contentResolver.keePassUriPermissionState(uri) != KeePassUriPermissionState.READ_WRITE) {
-                        throw SecurityException("当前文件提供方未授予写权限")
+                        throw SecurityException(strings.get(R.string.keepass_operation_write_permission_missing))
                     }
                     val password = database.encryptedPassword?.let { securityManager.decryptData(it) } ?: ""
                     workspaceRepository.inspectExternalDatabase(
@@ -1112,7 +1135,7 @@ class LocalKeePassViewModel(
                         current + (databaseId to KeePassUriPermissionState.READ_WRITE)
                     }
                 }
-                _operationState.value = OperationState.Success("数据库权限已恢复")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_permission_repair_success))
                 Toast.makeText(
                     context,
                     context.getString(takagi.ru.monica.R.string.keepass_permission_repair_success),
@@ -1120,7 +1143,7 @@ class LocalKeePassViewModel(
                 ).show()
                 onSuccess?.invoke()
             } catch (error: Throwable) {
-                _operationState.value = OperationState.Error("权限恢复失败: ${formatOperationError(error)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_permissions_failed, formatOperationError(error)))
                 refreshUriPermissionState(databaseId)
             }
         }
@@ -1128,14 +1151,14 @@ class LocalKeePassViewModel(
 
     fun reverifyDatabasePassword(databaseId: Long, password: String, keyFileUri: Uri? = null) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在验证数据库密码...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_verify_password))
             _verificationStates.update { current ->
                 current + (databaseId to VerificationState.Verifying)
             }
             try {
                 var verifyElapsedMs = 0L
                 withContext(Dispatchers.IO) {
-                    val database = dao.getDatabaseById(databaseId) ?: throw Exception("数据库不存在")
+                    val database = dao.getDatabaseById(databaseId) ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
                     val passwordToUse = if (password.isNotBlank()) {
                         password
                     } else {
@@ -1258,13 +1281,13 @@ class LocalKeePassViewModel(
                         )
                     }
                 }
-                _operationState.value = OperationState.Success("密码验证成功（${verifyElapsedMs}ms）")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_password_verified, verifyElapsedMs))
                 refreshKeyFileAccessState(databaseId)
             } catch (e: Exception) {
                 _verificationStates.update { current ->
-                    current + (databaseId to VerificationState.Failed(e.message ?: "验证失败"))
+                    current + (databaseId to VerificationState.Failed(e.message ?: strings.get(R.string.keepass_operation_verification_failed)))
                 }
-                _operationState.value = OperationState.Error("验证失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_verification_detail, formatOperationError(e)))
                 refreshKeyFileAccessState(databaseId)
             }
         }
@@ -1434,7 +1457,7 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean = false
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在创建数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_creating))
             
             try {
                 var createdDatabaseId: Long? = null
@@ -1474,7 +1497,7 @@ class LocalKeePassViewModel(
                     } else {
                         // 外部存储
                         if (externalUri == null) {
-                            throw IllegalArgumentException("外部存储需要指定保存位置")
+                            throw IllegalArgumentException(strings.get(R.string.keepass_operation_external_location_required))
                         }
                         
                         // 使用 DocumentFile 创建文件
@@ -1494,7 +1517,7 @@ class LocalKeePassViewModel(
                             }
                             filePath = newFile.uri.toString()
                         } else {
-                            throw Exception("无法在指定位置创建文件")
+                            throw Exception(strings.get(R.string.keepass_operation_create_file_failed))
                         }
                     }
 
@@ -1529,7 +1552,7 @@ class LocalKeePassViewModel(
                     )
                 }
                 
-                _operationState.value = OperationState.Success("数据库创建成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_created))
                 createdDatabaseId?.let { databaseId ->
                     logKeepassDatabaseCreate(
                         databaseId = databaseId,
@@ -1538,7 +1561,7 @@ class LocalKeePassViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("创建失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_webdav_create_failed, formatOperationError(e)))
             }
         }
     }
@@ -1548,7 +1571,7 @@ class LocalKeePassViewModel(
      */
     fun generateKeyFile(uri: Uri) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在生成密钥文件...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_generate_key))
             
             try {
                 withContext(Dispatchers.IO) {
@@ -1575,7 +1598,7 @@ class LocalKeePassViewModel(
                     // 4. 写入文件
                     context.contentResolver.openOutputStream(uri)?.use { output ->
                         output.write(xmlContent.toByteArray())
-                    } ?: throw Exception("无法写入文件")
+                    } ?: throw Exception(strings.get(R.string.keepass_operation_write_failed))
                     
                     runCatching {
                         context.contentResolver.takePersistableUriPermission(
@@ -1585,9 +1608,9 @@ class LocalKeePassViewModel(
                     }
                 }
                 
-                _operationState.value = OperationState.Success("密钥文件生成成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_key_generated))
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("生成密钥文件失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_key_generate_failed, formatOperationError(e)))
             }
         }
     }
@@ -1604,7 +1627,7 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean = false
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在添加数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_adding))
             
             try {
                 var verifyElapsedMs = 0L
@@ -1626,7 +1649,7 @@ class LocalKeePassViewModel(
 
                     // 验证文件是否可访问
                     context.contentResolver.openInputStream(uri)?.close()
-                        ?: throw Exception("无法访问文件")
+                        ?: throw Exception(strings.get(R.string.keepass_operation_file_unavailable))
 
                     val verifyStart = SystemClock.elapsedRealtime()
                     val verifyResult = workspaceRepository.inspectExternalDatabase(
@@ -1659,7 +1682,7 @@ class LocalKeePassViewModel(
                             )
                         }
                         context.contentResolver.openInputStream(keyFileUri)?.close()
-                            ?: throw Exception("无法访问密钥文件")
+                            ?: throw Exception(strings.get(R.string.local_keepass_key_file_access_unavailable))
                     }
                     val uriPath = uri.toString()
                     val existing = dao.getAllDatabasesSync().firstOrNull { it.filePath == uriPath }
@@ -1760,7 +1783,7 @@ class LocalKeePassViewModel(
                     }
                 }
                 
-                _operationState.value = OperationState.Success("数据库添加成功（验证${verifyElapsedMs}ms）")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_added, verifyElapsedMs))
                 when (importLogAction) {
                     "create" -> {
                         logKeepassDatabaseCreate(
@@ -1780,7 +1803,7 @@ class LocalKeePassViewModel(
                     }
                 }
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("添加失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_add_failed, formatOperationError(e)))
             }
         }
     }
@@ -1797,7 +1820,7 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean = false
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在接入 WebDAV 数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_connecting, "WebDAV"))
 
             try {
                 val attachResult = withContext(Dispatchers.IO) {
@@ -1814,7 +1837,7 @@ class LocalKeePassViewModel(
                     )
                 }
 
-                _operationState.value = OperationState.Success("WebDAV 数据库接入成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_connected, "WebDAV"))
                 logKeepassDatabaseCreate(
                     databaseId = attachResult.databaseId,
                     databaseName = attachResult.databaseName,
@@ -1825,7 +1848,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("接入失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_connect_failed, formatOperationError(e)))
             }
         }
     }
@@ -1843,7 +1866,7 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean = false
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在创建远端数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_creating_remote, "WebDAV"))
 
             try {
                 val attachResult = withContext(Dispatchers.IO) {
@@ -1857,7 +1880,7 @@ class LocalKeePassViewModel(
 
                     val displayName = name.trim()
                         .removeSuffix(".kdbx")
-                        .ifBlank { throw IllegalArgumentException("数据库名称不能为空") }
+                        .ifBlank { throw IllegalArgumentException(strings.get(R.string.keepass_operation_name_required)) }
                     val remoteFileName = if (name.trim().endsWith(".kdbx", ignoreCase = true)) {
                         name.trim()
                     } else {
@@ -1888,7 +1911,7 @@ class LocalKeePassViewModel(
                     )
                 }
 
-                _operationState.value = OperationState.Success("远端数据库创建并接入成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_remote_created, "WebDAV"))
                 logKeepassDatabaseCreate(
                     databaseId = attachResult.databaseId,
                     databaseName = attachResult.databaseName,
@@ -1899,7 +1922,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("创建失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_webdav_create_failed, formatOperationError(e)))
             }
         }
     }
@@ -1915,7 +1938,7 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean = false
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在接入 OneDrive 数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_connecting, "OneDrive"))
 
             try {
                 val attachResult = withContext(Dispatchers.IO) {
@@ -1931,7 +1954,7 @@ class LocalKeePassViewModel(
                     )
                 }
 
-                _operationState.value = OperationState.Success("OneDrive 数据库接入成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_connected, "OneDrive"))
                 logKeepassDatabaseCreate(
                     databaseId = attachResult.databaseId,
                     databaseName = attachResult.databaseName,
@@ -1942,7 +1965,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("接入失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_connect_failed, formatOperationError(e)))
             }
         }
     }
@@ -1959,7 +1982,7 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean = false
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在创建 OneDrive 远端数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_creating_remote, "OneDrive"))
 
             try {
                 val attachResult = withContext(Dispatchers.IO) {
@@ -1972,7 +1995,7 @@ class LocalKeePassViewModel(
 
                     val displayName = name.trim()
                         .removeSuffix(".kdbx")
-                        .ifBlank { throw IllegalArgumentException("数据库名称不能为空") }
+                        .ifBlank { throw IllegalArgumentException(strings.get(R.string.keepass_operation_name_required)) }
                     val remoteFileName = if (name.trim().endsWith(".kdbx", ignoreCase = true)) {
                         name.trim()
                     } else {
@@ -2002,7 +2025,7 @@ class LocalKeePassViewModel(
                     )
                 }
 
-                _operationState.value = OperationState.Success("OneDrive 远端数据库创建并接入成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_remote_created, "OneDrive"))
                 logKeepassDatabaseCreate(
                     databaseId = attachResult.databaseId,
                     databaseName = attachResult.databaseName,
@@ -2013,7 +2036,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("创建失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_webdav_create_failed, formatOperationError(e)))
             }
         }
     }
@@ -2029,7 +2052,7 @@ class LocalKeePassViewModel(
         description: String? = null
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在接入 Google Drive 数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_connecting, "Google Drive"))
 
             try {
                 val attachResult = withContext(Dispatchers.IO) {
@@ -2045,7 +2068,7 @@ class LocalKeePassViewModel(
                     )
                 }
 
-                _operationState.value = OperationState.Success("Google Drive 数据库接入成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_connected, "Google Drive"))
                 logKeepassDatabaseCreate(
                     databaseId = attachResult.databaseId,
                     databaseName = attachResult.databaseName,
@@ -2056,7 +2079,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("接入失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_connect_failed, formatOperationError(e)))
             }
         }
     }
@@ -2073,7 +2096,7 @@ class LocalKeePassViewModel(
         description: String? = null
     ) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在创建 Google Drive 远端数据库...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_creating_remote, "Google Drive"))
 
             try {
                 val attachResult = withContext(Dispatchers.IO) {
@@ -2086,7 +2109,7 @@ class LocalKeePassViewModel(
 
                     val displayName = name.trim()
                         .removeSuffix(".kdbx")
-                        .ifBlank { throw IllegalArgumentException("数据库名称不能为空") }
+                        .ifBlank { throw IllegalArgumentException(strings.get(R.string.keepass_operation_name_required)) }
                     val remoteFileName = if (name.trim().endsWith(".kdbx", ignoreCase = true)) {
                         name.trim()
                     } else {
@@ -2110,14 +2133,14 @@ class LocalKeePassViewModel(
                         accountId = accountId,
                         accountLabel = accountLabel,
                         remotePath = createdFile.path,
-                        fileId = createdFile.id ?: throw IllegalStateException("Google Drive 文件标识为空"),
+                        fileId = createdFile.id ?: throw IllegalStateException(strings.get(R.string.keepass_operation_google_file_id_missing)),
                         databasePassword = databasePassword,
                         keyFileUri = keyFileUri,
                         description = description
                     )
                 }
 
-                _operationState.value = OperationState.Success("Google Drive 远端数据库创建并接入成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_remote_created, "Google Drive"))
                 logKeepassDatabaseCreate(
                     databaseId = attachResult.databaseId,
                     databaseName = attachResult.databaseName,
@@ -2128,7 +2151,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("创建失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_webdav_create_failed, formatOperationError(e)))
             }
         }
     }
@@ -2288,11 +2311,15 @@ class LocalKeePassViewModel(
         val triggerLog = if (silent) "REMOTE_SYNC_SILENT" else "REMOTE_SYNC_MANUAL"
         SyncDiagnostics.queued(taskId, targetLog, triggerLog, detail = "silent=$silent")
         viewModelScope.launch {
+            if (!silent && openRemoteConflictIfNeeded(databaseId)) {
+                SyncDiagnostics.skipped(taskId, targetLog, triggerLog, "conflict_review")
+                return@launch
+            }
             if (!silent) {
                 clearVisibleRemoteAutoSyncFailure(databaseId)
             }
             if (!silent) {
-                _operationState.value = OperationState.Loading("正在同步远端数据库...")
+                _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_syncing))
             }
 
             val syncTarget = SyncTarget.KeePassDatabase(databaseId)
@@ -2351,13 +2378,13 @@ class LocalKeePassViewModel(
                         detail = "running=${result.status.runningRequestId.orEmpty()}"
                     )
                     if (!silent) {
-                        _operationState.value = OperationState.Success("已有远端同步正在运行")
+                        _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_sync_running))
                     }
                 }
                 is SyncTaskAwaitResult.Skipped -> {
                     SyncDiagnostics.skipped(taskId, targetLog, triggerLog, result.reason)
                     if (!silent) {
-                        _operationState.value = OperationState.Success("远端同步已跳过: ${result.reason}")
+                        _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_sync_skipped, result.reason))
                     }
                 }
                 is SyncTaskAwaitResult.Blocked -> {
@@ -2369,7 +2396,7 @@ class LocalKeePassViewModel(
                     )
                     val message = result.error.redactedMessage ?: result.error.kind.name
                     if (!silent) {
-                        _operationState.value = OperationState.Error("同步失败: $message")
+                        _operationState.value = OperationState.Error(strings.get(R.string.legacy_ui_sync_failed_detail, message))
                     } else {
                         Log.w(TAG, "Silent remote sync blocked: databaseId=$databaseId, reason=$message")
                     }
@@ -2378,20 +2405,31 @@ class LocalKeePassViewModel(
                     val message = result.reason ?: "sync canceled"
                     SyncDiagnostics.skipped(taskId, targetLog, triggerLog, message)
                     if (!silent) {
-                        _operationState.value = OperationState.Error("同步失败: $message")
+                        _operationState.value = OperationState.Error(strings.get(R.string.legacy_ui_sync_failed_detail, message))
                     } else {
                         Log.w(TAG, "Silent remote sync canceled: databaseId=$databaseId, reason=$message")
                     }
                 }
                 is SyncTaskAwaitResult.Failed -> {
                     if (!silent) {
-                        _operationState.value = OperationState.Error("同步失败: ${formatOperationError(result.error)}")
+                        _operationState.value = OperationState.Error(strings.get(R.string.legacy_ui_sync_failed_detail, formatOperationError(result.error)))
                     } else {
                         Log.w(TAG, "Silent remote sync failed: databaseId=$databaseId, reason=${result.error.message}")
                     }
                 }
             }
+            if (!silent && (result is SyncTaskAwaitResult.Failed || result is SyncTaskAwaitResult.Blocked)) {
+                openRemoteConflictIfNeeded(databaseId)
+            }
         }
+    }
+
+    private suspend fun openRemoteConflictIfNeeded(databaseId: Long): Boolean {
+        val database = dao.getDatabaseById(databaseId) ?: return false
+        if (!database.isRemoteSource() || database.lastSyncStatus != KeePassSyncStatus.CONFLICT) return false
+        _operationState.value = OperationState.Idle
+        conflictResolution.open(database.id, database.name)
+        return true
     }
 
     fun autoSyncVisibleRemoteDatabase(databaseId: Long) {
@@ -2554,7 +2592,7 @@ class LocalKeePassViewModel(
                         KeePassDatabaseSourceType.REMOTE_ONEDRIVE -> "ONEDRIVE_MANUAL_SYNC_FAILED"
                         else -> "WEBDAV_MANUAL_SYNC_FAILED"
                     },
-                    failureMessage = error.message ?: "远端同步失败"
+                    failureMessage = error.message ?: strings.get(R.string.keepass_operation_remote_sync_failed)
                 )
             }
         }
@@ -2565,7 +2603,7 @@ class LocalKeePassViewModel(
      */
     fun copyToInternal(databaseId: Long) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在复制到内部存储...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_copying_internal))
             
             try {
                 var copiedDatabaseId: Long? = null
@@ -2573,11 +2611,11 @@ class LocalKeePassViewModel(
                 var sourceDatabaseName = ""
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw Exception("数据库不存在")
+                        ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
                     sourceDatabaseName = database.name
                     
                     if (database.storageLocation == KeePassStorageLocation.INTERNAL) {
-                        throw Exception("数据库已在内部存储")
+                        throw Exception(strings.get(R.string.keepass_operation_already_internal))
                     }
                     
                     val externalUri = Uri.parse(database.filePath)
@@ -2601,7 +2639,7 @@ class LocalKeePassViewModel(
                     // 创建新的内部数据库记录
                     val newDatabase = database.copy(
                         id = 0,
-                        name = "${database.name} (内部)",
+                        name = strings.get(R.string.keepass_operation_internal_name, database.name),
                         filePath = "keepass/$fileName",
                         storageLocation = KeePassStorageLocation.INTERNAL,
                         createdAt = System.currentTimeMillis()
@@ -2611,7 +2649,7 @@ class LocalKeePassViewModel(
                     copiedDatabaseName = newDatabase.name
                 }
                 
-                _operationState.value = OperationState.Success("已复制到内部存储")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_copied_internal))
                 copiedDatabaseId?.let { newDatabaseId ->
                     logKeepassDatabaseCreate(
                         databaseId = newDatabaseId,
@@ -2623,7 +2661,7 @@ class LocalKeePassViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("复制失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_copy_failed, formatOperationError(e)))
             }
         }
     }
@@ -2633,25 +2671,25 @@ class LocalKeePassViewModel(
      */
     fun exportToExternal(databaseId: Long, destinationUri: Uri) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在导出...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.exporting))
             
             try {
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw Exception("数据库不存在")
+                        ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
                     
                     if (database.storageLocation != KeePassStorageLocation.INTERNAL) {
-                        throw Exception("只能导出内部数据库")
+                        throw Exception(strings.get(R.string.keepass_operation_export_internal_only))
                     }
                     
                     val internalFile = File(context.filesDir, database.filePath)
                     if (!internalFile.exists()) {
-                        throw Exception("数据库文件不存在")
+                        throw Exception(strings.get(R.string.keepass_operation_database_file_missing))
                     }
                     
                     // 导出到目标位置
                     val output = context.contentResolver.openOutputStream(destinationUri)
-                        ?: throw IOException("无法打开目标文件")
+                        ?: throw IOException(strings.get(R.string.keepass_operation_target_unavailable))
                     output.use { outputStream ->
                         internalFile.inputStream().use { input ->
                             input.copyTo(outputStream)
@@ -2659,9 +2697,9 @@ class LocalKeePassViewModel(
                     }
                 }
                 
-                _operationState.value = OperationState.Success("导出成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.export_data_success))
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("导出失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_export_failed, formatOperationError(e)))
             }
         }
     }
@@ -2678,9 +2716,9 @@ class LocalKeePassViewModel(
         viewModelScope.launch {
             _operationState.value = OperationState.Loading(
                 if (targetLocation == KeePassStorageLocation.EXTERNAL) 
-                    "正在转移到外部存储..." 
+                    strings.get(R.string.keepass_operation_moving_external)
                 else 
-                    "正在转移到内部存储..."
+                    strings.get(R.string.keepass_operation_moving_internal)
             )
             
             try {
@@ -2688,11 +2726,11 @@ class LocalKeePassViewModel(
                 var transferChanges: List<FieldChange> = emptyList()
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw Exception("数据库不存在")
+                        ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
                     transferDatabaseName = database.name
                     
                     if (database.storageLocation == targetLocation) {
-                        throw Exception("数据库已在目标位置")
+                        throw Exception(strings.get(R.string.keepass_operation_already_at_destination))
                     }
                     
                     val newPath: String
@@ -2700,12 +2738,12 @@ class LocalKeePassViewModel(
                     if (targetLocation == KeePassStorageLocation.EXTERNAL) {
                         // 内部 -> 外部
                         if (targetUri == null) {
-                            throw Exception("需要指定目标位置")
+                            throw Exception(strings.get(R.string.keepass_operation_destination_required))
                         }
                         
                         val internalFile = File(context.filesDir, database.filePath)
                         if (!internalFile.exists()) {
-                            throw Exception("源文件不存在")
+                            throw Exception(strings.get(R.string.keepass_operation_source_missing))
                         }
                         
                         // 复制到外部
@@ -2770,14 +2808,14 @@ class LocalKeePassViewModel(
                     )
                 }
                 
-                _operationState.value = OperationState.Success("转移成功")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_moved))
                 logKeepassDatabaseUpdate(
                     databaseId = databaseId,
                     databaseName = transferDatabaseName,
                     changes = transferChanges
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("转移失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_move_failed, formatOperationError(e)))
             }
         }
     }
@@ -2787,13 +2825,13 @@ class LocalKeePassViewModel(
      */
     fun deleteDatabase(databaseId: Long, deleteFile: Boolean = false) {
         viewModelScope.launch {
-            _operationState.value = OperationState.Loading("正在删除...")
+            _operationState.value = OperationState.Loading(strings.get(R.string.keepass_operation_deleting))
             
             try {
                 var deletedDatabaseName = ""
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw Exception("数据库不存在")
+                        ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
                     deletedDatabaseName = database.name
                     
                     if (deleteFile) {
@@ -2834,14 +2872,14 @@ class LocalKeePassViewModel(
                 _verificationStates.update { current -> current - databaseId }
                 _selectedDatabase.update { current -> current?.takeUnless { it.id == databaseId } }
                 
-                _operationState.value = OperationState.Success("已删除")
+                _operationState.value = OperationState.Success(strings.get(R.string.deleted))
                 logKeepassDatabaseDelete(
                     databaseId = databaseId,
                     databaseName = deletedDatabaseName,
                     detail = if (deleteFile) "删除记录与本地文件" else "删除记录"
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("删除失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.delete_failed, formatOperationError(e)))
             }
         }
     }
@@ -2856,7 +2894,7 @@ class LocalKeePassViewModel(
                 var databaseName = "KeePass DB #$databaseId"
                 withContext(Dispatchers.IO) {
                     val database = dao.getDatabaseById(databaseId)
-                        ?: throw Exception("数据库不存在")
+                        ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
                     databaseName = database.name
                     val verifyStart = SystemClock.elapsedRealtime()
                     val verifyResult = workspaceRepository.inspectDatabase(
@@ -2891,7 +2929,7 @@ class LocalKeePassViewModel(
                     }
                 }
                 
-                _operationState.value = OperationState.Success("密码已更新（验证${verifyElapsedMs}ms）")
+                _operationState.value = OperationState.Success(strings.get(R.string.keepass_operation_password_updated, verifyElapsedMs))
                 logKeepassDatabaseUpdate(
                     databaseId = databaseId,
                     databaseName = databaseName,
@@ -2900,7 +2938,7 @@ class LocalKeePassViewModel(
                     )
                 )
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("更新失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_update_failed, formatOperationError(e)))
             }
         }
     }
@@ -2927,7 +2965,7 @@ class LocalKeePassViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _operationState.value = OperationState.Error("设置失败: ${formatOperationError(e)}")
+                _operationState.value = OperationState.Error(strings.get(R.string.keepass_operation_setting_failed, formatOperationError(e)))
             }
         }
     }
@@ -3474,14 +3512,14 @@ class LocalKeePassViewModel(
 
     private fun storageLocationLabel(location: KeePassStorageLocation): String {
         return when (location) {
-            KeePassStorageLocation.INTERNAL -> "内部"
-            KeePassStorageLocation.EXTERNAL -> "外部"
+            KeePassStorageLocation.INTERNAL -> strings.get(R.string.keepass_operation_internal)
+            KeePassStorageLocation.EXTERNAL -> strings.get(R.string.keepass_operation_external)
         }
     }
 
     private fun storagePathLabel(path: String): String {
         return if (path.startsWith("content://")) {
-            "外部 URI"
+            strings.get(R.string.keepass_operation_external_uri)
         } else {
             path
         }
@@ -3497,7 +3535,8 @@ class LocalKeePassViewModel(
             serverUrl = serverUrl.trim().trimEnd('/'),
             username = username.trim(),
             password = webDavPassword,
-            remotePath = remotePath
+            remotePath = remotePath,
+            strings = strings,
         )
     }
 
@@ -3523,9 +3562,9 @@ class LocalKeePassViewModel(
         description: String?,
         keepKeyFileCopy: Boolean
     ): OneDriveAttachResult {
-        val normalizedRemotePath = OneDriveKeePassFileSource.normalizeRemotePath(remotePath)
+        val normalizedRemotePath = OneDriveKeePassFileSource.normalizeRemotePath(remotePath, strings = strings)
         val displayName = name.ifBlank {
-            OneDriveKeePassSupport.displayNameFromRemotePath(normalizedRemotePath)
+            OneDriveKeePassSupport.displayNameFromRemotePath(normalizedRemotePath, strings = strings)
                 .removeSuffix(".kdbx")
         }
         val remoteSourceDao = appDatabase.keepassRemoteSourceDao()
@@ -3543,7 +3582,7 @@ class LocalKeePassViewModel(
         if (existingSource != null) {
             val duplicate = dao.getAllDatabasesSync().firstOrNull { it.sourceId == existingSource.id }
             if (duplicate != null) {
-                throw IllegalArgumentException("该 OneDrive 数据库已接入")
+                throw IllegalArgumentException(strings.get(R.string.keepass_operation_already_connected, "OneDrive"))
             }
         }
 
@@ -3556,7 +3595,7 @@ class LocalKeePassViewModel(
                 providerType = KeePassRemoteProviderType.ONEDRIVE,
                 displayName = displayName,
                 remotePath = normalizedRemotePath,
-                remoteParentPath = OneDriveKeePassFileSource.parentPathOf(normalizedRemotePath),
+                remoteParentPath = OneDriveKeePassFileSource.parentPathOf(normalizedRemotePath, strings = strings),
                 accountId = accountLabel,
                 tokenRef = accountId,
                 autoSyncEnabled = true,
@@ -3564,7 +3603,7 @@ class LocalKeePassViewModel(
             )).copy(
                 displayName = displayName,
                 remotePath = normalizedRemotePath,
-                remoteParentPath = OneDriveKeePassFileSource.parentPathOf(normalizedRemotePath),
+                remoteParentPath = OneDriveKeePassFileSource.parentPathOf(normalizedRemotePath, strings = strings),
                 accountId = accountLabel,
                 tokenRef = accountId,
                 autoSyncEnabled = true,
@@ -3580,7 +3619,7 @@ class LocalKeePassViewModel(
             }
 
             val remoteSource = remoteSourceDao.getSourceById(remoteSourceId)
-                ?: throw IllegalStateException("远端来源创建失败")
+                ?: throw IllegalStateException(strings.get(R.string.keepass_operation_source_create_failed))
             val fileSource = OneDriveKeePassSupport.createFileSource(context, remoteSource)
             fileSource.testConnection().getOrThrow()
 
@@ -3599,7 +3638,8 @@ class LocalKeePassViewModel(
             }
             val mirrorPaths = OneDriveKeePassSupport.buildLocalMirrorPaths(
                 sourceId = remoteSourceId,
-                remotePath = normalizedRemotePath
+                remotePath = normalizedRemotePath,
+                strings = strings,
             )
             createdWorkingCopyPath = mirrorPaths.workingCopyPath
             createdCacheCopyPath = mirrorPaths.cacheCopyPath
@@ -3704,12 +3744,12 @@ class LocalKeePassViewModel(
         keyFileUri: Uri?,
         description: String?
     ): GoogleDriveAttachResult {
-        val normalizedRemotePath = GoogleDriveKeePassFileSource.normalizeRemotePath(remotePath)
+        val normalizedRemotePath = GoogleDriveKeePassFileSource.normalizeRemotePath(remotePath, strings = strings)
         val normalizedFileId = fileId.trim().ifBlank {
-            throw IllegalArgumentException("Google Drive 文件标识不能为空")
+            throw IllegalArgumentException(strings.get(R.string.keepass_operation_google_file_id_missing))
         }
         val displayName = name.ifBlank {
-            GoogleDriveKeePassSupport.displayNameFromRemotePath(normalizedRemotePath)
+            GoogleDriveKeePassSupport.displayNameFromRemotePath(normalizedRemotePath, strings = strings)
                 .removeSuffix(".kdbx")
         }
         val remoteSourceDao = appDatabase.keepassRemoteSourceDao()
@@ -3727,7 +3767,7 @@ class LocalKeePassViewModel(
         if (existingSource != null) {
             val duplicate = dao.getAllDatabasesSync().firstOrNull { it.sourceId == existingSource.id }
             if (duplicate != null) {
-                throw IllegalArgumentException("该 Google Drive 数据库已接入")
+                throw IllegalArgumentException(strings.get(R.string.keepass_operation_already_connected, "Google Drive"))
             }
         }
 
@@ -3740,7 +3780,7 @@ class LocalKeePassViewModel(
                 providerType = KeePassRemoteProviderType.GOOGLE_DRIVE,
                 displayName = displayName,
                 remotePath = normalizedRemotePath,
-                remoteParentPath = GoogleDriveKeePassFileSource.parentPathOf(normalizedRemotePath),
+                remoteParentPath = GoogleDriveKeePassFileSource.parentPathOf(normalizedRemotePath, strings = strings),
                 accountId = accountLabel,
                 itemId = normalizedFileId,
                 tokenRef = accountId,
@@ -3749,7 +3789,7 @@ class LocalKeePassViewModel(
             )).copy(
                 displayName = displayName,
                 remotePath = normalizedRemotePath,
-                remoteParentPath = GoogleDriveKeePassFileSource.parentPathOf(normalizedRemotePath),
+                remoteParentPath = GoogleDriveKeePassFileSource.parentPathOf(normalizedRemotePath, strings = strings),
                 accountId = accountLabel,
                 itemId = normalizedFileId,
                 tokenRef = accountId,
@@ -3766,7 +3806,7 @@ class LocalKeePassViewModel(
             }
 
             val remoteSource = remoteSourceDao.getSourceById(remoteSourceId)
-                ?: throw IllegalStateException("远端来源创建失败")
+                ?: throw IllegalStateException(strings.get(R.string.keepass_operation_source_create_failed))
             val fileSource = GoogleDriveKeePassSupport.createFileSource(context, remoteSource)
             fileSource.testConnection().getOrThrow()
 
@@ -3774,7 +3814,8 @@ class LocalKeePassViewModel(
             val remoteStat = runCatching { fileSource.stat() }.getOrDefault(takagi.ru.monica.utils.FileSourceStat())
             val mirrorPaths = GoogleDriveKeePassSupport.buildLocalMirrorPaths(
                 sourceId = remoteSourceId,
-                remotePath = normalizedRemotePath
+                remotePath = normalizedRemotePath,
+                strings = strings,
             )
             createdWorkingCopyPath = mirrorPaths.workingCopyPath
             createdCacheCopyPath = mirrorPaths.cacheCopyPath
@@ -3871,9 +3912,9 @@ class LocalKeePassViewModel(
         keepKeyFileCopy: Boolean
     ): WebDavAttachResult {
         val normalizedBaseUrl = serverUrl.trim().trimEnd('/')
-        val normalizedRemotePath = WebDavKeePassFileSource.normalizeRemotePath(remotePath)
+        val normalizedRemotePath = WebDavKeePassFileSource.normalizeRemotePath(remotePath, strings = strings)
         val displayName = name.ifBlank {
-            WebDavKeePassSupport.displayNameFromRemotePath(normalizedRemotePath)
+            WebDavKeePassSupport.displayNameFromRemotePath(normalizedRemotePath, strings = strings)
                 .removeSuffix(".kdbx")
         }
         val remoteSourceDao = appDatabase.keepassRemoteSourceDao()
@@ -3891,7 +3932,7 @@ class LocalKeePassViewModel(
         if (existingSource != null) {
             val duplicate = dao.getAllDatabasesSync().firstOrNull { it.sourceId == existingSource.id }
             if (duplicate != null) {
-                throw IllegalArgumentException("该 WebDAV 数据库已接入")
+                throw IllegalArgumentException(strings.get(R.string.keepass_operation_already_connected, "WebDAV"))
             }
         }
 
@@ -3904,7 +3945,7 @@ class LocalKeePassViewModel(
                 providerType = KeePassRemoteProviderType.WEBDAV,
                 displayName = displayName,
                 remotePath = normalizedRemotePath,
-                remoteParentPath = WebDavKeePassFileSource.parentPathOf(normalizedRemotePath),
+                remoteParentPath = WebDavKeePassFileSource.parentPathOf(normalizedRemotePath, strings = strings),
                 baseUrl = normalizedBaseUrl,
                 usernameEncrypted = securityManager.encryptData(username.trim()),
                 passwordEncrypted = securityManager.encryptData(webDavPassword),
@@ -3913,7 +3954,7 @@ class LocalKeePassViewModel(
             )).copy(
                 displayName = displayName,
                 remotePath = normalizedRemotePath,
-                remoteParentPath = WebDavKeePassFileSource.parentPathOf(normalizedRemotePath),
+                remoteParentPath = WebDavKeePassFileSource.parentPathOf(normalizedRemotePath, strings = strings),
                 baseUrl = normalizedBaseUrl,
                 usernameEncrypted = securityManager.encryptData(username.trim()),
                 passwordEncrypted = securityManager.encryptData(webDavPassword),
@@ -3930,15 +3971,16 @@ class LocalKeePassViewModel(
             }
 
             val remoteSource = remoteSourceDao.getSourceById(remoteSourceId)
-                ?: throw IllegalStateException("远端来源创建失败")
-            val fileSource = WebDavKeePassSupport.createFileSource(remoteSource, securityManager)
+                ?: throw IllegalStateException(strings.get(R.string.keepass_operation_source_create_failed))
+            val fileSource = WebDavKeePassSupport.createFileSource(remoteSource, securityManager, strings = strings)
             fileSource.testConnection().getOrThrow()
 
             val remoteBytes = fileSource.read()
             val remoteStat = runCatching { fileSource.stat() }.getOrDefault(takagi.ru.monica.utils.FileSourceStat())
             val mirrorPaths = WebDavKeePassSupport.buildLocalMirrorPaths(
                 sourceId = remoteSourceId,
-                remotePath = normalizedRemotePath
+                remotePath = normalizedRemotePath,
+                strings = strings,
             )
             createdWorkingCopyPath = mirrorPaths.workingCopyPath
             createdCacheCopyPath = mirrorPaths.cacheCopyPath
@@ -4049,7 +4091,7 @@ class LocalKeePassViewModel(
                 "[${error.code.name}] ${error.message}"
             }
         } else {
-            error.toOneDriveUserMessage(error.message ?: "未知错误")
+            error.toOneDriveUserMessage(AppLocaleStringResolver(context), error.message ?: strings.get(R.string.import_data_unknown_error))
         }
     }
     

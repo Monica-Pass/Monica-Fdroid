@@ -1,6 +1,7 @@
 package takagi.ru.monica.bitwarden.sync
 
-import android.content.Context
+import takagi.ru.monica.R
+import takagi.ru.monica.utils.StringResolver
 import android.util.Log
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -85,7 +86,8 @@ object EmptyVaultProtection {
      * @param isFirstSync 是否为首次同步
      * @return 检查结果
      */
-    fun checkSyncAllowed(
+    internal fun checkSyncAllowed(
+        strings: StringResolver,
         vaultId: Long,
         localCipherCount: Int,
         serverCipherCount: Int,
@@ -126,8 +128,7 @@ object EmptyVaultProtection {
             vaultId = vaultId,
             localCount = localCipherCount,
             serverCount = serverCipherCount,
-            reason = "服务器返回空数据，但本地有 $localCipherCount 条记录。" +
-                    "这可能是服务器错误或账号问题，为保护您的数据，同步已暂停。"
+            reason = strings.get(R.string.bitwarden_message_empty_vault, localCipherCount)
         )
     }
     

@@ -2,6 +2,7 @@ package takagi.ru.monica.utils
 
 import android.app.Activity
 import android.content.Context
+import takagi.ru.monica.R
 
 data class OneDriveAccountSession(
     val accountId: String,
@@ -12,21 +13,19 @@ data class OneDriveAccountSession(
 )
 
 class OneDriveAuthTemporarilyUnavailableException(
-    message: String = "OneDrive 暂时无法刷新登录状态。请关闭系统电池优化，或点亮屏幕并重新打开 Monica 后再试。",
+    message: String = "OneDrive session is temporarily unavailable.",
     cause: Throwable? = null
 ) : IllegalStateException(message, cause)
 
-const val ONEDRIVE_REDIRECT_CONFLICT_USER_MESSAGE: String =
-    "检测到旧版 Monica Steam 占用了 OneDrive 登录回调。请更新 Monica Steam 后重试；数据库文件本身没有损坏。"
-
 class OneDriveNotSupportedException(
-    message: String = "此构建（F-Droid 版）不包含 OneDrive 支持，请使用 WebDAV 同步。"
+    message: String = "OneDrive is unavailable in the F-Droid build. Use WebDAV."
 ) : UnsupportedOperationException(message)
 
-class OneDriveAuthManager(@Suppress("UNUSED_PARAMETER") context: Context) {
+class OneDriveAuthManager(context: Context) {
+    private val strings = AppLocaleStringResolver(context)
 
     suspend fun signIn(@Suppress("UNUSED_PARAMETER") activity: Activity): OneDriveAccountSession {
-        throw OneDriveNotSupportedException()
+        throw OneDriveNotSupportedException(strings.get(R.string.fdroid_cloud_provider_unavailable, "OneDrive"))
     }
 
     suspend fun getCachedSession(): OneDriveAccountSession? {
@@ -34,7 +33,7 @@ class OneDriveAuthManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     suspend fun acquireAccessToken(@Suppress("UNUSED_PARAMETER") accountId: String): OneDriveAccountSession {
-        throw OneDriveNotSupportedException()
+        throw OneDriveNotSupportedException(strings.get(R.string.fdroid_cloud_provider_unavailable, "OneDrive"))
     }
 
     companion object {
@@ -63,15 +62,15 @@ fun Throwable.isOneDriveRedirectHandlerConflict(): Boolean {
     }
 }
 
-fun Throwable.toOneDriveUserMessage(fallback: String = "OneDrive 操作失败"): String {
+internal fun Throwable.toOneDriveUserMessage(strings: StringResolver, fallback: String? = null): String {
     if (this is OneDriveNotSupportedException) {
-        return message ?: fallback
+        return strings.get(R.string.fdroid_cloud_provider_unavailable, "OneDrive")
     }
     if (isOneDriveRedirectHandlerConflict()) {
-        return ONEDRIVE_REDIRECT_CONFLICT_USER_MESSAGE
+        return strings.get(R.string.onedrive_error_redirect)
     }
     if (isOneDriveAuthTemporarilyUnavailable()) {
-        return "OneDrive 暂时无法刷新登录状态。请关闭系统电池优化，或点亮屏幕并重新打开 Monica 后再试。"
+        return strings.get(R.string.onedrive_error_power)
     }
-    return message?.takeIf { it.isNotBlank() } ?: fallback
+    return message?.takeIf { it.isNotBlank() } ?: fallback ?: strings.get(R.string.onedrive_error_operation)
 }

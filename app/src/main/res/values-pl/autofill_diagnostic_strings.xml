@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">Autouzupełnianie wymaga Androida 8.0 lub nowszego</string>
+    <string name="autofill_compat_huawei">Urządzenia Huawei z Androidem 10 lub nowszym mogą ograniczać autouzupełnianie</string>
+    <string name="autofill_compat_xiaomi">Na urządzeniach Xiaomi może być wymagane zezwolenie na autouzupełnianie w aplikacji Bezpieczeństwo MIUI</string>
+    <string name="autofill_compat_oppo">Na urządzeniach OPPO/Realme może być wymagane zezwolenie na autouzupełnianie w ustawieniach uprawnień</string>
+    <string name="autofill_compat_vivo">Na urządzeniach Vivo może być wymagane zezwolenie na autouzupełnianie w iManager</string>
+    <string name="autofill_compat_android12_rom">Na niektórych ROM-ach Androida 12 autouzupełnianie może działać niestabilnie z powodu niezgodności systemu</string>
+    <string name="autofill_compat_inline">To urządzenie nie obsługuje podpowiedzi na klawiaturze. Autouzupełnianie użyje listy rozwijanej.</string>
+    <string name="autofill_compat_emulator">Autouzupełnianie w emulatorze może działać niestabilnie</string>
+    <string name="autofill_compat_unsupported">To urządzenie nie obsługuje systemowego autouzupełniania</string>
+    <string name="autofill_compat_check_failed">Nie udało się sprawdzić zgodności</string>
+    <string name="autofill_check_manifest">Sprawdź deklarację MonicaAutofillServiceNg w AndroidManifest.xml</string>
+    <string name="autofill_check_permission_manifest">Usługa musi deklarować BIND_AUTOFILL_SERVICE i filtr autofill intent-filter</string>
+    <string name="autofill_check_enable_system">W ustawieniach systemu wybierz Monicę jako usługę autouzupełniania</string>
+    <string name="autofill_check_path_system">Ustawienia → System → Języki i wprowadzanie → Usługa autouzupełniania</string>
+    <string name="autofill_check_path_xiaomi">Xiaomi: Ustawienia → Dodatkowe ustawienia → Języki i wprowadzanie → Usługa autouzupełniania</string>
+    <string name="autofill_check_miui_permission">Zezwól też na wymagane uprawnienia w aplikacji Bezpieczeństwo MIUI</string>
+    <string name="autofill_check_path_huawei">Huawei: Ustawienia → System i aktualizacje → Język i wprowadzanie → Usługa autouzupełniania</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme: Ustawienia → Ustawienia dodatkowe → Klawiatura i metoda wprowadzania → Usługa autouzupełniania</string>
+    <string name="autofill_check_path_vivo">Vivo: Ustawienia → Więcej ustawień → Metoda wprowadzania → Usługa autouzupełniania</string>
+    <string name="autofill_check_path_samsung">Samsung: Ustawienia → Zarządzanie ogólne → Język i wprowadzanie → Usługa autouzupełniania</string>
+    <string name="autofill_check_enable_app">Włącz autouzupełnianie w ustawieniach Moniki</string>
+    <string name="autofill_check_app_permissions">Sprawdź, czy Monica ma wymagane uprawnienia aplikacji</string>
+    <string name="autofill_check_issue_count">Problemy ze zgodnością: %1$d. Szczegóły poniżej.</string>
+    <string name="autofill_check_xiaomi_permission">Xiaomi: Bezpieczeństwo → Zarządzaj aplikacjami → Monica → Uprawnienia → Zezwól na autouzupełnianie</string>
+    <string name="autofill_check_huawei_autostart">Huawei: może być konieczne zezwolenie Monice na autostart w Menedżerze telefonu</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme: Ustawienia → Zarządzanie aplikacjami → Monica → Uprawnienia → Zezwól na autouzupełnianie</string>
+    <string name="autofill_check_vivo_permission">Vivo: iManager → Zarządzanie aplikacjami → Uprawnienia → Monica → Zezwól na autouzupełnianie</string>
+    <string name="autofill_check_background">Wyłącz ograniczenia baterii dla Moniki oraz zezwól na autostart i pracę w tle</string>
+    <string name="autofill_check_trigger_manually">Jeśli autouzupełnianie nadal działa niestabilnie, uruchom je ręcznie w polu logowania</string>
+    <string name="autofill_check_configured">Usługa jest poprawnie skonfigurowana. Jeśli problem się utrzymuje, uruchom Monicę ponownie.</string>
+    <string name="autofill_check_view_logs">Użyj narzędzi diagnostycznych, aby sprawdzić szczegółowe dzienniki</string>
+    <string name="autofill_check_restart">Po wprowadzeniu zmian uruchom Monicę ponownie</string>
+    <string name="autofill_check_recommendations_failed">Nie udało się przygotować wskazówek. Skontaktuj się z pomocą techniczną.</string>
+    <string name="autofill_report_parsing">Rozpoznawanie pól</string>
+    <string name="autofill_report_matching">Dopasowanie haseł</string>
+    <string name="autofill_report_building">Tworzenie odpowiedzi</string>
+    <string name="autofill_report_performance">Wydajność</string>
+    <string name="autofill_report_parsing_failures">Błędy rozpoznawania pól: %1$d</string>
+    <string name="autofill_report_matching_failures">Żądania bez pasującego hasła: %1$d</string>
+    <string name="autofill_report_building_failures">Błędy tworzenia odpowiedzi: %1$d</string>
+    <string name="autofill_report_slow">Zbyt długi średni czas odpowiedzi: %1$d ms</string>
+    <string name="autofill_report_improve_recognition">Popraw rozpoznawanie pól</string>
+    <string name="autofill_report_recognition_hint">Nie rozpoznano niektórych pól formularzy. Sprawdź ustawienia analizy pól.</string>
+    <string name="autofill_report_add_passwords">Dodaj wpisy z hasłami</string>
+    <string name="autofill_report_add_passwords_hint">Nie znaleziono pasujących haseł. Dodaj wpisy dla tych aplikacji.</string>
+    <string name="autofill_report_integrity">Sprawdź kompletność danych</string>
+    <string name="autofill_report_integrity_hint">Niekompletne dane mogą powodować błędy odpowiedzi. Sprawdź wpisy z hasłami.</string>
+    <string name="autofill_report_optimize">Popraw wydajność</string>
+    <string name="autofill_report_optimize_hint">Odpowiedzi są wolne. Spróbuj wyczyścić pamięć podręczną lub zmniejszyć liczbę wpisów.</string>
+    <string name="autofill_report_title">=== Diagnostyka autouzupełniania Monica ===</string>
+    <string name="autofill_report_exported_at">Wyeksportowano: %1$s</string>
+    <string name="autofill_report_device">Informacje o urządzeniu</string>
+    <string name="autofill_report_manufacturer">Producent: %1$s</string>
+    <string name="autofill_report_model">Model: %1$s</string>
+    <string name="autofill_report_android">Android: %1$s (API %2$d)</string>
+    <string name="autofill_report_rom">ROM: %1$s</string>
+    <string name="autofill_report_inline">Obsługa podpowiedzi na klawiaturze: %1$s</string>
+    <string name="autofill_report_statistics">Statystyki</string>
+    <string name="autofill_report_log_details">Szczegóły dziennika</string>
+    <string name="autofill_report_end">=== Koniec dziennika ===</string>
+</resources>

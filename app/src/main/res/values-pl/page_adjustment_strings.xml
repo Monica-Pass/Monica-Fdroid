@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallet_stack_loop_title">Zapętlaj stosy kart</string>
+    <string name="wallet_stack_loop_desc">Przeglądaj stos kart w obu kierunkach. Po ostatniej karcie wrócisz do pierwszej.</string>
+    <string name="page_adjustment_preview_games">Gry</string>
+    <string name="page_adjustment_preview_folder">Folder 1</string>
+    <string name="page_adjustment_preview_subfolder">Podfolder</string>
+</resources>

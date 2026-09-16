@@ -13,10 +13,10 @@ class MdbxSnapshotStructureScrollRegressionGuardTest {
         ).readText()
         val pageBody = source
             .substringAfter("private fun MdbxSnapshotStructurePage(")
-            .substringBefore("@Composable\nprivate fun SnapshotStructurePreviewPage(")
+            .substringBefore("internal fun SnapshotStructurePreviewPage(")
         val previewBody = source
-            .substringAfter("private fun SnapshotStructurePreviewPage(")
-            .substringBefore("@Composable\nprivate fun StructureTreePanel(")
+            .substringAfter("fun SnapshotStructurePreviewPage(")
+            .substringBefore("internal fun StructureTreePanel(")
         val portraitBranch = previewBody.substringAfter("        } else {")
 
         assertTrue(

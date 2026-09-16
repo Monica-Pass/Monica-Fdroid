@@ -1,5 +1,10 @@
 package takagi.ru.monica.ui
 
+import takagi.ru.monica.ui.screens.NativeTokenListUi
+import takagi.ru.monica.ui.screens.NativeTokenFilterChip
+import takagi.ru.monica.ui.screens.rememberNativeTokenList
+
+
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +43,7 @@ private const val PASSWORD_LIST_BOTTOM_SPACER_KEY = "password_list_bottom_spacer
 
 @Composable
 internal fun PasswordListScrollableContent(
+    nativeTokens: NativeTokenListUi? = null,
     listState: LazyListState,
     modifier: Modifier,
     isPasswordPageListModelReady: Boolean,
@@ -114,6 +122,7 @@ internal fun PasswordListScrollableContent(
                                     .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                NativeTokenFilterChip(nativeTokens)
                                 if (appSettings.passwordListQuickFiltersEnabled) {
                                     configuredQuickFilterItems.forEach { item ->
                                         if (shouldShowQuickFilterItem(item, aggregateUiState.visibleContentTypes)) {
@@ -204,7 +213,8 @@ internal fun PasswordListScrollableContent(
             }
         }
 
-        if (showEmptyState) {
+        if (showEmptyState && nativeTokens?.onlyTokens != true && nativeTokens?.entries.orEmpty().isEmpty() &&
+            nativeTokens?.loading != true && nativeTokens?.failed != true) {
             item(key = PASSWORD_LIST_EMPTY_STATE_WITH_HEADERS_KEY) {
                 Box(
                     modifier = Modifier
@@ -223,6 +233,10 @@ internal fun PasswordListScrollableContent(
             }
         } else {
             renderPasswordRows()
+        }
+
+        if (nativeTokens?.failed == true) item("native_token_error") {
+            TextButton(onClick = nativeTokens.onRetry) { Text(stringResource(R.string.api_token_reload)) }
         }
 
         item(key = PASSWORD_LIST_BOTTOM_SPACER_KEY) {

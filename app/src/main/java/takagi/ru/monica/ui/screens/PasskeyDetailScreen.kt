@@ -253,7 +253,7 @@ fun PasskeyDetailScreen(
                     )
                 ) {
                     PasskeyBindResult.DeleteQueueFailed -> {
-                        Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.legacy_ui_operation_failed), Toast.LENGTH_SHORT).show()
                     }
 
                     PasskeyBindResult.UpdateFailed -> {

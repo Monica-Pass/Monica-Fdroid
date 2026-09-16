@@ -390,19 +390,21 @@ private data class PendingUpload(
     val softLimitBytes: Long
 )
 
+@Composable
 private fun formatSecondaryShort(attachment: Attachment): String {
     val sizeText = humanReadableSize(attachment.sizeBytes)
     val sourceLabel = when (attachment.sourceEnum) {
-        AttachmentSource.LOCAL -> "Local"
+        AttachmentSource.LOCAL -> stringResource(R.string.legacy_ui_local)
         AttachmentSource.BITWARDEN -> "Bitwarden"
         AttachmentSource.KEEPASS -> "KeePass"
     }
     return if (sizeText.isBlank()) sourceLabel else "$sourceLabel · $sizeText"
 }
 
+@Composable
 private fun formatDraftSecondary(draft: AttachmentPendingDraft): String {
     val sizeText = humanReadableSize(draft.sizeBytes)
-    val label = "Pending"
+    val label = stringResource(R.string.legacy_ui_attachment_pending)
     return if (sizeText.isBlank()) label else "$label · $sizeText"
 }
 

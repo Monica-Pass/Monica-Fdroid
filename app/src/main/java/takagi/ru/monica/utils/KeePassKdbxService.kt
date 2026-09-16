@@ -1,5 +1,9 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.keepass.hasKeePassSourceChangedCause
+
+import takagi.ru.monica.R
+
 import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
@@ -29,7 +33,10 @@ import app.keemobile.kotpass.models.EntryValue
 import app.keemobile.kotpass.models.Group
 import app.keemobile.kotpass.models.Meta
 import app.keemobile.kotpass.models.TimeData
+import androidx.room.withTransaction
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -214,7 +221,8 @@ data class KeePassEntryData(
     val ssoRefEntryId: Long? = null,
     /** [takagi.ru.monica.data.model.WifiData] 的 JSON，仅在 WIFI 条目上有值。 */
     val wifiMetadata: String = "",
-    val customFields: List<KeePassCustomFieldData> = emptyList()
+    val customFields: List<KeePassCustomFieldData> = emptyList(),
+    val hasPasskeyFields: Boolean = false
 )
 
 data class KeePassCustomFieldData(
@@ -414,6 +422,7 @@ class KeePassKdbxService(
     private val dao: LocalKeePassDatabaseDao,
     private val securityManager: SecurityManager
 ) {
+    private val strings = AppLocaleStringResolver(context)
     private val imageManager by lazy { ImageManager(context.applicationContext) }
     private val keyFileStore by lazy { KeePassKeyFileStore(context.applicationContext) }
     private val credentialTransitionStore by lazy {
@@ -428,7 +437,7 @@ class KeePassKdbxService(
     }
     private val nativeMutation = KeePassNativeMutation()
     private val recoveryStore by lazy {
-        KeePassRecoveryStore(File(context.filesDir, "keepass_recovery"))
+        KeePassRecoveryStore(File(context.filesDir, "keepass_recovery"), strings = strings)
     }
 
     companion object {
@@ -800,7 +809,7 @@ class KeePassKdbxService(
                 val loaded = getCachedLoadedDatabase(databaseId) ?: loadDatabase(databaseId)
                 return@withContext Result.success(buildDiagnostics(loaded.keePassDatabase))
             }
-            val database = dao.getDatabaseById(databaseId) ?: throw Exception("数据库不存在")
+            val database = dao.getDatabaseById(databaseId) ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
             val credentials = buildCredentials(
                 database,
                 passwordOverride = passwordOverride,
@@ -827,7 +836,7 @@ class KeePassKdbxService(
     ): Result<KeePassDatabaseDiagnostics> = withContext(Dispatchers.IO) {
         try {
             val credentials = buildCredentialsFromRaw(password = password, keyFileUri = keyFileUri)
-            openUriStreamSource(fileUri, "无法打开数据库文件").use { source ->
+            openUriStreamSource(fileUri, strings.get(R.string.storage_error_open_database)).use { source ->
                 val (keePassDatabase, _) = decodeDatabaseWithFallback(
                     source = source,
                     credentialsResolution = credentials,
@@ -842,12 +851,16 @@ class KeePassKdbxService(
     }
 
     suspend fun syncRemoteDatabase(databaseId: Long): Result<KeePassRemoteSyncResult> = withContext(Dispatchers.IO) {
-        try {
+        withRemoteDatabaseLocks(databaseId) { syncRemoteDatabaseLocked(databaseId) }
+    }
+
+    private suspend fun syncRemoteDatabaseLocked(databaseId: Long): Result<KeePassRemoteSyncResult> {
+        return try {
             val database = dao.getDatabaseById(databaseId)
-                ?: throw IOException("数据库不存在")
+                ?: throw IOException(strings.get(R.string.keepass_connection_status_missing))
             val syncedDatabaseName = database.name
             if (!database.isRemoteSource() || database.sourceId == null) {
-                throw IllegalArgumentException("当前数据库不是远端来源")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_not_remote))
             }
 
             val remoteDb = PasswordDatabase.getDatabase(context)
@@ -856,15 +869,16 @@ class KeePassKdbxService(
             val syncService = RemoteKeePassSyncService(
                 databaseDao = dao,
                 remoteSourceDao = remoteSourceDao,
-                syncStateDao = syncStateDao
+                syncStateDao = syncStateDao,
+                strings = strings,
             )
             val remoteSource = remoteSourceDao.getSourceById(database.sourceId)
-                ?: throw IllegalStateException("远端来源不存在")
+                ?: throw IllegalStateException(strings.get(R.string.keepass_error_remote_source_missing))
             val fileSource = createRemoteFileSource(database, remoteSource)
-            val workingPath = database.workingCopyPath ?: throw IllegalStateException("本地工作副本不存在")
+            val workingPath = database.workingCopyPath ?: throw IllegalStateException(strings.get(R.string.keepass_error_working_copy_missing))
             val workingFile = File(context.filesDir, workingPath)
             if (!workingFile.exists()) {
-                throw IllegalStateException("本地工作副本不存在")
+                throw IllegalStateException(strings.get(R.string.keepass_error_working_copy_missing))
             }
 
             val workingBytes = workingFile.readBytes()
@@ -907,12 +921,12 @@ class KeePassKdbxService(
                         workingHash = remoteHash
                     )
                     invalidateProcessCache(databaseId)
-                    return@withContext Result.success(
-                        KeePassRemoteSyncResult(syncedDatabaseName, "已拉取远端最新版本")
+                    return Result.success(
+                        KeePassRemoteSyncResult(syncedDatabaseName, strings.get(R.string.keepass_sync_pulled))
                     )
                 }
 
-                val conflictMessage = "远端文件已变化，且本地工作副本也有修改，请先处理冲突"
+                val conflictMessage = strings.get(R.string.keepass_sync_both_changed)
                 syncService.markConflict(
                     databaseId = databaseId,
                     workingHash = workingHash,
@@ -929,14 +943,21 @@ class KeePassKdbxService(
                     baseHash = remoteHash,
                     workingHash = workingHash
                 )
-                return@withContext Result.success(KeePassRemoteSyncResult(syncedDatabaseName, "远端已是最新状态"))
+                return Result.success(KeePassRemoteSyncResult(syncedDatabaseName, strings.get(R.string.keepass_sync_up_to_date)))
             }
 
             syncService.markUploadInProgress(databaseId, workingHash)
-            val writeResult = fileSource.write(
-                workingBytes,
-                expectedVersion = syncState?.remoteEtag ?: syncState?.remoteVersionToken
-            )
+            val writeResult = try {
+                fileSource.write(
+                    workingBytes,
+                    expectedVersion = syncState?.remoteEtag ?: syncState?.remoteVersionToken
+                )
+            } catch (error: Exception) {
+                if (isRemoteVersionConflict(error)) {
+                    syncService.markConflict(databaseId, workingHash, error.message ?: strings.get(R.string.keepass_sync_remote_changed))
+                }
+                throw error
+            }
             val verifiedRemote = verifyRemoteKdbxWrite(
                 database = database,
                 fileSource = fileSource,
@@ -955,7 +976,9 @@ class KeePassKdbxService(
                 workingHash = verifiedRemote.hash
             )
             invalidateProcessCache(databaseId)
-            Result.success(KeePassRemoteSyncResult(syncedDatabaseName, "远端同步成功"))
+            Result.success(KeePassRemoteSyncResult(syncedDatabaseName, strings.get(R.string.keepass_sync_complete)))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             Result.failure(normalizeError(e))
         }
@@ -988,7 +1011,7 @@ class KeePassKdbxService(
         try {
             val normalizedName = groupName.trim()
             if (normalizedName.isBlank()) {
-                throw IllegalArgumentException("分组名称不能为空")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_name_required))
             }
             val groupInfo = mutateDatabase(databaseId) { loaded ->
                 val parentSegments = decodeKeePassPathSegments(parentPath)
@@ -1057,18 +1080,18 @@ class KeePassKdbxService(
         try {
             val normalizedName = newName.trim()
             if (normalizedName.isBlank()) {
-                throw IllegalArgumentException("分组名称不能为空")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_name_required))
             }
             val pathSegments = decodeKeePassPathSegments(groupPath)
             if (pathSegments.isEmpty()) {
-                throw IllegalArgumentException("分组路径无效")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_path))
             }
             val groupInfo = mutateDatabase(databaseId) { loaded ->
                 val targetGroupUuid = findGroupUuidByPath(
                     group = loaded.keePassDatabase.content.group,
                     currentPathKey = null,
                     targetPathKey = groupPath
-                ) ?: throw IllegalArgumentException("分组不存在: $groupPath")
+                ) ?: throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, groupPath))
                 val result = renameGroupByPath(
                     group = loaded.keePassDatabase.content.group,
                     pathSegments = pathSegments,
@@ -1115,20 +1138,20 @@ class KeePassKdbxService(
         try {
             val pathSegments = decodeKeePassPathSegments(groupPath)
             if (pathSegments.isEmpty()) {
-                throw IllegalArgumentException("分组路径无效")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_path))
             }
             mutateDatabase(databaseId) { loaded ->
                 val targetGroupUuid = findGroupUuidByPath(
                     group = loaded.keePassDatabase.content.group,
                     currentPathKey = null,
                     targetPathKey = groupPath
-                ) ?: throw IllegalArgumentException("分组不存在: $groupPath")
+                ) ?: throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, groupPath))
                 val result = removeGroupByPath(
                     group = loaded.keePassDatabase.content.group,
                     pathSegments = pathSegments
                 )
                 if (!result.second) {
-                    throw IllegalArgumentException("分组不存在: $groupPath")
+                    throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, groupPath))
                 }
                 val changeSet = KeePassChangeSet(
                     databaseId = loaded.database.id,
@@ -1169,7 +1192,7 @@ class KeePassKdbxService(
         try {
             val sourcePathSegments = decodeKeePassPathSegments(groupPath)
             if (sourcePathSegments.isEmpty()) {
-                throw IllegalArgumentException("分组路径无效")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_path))
             }
 
             val normalizedSourcePath = groupPath.trim()
@@ -1181,7 +1204,7 @@ class KeePassKdbxService(
             ) {
                 val movedGroup = listGroups(sourceDatabaseId).getOrThrow()
                     .firstOrNull { it.path == normalizedSourcePath }
-                    ?: throw IllegalArgumentException("分组不存在: $groupPath")
+                    ?: throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, groupPath))
                 return@withContext Result.success(movedGroup)
             }
 
@@ -1190,7 +1213,7 @@ class KeePassKdbxService(
                 (normalizedTargetParentPath == normalizedSourcePath ||
                     normalizedTargetParentPath.startsWith("$normalizedSourcePath/"))
             ) {
-                throw IllegalArgumentException("不能移动到自身或子分组下")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_child))
             }
 
             val movedGroupInfo = withDatabaseMutationLocks(listOf(sourceDatabaseId, targetDatabaseId)) {
@@ -1205,7 +1228,7 @@ class KeePassKdbxService(
                         group = sourceLoaded.keePassDatabase.content.group,
                         currentPathKey = null,
                         targetPathKey = normalizedSourcePath
-                    ) ?: throw IllegalArgumentException("分组不存在: $groupPath")
+                    ) ?: throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, groupPath))
                     val sourceParentGroupUuid = sourceParentPath?.let {
                         findGroupUuidByPath(
                             group = sourceLoaded.keePassDatabase.content.group,
@@ -1236,7 +1259,7 @@ class KeePassKdbxService(
                         pathSegments = sourcePathSegments
                     )
                     if (extracted.removedGroup == null) {
-                        throw IllegalArgumentException("分组不存在: $groupPath")
+                        throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, groupPath))
                     }
 
                     val targetParentSegments = decodeKeePassPathSegments(normalizedTargetParentPath)
@@ -1258,7 +1281,7 @@ class KeePassKdbxService(
                     val inserted = if (existingTargetPath != null) {
                         val expectedTargetPath = buildKeePassPathKey(normalizedTargetParentPath, groupToMove.name)
                         if (existingTargetPath != expectedTargetPath) {
-                            throw IllegalArgumentException("目标数据库已存在相同 UUID 的不同分组: $existingTargetPath")
+                            throw IllegalArgumentException(strings.get(R.string.keepass_error_group_uuid, existingTargetPath))
                         }
                         InsertedGroupResult(
                             updatedGroup = targetRootBeforeInsert,
@@ -2199,7 +2222,7 @@ class KeePassKdbxService(
         expectedRevisionToken: String,
     ): Result<List<KeePassNativeGroupRecord>> = withContext(Dispatchers.IO) {
         try {
-            require(groupUuids.isNotEmpty()) { "至少选择一个文件夹" }
+            require(groupUuids.isNotEmpty()) { strings.get(R.string.keepass_error_select_folder) }
             var movedUuids = emptySet<UUID>()
             mutateDatabase(databaseId) { loaded ->
                 assertNativeRevision(expectedRevisionToken, loaded.nativeSession.value.revisionToken)
@@ -2229,6 +2252,7 @@ class KeePassKdbxService(
                     database = loaded.keePassDatabase,
                     groupUuids = groupUuids,
                     targetParentGroupUuid = targetParentGroupUuid,
+                    strings = strings,
                 )
                 MutationPlan(
                     updatedDatabase = updated,
@@ -4282,7 +4306,7 @@ class KeePassKdbxService(
         }
     }
 
-    private fun buildEntry(
+    internal fun buildEntry(
         entry: PasswordEntry,
         plainPassword: String,
         customFields: List<KeePassCustomFieldData> = emptyList()
@@ -4329,7 +4353,7 @@ class KeePassKdbxService(
         }
     }
 
-    private fun buildPasskeyEntry(passkey: PasskeyEntry): Entry {
+    internal fun buildPasskeyEntry(passkey: PasskeyEntry): Entry {
         return Entry(
             uuid = UUID.randomUUID(),
             fields = buildPasskeyFields(passkey),
@@ -4535,7 +4559,7 @@ class KeePassKdbxService(
         )
     }
 
-    private fun buildSecureItemEntry(item: SecureItem): Entry {
+    internal fun buildSecureItemEntry(item: SecureItem): Entry {
         return nativeMutation.initializeEntry(
             Entry(
                 uuid = parseUuid(item.keepassEntryUuid) ?: UUID.randomUUID(),
@@ -5838,7 +5862,8 @@ class KeePassKdbxService(
             ssoProvider = ssoProvider,
             ssoRefEntryId = ssoRefEntryId,
             wifiMetadata = resolvedWifiJson,
-            customFields = customFields
+            customFields = customFields,
+            hasPasskeyFields = hasPasskeyFields
         )
         return result(
             data = data,
@@ -6771,7 +6796,7 @@ class KeePassKdbxService(
         val nextSegment = parentSegments.first()
         val childIndex = group.groups.indexOfFirst { it.name == nextSegment }
         if (childIndex < 0) {
-            throw IllegalArgumentException("父分组不存在: $nextSegment")
+            throw IllegalArgumentException(strings.get(R.string.keepass_error_parent_group, nextSegment))
         }
 
         val child = group.groups[childIndex]
@@ -6795,10 +6820,10 @@ class KeePassKdbxService(
         currentPathKey: String
     ): Pair<Group, KeePassGroupInfo> {
         val targetName = pathSegments.firstOrNull()
-            ?: throw IllegalArgumentException("分组路径无效")
+            ?: throw IllegalArgumentException(strings.get(R.string.keepass_error_group_path))
         val childIndex = group.groups.indexOfFirst { it.name == targetName }
         if (childIndex < 0) {
-            throw IllegalArgumentException("分组不存在: $targetName")
+            throw IllegalArgumentException(strings.get(R.string.keepass_error_group_missing, targetName))
         }
 
         val child = group.groups[childIndex]
@@ -6809,7 +6834,7 @@ class KeePassKdbxService(
                 index != childIndex && sibling.name.equals(newName, ignoreCase = true)
             }
             if (conflict) {
-                throw IllegalArgumentException("同级已存在同名分组")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_exists))
             }
 
             val renamed = child.copy(name = newName)
@@ -6919,7 +6944,7 @@ class KeePassKdbxService(
                 sibling.uuid != groupToInsert.uuid && sibling.name.equals(groupToInsert.name, ignoreCase = true)
             }
             if (conflict) {
-                throw IllegalArgumentException("同级已存在同名分组")
+                throw IllegalArgumentException(strings.get(R.string.keepass_error_group_exists))
             }
             val newPath = buildKeePassPathKey(currentPathKey, groupToInsert.name)
             return InsertedGroupResult(
@@ -6937,7 +6962,7 @@ class KeePassKdbxService(
         val nextSegment = parentSegments.first()
         val childIndex = group.groups.indexOfFirst { it.name == nextSegment }
         if (childIndex < 0) {
-            throw IllegalArgumentException("父分组不存在: $nextSegment")
+            throw IllegalArgumentException(strings.get(R.string.keepass_error_parent_group, nextSegment))
         }
 
         val child = group.groups[childIndex]
@@ -7163,7 +7188,7 @@ class KeePassKdbxService(
         getCachedLoadedDatabase(databaseId)?.let { return it }
         return loadMutexForDatabase(databaseId).withLock {
             getCachedLoadedDatabase(databaseId)?.let { return@withLock it }
-            val database = dao.getDatabaseById(databaseId) ?: throw Exception("数据库不存在")
+            val database = dao.getDatabaseById(databaseId) ?: throw Exception(strings.get(R.string.keepass_connection_status_missing))
             val credentials = buildCredentials(database)
             val source = openDatabaseStreamSource(database)
             try {
@@ -7209,7 +7234,7 @@ class KeePassKdbxService(
         return withContext(decodeDispatcher) {
             withGlobalDecodeLock {
                 try {
-                    KeePassFormatInspector.ensureKdbxSupported(bytes = bytes, sourceName = sourceName)
+                    KeePassFormatInspector.ensureKdbxSupported(bytes = bytes, sourceName = sourceName, strings = strings)
                     KeePassDatabase.decode(
                         ByteArrayInputStream(bytes),
                         credentials,
@@ -7238,7 +7263,7 @@ class KeePassKdbxService(
     ): Pair<KeePassDatabase, Credentials> {
         val candidates = credentialsResolution.candidates
         if (candidates.isEmpty()) {
-            throw IllegalStateException("无可用凭据")
+            throw IllegalStateException(strings.get(R.string.keepass_error_no_credentials))
         }
 
         var lastError: Throwable? = null
@@ -7277,14 +7302,14 @@ class KeePassKdbxService(
         if (allInvalidCredential) {
             throw KeePassOperationException(
                 code = KeePassErrorCode.INVALID_CREDENTIAL,
-                message = KeePassCredentialSupport.buildInvalidCredentialMessage(attemptedLabels),
+                message = KeePassCredentialSupport.buildInvalidCredentialMessage(attemptedLabels, strings = strings),
                 cause = lastError
             )
         }
 
         throw (lastError ?: KeePassOperationException(
             code = KeePassErrorCode.IO_READ_WRITE_FAILED,
-            message = "KDBX 解码失败"
+            message = strings.get(R.string.runtime_kdbx_decode_failed)
         ))
     }
 
@@ -7295,7 +7320,7 @@ class KeePassKdbxService(
         sourceName: String? = null,
     ): Pair<KeePassDatabase, Credentials> {
         val candidates = credentialsResolution.candidates
-        if (candidates.isEmpty()) throw IllegalStateException("无可用凭据")
+        if (candidates.isEmpty()) throw IllegalStateException(strings.get(R.string.keepass_error_no_credentials))
         var lastError: Throwable? = null
         val attemptedLabels = mutableListOf<String>()
         candidates.forEachIndexed { index, candidate ->
@@ -7326,13 +7351,13 @@ class KeePassKdbxService(
         ) {
             throw KeePassOperationException(
                 code = KeePassErrorCode.INVALID_CREDENTIAL,
-                message = KeePassCredentialSupport.buildInvalidCredentialMessage(attemptedLabels),
+                message = KeePassCredentialSupport.buildInvalidCredentialMessage(attemptedLabels, strings = strings),
                 cause = lastError,
             )
         }
         throw (lastError ?: KeePassOperationException(
             code = KeePassErrorCode.IO_READ_WRITE_FAILED,
-            message = "KDBX 解码失败",
+            message = strings.get(R.string.runtime_kdbx_decode_failed),
         ))
     }
 
@@ -7439,7 +7464,7 @@ class KeePassKdbxService(
         return try {
             if (database.resolvedActiveStorageLocation() == KeePassStorageLocation.INTERNAL) {
                 val file = File(context.filesDir, database.resolvedActiveFilePath())
-                if (!file.isFile) throw FileNotFoundException("数据库文件不存在")
+                if (!file.isFile) throw FileNotFoundException(strings.get(R.string.keepass_operation_database_file_missing))
                 DatabaseStreamSource(
                     openStream = { file.inputStream() },
                     header = readFileHeader(file),
@@ -7447,7 +7472,7 @@ class KeePassKdbxService(
                 )
             } else {
                 val uri = Uri.parse(database.resolvedActiveFilePath())
-                openUriStreamSource(uri, "无法打开数据库文件")
+                openUriStreamSource(uri, strings.get(R.string.storage_error_open_database))
             }
         } catch (t: Throwable) {
             throw normalizeError(t)
@@ -7481,7 +7506,7 @@ class KeePassKdbxService(
         return withContext(decodeDispatcher) {
             withGlobalDecodeLock {
                 try {
-                    KeePassFormatInspector.ensureKdbxSupportedHeader(header, sourceName)
+                    KeePassFormatInspector.ensureKdbxSupportedHeader(header, sourceName, strings = strings)
                     input.use { stream ->
                         KeePassDatabase.decode(
                             stream,
@@ -7612,7 +7637,7 @@ class KeePassKdbxService(
         return try {
             if (database.resolvedActiveStorageLocation() == KeePassStorageLocation.INTERNAL) {
                 val file = File(context.filesDir, database.resolvedActiveFilePath())
-                if (!file.exists()) throw FileNotFoundException("数据库文件不存在")
+                if (!file.exists()) throw FileNotFoundException(strings.get(R.string.keepass_operation_database_file_missing))
                 val signature = DatabaseSourceSignature(
                     sizeBytes = file.length(),
                     lastModifiedEpochMs = file.lastModified()
@@ -7627,7 +7652,7 @@ class KeePassKdbxService(
                 )
             } else {
                 val uri = Uri.parse(database.resolvedActiveFilePath())
-                val bytes = readBytesFromUri(uri, "无法打开数据库文件")
+                val bytes = readBytesFromUri(uri, strings.get(R.string.storage_error_open_database))
                 DatabaseSnapshot(
                     bytes = bytes,
                     etag = null,
@@ -7778,18 +7803,19 @@ class KeePassKdbxService(
         val syncService = RemoteKeePassSyncService(
             databaseDao = dao,
             remoteSourceDao = remoteDb.keepassRemoteSourceDao(),
-            syncStateDao = remoteDb.keepassRemoteSyncStateDao()
+            syncStateDao = remoteDb.keepassRemoteSyncStateDao(),
+            strings = strings,
         )
         val syncStateDao = remoteDb.keepassRemoteSyncStateDao()
         return try {
             when (database.sourceType) {
                 KeePassDatabaseSourceType.REMOTE_WEBDAV -> {
                     val remoteSource = remoteDb.keepassRemoteSourceDao().getSourceById(database.sourceId)
-                        ?: throw IllegalStateException("远端来源不存在")
+                        ?: throw IllegalStateException(strings.get(R.string.keepass_error_remote_source_missing))
                     val expectedRemoteVersion = syncStateDao.getState(database.id)?.let { state ->
                         state.remoteEtag ?: state.remoteVersionToken
                     }
-                    val fileSource = WebDavKeePassSupport.createFileSource(remoteSource, securityManager)
+                    val fileSource = WebDavKeePassSupport.createFileSource(remoteSource, securityManager, strings = strings)
                     val writeResult = fileSource.write(bytes, expectedVersion = expectedRemoteVersion)
                     val verifiedRemote = verifyRemoteKdbxWrite(
                         database = database,
@@ -7819,7 +7845,7 @@ class KeePassKdbxService(
                 KeePassDatabaseSourceType.REMOTE_ONEDRIVE -> {
                     val remoteSourceDao = remoteDb.keepassRemoteSourceDao()
                     val remoteSource = remoteSourceDao.getSourceById(database.sourceId)
-                        ?: throw IllegalStateException("远端来源不存在")
+                        ?: throw IllegalStateException(strings.get(R.string.keepass_error_remote_source_missing))
                     val expectedRemoteVersion = syncStateDao.getState(database.id)?.let { state ->
                         state.remoteEtag ?: state.remoteVersionToken
                     }
@@ -7845,7 +7871,7 @@ class KeePassKdbxService(
                             throw error
                         }
                         throw KeePassSourceChangedException(
-                            "远端文件已变化，且本地工作副本也有修改，请先处理冲突"
+                            strings.get(R.string.keepass_sync_both_changed)
                         )
                     }
                     if ((remoteSource.itemId.isNullOrBlank() || remoteSource.driveId.isNullOrBlank()) &&
@@ -7873,7 +7899,7 @@ class KeePassKdbxService(
                 }
                 KeePassDatabaseSourceType.REMOTE_GOOGLE_DRIVE -> {
                     val remoteSource = remoteDb.keepassRemoteSourceDao().getSourceById(database.sourceId)
-                        ?: throw IllegalStateException("远端来源不存在")
+                        ?: throw IllegalStateException(strings.get(R.string.keepass_error_remote_source_missing))
                     val expectedRemoteVersion = syncStateDao.getState(database.id)?.let { state ->
                         KeePassRemoteVersionPolicy.preferred(
                             versionToken = state.remoteVersionToken,
@@ -7914,14 +7940,14 @@ class KeePassKdbxService(
                 syncService.markConflict(
                     databaseId = database.id,
                     workingHash = sourceRevision.sha256,
-                    failureMessage = error.message ?: "远端文件已变化，且本地工作副本也有修改，请先处理冲突"
+                    failureMessage = error.message ?: strings.get(R.string.keepass_sync_both_changed)
                 )
             } else {
                 syncService.markLocalChanges(database.id, sourceRevision.sha256)
                 syncService.markSyncFailure(
                     databaseId = database.id,
                     failureCode = "REMOTE_WRITE_FAILED",
-                    failureMessage = error.message ?: "远端同步失败"
+                    failureMessage = error.message ?: strings.get(R.string.keepass_operation_remote_sync_failed)
                 )
             }
             Log.w(TAG, "Remote working copy sync failed for db=${database.id}", error)
@@ -7940,7 +7966,8 @@ class KeePassKdbxService(
         val syncService = RemoteKeePassSyncService(
             databaseDao = dao,
             remoteSourceDao = remoteDb.keepassRemoteSourceDao(),
-            syncStateDao = remoteDb.keepassRemoteSyncStateDao()
+            syncStateDao = remoteDb.keepassRemoteSyncStateDao(),
+            strings = strings,
         )
         syncService.markLocalChanges(
             databaseId = database.id,
@@ -8006,7 +8033,8 @@ class KeePassKdbxService(
         val syncService = RemoteKeePassSyncService(
             databaseDao = dao,
             remoteSourceDao = remoteSourceDao,
-            syncStateDao = syncStateDao
+            syncStateDao = syncStateDao,
+            strings = strings,
         )
         val database = dao.getDatabaseById(databaseId)
         if (database == null || !database.isRemoteSource() || database.sourceId == null) {
@@ -8038,7 +8066,7 @@ class KeePassKdbxService(
         try {
             syncService.markUploadInProgress(databaseId, workingHash)
             val remoteSource = remoteSourceDao.getSourceById(database.sourceId)
-                ?: throw IllegalStateException("远端来源不存在")
+                ?: throw IllegalStateException(strings.get(R.string.keepass_error_remote_source_missing))
             val fileSource = createRemoteFileSource(database, remoteSource)
             conflictFileSource = fileSource
             val credentials = loadDatabase(databaseId).credentials
@@ -8151,14 +8179,14 @@ class KeePassKdbxService(
                     workingHash = latestHash,
                     failureMessage = rebaseFailure?.message
                         ?: error.message
-                        ?: "远端文件已变化，请先同步"
+                        ?: strings.get(R.string.keepass_sync_remote_changed)
                 )
             } else {
                 syncService.markLocalChanges(database.id, latestHash)
                 syncService.markSyncFailure(
                     databaseId = database.id,
                     failureCode = "REMOTE_BACKGROUND_UPLOAD_FAILED",
-                    failureMessage = error.message ?: "远端后台同步失败"
+                    failureMessage = error.message ?: strings.get(R.string.keepass_operation_remote_sync_failed)
                 )
             }
             pendingPlan.ready.forEach { item ->
@@ -8242,10 +8270,10 @@ class KeePassKdbxService(
         database: LocalKeePassDatabase,
         remoteSource: takagi.ru.monica.data.KeepassRemoteSource
     ): KeePassFileSource = when (database.sourceType) {
-        KeePassDatabaseSourceType.REMOTE_WEBDAV -> WebDavKeePassSupport.createFileSource(remoteSource, securityManager)
+        KeePassDatabaseSourceType.REMOTE_WEBDAV -> WebDavKeePassSupport.createFileSource(remoteSource, securityManager, strings = strings)
         KeePassDatabaseSourceType.REMOTE_ONEDRIVE -> OneDriveKeePassSupport.createFileSource(context, remoteSource)
         KeePassDatabaseSourceType.REMOTE_GOOGLE_DRIVE -> GoogleDriveKeePassSupport.createFileSource(context, remoteSource)
-        else -> throw IllegalStateException("不支持的远端来源类型: ${database.sourceType}")
+        else -> throw IllegalStateException(strings.get(R.string.keepass_error_source_type, database.sourceType))
     }
 
     private suspend fun updateOneDriveRemoteSourceBindingIfNeeded(
@@ -8286,7 +8314,7 @@ class KeePassKdbxService(
         sourceLabel: String
     ): RemoteKdbxVerification = withContext(Dispatchers.IO) {
         val database = dao.getDatabaseById(databaseId)
-            ?: throw IllegalStateException("数据库不存在")
+            ?: throw IllegalStateException(strings.get(R.string.keepass_connection_status_missing))
         val credentials = loadDatabase(databaseId).credentials
         verifyRemoteKdbxWrite(
             database = database,
@@ -8311,7 +8339,7 @@ class KeePassKdbxService(
             val remoteRevision = KeePassSourceSafety.revisionOf(remoteBytes)
             if (remoteRevision != expectedRevision) {
                 throw IOException(
-                    "远端写入校验失败：上传后内容不一致 (${remoteBytes.size}/${expectedBytes.size})"
+                    strings.get(R.string.keepass_error_upload_verification, remoteBytes.size, expectedBytes.size)
                 )
             }
             val decoded = decodeDatabase(
@@ -8461,7 +8489,7 @@ class KeePassKdbxService(
     }
 
     private fun writeInternalFile(file: File, bytes: ByteArray) {
-        val parent = file.parentFile ?: throw IOException("无效的文件路径")
+        val parent = file.parentFile ?: throw IOException(strings.get(R.string.storage_error_invalid_path))
         if (!parent.exists()) parent.mkdirs()
         val tempFile = File(parent, "${file.name}.tmp")
         val backupFile = File(parent, "${file.name}.bak")
@@ -8489,8 +8517,8 @@ class KeePassKdbxService(
     }
 
     private fun writeInternalFile(file: File, encodedFile: File) {
-        val parent = file.parentFile ?: throw IOException("无效的文件路径")
-        if (!parent.exists() && !parent.mkdirs()) throw IOException("无法创建数据库目录")
+        val parent = file.parentFile ?: throw IOException(strings.get(R.string.storage_error_invalid_path))
+        if (!parent.exists() && !parent.mkdirs()) throw IOException(strings.get(R.string.storage_error_create_directory))
         val tempFile = File(parent, "${file.name}.tmp")
         val backupFile = File(parent, "${file.name}.bak")
         encodedFile.inputStream().use { input ->
@@ -8544,23 +8572,24 @@ class KeePassKdbxService(
     ) {
         val uri = Uri.parse(database.resolvedActiveFilePath())
         val originalRevision = openExternalInputStream(uri)?.use(KeePassSourceSafety::revisionOf)
-            ?: throw IOException("无法读取数据库文件")
+            ?: throw IOException(strings.get(R.string.storage_error_read_database))
         expectedSourceRevision?.let { expected ->
             KeePassSourceSafety.requireUnchanged(
                 expectedRevision = expected,
                 currentRevision = originalRevision,
-                sourceLabel = uri.toString()
+                sourceLabel = uri.toString(),
+                strings = strings,
             )
         }
         val recoveryCopy = openExternalInputStream(uri)?.use { input ->
             recoveryStore.create(database.id, input)
-        } ?: throw IOException("无法创建 KeePass 恢复副本")
+        } ?: throw IOException(strings.get(R.string.storage_error_recovery_copy))
         try {
             writeExternalFile(uri, encodedFile)
             val writtenRevision = openExternalInputStream(uri)?.use(KeePassSourceSafety::revisionOf)
-                ?: throw IOException("无法校验数据库文件")
+                ?: throw IOException(strings.get(R.string.storage_error_verify_database))
             if (writtenRevision != targetRevision) {
-                throw IOException("外部 KeePass 文件写入后校验失败")
+                throw IOException(strings.get(R.string.storage_error_write_verification))
             }
             if (!recoveryStore.deleteVerified(recoveryCopy)) {
                 Log.w(TAG, "Verified KeePass recovery copy could not be removed: ${recoveryCopy.file}")
@@ -8571,7 +8600,7 @@ class KeePassKdbxService(
                 writeExternalFile(uri, recoveryCopy.file)
                 val restoredRevision = openExternalInputStream(uri)?.use(KeePassSourceSafety::revisionOf)
                 if (restoredRevision != originalRevision) {
-                    throw IOException("外部 KeePass 文件回滚校验失败")
+                    throw IOException(strings.get(R.string.storage_error_rollback_verification))
                 }
             }.isSuccess
             if (restored) {
@@ -8590,7 +8619,7 @@ class KeePassKdbxService(
         openExternalOutputStream(uri)?.use { output ->
             output.write(bytes)
             output.flush()
-        } ?: throw IOException("无法写入数据库文件")
+        } ?: throw IOException(strings.get(R.string.storage_error_write_database))
     }
 
     private fun openExternalOutputStream(uri: Uri) =
@@ -8604,7 +8633,19 @@ class KeePassKdbxService(
     internal suspend fun inspectCurrentRemoteConflict(
         databaseId: Long
     ): Result<KeePassRemoteConflictPreview> = withContext(Dispatchers.IO) {
-        try {
+        withRemoteDatabaseLocks(databaseId) { inspectCurrentRemoteConflictLocked(databaseId) }
+    }
+
+    private suspend fun <T> withRemoteDatabaseLocks(databaseId: Long, block: suspend () -> T): T =
+        withDatabaseMutationLocks(listOf(databaseId)) {
+            // Keep the same order as a local edit followed by a foreground upload.
+            remoteUploadMutex(databaseId).withLock { block() }
+        }
+
+    private suspend fun inspectCurrentRemoteConflictLocked(
+        databaseId: Long
+    ): Result<KeePassRemoteConflictPreview> {
+        return try {
             val context = loadCurrentRemoteConflictContext(databaseId)
             Result.success(
                 KeePassRemoteConflictPreview(
@@ -8620,6 +8661,8 @@ class KeePassKdbxService(
                     remoteSizeBytes = context.remoteBytes.size.toLong()
                 )
             )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
             Result.failure(normalizeError(error))
         }
@@ -8629,7 +8672,7 @@ class KeePassKdbxService(
         openExternalOutputStream(uri)?.use { output ->
             sourceFile.inputStream().use { input -> input.copyTo(output) }
             output.flush()
-        } ?: throw IOException("无法写入数据库文件")
+        } ?: throw IOException(strings.get(R.string.storage_error_write_database))
     }
 
     internal suspend fun resolveCurrentRemoteConflict(
@@ -8639,7 +8682,21 @@ class KeePassKdbxService(
         expectedRemoteRevision: String,
         selections: Map<String, KeePassConflictResolutionSide> = emptyMap()
     ): Result<KeePassRemoteConflictResolution> = withContext(Dispatchers.IO) {
-        try {
+        withRemoteDatabaseLocks(databaseId) {
+            resolveCurrentRemoteConflictLocked(
+                databaseId, decision, expectedLocalRevision, expectedRemoteRevision, selections
+            )
+        }
+    }
+
+    private suspend fun resolveCurrentRemoteConflictLocked(
+        databaseId: Long,
+        decision: KeePassConflictDecision,
+        expectedLocalRevision: String,
+        expectedRemoteRevision: String,
+        selections: Map<String, KeePassConflictResolutionSide>
+    ): Result<KeePassRemoteConflictResolution> {
+        return try {
             val context = loadCurrentRemoteConflictContext(databaseId)
             val localRevision = KeePassSourceSafety.revisionOf(context.localBytes)
             val remoteRevision = KeePassSourceSafety.revisionOf(context.remoteBytes)
@@ -8649,7 +8706,7 @@ class KeePassKdbxService(
             require(remoteRevision.sha256 == expectedRemoteRevision) {
                 "The remote KeePass database changed after conflict review; reopen the conflict center"
             }
-            val resolved = if (decision == KeePassConflictDecision.MERGE && selections.isNotEmpty()) {
+            val resolved = if (decision == KeePassConflictDecision.MERGE) {
                 KeePassConflictCenter.resolveSelected(
                     baseDatabase = context.baseDatabase,
                     localDatabase = context.localDatabase,
@@ -8665,7 +8722,7 @@ class KeePassKdbxService(
                 )
             }
             if (resolved.cancelled || resolved.database == null) {
-                return@withContext Result.success(
+                return Result.success(
                     KeePassRemoteConflictResolution(
                         decision = decision,
                         conflictCopyCount = 0,
@@ -8677,6 +8734,8 @@ class KeePassKdbxService(
             }
 
             accessPolicy.requireWritable(databaseId)
+            val pendingRepository = keePassPendingChangeRepository()
+            val reviewedChangeIds = pendingRepository.getUnfinishedChangesByDatabase(databaseId).map { it.id }
             val finalDatabase = resolved.database
             val finalBytes = encodeDatabase(finalDatabase)
             requirePreflightAllowed(
@@ -8694,7 +8753,8 @@ class KeePassKdbxService(
             val syncService = RemoteKeePassSyncService(
                 databaseDao = dao,
                 remoteSourceDao = remoteDb.keepassRemoteSourceDao(),
-                syncStateDao = remoteDb.keepassRemoteSyncStateDao()
+                syncStateDao = remoteDb.keepassRemoteSyncStateDao(),
+                strings = strings,
             )
             val finalWriteResult = if (decision == KeePassConflictDecision.USE_REMOTE) {
                 FileSourceWriteResult(
@@ -8707,7 +8767,9 @@ class KeePassKdbxService(
             } else {
                 context.fileSource.write(
                     finalBytes,
-                    expectedVersion = context.remoteStat.etag ?: context.remoteStat.versionToken
+                    expectedVersion = requireNotNull(context.remoteStat.etag ?: context.remoteStat.versionToken) {
+                        "Remote version information is unavailable; refresh the comparison before writing"
+                    }
                 )
             }
             val verifiedBytes = if (decision == KeePassConflictDecision.USE_REMOTE) {
@@ -8726,24 +8788,31 @@ class KeePassKdbxService(
             } else {
                 decodeDatabase(verifiedBytes, context.credentials, sourceName = "conflict-center-verified")
             }
-            context.database.workingCopyPath?.let { workingPath ->
-                writeInternalRelative(workingPath, verifiedBytes)
-            }
-            context.database.cacheCopyPath?.let { cachePath ->
-                writeInternalRelative(cachePath, verifiedBytes)
-            }
-            updateOneDriveRemoteSourceBindingIfNeeded(context.database, finalWriteResult)
             val finalRevision = KeePassSourceSafety.revisionOf(verifiedBytes)
-            syncService.markSynchronized(
-                databaseId = databaseId,
-                versionToken = finalWriteResult.versionToken,
-                etag = finalWriteResult.etag,
-                baseHash = finalRevision.sha256,
-                workingHash = finalRevision.sha256
-            )
-            updateStoredDatabaseMetadata(context.database, verifiedDatabase)
+            withContext(NonCancellable) {
+                writeInternalRelative(requireNotNull(context.database.workingCopyPath), verifiedBytes)
+                writeInternalRelative(requireNotNull(context.database.cacheCopyPath), verifiedBytes)
+                remoteDb.withTransaction {
+                    updateOneDriveRemoteSourceBindingIfNeeded(context.database, finalWriteResult)
+                    val latestRegistration = requireNotNull(dao.getDatabaseById(databaseId))
+                    // Metadata writes copy the registration, so do this before marking it in sync.
+                    updateStoredDatabaseMetadata(latestRegistration, verifiedDatabase)
+                    syncService.markSynchronized(
+                        databaseId = databaseId,
+                        versionToken = finalWriteResult.versionToken,
+                        etag = finalWriteResult.etag,
+                        baseHash = finalRevision.sha256,
+                        workingHash = finalRevision.sha256
+                    )
+                    pendingRepository.settleConflictChanges(
+                        databaseId = databaseId,
+                        changeIds = reviewedChangeIds,
+                        discardLocalChanges = decision == KeePassConflictDecision.USE_REMOTE
+                    )
+                }
+                invalidateProcessCache(databaseId)
+            }
             recoveryStore.prune(databaseId, keepNewest = 6)
-            invalidateProcessCache(databaseId)
             Result.success(
                 KeePassRemoteConflictResolution(
                     decision = decision,
@@ -8753,6 +8822,8 @@ class KeePassKdbxService(
                     retainedRecoveryCopies = retainedCopies.size
                 )
             )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Exception) {
             Result.failure(normalizeError(error))
         }
@@ -8969,8 +9040,9 @@ class KeePassKdbxService(
     }
 
     private fun isRemoteVersionConflict(error: Throwable): Boolean {
-        return error is KeePassSourceChangedException ||
+        return error.hasKeePassSourceChangedCause() ||
             error.message?.contains("远端文件已变化", ignoreCase = true) == true ||
+            error.message?.contains(strings.get(R.string.keepass_sync_remote_changed), ignoreCase = true) == true ||
             error.message?.contains("remote file changed", ignoreCase = true) == true ||
             error.message?.contains("version conflict", ignoreCase = true) == true
     }
@@ -8982,10 +9054,10 @@ class KeePassKdbxService(
         remoteBytes: ByteArray
     ): InternalConflictResolutionResult {
         val cachePath = database.cacheCopyPath
-            ?: throw IllegalStateException("缺少用于冲突处理的缓存副本")
+            ?: throw IllegalStateException(strings.get(R.string.keepass_error_conflict_cache_missing))
         val cacheFile = File(context.filesDir, cachePath)
         if (!cacheFile.exists()) {
-            throw IllegalStateException("缺少用于冲突处理的缓存副本")
+            throw IllegalStateException(strings.get(R.string.keepass_error_conflict_cache_missing))
         }
 
         val remoteDatabase = decodeDatabase(
@@ -9191,7 +9263,7 @@ class KeePassKdbxService(
         if (throwable is KeePassOperationException || throwable is IllegalArgumentException) {
             return throwable
         }
-        return throwable.toKeePassOperationException()
+        return throwable.toKeePassOperationException(strings)
     }
 
     private fun logMutationFailure(

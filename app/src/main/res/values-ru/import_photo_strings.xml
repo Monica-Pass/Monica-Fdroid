@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_message_empty">Экспортированный файл резервной копии пуст</string>
+    <string name="export_message_empty_zip">В резервной копии ZIP нет содержимого</string>
+    <string name="export_message_open_failed">Не удалось открыть место экспорта</string>
+    <string name="export_message_incomplete">Экспорт неполный: %1$d/%2$d байт</string>
+    <string name="export_message_invalid_encrypted">Записанная копия имеет недопустимый формат шифрования</string>
+    <string name="export_message_verify_failed">Не удалось проверить экспортированный файл</string>
+    <string name="export_message_backup_summary">Копия экспортирована: паролей — %1$d, изображений — %2$d</string>
+    <string name="import_message_aegis_unencrypted">Для импорта нужен незашифрованный JSON из Aegis</string>
+    <string name="import_message_aegis_missing">Недопустимый файл Aegis: отсутствует %1$s</string>
+    <string name="import_message_aegis_empty_slots">Недопустимый файл Aegis: slots пуст</string>
+    <string name="import_message_aegis_slot_type">Неподдерживаемый тип слота Aegis: %1$s</string>
+    <string name="import_message_aegis_no_totp">В файле Aegis нет допустимых записей TOTP</string>
+    <string name="import_message_aegis_failed">Не удалось импортировать файл Aegis: %1$s</string>
+    <string name="import_message_key_length">Недопустимая длина расшифрованного ключа</string>
+    <string name="import_message_steam_missing">Недопустимые данные Steam Guard: отсутствует %1$s</string>
+    <string name="import_message_steam_device_id">Недопустимый ID устройства. Ожидаемый формат: android:xxxx</string>
+    <string name="import_message_steam_secret">Недопустимый формат Steam shared_secret</string>
+    <string name="import_message_steam_exists">Этот аутентификатор Steam Guard уже существует</string>
+    <string name="export_message_empty_mafile">Экспортированный maFile пуст</string>
+    <string name="crypto_message_encrypt_failed">Ошибка шифрования: %1$s</string>
+    <string name="crypto_message_decrypt_failed">Ошибка расшифровки: %1$s</string>
+    <string name="crypto_message_file_too_small">Зашифрованный файл слишком мал и может быть повреждён</string>
+    <string name="crypto_message_invalid_file">Недопустимый формат зашифрованного файла</string>
+    <string name="crypto_message_password_or_corrupt">Неверный пароль или повреждённые зашифрованные данные</string>
+    <string name="crypto_message_invalid_text">Недопустимый формат зашифрованного текста</string>
+    <string name="photo_message_camera_failed">Не удалось открыть камеру: %1$s</string>
+    <string name="photo_message_gallery_missing">Приложение галереи недоступно</string>
+    <string name="photo_message_gallery_failed">Не удалось открыть галерею: %1$s</string>
+    <string name="photo_message_data_failed">Не удалось прочитать полученное изображение: %1$s</string>
+    <string name="photo_message_file_missing">Файл фотографии пуст или отсутствует</string>
+    <string name="photo_message_not_selected">Изображение не выбрано</string>
+</resources>

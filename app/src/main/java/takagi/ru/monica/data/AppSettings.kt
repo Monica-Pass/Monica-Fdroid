@@ -32,13 +32,16 @@ enum class Language {
     SYSTEM,
     ENGLISH,
     CHINESE,
+    CLASSICAL_CHINESE,
     VIETNAMESE,
     JAPANESE,
     RUSSIAN,
     KOREAN,
     GERMAN,
     SPANISH,
-    FRENCH
+    FRENCH,
+    POLISH,
+    NYA
 }
 
 enum class ProgressBarStyle {
@@ -550,6 +553,7 @@ data class AppSettings(
     val notificationValidatorId: Long = -1L, // 通知栏显示的验证器ID
     val isPlusActivated: Boolean = false, // Plus是否已激活
     val stackCardMode: String = "AUTO", // 堆叠卡片模式
+    val walletStackLoopEnabled: Boolean = false,
     val passwordGroupMode: String = "smart", // 密码分组模式
     val passwordWebsiteStackMatchMode: String = "strict", // 网站自动堆叠匹配模式：strict/relaxed
     val totpTimeOffset: Int = 0, // TOTP时间偏移（秒），用于校正系统时间误差

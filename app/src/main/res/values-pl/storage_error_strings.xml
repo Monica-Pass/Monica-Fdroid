@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keepass_error_read_only">Baza jest tylko do odczytu. Przed edycją wyłącz ten tryb w jej ustawieniach.</string>
+    <string name="keepass_error_write_permission">Brak prawa zapisu KDBX. Przed zapisem lub usuwaniem przyznaj ponownie dostęp w ustawieniach bazy.</string>
+    <string name="keepass_error_memory">Ustawienia KDF wymagają zbyt dużo pamięci. Zmniejsz zużycie pamięci lub równoległość.</string>
+    <string name="keepass_error_credentials">Błędne hasło bazy lub plik klucza</string>
+    <string name="keepass_error_legacy">Starsze bazy .kdb (KeePass 1.x) nie są obsługiwane. Zapisz bazę jako .kdbx w KeePassDX lub KeePassXC i zaimportuj ją ponownie.</string>
+    <string name="keepass_error_format">Nieobsługiwany format bazy lub uszkodzony plik</string>
+    <string name="keepass_error_io">Nie udało się odczytać lub zapisać pliku KeePass</string>
+    <string name="keepass_error_operation">Operacja KeePass nie powiodła się</string>
+    <string name="onedrive_error_redirect">Starsza wersja Monica Steam przechwytuje logowanie OneDrive. Zaktualizuj Monica Steam i spróbuj ponownie. Plik bazy nie jest uszkodzony.</string>
+    <string name="onedrive_error_power">OneDrive nie może teraz odnowić sesji. Wyłącz optymalizację baterii albo włącz ekran, otwórz ponownie Monica i spróbuj jeszcze raz.</string>
+    <string name="onedrive_error_operation">Operacja OneDrive nie powiodła się</string>
+    <string name="keepass_error_not_remote">Ta baza nie ma zdalnego źródła</string>
+    <string name="keepass_error_remote_source_missing">Nie znaleziono zdalnego źródła</string>
+    <string name="keepass_error_working_copy_missing">Nie znaleziono lokalnej kopii roboczej</string>
+    <string name="keepass_sync_pulled">Pobrano najnowszą wersję zdalną</string>
+    <string name="keepass_sync_both_changed">Zmieniono plik zdalny i lokalną kopię roboczą. Rozwiąż konflikt przed synchronizacją.</string>
+    <string name="keepass_sync_up_to_date">Zdalna baza jest aktualna</string>
+    <string name="keepass_sync_remote_changed">Plik zdalny się zmienił. Zsynchronizuj go ponownie przed kontynuowaniem.</string>
+    <string name="keepass_sync_complete">Zdalna synchronizacja zakończona</string>
+    <string name="keepass_error_group_name_required">Podaj nazwę grupy</string>
+    <string name="keepass_error_group_path">Nieprawidłowa ścieżka grupy</string>
+    <string name="keepass_error_group_missing">Nie znaleziono grupy: %1$s</string>
+    <string name="keepass_error_group_child">Nie można przenieść grupy do niej samej ani do jej podgrupy</string>
+    <string name="keepass_error_group_uuid">W bazie docelowej istnieje inna grupa o tym samym UUID: %1$s</string>
+    <string name="keepass_error_select_folder">Wybierz co najmniej jeden folder</string>
+    <string name="keepass_group_unnamed">Grupa bez nazwy</string>
+    <string name="keepass_error_parent_group">Nie znaleziono grupy nadrzędnej: %1$s</string>
+    <string name="keepass_error_group_exists">W tym miejscu istnieje już grupa o tej nazwie</string>
+    <string name="keepass_error_no_credentials">Brak danych do odblokowania bazy</string>
+    <string name="keepass_error_source_type">Nieobsługiwany typ zdalnego źródła: %1$s</string>
+    <string name="keepass_error_upload_verification">Weryfikacja zdalna nie powiodła się: przesłana zawartość różni się (%1$d/%2$d bajtów)</string>
+    <string name="storage_error_invalid_path">Nieprawidłowa ścieżka pliku</string>
+    <string name="storage_error_create_directory">Nie udało się utworzyć katalogu bazy</string>
+    <string name="storage_error_read_database">Nie udało się odczytać pliku bazy</string>
+    <string name="storage_error_open_database">Nie udało się otworzyć pliku bazy</string>
+    <string name="storage_error_recovery_copy">Nie udało się utworzyć kopii odzyskiwania KeePass</string>
+    <string name="storage_error_verify_database">Nie udało się zweryfikować pliku bazy</string>
+    <string name="storage_error_write_verification">Weryfikacja zewnętrznego pliku KeePass po zapisie nie powiodła się</string>
+    <string name="storage_error_rollback_verification">Weryfikacja zewnętrznego pliku KeePass po cofnięciu zmian nie powiodła się</string>
+    <string name="storage_error_write_database">Nie udało się zapisać pliku bazy</string>
+    <string name="keepass_error_conflict_cache_missing">Brak kopii podręcznej potrzebnej do rozstrzygnięcia konfliktów</string>
+    <string name="onedrive_error_session_expired">Sesja konta OneDrive wygasła. Zaloguj się ponownie.</string>
+</resources>

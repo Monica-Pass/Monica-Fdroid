@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Bitwarden 删除之事未能入列</string>
+    <string name="bitwarden_message_conflict_detail">此条目于本机与服务器皆有更易</string>
+    <string name="bitwarden_message_empty_vault">服务器返空，而本机尚存 %1$d 条。为护所藏，已暂停同步；请核服务器与名籍，再续。</string>
+    <string name="runtime_kdbx_decode_failed">未能解读 KDBX 密库</string>
+</resources>

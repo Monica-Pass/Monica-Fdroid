@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.R
+
 import java.util.Locale
 
 enum class KeePassContainerFormat {
@@ -37,18 +39,18 @@ object KeePassFormatInspector {
         return KeePassContainerFormat.UNKNOWN
     }
 
-    fun ensureKdbxSupported(bytes: ByteArray, sourceName: String? = null) {
+    internal fun ensureKdbxSupported(bytes: ByteArray, sourceName: String? = null, strings: StringResolver) {
         val format = detect(bytes = bytes, sourceName = sourceName)
         if (format == KeePassContainerFormat.KDB_LEGACY) {
             throw KeePassOperationException(
                 code = KeePassErrorCode.LEGACY_KDB_UNSUPPORTED,
-                message = "检测到旧版 .kdb（KeePass 1.x）数据库，当前仅支持 .kdbx。请先在 KeePassDX/KeePassXC 中另存为 .kdbx 后再导入。"
+                message = strings.get(R.string.keepass_error_legacy)
             )
         }
     }
 
-    fun ensureKdbxSupportedHeader(header: ByteArray, sourceName: String? = null) {
-        ensureKdbxSupported(header, sourceName)
+    internal fun ensureKdbxSupportedHeader(header: ByteArray, sourceName: String? = null, strings: StringResolver) {
+        ensureKdbxSupported(header, sourceName, strings = strings)
     }
 
     private fun matchesSignature(bytes: ByteArray, signature: ByteArray): Boolean {

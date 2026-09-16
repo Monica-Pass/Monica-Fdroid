@@ -179,78 +179,16 @@ internal fun PasswordListDialogs(
     }
 
     if (showManualStackConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { onShowManualStackConfirmDialogChange(false) },
-            title = { Text(text = stringResource(R.string.batch_stack_confirm_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = stringResource(
-                            R.string.batch_stack_confirm_message,
-                            selectedCount
-                        )
-                    )
-                    ManualStackDialogMode.values().forEach { mode ->
-                        Row(
-                            modifier = androidx.compose.ui.Modifier
-                                .fillMaxWidth()
-                                .clickable { onSelectedManualStackModeChange(mode) },
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            RadioButton(
-                                selected = selectedManualStackMode == mode,
-                                onClick = { onSelectedManualStackModeChange(mode) }
-                            )
-                            Column(modifier = androidx.compose.ui.Modifier.padding(top = 10.dp)) {
-                                Text(
-                                    text = stringResource(mode.titleRes),
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Text(
-                                    text = stringResource(mode.descRes),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            val handledCount = onApplyManualStackMode(
-                                selectedManualStackMode,
-                                selectedItemKeys,
-                                selectedPasswords
-                            )
-                            if (handledCount > 0) {
-                                val toastRes = when (selectedManualStackMode) {
-                                    ManualStackDialogMode.STACK -> R.string.batch_stack_success
-                                    ManualStackDialogMode.AUTO_STACK -> R.string.batch_stack_auto_success
-                                    ManualStackDialogMode.NEVER_STACK -> R.string.batch_stack_never_success
-                                }
-                                Toast.makeText(
-                                    context,
-                                    context.getString(toastRes, handledCount),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onSelectionCleared()
-                            }
-                            onShowManualStackConfirmDialogChange(false)
-                        }
-                    }
-                ) {
-                    Text(text = stringResource(R.string.confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onShowManualStackConfirmDialogChange(false) }) {
-                    Text(text = stringResource(R.string.cancel))
-                }
-            }
-        )
+        PasswordStackModeDialog(selectedCount, selectedManualStackMode, onSelectedManualStackModeChange,
+            onDismiss = { onShowManualStackConfirmDialogChange(false) },
+            onConfirm = { coroutineScope.launch {
+                try {
+                    val count = onApplyManualStackMode(selectedManualStackMode, selectedItemKeys, selectedPasswords)
+                    if (count > 0) onSelectionCleared()
+                    onShowManualStackConfirmDialogChange(false)
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: Exception) { Toast.makeText(context, R.string.api_token_load_error, Toast.LENGTH_LONG).show() }
+            } })
     }
 
     if (showBatchDeleteDialog) {

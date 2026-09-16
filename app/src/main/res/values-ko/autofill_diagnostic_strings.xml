@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autofill_compat_android_old">자동 완성은 Android 8.0 이상에서 사용할 수 있습니다</string>
+    <string name="autofill_compat_huawei">Huawei 기기는 Android 10 이상에서 자동 완성을 제한할 수 있습니다</string>
+    <string name="autofill_compat_xiaomi">Xiaomi 기기는 MIUI 보안에서 자동 완성 권한을 허용해야 할 수 있습니다</string>
+    <string name="autofill_compat_oppo">OPPO/Realme 기기는 권한 설정에서 자동 완성 권한을 허용해야 할 수 있습니다</string>
+    <string name="autofill_compat_vivo">Vivo 기기는 iManager에서 자동 완성 권한을 허용해야 할 수 있습니다</string>
+    <string name="autofill_compat_android12_rom">일부 Android 12 ROM에서는 시스템 호환성 문제로 자동 완성이 불안정할 수 있습니다</string>
+    <string name="autofill_compat_inline">이 기기는 키보드 추천을 지원하지 않습니다. 자동 완성에 드롭다운이 사용됩니다.</string>
+    <string name="autofill_compat_emulator">이 에뮬레이터에서는 자동 완성이 불안정할 수 있습니다</string>
+    <string name="autofill_compat_unsupported">이 기기는 자동 완성 프레임워크를 지원하지 않습니다</string>
+    <string name="autofill_compat_check_failed">호환성 검사를 완료할 수 없습니다</string>
+    <string name="autofill_check_manifest">AndroidManifest.xml에 MonicaAutofillServiceNg가 선언되어 있는지 확인하세요</string>
+    <string name="autofill_check_permission_manifest">서비스에 BIND_AUTOFILL_SERVICE와 자동 완성 intent-filter가 선언되어 있어야 합니다</string>
+    <string name="autofill_check_enable_system">시스템 설정에서 자동 완성 서비스로 Monica를 선택하세요</string>
+    <string name="autofill_check_path_system">설정 → 시스템 → 언어 및 입력 → 자동 완성 서비스</string>
+    <string name="autofill_check_path_xiaomi">Xiaomi: 설정 → 추가 설정 → 언어 및 입력 → 자동 완성 서비스</string>
+    <string name="autofill_check_miui_permission">MIUI 보안에서도 필요한 권한을 허용하세요</string>
+    <string name="autofill_check_path_huawei">Huawei: 설정 → 시스템 및 업데이트 → 언어 및 입력 → 자동 완성 서비스</string>
+    <string name="autofill_check_path_oppo">OPPO/Realme: 설정 → 추가 설정 → 키보드 및 입력 방법 → 자동 완성 서비스</string>
+    <string name="autofill_check_path_vivo">Vivo: 설정 → 추가 설정 → 입력 방법 → 자동 완성 서비스</string>
+    <string name="autofill_check_path_samsung">Samsung: 설정 → 일반 관리 → 언어 및 입력 → 자동 완성 서비스</string>
+    <string name="autofill_check_enable_app">Monica 설정에서 자동 완성을 켜세요</string>
+    <string name="autofill_check_app_permissions">Monica에 필요한 앱 권한이 부여되어 있는지 확인하세요</string>
+    <string name="autofill_check_issue_count">호환성 문제: %1$d개. 아래에서 자세한 내용을 확인하세요.</string>
+    <string name="autofill_check_xiaomi_permission">Xiaomi: 보안 → 앱 관리 → Monica → 권한 → 자동 완성 허용</string>
+    <string name="autofill_check_huawei_autostart">Huawei: 휴대폰 관리자에서 Monica 자동 시작을 허용해야 할 수 있습니다</string>
+    <string name="autofill_check_oppo_permission">OPPO/Realme: 설정 → 앱 관리 → Monica → 권한 → 자동 완성 허용</string>
+    <string name="autofill_check_vivo_permission">Vivo: iManager → 앱 관리 → 권한 관리 → Monica → 자동 완성 허용</string>
+    <string name="autofill_check_background">Monica의 배터리 제한을 해제하고 자동 시작 및 백그라운드 활동을 허용하세요</string>
+    <string name="autofill_check_trigger_manually">자동 완성이 계속 불안정하면 로그인 필드에서 직접 실행하여 세션을 시작하세요</string>
+    <string name="autofill_check_configured">서비스가 올바르게 설정되어 있습니다. 문제가 계속되면 Monica를 다시 시작하세요.</string>
+    <string name="autofill_check_view_logs">문제 해결 도구에서 자세한 로그를 확인하세요</string>
+    <string name="autofill_check_restart">변경 사항을 적용한 후 Monica를 다시 시작하세요</string>
+    <string name="autofill_check_recommendations_failed">권장 사항을 생성할 수 없습니다. 지원팀에 문의하세요.</string>
+    <string name="autofill_report_parsing">필드 인식</string>
+    <string name="autofill_report_matching">비밀번호 매칭</string>
+    <string name="autofill_report_building">응답 생성</string>
+    <string name="autofill_report_performance">성능</string>
+    <string name="autofill_report_parsing_failures">필드 인식 실패: %1$d건</string>
+    <string name="autofill_report_matching_failures">일치하는 비밀번호가 없는 요청: %1$d건</string>
+    <string name="autofill_report_building_failures">응답 생성 실패: %1$d건</string>
+    <string name="autofill_report_slow">평균 응답 시간이 너무 깁니다: %1$d ms</string>
+    <string name="autofill_report_improve_recognition">필드 인식 개선</string>
+    <string name="autofill_report_recognition_hint">일부 앱 필드를 인식할 수 없습니다. 필드 분석기 설정을 확인하세요.</string>
+    <string name="autofill_report_add_passwords">비밀번호 항목 추가</string>
+    <string name="autofill_report_add_passwords_hint">일치하는 비밀번호가 없습니다. 해당 앱의 비밀번호 항목을 추가하세요.</string>
+    <string name="autofill_report_integrity">데이터 완전성 확인</string>
+    <string name="autofill_report_integrity_hint">데이터가 불완전하면 응답에 실패할 수 있습니다. 비밀번호 항목을 확인하세요.</string>
+    <string name="autofill_report_optimize">성능 개선</string>
+    <string name="autofill_report_optimize_hint">응답이 느립니다. 캐시를 지우거나 비밀번호 항목 수를 줄여 보세요.</string>
+    <string name="autofill_report_title">=== Monica 자동 완성 진단 ===</string>
+    <string name="autofill_report_exported_at">내보낸 일시: %1$s</string>
+    <string name="autofill_report_device">기기 정보</string>
+    <string name="autofill_report_manufacturer">제조업체: %1$s</string>
+    <string name="autofill_report_model">모델: %1$s</string>
+    <string name="autofill_report_android">Android: %1$s(API %2$d)</string>
+    <string name="autofill_report_rom">ROM: %1$s</string>
+    <string name="autofill_report_inline">키보드 추천 지원: %1$s</string>
+    <string name="autofill_report_statistics">통계</string>
+    <string name="autofill_report_log_details">로그 상세 정보</string>
+    <string name="autofill_report_end">=== 로그 끝 ===</string>
+</resources>

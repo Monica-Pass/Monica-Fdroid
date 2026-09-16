@@ -102,7 +102,7 @@ internal fun PasswordListQuickStatusDialogs(
                         TextButton(
                             onClick = { onRunKeePassSyncNow(state) }
                         ) {
-                            Text(text = "立即同步")
+                            Text(text = stringResource(R.string.sync_now))
                         }
                     }
                 } else {

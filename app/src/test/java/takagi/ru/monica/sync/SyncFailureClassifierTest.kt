@@ -1,6 +1,7 @@
 package takagi.ru.monica.sync
 
 import java.io.IOException
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,6 +9,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SyncFailureClassifierTest {
+
+    @Test
+    fun wrappedSocketResetIsRetryableNetworkFailure() {
+        val classified = classifySyncFailure(IOException("Sync failed", SocketException("Connection reset")))
+
+        assertEquals(SyncErrorKind.NETWORK_UNAVAILABLE, classified.kind)
+        assertTrue(classified.retryable)
+    }
+
+    @Test
+    fun returnedConnectionResetMessageIsRetryableNetworkFailure() {
+        val classified = classifySyncFailure(IllegalStateException("Sync failed: Connection reset"))
+
+        assertEquals(SyncErrorKind.NETWORK_UNAVAILABLE, classified.kind)
+        assertTrue(classified.retryable)
+    }
 
     @Test
     fun remoteAndLocalKeePassChangesAreClassifiedAsConflict() {

@@ -700,7 +700,7 @@ fun PasskeyListScreen(
                 val msg = if (failedCount == 0) {
                     context.getString(R.string.deleted_items, deletedCount)
                 } else {
-                    "${context.getString(R.string.deleted_items, deletedCount)}，失败$failedCount"
+                    context.getString(R.string.legacy_ui_result_with_failed, context.getString(R.string.deleted_items, deletedCount), failedCount)
                 }
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             } else {
@@ -1223,7 +1223,7 @@ fun PasskeyListScreen(
                             itemType = BitwardenPendingOperation.ITEM_TYPE_PASSKEY
                         )
                         if (queueResult.isFailure) {
-                            Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.legacy_ui_operation_failed), Toast.LENGTH_SHORT).show()
                             return@launch
                         }
                     }
@@ -1373,7 +1373,7 @@ fun PasskeyListScreen(
 
                 val baseMessage = context.getString(R.string.selected_items, movedCount)
                 val skippedTotal = lockedCount + failedCount + blockedCount + keepassConflictCount
-                val toastMessage = if (skippedTotal > 0) "$baseMessage，跳过$skippedTotal" else baseMessage
+                val toastMessage = if (skippedTotal > 0) context.getString(R.string.legacy_ui_result_with_skipped, baseMessage, skippedTotal) else baseMessage
                 Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
                 if (blockedCount > 0) {
                     Toast.makeText(

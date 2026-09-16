@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">Bitwarden の削除をキューに追加できませんでした</string>
+    <string name="bitwarden_message_conflict_detail">このエントリーはローカルとサーバーの両方で変更されています</string>
+    <string name="bitwarden_message_empty_vault">サーバーからデータが返されませんでしたが、ローカルには %1$d 件のエントリーが残っています。データを保護するため同期を一時停止しました。続行する前にサーバーとアカウントを確認してください。</string>
+    <string name="runtime_kdbx_decode_failed">KDBX データベースを読み取れませんでした</string>
+</resources>

@@ -1,5 +1,7 @@
 package takagi.ru.monica.autofill_ng
 
+import takagi.ru.monica.utils.LocaleHelper
+import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -43,6 +45,10 @@ class AutofillUnlockActivity : AppCompatActivity() {
     private var requestToken: String? = null
     private var biometricPromptShown = false
     private var resultPublished = false
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

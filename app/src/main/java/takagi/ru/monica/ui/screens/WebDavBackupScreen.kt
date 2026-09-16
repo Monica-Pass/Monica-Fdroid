@@ -1,36 +1,28 @@
 package takagi.ru.monica.ui.screens
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-// Ensure Bookmark icons are available (using wildcards in original line 9 covers it if they are in filled, else explicit import)
-import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.BookmarkRemove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.testTag
+import takagi.ru.monica.ui.components.MonicaExpandableContent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
 import takagi.ru.monica.repository.PasswordRepository
@@ -38,16 +30,12 @@ import takagi.ru.monica.repository.SecureItemRepository
 import takagi.ru.monica.utils.BackupFile
 import takagi.ru.monica.utils.BackupRetentionConfig
 import takagi.ru.monica.utils.BackupRetentionPolicy
-import takagi.ru.monica.utils.BackupContent
 import takagi.ru.monica.utils.BackupContentScope
 import takagi.ru.monica.utils.BackupRestoreApplier
 import takagi.ru.monica.utils.RestoreResult
 import takagi.ru.monica.utils.WebDavHelper
 import takagi.ru.monica.webdav.WebDavUntrustedCertificateException
 import takagi.ru.monica.utils.AutoBackupManager
-import takagi.ru.monica.utils.CustomFieldBackupEntry
-import takagi.ru.monica.data.PasswordEntry
-import takagi.ru.monica.data.CustomField
 import takagi.ru.monica.sync.SyncBackupProvider
 import takagi.ru.monica.sync.SyncDiagnostics
 import takagi.ru.monica.sync.SyncMode
@@ -59,17 +47,11 @@ import takagi.ru.monica.sync.SyncTaskAwaitResult
 import takagi.ru.monica.sync.SyncTaskRunner
 import takagi.ru.monica.sync.SyncTrigger
 import takagi.ru.monica.ui.components.PasswordEntryPickerBottomSheet
-import takagi.ru.monica.util.DataExportImportManager
 import takagi.ru.monica.utils.ChangeTriggeredBackupScheduler
-import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.delay
-import java.text.DateFormat
 import android.text.format.DateUtils
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import takagi.ru.monica.ui.components.OutlinedTextField
 
 private fun matchesAnyKeyword(message: String, vararg keywords: String): Boolean {
@@ -77,18 +59,18 @@ private fun matchesAnyKeyword(message: String, vararg keywords: String): Boolean
     return keywords.any { keyword -> normalized.contains(keyword.lowercase(Locale.ROOT)) }
 }
 
-private fun monicaConfigEntryDisplayName(entry: String): String {
+private fun monicaConfigEntryDisplayName(context: Context, entry: String): String {
     val normalized = entry.substringAfterLast('/').lowercase(Locale.ROOT)
     return when (normalized) {
-        "webdav_connection.json", "webdav_config.json" -> "WebDAV连接配置"
-        "page_adjustment_settings.json" -> "页面调整设置"
-        "autofill_blocked_fields.json" -> "自动填充屏蔽字段"
-        "autofill_save_blocked_targets.json" -> "自动填充不保存名单"
-        "autofill_blacklist.json" -> "自动填充黑名单"
-        "bitwarden_vaults.json" -> "Bitwarden Vault配置"
-        "security_questions.json" -> "密保问题"
-        "common_account.json" -> "常用账号模板"
-        "monica_config.json" -> "Monica聚合配置"
+        "webdav_connection.json", "webdav_config.json" -> context.getString(R.string.legacy_ui_config_webdav)
+        "page_adjustment_settings.json" -> context.getString(R.string.legacy_ui_config_page_adjustment)
+        "autofill_blocked_fields.json" -> context.getString(R.string.legacy_ui_config_autofill_blocked_fields)
+        "autofill_save_blocked_targets.json" -> context.getString(R.string.legacy_ui_config_autofill_save_blocklist)
+        "autofill_blacklist.json" -> context.getString(R.string.legacy_ui_config_autofill_blocklist)
+        "bitwarden_vaults.json" -> context.getString(R.string.legacy_ui_config_bitwarden)
+        "security_questions.json" -> context.getString(R.string.legacy_ui_config_security_questions)
+        "common_account.json" -> context.getString(R.string.legacy_ui_config_account_templates)
+        "monica_config.json" -> context.getString(R.string.legacy_ui_config_monica)
         else -> entry.substringAfterLast('/')
     }
 }
@@ -98,80 +80,368 @@ private enum class RestoreMode {
     REPLACE_LOCAL,
 }
 
-@Composable
-private fun RestoreModeOptionCard(
-    title: String,
-    description: String,
-    icon: ImageVector,
-    selected: Boolean,
-    accentColor: androidx.compose.ui.graphics.Color,
-    onClick: () -> Unit,
+/** Route-owned state and callbacks; kept outside composition and recycled history rows. */
+private class WebDavBackupScreenState(
+    private val context: Context,
+    private val coroutineScope: kotlinx.coroutines.CoroutineScope,
+    private val webDavHelper: WebDavHelper,
+    private val autoBackupManager: AutoBackupManager,
+    private val passwordRepository: PasswordRepository,
+    private val secureItemRepository: SecureItemRepository,
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                role = Role.RadioButton,
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            }
-        ),
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) accentColor else MaterialTheme.colorScheme.outlineVariant,
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                color = if (selected) accentColor.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = accentColor,
-                    )
+    var serverUrl by mutableStateOf("")
+    var username by mutableStateOf("")
+    var password by mutableStateOf("")
+    var passwordVisible by mutableStateOf(false)
+    var isConfigured by mutableStateOf(false)
+    var isEditingConnection by mutableStateOf(false)
+    var isTesting by mutableStateOf(false)
+    var backupList by mutableStateOf<List<BackupFile>>(emptyList())
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf("")
+    var pendingUntrustedCertificate by mutableStateOf<WebDavUntrustedCertificateException?>(null)
+    var autoBackupEnabled by mutableStateOf(false)
+    var lastBackupTime by mutableStateOf(0L)
+    var showSyncSettings by mutableStateOf(false)
+    var changeTriggeredConfig by mutableStateOf(WebDavHelper.ChangeTriggeredBackupConfig())
+    var backupRetentionConfig by mutableStateOf(BackupRetentionConfig())
+    var encryptionEnabled by mutableStateOf(false)
+    var encryptionPassword by mutableStateOf("")
+    var encryptionPasswordVisible by mutableStateOf(false)
+    var backupPreferences by mutableStateOf(takagi.ru.monica.data.BackupPreferences())
+    var passwordCount by mutableStateOf(0)
+    var authenticatorCount by mutableStateOf(0)
+    var documentCount by mutableStateOf(0)
+    var bankCardCount by mutableStateOf(0)
+    var noteCount by mutableStateOf(0)
+    var trashCount by mutableStateOf(0)
+    var localKeePassCount by mutableStateOf(0)
+    var passkeyCount by mutableStateOf(0)
+    var isBackupInProgress by mutableStateOf(false)
+    var showPasswordPicker by mutableStateOf(false)
+    var restoreBackup by mutableStateOf<BackupFile?>(null)
+    var deleteBackup by mutableStateOf<BackupFile?>(null)
+    var restoreBusy by mutableStateOf(false)
+
+    fun connectWebDav() {
+        if (serverUrl.isBlank()) {
+            errorMessage = context.getString(R.string.webdav_fill_all_fields)
+            return
+        }
+
+        isTesting = true
+        errorMessage = ""
+        webDavHelper.configure(serverUrl, username, password)
+
+        coroutineScope.launch {
+            webDavHelper.testConnection().fold(
+                onSuccess = {
+                    isConfigured = true
+                    isEditingConnection = false
+                    isTesting = false
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.webdav_connection_success),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    // 加载备份列表
+                    loadBackups(webDavHelper) { list, error ->
+                        backupList = list
+                        error?.let { errorMessage = it }
+                    }
+                },
+                onFailure = { e ->
+                    isTesting = false
+                    val certificateError = e.findWebDavCertificateError()
+                    if (certificateError != null) {
+                        pendingUntrustedCertificate = certificateError
+                        return@fold
+                    }
+                    // 提供更友好的错误信息
+                    val message = e.message.orEmpty()
+                    val userFriendlyMessage = when {
+                        matchesAnyKeyword(message, "network is unreachable", "unreachable") ->
+                            context.getString(R.string.webdav_network_unreachable)
+                        matchesAnyKeyword(message, "timeout", "timed out") ->
+                            context.getString(R.string.webdav_connection_timeout)
+                        matchesAnyKeyword(message, "authentication failed", "unauthorized", "forbidden", "401", "403") ->
+                            context.getString(R.string.webdav_auth_failed)
+                        matchesAnyKeyword(message, "path not found", "not found", "404") ->
+                            context.getString(R.string.webdav_path_not_found)
+                        else -> e.message ?: context.getString(R.string.webdav_connection_failed, "")
+                    }
+                    errorMessage = userFriendlyMessage
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.webdav_connection_failed, userFriendlyMessage),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            RadioButton(
-                selected = selected,
-                onClick = null,
             )
         }
+    }
+
+    fun createBackup() {
+        // 防止重复点击
+        if (isBackupInProgress) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.webdav_backup_in_progress),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        // 验证：检查是否至少选择了一种内容类型
+        if (!backupPreferences.hasAnyEnabled()) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.backup_validation_error),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        isBackupInProgress = true
+        isLoading = true
+        errorMessage = ""
+        coroutineScope.launch {
+            val backupTarget = SyncTarget.Backup(SyncBackupProvider.WEBDAV)
+            val taskId = SyncDiagnostics.nextTaskId("backup-webdav-screen")
+            val targetLog = backupTarget.stableKey.value
+            val triggerLog = "WEBDAV_SCREEN_MANUAL"
+            try {
+                val syncResult = SyncTaskRunner.requestAndAwait(
+                    request = SyncRequest(
+                        requestId = taskId,
+                        target = backupTarget,
+                        trigger = SyncTrigger.MANUAL,
+                        createdAtMillis = System.currentTimeMillis(),
+                        priority = SyncPriority.MANUAL,
+                        mode = SyncMode.FOREGROUND,
+                        networkPolicy = SyncNetworkPolicy.REQUIRED
+                    )
+                ) {
+                    SyncDiagnostics.queued(taskId, targetLog, triggerLog)
+                    val startedAt = SyncDiagnostics.start(taskId, targetLog, triggerLog)
+                    try {
+                        // 获取 Monica 本地密码数据
+                        val localPasswords = passwordRepository.getAllLocalPasswordEntries()
+
+                        // WebDAV 是跨端备份；如果 Android 本机密钥不可用，不能把设备密文写进备份。
+                        val securityManager = takagi.ru.monica.security.SecurityManager(context)
+                        var failedPasswordDecryptCount = 0
+                        val decryptedPasswords = localPasswords.map { entry ->
+                            try {
+                                entry.copy(password = securityManager.decryptData(entry.password))
+                            } catch (e: Exception) {
+                                android.util.Log.w("WebDavBackupScreen", "无法解密密码条目: ${e.message}")
+                                failedPasswordDecryptCount++
+                                entry.copy(password = "")
+                            }
+                        }
+                        if (failedPasswordDecryptCount > 0) {
+                            throw IllegalStateException(
+                                context.getString(R.string.legacy_ui_backup_decrypt_failed, failedPasswordDecryptCount)
+                            )
+                        }
+
+                        // 获取 Monica 本地其他数据(TOTP、银行卡、证件、笔记)
+                        val localSecureItems = secureItemRepository.getAllLocalItems()
+
+                        // 创建并上传永久备份
+                        val report = webDavHelper.createAndUploadBackup(
+                            passwords = decryptedPasswords,
+                            secureItems = localSecureItems,
+                            preferences = backupPreferences,
+                            isPermanent = true, // Manual backups are permanent
+                            isManualTrigger = true,
+                            contentScope = BackupContentScope.MONICA_LOCAL_ONLY
+                        ).getOrThrow()
+
+                        SyncDiagnostics.success(
+                            taskId = taskId,
+                            target = targetLog,
+                            trigger = triggerLog,
+                            startedAt = startedAt,
+                            detail = "passwords=${decryptedPasswords.size} secureItems=${localSecureItems.size} hasIssues=${report.hasIssues()}"
+                        )
+                        report
+                    } catch (error: Exception) {
+                        SyncDiagnostics.failed(taskId, targetLog, triggerLog, startedAt, error)
+                        throw error
+                    }
+                }
+
+                when (syncResult) {
+                    is SyncTaskAwaitResult.Completed -> {
+                        lastBackupTime = webDavHelper.getLastBackupTime()
+
+                        val report = syncResult.value
+                        val message = if (report.hasIssues()) {
+                            report.getSummary(context)
+                        } else {
+                            context.getString(R.string.webdav_backup_success)
+                        }
+
+                        Toast.makeText(
+                            context,
+                            message,
+                            Toast.LENGTH_LONG
+                        ).show()
+
+                        loadBackups(webDavHelper) { list, error ->
+                            backupList = list
+                            error?.let { errorMessage = it }
+                        }
+                    }
+                    is SyncTaskAwaitResult.Merged -> {
+                        SyncDiagnostics.skipped(
+                            taskId = taskId,
+                            target = targetLog,
+                            trigger = triggerLog,
+                            reason = "merged_with_running_backup",
+                            detail = "running=${syncResult.status.runningRequestId.orEmpty()}"
+                        )
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_in_progress),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Skipped -> {
+                        SyncDiagnostics.skipped(taskId, targetLog, triggerLog, syncResult.reason)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, syncResult.reason),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Blocked -> {
+                        val reason = syncResult.error.redactedMessage ?: syncResult.error.kind.name
+                        SyncDiagnostics.blocked(taskId, targetLog, triggerLog, reason)
+                        errorMessage = reason
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, reason),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Canceled -> {
+                        val reason = syncResult.reason ?: "backup canceled"
+                        SyncDiagnostics.skipped(taskId, targetLog, triggerLog, reason)
+                        errorMessage = reason
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, reason),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is SyncTaskAwaitResult.Failed -> {
+                        val error = syncResult.error.message
+                            ?: context.getString(R.string.webdav_create_backup_failed)
+                        errorMessage = error
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.webdav_backup_failed, error),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: context.getString(R.string.webdav_create_backup_failed)
+                Toast.makeText(
+                    context,
+                    context.getString(
+                        R.string.webdav_backup_failed,
+                        e.message ?: context.getString(R.string.import_data_unknown_error)
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                isLoading = false
+                isBackupInProgress = false
+            }
+        }
+    }
+
+    fun triggerAutomaticBackup() {
+        coroutineScope.launch {
+            try {
+                val enqueued = autoBackupManager.triggerBackupNow()
+                if (!enqueued) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.webdav_error_rate_limited_toast),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@launch
+                }
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.webdav_backup_in_progress),
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                // 延迟2秒后更新上次备份时间和刷新备份列表
+                kotlinx.coroutines.delay(2000)
+                lastBackupTime = webDavHelper.getLastBackupTime()
+
+                // 刷新备份列表
+                isLoading = true
+                loadBackups(webDavHelper) { list, error ->
+                    backupList = list
+                    isLoading = false
+                    error?.let { errorMessage = it }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.webdav_backup_trigger_failed, e.message ?: ""),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    fun refreshBackupList() {
+        isLoading = true
+        errorMessage = ""
+        coroutineScope.launch {
+            loadBackups(webDavHelper) { list, error ->
+                backupList = list
+                isLoading = false
+                error?.let { errorMessage = it }
+            }
+        }
+    }
+
+    fun editConnection() {
+        webDavHelper.getCurrentConfig()?.let { config ->
+            serverUrl = config.serverUrl
+            username = config.username
+            password = webDavHelper.getCurrentPasswordForEdit()
+            passwordVisible = false
+            isEditingConnection = true
+            isConfigured = false
+        }
+    }
+
+    fun cancelConnectionEdit() {
+        isEditingConnection = false
+        isConfigured = webDavHelper.isConfigured()
+        passwordVisible = false
+        errorMessage = ""
+    }
+
+    fun clearConnection() {
+        webDavHelper.clearConfig()
+        isConfigured = false
+        isEditingConnection = false
+        serverUrl = ""
+        username = ""
+        password = ""
+        backupList = emptyList()
     }
 }
 
@@ -184,1027 +454,415 @@ fun WebDavBackupScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-    
-    var serverUrl by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    
-    var isConfigured by remember { mutableStateOf(false) }
-    var isTesting by remember { mutableStateOf(false) }
-    var backupList by remember { mutableStateOf<List<BackupFile>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
-    var pendingUntrustedCertificate by remember { mutableStateOf<WebDavUntrustedCertificateException?>(null) }
-    
-    // 自动备份状态
-    var autoBackupEnabled by remember { mutableStateOf(false) }
-    var lastBackupTime by remember { mutableStateOf(0L) }
 
-    // 同步设置弹窗
-    var showSyncSettings by remember { mutableStateOf(false) }
-    var changeTriggeredConfig by remember {
-        mutableStateOf(WebDavHelper.ChangeTriggeredBackupConfig())
-    }
-    var backupRetentionConfig by remember { mutableStateOf(BackupRetentionConfig()) }
-    
-    // 加密设置状态
-    var encryptionEnabled by remember { mutableStateOf(false) }
-    var encryptionPassword by remember { mutableStateOf("") }
-    var encryptionPasswordVisible by remember { mutableStateOf(false) }
-    
-    // 选择性备份状态
-    var backupPreferences by remember { mutableStateOf(takagi.ru.monica.data.BackupPreferences()) }
-    var passwordCount by remember { mutableStateOf(0) }
-    var authenticatorCount by remember { mutableStateOf(0) }
-    var documentCount by remember { mutableStateOf(0) }
-    var bankCardCount by remember { mutableStateOf(0) }
-    var noteCount by remember { mutableStateOf(0) }
-    var trashCount by remember { mutableStateOf(0) }
-    var localKeePassCount by remember { mutableStateOf(0) }
-    var passkeyCount by remember { mutableStateOf(0) }
-    
-    // 备份进行中状态（防止重复点击）
-    var isBackupInProgress by remember { mutableStateOf(false) }
-    
-    var showPasswordPicker by remember { mutableStateOf(false) }
-    
     val webDavHelper = remember { WebDavHelper(context) }
     val autoBackupManager = remember { AutoBackupManager(context) }
     val pickerSecurityManager = remember { takagi.ru.monica.security.SecurityManager(context) }
     val passwordEntriesForPicker by passwordRepository.getAllPasswordEntries().collectAsState(initial = emptyList())
-    
-    // 启动时检查是否已有配置
-    LaunchedEffect(Unit) {
-        if (webDavHelper.isConfigured()) {
-            isConfigured = true
-            // 自动加载备份列表
-            isLoading = true
-            val result = webDavHelper.listBackups()
-            isLoading = false
-            if (result.isSuccess) {
-                backupList = result.getOrNull() ?: emptyList()
+    val screenState = remember {
+        WebDavBackupScreenState(context, coroutineScope, webDavHelper, autoBackupManager, passwordRepository, secureItemRepository)
+    }
+
+    with(screenState) {
+        // 启动时检查是否已有配置
+        LaunchedEffect(Unit) {
+            if (webDavHelper.isConfigured()) {
+                isConfigured = true
+                // 自动加载备份列表
+                isLoading = true
+                val result = webDavHelper.listBackups()
+                isLoading = false
+                if (result.isSuccess) {
+                    backupList = result.getOrNull() ?: emptyList()
+                } else {
+                    errorMessage = result.exceptionOrNull()?.message ?: context.getString(R.string.webdav_operation_failed, "")
+                }
             }
-        }
-        
-        // 加载自动备份状态
-        autoBackupEnabled = webDavHelper.isAutoBackupEnabled()
-        lastBackupTime = webDavHelper.getLastBackupTime()
-        changeTriggeredConfig = webDavHelper.getChangeTriggeredBackupConfig()
-        backupRetentionConfig = webDavHelper.getBackupRetentionConfig()
-        
-        // 加载加密配置
-        val encryptionConfig = webDavHelper.getEncryptionConfig()
-        encryptionEnabled = encryptionConfig.enabled
-        encryptionPassword = encryptionConfig.password
-        
-        // 加载备份偏好设置
-        backupPreferences = webDavHelper.getBackupPreferences()
-        
-        // WebDAV 主备份只备份 Monica 本地库；外部来源有各自的同步/备份入口。
-        passwordCount = passwordRepository.getLocalEntriesCount()
-        authenticatorCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.TOTP)
-        documentCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.DOCUMENT)
-        bankCardCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.BANK_CARD)
-        noteCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.NOTE)
-        
-        // 获取本地回收站数量（排除 KeePass 和 Bitwarden 的数据）
-        val database = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
-        val deletedPasswordCount = passwordRepository.getLocalDeletedEntriesCount()
-        val deletedSecureItemCount = secureItemRepository.getLocalDeletedItemCount()
-        trashCount = deletedPasswordCount + deletedSecureItemCount
-        
-        // 获取本地 KeePass 数据库数量
-        try {
-            val keepassDao = database.localKeePassDatabaseDao()
-            localKeePassCount = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                keepassDao.getAllDatabasesSync().size
+
+            // 加载自动备份状态
+            autoBackupEnabled = webDavHelper.isAutoBackupEnabled()
+            lastBackupTime = webDavHelper.getLastBackupTime()
+            changeTriggeredConfig = webDavHelper.getChangeTriggeredBackupConfig()
+            backupRetentionConfig = webDavHelper.getBackupRetentionConfig()
+
+            // 加载加密配置
+            val encryptionConfig = webDavHelper.getEncryptionConfig()
+            encryptionEnabled = encryptionConfig.enabled
+            encryptionPassword = encryptionConfig.password
+
+            // 加载备份偏好设置
+            backupPreferences = webDavHelper.getBackupPreferences()
+
+            // WebDAV 主备份只备份 Monica 本地库；外部来源有各自的同步/备份入口。
+            passwordCount = passwordRepository.getLocalEntriesCount()
+            authenticatorCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.TOTP)
+            documentCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.DOCUMENT)
+            bankCardCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.BANK_CARD)
+            noteCount = secureItemRepository.getLocalItemCountByType(takagi.ru.monica.data.ItemType.NOTE)
+
+            // 获取本地回收站数量（排除 KeePass 和 Bitwarden 的数据）
+            val database = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
+            val deletedPasswordCount = passwordRepository.getLocalDeletedEntriesCount()
+            val deletedSecureItemCount = secureItemRepository.getLocalDeletedItemCount()
+            trashCount = deletedPasswordCount + deletedSecureItemCount
+
+            // 获取本地 KeePass 数据库数量
+            try {
+                val keepassDao = database.localKeePassDatabaseDao()
+                localKeePassCount = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    keepassDao.getAllDatabasesSync().size
+                }
+            } catch (e: Exception) {
+                localKeePassCount = 0
             }
-        } catch (e: Exception) {
-            localKeePassCount = 0
+
+            // 获取本地 Passkey 数量（排除 KeePass 和 Bitwarden 的数据）
+            try {
+                val passkeyDao = database.passkeyDao()
+                passkeyCount = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    passkeyDao.getLocalPasskeyCount()
+                }
+            } catch (e: Exception) {
+                passkeyCount = 0
+            }
         }
 
-        // 获取本地 Passkey 数量（排除 KeePass 和 Bitwarden 的数据）
-        try {
-            val passkeyDao = database.passkeyDao()
-            passkeyCount = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                passkeyDao.getLocalPasskeyCount()
-            }
-        } catch (e: Exception) {
-            passkeyCount = 0
+        val pendingCleanupNames = remember(backupList, backupRetentionConfig) {
+            BackupRetentionPolicy.backupsToDelete(backupList, backupRetentionConfig).mapTo(mutableSetOf()) { it.name }
         }
-    }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.webdav_backup)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+        CloudBackupPage(
+            title = stringResource(R.string.webdav_backup),
+            configured = isConfigured,
+            backups = backupList,
+            loading = isLoading,
+            refreshEnabled = !isBackupInProgress && !restoreBusy,
+            onRefresh = ::refreshBackupList,
+            onNavigateBack = onNavigateBack,
+            onCancelConnection = if (isEditingConnection) ::cancelConnectionEdit else null,
+            errorMessage = errorMessage,
+            primaryAction = {
+                if (isConfigured) {
+                    CloudBackupPrimaryButton(
+                        label = stringResource(if (isBackupInProgress) R.string.webdav_backup_in_progress else R.string.webdav_create_new_backup),
+                        onClick = ::createBackup,
+                        enabled = !isLoading && !restoreBusy,
+                        busy = isBackupInProgress,
+                    )
+                } else {
+                    CloudBackupPrimaryButton(
+                        label = stringResource(R.string.webdav_test_connection),
+                        onClick = ::connectWebDav,
+                        enabled = serverUrl.isNotBlank(),
+                        busy = isTesting,
+                        icon = Icons.Default.CloudDone,
+                    )
+                }
+            },
+            location = {
+                val config = if (isConfigured) webDavHelper.getCurrentConfig() else null
+                CloudBackupLocationCard(
+                    title = config?.serverUrl?.substringAfter("://")?.substringBefore("/") ?: "WebDAV",
+                    subtitle = config?.let { listOf(it.serverUrl, it.username).filter(String::isNotBlank).joinToString("\n") }
+                        ?: stringResource(R.string.webdav_backup_description),
+                    supporting = if (isConfigured && lastBackupTime > 0) {
+                        stringResource(R.string.webdav_last_backup) + " " + DateUtils.getRelativeTimeSpanString(
+                            lastBackupTime, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE)
+                    } else null,
+                    actionLabel = stringResource(R.string.webdav_reconfigure),
+                    onClick = if (isConfigured && !isBackupInProgress && !restoreBusy) ::editConnection else null,
+                    busy = isTesting,
+                )
+            },
+            connection = {
+                var insecureHttpAllowed by remember(context) {
+                    mutableStateOf(WebDavHelper.isInsecureHttpAllowed(context))
+                }
+                DatabaseManagementCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.webdav_allow_insecure_http), style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.webdav_allow_insecure_http_description),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = insecureHttpAllowed, enabled = !isTesting, onCheckedChange = { enabled ->
+                            insecureHttpAllowed = enabled
+                            WebDavHelper.setInsecureHttpAllowed(context, enabled)
+                        })
                     }
+                }
+                FilledTonalButton(onClick = { showPasswordPicker = true }, enabled = !isTesting,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Icon(Icons.Default.Key, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.webdav_fill_from_password))
+                }
+                OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
+                    value = serverUrl, onValueChange = { serverUrl = it; isConfigured = false },
+                    label = { Text(stringResource(R.string.webdav_server_url)) },
+                    placeholder = { Text("https://example.com/webdav") },
+                    leadingIcon = { Icon(Icons.Default.Cloud, null) },
+                    modifier = Modifier.fillMaxWidth().testTag("cloud_backup_server_url"),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                    singleLine = true, enabled = !isTesting,
+                )
+                OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
+                    value = username, onValueChange = { username = it; isConfigured = false },
+                    label = { Text(stringResource(R.string.webdav_username_optional)) },
+                    leadingIcon = { Icon(Icons.Default.Person, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next), singleLine = true, enabled = !isTesting,
+                )
+                OutlinedTextField(
+                    shape = DatabaseManagementFieldShape,
+                    value = password, onValueChange = { password = it; isConfigured = false },
+                    label = { Text(stringResource(R.string.webdav_password_optional)) },
+                    leadingIcon = { Icon(Icons.Default.Lock, null) },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                stringResource(if (passwordVisible) R.string.hide_password else R.string.show_password))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag("cloud_backup_connection_password"),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    singleLine = true, enabled = !isTesting,
+                )
+            },
+            settings = {
+                CloudBackupEncryptionSettings(
+                    enabled = encryptionEnabled, password = encryptionPassword, passwordVisible = encryptionPasswordVisible,
+                    onEnabledChange = { enabled ->
+                        encryptionEnabled = enabled
+                        if (!enabled) webDavHelper.setEncryptionConfig(false, encryptionPassword)
+                        else if (encryptionPassword.isNotEmpty()) webDavHelper.setEncryptionConfig(true, encryptionPassword)
+                    },
+                    onPasswordChange = { encryptionPassword = it; webDavHelper.setEncryptionConfig(true, it) },
+                    onVisibilityChange = { encryptionPasswordVisible = !encryptionPasswordVisible },
+                )
+                takagi.ru.monica.ui.components.SelectiveBackupCard(
+                    preferences = backupPreferences,
+                    onPreferencesChange = { backupPreferences = it; webDavHelper.saveBackupPreferences(it) },
+                    passwordCount = passwordCount, authenticatorCount = authenticatorCount,
+                    documentCount = documentCount, bankCardCount = bankCardCount, noteCount = noteCount,
+                    trashCount = trashCount, passkeyCount = passkeyCount, localKeePassCount = localKeePassCount,
+                    isWebDavConfigured = isConfigured,
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    DatabaseManagementCard(modifier = Modifier.fillMaxWidth(), shape = settingsSectionItemShape(0, 3)) {
+                        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Schedule, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(stringResource(R.string.webdav_auto_backup), style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.webdav_auto_backup_description), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = autoBackupEnabled, onCheckedChange = { enabled ->
+                                autoBackupEnabled = enabled
+                                webDavHelper.configureAutoBackup(enabled)
+                                if (!enabled) ChangeTriggeredBackupScheduler.cancel(context)
+                                Toast.makeText(context, context.getString(if (enabled) R.string.webdav_auto_backup_enabled
+                                    else R.string.webdav_auto_backup_disabled), Toast.LENGTH_SHORT).show()
+                            })
+                        }
+                    }
+                    DatabaseManagementActionRow(DatabaseManagementAction(Icons.Default.Tune,
+                        stringResource(R.string.webdav_sync_settings), {
+                            changeTriggeredConfig = webDavHelper.getChangeTriggeredBackupConfig()
+                            backupRetentionConfig = webDavHelper.getBackupRetentionConfig()
+                            showSyncSettings = true
+                        }), 1, 3)
+                    DatabaseManagementActionRow(DatabaseManagementAction(Icons.Default.PlayArrow,
+                        stringResource(R.string.webdav_backup_now), ::triggerAutomaticBackup,
+                        enabled = !isLoading && !isBackupInProgress && !restoreBusy, showChevron = false), 2, 3)
+                }
+                CloudBackupConnectionSettings(
+                    title = stringResource(R.string.webdav_config),
+                    fields = webDavHelper.getCurrentConfig()?.let { config -> listOf(
+                        stringResource(R.string.webdav_server_url) to config.serverUrl,
+                        stringResource(R.string.username) to config.username,
+                    ) }.orEmpty(),
+                    actions = listOf(
+                    DatabaseManagementAction(Icons.Default.Edit, stringResource(R.string.webdav_reconfigure), ::editConnection,
+                        enabled = !isBackupInProgress && !restoreBusy),
+                    DatabaseManagementAction(Icons.Default.LinkOff, stringResource(R.string.webdav_clear_config), ::clearConnection,
+                        enabled = !isBackupInProgress && !restoreBusy, warning = true),
+                ))
+            },
+            backupRow = { index, backup ->
+                CloudBackupFileRow(
+                    backup = backup, sizeLabel = webDavHelper.formatFileSize(backup.size), index = index, count = backupList.size,
+                    expiring = if (backupRetentionConfig.enabled) backup.name in pendingCleanupNames else backup.isExpiring,
+                    busy = restoreBusy && restoreBackup?.path == backup.path,
+                    enabled = !isLoading && !restoreBusy && !isBackupInProgress,
+                    onRestore = { restoreBackup = backup },
+                    onDelete = { deleteBackup = backup },
+                    onTogglePermanent = {
+                        coroutineScope.launch {
+                            val result = if (backup.isPermanent) {
+                                webDavHelper.unmarkPermanent(backup)
+                            } else {
+                                webDavHelper.markBackupAsPermanent(backup)
+                            }
+
+                            result.onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    if (backup.isPermanent) {
+                                        context.getString(R.string.webdav_unmark_permanent_success)
+                                    } else {
+                                        context.getString(R.string.webdav_mark_permanent_success)
+                                    },
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                refreshBackupList()
+                            }.onFailure { e ->
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.webdav_operation_failed, e.message),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    },
+                )
+            },
+        )
+
+        // Keep operation state outside the lazy history: scrolling or switching tabs must not cancel a restore.
+        restoreBackup?.let { backup ->
+            key(backup.path) {
+                WebDavRestoreDialogs(
+                    backup = backup, webDavHelper = webDavHelper,
+                    passwordRepository = passwordRepository, secureItemRepository = secureItemRepository,
+                    onDismiss = { restoreBackup = null }, onBusyChanged = { restoreBusy = it },
+                    onRestoreSuccess = { Toast.makeText(context, context.getString(R.string.webdav_restore_success), Toast.LENGTH_SHORT).show() },
+                )
+            }
+        }
+        deleteBackup?.let { backup ->
+            AlertDialog(
+                onDismissRequest = { deleteBackup = null },
+                title = { Text(stringResource(R.string.delete_backup)) },
+                text = { Text(stringResource(R.string.delete_backup_confirm, backup.name)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        deleteBackup = null
+                        coroutineScope.launch {
+                            webDavHelper.deleteBackup(backup).fold(
+                                onSuccess = {
+                                    backupList = backupList - backup
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.backup_deleted),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                onFailure = { e ->
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.delete_failed, e.message),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        }
+                    }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
                 },
-                actions = {
-                    IconButton(onClick = {
-                        changeTriggeredConfig = webDavHelper.getChangeTriggeredBackupConfig()
-                        backupRetentionConfig = webDavHelper.getBackupRetentionConfig()
-                        showSyncSettings = true
-                    }) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.webdav_sync_settings)
-                        )
+                dismissButton = { TextButton(onClick = { deleteBackup = null }) { Text(stringResource(R.string.cancel)) } },
+            )
+        }
+
+        if (showPasswordPicker) {
+            PasswordEntryPickerBottomSheet(
+                visible = true,
+                title = stringResource(R.string.webdav_fill_from_password),
+                passwords = passwordEntriesForPicker.filter { !it.isDeleted && !it.isArchived },
+                onDismiss = { showPasswordPicker = false },
+                onSelect = { entry ->
+                    val resolvedServerUrl = entry.website.trim()
+                    val resolvedUsername = runCatching { pickerSecurityManager.decryptData(entry.username) }
+                        .getOrNull()
+                        ?.trim()
+                        .takeUnless { it.isNullOrBlank() }
+                        ?: entry.username.trim()
+                    val resolvedPassword = runCatching { pickerSecurityManager.decryptData(entry.password) }
+                        .getOrNull()
+                        ?.trim()
+                        .takeUnless { it.isNullOrBlank() }
+                        ?: entry.password.trim()
+
+                    if (resolvedServerUrl.isNotBlank()) {
+                        serverUrl = resolvedServerUrl
                     }
+                    username = resolvedUsername
+                    password = resolvedPassword
+                    isConfigured = false
+                    errorMessage = ""
+                    showPasswordPicker = false
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.webdav_fill_from_password_applied),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             )
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 配置信息卡片 (如果已配置)
-            if (isConfigured) {
-                webDavHelper.getCurrentConfig()?.let { config ->
-                    WebDavConfigSummaryCard(
-                        config = config,
-                        onEdit = {
-                            isConfigured = false
-                            serverUrl = config.serverUrl
-                            username = config.username
-                            password = webDavHelper.getCurrentPasswordForEdit()
-                            passwordVisible = false
-                        },
-                        onClear = {
-                            webDavHelper.clearConfig()
-                            isConfigured = false
-                            serverUrl = ""
-                            username = ""
-                            password = ""
-                            backupList = emptyList()
-                        }
-                    )
-                }
-            }
-            
-            // 加密设置卡片 (仅在配置成功后显示)
-            if (isConfigured) {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // F-Droid 加固：明文 HTTP 连接开关（默认关闭，由 WebDavGateway 守卫拦截器执行）
-                        var insecureHttpAllowed by remember {
-                            mutableStateOf(WebDavHelper.isInsecureHttpAllowed(context))
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.webdav_allow_insecure_http),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = stringResource(R.string.webdav_allow_insecure_http_description),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = insecureHttpAllowed,
-                                onCheckedChange = { enabled ->
-                                    insecureHttpAllowed = enabled
-                                    WebDavHelper.setInsecureHttpAllowed(context, enabled)
-                                }
-                            )
-                        }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.webdav_enable_encryption),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = stringResource(R.string.webdav_encryption_description),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = encryptionEnabled,
-                                onCheckedChange = { enabled ->
-                                    encryptionEnabled = enabled
-                                    if (!enabled) {
-                                        // 如果关闭加密，不需要密码
-                                        webDavHelper.setEncryptionConfig(false, encryptionPassword)
-                                    } else {
-                                        // 如果开启加密，且已有密码，则保存
-                                        if (encryptionPassword.isNotEmpty()) {
-                                            webDavHelper.setEncryptionConfig(true, encryptionPassword)
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                        
-                        if (encryptionEnabled) {
-                            OutlinedTextField(
-                                value = encryptionPassword,
-                                onValueChange = { 
-                                    encryptionPassword = it
-                                    webDavHelper.setEncryptionConfig(true, it)
-                                },
-                                label = { Text(stringResource(R.string.webdav_encryption_password)) },
-                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                                visualTransformation = if (encryptionPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                                trailingIcon = {
-                                    IconButton(onClick = { encryptionPasswordVisible = !encryptionPasswordVisible }) {
-                                        Icon(
-                                            if (encryptionPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                            contentDescription = null
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Password,
-                                    imeAction = ImeAction.Done
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // 配置卡片
-            if (!isConfigured) {
-                Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.webdav_config),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    FilledTonalButton(
-                        onClick = { showPasswordPicker = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isTesting && !isConfigured
-                    ) {
-                        Icon(Icons.Default.Key, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.webdav_fill_from_password))
-                    }
-                    
-                    // 服务器地址
-                    OutlinedTextField(
-                        value = serverUrl,
-                        onValueChange = { 
-                            serverUrl = it
-                            isConfigured = false
-                        },
-                        label = { Text(stringResource(R.string.webdav_server_url)) },
-                        placeholder = { Text("https://example.com/webdav") },
-                        leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Uri,
-                            imeAction = ImeAction.Next
-                        ),
-                        singleLine = true,
-                        enabled = !isConfigured
-                    )
-                    
-                    // 用户名
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = { 
-                            username = it
-                            isConfigured = false
-                        },
-                        label = { Text(stringResource(R.string.webdav_username_optional)) },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        singleLine = true,
-                        enabled = !isConfigured
-                    )
-                    
-                    // 密码
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { 
-                            password = it
-                            isConfigured = false
-                        },
-                        label = { Text(stringResource(R.string.webdav_password_optional)) },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = if (passwordVisible) stringResource(R.string.hide_password) else stringResource(R.string.show_password)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        enabled = !isConfigured
-                    )
-                    
-                    // 测试连接按钮
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (!isConfigured) {
-                            Button(
-                                onClick = {
-                                    if (serverUrl.isBlank()) {
-                                        errorMessage = context.getString(R.string.webdav_fill_all_fields)
-                                        return@Button
-                                    }
-                                    
-                                    isTesting = true
-                                    errorMessage = ""
-                                    webDavHelper.configure(serverUrl, username, password)
-                                    
-                                    coroutineScope.launch {
-                                        webDavHelper.testConnection().fold(
-                                            onSuccess = {
-                                                isConfigured = true
-                                                isTesting = false
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.webdav_connection_success),
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                                // 加载备份列表
-                                                loadBackups(webDavHelper) { list, error ->
-                                                    backupList = list
-                                                    error?.let { errorMessage = it }
-                                                }
-                                            },
-                                            onFailure = { e -> 
-                                                isTesting = false
-                                                val certificateError = e.findWebDavCertificateError()
-                                                if (certificateError != null) {
-                                                    pendingUntrustedCertificate = certificateError
-                                                    return@fold
-                                                }
-                                                // 提供更友好的错误信息
-                                                val message = e.message.orEmpty()
-                                                val userFriendlyMessage = when {
-                                                    matchesAnyKeyword(message, "network is unreachable", "unreachable") ->
-                                                        context.getString(R.string.webdav_network_unreachable)
-                                                    matchesAnyKeyword(message, "timeout", "timed out") ->
-                                                        context.getString(R.string.webdav_connection_timeout)
-                                                    matchesAnyKeyword(message, "authentication failed", "unauthorized", "forbidden", "401", "403") ->
-                                                        context.getString(R.string.webdav_auth_failed)
-                                                    matchesAnyKeyword(message, "path not found", "not found", "404") ->
-                                                        context.getString(R.string.webdav_path_not_found)
-                                                    else -> e.message ?: context.getString(R.string.webdav_connection_failed, "")
-                                                }
-                                                errorMessage = userFriendlyMessage
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.webdav_connection_failed, userFriendlyMessage),
-                                                    Toast.LENGTH_LONG
-                                                ).show()
-                                            }
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                enabled = !isTesting && serverUrl.isNotBlank()
-                            ) {
-                                if (isTesting) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                Text(stringResource(R.string.webdav_test_connection))
-                            }
-                        } else {
-                            // 已配置状态显示重新配置和清除配置按钮
-                            OutlinedButton(
-                                onClick = {
-                                    isConfigured = false
-                                    backupList = emptyList()
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.Edit, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.webdav_reconfigure))
-                            }
-                            
-                            OutlinedButton(
-                                onClick = {
-                                    webDavHelper.clearConfig()
-                                    isConfigured = false
-                                    serverUrl = ""
-                                    username = ""
-                                    password = ""
-                                    backupList = emptyList()
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.webdav_config_cleared),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.webdav_clear_config))
-                            }
-                        }
-                    }
-                    
-                    // 错误信息
-                    if (errorMessage.isNotEmpty()) {
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
-            }
-            
-            // 自动备份设置卡片 (仅在配置成功后显示)
-            if (isConfigured) {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.webdav_auto_backup),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        
-                        // 自动备份开关
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.webdav_auto_backup),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = stringResource(R.string.webdav_auto_backup_description),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            
-                            Switch(
-                                checked = autoBackupEnabled,
-                                onCheckedChange = { enabled ->
-                                    autoBackupEnabled = enabled
-                                    webDavHelper.configureAutoBackup(enabled)
-                                    if (!enabled) {
-                                        // 否则关掉总开关后，已入队的改动触发任务仍会上传一次。
-                                        ChangeTriggeredBackupScheduler.cancel(context)
-                                    }
-
-                                    Toast.makeText(
-                                        context,
-                                        if (enabled) {
-                                            context.getString(R.string.webdav_auto_backup_enabled)
-                                        } else {
-                                            context.getString(R.string.webdav_auto_backup_disabled)
-                                        },
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            )
-                        }
-                        
-                        // 显示上次备份时间
-                        if (lastBackupTime > 0) {
-                            val relativeTime = DateUtils.getRelativeTimeSpanString(
-                                lastBackupTime,
-                                System.currentTimeMillis(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_RELATIVE
-                            )
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Schedule,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.webdav_last_backup) + " " + relativeTime,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        
-                        // 立即备份按钮
-                        OutlinedButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    try {
-                                        val enqueued = autoBackupManager.triggerBackupNow()
-                                        if (!enqueued) {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.webdav_error_rate_limited_toast),
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            return@launch
-                                        }
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_in_progress),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        
-                                        // 延迟2秒后更新上次备份时间和刷新备份列表
-                                        kotlinx.coroutines.delay(2000)
-                                        lastBackupTime = webDavHelper.getLastBackupTime()
-                                        
-                                        // 刷新备份列表
-                                        isLoading = true
-                                        loadBackups(webDavHelper) { list, error ->
-                                            backupList = list
-                                            isLoading = false
-                                            error?.let { errorMessage = it }
-                                        }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_trigger_failed, e.message ?: ""),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isLoading && isConfigured
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.webdav_backup_now))
-                        }
-                    }
-                }
-                
-                // 选择性备份设置卡片
-                takagi.ru.monica.ui.components.SelectiveBackupCard(
-                    preferences = backupPreferences,
-                    onPreferencesChange = { newPreferences ->
-                        backupPreferences = newPreferences
-                        webDavHelper.saveBackupPreferences(newPreferences)
-                    },
-                    passwordCount = passwordCount,
-                    authenticatorCount = authenticatorCount,
-                    documentCount = documentCount,
-                    bankCardCount = bankCardCount,
-                    noteCount = noteCount,
-                    trashCount = trashCount,
-                    passkeyCount = passkeyCount,
-                    localKeePassCount = localKeePassCount,
-                    isWebDavConfigured = isConfigured
-                )
-            }
-            
-            // 备份列表(仅在配置成功后显示)
-            if (isConfigured) {
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // 创建备份按钮
-                Button(
-                    onClick = {
-                        // 防止重复点击
-                        if (isBackupInProgress) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.webdav_backup_in_progress),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-                        
-                        // 验证：检查是否至少选择了一种内容类型
-                        if (!backupPreferences.hasAnyEnabled()) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.backup_validation_error),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-                        
-                        isBackupInProgress = true
-                        isLoading = true
-                        errorMessage = ""
+        pendingUntrustedCertificate?.let { certificate ->
+            WebDavCertificateDialog(
+                certificate = certificate,
+                onDismiss = { pendingUntrustedCertificate = null },
+                onContinue = {
+                        pendingUntrustedCertificate = null
+                        isTesting = true
                         coroutineScope.launch {
-                            val backupTarget = SyncTarget.Backup(SyncBackupProvider.WEBDAV)
-                            val taskId = SyncDiagnostics.nextTaskId("backup-webdav-screen")
-                            val targetLog = backupTarget.stableKey.value
-                            val triggerLog = "WEBDAV_SCREEN_MANUAL"
-                            try {
-                                val syncResult = SyncTaskRunner.requestAndAwait(
-                                    request = SyncRequest(
-                                        requestId = taskId,
-                                        target = backupTarget,
-                                        trigger = SyncTrigger.MANUAL,
-                                        createdAtMillis = System.currentTimeMillis(),
-                                        priority = SyncPriority.MANUAL,
-                                        mode = SyncMode.FOREGROUND,
-                                        networkPolicy = SyncNetworkPolicy.REQUIRED
-                                    )
-                                ) {
-                                    SyncDiagnostics.queued(taskId, targetLog, triggerLog)
-                                    val startedAt = SyncDiagnostics.start(taskId, targetLog, triggerLog)
-                                    try {
-                                        // 获取 Monica 本地密码数据
-                                        val localPasswords = passwordRepository.getAllLocalPasswordEntries()
-
-                                        // WebDAV 是跨端备份；如果 Android 本机密钥不可用，不能把设备密文写进备份。
-                                        val securityManager = takagi.ru.monica.security.SecurityManager(context)
-                                        var failedPasswordDecryptCount = 0
-                                        val decryptedPasswords = localPasswords.map { entry ->
-                                            try {
-                                                entry.copy(password = securityManager.decryptData(entry.password))
-                                            } catch (e: Exception) {
-                                                android.util.Log.w("WebDavBackupScreen", "无法解密密码条目: ${e.message}")
-                                                failedPasswordDecryptCount++
-                                                entry.copy(password = "")
-                                            }
-                                        }
-                                        if (failedPasswordDecryptCount > 0) {
-                                            throw IllegalStateException(
-                                                "有 $failedPasswordDecryptCount 条密码无法解密，已取消备份。请先用主密码解锁 Monica 后重新备份。"
-                                            )
-                                        }
-
-                                        // 获取 Monica 本地其他数据(TOTP、银行卡、证件、笔记)
-                                        val localSecureItems = secureItemRepository.getAllLocalItems()
-
-                                        // 创建并上传永久备份
-                                        val report = webDavHelper.createAndUploadBackup(
-                                            passwords = decryptedPasswords,
-                                            secureItems = localSecureItems,
-                                            preferences = backupPreferences,
-                                            isPermanent = true, // Manual backups are permanent
-                                            isManualTrigger = true,
-                                            contentScope = BackupContentScope.MONICA_LOCAL_ONLY
-                                        ).getOrThrow()
-
-                                        SyncDiagnostics.success(
-                                            taskId = taskId,
-                                            target = targetLog,
-                                            trigger = triggerLog,
-                                            startedAt = startedAt,
-                                            detail = "passwords=${decryptedPasswords.size} secureItems=${localSecureItems.size} hasIssues=${report.hasIssues()}"
-                                        )
-                                        report
-                                    } catch (error: Exception) {
-                                        SyncDiagnostics.failed(taskId, targetLog, triggerLog, startedAt, error)
-                                        throw error
+                            webDavHelper.configure(serverUrl, username, password)
+                            webDavHelper.testConnection().fold(
+                                onSuccess = {
+                                    isTesting = false
+                                    isConfigured = true
+                                    loadBackups(webDavHelper) { list, error ->
+                                        backupList = list
+                                        error?.let { errorMessage = it }
                                     }
+                                },
+                                onFailure = { retryError ->
+                                    isTesting = false
+                                    errorMessage = retryError.message ?: context.getString(R.string.webdav_connection_failed, "")
                                 }
-
-                                when (syncResult) {
-                                    is SyncTaskAwaitResult.Completed -> {
-                                        lastBackupTime = webDavHelper.getLastBackupTime()
-
-                                        val report = syncResult.value
-                                        val message = if (report.hasIssues()) {
-                                            report.getSummary()
-                                        } else {
-                                            context.getString(R.string.webdav_backup_success)
-                                        }
-
-                                        Toast.makeText(
-                                            context,
-                                            message,
-                                            Toast.LENGTH_LONG
-                                        ).show()
-
-                                        loadBackups(webDavHelper) { list, error ->
-                                            backupList = list
-                                            error?.let { errorMessage = it }
-                                        }
-                                    }
-                                    is SyncTaskAwaitResult.Merged -> {
-                                        SyncDiagnostics.skipped(
-                                            taskId = taskId,
-                                            target = targetLog,
-                                            trigger = triggerLog,
-                                            reason = "merged_with_running_backup",
-                                            detail = "running=${syncResult.status.runningRequestId.orEmpty()}"
-                                        )
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_in_progress),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                    is SyncTaskAwaitResult.Skipped -> {
-                                        SyncDiagnostics.skipped(taskId, targetLog, triggerLog, syncResult.reason)
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_failed, syncResult.reason),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    is SyncTaskAwaitResult.Blocked -> {
-                                        val reason = syncResult.error.redactedMessage ?: syncResult.error.kind.name
-                                        SyncDiagnostics.blocked(taskId, targetLog, triggerLog, reason)
-                                        errorMessage = reason
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_failed, reason),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    is SyncTaskAwaitResult.Canceled -> {
-                                        val reason = syncResult.reason ?: "backup canceled"
-                                        SyncDiagnostics.skipped(taskId, targetLog, triggerLog, reason)
-                                        errorMessage = reason
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_failed, reason),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    is SyncTaskAwaitResult.Failed -> {
-                                        val error = syncResult.error.message
-                                            ?: context.getString(R.string.webdav_create_backup_failed)
-                                        errorMessage = error
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_backup_failed, error),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                errorMessage = e.message ?: context.getString(R.string.webdav_create_backup_failed)
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.webdav_backup_failed,
-                                        e.message ?: context.getString(R.string.import_data_unknown_error)
-                                    ),
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            } finally {
-                                isLoading = false
-                                isBackupInProgress = false
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading && !isBackupInProgress
-                ) {
-                    if (isBackupInProgress) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.webdav_backup_in_progress))
-                    } else {
-                        Icon(Icons.Default.CloudUpload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.webdav_create_new_backup))
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.webdav_backup_list),
-                                style = MaterialTheme.typography.titleMedium
                             )
-                            
-                            IconButton(
-                                onClick = {
-                                    isLoading = true
-                                    coroutineScope.launch {
-                                        loadBackups(webDavHelper) { list, error ->
-                                            backupList = list
-                                            isLoading = false
-                                            error?.let { errorMessage = it }
-                                        }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
-                            }
                         }
-                        
-                        if (isLoading) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        } else if (backupList.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.webdav_no_backups),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
-                        } else {
-                            val pendingCleanupNames = remember(backupList, backupRetentionConfig) {
-                                BackupRetentionPolicy.backupsToDelete(backupList, backupRetentionConfig)
-                                    .mapTo(mutableSetOf()) { it.name }
-                            }
-                            backupList.forEach { backup ->
-                                BackupItem(
-                                    backup = backup,
-                                    isExpiring = if (backupRetentionConfig.enabled) {
-                                        backup.name in pendingCleanupNames
-                                    } else {
-                                        backup.isExpiring
-                                    },
-                                    webDavHelper = webDavHelper,
-                                    passwordRepository = passwordRepository,
-                                    secureItemRepository = secureItemRepository,
-                                    onDeleted = {
-                                        backupList = backupList - backup
-                                    },
-                                    onRestoreSuccess = {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.webdav_restore_success),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    onStatusChanged = {
-                                        // Refresh list when status changes
-                                        // (Simplest way to update UI for now)
-                                        isLoading = true
-                                        coroutineScope.launch {
-                                            loadBackups(webDavHelper) { list, error ->
-                                                backupList = list
-                                                isLoading = false
-                                                error?.let { errorMessage = it }
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
                 }
-            }
+            )
         }
-    }
 
-    if (showPasswordPicker) {
-        PasswordEntryPickerBottomSheet(
-            visible = true,
-            title = stringResource(R.string.webdav_fill_from_password),
-            passwords = passwordEntriesForPicker.filter { !it.isDeleted && !it.isArchived },
-            onDismiss = { showPasswordPicker = false },
-            onSelect = { entry ->
-                val resolvedServerUrl = entry.website.trim()
-                val resolvedUsername = runCatching { pickerSecurityManager.decryptData(entry.username) }
-                    .getOrNull()
-                    ?.trim()
-                    .takeUnless { it.isNullOrBlank() }
-                    ?: entry.username.trim()
-                val resolvedPassword = runCatching { pickerSecurityManager.decryptData(entry.password) }
-                    .getOrNull()
-                    ?.trim()
-                    .takeUnless { it.isNullOrBlank() }
-                    ?: entry.password.trim()
-
-                if (resolvedServerUrl.isNotBlank()) {
-                    serverUrl = resolvedServerUrl
-                }
-                username = resolvedUsername
-                password = resolvedPassword
-                isConfigured = false
-                errorMessage = ""
-                showPasswordPicker = false
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.webdav_fill_from_password_applied),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        )
-    }
-
-    pendingUntrustedCertificate?.let { certificate ->
-        WebDavCertificateDialog(
-            certificate = certificate,
-            onDismiss = { pendingUntrustedCertificate = null },
-            onContinue = {
-                    pendingUntrustedCertificate = null
-                    isTesting = true
-                    coroutineScope.launch {
-                        webDavHelper.configure(serverUrl, username, password)
-                        webDavHelper.testConnection().fold(
-                            onSuccess = {
-                                isTesting = false
-                                isConfigured = true
-                                loadBackups(webDavHelper) { list, error ->
-                                    backupList = list
-                                    error?.let { errorMessage = it }
-                                }
-                            },
-                            onFailure = { retryError ->
-                                isTesting = false
-                                errorMessage = retryError.message ?: context.getString(R.string.webdav_connection_failed, "")
-                            }
-                        )
+        if (showSyncSettings) {
+            WebDavSyncSettingsDialog(
+                config = changeTriggeredConfig,
+                retentionConfig = backupRetentionConfig,
+                autoBackupEnabled = autoBackupEnabled,
+                onDismiss = { showSyncSettings = false },
+                onConfirm = { updated, updatedRetention ->
+                    changeTriggeredConfig = updated
+                    backupRetentionConfig = updatedRetention
+                    webDavHelper.setChangeTriggeredBackupConfig(updated)
+                    webDavHelper.setBackupRetentionConfig(updatedRetention)
+                    if (!updated.enabled) {
+                        ChangeTriggeredBackupScheduler.cancel(context)
                     }
-            }
-        )
-    }
-
-    if (showSyncSettings) {
-        WebDavSyncSettingsDialog(
-            config = changeTriggeredConfig,
-            retentionConfig = backupRetentionConfig,
-            autoBackupEnabled = autoBackupEnabled,
-            onDismiss = { showSyncSettings = false },
-            onConfirm = { updated, updatedRetention ->
-                changeTriggeredConfig = updated
-                backupRetentionConfig = updatedRetention
-                webDavHelper.setChangeTriggeredBackupConfig(updated)
-                webDavHelper.setBackupRetentionConfig(updatedRetention)
-                if (!updated.enabled) {
-                    ChangeTriggeredBackupScheduler.cancel(context)
+                    showSyncSettings = false
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.webdav_sync_settings_saved),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-                showSyncSettings = false
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.webdav_sync_settings_saved),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        )
+            )
+        }
     }
 }
 
@@ -1232,226 +890,179 @@ internal fun WebDavSyncSettingsDialog(
     val retentionCountValid = parsedRetentionCount != null &&
         parsedRetentionCount in BackupRetentionConfig.MAX_BACKUPS_RANGE
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.webdav_sync_settings)) },
-        text = {
-            Column(
-                modifier = Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.webdav_change_triggered_title),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = stringResource(R.string.webdav_change_triggered_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = draft.enabled,
-                        enabled = autoBackupEnabled,
-                        onCheckedChange = { draft = draft.copy(enabled = it) }
-                    )
-                }
-
-                if (!autoBackupEnabled) {
-                    Text(
-                        text = stringResource(R.string.webdav_change_triggered_requires_auto_backup),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                if (draft.enabled && autoBackupEnabled) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.webdav_change_triggered_quiet),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = stringResource(
-                                R.string.webdav_change_triggered_quiet_value,
-                                draft.quietMinutes
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    Slider(
-                        value = draft.quietMinutes.toFloat(),
-                        onValueChange = { draft = draft.copy(quietMinutes = it.toInt()) },
-                        valueRange = WebDavHelper.QUIET_MINUTES_RANGE.first.toFloat()..
-                            WebDavHelper.QUIET_MINUTES_RANGE.last.toFloat()
-                    )
-                    Text(
-                        text = stringResource(R.string.webdav_change_triggered_quiet_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.webdav_change_triggered_min_interval),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = if (draft.minIntervalMinutes == 0) {
-                                stringResource(R.string.webdav_change_triggered_min_interval_off)
-                            } else {
-                                stringResource(
-                                    R.string.webdav_change_triggered_min_interval_value,
-                                    draft.minIntervalMinutes
-                                )
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    Slider(
-                        value = draft.minIntervalMinutes.toFloat(),
-                        onValueChange = { draft = draft.copy(minIntervalMinutes = it.toInt()) },
-                        valueRange = WebDavHelper.MIN_INTERVAL_MINUTES_RANGE.first.toFloat()..
-                            WebDavHelper.MIN_INTERVAL_MINUTES_RANGE.last.toFloat()
-                    )
-                    Text(
-                        text = stringResource(R.string.webdav_change_triggered_min_interval_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(
-                            text = stringResource(R.string.webdav_retention_title),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = stringResource(R.string.webdav_retention_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = retentionEnabled,
-                        onCheckedChange = { retentionEnabled = it }
-                    )
-                }
-                if (retentionEnabled) {
-                    OutlinedTextField(
-                        value = retentionCount,
-                        onValueChange = { value ->
-                            if (value.length <= 4 && value.all { it in '0'..'9' }) {
-                                retentionCount = value
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        label = { Text(stringResource(R.string.webdav_retention_count)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        isError = !retentionCountValid,
-                        supportingText = {
-                            Text(stringResource(
-                                R.string.webdav_retention_count_hint,
-                                BackupRetentionConfig.MAX_BACKUPS_RANGE.first,
-                                BackupRetentionConfig.MAX_BACKUPS_RANGE.last
-                            ))
-                        }
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.webdav_retention_permanent_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (!retentionEnabled) {
-                    Text(
-                        text = stringResource(
-                            R.string.webdav_retention_disabled_hint,
-                            BackupRetentionPolicy.DEFAULT_RETENTION_DAYS,
-                            BackupRetentionPolicy.DEFAULT_MIN_TEMPORARY_BACKUPS_TO_KEEP
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
+    CloudBackupSheet(
+        title = stringResource(R.string.webdav_sync_settings), onDismiss = onDismiss,
+        actions = {
+            CloudBackupPrimaryButton(
+                label = stringResource(R.string.save),
+                icon = Icons.Default.Done,
                 enabled = !retentionEnabled || retentionCountValid,
                 onClick = {
                     onConfirm(draft, BackupRetentionConfig(
                         enabled = retentionEnabled,
                         maxBackups = parsedRetentionCount
                             ?.takeIf { it in BackupRetentionConfig.MAX_BACKUPS_RANGE }
-                            ?: retentionConfig.maxBackups
+                            ?: retentionConfig.maxBackups,
+                    ))
+                },
+            )
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.cancel)) }
+        },
+    ) {
+        CloudBackupOptionSwitch(
+            title = stringResource(R.string.webdav_change_triggered_title),
+            description = stringResource(R.string.webdav_change_triggered_description),
+            checked = draft.enabled, enabled = autoBackupEnabled,
+            onCheckedChange = { draft = draft.copy(enabled = it) },
+        )
+
+        if (!autoBackupEnabled) {
+            Text(
+                text = stringResource(R.string.webdav_change_triggered_requires_auto_backup),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        MonicaExpandableContent(draft.enabled && autoBackupEnabled) {
+            Column {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.webdav_change_triggered_quiet),
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.webdav_change_triggered_quiet_value,
+                            draft.quietMinutes
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Slider(
+                    value = draft.quietMinutes.toFloat(),
+                    onValueChange = { draft = draft.copy(quietMinutes = it.toInt()) },
+                    valueRange = WebDavHelper.QUIET_MINUTES_RANGE.first.toFloat()..
+                        WebDavHelper.QUIET_MINUTES_RANGE.last.toFloat()
+                )
+                Text(
+                    text = stringResource(R.string.webdav_change_triggered_quiet_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.webdav_change_triggered_min_interval),
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = if (draft.minIntervalMinutes == 0) {
+                            stringResource(R.string.webdav_change_triggered_min_interval_off)
+                        } else {
+                            stringResource(
+                                R.string.webdav_change_triggered_min_interval_value,
+                                draft.minIntervalMinutes
+                            )
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Slider(
+                    value = draft.minIntervalMinutes.toFloat(),
+                    onValueChange = { draft = draft.copy(minIntervalMinutes = it.toInt()) },
+                    valueRange = WebDavHelper.MIN_INTERVAL_MINUTES_RANGE.first.toFloat()..
+                        WebDavHelper.MIN_INTERVAL_MINUTES_RANGE.last.toFloat()
+                )
+                Text(
+                    text = stringResource(R.string.webdav_change_triggered_min_interval_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+        CloudBackupOptionSwitch(
+            title = stringResource(R.string.webdav_retention_title),
+            description = stringResource(R.string.webdav_retention_description),
+            checked = retentionEnabled, onCheckedChange = { retentionEnabled = it },
+        )
+        MonicaExpandableContent(retentionEnabled) {
+            OutlinedTextField(
+                shape = DatabaseManagementFieldShape,
+                value = retentionCount,
+                onValueChange = { value ->
+                    if (value.length <= 4 && value.all { it in '0'..'9' }) {
+                        retentionCount = value
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                label = { Text(stringResource(R.string.webdav_retention_count)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                isError = !retentionCountValid,
+                supportingText = {
+                    Text(stringResource(
+                        R.string.webdav_retention_count_hint,
+                        BackupRetentionConfig.MAX_BACKUPS_RANGE.first,
+                        BackupRetentionConfig.MAX_BACKUPS_RANGE.last
                     ))
                 }
-            ) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            )
         }
-    )
+        Text(
+            text = stringResource(R.string.webdav_retention_permanent_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (!retentionEnabled) {
+            Text(
+                text = stringResource(
+                    R.string.webdav_retention_disabled_hint,
+                    BackupRetentionPolicy.DEFAULT_RETENTION_DAYS,
+                    BackupRetentionPolicy.DEFAULT_MIN_TEMPORARY_BACKUPS_TO_KEEP
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BackupItem(
+private fun WebDavRestoreDialogs(
     backup: BackupFile,
-    isExpiring: Boolean,
     webDavHelper: WebDavHelper,
     passwordRepository: PasswordRepository,
     secureItemRepository: SecureItemRepository,
-    onDeleted: () -> Unit,
     onRestoreSuccess: () -> Unit,
-    onStatusChanged: () -> Unit // Callback for status change
+    onDismiss: () -> Unit,
+    onBusyChanged: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
-    val modifiedText = if (backup.modified.time > 0L) {
-        dateFormat.format(backup.modified)
-    } else {
-        stringResource(R.string.webdav_backup_unknown_date)
-    }
-    
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showRestoreDialog by remember { mutableStateOf(false) }
+    var showRestoreDialog by remember { mutableStateOf(true) }
     var isRestoring by remember { mutableStateOf(false) }
-    var menuExpanded by remember { mutableStateOf(false) }
     var selectedRestoreMode by remember { mutableStateOf(RestoreMode.MERGE_LOCAL) }
     var restoreGlobalDedup by remember { mutableStateOf(false) }
     var showMonicaConfigOverwriteDialog by remember { mutableStateOf(false) }
@@ -1459,7 +1070,7 @@ private fun BackupItem(
     var pendingDecryptPassword by remember { mutableStateOf<String?>(null) }
     var showRestartRequiredDialog by remember { mutableStateOf(false) }
     var restartCountdownSeconds by remember { mutableStateOf(5) }
-    
+
     // New state variables for smart decryption
     var showPasswordInputDialog by remember { mutableStateOf(false) }
     var tempPassword by remember { mutableStateOf("") }
@@ -1487,7 +1098,7 @@ private fun BackupItem(
                 localOnlyDedup = localOnlyDedup,
                 logTag = "WebDavBackup"
             )
-            
+
             isRestoring = false
             pendingDecryptPassword = null
             pendingMonicaConfigEntries = emptyList()
@@ -1495,7 +1106,7 @@ private fun BackupItem(
             // P0修复：显示详细报告
             val message = if (report.hasIssues()) {
                 // 有问题，显示详细报告
-                report.getSummary()
+                report.getSummary(context)
             } else {
                 // 无问题，显示简洁消息
                 buildString {
@@ -1503,7 +1114,7 @@ private fun BackupItem(
                     summaryParts += context.getString(R.string.webdav_restore_summary_part_passwords, stats.passwordImported)
                     summaryParts += context.getString(R.string.webdav_restore_summary_part_other_data, stats.secureItemImported)
                     if (stats.passkeyImported > 0) {
-                        summaryParts += "通行密钥 ${stats.passkeyImported}"
+                        summaryParts += context.getString(R.string.legacy_ui_restore_passkey_count, stats.passkeyImported)
                     }
                     if (stats.steamAccountImported > 0) {
                         summaryParts += "Steam maFile ${stats.steamAccountImported}"
@@ -1514,7 +1125,7 @@ private fun BackupItem(
                             summaryParts.joinToString(", ")
                         )
                     )
-                    
+
                     val issuesParts = mutableListOf<String>()
                     if (stats.passwordSkipped > 0) {
                         issuesParts += context.getString(
@@ -1541,12 +1152,12 @@ private fun BackupItem(
                         )
                     }
                     if (stats.passkeySkipped > 0) {
-                        issuesParts += "重复通行密钥 ${stats.passkeySkipped}"
+                        issuesParts += context.getString(R.string.legacy_ui_restore_passkey_duplicate_count, stats.passkeySkipped)
                     }
                     if (stats.passkeyFailed > 0) {
-                        issuesParts += "通行密钥失败 ${stats.passkeyFailed}"
+                        issuesParts += context.getString(R.string.legacy_ui_restore_passkey_failed_count, stats.passkeyFailed)
                     }
-                    
+
                     if (issuesParts.isNotEmpty()) {
                         append(
                             "\n" + context.getString(
@@ -1555,7 +1166,7 @@ private fun BackupItem(
                             )
                         )
                     }
-                    
+
                     // 如果有导入失败，显示详细信息
                     if (stats.passwordFailed > 0 || stats.secureItemFailed > 0) {
                         append("\n\n${context.getString(R.string.webdav_restore_summary_failed_details)}")
@@ -1647,348 +1258,26 @@ private fun BackupItem(
         animationSpec = tween(durationMillis = 350),
         label = "restore_restart_ring",
     )
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.CloudDownload,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = backup.name,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "$modifiedText • ${webDavHelper.formatFileSize(backup.size)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                // Tags
-                Row(
-                    modifier = Modifier.padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (backup.isPermanent) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(
-                                text = stringResource(R.string.webdav_tag_permanent),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                    if (isExpiring) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = MaterialTheme.shapes.small
-                        ) {
-                            Text(
-                                text = stringResource(R.string.webdav_tag_expiring),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // 恢复按钮
-            IconButton(
-                onClick = {
-                    selectedRestoreMode = RestoreMode.MERGE_LOCAL
-                    restoreGlobalDedup = false
-                    showRestoreDialog = true
-                },
-                enabled = !isRestoring
-            ) {
-                if (isRestoring) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        Icons.Default.Download,
-                        contentDescription = stringResource(R.string.webdav_restore_backup_title),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            
-            // More Menu
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
-                }
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
-                    // Mark/Unmark Permanent
-                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                if (backup.isPermanent) {
-                                    stringResource(R.string.webdav_unmark_permanent)
-                                } else {
-                                    stringResource(R.string.webdav_mark_permanent)
-                                }
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            coroutineScope.launch {
-                                val result = if (backup.isPermanent) {
-                                    webDavHelper.unmarkPermanent(backup)
-                                } else {
-                                    webDavHelper.markBackupAsPermanent(backup)
-                                }
-                                
-                                result.onSuccess {
-                                    Toast.makeText(
-                                        context,
-                                        if (backup.isPermanent) {
-                                            context.getString(R.string.webdav_unmark_permanent_success)
-                                        } else {
-                                            context.getString(R.string.webdav_mark_permanent_success)
-                                        },
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    onStatusChanged()
-                                }.onFailure { e ->
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.webdav_operation_failed, e.message),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        },
-                        leadingIcon = { 
-                            Icon(
-                                if (backup.isPermanent) Icons.Default.BookmarkRemove else Icons.Default.BookmarkAdd, 
-                                contentDescription = null
-                            ) 
-                        }
-                    )
-                    
-                    // Delete
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
-                        onClick = {
-                            menuExpanded = false
-                            showDeleteDialog = true
-                        },
-                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
-                    )
-                }
-            }
-        }
+
+    LaunchedEffect(isRestoring) { onBusyChanged(isRestoring) }
+    DisposableEffect(Unit) { onDispose { onBusyChanged(false) } }
+    LaunchedEffect(showRestoreDialog, isRestoring, showPasswordInputDialog,
+        showMonicaConfigOverwriteDialog, showRestartRequiredDialog) {
+        if (!showRestoreDialog && !isRestoring && !showPasswordInputDialog &&
+            !showMonicaConfigOverwriteDialog && !showRestartRequiredDialog) onDismiss()
     }
-    
-    // 恢复确认对话框
     if (showRestoreDialog) {
-        BasicAlertDialog(
-            onDismissRequest = { showRestoreDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(0.94f),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 6.dp,
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = stringResource(R.string.webdav_restore_backup_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = stringResource(R.string.webdav_restore_mode_title),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = MaterialTheme.shapes.large,
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = MaterialTheme.shapes.medium,
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(36.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CloudDownload,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Text(
-                                    text = backup.name,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    text = "$modifiedText · ${webDavHelper.formatFileSize(backup.size)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        RestoreModeOptionCard(
-                            title = stringResource(R.string.webdav_restore_mode_merge_title),
-                            description = stringResource(R.string.webdav_restore_mode_merge_desc),
-                            icon = Icons.Default.Sync,
-                            selected = selectedRestoreMode == RestoreMode.MERGE_LOCAL,
-                            accentColor = MaterialTheme.colorScheme.primary,
-                            onClick = { selectedRestoreMode = RestoreMode.MERGE_LOCAL },
-                        )
-
-                        RestoreModeOptionCard(
-                            title = stringResource(R.string.webdav_restore_mode_replace_title),
-                            description = stringResource(R.string.webdav_restore_mode_replace_desc),
-                            icon = Icons.Default.DeleteSweep,
-                            selected = selectedRestoreMode == RestoreMode.REPLACE_LOCAL,
-                            accentColor = MaterialTheme.colorScheme.error,
-                            onClick = { selectedRestoreMode = RestoreMode.REPLACE_LOCAL },
-                        )
-                    }
-
-                    if (selectedRestoreMode == RestoreMode.MERGE_LOCAL) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = MaterialTheme.shapes.large,
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.webdav_restore_mode_global_dedup),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.webdav_restore_mode_local_safe_desc),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.webdav_restore_mode_global_dedup_desc),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.78f),
-                                    )
-                                }
-                                Switch(
-                                    checked = restoreGlobalDedup,
-                                    onCheckedChange = { restoreGlobalDedup = it },
-                                )
-                            }
-                        }
-                    } else {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = MaterialTheme.shapes.large,
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                )
-                                Text(
-                                    text = stringResource(R.string.webdav_restore_mode_replace_warning),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                )
-                            }
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = { showRestoreDialog = false }) {
-                            Text(context.getString(R.string.cancel))
-                        }
-                        TextButton(
-                            onClick = {
-                                showRestoreDialog = false
-                                startRestore(
-                                    decryptPassword = null,
-                                    restoreMonicaConfig = null,
-                                )
-                            }
-                        ) {
-                            Text(stringResource(R.string.webdav_restore_action))
-                        }
-                    }
-                }
-            }
-        }
+        CloudBackupRestoreSheet(
+            backup = backup, sizeLabel = webDavHelper.formatFileSize(backup.size),
+            merge = selectedRestoreMode == RestoreMode.MERGE_LOCAL, globalDedup = restoreGlobalDedup,
+            onMergeChange = { selectedRestoreMode = if (it) RestoreMode.MERGE_LOCAL else RestoreMode.REPLACE_LOCAL },
+            onGlobalDedupChange = { restoreGlobalDedup = it },
+            onDismiss = { showRestoreDialog = false },
+            onRestore = {
+                showRestoreDialog = false
+                startRestore(decryptPassword = null, restoreMonicaConfig = null)
+            },
+        )
     }
 
     // 密码输入对话框
@@ -2001,6 +1290,7 @@ private fun BackupItem(
                     Text(stringResource(R.string.webdav_restore_encrypted_hint))
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
+                        shape = DatabaseManagementFieldShape,
                         value = tempPassword,
                         onValueChange = { tempPassword = it },
                         label = { Text(stringResource(R.string.password)) },
@@ -2035,7 +1325,7 @@ private fun BackupItem(
 
     if (showMonicaConfigOverwriteDialog) {
         val displayEntries = pendingMonicaConfigEntries
-            .map(::monicaConfigEntryDisplayName)
+            .map { monicaConfigEntryDisplayName(context, it) }
             .distinct()
         AlertDialog(
             onDismissRequest = {
@@ -2170,178 +1460,7 @@ private fun BackupItem(
             },
         )
     }
-    
-    // 删除确认对话框
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(context.getString(R.string.delete_backup)) },
-            text = { Text(context.getString(R.string.delete_backup_confirm, backup.name)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        coroutineScope.launch {
-                            webDavHelper.deleteBackup(backup).fold(
-                                onSuccess = {
-                                    onDeleted()
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.backup_deleted),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                onFailure = { e ->
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.delete_failed, e.message),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            )
-                        }
-                    }
-                ) {
-                    Text(context.getString(R.string.delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(context.getString(R.string.cancel))
-                }
-            }
-        )
-    }
-}
 
-/**
- * WebDAV 配置信息卡片
- */
-@Composable
-fun WebDavConfigSummaryCard(
-    config: WebDavHelper.WebDavConfig,
-    onEdit: () -> Unit,
-    onClear: () -> Unit
-) {
-    val context = LocalContext.current
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.webdav_config),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(onClick = onEdit) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.webdav_reconfigure),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    IconButton(onClick = onClear) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.webdav_clear_config),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-            
-            Divider()
-            
-            ConfigInfoRow(
-                label = stringResource(R.string.webdav_server_url),
-                value = config.serverUrl,
-                icon = Icons.Default.CloudUpload
-            )
-            
-            ConfigInfoRow(
-                label = stringResource(R.string.username),
-                value = config.username,
-                icon = Icons.Default.Person
-            )
-        }
-    }
-}
-
-/**
- * 配置信息行组件
- */
-@Composable
-fun ConfigInfoRow(
-    label: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
-) {
-    val context = LocalContext.current
-    val clipboardManager = remember { 
-        context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager 
-    }
-    
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(20.dp)
-            )
-            Column {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-        
-        IconButton(
-            onClick = {
-                val clip = android.content.ClipData.newPlainText(label, value)
-                clipboardManager.setPrimaryClip(clip)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.copied_field_name, label),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        ) {
-            Icon(
-                Icons.Default.ContentCopy,
-                contentDescription = "${stringResource(R.string.copy)} $label",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
 }
 
 private suspend fun loadBackups(
@@ -2357,5 +1476,4 @@ private suspend fun loadBackups(
         }
     )
 }
-
 

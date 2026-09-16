@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -21,23 +23,23 @@ fun WebDavCertificateDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("WebDAV 证书不受信任") },
+        title = { Text(stringResource(R.string.legacy_ui_webdav_untrusted_certificate)) },
         text = {
             Column {
-                Text("服务器：${certificate.host}")
+                Text(stringResource(R.string.legacy_ui_certificate_host, certificate.host))
                 Spacer(Modifier.height(6.dp))
                 Text("SHA-256：${certificate.fingerprint}", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(6.dp))
-                Text("继续后仅信任当前证书；证书变化时会再次确认。")
+                Text(stringResource(R.string.legacy_ui_certificate_trust_hint))
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 WebDavCertificateTrustStore.trust(certificate.host, certificate.fingerprint)
                 onContinue()
-            }) { Text("继续连接") }
+            }) { Text(stringResource(R.string.legacy_ui_continue_connect)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 

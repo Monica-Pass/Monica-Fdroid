@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">Bitwarden 密府不可用。</string>
+    <string name="entry_message_unsupported_type">此类条目不可行此事。</string>
+    <string name="entry_message_ownership_conflict">条目归属相争，请先决之，再迁入 Monica 本机。</string>
+    <string name="entry_message_local_copy_failed">Monica 本机副本未能建成。</string>
+    <string name="entry_message_attachments_incomplete">附件未能尽摹。</string>
+    <string name="entry_message_bitwarden_sync_id_missing">Bitwarden 条目缺同步标识。</string>
+    <string name="entry_message_keepass_source_delete_failed">KeePass 原条目未能删去。</string>
+    <string name="entry_message_source_delete_failed">原条目未能删去。</string>
+    <string name="entry_message_storage_save_failed">未能存入所选之处。</string>
+    <string name="entry_message_from_password">出自密钥：%1$s</string>
+    <string name="entry_message_passkey_android_required">Passkey 全备之用需 Android 14 及以上。此机：%1$s</string>
+    <string name="entry_message_passkey_save_failed">通行之钥未能存：%1$s</string>
+    <string name="entry_message_passkey_missing">无此通行之钥。</string>
+    <string name="entry_message_passkey_update_failed">通行之钥未能更新：%1$s</string>
+    <string name="entry_message_passkey_ownership_failed">MDBX 通行之钥归属未能更定：%1$s</string>
+    <string name="entry_message_passkey_binding_failed">关联未能更定：%1$s</string>
+    <string name="entry_message_passkey_usage_failed">用钥之录未能更新：%1$s</string>
+    <string name="entry_message_passkey_delete_failed">通行之钥未能删：%1$s</string>
+    <string name="entry_message_category_path_invalid">分类路径无效。</string>
+    <string name="entry_message_category_move_into_self">分类不可迁入自身及其下属。</string>
+    <string name="entry_message_category_missing">无此分类。</string>
+    <string name="entry_message_category_exists">所往之处已有同名分类。</string>
+    <string name="entry_message_category_move_conflict">迁之则与既有分类相冲。</string>
+    <string name="entry_message_category_name_required">分类不可无名。</string>
+    <string name="entry_message_category_name_separator">分类名不可含 /。</string>
+    <string name="entry_message_category_rename_conflict">更名则与既有分类相冲。</string>
+    <string name="entry_message_saved">已存</string>
+</resources>

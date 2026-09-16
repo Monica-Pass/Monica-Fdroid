@@ -1,5 +1,9 @@
 package takagi.ru.monica.util
 
+import takagi.ru.monica.utils.AppLocaleStringResolver
+
+import takagi.ru.monica.R
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -43,6 +47,7 @@ object PhotoPickerHelper {
     
     // 当前回调实例
     private var currentCallback: PhotoPickerCallback? = null
+    private lateinit var strings: AppLocaleStringResolver
     
     // Use WeakReference to avoid memory leaks
     private var weakContext: WeakReference<Context>? = null
@@ -55,6 +60,7 @@ object PhotoPickerHelper {
      */
     fun setCallback(context: Context, callback: PhotoPickerCallback) {
         this.weakContext = WeakReference(context)
+        this.strings = AppLocaleStringResolver(context)
         this.currentCallback = callback
     }
     
@@ -88,7 +94,7 @@ object PhotoPickerHelper {
                 pendingAction?.invoke()
             } else {
                 // 权限被拒绝
-                currentCallback?.onError("相机权限被拒绝，无法使用拍照功能")
+                currentCallback?.onError(strings.get(R.string.camera_permission_needed))
             }
             pendingAction = null
             weakPendingActivity = null
@@ -131,10 +137,10 @@ object PhotoPickerHelper {
                     activity.startActivityForResult(intent, REQUEST_CODE_CAMERA)
                 } catch (e: Exception) {
                     // 如果启动相机失败，给出明确的错误提示，但不自动切换到图库
-                    currentCallback?.onError("启动相机失败: ${e.message}")
+                    currentCallback?.onError(strings.get(R.string.photo_message_camera_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
                 }
             } catch (e: Exception) {
-                currentCallback?.onError("启动相机失败: ${e.message}")
+                currentCallback?.onError(strings.get(R.string.photo_message_camera_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
             }
         }
     }
@@ -204,11 +210,11 @@ object PhotoPickerHelper {
                     val defaultIntent = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
                     activity.startActivityForResult(defaultIntent, REQUEST_CODE_GALLERY)
                 } catch (e: Exception) {
-                    currentCallback?.onError("设备上没有可用的图库应用")
+                    currentCallback?.onError(strings.get(R.string.photo_message_gallery_missing))
                 }
             }
         } catch (e: Exception) {
-            currentCallback?.onError("启动相册失败: ${e.message}")
+            currentCallback?.onError(strings.get(R.string.photo_message_gallery_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
         }
     }
     
@@ -260,10 +266,10 @@ object PhotoPickerHelper {
                                     outputStream.close()
                                     currentCallback?.onPhotoSelected(file.absolutePath)
                                 } catch (e: Exception) {
-                                    currentCallback?.onError("从Intent获取图片数据失败: ${e.message}")
+                                    currentCallback?.onError(strings.get(R.string.photo_message_data_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
                                 }
                             } else {
-                                currentCallback?.onError("照片文件为空或不存在")
+                                currentCallback?.onError(strings.get(R.string.photo_message_file_missing))
                             }
                         }
                     }
@@ -280,11 +286,11 @@ object PhotoPickerHelper {
                                 outputStream.close()
                                 currentCallback?.onPhotoSelected(photoFile.absolutePath)
                             } catch (e: Exception) {
-                                currentCallback?.onError("从Intent获取图片数据失败: ${e.message}")
+                                currentCallback?.onError(strings.get(R.string.photo_message_data_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
                             }
                         }
                     } else {
-                        currentCallback?.onError("临时照片文件不存在")
+                        currentCallback?.onError(strings.get(R.string.photo_message_file_missing))
                     }
                 }
             } else {
@@ -312,10 +318,10 @@ object PhotoPickerHelper {
                     if (imagePath != null) {
                         currentCallback?.onPhotoSelected(imagePath)
                     } else {
-                        currentCallback?.onError("保存图片失败")
+                        currentCallback?.onError(strings.get(R.string.photo_save_failed))
                     }
                 } else {
-                    currentCallback?.onError("未选择图片")
+                    currentCallback?.onError(strings.get(R.string.photo_message_not_selected))
                 }
             } else {
                 currentCallback?.onPhotoSelected(null)
