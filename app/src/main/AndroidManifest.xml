@@ -314,6 +314,8 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        <!-- Keep automatic Sui initialization: Sui can also grant Shell access.
+             Recovery checks the actual backend UID and permission before using it. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"

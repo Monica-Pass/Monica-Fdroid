@@ -43,12 +43,6 @@ class MonicaApplication : Application() {
 
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(base)
-        // Recovery supports the ADB backend only, and never initializes a root/Sui connection.
-        rikka.shizuku.ShizukuProvider.disableAutomaticSuiInitialization()
-    }
-
     override fun onCreate() {
         super.onCreate()
 
