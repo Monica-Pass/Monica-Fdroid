@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Proposed tag to check only (optional; example: v1.0.312)'
+        description: 'Proposed tag to check only (optional; example: v1.0.313)'
         required: false
         type: string
 

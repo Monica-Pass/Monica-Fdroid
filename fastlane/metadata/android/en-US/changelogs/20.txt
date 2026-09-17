@@ -1,0 +1,6 @@
+Updated to Monica 1.0.313.
+- Redesigned deduplication with attachment, photo and custom field preservation and eligible passkeys.
+- Faster Dock switching and Rust grouping for large lists.
+- Six quick-setup presets and draggable Dock ordering.
+- Hong Kong Traditional Chinese and grouped Chinese language options.
+- Better autofill for nonstandard fields, two-step sign-in and web forms; fixed exclusions.

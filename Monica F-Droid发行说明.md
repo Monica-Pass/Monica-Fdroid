@@ -1,4 +1,4 @@
-# Monica for Android (F-Droid) 1.0.312
+# Monica for Android (F-Droid) 1.0.313
 
 ## 中文
 
