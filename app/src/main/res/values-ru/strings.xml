@@ -3461,8 +3461,8 @@
     <string name="qs_next">Далее</string>
     <string name="qs_skip">Пропустить</string>
     <string name="qs_previous">Назад</string>
-    <string name="qs_welcome_heading">В Monica много настроек. Хотите пройти быструю настройку?</string>
-    <string name="qs_welcome_description">Покажем только самые важные настройки. Можно пропустить или вернуться позже.</string>
+    <string name="qs_welcome_heading">Monica по-вашему</string>
+    <string name="qs_welcome_description">Выберите раскладку, настройте защиту и добавьте данные. Этот мастер можно снова открыть в настройках.</string>
     <string name="qs_language_selection">Язык</string>
     <string name="qs_collapse">Свернуть</string>
     <string name="qs_change">Изменить</string>

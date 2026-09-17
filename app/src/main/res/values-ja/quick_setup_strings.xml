@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">プリセットを選択</string>
+    <string name="qs_step_presets_subtitle">まずレイアウトを選び、Dock と各ページを個別に調整できます。</string>
+    <string name="qs_dock_subtitle">Dock に表示するページと並び順を選びます。</string>
+    <string name="qs_step_customize_title">ページを調整</string>
+    <string name="qs_step_customize_subtitle">変更したい項目だけ開いてください。後から設定でも変更できます。</string>
+    <string name="qs_step_protect_title">保護と自動入力</string>
+    <string name="qs_step_protect_subtitle">保管庫を保護し、ログインを手軽に。</string>
+    <string name="qs_ready_title">準備完了</string>
+    <string name="qs_ready_subtitle">このレイアウトで始めます。設定からいつでも変更できます。</string>
+    <string name="qs_save_failed">設定を保存できませんでした。もう一度お試しください。</string>
+    <string name="qs_use_preset">適用する</string>
+    <string name="qs_enter_monica">Monica を開く</string>
+    <string name="qs_current_layout">現在のレイアウト</string>
+    <string name="qs_data_optional">データベースの接続やデータのインポートは、後から設定でも行えます。</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · プレビュー</string>
+    <string name="qs_preset_bitwarden_preview_desc">保管庫の概要を表示。Dock に Send と生成器を配置します。</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · リスト</string>
+    <string name="qs_preset_bitwarden_list_desc">保管庫の一覧を直接表示。Dock に Send と生成器を配置します。</string>
+    <string name="qs_preset_authenticator">認証コード専用</string>
+    <string name="qs_preset_authenticator_desc">認証アプリと Steam を配置し、コードをすぐに確認できます。</string>
+    <string name="qs_preset_paged">ページ別管理</string>
+    <string name="qs_preset_paged_desc">パスワード、認証コード、カード、ノートを別々のページに。</string>
+    <string name="qs_preset_everyday">日常向け</string>
+    <string name="qs_preset_everyday_desc">パスワード、認証コード、生成器をすぐ使える場所に。</string>
+    <string name="qs_preset_minimal">シンプル</string>
+    <string name="qs_preset_minimal_desc">パスワードと生成器だけのすっきりした Dock。</string>
+    <string name="qs_keep_layout">現在の配置を保持</string>
+    <string name="qs_keep_layout_desc">今の設定を引き継ぎ、必要に応じて調整します。</string>
+    <string name="qs_presets_hint">設定は常に Dock に表示されます。どのデータベースでも使えるレイアウトです。データの接続は後の手順で行えます。</string>
+    <string name="qs_move_up">上へ</string>
+    <string name="qs_move_down">下へ</string>
+    <string name="qs_settings_kept">常に表示</string>
+    <string name="qs_vault_overview">保管庫を概要から開く</string>
+</resources>

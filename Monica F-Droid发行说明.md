@@ -4,6 +4,7 @@
 
 ### 简要
 
+- 快速初始化新增六套布局预设，Dock 与页面微调分步设置。
 - 新增香港繁体中文、文言文（华夏）、波兰语和猫语，中文选项集中在可展开的语言卡片中。
 - ZIP、CSV 导入和文件导出支持选择数据库，加入进度显示和后台导出。
 - 数据库、WebDAV 备份等页面统一采用 M3E 设计，加入平滑展开与可选卡叠循环。
@@ -12,6 +13,7 @@
 
 ### 详细
 
+- **快速初始化**：新增 Bitwarden 预览／列表、验证器专用、分页管理、日常常用和极简密码六套预设，可先预览 Dock 再应用；支持保留当前布局。流程调整为欢迎、预设、Dock、页面微调、安全与自动填充、接入数据、完成；Dock 复用底栏设置卡片，完整显示已开启及隐藏页面，支持长按拖拽排序；列表、卡片和配色在后续步骤按需展开。返回前一步保留微调，设置入口始终可达，并补齐各语言文案。
 - **语言与本地化**：新增香港繁体中文、文言文（华夏）、波兰语和猫语。繁体中文采用香港常用书面用语，明确区分简繁语言，缺失文案优先回退简体中文；文言文采用简洁、统一的古文表达，波兰语调整常用标签与复数形式，猫语缺失内容回退简体中文。清理 Bitwarden、备份恢复、Steam、自动填充等页面的中文硬编码，补齐各语言的新旧功能文案。2FA 和 Steam 卡片统一使用 `Next` 标记。
 - **选择目标导入**：ZIP 和 CSV 可导入到本地、KeePass、MDBX 或 Bitwarden，按目标数据库格式保存支持的数据类型。加密 ZIP 使用备份文件自身的解密密码，导入结果展示成功、跳过、失败及待上传状态；重复导入进行去重。
 - **按数据库导出**：文件导出使用所选数据库作为来源，ZIP 中的密码、Passkey、附件和回收站均跟随该范围。可移植 Passkey 私钥与附件通过加密 ZIP 导出；附件流式写入并校验完整性，异常时指出具体条目与附件。其他数据库的数据与应用连接配置不混入备份。
@@ -35,6 +37,7 @@
 
 ### Summary
 
+- Add six quick-setup layouts, with separate Dock and page-customization steps.
 - Add Hong Kong Traditional Chinese, Classical Chinese (Huaxia), Polish, and Nya, with Chinese variants grouped in an expandable language card.
 - Add database selection for ZIP/CSV imports and file exports, progress indicators, and background exports.
 - Refresh database and WebDAV backup pages with M3E layouts, smooth expansion, and optional looping card stacks.
@@ -43,6 +46,7 @@
 
 ### Details
 
+- **Quick setup:** Preview and apply six layouts: Bitwarden overview or list, Authenticator, Separate pages, Everyday, and Minimal. Keep your current layout if preferred. The flow now covers welcome, presets, Dock, page customization, security and autofill, data connections, and completion. Dock uses the existing settings cards, lists both visible and hidden pages, and supports drag-and-drop ordering in its own step; list, card, and color options expand separately in the next step. Going back preserves adjustments, Settings remains accessible, and all supported languages include the new text.
 - **Languages and localization:** Add Hong Kong Traditional Chinese, Classical Chinese (Huaxia), Polish, and Nya. Traditional Chinese uses Hong Kong terminology and is distinguished from Simplified Chinese, with Simplified Chinese as its first fallback. Classical Chinese uses concise, consistent terminology; Polish includes compact labels and proper plural forms. Missing Nya text falls back to Simplified Chinese. Replace hardcoded Chinese in Bitwarden, backup, Steam, autofill, and other screens, and complete translations for existing and new features. Both 2FA and Steam cards use the label `Next`.
 - **Import destinations:** Import ZIP and CSV files into a local, KeePass, MDBX, or Bitwarden database, using the destination's format for supported items. Encrypted ZIP files use their own decryption password. Results show imported, skipped, failed, and pending-upload items, with deduplication for repeated imports.
 - **Database-scoped exports:** File exports use the selected database. Passwords, passkeys, attachments, and trash in a ZIP follow that scope. Portable passkey private keys and attachments require an encrypted ZIP. Attachments are streamed and checked for integrity; failures identify the item and attachment. Unrelated databases and app connection settings are excluded.

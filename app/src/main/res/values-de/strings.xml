@@ -4055,8 +4055,8 @@
     <string name="qs_next">Weiter</string>
     <string name="qs_skip">Überspringen</string>
     <string name="qs_previous">Zurück</string>
-    <string name="qs_welcome_heading">Monica hat viele Einstellungen. Möchten Sie eine kurze Anleitung zur Einrichtung?</string>
-    <string name="qs_welcome_description">Zunächst richten wir die wichtigsten Einstellungen ein. Sie können dies überspringen oder später erneut öffnen.</string>
+    <string name="qs_welcome_heading">Deine Monica, dein Layout</string>
+    <string name="qs_welcome_description">Wähle ein Layout, richte den Schutz ein und bring deine Daten mit. Diese Einrichtung findest du später in den Einstellungen.</string>
     <string name="qs_language_selection">Sprache</string>
     <string name="qs_collapse">Einklappen</string>
     <string name="qs_change">Ändern</string>

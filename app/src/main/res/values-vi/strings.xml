@@ -1995,8 +1995,8 @@
     <string name="qs_next">Tiep theo</string>
     <string name="qs_skip">Bo qua</string>
     <string name="qs_previous">Quay lai</string>
-    <string name="qs_welcome_heading">Cai dat Monica co phan phuc tap, nen toi co the dan ban qua khoi tao nhanh. San sang bat dau?</string>
-    <string name="qs_welcome_description">Ben duoi chi giu lai cac cai dat anh huong nhieu nhat den lan dau su dung. Ban co the bo qua, hoac mo lai tu \"Tinh nang mo rong\" sau.</string>
+    <string name="qs_welcome_heading">Monica theo cách của bạn</string>
+    <string name="qs_welcome_description">Chọn bố cục, thiết lập bảo mật và thêm dữ liệu. Bạn có thể mở lại hướng dẫn này trong Cài đặt.</string>
     <string name="qs_language_selection">Chon ngon ngu</string>
     <string name="qs_collapse">Thu gon</string>
     <string name="qs_change">Thay doi</string>

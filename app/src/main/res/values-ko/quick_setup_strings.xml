@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">프리셋 선택</string>
+    <string name="qs_step_presets_subtitle">레이아웃을 먼저 고른 뒤 Dock과 각 페이지를 따로 조정하세요.</string>
+    <string name="qs_dock_subtitle">Dock에 표시할 페이지와 순서를 정하세요.</string>
+    <string name="qs_step_customize_title">페이지 세부 설정</string>
+    <string name="qs_step_customize_subtitle">바꾸고 싶은 항목만 펼치세요. 나중에 설정에서도 변경할 수 있어요.</string>
+    <string name="qs_step_protect_title">보안 및 자동 완성</string>
+    <string name="qs_step_protect_subtitle">보관함을 보호하고 더 편하게 로그인하세요.</string>
+    <string name="qs_ready_title">준비 완료</string>
+    <string name="qs_ready_subtitle">이 레이아웃으로 시작해요. 언제든 설정에서 바꿀 수 있어요.</string>
+    <string name="qs_save_failed">설정을 저장하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="qs_use_preset">프리셋 적용</string>
+    <string name="qs_enter_monica">Monica 열기</string>
+    <string name="qs_current_layout">현재 레이아웃</string>
+    <string name="qs_data_optional">지금 데이터베이스를 연결하거나 데이터를 가져오세요. 나중에 설정에서 해도 돼요.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · 미리보기</string>
+    <string name="qs_preset_bitwarden_preview_desc">보관함 개요로 시작하고 Dock에 Send와 생성기를 배치해요.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · 목록</string>
+    <string name="qs_preset_bitwarden_list_desc">보관함 목록을 바로 열고 Dock에 Send와 생성기를 배치해요.</string>
+    <string name="qs_preset_authenticator">인증 코드 전용</string>
+    <string name="qs_preset_authenticator_desc">인증기와 Steam으로 인증 코드를 빠르게 확인하세요.</string>
+    <string name="qs_preset_paged">페이지별 관리</string>
+    <string name="qs_preset_paged_desc">비밀번호, 인증기, 카드, 메모를 각각의 페이지로 나눠요.</string>
+    <string name="qs_preset_everyday">일상용</string>
+    <string name="qs_preset_everyday_desc">비밀번호, 인증기, 생성기를 한곳에서 빠르게 열어요.</string>
+    <string name="qs_preset_minimal">간단하게</string>
+    <string name="qs_preset_minimal_desc">비밀번호와 생성기만 두어 Dock을 간결하게 만들어요.</string>
+    <string name="qs_keep_layout">현재 레이아웃 유지</string>
+    <string name="qs_keep_layout_desc">기존 설정을 유지하고 다음 단계에서 필요에 맞게 조정해요.</string>
+    <string name="qs_presets_hint">설정은 항상 Dock에 표시돼요. 모든 데이터베이스에서 쓸 수 있는 레이아웃이며, 데이터 연결 단계에서 원하는 데이터베이스를 연결하세요.</string>
+    <string name="qs_move_up">위로</string>
+    <string name="qs_move_down">아래로</string>
+    <string name="qs_settings_kept">항상 표시</string>
+    <string name="qs_vault_overview">보관함을 개요 화면으로 열기</string>
+</resources>

@@ -4055,8 +4055,8 @@
     <string name="qs_next">Siguiente</string>
     <string name="qs_skip">Omitir</string>
     <string name="qs_previous">Anterior</string>
-    <string name="qs_welcome_heading">Monica tiene muchas configuraciones. ¿Quieres un tutorial de configuración rápida?</string>
-    <string name="qs_welcome_description">Cubriremos solo las configuraciones que más importan al principio. Puedes omitirlo o volver a abrirlo más tarde.</string>
+    <string name="qs_welcome_heading">Monica a tu manera</string>
+    <string name="qs_welcome_description">Elige un diseño, protege tu bóveda y trae tus datos. Puedes volver a esta guía desde Ajustes.</string>
     <string name="qs_language_selection">Idioma</string>
     <string name="qs_collapse">Contraer</string>
     <string name="qs_change">Cambiar</string>

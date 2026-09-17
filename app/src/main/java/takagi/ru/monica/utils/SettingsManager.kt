@@ -40,6 +40,8 @@ import takagi.ru.monica.data.AutofillSource
 import takagi.ru.monica.data.AuthenticatorLayoutMode
 import takagi.ru.monica.data.VaultV2LayoutMode
 import takagi.ru.monica.data.VaultOverviewConfig
+import takagi.ru.monica.data.QuickSetupPreset
+import takagi.ru.monica.data.quickSetupNavigationVisibility
 
 private val Context.dataStore by preferencesDataStore("settings")
 
@@ -836,6 +838,42 @@ class SettingsManager(private val context: Context) {
         dataStore.edit { preferences ->
             preferences[BOTTOM_NAV_ORDER_KEY] = sanitizedOrder.joinToString(",") { it.name }
         }
+    }
+
+    /** A preset is one transaction, so observers never see a partially configured Dock. */
+    suspend fun applyQuickSetupPreset(preset: QuickSetupPreset) {
+        dataStore.edit { preferences ->
+            preferences.writeQuickSetupNavigation(preset.tabs)
+            preset.vaultOverviewEnabled?.let { enabled ->
+                preferences[VAULT_OVERVIEW_ENABLED_KEY] = enabled
+                preferences[VAULT_V2_LAYOUT_MODE_KEY] = VaultV2LayoutMode.CLASSIC.name
+            }
+            if (BottomNavContentTab.PASSWORDS in preset.tabs) {
+                preferences[PASSWORD_PAGE_AGGREGATE_ENABLED_KEY] = false
+            }
+        }
+    }
+
+    suspend fun updateQuickSetupNavigation(order: List<BottomNavContentTab>, tabs: List<BottomNavContentTab>) {
+        require(tabs.isNotEmpty())
+        dataStore.edit { preferences -> preferences.writeQuickSetupNavigation(tabs, order) }
+    }
+
+    private fun MutablePreferences.writeQuickSetupNavigation(
+        tabs: List<BottomNavContentTab>, order: List<BottomNavContentTab> = tabs,
+    ) {
+        val visibility = quickSetupNavigationVisibility(tabs)
+        this[BOTTOM_NAV_ORDER_KEY] = BottomNavContentTab.sanitizeOrder(order).joinToString(",") { it.name }
+        this[SHOW_VAULT_V2_TAB_KEY] = visibility.vaultV2
+        this[SHOW_PASSWORDS_TAB_KEY] = visibility.passwords
+        this[SHOW_AUTHENTICATOR_TAB_KEY] = visibility.authenticator
+        this[SHOW_CARD_WALLET_TAB_KEY] = visibility.cardWallet
+        this[SHOW_GENERATOR_TAB_KEY] = visibility.generator
+        this[SHOW_NOTES_TAB_KEY] = visibility.notes
+        this[SHOW_SEND_TAB_KEY] = visibility.send
+        this[SHOW_PASSKEY_TAB_KEY] = visibility.passkey
+        this[SHOW_STEAM_TAB_KEY] = visibility.steam
+        this[AUTO_HIDE_BOTTOM_NAV_WHEN_SINGLE_TAB_KEY] = false
     }
 
     suspend fun updateUseDraggableBottomNav(enabled: Boolean) {

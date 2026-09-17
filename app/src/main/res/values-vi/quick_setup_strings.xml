@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Chọn bố cục có sẵn</string>
+    <string name="qs_step_presets_subtitle">Chọn bố cục trước, rồi chỉnh Dock và từng trang riêng sau.</string>
+    <string name="qs_dock_subtitle">Chọn các trang trên Dock và sắp xếp thứ tự.</string>
+    <string name="qs_step_customize_title">Tinh chỉnh trang</string>
+    <string name="qs_step_customize_subtitle">Chỉ mở những mục bạn muốn đổi. Bạn vẫn có thể chỉnh lại trong Cài đặt.</string>
+    <string name="qs_step_protect_title">Bảo mật và tự động điền</string>
+    <string name="qs_step_protect_subtitle">Bảo vệ kho mật khẩu và đăng nhập thuận tiện hơn.</string>
+    <string name="qs_ready_title">Sẵn sàng</string>
+    <string name="qs_ready_subtitle">Đây là bố cục của bạn. Có thể đổi bất cứ lúc nào trong Cài đặt.</string>
+    <string name="qs_save_failed">Không lưu được cài đặt. Vui lòng thử lại.</string>
+    <string name="qs_use_preset">Áp dụng</string>
+    <string name="qs_enter_monica">Mở Monica</string>
+    <string name="qs_current_layout">Bố cục hiện tại</string>
+    <string name="qs_data_optional">Kết nối cơ sở dữ liệu hoặc nhập dữ liệu ngay, hoặc để sau trong Cài đặt.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Tổng quan</string>
+    <string name="qs_preset_bitwarden_preview_desc">Mở tổng quan kho, với Send và Trình tạo trên Dock.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · Danh sách</string>
+    <string name="qs_preset_bitwarden_list_desc">Vào thẳng danh sách trong kho, với Send và Trình tạo trên Dock.</string>
+    <string name="qs_preset_authenticator">Chuyên mã xác thực</string>
+    <string name="qs_preset_authenticator_desc">Trình xác thực và Steam để xem mã nhanh chóng.</string>
+    <string name="qs_preset_paged">Từng trang riêng</string>
+    <string name="qs_preset_paged_desc">Mật khẩu, Trình xác thực, Ví thẻ và Ghi chú có trang riêng.</string>
+    <string name="qs_preset_everyday">Hằng ngày</string>
+    <string name="qs_preset_everyday_desc">Mật khẩu, Trình xác thực và Trình tạo luôn trong tầm tay.</string>
+    <string name="qs_preset_minimal">Tối giản</string>
+    <string name="qs_preset_minimal_desc">Chỉ Mật khẩu và Trình tạo, giúp Dock gọn hơn.</string>
+    <string name="qs_keep_layout">Giữ bố cục hiện tại</string>
+    <string name="qs_keep_layout_desc">Giữ cấu hình đang dùng và chỉnh thêm ở bước sau nếu cần.</string>
+    <string name="qs_presets_hint">Cài đặt luôn có trên Dock. Mọi bố cục đều dùng được với mọi cơ sở dữ liệu; hãy kết nối ở bước nhập dữ liệu.</string>
+    <string name="qs_move_up">Lên trên</string>
+    <string name="qs_move_down">Xuống dưới</string>
+    <string name="qs_settings_kept">Luôn hiển thị</string>
+    <string name="qs_vault_overview">Mở kho từ trang tổng quan</string>
+</resources>

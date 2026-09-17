@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.AddButtonBehaviorMode
@@ -19,6 +20,9 @@ import takagi.ru.monica.data.Language
 import takagi.ru.monica.data.PasswordPageContentType
 import takagi.ru.monica.data.PasswordSwipeSelectionMode
 import takagi.ru.monica.data.PresetCustomField
+import takagi.ru.monica.data.QuickSetupPreset
+import takagi.ru.monica.data.quickSetupVisibleTabs
+import takagi.ru.monica.data.quickSetupTabOrder
 import takagi.ru.monica.data.ThemeMode
 import takagi.ru.monica.data.SecureItem
 import takagi.ru.monica.data.ItemType
@@ -97,6 +101,23 @@ class SettingsViewModel(
         viewModelScope.launch {
             settingsManager.updateQuickSetupCompleted(completed)
         }
+    }
+
+    suspend fun applyQuickSetupPreset(preset: QuickSetupPreset) {
+        settingsManager.applyQuickSetupPreset(preset)
+        // Advance only after the screen observes the saved layout.
+        settings.first { preset.matches(it) }
+    }
+
+    suspend fun updateQuickSetupNavigation(order: List<BottomNavContentTab>, tabs: List<BottomNavContentTab>) {
+        settingsManager.updateQuickSetupNavigation(order, tabs)
+        settings.first {
+            it.quickSetupVisibleTabs() == tabs && it.quickSetupTabOrder() == order && !it.autoHideBottomNavWhenSingleTab
+        }
+    }
+
+    suspend fun completeQuickSetup() {
+        settingsManager.updateQuickSetupCompleted(true)
     }
     
     fun updateAutoLockMinutes(minutes: Int) {

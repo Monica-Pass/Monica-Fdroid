@@ -3950,8 +3950,8 @@
     <string name="qs_skip">先跳过喵</string>
     <string name="qs_previous">上一步喵</string>
     <string name="qs_step_counter">第 %1$d 步喵，一共 %2$d 步喵</string>
-    <string name="qs_welcome_heading">Monica 的设置有点多，让人家带您快速搭一遍窝好不好喵？</string>
-    <string name="qs_welcome_description">下面只放了第一次使用最要紧的几个设置喵。可以先跳过，以后也能在「功能拓展」里重新打开喵</string>
+    <string name="qs_welcome_heading">你的 Monica，由你安排</string>
+    <string name="qs_welcome_description">选布局、设保护、接入数据。以后也能从设置中重新打开本向导。</string>
     <string name="qs_language_selection">选个顺口的语言喵</string>
     <string name="qs_collapse">收起喵</string>
     <string name="qs_change">更改喵</string>

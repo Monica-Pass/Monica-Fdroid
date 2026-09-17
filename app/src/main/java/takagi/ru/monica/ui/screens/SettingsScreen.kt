@@ -47,6 +47,7 @@ import androidx.fragment.app.FragmentActivity
 import takagi.ru.monica.BuildConfig
 import takagi.ru.monica.R
 import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.BottomNavConfigRow
 import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.BottomNavContentTab
@@ -2469,79 +2470,6 @@ fun CheckboxRow(
             text = label,
             style = MaterialTheme.typography.bodyMedium
         )
-    }
-}
-
-@Composable
-private fun BottomNavConfigRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    switchEnabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    showDragHandle: Boolean = true,
-    dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(modifier),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (showDragHandle) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .then(dragHandleModifier),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DragIndicator,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                enabled = switchEnabled
-            )
-        }
     }
 }
 

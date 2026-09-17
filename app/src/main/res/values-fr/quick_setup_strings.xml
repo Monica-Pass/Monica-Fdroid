@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Choisir une disposition</string>
+    <string name="qs_step_presets_subtitle">Partez d’un modèle, puis ajustez le Dock et les pages séparément.</string>
+    <string name="qs_dock_subtitle">Choisissez les pages du Dock et leur ordre.</string>
+    <string name="qs_step_customize_title">Personnaliser les pages</string>
+    <string name="qs_step_customize_subtitle">Dépliez uniquement les options à modifier. Elles restent accessibles dans les paramètres.</string>
+    <string name="qs_step_protect_title">Sécurité et saisie auto</string>
+    <string name="qs_step_protect_subtitle">Protégez votre coffre et simplifiez vos connexions.</string>
+    <string name="qs_ready_title">Tout est prêt</string>
+    <string name="qs_ready_subtitle">Voici votre disposition. Vous pourrez la modifier dans les paramètres.</string>
+    <string name="qs_save_failed">Impossible d’enregistrer les paramètres. Réessayez.</string>
+    <string name="qs_use_preset">Appliquer</string>
+    <string name="qs_enter_monica">Ouvrir Monica</string>
+    <string name="qs_current_layout">Disposition actuelle</string>
+    <string name="qs_data_optional">Connectez une base ou importez des données maintenant, ou plus tard dans les paramètres.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Aperçu</string>
+    <string name="qs_preset_bitwarden_preview_desc">Ouvrez la vue d’ensemble du coffre, avec Send et Générateur dans le Dock.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · Liste</string>
+    <string name="qs_preset_bitwarden_list_desc">Accédez directement à la liste du coffre, avec Send et Générateur dans le Dock.</string>
+    <string name="qs_preset_authenticator">Authentificateur</string>
+    <string name="qs_preset_authenticator_desc">Authentificateur et Steam pour retrouver vos codes rapidement.</string>
+    <string name="qs_preset_paged">Pages séparées</string>
+    <string name="qs_preset_paged_desc">Mots de passe, Authentificateur, Cartes et Notes ont chacun leur page.</string>
+    <string name="qs_preset_everyday">Au quotidien</string>
+    <string name="qs_preset_everyday_desc">Mots de passe, Authentificateur et Générateur à portée de main.</string>
+    <string name="qs_preset_minimal">Minimal</string>
+    <string name="qs_preset_minimal_desc">Mots de passe et Générateur, pour un Dock épuré.</string>
+    <string name="qs_keep_layout">Garder la disposition</string>
+    <string name="qs_keep_layout_desc">Conservez vos réglages et ajustez-les à l’étape suivante.</string>
+    <string name="qs_presets_hint">Les paramètres restent dans le Dock. Chaque modèle convient à toutes les bases ; connectez la vôtre à l’étape d’importation.</string>
+    <string name="qs_move_up">Monter</string>
+    <string name="qs_move_down">Descendre</string>
+    <string name="qs_settings_kept">Toujours accessible</string>
+    <string name="qs_vault_overview">Ouvrir le coffre sur la vue d’ensemble</string>
+</resources>

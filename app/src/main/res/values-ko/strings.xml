@@ -4055,8 +4055,8 @@
     <string name="qs_next">다음</string>
     <string name="qs_skip">건너뛰기</string>
     <string name="qs_previous">이전</string>
-    <string name="qs_welcome_heading">Monica에는 많은 설정이 있습니다. 빠른 설정 과정을 원하시나요?</string>
-    <string name="qs_welcome_description">\'에서는 처음에 가장 중요한 설정만 다루겠습니다. 나중에 건너뛰거나 다시 열 수 있습니다.</string>
+    <string name="qs_welcome_heading">나에게 맞는 Monica</string>
+    <string name="qs_welcome_description">레이아웃을 고르고, 보안을 설정하고, 데이터를 가져오세요. 이 안내는 설정에서 다시 열 수 있어요.</string>
     <string name="qs_language_selection">언어</string>
     <string name="qs_collapse">접기</string>
     <string name="qs_change">변경</string>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Empieza con un diseño</string>
+    <string name="qs_step_presets_subtitle">Elige un diseño. Después podrás ajustar el Dock y las páginas por separado.</string>
+    <string name="qs_dock_subtitle">Elige las páginas del Dock y su orden.</string>
+    <string name="qs_step_customize_title">Ajusta las páginas</string>
+    <string name="qs_step_customize_subtitle">Despliega solo lo que quieras cambiar. También podrás hacerlo en Ajustes.</string>
+    <string name="qs_step_protect_title">Seguridad y autocompletado</string>
+    <string name="qs_step_protect_subtitle">Protege tu bóveda y facilita el inicio de sesión.</string>
+    <string name="qs_ready_title">Todo listo</string>
+    <string name="qs_ready_subtitle">Este es tu diseño. Puedes cambiarlo en Ajustes cuando quieras.</string>
+    <string name="qs_save_failed">No se pudieron guardar los ajustes. Vuelve a intentarlo.</string>
+    <string name="qs_use_preset">Usar diseño</string>
+    <string name="qs_enter_monica">Abrir Monica</string>
+    <string name="qs_current_layout">Diseño actual</string>
+    <string name="qs_data_optional">Conecta una base de datos o importa datos ahora, o hazlo más tarde desde Ajustes.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Vista previa</string>
+    <string name="qs_preset_bitwarden_preview_desc">Abre la vista general de la bóveda, con Send y Generador en el Dock.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · Lista</string>
+    <string name="qs_preset_bitwarden_list_desc">Abre directamente la lista de la bóveda, con Send y Generador en el Dock.</string>
+    <string name="qs_preset_authenticator">Autenticador</string>
+    <string name="qs_preset_authenticator_desc">Autenticador y Steam para tener los códigos a mano.</string>
+    <string name="qs_preset_paged">Páginas separadas</string>
+    <string name="qs_preset_paged_desc">Contraseñas, Autenticador, Tarjetas y Notas en sus propias páginas.</string>
+    <string name="qs_preset_everyday">Uso diario</string>
+    <string name="qs_preset_everyday_desc">Contraseñas, Autenticador y Generador siempre a mano.</string>
+    <string name="qs_preset_minimal">Mínimo</string>
+    <string name="qs_preset_minimal_desc">Solo Contraseñas y Generador para un Dock más sencillo.</string>
+    <string name="qs_keep_layout">Mantener diseño actual</string>
+    <string name="qs_keep_layout_desc">Conserva tu configuración y ajústala en el siguiente paso.</string>
+    <string name="qs_presets_hint">Ajustes siempre queda en el Dock. Los diseños sirven para cualquier base de datos; conéctala en el paso de importación.</string>
+    <string name="qs_move_up">Subir</string>
+    <string name="qs_move_down">Bajar</string>
+    <string name="qs_settings_kept">Siempre disponible</string>
+    <string name="qs_vault_overview">Abrir la bóveda en la vista general</string>
+</resources>

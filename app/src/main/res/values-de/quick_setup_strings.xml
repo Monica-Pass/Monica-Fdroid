@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Mit einer Vorlage starten</string>
+    <string name="qs_step_presets_subtitle">Wähle ein Layout. Dock und Seiten passt du danach getrennt an.</string>
+    <string name="qs_dock_subtitle">Wähle die Seiten im Dock und ihre Reihenfolge.</string>
+    <string name="qs_step_customize_title">Seiten anpassen</string>
+    <string name="qs_step_customize_subtitle">Klappe nur auf, was du ändern möchtest. Alles bleibt in den Einstellungen erreichbar.</string>
+    <string name="qs_step_protect_title">Schutz &amp; Autofill</string>
+    <string name="qs_step_protect_subtitle">Schütze deinen Tresor und erleichtere dir das Anmelden.</string>
+    <string name="qs_ready_title">Alles bereit</string>
+    <string name="qs_ready_subtitle">Das ist dein Layout. Du kannst es jederzeit in den Einstellungen ändern.</string>
+    <string name="qs_save_failed">Die Einstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.</string>
+    <string name="qs_use_preset">Layout anwenden</string>
+    <string name="qs_enter_monica">Monica öffnen</string>
+    <string name="qs_current_layout">Aktuelles Layout</string>
+    <string name="qs_data_optional">Verbinde eine Datenbank oder importiere Daten jetzt oder später in den Einstellungen.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Übersicht</string>
+    <string name="qs_preset_bitwarden_preview_desc">Tresorübersicht beim Öffnen, dazu Send und Generator im Dock.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · Liste</string>
+    <string name="qs_preset_bitwarden_list_desc">Direkt zur Tresorliste, dazu Send und Generator im Dock.</string>
+    <string name="qs_preset_authenticator">Authenticator</string>
+    <string name="qs_preset_authenticator_desc">Authenticator und Steam für schnellen Zugriff auf Codes.</string>
+    <string name="qs_preset_paged">Getrennte Seiten</string>
+    <string name="qs_preset_paged_desc">Eigene Seiten für Passwörter, Authenticator, Karten und Notizen.</string>
+    <string name="qs_preset_everyday">Für den Alltag</string>
+    <string name="qs_preset_everyday_desc">Passwörter, Authenticator und Generator stets griffbereit.</string>
+    <string name="qs_preset_minimal">Minimal</string>
+    <string name="qs_preset_minimal_desc">Nur Passwörter und Generator für ein schlankes Dock.</string>
+    <string name="qs_keep_layout">Aktuelles Layout behalten</string>
+    <string name="qs_keep_layout_desc">Behalte deine Konfiguration und passe sie bei Bedarf an.</string>
+    <string name="qs_presets_hint">Einstellungen bleiben im Dock. Jedes Layout funktioniert mit jeder Datenbank; verbinde sie im Schritt zum Datenimport.</string>
+    <string name="qs_move_up">Nach oben</string>
+    <string name="qs_move_down">Nach unten</string>
+    <string name="qs_settings_kept">Immer erreichbar</string>
+    <string name="qs_vault_overview">Tresor mit der Übersicht öffnen</string>
+</resources>

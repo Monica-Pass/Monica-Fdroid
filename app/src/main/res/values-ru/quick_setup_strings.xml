@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Выберите раскладку</string>
+    <string name="qs_step_presets_subtitle">Начните с готового варианта. Панель и страницы можно настроить отдельно.</string>
+    <string name="qs_dock_subtitle">Выберите страницы на панели и их порядок.</string>
+    <string name="qs_step_customize_title">Настройте страницы</string>
+    <string name="qs_step_customize_subtitle">Разверните нужные параметры. Позже их можно изменить в настройках.</string>
+    <string name="qs_step_protect_title">Защита и автозаполнение</string>
+    <string name="qs_step_protect_subtitle">Защитите хранилище и упростите вход в аккаунты.</string>
+    <string name="qs_ready_title">Всё готово</string>
+    <string name="qs_ready_subtitle">Вот ваша раскладка. Её всегда можно изменить в настройках.</string>
+    <string name="qs_save_failed">Не удалось сохранить настройки. Попробуйте ещё раз.</string>
+    <string name="qs_use_preset">Применить</string>
+    <string name="qs_enter_monica">Открыть Monica</string>
+    <string name="qs_current_layout">Текущая раскладка</string>
+    <string name="qs_data_optional">Подключите базу или импортируйте данные сейчас — или сделайте это позже в настройках.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Обзор</string>
+    <string name="qs_preset_bitwarden_preview_desc">Открывается обзор хранилища, на панели — Send и генератор.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · Список</string>
+    <string name="qs_preset_bitwarden_list_desc">Сразу открывается список записей, на панели — Send и генератор.</string>
+    <string name="qs_preset_authenticator">Коды подтверждения</string>
+    <string name="qs_preset_authenticator_desc">Аутентификатор и Steam для быстрого доступа к кодам.</string>
+    <string name="qs_preset_paged">Отдельные страницы</string>
+    <string name="qs_preset_paged_desc">Пароли, аутентификатор, карты и заметки — каждый на своей странице.</string>
+    <string name="qs_preset_everyday">На каждый день</string>
+    <string name="qs_preset_everyday_desc">Пароли, аутентификатор и генератор всегда под рукой.</string>
+    <string name="qs_preset_minimal">Минимум</string>
+    <string name="qs_preset_minimal_desc">Только пароли и генератор, чтобы не перегружать панель.</string>
+    <string name="qs_keep_layout">Оставить как есть</string>
+    <string name="qs_keep_layout_desc">Сохраните свою раскладку и при необходимости измените её далее.</string>
+    <string name="qs_presets_hint">Настройки всегда остаются на панели. Раскладки подходят для любой базы; подключите её на этапе импорта.</string>
+    <string name="qs_move_up">Выше</string>
+    <string name="qs_move_down">Ниже</string>
+    <string name="qs_settings_kept">Всегда доступны</string>
+    <string name="qs_vault_overview">Открывать хранилище с обзора</string>
+</resources>

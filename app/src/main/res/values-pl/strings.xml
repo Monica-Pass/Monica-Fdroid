@@ -3805,8 +3805,8 @@
     <string name="qs_skip">Pomiń</string>
     <string name="qs_previous">Wstecz</string>
     <string name="qs_step_counter">Krok %1$d z %2$d</string>
-    <string name="qs_welcome_heading">Monica ma wiele ustawień. Przejść przez szybką konfigurację?</string>
-    <string name="qs_welcome_description">Na początek wybierzemy tylko najważniejsze opcje. Możesz pominąć konfigurację lub wrócić do niej później.</string>
+    <string name="qs_welcome_heading">Monica po Twojemu</string>
+    <string name="qs_welcome_description">Wybierz układ, zabezpiecz sejf i dodaj dane. Do tego przewodnika wrócisz w ustawieniach.</string>
     <string name="qs_language_selection">Język</string>
     <string name="qs_collapse">Zwiń</string>
     <string name="qs_change">Zmień</string>

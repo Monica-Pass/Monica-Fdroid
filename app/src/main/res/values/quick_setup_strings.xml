@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Start with a preset</string>
+    <string name="qs_step_presets_subtitle">Choose a layout. You can adjust it in the next steps.</string>
+    <string name="qs_dock_subtitle">Choose your Dock pages and their order.</string>
+    <string name="qs_step_customize_title">Fine-tune your pages</string>
+    <string name="qs_step_customize_subtitle">Expand only what you want to change. These options are separate from the Dock.</string>
+    <string name="qs_step_protect_title">Security &amp; autofill</string>
+    <string name="qs_step_protect_subtitle">Protect your vault, then make sign-in easier.</string>
+    <string name="qs_ready_title">Ready to go</string>
+    <string name="qs_ready_subtitle">Here is your layout. You can change it anytime in Settings.</string>
+    <string name="qs_save_failed">Could not save your settings. Please try again.</string>
+    <string name="qs_use_preset">Use preset</string>
+    <string name="qs_enter_monica">Open Monica</string>
+    <string name="qs_current_layout">Current layout</string>
+    <string name="qs_data_optional">You can connect a database or import data now, or do this later in Settings.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Preview</string>
+    <string name="qs_preset_bitwarden_preview_desc">Open the vault overview, with Send and Generator in the Dock.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · List</string>
+    <string name="qs_preset_bitwarden_list_desc">Go straight to the vault list, with Send and Generator in the Dock.</string>
+    <string name="qs_preset_authenticator">Authenticator</string>
+    <string name="qs_preset_authenticator_desc">Authenticator and Steam, focused on verification codes.</string>
+    <string name="qs_preset_paged">Separate pages</string>
+    <string name="qs_preset_paged_desc">Passwords, Authenticator, Wallet and Notes on their own pages.</string>
+    <string name="qs_preset_everyday">Everyday</string>
+    <string name="qs_preset_everyday_desc">Keep Passwords, Authenticator and Generator close at hand.</string>
+    <string name="qs_preset_minimal">Minimal</string>
+    <string name="qs_preset_minimal_desc">Just Passwords and Generator for a simpler Dock.</string>
+    <string name="qs_keep_layout">Keep current layout</string>
+    <string name="qs_keep_layout_desc">Continue with your existing layout and adjust it as needed.</string>
+    <string name="qs_presets_hint">Settings stays in the Dock. Presets work with any database; connect yours in the data step.</string>
+    <string name="qs_move_up">Move up</string>
+    <string name="qs_move_down">Move down</string>
+    <string name="qs_settings_kept">Always available</string>
+    <string name="qs_vault_overview">Start the vault with the overview</string>
+</resources>

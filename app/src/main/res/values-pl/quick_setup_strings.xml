@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">Wybierz układ</string>
+    <string name="qs_step_presets_subtitle">Zacznij od gotowego układu. Dock i strony dostosujesz osobno.</string>
+    <string name="qs_dock_subtitle">Wybierz strony w Docku i ustaw ich kolejność.</string>
+    <string name="qs_step_customize_title">Dostosuj strony</string>
+    <string name="qs_step_customize_subtitle">Rozwiń tylko potrzebne opcje. Wrócisz do nich w ustawieniach.</string>
+    <string name="qs_step_protect_title">Ochrona i autouzupełnianie</string>
+    <string name="qs_step_protect_subtitle">Zabezpiecz sejf i ułatw sobie logowanie.</string>
+    <string name="qs_ready_title">Gotowe</string>
+    <string name="qs_ready_subtitle">Oto Twój układ. Możesz go zmienić w ustawieniach.</string>
+    <string name="qs_save_failed">Nie udało się zapisać ustawień. Spróbuj ponownie.</string>
+    <string name="qs_use_preset">Zastosuj układ</string>
+    <string name="qs_enter_monica">Otwórz Monica</string>
+    <string name="qs_current_layout">Obecny układ</string>
+    <string name="qs_data_optional">Połącz bazę lub importuj dane teraz albo zrób to później w ustawieniach.</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · Podgląd</string>
+    <string name="qs_preset_bitwarden_preview_desc">Przegląd sejfu oraz Send i Generator w Docku.</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · Lista</string>
+    <string name="qs_preset_bitwarden_list_desc">Od razu lista wpisów, a w Docku Send i Generator.</string>
+    <string name="qs_preset_authenticator">Kody 2FA</string>
+    <string name="qs_preset_authenticator_desc">Uwierzytelniacz i Steam — szybki dostęp do kodów.</string>
+    <string name="qs_preset_paged">Osobne strony</string>
+    <string name="qs_preset_paged_desc">Hasła, kody 2FA, portfel i notatki na osobnych stronach.</string>
+    <string name="qs_preset_everyday">Na co dzień</string>
+    <string name="qs_preset_everyday_desc">Hasła, kody 2FA i generator zawsze pod ręką.</string>
+    <string name="qs_preset_minimal">Minimum</string>
+    <string name="qs_preset_minimal_desc">Tylko hasła i generator. Mniej pozycji w Docku.</string>
+    <string name="qs_keep_layout">Zachowaj obecny układ</string>
+    <string name="qs_keep_layout_desc">Pozostaw swoje ustawienia i dostosuj je w kolejnym kroku.</string>
+    <string name="qs_presets_hint">Ustawienia zawsze są w Docku. Układy działają z każdą bazą; połącz ją w kroku importu.</string>
+    <string name="qs_move_up">W górę</string>
+    <string name="qs_move_down">W dół</string>
+    <string name="qs_settings_kept">Zawsze dostępne</string>
+    <string name="qs_vault_overview">Otwieraj sejf od przeglądu</string>
+</resources>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qs_step_presets_title">先择其式</string>
+    <string name="qs_step_presets_subtitle">择一式，后可更 Dock 及诸页之细。</string>
+    <string name="qs_dock_subtitle">择 Dock 所列之页，次定其序。</string>
+    <string name="qs_step_customize_title">细修诸页</string>
+    <string name="qs_step_customize_subtitle">欲修者展之，亦可他日于设中更之。</string>
+    <string name="qs_step_protect_title">护府与自填</string>
+    <string name="qs_step_protect_subtitle">先固密府，后便登入。</string>
+    <string name="qs_ready_title">诸事已备</string>
+    <string name="qs_ready_subtitle">此为所择之式，后可于设中更之。</string>
+    <string name="qs_save_failed">设未存，请再试。</string>
+    <string name="qs_use_preset">用此式</string>
+    <string name="qs_enter_monica">入 Monica</string>
+    <string name="qs_current_layout">今之式</string>
+    <string name="qs_data_optional">今可接密库、纳旧藏，亦可他日为之。</string>
+    <string name="qs_preset_bitwarden_preview">Bitwarden · 总览</string>
+    <string name="qs_preset_bitwarden_preview_desc">先览密府，Dock 列 Send 与造钥之器。</string>
+    <string name="qs_preset_bitwarden_list">Bitwarden · 列籍</string>
+    <string name="qs_preset_bitwarden_list_desc">径览密府诸项，Dock 列 Send 与造钥之器。</string>
+    <string name="qs_preset_authenticator">专司验码</string>
+    <string name="qs_preset_authenticator_desc">惟列验符与 Steam，以便取码。</string>
+    <string name="qs_preset_paged">分门列页</string>
+    <string name="qs_preset_paged_desc">密钥、验符、卡囊、简牍，各居一页。</string>
+    <string name="qs_preset_everyday">日用</string>
+    <string name="qs_preset_everyday_desc">列密钥、验符、造钥之器，取用皆便。</string>
+    <string name="qs_preset_minimal">简约</string>
+    <string name="qs_preset_minimal_desc">惟列密钥与造钥之器，省其入口。</string>
+    <string name="qs_keep_layout">仍用今式</string>
+    <string name="qs_keep_layout_desc">循旧式，后再酌修。</string>
+    <string name="qs_presets_hint">诸式皆留设之入口，可用于各库；至纳藏之步，再接所用之库。</string>
+    <string name="qs_move_up">上移</string>
+    <string name="qs_move_down">下移</string>
+    <string name="qs_settings_kept">常留于此</string>
+    <string name="qs_vault_overview">入密府先见总览</string>
+</resources>

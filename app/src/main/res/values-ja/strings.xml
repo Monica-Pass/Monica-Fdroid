@@ -1976,8 +1976,8 @@
     <string name="qs_next">次へ</string>
     <string name="qs_skip">スキップ</string>
     <string name="qs_previous">戻る</string>
-    <string name="qs_welcome_heading">Monica の設定は少し複雑かもしれません。クイック初期化をご案内します。始めますか？</string>
-    <string name="qs_welcome_description">以下では、初回体験に最も影響する設定だけを残します。スキップすることも、後で「拡張機能」から再度開くこともできます。</string>
+    <string name="qs_welcome_heading">あなたに合った Monica に</string>
+    <string name="qs_welcome_description">レイアウトを選び、保護を設定し、データを取り込みましょう。このガイドは設定からいつでも開けます。</string>
     <string name="qs_language_selection">言語選択</string>
     <string name="qs_collapse">閉じる</string>
     <string name="qs_change">変更</string>

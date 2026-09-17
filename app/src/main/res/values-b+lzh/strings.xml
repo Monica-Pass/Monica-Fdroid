@@ -3806,8 +3806,8 @@
     <string name="qs_skip">略</string>
     <string name="qs_previous">上一步</string>
     <string name="qs_step_counter">第 %1$d 步，共 %2$d 步</string>
-    <string name="qs_welcome_heading">Monica 设项颇多，欲随引导速设乎？</string>
-    <string name="qs_welcome_description">先定初用要项，可略之，亦可日后于“扩展”重开。</string>
+    <string name="qs_welcome_heading">Monica 之式，随君所宜</string>
+    <string name="qs_welcome_description">择式、固府、纳藏。后可于设中重启此引。</string>
     <string name="qs_language_selection">择言语</string>
     <string name="qs_collapse">收</string>
     <string name="qs_change">更</string>

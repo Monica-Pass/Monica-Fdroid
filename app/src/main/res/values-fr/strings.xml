@@ -3802,8 +3802,8 @@
     <string name="qs_skip">Passer</string>
     <string name="qs_previous">Précédent</string>
     <string name="qs_step_counter">Étape %1$d de %2$d</string>
-    <string name="qs_welcome_heading">Monica a beaucoup de paramètres. Vous voulez une présentation rapide de la configuration ?</string>
-    <string name="qs_welcome_description">Nous ne couvrirons que les paramètres les plus importants au début. Vous pouvez ignorer ou rouvrir cette opération plus tard.</string>
+    <string name="qs_welcome_heading">Monica à votre image</string>
+    <string name="qs_welcome_description">Choisissez une disposition, protégez votre coffre et ajoutez vos données. Ce guide reste accessible dans les paramètres.</string>
     <string name="qs_language_selection">Langue</string>
     <string name="qs_collapse">Réduire</string>
     <string name="qs_change">Changement</string>

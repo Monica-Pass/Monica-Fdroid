@@ -4128,8 +4128,8 @@
     <string name="qs_skip">Skip</string>
     <string name="qs_previous">Previous</string>
     <string name="qs_step_counter">Step %1$d of %2$d</string>
-    <string name="qs_welcome_heading">Monica has a lot of settings. Want a quick setup walkthrough?</string>
-    <string name="qs_welcome_description">We\'ll cover only the settings that matter most at first. You can skip or reopen this later.</string>
+    <string name="qs_welcome_heading">Make Monica your own</string>
+    <string name="qs_welcome_description">Choose a layout, set up protection, and bring your data. You can revisit this guide in Settings.</string>
     <string name="qs_language_selection">Language</string>
     <string name="qs_collapse">Collapse</string>
     <string name="qs_change">Change</string>
