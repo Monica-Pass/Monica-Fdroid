@@ -5,6 +5,7 @@
 ### 简要
 
 - 修复密码库列表混入普通卡片或堆叠卡片的问题：所有条目始终平铺，不受密钥页堆叠设置影响。
+- 优化开启预览页面时的密码库首屏加载：密码条目就绪后立即显示概览，其他类型在后台完成解析并自动补全。
 - 恢复 Sui 初始化，修复已授权却显示未运行的问题。
 
 - 重做去重引擎，支持单库或多库整理、冲突预览、可用 Passkey 去重和完整字段保存。
@@ -48,6 +49,7 @@
 ### Summary
 
 - Keep all vault entries in individual list rows, independent of password-page stacking settings.
+- Speed up the vault overview first frame by showing password entries as soon as they are ready and completing other item types in the background.
 - Restore Sui initialization to detect authorized connections.
 
 - Redesign deduplication with single- or multi-vault consolidation, conflict previews, eligible passkey deduplication, and complete field preservation.

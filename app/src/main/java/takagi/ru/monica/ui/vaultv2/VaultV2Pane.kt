@@ -2935,7 +2935,14 @@ fun VaultV2Pane(
 			}
 		}
 	}
-	val allItems = if (showOverview) computedListState.allItemsRaw else displayedListState.allItemsRaw
+	// The overview can publish a fast first snapshot from password rows while secondary
+	// item payloads are still being decoded. The full computed snapshot replaces it later.
+	val overviewItems = if (computedListStateAsync.hasComputed) {
+		computedListState.allItemsRaw
+	} else {
+		currentPasswordItems.value
+	}
+	val allItems = if (showOverview) overviewItems else displayedListState.allItemsRaw
 	val visibleListState = displayedListState.visibleListState
 	LaunchedEffect(
 		visibleSnapshotKey,
@@ -3269,7 +3276,7 @@ fun VaultV2Pane(
 	) {
 		if (showOverview) {
 			VaultOverviewContent(
-				itemsReady = computedListStateAsync.hasComputed && selectedPasswordEntriesReady,
+				itemsReady = selectedPasswordEntriesReady,
 				allItems = allItems, archivedPasswords = archivedPasswordEntries, categories = categories,
 				keepassDatabases = keepassDatabases, mdbxDatabases = mdbxDatabases, bitwardenVaults = bitwardenVaults,
 				passwordViewModel = passwordViewModel, localKeePassViewModel = localKeePassViewModel,
