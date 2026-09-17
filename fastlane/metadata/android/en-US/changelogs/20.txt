@@ -4,3 +4,4 @@ Updated to Monica 1.0.313.
 - Six quick-setup presets and draggable Dock ordering.
 - Hong Kong Traditional Chinese and grouped Chinese language options.
 - Better autofill for nonstandard fields, two-step sign-in and web forms; fixed exclusions.
+- Vault rows always stay expanded; restored Sui detection.

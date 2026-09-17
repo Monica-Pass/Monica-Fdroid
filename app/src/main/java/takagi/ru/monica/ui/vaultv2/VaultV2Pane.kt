@@ -2997,12 +2997,10 @@ fun VaultV2Pane(
 	} else {
 		baseFilteredItems
 	}
-	val sectionedItems = remember(showOverview, filteredItems, aggregateStackEntries, manualStackGroupByEntryId,
-        effectiveNoStackIds, appSettings.passwordGroupMode, appSettings.passwordWebsiteStackMatchMode, appSettings.stackCardMode) {
-        if (showOverview) emptyList() else buildVaultV2StackedSections(filteredItems, aggregateStackEntries, manualStackGroupByEntryId,
-            effectiveNoStackIds, appSettings.passwordGroupMode, appSettings.passwordWebsiteStackMatchMode,
-            appSettings.stackCardMode == "ALWAYS_EXPANDED")
-    }
+	// This page always shows individual rows, independently of password-page stack settings.
+	val sectionedItems = remember(showOverview, filteredItems) {
+		if (showOverview) emptyList() else buildVaultV2Sections(filteredItems)
+	}
 	val showQuickFiltersInList = !state.isArchiveView && (hasVisibleQuickFilters || nativeTokens.visible)
 	val showCategoryQuickFiltersInList =
 		!state.isArchiveView && !useHierarchicalLayout && categoryMenuQuickFolderShortcuts.isNotEmpty()
@@ -3795,11 +3793,7 @@ fun VaultV2Pane(
 					selectedKeys.addAll(items.map { it.key })
 					showDeleteConfirmDialog = true
 				},
-                onFavoriteItem = { item ->
-                    if (item.nativeToken != null) nativeTokens.onFavorite(item.nativeToken, !item.isFavorite)
-                    else item.passwordEntry?.let { passwordViewModel.toggleFavorite(it.id, !it.isFavorite) }
-                },
-                onReorderStack = { items -> scope.launch { aggregateStackRepository.applyManualStack(items.map { it.key }) } },
+
 				modifier = Modifier.fillMaxSize(),
 				onOpenItem = { item ->
 					when (item.type) {
@@ -4610,8 +4604,6 @@ private fun VaultV2List(
 	securityManager: SecurityManager,
 	selectedKeys: MutableList<String>,
 	onRequestDeleteItems: (List<VaultV2Item>) -> Unit,
-    onFavoriteItem: (VaultV2Item) -> Unit,
-    onReorderStack: (List<VaultV2Item>) -> Unit,
 	modifier: Modifier = Modifier,
 	onOpenItem: (VaultV2Item) -> Unit,
 ) {
@@ -4731,11 +4723,7 @@ private fun VaultV2List(
 				key = { _, item -> item.key },
 				contentType = { _, item -> item.type },
 			) { index, item ->
-                if (item.stackedItems.isNotEmpty()) {
-                    VaultV2PasswordStackCard(item, appSettings, securityManager, selectedKeys, onOpenItem,
-                        onRequestDeleteItems, onFavoriteItem, onReorderStack)
-                    return@itemsIndexed
-                }
+
 				val selected = item.key in selectedKeys
 				val cardShape = GroupedItemDefaults.shape(index, itemsInSection.size)
 				SwipeActions(

@@ -4,6 +4,9 @@
 
 ### 简要
 
+- 修复密码库列表混入普通卡片或堆叠卡片的问题：所有条目始终平铺，不受密钥页堆叠设置影响。
+- 恢复 Sui 初始化，修复已授权却显示未运行的问题。
+
 - 重做去重引擎，支持单库或多库整理、冲突预览、可用 Passkey 去重和完整字段保存。
 - 优化 Dock 连续切换，大列表分组与排序接入 Rust。
 - 快速初始化新增六套布局预设，Dock 与页面微调分步设置。
@@ -43,6 +46,9 @@
 ## English
 
 ### Summary
+
+- Keep all vault entries in individual list rows, independent of password-page stacking settings.
+- Restore Sui initialization to detect authorized connections.
 
 - Redesign deduplication with single- or multi-vault consolidation, conflict previews, eligible passkey deduplication, and complete field preservation.
 - Improve rapid Dock switching and use Rust for large-list grouping and sorting.
