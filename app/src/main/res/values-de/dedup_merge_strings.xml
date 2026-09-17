@@ -10,10 +10,10 @@
     <string name="dedup_merge_warning_count">Zu prüfende Hinweise: %1$d</string>
     <string name="dedup_merge_preview_title">Details zur Zusammenführung</string>
     <string name="dedup_merge_preview_summary">Einträge: %1$d · Konfliktgruppen: %2$d</string>
-    <string name="dedup_merge_preview_need_sources">Mindestens zwei Quelldatenbanken auswählen, um eine Vorschau zu erstellen</string>
+    <string name="dedup_merge_preview_need_sources">Quelldatenbank für die Vorschau wählen</string>
     <string name="dedup_merge_preview_need_target">Eine Zieldatenbank auswählen, um eine Vorschau zu erstellen</string>
     <string name="dedup_merge_preview_empty">Diese Auswahl enthält keine neuen Einträge zum Schreiben</string>
-    <string name="dedup_merge_source_empty">Keine Auswahl. Mindestens zwei Datenbanken sind erforderlich.</string>
+    <string name="dedup_merge_source_empty">Eine oder mehrere Datenbanken wählen</string>
     <string name="dedup_merge_source_summary_more">%1$s … (%2$d ausgewählt)</string>
     <string name="dedup_merge_source_title">Quelldatenbanken</string>
     <string name="dedup_merge_target_title">Zieldatenbank</string>
@@ -38,7 +38,7 @@
     <string name="dedup_merge_policy_title">Bei Feldkonflikten bevorzugen</string>
     <string name="dedup_merge_policy_complete">Vollständigste Version</string>
     <string name="dedup_merge_policy_newest">Zuletzt aktualisierte Version</string>
-    <string name="dedup_merge_policy_description">Bestimmt die Basisversion bei Feldkonflikten desselben Eintrags. Leere Felder werden weiterhin aus anderen Kopien ergänzt.</string>
+    <string name="dedup_merge_policy_description">Leere Passwortfelder werden ergänzt, eigene Felder zusammengeführt. Karten und andere Einträge behalten die gewählte Fassung. Passkeys werden nur bei gleicher Identität und gleichen Schlüsseldaten zusammengeführt.</string>
     <string name="dedup_merge_summary_title">Vorschau der Zusammenführung</string>
     <string name="dedup_merge_writing_target">Schreiben in die Zieldatenbank</string>
     <string name="dedup_merge_analyzing">Erneute Analyse</string>
@@ -50,7 +50,7 @@
     <string name="dedup_merge_summary_unsupported">Nicht unterstützt</string>
     <string name="dedup_merge_label_count">%1$s: %2$d</string>
     <string name="dedup_merge_merging">Zusammenführung läuft</string>
-    <string name="dedup_merge_need_sources">Mindestens zwei Quelldatenbanken auswählen</string>
+    <string name="dedup_merge_need_sources">Quelldatenbank wählen</string>
     <string name="dedup_merge_need_target">Eine Zieldatenbank auswählen</string>
     <string name="dedup_merge_nothing_to_write">Keine Einträge zum Schreiben</string>
     <string name="dedup_merge_confirm_write">Bestätigen und schreiben (%1$d)</string>
@@ -92,11 +92,11 @@
     <string name="dedup_merge_preview_pending">Die Vorschau der Zusammenführung wird noch erstellt</string>
     <string name="dedup_merge_target_contains_all">Die Zieldatenbank enthält bereits alle zusammenführbaren Einträge</string>
     <string name="dedup_merge_plan_invalid">Der aktuelle Zusammenführungsplan kann nicht ausgeführt werden</string>
-    <string name="dedup_merge_warning_empty_sources">Die ausgewählten Quelldatenbanken enthalten keine schreibbaren Passwörter oder sicheren Einträge</string>
+    <string name="dedup_merge_warning_empty_sources">Die gewählten Quellen enthalten keine zusammenführbaren Einträge.</string>
     <string name="dedup_merge_warning_target_is_source">Das Ziel ist auch als Quelle ausgewählt. Vorhandene Zieleinträge werden nur auf Duplikate geprüft und nicht aktualisiert oder überschrieben.</string>
-    <string name="dedup_merge_warning_existing_passwords">Entsprechende Passwörter, die bereits im Ziel vorhanden sind, werden übersprungen. Vorhandene Einträge werden nicht überschrieben.</string>
-    <string name="dedup_merge_warning_existing_secure_items">Entsprechende Authentifikatoren, Karten, Dokumente oder Notizen, die bereits im Ziel vorhanden sind, werden übersprungen und nicht überschrieben.</string>
-    <string name="dedup_merge_warning_passkeys">Passkeys enthalten private Schlüssel im Android Keystore. Sie werden gezählt, aber nicht automatisch kopiert. Passkeys: %1$d.</string>
+    <string name="dedup_merge_warning_existing_passwords">Passwörter mit gleichem Inhalt im Ziel werden übersprungen.</string>
+    <string name="dedup_merge_warning_existing_secure_items">Sichere Einträge mit gleichem Inhalt im Ziel werden übersprungen.</string>
+    <string name="dedup_merge_warning_passkeys">%1$d Passkeys übersprungen. Gründe stehen in den Zusammenführungsdetails.</string>
     <string name="dedup_merge_target_cannot_be_source">Die Zieldatenbank kann nicht gleichzeitig eine Quelle sein</string>
     <string name="dedup_merge_sources_unavailable">Mindestens eine Quelldatenbank ist nicht mehr verfügbar</string>
     <string name="dedup_merge_field_type">Typ</string>
@@ -105,4 +105,16 @@
     <!-- Shared labels used by merge previews. -->
     <string name="attachments">Anhänge</string>
     <string name="custom_fields">Benutzerdefinierte Felder</string>
+    <string name="dedup_merge_intro_title">Kopien zusammenführen</string>
+    <string name="dedup_merge_intro_desc">Eine gemeinsame Sammlung im Ziel speichern. Die Quellen bleiben erhalten.</string>
+    <string name="dedup_merge_select_results">Treffer auswählen</string>
+    <string name="dedup_merge_new_count">%1$d neue Einträge</string>
+    <string name="dedup_merge_consolidated">Kopien vereint</string>
+    <string name="dedup_merge_target_variant">Im Ziel gibt es einen ähnlichen Eintrag mit anderem Inhalt. Eine weitere Kopie wird hinzugefügt.</string>
+    <string name="dedup_merge_kept_from">Basisversion: %1$s</string>
+    <string name="dedup_passkey_missing_key">Nur ein Verweis oder kein nutzbarer privater Schlüssel. Das Original bleibt erhalten.</string>
+    <string name="dedup_passkey_nonzero_counter">Signaturzähler ungleich null. Bitte verschieben, statt eine unabhängige Kopie anzulegen.</string>
+    <string name="dedup_passkey_bound_password">Mit einem Passwort verknüpft; wird nicht einzeln kopiert.</string>
+    <string name="dedup_passkey_device_key">Dieser gerätegebundene Schlüssel kann nicht in eine synchronisierte Datenbank kopiert werden.</string>
+    <string name="dedup_passkey_identity_conflict">Gleiche Anmeldedaten-ID, aber abweichende Schlüssel- oder Metadaten. Bitte manuell prüfen.</string>
 </resources>

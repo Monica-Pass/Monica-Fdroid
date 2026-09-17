@@ -42,7 +42,8 @@ class CustomFieldRepository(
      */
     suspend fun getFieldsByEntryIds(entryIds: List<Long>): Map<Long, List<CustomField>> {
         if (entryIds.isEmpty()) return emptyMap()
-        val fields = customFieldDao.getFieldsByEntryIds(entryIds)
+        // Android SQLite versions may allow only 999 bindings in one statement.
+        val fields = entryIds.distinct().chunked(800).flatMap { customFieldDao.getFieldsByEntryIds(it) }
         return fields.groupBy { it.entryId }
     }
     

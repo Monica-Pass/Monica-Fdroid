@@ -2,6 +2,7 @@
 
 mod autofill;
 mod list_sort;
+mod password_grouping;
 mod search;
 mod vault_overview;
 mod vault_picker;
@@ -14,6 +15,31 @@ use monica_rust_crypto::{derive_argon2id, derive_pbkdf2_sha256};
 use search::{filter_metadata_batch, SearchQuery};
 
 const RUST_CORE_VERSION: &str = "monica-rust-jni/0.5.0-kdf";
+
+#[no_mangle]
+pub extern "system" fn Java_takagi_ru_monica_rustcore_RustPasswordGroupingCore_nativeProject(
+    env: JNIEnv,
+    _class: JClass,
+    metadata: JIntArray,
+) -> jintArray {
+    (|| {
+        let len = usize::try_from(env.get_array_length(&metadata).ok()?).ok()?;
+        if !(password_grouping::HEADER..=password_grouping::MAX_BATCH_LEN).contains(&len) {
+            return None;
+        }
+        let mut batch = Vec::new();
+        batch.try_reserve_exact(len).ok()?;
+        batch.resize(len, 0_i32);
+        env.get_int_array_region(&metadata, 0, &mut batch).ok()?;
+        let projection = password_grouping::project(&batch)?;
+        let output = env
+            .new_int_array(i32::try_from(projection.len()).ok()?)
+            .ok()?;
+        env.set_int_array_region(&output, 0, &projection).ok()?;
+        Some(output.into_raw())
+    })()
+    .unwrap_or(std::ptr::null_mut())
+}
 
 #[no_mangle]
 pub extern "system" fn Java_takagi_ru_monica_rustcore_RustAutofillCore_nativeOpen(

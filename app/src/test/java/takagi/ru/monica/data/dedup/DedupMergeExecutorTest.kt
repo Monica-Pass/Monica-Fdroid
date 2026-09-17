@@ -83,6 +83,7 @@ class DedupMergeExecutorTest {
             }
 
             override suspend fun writeSecureItem(resolved: DedupResolvedSecureItem) = Unit
+            override suspend fun writePasskey(resolved: DedupResolvedPasskey) = Unit
         }
         val progress = mutableListOf<DedupMergeExecutionProgress>()
 
@@ -129,6 +130,7 @@ class DedupMergeExecutorTest {
         private val cancelOnPassword: String? = null
     ) : DedupMergeWriter {
         val passwordAttempts = mutableListOf<String>()
+        override suspend fun writePasskey(resolved: DedupResolvedPasskey) = Unit
 
         override suspend fun writePassword(resolved: DedupResolvedPassword) {
             val title = resolved.entry.title

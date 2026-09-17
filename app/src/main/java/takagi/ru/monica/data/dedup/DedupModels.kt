@@ -2,6 +2,7 @@ package takagi.ru.monica.data.dedup
 
 import takagi.ru.monica.data.CustomField
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.data.PasskeyEntry
 import takagi.ru.monica.data.SecureItem
 
 enum class DedupMergeSourceKind {
@@ -43,7 +44,7 @@ enum class DedupConflictPolicy {
 }
 
 enum class DedupMergeValidationIssue {
-    NEED_TWO_SOURCES,
+    NEED_SOURCES,
     NEED_TARGET,
     TARGET_IS_SOURCE,
     NOTHING_TO_WRITE
@@ -54,7 +55,7 @@ data class DedupMergeValidation(
 ) {
     val canReview: Boolean
         get() = issues.none {
-            it == DedupMergeValidationIssue.NEED_TWO_SOURCES ||
+            it == DedupMergeValidationIssue.NEED_SOURCES ||
                 it == DedupMergeValidationIssue.NEED_TARGET ||
                 it == DedupMergeValidationIssue.TARGET_IS_SOURCE
         }
@@ -89,7 +90,7 @@ data class DedupMergeSelection(
     fun validate(writableItems: Int): DedupMergeValidation {
         val issues = buildSet {
             if (sourceKeys.size < MINIMUM_SOURCE_DATABASES) {
-                add(DedupMergeValidationIssue.NEED_TWO_SOURCES)
+                add(DedupMergeValidationIssue.NEED_SOURCES)
             }
             if (targetOption == null) {
                 add(DedupMergeValidationIssue.NEED_TARGET)
@@ -105,7 +106,7 @@ data class DedupMergeSelection(
     }
 
     companion object {
-        const val MINIMUM_SOURCE_DATABASES = 2
+        const val MINIMUM_SOURCE_DATABASES = 1
     }
 }
 
@@ -116,7 +117,10 @@ data class DedupResolvedPassword(
     val sourceEntryIds: List<Long>,
     val sourceLabels: List<String>,
     val conflictFields: Set<String>,
-    val existsInTarget: Boolean = false
+    val existsInTarget: Boolean = false,
+    val targetHasDifferentContent: Boolean = false,
+    val preferredSourceLabel: String = "",
+    val attachments: List<DedupAttachmentRef> = emptyList()
 )
 
 data class DedupResolvedSecureItem(
@@ -125,8 +129,33 @@ data class DedupResolvedSecureItem(
     val sourceItemIds: List<Long>,
     val sourceLabels: List<String>,
     val conflictFields: Set<String>,
-    val existsInTarget: Boolean = false
+    val existsInTarget: Boolean = false,
+    val targetHasDifferentContent: Boolean = false,
+    val preferredSourceLabel: String = "",
+    val attachments: List<DedupAttachmentRef> = emptyList()
 )
+
+data class DedupAttachmentRef(
+    val attachmentId: Long,
+    val contentKey: String,
+    val readable: Boolean = true
+)
+
+enum class DedupPasskeySkipReason {
+    REFERENCE_OR_MISSING_KEY, NONZERO_COUNTER, BOUND_PASSWORD, DEVICE_KEY, CREDENTIAL_CONFLICT
+}
+
+data class DedupResolvedPasskey(
+    val mergeKey: String,
+    val entry: PasskeyEntry,
+    val sourceEntryIds: List<Long>,
+    val sourceLabels: List<String>,
+    val preferredSourceLabel: String,
+    val existsInTarget: Boolean = false,
+    val skipReason: DedupPasskeySkipReason? = null,
+) {
+    val writable: Boolean get() = !existsInTarget && skipReason == null
+}
 
 data class DedupMergePlan(
     val selectedSources: List<DedupMergeSourceOption> = emptyList(),
@@ -135,6 +164,7 @@ data class DedupMergePlan(
     val totalSourcePasswords: Int = 0,
     val totalSourceSecureItems: Int = 0,
     val unsupportedSourcePasskeys: Int = 0,
+    val totalSourcePasskeys: Int = unsupportedSourcePasskeys,
     val uniquePasswords: Int = 0,
     val uniqueSecureItems: Int = 0,
     val duplicateGroups: Int = 0,
@@ -145,6 +175,7 @@ data class DedupMergePlan(
     val targetExistingSecureItems: Int = 0,
     val previewPasswords: List<DedupResolvedPassword> = emptyList(),
     val previewSecureItems: List<DedupResolvedSecureItem> = emptyList(),
+    val previewPasskeys: List<DedupResolvedPasskey> = emptyList(),
     val warnings: List<String> = emptyList()
 ) {
     val writablePasswords: Int
@@ -154,24 +185,40 @@ data class DedupMergePlan(
         get() = (uniqueSecureItems - targetExistingSecureItems).coerceAtLeast(0)
 
     val writableItems: Int
-        get() = writablePasswords + writableSecureItems
+        get() = writablePasswords + writableSecureItems + previewPasskeys.count { it.writable }
+
+    val targetExistingPasskeys: Int
+        get() = previewPasskeys.count { it.existsInTarget }
+
+    val previewItemCount: Int
+        get() = previewPasswords.size + previewSecureItems.size + previewPasskeys.size
 
     val totalSourceItems: Int
-        get() = totalSourcePasswords + totalSourceSecureItems + unsupportedSourcePasskeys
+        get() = totalSourcePasswords + totalSourceSecureItems + totalSourcePasskeys
 
     val duplicateGroupsTotal: Int
-        get() = duplicateGroups + duplicateSecureItemGroups
+        get() = duplicateGroups + duplicateSecureItemGroups + previewPasskeys.count { it.sourceEntryIds.size > 1 }
 
     val conflictGroupsTotal: Int
         get() = passwordConflictGroups + secureItemConflictGroups
 
     val skippedItems: Int
-        get() = targetExistingDuplicates + targetExistingSecureItems + unsupportedSourcePasskeys
+        get() = targetExistingDuplicates + targetExistingSecureItems + targetExistingPasskeys + unsupportedSourcePasskeys
+
+    val consolidatedCopies: Int
+        get() = (totalSourcePasswords + totalSourceSecureItems - uniquePasswords - uniqueSecureItems).coerceAtLeast(0) +
+            previewPasskeys.sumOf { (it.sourceEntryIds.size - 1).coerceAtLeast(0) }
+
+    val reviewConflictGroups: Int
+        get() = previewPasswords.count { it.conflictFields.isNotEmpty() || it.targetHasDifferentContent } +
+            previewSecureItems.count { it.conflictFields.isNotEmpty() || it.targetHasDifferentContent } +
+            previewPasskeys.count { it.skipReason == DedupPasskeySkipReason.CREDENTIAL_CONFLICT }
 }
 
 enum class DedupMergeItemKind {
     PASSWORD,
-    SECURE_ITEM
+    SECURE_ITEM,
+    PASSKEY
 }
 
 data class DedupMergeFailure(
@@ -192,23 +239,26 @@ data class DedupMergeExecutionProgress(
 data class DedupMergeExecutionResult(
     val insertedPasswords: Int,
     val insertedSecureItems: Int = 0,
+    val insertedPasskeys: Int = 0,
     val skippedExistingPasswords: Int,
     val skippedExistingSecureItems: Int = 0,
+    val skippedExistingPasskeys: Int = 0,
     val skippedUnsupportedPasskeys: Int = 0,
     val failedPasswords: Int,
     val failedSecureItems: Int = 0,
+    val failedPasskeys: Int = 0,
     val targetLabel: String,
     val failures: List<DedupMergeFailure> = emptyList(),
     val cancelled: Boolean = false
 ) {
     val insertedItems: Int
-        get() = insertedPasswords + insertedSecureItems
+        get() = insertedPasswords + insertedSecureItems + insertedPasskeys
 
     val skippedExistingItems: Int
-        get() = skippedExistingPasswords + skippedExistingSecureItems
+        get() = skippedExistingPasswords + skippedExistingSecureItems + skippedExistingPasskeys
 
     val failedItems: Int
-        get() = failedPasswords + failedSecureItems
+        get() = failedPasswords + failedSecureItems + failedPasskeys
 
     val hasPartialFailure: Boolean
         get() = failedItems > 0 && insertedItems > 0

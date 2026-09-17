@@ -834,13 +834,18 @@ class AttachmentFacade(
         targetOwner: AttachmentOwner,
         sourceBitwardenContext: BitwardenContext? = null,
         sourceKeepassContext: KeePassContext? = null,
-        excludedFileNames: Set<String> = emptySet()
+        excludedFileNames: Set<String> = emptySet(),
+        attachmentIds: Set<Long>? = null
     ): Int = withContext(Dispatchers.IO) {
         if (sourceOwner.id <= 0 || targetOwner.id <= 0 || sourceOwner == targetOwner) {
             return@withContext 0
         }
         val sources = repository.list(sourceOwner)
             .filterNot { it.fileName in excludedFileNames }
+            .filter { attachmentIds == null || it.id in attachmentIds }
+        check(attachmentIds == null || sources.map { it.id }.toSet() == attachmentIds) {
+            "Source attachments changed before copying"
+        }
         if (sources.isEmpty()) return@withContext 0
 
         val created = mutableListOf<Attachment>()

@@ -44,14 +44,14 @@ class DedupMergeSelectionTest {
     }
 
     @Test
-    fun validationRequiresTwoSourcesAndOneTarget() {
+    fun validationRequiresAtLeastOneSourceAndSeparateTarget() {
         val empty = DedupMergeSelection().validate(writableItems = 1)
         assertFalse(empty.canReview)
-        assertTrue(DedupMergeValidationIssue.NEED_TWO_SOURCES in empty.issues)
+        assertTrue(DedupMergeValidationIssue.NEED_SOURCES in empty.issues)
         assertTrue(DedupMergeValidationIssue.NEED_TARGET in empty.issues)
 
         val ready = DedupMergeSelection(
-            sourceKeys = setOf("keepass:1", "bitwarden:1"),
+            sourceKeys = setOf("keepass:1"),
             targetOption = localTarget
         ).validate(writableItems = 3)
         assertTrue(ready.canReview)

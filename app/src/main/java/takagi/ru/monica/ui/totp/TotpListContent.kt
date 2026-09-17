@@ -237,11 +237,13 @@ fun TotpListContent(
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val uiSecurityManager = rememberUiSecurityManager()
     // 集中未带 key 的状态，减小 Compose 生成的方法。
     // 旧的超大方法曾在部分设备的 Debug 构建中触发 ART VerifyError。
-    val ui = remember {
+    val ui = remember(uiSecurityManager) {
         TotpListUiState(
             context = context,
+            securityManager = uiSecurityManager,
             initialResumed = lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
         )
     }
@@ -1085,9 +1087,9 @@ fun TotpListContent(
  */
 private class TotpListUiState(
     context: android.content.Context,
+    val securityManager: SecurityManager,
     initialResumed: Boolean
 ) {
-    val securityManager = SecurityManager(context.applicationContext)
     val bitwardenRepository = takagi.ru.monica.bitwarden.repository.BitwardenRepository.getInstance(context)
     val database = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
     val keepassBridge = KeePassCompatibilityBridge(

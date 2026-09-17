@@ -320,6 +320,7 @@ class ImageManager(private val context: Context) {
         try {
             val file = resolveImageFile(fileName) ?: return@withContext null
             if (!file.exists() || file.length() <= 0L) return@withContext null
+            if (file.length() > MAX_IMPORTED_IMAGE_BYTES.toLong() + 32L) return@withContext null
             val bytes = decrypt(file.readBytes())
             bytes.takeIf(::isValidImportedImage)
         } catch (e: OutOfMemoryError) {
@@ -328,6 +329,23 @@ class ImageManager(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "readImageBytes failed", e)
             null
+        }
+    }
+
+    /** Restore a missing portable image to its existing metadata name without replacing another image. */
+    internal suspend fun restoreMissingImage(fileName: String, bytes: ByteArray): Boolean = withContext(Dispatchers.IO) {
+        if (!isValidImportedImage(bytes)) return@withContext false
+        val file = resolveImageFile(fileName) ?: return@withContext false
+        if (!file.createNewFile()) return@withContext file.isFile
+        try {
+            FileOutputStream(file).use { output ->
+                output.write(encrypt(bytes))
+                output.fd.sync()
+            }
+            true
+        } catch (error: Exception) {
+            file.delete()
+            throw error
         }
     }
     

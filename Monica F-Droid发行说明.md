@@ -4,6 +4,8 @@
 
 ### 简要
 
+- 重做去重引擎，支持单库或多库整理、冲突预览、可用 Passkey 去重和完整字段保存。
+- 优化 Dock 连续切换，大列表分组与排序接入 Rust。
 - 快速初始化新增六套布局预设，Dock 与页面微调分步设置。
 - 新增香港繁体中文、文言文（华夏）、波兰语和猫语，中文选项集中在可展开的语言卡片中。
 - ZIP、CSV 导入和文件导出支持选择数据库，加入进度显示和后台导出。
@@ -14,6 +16,8 @@
 
 ### 详细
 
+- **去重整理**：来源、目标与冲突策略集中在连接式圆角操作组；数据库和合并明细支持搜索，新增、冲突、跳过分别筛选，写入进度与主操作保持可达。支持将单个或多个来源整理到独立的本地或 MDBX 目标，保留来源与目标已有内容；同账号但内容不同的目标条目另存一份。判重区分 URL 路径、非邮箱账号大小写、密码空格及 OTP 参数，保留自定义字段、附件、照片和卡面，同名不同内容的附件分别保留；再次整理不会重复新增，MDBX 重新打开后内容完整。取消或重新扫描不会执行旧结果，Passkey 按凭据身份和密钥判重，同账号的不同钥匙分别保留；非零计数、不可用或冲突记录会列明跳过原因。批量移动先保存目标再清理来源，删除副本不影响仍在使用的共享私钥。
+- **Dock 与列表性能**：切换页面复用已初始化的加密组件，返回密码页复用完全匹配的分组结果；数据或堆叠设置变化时仍及时重算。大列表的归组、评分和稳定排序使用 Rust 批量处理，保留原有卡片顺序与样式，并设定批量上限、结果校验和兼容回退。
 - **快速初始化**：新增 Bitwarden 预览／列表、验证器专用、分页管理、日常常用和极简密码六套预设，可先预览 Dock 再应用；支持保留当前布局。流程调整为欢迎、预设、Dock、页面微调、安全与自动填充、接入数据、完成；Dock 复用底栏设置卡片，完整显示已开启及隐藏页面，支持长按拖拽排序；列表、卡片和配色在后续步骤按需展开。返回前一步保留微调，设置入口始终可达，并补齐各语言文案。
 - **语言与本地化**：新增香港繁体中文、文言文（华夏）、波兰语和猫语。繁体中文采用香港常用书面用语，明确区分简繁语言，缺失文案优先回退简体中文；文言文采用简洁、统一的古文表达，波兰语调整常用标签与复数形式，猫语缺失内容回退简体中文。清理 Bitwarden、备份恢复、Steam、自动填充等页面的中文硬编码，补齐各语言的新旧功能文案。2FA 和 Steam 卡片统一使用 `Next` 标记。
 - **选择目标导入**：ZIP 和 CSV 可导入到本地、KeePass、MDBX 或 Bitwarden，按目标数据库格式保存支持的数据类型。加密 ZIP 使用备份文件自身的解密密码，导入结果展示成功、跳过、失败及待上传状态；重复导入进行去重。
@@ -40,6 +44,8 @@
 
 ### Summary
 
+- Redesign deduplication with single- or multi-vault consolidation, conflict previews, eligible passkey deduplication, and complete field preservation.
+- Improve rapid Dock switching and use Rust for large-list grouping and sorting.
 - Add six quick-setup layouts, with separate Dock and page-customization steps.
 - Add Hong Kong Traditional Chinese, Classical Chinese (Huaxia), Polish, and Nya, with Chinese variants grouped in an expandable language card.
 - Add database selection for ZIP/CSV imports and file exports, progress indicators, and background exports.
@@ -50,6 +56,8 @@
 
 ### Details
 
+- **Deduplication:** Configure sources, destination, and conflict policy in connected rounded rows. Search databases and preview details, filter additions, conflicts, and skipped items, and keep progress and primary actions accessible. Consolidate one or more sources into a separate local or MDBX destination while preserving sources and existing destination entries. Keep a separate copy when an existing account has different content. Matching preserves URL path and non-email username case, password whitespace, OTP parameters, custom fields, attachments, photos, and card faces, including after reopening MDBX. Same-name attachments with different content are retained, and repeat runs do not add duplicates. Cancelled or replaced scans cannot execute stale results. Passkeys are matched by credential identity and key data, preserving different keys for the same account. Nonzero counters, unavailable keys, and conflicts show explicit skip reasons. Batch moves save the destination before source cleanup, and deleting a copy preserves keys still referenced by other records.
+- **Dock and list performance:** Reuse initialized security components between pages and reuse password groups when the complete input snapshot matches. Data or stack-setting changes still trigger recalculation. Rust batches grouping, scoring, and stable sorting for large lists, preserving card order and appearance with input limits, result validation, and a compatible fallback.
 - **Quick setup:** Preview and apply six layouts: Bitwarden overview or list, Authenticator, Separate pages, Everyday, and Minimal. Keep your current layout if preferred. The flow now covers welcome, presets, Dock, page customization, security and autofill, data connections, and completion. Dock uses the existing settings cards, lists both visible and hidden pages, and supports drag-and-drop ordering in its own step; list, card, and color options expand separately in the next step. Going back preserves adjustments, Settings remains accessible, and all supported languages include the new text.
 - **Languages and localization:** Add Hong Kong Traditional Chinese, Classical Chinese (Huaxia), Polish, and Nya. Traditional Chinese uses Hong Kong terminology and is distinguished from Simplified Chinese, with Simplified Chinese as its first fallback. Classical Chinese uses concise, consistent terminology; Polish includes compact labels and proper plural forms. Missing Nya text falls back to Simplified Chinese. Replace hardcoded Chinese in Bitwarden, backup, Steam, autofill, and other screens, and complete translations for existing and new features. Both 2FA and Steam cards use the label `Next`.
 - **Import destinations:** Import ZIP and CSV files into a local, KeePass, MDBX, or Bitwarden database, using the destination's format for supported items. Encrypted ZIP files use their own decryption password. Results show imported, skipped, failed, and pending-upload items, with deduplication for repeated imports.

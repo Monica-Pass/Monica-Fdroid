@@ -355,7 +355,7 @@ class PasskeyRepository(
             rollbackMirror = { mdbxRepository?.upsertPasskeys(passkeys) }
         )
         for (passkey in passkeys) {
-            cleanupPrivateKey(passkey.privateKeyAlias)
+            cleanupPrivateKeyIfUnreferenced(passkey.privateKeyAlias)
             logAudit("PASSKEY_DELETED", "${passkey.credentialId}|rpId=$rpId")
         }
     }
@@ -383,7 +383,7 @@ class PasskeyRepository(
             roomCommit = { passkeyDao.delete(passkey) },
             rollbackMirror = { mdbxRepository?.upsertPasskey(passkey) }
         )
-        cleanupPrivateKey(passkey.privateKeyAlias)
+        cleanupPrivateKeyIfUnreferenced(passkey.privateKeyAlias)
         logAudit("PASSKEY_DELETED", "${passkey.credentialId}|rpId=${passkey.rpId}")
     }
     

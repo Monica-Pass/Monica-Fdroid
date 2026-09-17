@@ -1364,6 +1364,9 @@ fun PasswordListContent(
         if (retainedSeed.hasSnapshot) {
             groupedPasswords = retainedSeed.groups
             completedGroupingSnapshotKey = groupingSnapshotKey
+            // Compatible snapshots may still have outdated manual-stack metadata.
+            // Only the exact input/configuration match can skip the background work.
+            if (retainedSeed.isExactMatch) return@LaunchedEffect
         }
         if (sourceEntries.isEmpty()) {
             groupedPasswords = emptyMap()

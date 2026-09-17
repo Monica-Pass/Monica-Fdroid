@@ -26,6 +26,7 @@ internal data class PasswordGroupingSnapshotKey(
 internal data class PasswordGroupingSnapshotSeed(
     val groups: Map<String, List<PasswordEntry>>,
     val hasSnapshot: Boolean,
+    val isExactMatch: Boolean = false,
 )
 
 internal data class PasswordGroupingEntryRevision(
@@ -74,6 +75,7 @@ internal class PasswordAggregateRetainedState {
         return PasswordGroupingSnapshotSeed(
             groups = if (matches || compatible) groupingSnapshotGroups else emptyMap(),
             hasSnapshot = matches || compatible,
+            isExactMatch = matches,
         )
     }
 

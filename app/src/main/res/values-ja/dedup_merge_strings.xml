@@ -10,10 +10,10 @@
     <string name="dedup_merge_warning_count">確認が必要な注意事項：%1$d 件</string>
     <string name="dedup_merge_preview_title">統合の詳細</string>
     <string name="dedup_merge_preview_summary">%1$d 件 · 競合グループ %2$d 件</string>
-    <string name="dedup_merge_preview_need_sources">統合元のデータベースを 2 つ以上選択するとプレビューを生成します</string>
+    <string name="dedup_merge_preview_need_sources">元のデータベースを選ぶとプレビューが表示されます</string>
     <string name="dedup_merge_preview_need_target">統合先のデータベースを選択するとプレビューを生成します</string>
     <string name="dedup_merge_preview_empty">現在の選択には新しく書き込む項目がありません</string>
-    <string name="dedup_merge_source_empty">未選択です。データベースを 2 つ以上選択してください。</string>
+    <string name="dedup_merge_source_empty">データベースを1つ以上選択</string>
     <string name="dedup_merge_source_summary_more">%1$s など %2$d 件</string>
     <string name="dedup_merge_source_title">統合元のデータベース</string>
     <string name="dedup_merge_target_title">統合先のデータベース</string>
@@ -38,7 +38,7 @@
     <string name="dedup_merge_policy_title">フィールド競合時に優先するバージョン</string>
     <string name="dedup_merge_policy_complete">内容がより充実</string>
     <string name="dedup_merge_policy_newest">更新日時が最新</string>
-    <string name="dedup_merge_policy_description">同じ項目のフィールドが競合した場合の基本バージョンを決めます。空のフィールドは他のコピーから補完されます。</string>
+    <string name="dedup_merge_policy_description">パスワードの空欄を補い、カスタム項目を統合します。カードなどは選択した版の内容を保持します。パスキーは識別情報と鍵データが一致する場合のみ統合します。</string>
     <string name="dedup_merge_summary_title">統合プレビュー</string>
     <string name="dedup_merge_writing_target">統合先のデータベースに書き込み中</string>
     <string name="dedup_merge_analyzing">再分析中</string>
@@ -50,7 +50,7 @@
     <string name="dedup_merge_summary_unsupported">未対応</string>
     <string name="dedup_merge_label_count">%1$s %2$d</string>
     <string name="dedup_merge_merging">統合中</string>
-    <string name="dedup_merge_need_sources">統合元のデータベースを 2 つ以上選択してください</string>
+    <string name="dedup_merge_need_sources">元のデータベースを選択</string>
     <string name="dedup_merge_need_target">統合先のデータベースを選択してください</string>
     <string name="dedup_merge_nothing_to_write">書き込む項目はありません</string>
     <string name="dedup_merge_confirm_write">確認して %1$d 件を書き込む</string>
@@ -92,11 +92,11 @@
     <string name="dedup_merge_preview_pending">統合プレビューを生成中です</string>
     <string name="dedup_merge_target_contains_all">統合可能な項目はすべて統合先に存在します</string>
     <string name="dedup_merge_plan_invalid">現在の統合計画は実行できません</string>
-    <string name="dedup_merge_warning_empty_sources">選択した統合元には、書き込み可能なパスワードやセキュア項目がありません</string>
+    <string name="dedup_merge_warning_empty_sources">選択したデータベースに統合できる項目がありません。</string>
     <string name="dedup_merge_warning_target_is_source">統合先が統合元としても選択されています。統合先の既存項目はスキップ判定にのみ使用され、更新や上書きはされません。</string>
-    <string name="dedup_merge_warning_existing_passwords">統合先に同種のパスワードがある場合はスキップし、既存項目を上書きしません。</string>
-    <string name="dedup_merge_warning_existing_secure_items">統合先に同種の認証、カード、身分証明書、ノートがある場合はスキップし、上書きしません。</string>
-    <string name="dedup_merge_warning_passkeys">パスキーには Android Keystore 内の秘密鍵が含まれます。%1$d 件を集計しますが、自動コピーは行いません。</string>
+    <string name="dedup_merge_warning_existing_passwords">保存先に同じ内容があるパスワードはスキップします。</string>
+    <string name="dedup_merge_warning_existing_secure_items">保存先に同じ内容がある安全な項目はスキップします。</string>
+    <string name="dedup_merge_warning_passkeys">%1$d 件のパスキーをスキップしました。理由は統合の詳細で確認できます。</string>
     <string name="dedup_merge_target_cannot_be_source">統合先のデータベースを統合元にすることはできません</string>
     <string name="dedup_merge_sources_unavailable">利用できなくなった統合元のデータベースがあります</string>
     <string name="dedup_merge_field_type">種類</string>
@@ -106,4 +106,16 @@
     <string name="attachments">添付ファイル</string>
     <string name="custom_fields">カスタムフィールド</string>
     <string name="payment_account">支払い方法</string>
+    <string name="dedup_merge_intro_title">重複をまとめて整理</string>
+    <string name="dedup_merge_intro_desc">整理したデータを保存先に追加します。元のデータは残ります。</string>
+    <string name="dedup_merge_select_results">検索結果をすべて選択</string>
+    <string name="dedup_merge_new_count">%1$d 件を追加予定</string>
+    <string name="dedup_merge_consolidated">統合する重複</string>
+    <string name="dedup_merge_target_variant">保存先に似た項目がありますが、内容が異なるため別の項目として追加します。</string>
+    <string name="dedup_merge_kept_from">採用する元のデータ：%1$s</string>
+    <string name="dedup_passkey_missing_key">参照のみ、または秘密鍵を利用できません。元の記録を保持します。</string>
+    <string name="dedup_passkey_nonzero_counter">署名カウンターが 0 ではありません。独立したコピーを作らず、移動を使用してください。</string>
+    <string name="dedup_passkey_bound_password">パスワードに紐付いているため、単独ではコピーしません。</string>
+    <string name="dedup_passkey_device_key">この端末専用の鍵は同期データベースにコピーできません。</string>
+    <string name="dedup_passkey_identity_conflict">同じ認証情報 ID の鍵または重要なデータが異なります。手動で確認してください。</string>
 </resources>

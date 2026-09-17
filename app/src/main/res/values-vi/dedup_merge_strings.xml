@@ -10,10 +10,10 @@
     <string name="dedup_merge_warning_count">%1$d lưu ý cần xem</string>
     <string name="dedup_merge_preview_title">Chi tiết hợp nhất</string>
     <string name="dedup_merge_preview_summary">%1$d mục · %2$d nhóm xung đột</string>
-    <string name="dedup_merge_preview_need_sources">Chọn ít nhất hai cơ sở dữ liệu nguồn để tạo bản xem trước</string>
+    <string name="dedup_merge_preview_need_sources">Chọn cơ sở dữ liệu nguồn để xem trước</string>
     <string name="dedup_merge_preview_need_target">Chọn cơ sở dữ liệu đích để tạo bản xem trước</string>
     <string name="dedup_merge_preview_empty">Không có mục mới để ghi với lựa chọn này</string>
-    <string name="dedup_merge_source_empty">Chưa chọn. Cần ít nhất hai cơ sở dữ liệu.</string>
+    <string name="dedup_merge_source_empty">Chọn ít nhất một cơ sở dữ liệu</string>
     <string name="dedup_merge_source_summary_more">%1$s … (đã chọn %2$d)</string>
     <string name="dedup_merge_source_title">Cơ sở dữ liệu nguồn</string>
     <string name="dedup_merge_target_title">Cơ sở dữ liệu đích</string>
@@ -38,7 +38,7 @@
     <string name="dedup_merge_policy_title">Khi các trường xung đột, ưu tiên</string>
     <string name="dedup_merge_policy_complete">Nội dung đầy đủ hơn</string>
     <string name="dedup_merge_policy_newest">Cập nhật gần nhất</string>
-    <string name="dedup_merge_policy_description">Chỉ xác định phiên bản cơ sở khi các trường của cùng một mục xung đột. Các trường trống vẫn được bổ sung từ bản sao khác.</string>
+    <string name="dedup_merge_policy_description">Điền các trường mật khẩu còn trống và gộp trường tùy chỉnh. Thẻ và mục khác giữ nội dung của phiên bản đã chọn. Chỉ gộp khóa truy cập khi thông tin nhận dạng và dữ liệu khóa trùng khớp.</string>
     <string name="dedup_merge_summary_title">Xem trước hợp nhất</string>
     <string name="dedup_merge_writing_target">Đang ghi vào cơ sở dữ liệu đích</string>
     <string name="dedup_merge_analyzing">Đang phân tích lại</string>
@@ -50,7 +50,7 @@
     <string name="dedup_merge_summary_unsupported">Không hỗ trợ</string>
     <string name="dedup_merge_label_count">%1$s: %2$d</string>
     <string name="dedup_merge_merging">Đang hợp nhất</string>
-    <string name="dedup_merge_need_sources">Chọn ít nhất hai cơ sở dữ liệu nguồn</string>
+    <string name="dedup_merge_need_sources">Chọn nguồn</string>
     <string name="dedup_merge_need_target">Chọn cơ sở dữ liệu đích</string>
     <string name="dedup_merge_nothing_to_write">Không có mục cần ghi</string>
     <string name="dedup_merge_confirm_write">Xác nhận và ghi %1$d mục</string>
@@ -92,11 +92,11 @@
     <string name="dedup_merge_preview_pending">Bản xem trước hợp nhất vẫn đang được tạo</string>
     <string name="dedup_merge_target_contains_all">Cơ sở dữ liệu đích đã chứa tất cả các mục có thể hợp nhất</string>
     <string name="dedup_merge_plan_invalid">Không thể thực hiện kế hoạch hợp nhất hiện tại</string>
-    <string name="dedup_merge_warning_empty_sources">Cơ sở dữ liệu nguồn đã chọn không có mật khẩu hoặc mục bảo mật có thể ghi</string>
+    <string name="dedup_merge_warning_empty_sources">Các nguồn đã chọn không có mục để hợp nhất.</string>
     <string name="dedup_merge_warning_target_is_source">Đích cũng được chọn làm nguồn. Các mục hiện có ở đích chỉ được kiểm tra để bỏ qua trùng lặp, không bị cập nhật hoặc ghi đè.</string>
-    <string name="dedup_merge_warning_existing_passwords">Mật khẩu tương ứng đã có ở đích sẽ được bỏ qua. Các mục hiện có không bị ghi đè.</string>
-    <string name="dedup_merge_warning_existing_secure_items">Mã xác thực, thẻ, giấy tờ hoặc ghi chú tương ứng đã có ở đích sẽ được bỏ qua, không bị ghi đè.</string>
-    <string name="dedup_merge_warning_passkeys">Khóa truy cập chứa khóa riêng trong Android Keystore. %1$d khóa chỉ được thống kê, không tự động sao chép.</string>
+    <string name="dedup_merge_warning_existing_passwords">Bỏ qua mật khẩu có cùng nội dung ở đích.</string>
+    <string name="dedup_merge_warning_existing_secure_items">Bỏ qua mục bảo mật có cùng nội dung ở đích.</string>
+    <string name="dedup_merge_warning_passkeys">Đã bỏ qua %1$d khóa truy cập. Xem lý do trong chi tiết hợp nhất.</string>
     <string name="dedup_merge_target_cannot_be_source">Cơ sở dữ liệu đích không thể đồng thời làm nguồn</string>
     <string name="dedup_merge_sources_unavailable">Một hoặc nhiều cơ sở dữ liệu nguồn không còn khả dụng</string>
     <string name="dedup_merge_field_type">Loại</string>
@@ -106,4 +106,16 @@
     <string name="attachments">Tệp đính kèm</string>
     <string name="custom_fields">Trường tùy chỉnh</string>
     <string name="payment_account">Phương thức thanh toán</string>
+    <string name="dedup_merge_intro_title">Gộp các bản trùng</string>
+    <string name="dedup_merge_intro_desc">Lưu một bộ dữ liệu đã gộp vào đích. Dữ liệu nguồn vẫn được giữ.</string>
+    <string name="dedup_merge_select_results">Chọn mọi kết quả</string>
+    <string name="dedup_merge_new_count">Sẽ thêm %1$d mục</string>
+    <string name="dedup_merge_consolidated">Bản trùng đã gộp</string>
+    <string name="dedup_merge_target_variant">Đích có mục tương tự nhưng khác nội dung. Một bản riêng sẽ được thêm vào.</string>
+    <string name="dedup_merge_kept_from">Bản gốc được chọn: %1$s</string>
+    <string name="dedup_passkey_missing_key">Chỉ có tham chiếu hoặc không dùng được khóa riêng tư. Giữ nguyên bản gốc.</string>
+    <string name="dedup_passkey_nonzero_counter">Bộ đếm chữ ký khác 0. Hãy dùng Di chuyển để tránh tạo bản sao độc lập.</string>
+    <string name="dedup_passkey_bound_password">Đã liên kết với mật khẩu; không sao chép riêng.</string>
+    <string name="dedup_passkey_device_key">Khóa gắn với thiết bị này không thể sao chép vào cơ sở dữ liệu có đồng bộ.</string>
+    <string name="dedup_passkey_identity_conflict">Cùng ID thông tin đăng nhập nhưng khóa hoặc siêu dữ liệu khác nhau. Cần kiểm tra thủ công.</string>
 </resources>

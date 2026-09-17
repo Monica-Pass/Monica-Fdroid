@@ -4425,6 +4425,13 @@ class MdbxViewModel(
                 )
             }
         }
+        val imageSupport = takagi.ru.monica.attachments.LegacyImageAttachmentSupport(context)
+        val attachmentFacade = takagi.ru.monica.attachments.AttachmentContainer.facade(context)
+        for (ids in importedSecureItemIds.values.distinct().chunked(800)) {
+            for (item in secureItemDao.getItemsByIds(ids)) {
+                if (item.imagePaths.isNotBlank()) imageSupport.restoreMissing(item, attachmentFacade)
+            }
+        }
     }
 
     private fun List<Attachment>.matchesMdbxAttachments(remoteAttachments: List<MdbxStoredAttachment>): Boolean {

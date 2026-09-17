@@ -155,7 +155,7 @@ fun PasskeyListScreen(
     val mdbxDatabases by database.localMdbxDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
     val bitwardenRepository = remember { BitwardenRepository.getInstance(context) }
     val bitwardenVaults by database.bitwardenVaultDao().getAllVaultsFlow().collectAsState(initial = emptyList())
-    val securityManager = remember { takagi.ru.monica.security.SecurityManager(context) }
+    val securityManager = takagi.ru.monica.ui.rememberUiSecurityManager()
     val keepassBridge = remember {
         KeePassCompatibilityBridge(
             KeePassWorkspaceRepository(

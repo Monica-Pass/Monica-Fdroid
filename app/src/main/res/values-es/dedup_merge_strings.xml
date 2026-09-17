@@ -10,10 +10,10 @@
     <string name="dedup_merge_warning_count">Notas que revisar: %1$d</string>
     <string name="dedup_merge_preview_title">Detalles de la fusión</string>
     <string name="dedup_merge_preview_summary">Elementos: %1$d · Grupos en conflicto: %2$d</string>
-    <string name="dedup_merge_preview_need_sources">Selecciona al menos dos bases de datos de origen para generar una vista previa</string>
+    <string name="dedup_merge_preview_need_sources">Elige una base de origen para ver la vista previa</string>
     <string name="dedup_merge_preview_need_target">Selecciona una base de datos de destino para generar una vista previa</string>
     <string name="dedup_merge_preview_empty">No hay elementos nuevos que escribir con esta selección</string>
-    <string name="dedup_merge_source_empty">Sin selección. Se necesitan al menos dos bases de datos.</string>
+    <string name="dedup_merge_source_empty">Elige una o varias bases de datos</string>
     <string name="dedup_merge_source_summary_more">%1$s … (%2$d seleccionadas)</string>
     <string name="dedup_merge_source_title">Bases de datos de origen</string>
     <string name="dedup_merge_target_title">Base de datos de destino</string>
@@ -38,7 +38,7 @@
     <string name="dedup_merge_policy_title">Si hay conflictos entre campos, preferir</string>
     <string name="dedup_merge_policy_complete">La versión más completa</string>
     <string name="dedup_merge_policy_newest">La actualización más reciente</string>
-    <string name="dedup_merge_policy_description">Determina la versión base cuando los campos de un mismo elemento entran en conflicto. Los campos vacíos se siguen completando con otras copias.</string>
+    <string name="dedup_merge_policy_description">Se completan los campos vacíos de las contraseñas y se combinan los campos propios. Las tarjetas y otros elementos conservan la versión elegida. Las claves de acceso solo se combinan si coinciden su identidad y los datos de la clave.</string>
     <string name="dedup_merge_summary_title">Vista previa de la fusión</string>
     <string name="dedup_merge_writing_target">Escribiendo en la base de datos de destino</string>
     <string name="dedup_merge_analyzing">Analizando de nuevo</string>
@@ -50,7 +50,7 @@
     <string name="dedup_merge_summary_unsupported">No compatibles</string>
     <string name="dedup_merge_label_count">%1$s: %2$d</string>
     <string name="dedup_merge_merging">Fusionando</string>
-    <string name="dedup_merge_need_sources">Selecciona al menos dos bases de datos de origen</string>
+    <string name="dedup_merge_need_sources">Elegir origen</string>
     <string name="dedup_merge_need_target">Selecciona una base de datos de destino</string>
     <string name="dedup_merge_nothing_to_write">No hay elementos que escribir</string>
     <string name="dedup_merge_confirm_write">Confirmar y escribir (%1$d)</string>
@@ -92,11 +92,11 @@
     <string name="dedup_merge_preview_pending">Todavía se está generando la vista previa de la fusión</string>
     <string name="dedup_merge_target_contains_all">La base de datos de destino ya contiene todos los elementos que se pueden fusionar</string>
     <string name="dedup_merge_plan_invalid">No se puede ejecutar el plan de fusión actual</string>
-    <string name="dedup_merge_warning_empty_sources">Las bases de datos de origen seleccionadas no contienen contraseñas ni elementos seguros que se puedan escribir</string>
+    <string name="dedup_merge_warning_empty_sources">No hay elementos para combinar en los orígenes seleccionados.</string>
     <string name="dedup_merge_warning_target_is_source">El destino también está seleccionado como origen. Los elementos existentes del destino solo se comprueban para omitir duplicados; no se actualizarán ni sobrescribirán.</string>
-    <string name="dedup_merge_warning_existing_passwords">Se omitirán las contraseñas equivalentes que ya existan en el destino. Los elementos existentes no se sobrescribirán.</string>
-    <string name="dedup_merge_warning_existing_secure_items">Se omitirán los autenticadores, tarjetas, documentos o notas equivalentes que ya existan en el destino, sin sobrescribirlos.</string>
-    <string name="dedup_merge_warning_passkeys">Las claves de acceso contienen claves privadas en Android Keystore. Se contabilizan, pero no se copian automáticamente. Claves de acceso: %1$d.</string>
+    <string name="dedup_merge_warning_existing_passwords">Se omiten las contraseñas cuyo contenido ya existe en el destino.</string>
+    <string name="dedup_merge_warning_existing_secure_items">Se omiten los elementos seguros cuyo contenido ya existe en el destino.</string>
+    <string name="dedup_merge_warning_passkeys">Se omitieron %1$d claves de acceso. Consulta el motivo en los detalles.</string>
     <string name="dedup_merge_target_cannot_be_source">La base de datos de destino no puede ser también un origen</string>
     <string name="dedup_merge_sources_unavailable">Una o más bases de datos de origen ya no están disponibles</string>
     <string name="dedup_merge_field_type">Tipo</string>
@@ -105,4 +105,16 @@
     <!-- Shared labels used by merge previews. -->
     <string name="attachments">Adjuntos</string>
     <string name="custom_fields">Campos personalizados</string>
+    <string name="dedup_merge_intro_title">Reúne las copias</string>
+    <string name="dedup_merge_intro_desc">Guarda un conjunto unificado en el destino. Los datos de origen se conservan.</string>
+    <string name="dedup_merge_select_results">Seleccionar resultados</string>
+    <string name="dedup_merge_new_count">%1$d por añadir</string>
+    <string name="dedup_merge_consolidated">Copias unificadas</string>
+    <string name="dedup_merge_target_variant">El destino tiene un elemento similar con contenido distinto. Se añadirá otra copia.</string>
+    <string name="dedup_merge_kept_from">Versión base: %1$s</string>
+    <string name="dedup_passkey_missing_key">Solo hay una referencia o la clave privada no está disponible. Se conserva el original.</string>
+    <string name="dedup_passkey_nonzero_counter">Contador de firmas distinto de cero. Usa Mover para evitar una copia independiente.</string>
+    <string name="dedup_passkey_bound_password">Vinculada a una contraseña; no se copia por separado.</string>
+    <string name="dedup_passkey_device_key">Esta clave está ligada al dispositivo y no puede copiarse a una base sincronizada.</string>
+    <string name="dedup_passkey_identity_conflict">El mismo ID de credencial tiene claves o metadatos distintos. Revísalo manualmente.</string>
 </resources>

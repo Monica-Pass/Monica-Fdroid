@@ -3,8 +3,10 @@ package takagi.ru.monica.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +18,7 @@ import takagi.ru.monica.data.dedup.DedupMergeExecutionResult
 import takagi.ru.monica.data.dedup.DedupMergeExecutionProgress
 import takagi.ru.monica.data.dedup.DedupMergePlan
 import takagi.ru.monica.data.dedup.DedupMergeSelection
-import takagi.ru.monica.data.dedup.DedupMergeService
+import takagi.ru.monica.data.dedup.DedupMergeOperations
 import takagi.ru.monica.data.dedup.DedupMergeSourceOption
 import takagi.ru.monica.data.dedup.DedupMergeTarget
 import takagi.ru.monica.data.dedup.DedupMergeTargetOption
@@ -46,11 +48,17 @@ data class DedupEngineUiState(
 
     val validation
         get() = selection.validate(mergePlan.writableItems)
+
+    val canExecuteMerge: Boolean
+        get() = validation.canExecute && !isLoading && !isAnalyzing && !isExecutingMerge && error == null &&
+            mergePlan.target == selectedMergeTarget && mergePlan.conflictPolicy == conflictPolicy &&
+            mergePlan.selectedSources.map { it.key }.toSet() == selectedMergeSourceKeys
 }
 
 class DedupEngineViewModel internal constructor(
-    private val mergeService: DedupMergeService,
-    private val strings: StringResolver
+    private val mergeService: DedupMergeOperations,
+    private val strings: StringResolver,
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DedupEngineUiState())
     val uiState: StateFlow<DedupEngineUiState> = _uiState.asStateFlow()
@@ -66,10 +74,11 @@ class DedupEngineViewModel internal constructor(
     fun refresh() {
         if (_uiState.value.isExecutingMerge) return
         refreshJob?.cancel()
+        analyzeJob?.cancel()
         refreshJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, isAnalyzing = false, mergePlan = DedupMergePlan(), error = null) }
             runCatching {
-                withContext(Dispatchers.Default) {
+                withContext(analysisDispatcher) {
                     mergeService.getSourceOptions() to mergeService.getTargetOptions()
                 }
             }.onSuccess { (sources, targets) ->
@@ -91,6 +100,7 @@ class DedupEngineViewModel internal constructor(
                 }
                 rebuildPlan()
             }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -102,6 +112,7 @@ class DedupEngineViewModel internal constructor(
     }
 
     fun toggleMergeSource(sourceKey: String) {
+        if (_uiState.value.isExecutingMerge || _uiState.value.sourceOptions.none { it.key == sourceKey }) return
         _uiState.update { state ->
             val next = state.selection.toggleSource(sourceKey)
             state.copy(
@@ -115,11 +126,13 @@ class DedupEngineViewModel internal constructor(
         rebuildPlan()
     }
 
-    fun selectAllSources() {
+    fun selectAllSources(visibleKeys: Set<String>? = null) {
+        if (_uiState.value.isExecutingMerge) return
         _uiState.update { state ->
-            val next = state.selection.selectAll(state.sourceOptions.map { it.key }.toSet())
+            val availableKeys = state.sourceOptions.map { it.key }.toSet()
+            val next = state.selection.selectAll(visibleKeys?.intersect(availableKeys) ?: availableKeys)
             state.copy(
-                selectedMergeSourceKeys = next.sourceKeys,
+                selectedMergeSourceKeys = state.selectedMergeSourceKeys + next.sourceKeys,
                 executionResult = null,
                 message = null,
                 error = null
@@ -129,8 +142,11 @@ class DedupEngineViewModel internal constructor(
     }
 
     fun clearSources() {
+        if (_uiState.value.isExecutingMerge) return
+        analyzeJob?.cancel()
         _uiState.update {
             it.copy(
+                isAnalyzing = false,
                 selectedMergeSourceKeys = emptySet(),
                 mergePlan = DedupMergePlan(
                     target = it.selectedMergeTarget,
@@ -144,6 +160,7 @@ class DedupEngineViewModel internal constructor(
     }
 
     fun selectMergeTarget(target: DedupMergeTarget) {
+        if (_uiState.value.isExecutingMerge) return
         _uiState.update {
             val option = it.targetOptions.firstOrNull { option -> option.target == target }
                 ?: return@update it
@@ -160,7 +177,7 @@ class DedupEngineViewModel internal constructor(
     }
 
     fun updateConflictPolicy(policy: DedupConflictPolicy) {
-        if (_uiState.value.conflictPolicy == policy) return
+        if (_uiState.value.isExecutingMerge || _uiState.value.conflictPolicy == policy) return
         _uiState.update {
             it.copy(
                 conflictPolicy = policy,
@@ -175,7 +192,7 @@ class DedupEngineViewModel internal constructor(
     fun executeMerge() {
         val state = _uiState.value
         val plan = state.mergePlan
-        if (!state.validation.canExecute || state.isAnalyzing || state.isExecutingMerge) {
+        if (!state.canExecuteMerge) {
             _uiState.update {
                 it.copy(message = validationMessage(state, strings))
             }
@@ -217,6 +234,7 @@ class DedupEngineViewModel internal constructor(
                         message = strings.get(R.string.dedup_merge_cancelled)
                     )
                 }
+                refresh()
             } catch (throwable: Throwable) {
                 _uiState.update {
                     it.copy(
@@ -246,16 +264,25 @@ class DedupEngineViewModel internal constructor(
 
     private fun rebuildPlan() {
         analyzeJob?.cancel()
+        val selection = _uiState.value
+        if (!selection.validation.canReview) {
+            _uiState.update { it.copy(isAnalyzing = false, mergePlan = DedupMergePlan()) }
+            return
+        }
+        _uiState.update { it.copy(isAnalyzing = true, mergePlan = DedupMergePlan(), error = null) }
         analyzeJob = viewModelScope.launch {
-            val selectedKeys = _uiState.value.selectedMergeSourceKeys
-            val selectedTarget = _uiState.value.selectedMergeTarget
-            val conflictPolicy = _uiState.value.conflictPolicy
-            _uiState.update { it.copy(isAnalyzing = true, error = null) }
+            val selectedKeys = selection.selectedMergeSourceKeys
+            val selectedTarget = selection.selectedMergeTarget
+            val conflictPolicy = selection.conflictPolicy
             runCatching {
-                withContext(Dispatchers.Default) {
+                withContext(analysisDispatcher) {
                     mergeService.buildPlan(selectedKeys, selectedTarget, conflictPolicy)
                 }
             }.onSuccess { plan ->
+                ensureActive()
+                val current = _uiState.value
+                if (current.selectedMergeSourceKeys != selectedKeys || current.selectedMergeTarget != selectedTarget ||
+                    current.conflictPolicy != conflictPolicy) return@onSuccess
                 _uiState.update {
                     it.copy(
                         isAnalyzing = false,
@@ -264,9 +291,11 @@ class DedupEngineViewModel internal constructor(
                     )
                 }
             }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
                 _uiState.update {
                     it.copy(
                         isAnalyzing = false,
+                        mergePlan = DedupMergePlan(),
                         error = throwable.message ?: strings.get(R.string.dedup_merge_plan_failed)
                     )
                 }
@@ -279,6 +308,7 @@ private fun DedupMergeExecutionResult.toMessage(strings: StringResolver): String
     val details = buildList {
         if (insertedPasswords > 0) add(strings.get(R.string.dedup_merge_password_count, insertedPasswords))
         if (insertedSecureItems > 0) add(strings.get(R.string.dedup_merge_secure_item_count, insertedSecureItems))
+        if (insertedPasskeys > 0) add(strings.get(R.string.dedup_merge_passkey_count, insertedPasskeys))
         if (failedItems > 0) add(strings.get(R.string.dedup_merge_failed_count, failedItems))
         if (skippedExistingItems > 0) add(strings.get(R.string.dedup_merge_skipped_existing_count, skippedExistingItems))
         if (skippedUnsupportedPasskeys > 0) add(strings.get(R.string.dedup_merge_skipped_passkey_count, skippedUnsupportedPasskeys))

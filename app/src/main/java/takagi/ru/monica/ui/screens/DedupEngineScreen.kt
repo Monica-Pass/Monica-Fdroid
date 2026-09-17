@@ -2,6 +2,21 @@ package takagi.ru.monica.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.Shape
+import takagi.ru.monica.ui.components.GroupedItemDefaults
+import takagi.ru.monica.ui.components.MonicaExpandableContent
+import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +34,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
@@ -37,10 +50,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -48,6 +59,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -84,12 +96,15 @@ import takagi.ru.monica.data.dedup.DedupMergeTarget
 import takagi.ru.monica.data.dedup.DedupMergeTargetOption
 import takagi.ru.monica.data.dedup.DedupResolvedPassword
 import takagi.ru.monica.data.dedup.DedupResolvedSecureItem
+import takagi.ru.monica.data.dedup.DedupResolvedPasskey
+import takagi.ru.monica.data.dedup.DedupPasskeySkipReason
 import takagi.ru.monica.data.dedup.dedupLabel
 import takagi.ru.monica.utils.StringResolver
 import takagi.ru.monica.viewmodel.DedupEngineUiState
 
 private enum class DedupSheet {
     SOURCES,
+    POLICY,
     TARGET,
     PREVIEW,
     WARNINGS,
@@ -110,7 +125,7 @@ fun DedupEngineScreen(
     onNavigateBack: () -> Unit,
     onRefresh: () -> Unit,
     onToggleSource: (String) -> Unit,
-    onSelectAllSources: () -> Unit,
+    onSelectAllSources: (Set<String>) -> Unit,
     onClearSources: () -> Unit,
     onSelectTarget: (DedupMergeTarget) -> Unit,
     onCreateMdbxTarget: () -> Unit,
@@ -125,6 +140,7 @@ fun DedupEngineScreen(
     var showCancelConfirmation by rememberSaveable { mutableStateOf(false) }
     var activeSheet by rememberSaveable { mutableStateOf<DedupSheet?>(null) }
     var previewFilter by rememberSaveable { mutableStateOf(DedupPreviewFilter.ALL) }
+    val listState = rememberLazyListState()
     val busy = uiState.isLoading || uiState.isAnalyzing || uiState.isExecutingMerge
 
     fun requestBack() {
@@ -142,10 +158,21 @@ fun DedupEngineScreen(
         if (uiState.isExecutingMerge) {
             showMergeConfirmation = false
             activeSheet = null
+            listState.animateScrollToItem(0)
         }
     }
 
     when (activeSheet) {
+        DedupSheet.POLICY -> ModalBottomSheet(onDismissRequest = { activeSheet = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            Column(Modifier.padding(horizontal = 12.dp).navigationBarsPadding().padding(bottom = 16.dp)) {
+                SheetHeader(strings.get(R.string.dedup_merge_policy_title), "", { activeSheet = null })
+                ConflictPolicyPanel(uiState.conflictPolicy, !busy) {
+                    onConflictPolicyChange(it)
+                    activeSheet = null
+                }
+            }
+        }
         DedupSheet.SOURCES -> SourceSelectionSheet(
             sources = uiState.sourceOptions,
             selectedKeys = uiState.selectedMergeSourceKeys,
@@ -218,7 +245,7 @@ fun DedupEngineScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(strings.get(R.string.dedup_merge_title), fontWeight = FontWeight.SemiBold) },
+                title = { Text(strings.get(R.string.dedup_engine_title), fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = ::requestBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.get(R.string.back))
@@ -234,16 +261,24 @@ fun DedupEngineScreen(
         bottomBar = {
             MergeBottomBar(
                 uiState = uiState,
-                onReviewAndMerge = { showMergeConfirmation = true }
+                onReviewAndMerge = {
+                    when {
+                        uiState.selectedMergeSourceKeys.isEmpty() -> activeSheet = DedupSheet.SOURCES
+                        uiState.selectedMergeTarget == null -> activeSheet = DedupSheet.TARGET
+                        else -> showMergeConfirmation = true
+                    }
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("dedup_content")
                 .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (uiState.isLoading) {
@@ -252,26 +287,40 @@ fun DedupEngineScreen(
                 }
             }
 
+            uiState.executionProgress?.let { progress ->
+                item(key = "progress") {
+                    ExecutionProgressPanel(progress.completedItems, progress.totalItems, progress.currentLabel,
+                        progress.fraction, onCancel = { showCancelConfirmation = true })
+                }
+            }
+            uiState.executionResult?.let { result ->
+                item(key = "result") {
+                    ExecutionResultPanel(result, onViewFailures = { activeSheet = DedupSheet.FAILURES })
+                }
+            }
+
+            item(key = "intro") {
+                Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(strings.get(R.string.dedup_merge_intro_title), style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold)
+                    Text(strings.get(R.string.dedup_merge_intro_desc), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             item(key = "setup") {
                 CompactSetupPanel(
                     sources = uiState.sourceOptions,
                     selectedSourceKeys = uiState.selectedMergeSourceKeys,
                     selectedTarget = uiState.selectedTargetOption,
-                    enabled = !uiState.isExecutingMerge,
+                    enabled = !uiState.isLoading && !uiState.isExecutingMerge,
+                    policy = uiState.conflictPolicy,
+                    onOpenPolicy = { activeSheet = DedupSheet.POLICY },
                     onOpenSources = { activeSheet = DedupSheet.SOURCES },
                     onOpenTarget = { activeSheet = DedupSheet.TARGET }
                 )
             }
-            item(key = "policy") {
-                ConflictPolicyPanel(
-                    selected = uiState.conflictPolicy,
-                    enabled = !busy,
-                    onSelected = onConflictPolicyChange
-                )
-            }
-
-            item(key = "summary") {
-                MergeSummaryPanel(uiState)
+            if (uiState.isAnalyzing || (!uiState.isLoading && uiState.validation.canReview)) {
+                item(key = "summary") { MergeSummaryPanel(uiState) }
             }
 
             if (uiState.mergePlan.warnings.isNotEmpty()) {
@@ -290,47 +339,28 @@ fun DedupEngineScreen(
                     MessagePanel(Icons.Default.Error, MaterialTheme.colorScheme.error, error)
                 }
             }
-            uiState.executionProgress?.let { progress ->
-                item(key = "progress") {
-                    ExecutionProgressPanel(
-                        completed = progress.completedItems,
-                        total = progress.totalItems,
-                        currentLabel = progress.currentLabel,
-                        fraction = progress.fraction,
-                        onCancel = { showCancelConfirmation = true }
-                    )
-                }
-            }
-            uiState.executionResult?.let { result ->
-                item(key = "result") {
-                    ExecutionResultPanel(
-                        result = result,
-                        onViewFailures = { activeSheet = DedupSheet.FAILURES }
-                    )
-                }
-            }
 
-            if (uiState.selection.validate(uiState.mergePlan.writableItems).canReview) {
+            if (!busy && uiState.error == null && uiState.validation.canReview) {
                 item(key = "preview") {
                     CompactLinkPanel(
                         icon = Icons.Default.Merge,
                         title = strings.get(R.string.dedup_merge_preview_title),
                         subtitle = strings.get(
                             R.string.dedup_merge_preview_summary,
-                            uiState.mergePlan.previewPasswords.size + uiState.mergePlan.previewSecureItems.size,
-                            uiState.mergePlan.conflictGroupsTotal
+                            uiState.mergePlan.previewItemCount,
+                            uiState.mergePlan.reviewConflictGroups
                         ),
                         tint = MaterialTheme.colorScheme.primary,
                         onClick = { activeSheet = DedupSheet.PREVIEW }
                     )
                 }
-            } else if (!uiState.isLoading) {
+            } else if (!busy && uiState.error == null) {
                 item(key = "preview_empty") {
                     MessagePanel(
                         icon = Icons.Default.Info,
                         tint = MaterialTheme.colorScheme.primary,
                         text = when {
-                            uiState.selectedMergeSourceKeys.size < 2 -> strings.get(R.string.dedup_merge_preview_need_sources)
+                            uiState.selectedMergeSourceKeys.isEmpty() -> strings.get(R.string.dedup_merge_preview_need_sources)
                             uiState.selectedMergeTarget == null -> strings.get(R.string.dedup_merge_preview_need_target)
                             else -> strings.get(R.string.dedup_merge_preview_empty)
                         }
@@ -343,86 +373,43 @@ fun DedupEngineScreen(
 
 @Composable
 private fun CompactSetupPanel(
-    sources: List<DedupMergeSourceOption>,
-    selectedSourceKeys: Set<String>,
-    selectedTarget: DedupMergeTargetOption?,
-    enabled: Boolean,
-    onOpenSources: () -> Unit,
-    onOpenTarget: () -> Unit
+    sources: List<DedupMergeSourceOption>, selectedSourceKeys: Set<String>,
+    selectedTarget: DedupMergeTargetOption?, enabled: Boolean, policy: DedupConflictPolicy,
+    onOpenSources: () -> Unit, onOpenTarget: () -> Unit, onOpenPolicy: () -> Unit
 ) {
     val strings = rememberScreenStrings()
     val selectedSources = sources.filter { it.key in selectedSourceKeys }
-    val sourceSummary = when {
-        selectedSources.isEmpty() -> strings.get(R.string.dedup_merge_source_empty)
-        selectedSources.size <= 2 -> selectedSources.joinToString(strings.get(R.string.dedup_merge_list_separator)) { it.label }
-        else -> strings.get(
-            R.string.dedup_merge_source_summary_more,
-            selectedSources.take(2).joinToString(strings.get(R.string.dedup_merge_list_separator)) { it.label },
-            selectedSources.size
-        )
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column {
-            CompactSelectionRow(
-                index = 1,
-                title = strings.get(R.string.dedup_merge_source_title),
-                subtitle = sourceSummary,
-                complete = selectedSources.size >= 2,
-                enabled = enabled,
-                onClick = onOpenSources
-            )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            CompactSelectionRow(
-                index = 2,
-                title = strings.get(R.string.dedup_merge_target_title),
-                subtitle = selectedTarget?.let { "${it.label} · ${it.countSummary(strings)}" } ?: strings.get(R.string.dedup_merge_target_empty),
-                complete = selectedTarget != null,
-                enabled = enabled,
-                onClick = onOpenTarget
-            )
-        }
+    val sourceSummary = if (selectedSources.isEmpty()) strings.get(R.string.dedup_merge_source_empty)
+        else selectedSources.joinToString(strings.get(R.string.dedup_merge_list_separator)) { it.label }
+    Column(verticalArrangement = Arrangement.spacedBy(GroupedItemDefaults.Spacing)) {
+        CompactSelectionRow(Icons.Default.ContentCopy, strings.get(R.string.dedup_merge_source_title),
+            sourceSummary, GroupedItemDefaults.shape(0, 3), enabled, onOpenSources)
+        CompactSelectionRow(Icons.Default.Storage, strings.get(R.string.dedup_merge_target_title),
+            selectedTarget?.label ?: strings.get(R.string.dedup_merge_target_empty),
+            GroupedItemDefaults.shape(1, 3), enabled, onOpenTarget)
+        CompactSelectionRow(Icons.Default.Tune, strings.get(R.string.dedup_merge_policy_title),
+            policy.label(strings), GroupedItemDefaults.shape(2, 3), enabled, onOpenPolicy)
     }
 }
 
 @Composable
 private fun CompactSelectionRow(
-    index: Int,
-    title: String,
-    subtitle: String,
-    complete: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit
+    icon: ImageVector, title: String, subtitle: String, shape: Shape, enabled: Boolean, onClick: () -> Unit
 ) {
-    val strings = rememberScreenStrings()
-    ListItem(
-        modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        headlineContent = { Text(title, fontWeight = FontWeight.Medium) },
-        supportingContent = {
-            Text(subtitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        },
-        leadingContent = {
-            Surface(
-                shape = CircleShape,
-                color = if (complete) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest
-            ) {
-                Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-                    if (complete) {
-                        Icon(Icons.Default.Check, contentDescription = strings.get(R.string.qs_completed), modifier = Modifier.size(19.dp))
-                    } else {
-                        Text(index.toString(), fontWeight = FontWeight.Bold)
-                    }
+    Surface(onClick = onClick, enabled = enabled, shape = shape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            headlineContent = { Text(title, fontWeight = FontWeight.Medium) },
+            supportingContent = { Text(subtitle, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+            leadingContent = {
+                Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) { Icon(icon, null, Modifier.size(22.dp)) }
                 }
-            }
-        },
-        trailingContent = {
-            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
-        }
-    )
+            },
+            trailingContent = { Icon(Icons.Default.KeyboardArrowRight, null) }
+        )
+    }
 }
 
 @Composable
@@ -436,8 +423,9 @@ private fun CompactLinkPanel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(GroupedItemDefaults.SingleShape)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+        shape = GroupedItemDefaults.SingleShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         ListItem(
@@ -450,64 +438,54 @@ private fun CompactLinkPanel(
     }
 }
 
+
+@Composable
+private fun DedupSearchField(query: String, onQueryChange: (String) -> Unit, tag: String) {
+    val strings = rememberScreenStrings()
+    OutlinedTextField(value = query, onValueChange = onQueryChange, singleLine = true,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).testTag(tag),
+        shape = RoundedCornerShape(28.dp), placeholder = { Text(strings.get(R.string.search)) },
+        leadingIcon = { Icon(Icons.Default.Search, null) },
+        trailingIcon = if (query.isNotEmpty()) ({ IconButton(onClick = { onQueryChange("") }) {
+            Icon(Icons.Default.Close, strings.get(R.string.clear))
+        } }) else null)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SourceSelectionSheet(
-    sources: List<DedupMergeSourceOption>,
-    selectedKeys: Set<String>,
-    targetSourceKey: String?,
-    onToggleSource: (String) -> Unit,
-    onSelectAllSources: () -> Unit,
-    onClearSources: () -> Unit,
-    onDismiss: () -> Unit
+    sources: List<DedupMergeSourceOption>, selectedKeys: Set<String>, targetSourceKey: String?,
+    onToggleSource: (String) -> Unit, onSelectAllSources: (Set<String>) -> Unit,
+    onClearSources: () -> Unit, onDismiss: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.88f)
-                .navigationBarsPadding()
-        ) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val visible = remember(sources, query) { sources.filter { it.label.contains(query, true) || it.kind.label().contains(query, true) } }
+    ModalBottomSheet(onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).navigationBarsPadding()) {
             SheetHeader(strings.get(R.string.dedup_merge_source_title), strings.get(R.string.dedup_merge_selected_count, selectedKeys.size), onDismiss)
-            Row(modifier = Modifier.padding(horizontal = 12.dp)) {
-                TextButton(onClick = onSelectAllSources) { Text(strings.get(R.string.dedup_merge_select_all)) }
+            DedupSearchField(query, { query = it }, "dedup_source_search")
+            Row(Modifier.padding(horizontal = 12.dp)) {
+                TextButton(onClick = { onSelectAllSources(visible.map { it.key }.toSet()) }, enabled = visible.isNotEmpty()) {
+                    Text(strings.get(R.string.dedup_merge_select_results))
+                }
                 TextButton(onClick = onClearSources, enabled = selectedKeys.isNotEmpty()) { Text(strings.get(R.string.clear)) }
             }
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                if (sources.isEmpty()) {
-                    item { SheetEmptyText(strings.get(R.string.dedup_merge_no_sources)) }
-                }
-                items(sources, key = { it.key }) { source ->
-                    ListItem(
-                        modifier = Modifier
-                            .semantics { selected = source.key in selectedKeys }
-                            .clickable(role = Role.Checkbox) { onToggleSource(source.key) },
-                        headlineContent = { Text(source.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = {
-                            Text(
-                                if (source.key == targetSourceKey) {
-                                    strings.get(R.string.dedup_merge_source_is_target)
-                                } else {
-                                    "${source.kind.label()} · ${source.countSummary(strings)}"
-                                },
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        leadingContent = {
-                            Checkbox(
-                                checked = source.key in selectedKeys,
-                                onCheckedChange = { onToggleSource(source.key) }
-                            )
-                        },
-                        trailingContent = {
-                            Icon(Icons.Default.Storage, contentDescription = null, tint = sourceColor(source.kind))
-                        }
-                    )
+            LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (visible.isEmpty()) item { SheetEmptyText(strings.get(R.string.dedup_merge_filter_empty)) }
+                itemsIndexed(visible, key = { _, source -> source.key }) { index, source ->
+                    Surface(onClick = { onToggleSource(source.key) }, shape = GroupedItemDefaults.shape(index, visible.size),
+                        color = if (source.key in selectedKeys) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                        modifier = Modifier.fillMaxWidth().semantics { selected = source.key in selectedKeys }) {
+                        ListItem(
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            headlineContent = { Text(source.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                            supportingContent = { Text(if (source.key == targetSourceKey) strings.get(R.string.dedup_merge_source_is_target)
+                                else "${source.kind.label()} · ${source.countSummary(strings)}", style = MaterialTheme.typography.bodySmall) },
+                            leadingContent = { Checkbox(checked = source.key in selectedKeys, onCheckedChange = null) }
+                        )
+                    }
                 }
             }
         }
@@ -517,63 +495,38 @@ private fun SourceSelectionSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TargetSelectionSheet(
-    targets: List<DedupMergeTargetOption>,
-    selectedTarget: DedupMergeTarget?,
-    selectedSourceKeys: Set<String>,
-    onSelectTarget: (DedupMergeTarget) -> Unit,
-    onCreateMdbxTarget: () -> Unit,
-    onDismiss: () -> Unit
+    targets: List<DedupMergeTargetOption>, selectedTarget: DedupMergeTarget?, selectedSourceKeys: Set<String>,
+    onSelectTarget: (DedupMergeTarget) -> Unit, onCreateMdbxTarget: () -> Unit, onDismiss: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.8f)
-                .navigationBarsPadding()
-        ) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val visible = remember(targets, query) { targets.filter { it.label.contains(query, true) } }
+    ModalBottomSheet(onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.9f).navigationBarsPadding()) {
             SheetHeader(strings.get(R.string.dedup_merge_target_title), strings.get(R.string.dedup_merge_target_add_only), onDismiss)
-            Text(
-                strings.get(R.string.dedup_merge_target_support),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(targets, key = { it.sourceKey }) { target ->
-                    ListItem(
-                        modifier = Modifier
-                            .semantics { selected = target.target == selectedTarget }
-                            .clickable(role = Role.RadioButton) { onSelectTarget(target.target) },
-                        headlineContent = { Text(target.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = {
-                            Text(
-                                if (target.sourceKey in selectedSourceKeys) {
-                                    strings.get(R.string.dedup_merge_target_is_source, target.countSummary(strings))
-                                } else {
-                                    target.countSummary(strings)
-                                },
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        leadingContent = {
-                            RadioButton(
-                                selected = target.target == selectedTarget,
-                                onClick = { onSelectTarget(target.target) }
-                            )
-                        }
-                    )
+            DedupSearchField(query, { query = it }, "dedup_target_search")
+            Text(strings.get(R.string.dedup_merge_target_support), Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (visible.isEmpty()) item { SheetEmptyText(strings.get(R.string.dedup_merge_filter_empty)) }
+                itemsIndexed(visible, key = { _, target -> target.sourceKey }) { index, target ->
+                    Surface(onClick = { onSelectTarget(target.target) }, shape = GroupedItemDefaults.shape(index, visible.size),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        modifier = Modifier.fillMaxWidth().semantics { selected = target.target == selectedTarget }) {
+                        ListItem(
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            headlineContent = { Text(target.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                            supportingContent = { Text(if (target.sourceKey in selectedSourceKeys)
+                                strings.get(R.string.dedup_merge_target_is_source, target.countSummary(strings)) else target.countSummary(strings)) },
+                            leadingContent = { RadioButton(target.target == selectedTarget, onClick = null) }
+                        )
+                    }
                 }
             }
-            OutlinedButton(
-                onClick = onCreateMdbxTarget,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Icon(Icons.Default.Storage, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
+            OutlinedButton(onClick = onCreateMdbxTarget, modifier = Modifier.fillMaxWidth().padding(12.dp).heightIn(min = 52.dp)) {
+                Icon(Icons.Default.Storage, null, Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
                 Text(strings.get(R.string.dedup_merge_create_target))
             }
         }
@@ -589,9 +542,25 @@ private fun MergePreviewSheet(
     onDismiss: () -> Unit
 ) {
     val strings = rememberScreenStrings()
-    val passwords = plan.previewPasswords.filter { selectedFilter.matches(it.existsInTarget, it.conflictFields) }
-    val secureItems = plan.previewSecureItems.filter { selectedFilter.matches(it.existsInTarget, it.conflictFields) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val passwords = remember(plan, selectedFilter, query) { plan.previewPasswords.filter {
+        selectedFilter.matches(it.existsInTarget, it.conflictFields, it.targetHasDifferentContent) &&
+            listOf(it.entry.title, it.entry.username, it.entry.website).any { text -> text.contains(query, true) }
+    } }
+    val secureItems = remember(plan, selectedFilter, query) { plan.previewSecureItems.filter {
+        selectedFilter.matches(it.existsInTarget, it.conflictFields, it.targetHasDifferentContent) && it.item.title.contains(query, true)
+    } }
+    val passkeys = remember(plan, selectedFilter, query) { plan.previewPasskeys.filter {
+        val matchesFilter = when (selectedFilter) {
+            DedupPreviewFilter.ALL -> true
+            DedupPreviewFilter.WRITE -> it.writable
+            DedupPreviewFilter.SKIP -> !it.writable
+            DedupPreviewFilter.CONFLICT -> it.skipReason == DedupPasskeySkipReason.CREDENTIAL_CONFLICT
+        }
+        matchesFilter && listOf(it.entry.displayTitle(), it.entry.rpId, it.entry.userName).any { text -> text.contains(query, true) }
+    } }
+    ModalBottomSheet(onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -600,11 +569,12 @@ private fun MergePreviewSheet(
         ) {
             SheetHeader(
                 title = strings.get(R.string.dedup_merge_preview_title),
-                subtitle = strings.get(R.string.dedup_merge_items_count, plan.previewPasswords.size + plan.previewSecureItems.size),
+                subtitle = strings.get(R.string.dedup_merge_items_count, plan.previewItemCount),
                 onDismiss = onDismiss
             )
+            DedupSearchField(query, { query = it }, "dedup_preview_search")
             FlowRow(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -621,7 +591,7 @@ private fun MergePreviewSheet(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (passwords.isEmpty() && secureItems.isEmpty()) {
+                if (passwords.isEmpty() && secureItems.isEmpty() && passkeys.isEmpty()) {
                     item { SheetEmptyText(strings.get(R.string.dedup_merge_filter_empty)) }
                 }
                 items(passwords, key = { "password:${it.mergeKey}" }) { resolved ->
@@ -629,6 +599,9 @@ private fun MergePreviewSheet(
                 }
                 items(secureItems, key = { "secure:${it.mergeKey}" }) { resolved ->
                     SecureItemPreviewRow(resolved)
+                }
+                items(passkeys, key = { "passkey:${it.mergeKey}" }) { resolved ->
+                    PasskeyPreviewRow(resolved)
                 }
             }
         }
@@ -639,7 +612,8 @@ private fun MergePreviewSheet(
 @Composable
 private fun WarningSheet(warnings: List<String>, onDismiss: () -> Unit) {
     val strings = rememberScreenStrings()
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -654,7 +628,7 @@ private fun WarningSheet(warnings: List<String>, onDismiss: () -> Unit) {
             ) {
                 items(warnings) { warning ->
                     Card(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = GroupedItemDefaults.SingleShape,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
                     ) {
                         Row(
@@ -676,7 +650,8 @@ private fun WarningSheet(warnings: List<String>, onDismiss: () -> Unit) {
 @Composable
 private fun FailureSheet(result: DedupMergeExecutionResult, onDismiss: () -> Unit) {
     val strings = rememberScreenStrings()
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -691,7 +666,7 @@ private fun FailureSheet(result: DedupMergeExecutionResult, onDismiss: () -> Uni
             ) {
                 items(result.failures) { failure ->
                     Card(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = GroupedItemDefaults.SingleShape,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                     ) {
                         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -735,54 +710,34 @@ private fun SheetEmptyText(text: String) {
     )
 }
 
-private fun DedupPreviewFilter.matches(existsInTarget: Boolean, conflictFields: Set<String>): Boolean = when (this) {
+private fun DedupPreviewFilter.matches(existsInTarget: Boolean, conflictFields: Set<String>, targetDiffers: Boolean): Boolean = when (this) {
     DedupPreviewFilter.ALL -> true
     DedupPreviewFilter.WRITE -> !existsInTarget
-    DedupPreviewFilter.CONFLICT -> conflictFields.isNotEmpty()
+    DedupPreviewFilter.CONFLICT -> conflictFields.isNotEmpty() || targetDiffers
     DedupPreviewFilter.SKIP -> existsInTarget
 }
 
 private fun DedupPreviewFilter.label(plan: DedupMergePlan, strings: StringResolver): String = when (this) {
-    DedupPreviewFilter.ALL -> strings.get(R.string.dedup_merge_filter_all, plan.previewPasswords.size + plan.previewSecureItems.size)
+    DedupPreviewFilter.ALL -> strings.get(R.string.dedup_merge_filter_all, plan.previewItemCount)
     DedupPreviewFilter.WRITE -> strings.get(R.string.dedup_merge_filter_write, plan.writableItems)
-    DedupPreviewFilter.CONFLICT -> strings.get(R.string.dedup_merge_filter_conflict, plan.conflictGroupsTotal)
-    DedupPreviewFilter.SKIP -> strings.get(R.string.dedup_merge_filter_skip, plan.targetExistingDuplicates + plan.targetExistingSecureItems)
+    DedupPreviewFilter.CONFLICT -> strings.get(R.string.dedup_merge_filter_conflict, plan.reviewConflictGroups)
+    DedupPreviewFilter.SKIP -> strings.get(R.string.dedup_merge_filter_skip, plan.skippedItems)
 }
 
 @Composable
-private fun ConflictPolicyPanel(
-    selected: DedupConflictPolicy,
-    enabled: Boolean,
-    onSelected: (DedupConflictPolicy) -> Unit
-) {
+private fun ConflictPolicyPanel(selected: DedupConflictPolicy, enabled: Boolean, onSelected: (DedupConflictPolicy) -> Unit) {
     val strings = rememberScreenStrings()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(strings.get(R.string.dedup_merge_policy_title), style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = selected == DedupConflictPolicy.MOST_COMPLETE,
-                onClick = { onSelected(DedupConflictPolicy.MOST_COMPLETE) },
-                enabled = enabled,
-                label = { Text(strings.get(R.string.dedup_merge_policy_complete)) },
-                leadingIcon = if (selected == DedupConflictPolicy.MOST_COMPLETE) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                } else null
-            )
-            FilterChip(
-                selected = selected == DedupConflictPolicy.NEWEST,
-                onClick = { onSelected(DedupConflictPolicy.NEWEST) },
-                enabled = enabled,
-                label = { Text(strings.get(R.string.dedup_merge_policy_newest)) },
-                leadingIcon = if (selected == DedupConflictPolicy.NEWEST) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                } else null
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        DedupConflictPolicy.entries.forEachIndexed { index, policy ->
+            Surface(onClick = { onSelected(policy) }, enabled = enabled, shape = GroupedItemDefaults.shape(index, 2),
+                color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+                ListItem(colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    headlineContent = { Text(policy.label(strings)) },
+                    leadingContent = { RadioButton(policy == selected, onClick = null) })
+            }
         }
-        Text(
-            strings.get(R.string.dedup_merge_policy_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(strings.get(R.string.dedup_merge_policy_description), Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -790,59 +745,30 @@ private fun ConflictPolicyPanel(
 private fun MergeSummaryPanel(uiState: DedupEngineUiState) {
     val strings = rememberScreenStrings()
     val plan = uiState.mergePlan
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(strings.get(R.string.dedup_merge_summary_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        when {
-                            uiState.isExecutingMerge -> strings.get(R.string.dedup_merge_writing_target)
-                            uiState.isAnalyzing -> strings.get(R.string.dedup_merge_analyzing)
-                            else -> uiState.selectedTargetOption?.label ?: strings.get(R.string.dedup_merge_target_empty)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (uiState.isAnalyzing) {
+                Text(strings.get(R.string.dedup_merge_analyzing), style = MaterialTheme.typography.titleMedium)
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            } else {
+                Text(strings.get(R.string.dedup_merge_new_count, plan.writableItems),
+                    style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SummaryPill(strings.get(R.string.dedup_merge_summary_sources), plan.totalSourcePasswords + plan.totalSourceSecureItems, Modifier.weight(1f))
+                    SummaryPill(strings.get(R.string.dedup_merge_consolidated), plan.consolidatedCopies, Modifier.weight(1f))
+                    SummaryPill(strings.get(R.string.dedup_merge_summary_existing), plan.targetExistingDuplicates + plan.targetExistingSecureItems, Modifier.weight(1f))
                 }
-                if (uiState.isAnalyzing) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.Merge, contentDescription = null)
-                }
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryPill(strings.get(R.string.dedup_merge_summary_sources), plan.totalSourceItems)
-                SummaryPill(strings.get(R.string.dedup_merge_summary_write), plan.writableItems)
-                SummaryPill(strings.get(R.string.dedup_merge_summary_existing), plan.targetExistingDuplicates + plan.targetExistingSecureItems)
-                SummaryPill(strings.get(R.string.dedup_merge_summary_duplicates), plan.duplicateGroupsTotal)
-                SummaryPill(strings.get(R.string.dedup_merge_summary_conflicts), plan.conflictGroupsTotal)
-                if (plan.unsupportedSourcePasskeys > 0) SummaryPill(strings.get(R.string.dedup_merge_summary_unsupported), plan.unsupportedSourcePasskeys)
             }
         }
     }
 }
 
 @Composable
-private fun SummaryPill(label: String, value: Int) {
-    val strings = rememberScreenStrings()
-    Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
-    ) {
-        Text(
-            strings.get(R.string.dedup_merge_label_count, label, value),
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium
-        )
+private fun SummaryPill(label: String, value: Int, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(value.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        Text(label, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -850,7 +776,7 @@ private fun SummaryPill(label: String, value: Int) {
 private fun MergeBottomBar(uiState: DedupEngineUiState, onReviewAndMerge: () -> Unit) {
     val strings = rememberScreenStrings()
     val validation = uiState.validation
-    Surface(shadowElevation = 4.dp, color = MaterialTheme.colorScheme.surfaceContainer) {
+    Surface(color = MaterialTheme.colorScheme.surface) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -860,27 +786,23 @@ private fun MergeBottomBar(uiState: DedupEngineUiState, onReviewAndMerge: () -> 
         ) {
             Button(
                 onClick = onReviewAndMerge,
-                enabled = validation.canExecute && !uiState.isAnalyzing && !uiState.isLoading && !uiState.isExecutingMerge,
-                modifier = Modifier.fillMaxWidth()
+                enabled = !uiState.isAnalyzing && !uiState.isLoading && !uiState.isExecutingMerge &&
+                    (!validation.canReview || uiState.canExecuteMerge),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("dedup_primary_action")
             ) {
                 Icon(Icons.Default.Merge, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     when {
                         uiState.isExecutingMerge -> strings.get(R.string.dedup_merge_merging)
-                        uiState.selectedMergeSourceKeys.size < 2 -> strings.get(R.string.dedup_merge_need_sources)
+                        uiState.selectedMergeSourceKeys.isEmpty() -> strings.get(R.string.dedup_merge_need_sources)
                         uiState.selectedMergeTarget == null -> strings.get(R.string.dedup_merge_need_target)
                         uiState.mergePlan.writableItems <= 0 -> strings.get(R.string.dedup_merge_nothing_to_write)
                         else -> strings.get(R.string.dedup_merge_confirm_write, uiState.mergePlan.writableItems)
                     }
                 )
             }
-            Text(
-                strings.get(R.string.dedup_merge_rescan_hint),
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+
         }
     }
 }
@@ -909,6 +831,9 @@ private fun MergeConfirmationDialog(
                 if (plan.skippedItems > 0) {
                     Text(strings.get(R.string.dedup_merge_confirm_skipped, plan.skippedItems))
                 }
+                if (plan.previewPasswords.any { it.targetHasDifferentContent } || plan.previewSecureItems.any { it.targetHasDifferentContent }) {
+                    Text(strings.get(R.string.dedup_merge_target_variant))
+                }
                 Text(strings.get(R.string.dedup_merge_confirm_source_unchanged), fontWeight = FontWeight.SemiBold)
             }
         },
@@ -927,7 +852,7 @@ private fun ExecutionProgressPanel(
 ) {
     val strings = rememberScreenStrings()
     Card(
-        shape = RoundedCornerShape(8.dp),
+        shape = GroupedItemDefaults.SingleShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -951,7 +876,7 @@ private fun ExecutionResultPanel(
 ) {
     val strings = rememberScreenStrings()
     Card(
-        shape = RoundedCornerShape(8.dp),
+        shape = GroupedItemDefaults.SingleShape,
         colors = CardDefaults.cardColors(
             containerColor = if (result.failedItems > 0) {
                 MaterialTheme.colorScheme.errorContainer
@@ -972,7 +897,8 @@ private fun ExecutionResultPanel(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Text(strings.get(R.string.dedup_merge_result_summary, result.targetLabel, result.insertedItems, result.skippedExistingItems))
+                    Text(strings.get(R.string.dedup_merge_result_summary, result.targetLabel, result.insertedItems,
+                        result.skippedExistingItems + result.skippedUnsupportedPasskeys))
                 }
             }
             if (result.failures.isNotEmpty()) {
@@ -988,7 +914,7 @@ private fun ExecutionResultPanel(
 @Composable
 private fun MessagePanel(icon: ImageVector, tint: Color, text: String) {
     Card(
-        shape = RoundedCornerShape(8.dp),
+        shape = GroupedItemDefaults.SingleShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Row(
@@ -1011,7 +937,10 @@ private fun PasswordPreviewRow(resolved: DedupResolvedPassword) {
         sourceLabels = resolved.sourceLabels,
         copyCount = resolved.sourceEntryIds.size,
         conflictFields = resolved.conflictFields,
-        existsInTarget = resolved.existsInTarget
+        existsInTarget = resolved.existsInTarget,
+        targetDiffers = resolved.targetHasDifferentContent,
+        preferredSource = resolved.preferredSourceLabel,
+        stableKey = resolved.mergeKey
     )
 }
 
@@ -1024,79 +953,69 @@ private fun SecureItemPreviewRow(resolved: DedupResolvedSecureItem) {
         sourceLabels = resolved.sourceLabels,
         copyCount = resolved.sourceItemIds.size,
         conflictFields = resolved.conflictFields,
-        existsInTarget = resolved.existsInTarget
+        existsInTarget = resolved.existsInTarget,
+        targetDiffers = resolved.targetHasDifferentContent,
+        preferredSource = resolved.preferredSourceLabel,
+        stableKey = resolved.mergeKey
+    )
+}
+
+@Composable
+private fun PasskeyPreviewRow(resolved: DedupResolvedPasskey) {
+    val strings = rememberScreenStrings()
+    PreviewRow(
+        title = resolved.entry.displayTitle(),
+        subtitle = listOf("Passkey", resolved.entry.rpId, resolved.entry.userName).filter { it.isNotBlank() }.joinToString(" · "),
+        sourceLabels = resolved.sourceLabels, copyCount = resolved.sourceEntryIds.size,
+        conflictFields = emptySet(), existsInTarget = !resolved.writable, targetDiffers = false,
+        preferredSource = resolved.preferredSourceLabel, stableKey = resolved.mergeKey,
+        skipReason = resolved.skipReason?.let { strings.get(when (it) {
+            DedupPasskeySkipReason.REFERENCE_OR_MISSING_KEY -> R.string.dedup_passkey_missing_key
+            DedupPasskeySkipReason.NONZERO_COUNTER -> R.string.dedup_passkey_nonzero_counter
+            DedupPasskeySkipReason.BOUND_PASSWORD -> R.string.dedup_passkey_bound_password
+            DedupPasskeySkipReason.DEVICE_KEY -> R.string.dedup_passkey_device_key
+            DedupPasskeySkipReason.CREDENTIAL_CONFLICT -> R.string.dedup_passkey_identity_conflict
+        }) }
     )
 }
 
 @Composable
 private fun PreviewRow(
-    title: String,
-    subtitle: String,
-    sourceLabels: List<String>,
-    copyCount: Int,
-    conflictFields: Set<String>,
-    existsInTarget: Boolean
+    title: String, subtitle: String, sourceLabels: List<String>, copyCount: Int,
+    conflictFields: Set<String>, existsInTarget: Boolean, targetDiffers: Boolean,
+    preferredSource: String, stableKey: String, skipReason: String? = null
 ) {
     val strings = rememberScreenStrings()
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (existsInTarget) {
-                MaterialTheme.colorScheme.surfaceContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(title, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+    var expanded by rememberSaveable(stableKey) { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth(), shape = GroupedItemDefaults.SingleShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column {
+            Row(Modifier.fillMaxWidth().clip(GroupedItemDefaults.SingleShape)
+                .clickable(role = Role.Button) { expanded = !expanded }.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(strings.get(if (existsInTarget) R.string.dedup_merge_skip else R.string.dedup_merge_write) +
+                        " · " + strings.get(R.string.dedup_merge_copies_count, copyCount), style = MaterialTheme.typography.labelMedium,
+                        color = if (targetDiffers || conflictFields.isNotEmpty()) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary)
+                    if (skipReason != null) Text(skipReason, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (existsInTarget) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Text(
-                        if (existsInTarget) strings.get(R.string.dedup_merge_skip) else strings.get(R.string.dedup_merge_write),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
+                MonicaExpansionChevron(expanded, strings.get(if (expanded) R.string.collapse else R.string.expand))
             }
-            Text(
-                buildList {
-                    add(sourceLabels.joinToString(strings.get(R.string.dedup_merge_list_separator)))
-                    if (copyCount > 1) add(strings.get(R.string.dedup_merge_copies_count, copyCount))
-                }.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (conflictFields.isNotEmpty()) {
-                Text(
-                    strings.get(R.string.dedup_merge_conflict_fields, conflictFields.joinToString(strings.get(R.string.dedup_merge_list_separator))),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
+            MonicaExpandableContent(expanded) {
+                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(sourceLabels.joinToString(strings.get(R.string.dedup_merge_list_separator)), style = MaterialTheme.typography.bodySmall)
+                    if (preferredSource.isNotBlank()) Text(strings.get(R.string.dedup_merge_kept_from, preferredSource), style = MaterialTheme.typography.bodyMedium)
+                    if (conflictFields.isNotEmpty()) Text(strings.get(R.string.dedup_merge_conflict_fields, conflictFields.joinToString(strings.get(R.string.dedup_merge_list_separator))),
+                        color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.bodyMedium)
+                    if (targetDiffers) Text(strings.get(R.string.dedup_merge_target_variant), style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }
-}
-
-@Composable
-private fun sourceColor(kind: DedupMergeSourceKind): Color = when (kind) {
-    DedupMergeSourceKind.MONICA_LOCAL -> MaterialTheme.colorScheme.primary
-    DedupMergeSourceKind.MDBX -> MaterialTheme.colorScheme.tertiary
-    DedupMergeSourceKind.KEEPASS -> MaterialTheme.colorScheme.secondary
-    DedupMergeSourceKind.BITWARDEN -> MaterialTheme.colorScheme.error
 }
 
 private fun DedupMergeSourceKind.label(): String = when (this) {

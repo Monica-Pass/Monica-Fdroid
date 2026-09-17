@@ -193,6 +193,12 @@ class KeePassAttachmentReconcilerTest {
         override suspend fun getActiveBySecureItem(secureItemId: Long): List<Attachment> =
             items.filter { it.parentSecureItemId == secureItemId && !it.isDeleted }
 
+        override suspend fun getActiveByParents(ids: List<Long>): List<Attachment> =
+            items.filter { it.parentPasswordId in ids && !it.isDeleted }
+
+        override suspend fun getActiveBySecureItems(ids: List<Long>): List<Attachment> =
+            items.filter { it.parentSecureItemId in ids && !it.isDeleted }
+
         override suspend fun getById(id: Long): Attachment? =
             items.firstOrNull { it.id == id }
 

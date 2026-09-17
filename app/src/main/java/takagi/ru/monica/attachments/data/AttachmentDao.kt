@@ -20,6 +20,12 @@ import takagi.ru.monica.attachments.model.Attachment
 @Dao
 interface AttachmentDao {
 
+    @Query("SELECT * FROM attachments WHERE parent_password_id IN (:ids) AND is_deleted = 0 ORDER BY created_at, id")
+    suspend fun getActiveByParents(ids: List<Long>): List<Attachment>
+
+    @Query("SELECT * FROM attachments WHERE parent_secure_item_id IN (:ids) AND is_deleted = 0 ORDER BY created_at, id")
+    suspend fun getActiveBySecureItems(ids: List<Long>): List<Attachment>
+
     // ---------------------------------------------------------------- 查询
 
     @Query(

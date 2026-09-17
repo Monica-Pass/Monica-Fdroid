@@ -21,6 +21,7 @@ import takagi.ru.monica.data.isLocalOnlyItem
 import takagi.ru.monica.data.model.TimelinePasswordRecreatedEntry
 import takagi.ru.monica.notes.domain.NoteContentCodec
 import takagi.ru.monica.passkey.PasskeyPrivateKeyStore
+import takagi.ru.monica.passkey.PasskeyBatchMoveExecutor
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.ui.components.UnifiedMoveAction
 import takagi.ru.monica.ui.components.UnifiedMoveCategoryTarget
@@ -1091,7 +1092,7 @@ internal suspend fun executeMixedPasswordBatchMove(
         movablePasskeys
     }
     if (mdbxBatchPasskeys.isNotEmpty()) {
-        val preparedRecordIds = mutableListOf<Long>()
+        val preparedPasskeys = mutableListOf<PasskeyEntry>()
         mdbxBatchPasskeys.forEach { passkey ->
             val updateResult = applyPasswordPagePasskeyStorageTarget(
                 passkey = passkey,
@@ -1101,17 +1102,7 @@ internal suspend fun executeMixedPasswordBatchMove(
             )
             when {
                 updateResult.isSuccess && passkey.id > 0L -> {
-                    val queueDelete = queuePasswordPagePasskeyBitwardenDeleteAfterMove(
-                        source = passkey,
-                        target = target,
-                        bitwardenRepository = bitwardenRepository
-                    )
-                    if (queueDelete.isSuccess) {
-                        preparedRecordIds += passkey.id
-                    } else {
-                        failedCount++
-                        reportProgress()
-                    }
+                    preparedPasskeys += passkey
                 }
 
                 updateResult.exceptionOrNull() is PasswordPagePasskeyBitwardenMoveBlockedException -> {
@@ -1126,19 +1117,23 @@ internal suspend fun executeMixedPasswordBatchMove(
                 }
             }
         }
-        if (preparedRecordIds.isNotEmpty()) {
-            val persisted = aggregateViewModels.passkeyViewModel?.updateMdbxDatabaseForPasskeys(
-                recordIds = preparedRecordIds,
-                databaseId = targetMdbxDatabaseId!!,
-                folderId = targetMdbxFolderId
-            )
-            if (persisted?.isSuccess == true) {
-                successCount += preparedRecordIds.size
-            } else {
-                failedCount += preparedRecordIds.size
+        PasskeyBatchMoveExecutor.execute(
+            entries = preparedPasskeys,
+            persistTarget = { recordIds ->
+                aggregateViewModels.passkeyViewModel?.updateMdbxDatabaseForPasskeys(
+                    recordIds = recordIds,
+                    databaseId = targetMdbxDatabaseId!!,
+                    folderId = targetMdbxFolderId
+                ) ?: Result.failure(IllegalStateException("Passkey store unavailable"))
+            },
+            deleteSource = { passkey ->
+                queuePasswordPagePasskeyBitwardenDeleteAfterMove(passkey, target, bitwardenRepository)
+            },
+            onCompleted = { _, result ->
+                if (result.isSuccess) successCount++ else failedCount++
+                reportProgress()
             }
-            reportProgress(preparedRecordIds.size)
-        }
+        )
     }
     individuallyMovedPasskeys.forEach { passkey ->
         val updateResult = applyPasswordPagePasskeyStorageTarget(

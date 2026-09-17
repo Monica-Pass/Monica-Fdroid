@@ -244,7 +244,7 @@ fun CardWalletScreen(
     val activity = context as? FragmentActivity
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val securityManager = remember { SecurityManager(context) }
+    val securityManager = takagi.ru.monica.ui.rememberUiSecurityManager()
     val biometricHelper = remember { BiometricHelper(context) }
     val settingsManager = remember { SettingsManager(context) }
     val appSettings by settingsManager.settingsFlow.collectAsState(

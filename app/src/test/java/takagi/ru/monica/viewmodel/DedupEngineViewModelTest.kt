@@ -34,7 +34,7 @@ class DedupEngineViewModelTest {
         assertTrue(ready.validation.canExecute)
         assertEquals(localTarget, ready.selectedTargetOption)
 
-        val incomplete = ready.copy(selectedMergeSourceKeys = setOf("keepass:1"))
+        val incomplete = ready.copy(selectedMergeSourceKeys = emptySet())
         assertFalse(incomplete.validation.canExecute)
     }
 

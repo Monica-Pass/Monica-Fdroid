@@ -1101,6 +1101,26 @@ internal fun buildGroupedPasswordsForEntries(
     sourceEntries: List<PasswordEntry>,
     config: PasswordGroupingConfig
 ): Map<String, List<PasswordEntry>> {
+    if (sourceEntries.size >= NATIVE_PASSWORD_GROUPING_THRESHOLD) {
+        tryBuildNativePasswordGroups(sourceEntries, config)?.let { return it }
+    }
+    return buildKotlinPasswordGroups(sourceEntries, config)
+}
+
+internal fun buildKotlinPasswordGroups(
+    sourceEntries: List<PasswordEntry>,
+    config: PasswordGroupingConfig,
+): Map<String, List<PasswordEntry>> {
+    if (config.isLocalOnlyView) {
+        return sourceEntries.sortedBy { it.sortOrder }.associate { "entry_${it.id}" to listOf(it) }
+    }
+    val scoreCache = java.util.IdentityHashMap<List<PasswordEntry>, Int>()
+    fun score(passwords: List<PasswordEntry>): Int = scoreCache.getOrPut(passwords) {
+        val firstInfo = getPasswordInfoKey(passwords.first())
+        val distinctInfo = passwords.asSequence().drop(1).any { getPasswordInfoKey(it) != firstInfo }
+        val cardType = if (distinctInfo) 3 else if (passwords.size > 1) 2 else 1
+        (if (passwords.any { it.isFavorite }) 10 else 0) + cardType
+    }
     val mergedByInfo = if (config.effectiveStackCardMode == StackCardMode.ALWAYS_EXPANDED) {
         sourceEntries.sortedBy { it.sortOrder }.map { listOf(it) }
     } else {
@@ -1138,14 +1158,7 @@ internal fun buildGroupedPasswordsForEntries(
                 .toList()
                 .sortedWith(
                     compareByDescending<Pair<String, List<PasswordEntry>>> { (_, passwords) ->
-                        val infoKeyGroups = passwords.groupBy { getPasswordInfoKey(it) }
-                        val cardType = when {
-                            infoKeyGroups.size > 1 -> 3
-                            infoKeyGroups.size == 1 && passwords.size > 1 -> 2
-                            else -> 1
-                        }
-                        val favoriteBonus = if (passwords.any { it.isFavorite }) 10 else 0
-                        favoriteBonus.toDouble() + cardType.toDouble()
+                        score(passwords)
                     }.thenBy { (title, _) -> title }
                 )
                 .toMap()
@@ -1169,14 +1182,7 @@ internal fun buildGroupedPasswordsForEntries(
                 .toList()
                 .sortedWith(
                     compareByDescending<Pair<String, List<PasswordEntry>>> { (_, passwords) ->
-                        val infoKeyGroups = passwords.groupBy { getPasswordInfoKey(it) }
-                        val cardType = when {
-                            infoKeyGroups.size > 1 -> 3
-                            infoKeyGroups.size == 1 && passwords.size > 1 -> 2
-                            else -> 1
-                        }
-                        val favoriteBonus = if (passwords.any { it.isFavorite }) 10 else 0
-                        favoriteBonus.toDouble() + cardType.toDouble()
+                        score(passwords)
                     }.thenBy { (_, passwords) ->
                         passwords.firstOrNull()?.sortOrder ?: Int.MAX_VALUE
                     }
@@ -1225,7 +1231,9 @@ internal fun filterPasswordEntriesByStackQuickFilters(
         val autoGroupingCandidates = filtered.filter { entry ->
             entry.id !in aggregateManualStackedPasswordIds
         }
-        val singleCardEntryIds = buildGroupedPasswordsForEntries(
+        // This quick-filter projection runs synchronously during composition. Keep
+        // JNI loading and dispatch on the background grouping path below.
+        val singleCardEntryIds = buildKotlinPasswordGroups(
             sourceEntries = autoGroupingCandidates,
             config = groupingConfig
         )
