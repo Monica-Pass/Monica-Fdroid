@@ -244,19 +244,29 @@ fun DedupEngineScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(strings.get(R.string.dedup_engine_title), fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = ::requestBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.get(R.string.back))
+            Box {
+                TopAppBar(
+                    title = { Text(strings.get(R.string.dedup_engine_title), fontWeight = FontWeight.SemiBold) },
+                    navigationIcon = {
+                        IconButton(onClick = ::requestBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.get(R.string.back))
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onRefresh, enabled = !busy) {
+                            Icon(Icons.Default.Refresh, contentDescription = strings.get(R.string.dedup_merge_refresh))
+                        }
                     }
-                },
-                actions = {
-                    IconButton(onClick = onRefresh, enabled = !busy) {
-                        Icon(Icons.Default.Refresh, contentDescription = strings.get(R.string.dedup_merge_refresh))
-                    }
+                )
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                    )
                 }
-            )
+            }
         },
         bottomBar = {
             MergeBottomBar(
@@ -281,12 +291,6 @@ fun DedupEngineScreen(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (uiState.isLoading) {
-                item(key = "loading") {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-            }
-
             uiState.executionProgress?.let { progress ->
                 item(key = "progress") {
                     ExecutionProgressPanel(progress.completedItems, progress.totalItems, progress.currentLabel,
