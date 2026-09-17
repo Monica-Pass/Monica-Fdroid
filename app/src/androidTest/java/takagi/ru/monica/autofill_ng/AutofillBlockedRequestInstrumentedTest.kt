@@ -3,6 +3,8 @@ package takagi.ru.monica.autofill_ng
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
+import android.os.Parcel
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
@@ -132,12 +134,22 @@ class AutofillBlockedRequestInstrumentedTest {
             return
         }
         assertNotNull(response)
-        fun responseValue(method: String): Any? = FillResponse::class.java
-            .getDeclaredMethod(method).invoke(response)
-        assertEquals(ids.toSet(), (responseValue("getIgnoredIds") as Array<*>).toSet())
-        assertNull(responseValue("getAuthentication"))
-        assertNull(responseValue("getDatasets"))
-        assertNull(responseValue("getSaveInfo"))
-        assertEquals(0L, responseValue("getDisableDuration"))
+        // FillResponse getters are hidden APIs on devices. Compare the public
+        // Parcelable representation to an ignored-only response on this same
+        // runtime: any dataset, authentication, save prompt or disable differs.
+        val expected = FillResponse.Builder()
+            .setIgnoredIds(*ids.distinct().toTypedArray())
+            .setClientState(Bundle())
+            .build()
+        fun encode(value: FillResponse): ByteArray {
+            val parcel = Parcel.obtain()
+            return try {
+                value.writeToParcel(parcel, 0)
+                parcel.marshall()
+            } finally {
+                parcel.recycle()
+            }
+        }
+        assertArrayEquals(encode(expected), encode(requireNotNull(response)))
     }
 }

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import takagi.ru.monica.autofill_ng.protection.AutofillProtection
 import takagi.ru.monica.autofill_ng.ActiveFillPromptThrottle
 import takagi.ru.monica.autofill_ng.AutofillPreferences
+import takagi.ru.monica.autofill_ng.AutofillDetectionPolicy
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.isLinkedToApp
 import takagi.ru.monica.data.linkedAppBindings
@@ -84,6 +85,7 @@ class MonicaAccessibilityService : AccessibilityService() {
         private const val ACTIVE_FILL_THROTTLE_MS = 5000L
         private const val TEMPORARY_CLIPBOARD_LABEL = "Monica autofill"
         private const val TEMPORARY_CLIPBOARD_RESTORE_DELAY_MS = 500L
+        private const val WEB_FORM_UPDATE_DELAY_MS = 150L
 
         @Volatile
         private var activeInstance: MonicaAccessibilityService? = null
@@ -145,7 +147,7 @@ class MonicaAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
         )
 
-        fun requestCredentialFill(
+        suspend fun requestCredentialFill(
             targetPackageName: String?,
             username: String,
             password: String,
@@ -182,6 +184,7 @@ class MonicaAccessibilityService : AccessibilityService() {
     private enum class FillFieldType {
         USERNAME,
         PASSWORD,
+        EXCLUDED,
         UNKNOWN
     }
 
@@ -278,7 +281,7 @@ class MonicaAccessibilityService : AccessibilityService() {
         return super.onUnbind(intent)
     }
 
-    private fun fillCredentialsInActiveWindow(
+    internal suspend fun fillCredentialsInActiveWindow(
         targetPackageName: String?,
         username: String,
         password: String,
@@ -286,6 +289,7 @@ class MonicaAccessibilityService : AccessibilityService() {
     ): Boolean = runCatching {
         val root = rootInActiveWindow ?: return@runCatching false
         val activePackageName = root.packageName?.toString().orEmpty()
+        val activeWindowId = root.windowId
         if (
             !targetPackageName.isNullOrBlank() &&
             !activePackageName.equals(targetPackageName, ignoreCase = true)
@@ -303,35 +307,68 @@ class MonicaAccessibilityService : AccessibilityService() {
         }
 
         val focusedCandidate = candidates.firstOrNull { it.isFocused }
+        val focusedUnknown = focusedCandidate?.takeIf { it.type == FillFieldType.UNKNOWN }
         val passwordCandidate = selectBestCandidate(
             candidates = candidates,
             preferredType = FillFieldType.PASSWORD,
             excludedNode = null,
-            fallback = if (preferPasswordField) {
-                focusedCandidate?.node
-            } else {
-                nearestCandidate(candidates, focusedCandidate?.node, null)?.node
-            }
+            // A missing password field is normal in a username-first flow.
+            // Only an explicitly requested password target may use an unknown field.
+            fallback = focusedUnknown?.node.takeIf { preferPasswordField },
         )
         val usernameCandidate = selectBestCandidate(
             candidates = candidates,
             preferredType = FillFieldType.USERNAME,
             excludedNode = passwordCandidate?.node,
             fallback = if (!preferPasswordField) {
-                focusedCandidate?.node
+                focusedUnknown?.node ?: nearestCandidate(
+                    candidates.filter { it.type == FillFieldType.UNKNOWN && it.top <= (passwordCandidate?.top ?: Int.MIN_VALUE) },
+                    passwordCandidate?.node,
+                    passwordCandidate?.node,
+                )?.node
             } else {
-                nearestCandidate(candidates, focusedCandidate?.node, passwordCandidate?.node)?.node
+                nearestCandidate(
+                    candidates.filter { it.type == FillFieldType.UNKNOWN && it.top <= (passwordCandidate?.top ?: Int.MIN_VALUE) },
+                    passwordCandidate?.node,
+                    passwordCandidate?.node,
+                )?.node
             }
         )
 
         var usernameFilled = false
         var passwordFilled = false
+        val browserSpec = browserSpecsByPackage[activePackageName]
+        val originalUrl = browserSpec?.let { findBrowserUrl(root, it) }
 
         if (username.isNotBlank()) {
-            usernameFilled = setNodeText(usernameCandidate?.node, username)
+            // Do not retrigger username input handlers during a bounded retry.
+            usernameFilled = usernameCandidate?.node?.text?.toString() == username ||
+                setNodeText(usernameCandidate?.node, username)
         }
-        if (password.isNotBlank()) {
-            passwordFilled = setNodeText(passwordCandidate?.node, password)
+        if (password.isNotBlank() && passwordCandidate != null) {
+            if (usernameFilled && usernameCandidate != null && isWebInput(usernameCandidate.node)) {
+                // Web input handlers can replace the password control. Let the
+                // renderer and accessibility tree update, then resolve it again.
+                delay(WEB_FORM_UPDATE_DELAY_MS)
+            }
+            val currentRoot = rootInActiveWindow ?: return@runCatching false
+            if (currentRoot.windowId != activeWindowId ||
+                currentRoot.packageName?.toString() != activePackageName ||
+                (browserSpec != null && findBrowserUrl(currentRoot, browserSpec) != originalUrl)
+            ) return@runCatching false
+            val currentCandidates = collectFillCandidates(
+                currentRoot,
+                currentRoot.findFocus(AccessibilityNodeInfo.FOCUS_INPUT),
+            )
+            val currentPassword = selectBestCandidate(
+                candidates = currentCandidates,
+                preferredType = FillFieldType.PASSWORD,
+                excludedNode = null,
+                fallback = currentCandidates.firstOrNull {
+                    preferPasswordField && it.isFocused && it.type == FillFieldType.UNKNOWN
+                }?.node,
+            ) ?: return@runCatching false
+            passwordFilled = setNodeText(currentPassword.node, password)
         }
 
         if (!usernameFilled && !passwordFilled) {
@@ -343,14 +380,24 @@ class MonicaAccessibilityService : AccessibilityService() {
             TAG,
             "Accessibility fill success: usernameFilled=$usernameFilled, passwordFilled=$passwordFilled, preferPassword=$preferPasswordField"
         )
-        if (preferPasswordField) {
-            passwordFilled || (password.isBlank() && usernameFilled)
-        } else {
-            usernameFilled || (username.isBlank() && passwordFilled)
-        }
+        // A step can legitimately contain just one of the two fields. If both
+        // targets exist, a rejected write still needs the caller's bounded retry.
+        (usernameCandidate == null || username.isBlank() || usernameFilled) &&
+            (passwordCandidate == null || password.isBlank() || passwordFilled)
     }.onFailure { e ->
+        if (e is CancellationException) throw e
         Log.w(TAG, "fillCredentialsInActiveWindow failed", e)
     }.getOrDefault(false)
+
+    private fun isWebInput(node: AccessibilityNodeInfo): Boolean {
+        var ancestor: AccessibilityNodeInfo? = node
+        repeat(32) {
+            val current = ancestor ?: return false
+            if (current.className?.toString()?.endsWith("WebView") == true) return true
+            ancestor = current.parent
+        }
+        return false
+    }
 
     private fun maybePromptActiveFill(packageName: String, source: AccessibilityNodeInfo?) {
         if (!activeFillNotificationEnabled) return
@@ -387,6 +434,9 @@ class MonicaAccessibilityService : AccessibilityService() {
     }
 
     private fun isLikelyLoginField(node: AccessibilityNodeInfo): Boolean {
+        val candidate = classifyFillCandidate(node)
+        if (candidate.type == FillFieldType.EXCLUDED) return false
+        if (candidate.type == FillFieldType.USERNAME || candidate.type == FillFieldType.PASSWORD) return true
         if (node.isPassword) return true
         val inputType = node.inputType
         val inputClass = inputType and InputType.TYPE_MASK_CLASS
@@ -409,7 +459,7 @@ class MonicaAccessibilityService : AccessibilityService() {
             val signals = buildList {
                 add(node.hintText?.toString().orEmpty())
                 add(node.contentDescription?.toString().orEmpty())
-                add(node.viewIdResourceName.orEmpty())
+                add(node.viewIdResourceName.orEmpty().substringAfterLast('/'))
             }.joinToString(" ").lowercase()
             if (
                 signals.contains("password") || signals.contains("passwd") || signals.contains("pwd") ||
@@ -489,6 +539,7 @@ class MonicaAccessibilityService : AccessibilityService() {
 
         if (
             focusedNode != null &&
+            focusedNode.isVisibleToUser && focusedNode.isEnabled &&
             runCatching { supportsSetText(focusedNode) }.getOrDefault(false) &&
             candidates.none { it.node == focusedNode }
         ) {
@@ -519,14 +570,25 @@ class MonicaAccessibilityService : AccessibilityService() {
     private fun classifyFillCandidate(node: AccessibilityNodeInfo): FillCandidate {
         val bounds = Rect().also { runCatching { node.getBoundsInScreen(it) } }
         val signals = buildList {
-            add(node.viewIdResourceName.orEmpty())
+            add(node.viewIdResourceName.orEmpty().substringAfterLast('/'))
             add(node.hintText?.toString().orEmpty())
             add(node.contentDescription?.toString().orEmpty())
-            add(node.text?.toString().orEmpty())
+            // Current input is user data, not a semantic hint. Some WebViews
+            // expose the placeholder as text but mark it with isShowingHintText.
+            if (node.isShowingHintText) add(node.text?.toString().orEmpty())
+            runCatching { node.labeledBy?.text?.toString() }.getOrNull()?.let(::add)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 add(node.tooltipText?.toString().orEmpty())
             }
         }.joinToString(" ").lowercase()
+
+        if (AutofillDetectionPolicy.matchesOtpField(signals) ||
+            AutofillDetectionPolicy.matchesSearchField(signals) ||
+            signals.contains("url_bar") || signals.contains("location_bar") ||
+            signals.contains("address_bar")
+        ) {
+            return FillCandidate(node, FillFieldType.EXCLUDED, 0, node.isFocused, bounds.top, bounds.left)
+        }
 
         var passwordScore = 0
         var usernameScore = 0
@@ -559,16 +621,17 @@ class MonicaAccessibilityService : AccessibilityService() {
             usernameScore += SCORE_USERNAME_SIGNAL
         }
 
-        if (signals.contains("password") || signals.contains("passwd") || signals.contains("pwd")) {
+        if (AutofillDetectionPolicy.matchesPasswordField(signals)) {
             passwordScore += SCORE_PASSWORD_SIGNAL
         }
-        if (signals.contains("passcode") || signals.contains("pin")) {
+        if (Regex("(?:^|[^a-z])pin(?:$|[^a-z])").containsMatchIn(signals)) {
             passwordScore += SCORE_PASSWORD_SIGNAL / 2
         }
         if (
             signals.contains("confirm") ||
             signals.contains("re-enter") ||
-            signals.contains("repeat")
+            signals.contains("repeat") || signals.contains("确认") || signals.contains("確認") ||
+            signals.contains("再次")
         ) {
             passwordScore -= SCORE_CONFIRM_PENALTY
         }
@@ -577,14 +640,11 @@ class MonicaAccessibilityService : AccessibilityService() {
             usernameScore += SCORE_USERNAME_SIGNAL + 12
         }
         if (
-            signals.contains("email") ||
-            signals.contains("e-mail") ||
-            signals.contains("login") ||
-            signals.contains("account")
+            AutofillDetectionPolicy.matchesExplicitAccountField(signals)
         ) {
             usernameScore += SCORE_USERNAME_SIGNAL
         }
-        if (signals.contains("phone") || signals.contains("mobile")) {
+        if (AutofillDetectionPolicy.matchesPhoneFieldName(signals) || inputClass == InputType.TYPE_CLASS_PHONE) {
             usernameScore += SCORE_USERNAME_SIGNAL / 2
         }
 
@@ -631,11 +691,8 @@ class MonicaAccessibilityService : AccessibilityService() {
 
         val fallbackNode = fallback
             ?.takeIf { node -> excludedNode == null || node != excludedNode }
-            ?.let { node -> candidates.firstOrNull { it.node == node } }
-        if (fallbackNode != null) return fallbackNode
-
-        return nearestCandidate(candidates, fallback, excludedNode)
-            ?: candidates.firstOrNull { candidate -> excludedNode == null || candidate.node != excludedNode }
+            ?.let { node -> candidates.firstOrNull { it.node == node && it.type == FillFieldType.UNKNOWN } }
+        return fallbackNode
     }
 
     private fun nearestCandidate(
@@ -661,10 +718,25 @@ class MonicaAccessibilityService : AccessibilityService() {
 
     private fun setNodeText(node: AccessibilityNodeInfo?, text: String): Boolean {
         if (node == null || text.isBlank()) return false
+
+        // Address the field itself before relying on the shared clipboard and
+        // input focus. WebView may acknowledge PASTE before focus/clipboard work
+        // reaches its renderer, so consecutive pastes can land in the same field.
+        val args = Bundle().apply {
+            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+        }
+        if (runCatching {
+                node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+            }.getOrDefault(false)
+        ) return true
+
         if (!node.isFocused) {
             node.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
         }
         node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        // A consumed focus action is not proof that the destination changed.
+        // Let the caller retry after the page settles instead of pasting elsewhere.
+        if (!node.refresh() || !node.isFocused || !node.isVisibleToUser || !node.isEnabled) return false
 
         val existingText = runCatching { node.text?.toString().orEmpty() }.getOrDefault("")
         val canPasteWithoutAppending = if (existingText.isEmpty()) {
@@ -690,12 +762,7 @@ class MonicaAccessibilityService : AccessibilityService() {
             }
         }
 
-        val args = Bundle().apply {
-            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
-        }
-        return runCatching {
-            node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-        }.getOrDefault(false)
+        return false
     }
 
     private fun setTemporaryClipboard(text: String): TemporaryClipboardToken? {

@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <service
+            android:name="takagi.ru.monica.autofill_ng.fixture.AutofillFixtureInputMethodService"
+            android:exported="true"
+            android:permission="android.permission.BIND_INPUT_METHOD"
+            android:process=":autofill_fixture">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data android:name="android.view.im" android:resource="@xml/autofill_fixture_input_method" />
+        </service>
+        <activity
+            android:name="takagi.ru.monica.autofill_ng.fixture.AutofillFormFixtureActivity"
+            android:exported="true"
+            android:process=":autofill_fixture"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
         <provider
             android:name="takagi.ru.monica.repository.StaleSizeContentProvider"
             android:authorities="takagi.ru.monica.test.stale-size"

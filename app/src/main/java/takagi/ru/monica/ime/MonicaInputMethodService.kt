@@ -1494,13 +1494,32 @@ class MonicaInputMethodService : InputMethodService() {
         serviceScope.launch {
             values.forEachIndexed { index, value ->
                 val connection = currentInputConnection ?: return@launch
-                connection.commitText(value, 1)
+                val editor = currentInputEditorInfo ?: return@launch
+                val packageName = editor.packageName
+                val fieldId = editor.fieldId
+                val fieldName = editor.fieldName
+                val inputType = editor.inputType
+                val hint = editor.hintText?.toString()
+                if (!connection.commitText(value, 1)) return@launch
                 if (index < values.lastIndex) {
                     delay(ImeSequentialFillStepDelayMs)
                     if (!moveToNextInputField(connection)) {
                         return@launch
                     }
                     delay(ImeSequentialFillFocusDelayMs)
+                    val nextEditor = currentInputEditorInfo ?: return@launch
+                    if (nextEditor.packageName != packageName) return@launch
+                    // IME_ACTION_NEXT=true only means the event was consumed.
+                    // Enterprise forms sometimes consume it without moving focus.
+                    val moved = if (fieldId > 0 && nextEditor.fieldId > 0) {
+                        nextEditor.fieldId != fieldId
+                    } else {
+                        // restartInput can replace the connection for the same
+                        // editor. Require evidence that the target changed.
+                        nextEditor.fieldName != fieldName ||
+                            nextEditor.inputType != inputType || nextEditor.hintText?.toString() != hint
+                    }
+                    if (!moved) return@launch
                 }
             }
         }

@@ -9,8 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.Parcelable
 import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
@@ -77,6 +75,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -1018,7 +1017,10 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
 
         val appContext = applicationContext
         val packageNameToSkip = packageName
-        Handler(Looper.getMainLooper()).postDelayed({
+        // This bounded task must survive closing the picker and returning to
+        // the target app; lifecycleScope is cancelled when the picker finishes.
+        CoroutineScope(Dispatchers.Main.immediate).launch {
+            delay(MANUAL_ACCESSIBILITY_FILL_DELAY_MS)
             requestManualAccessibilityFillWithRetry(
                 appContext = appContext,
                 packageNameToSkip = packageNameToSkip,
@@ -1028,7 +1030,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
                 preferPasswordField = preferPasswordField,
                 attempt = 1,
             )
-        }, MANUAL_ACCESSIBILITY_FILL_DELAY_MS)
+        }
 
         setResult(Activity.RESULT_CANCELED)
         moveTaskToBack(true)
@@ -1036,7 +1038,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
         return true
     }
 
-    private fun requestManualAccessibilityFillWithRetry(
+    private suspend fun requestManualAccessibilityFillWithRetry(
         appContext: Context,
         packageNameToSkip: String,
         expectedTargetPackage: String?,
@@ -1102,17 +1104,16 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             return
         }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            requestManualAccessibilityFillWithRetry(
-                appContext = appContext,
-                packageNameToSkip = packageNameToSkip,
-                expectedTargetPackage = expectedTargetPackage,
-                username = username,
-                password = password,
-                preferPasswordField = preferPasswordField,
-                attempt = attempt + 1,
-            )
-        }, MANUAL_ACCESSIBILITY_RETRY_DELAY_MS)
+        delay(MANUAL_ACCESSIBILITY_RETRY_DELAY_MS)
+        requestManualAccessibilityFillWithRetry(
+            appContext = appContext,
+            packageNameToSkip = packageNameToSkip,
+            expectedTargetPackage = expectedTargetPackage,
+            username = username,
+            password = password,
+            preferPasswordField = preferPasswordField,
+            attempt = attempt + 1,
+        )
     }
 
     private fun copyManualCredentialFallback(username: String, password: String) {

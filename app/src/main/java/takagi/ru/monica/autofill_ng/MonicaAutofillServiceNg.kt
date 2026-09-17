@@ -24,6 +24,7 @@ import android.text.InputType
 import android.view.inputmethod.InlineSuggestionsRequest
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -53,6 +54,7 @@ import takagi.ru.monica.utils.DeviceUtils
 import takagi.ru.monica.utils.SettingsManager
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
 /**
@@ -177,8 +179,10 @@ class MonicaAutofillServiceNg : AutofillService() {
         cancellationSignal: CancellationSignal,
         callback: FillCallback,
     ) {
+        if (cancellationSignal.isCanceled) return
         val requestId = fillRequestSequence.incrementAndGet()
         val startedAt = System.currentTimeMillis()
+        val completed = AtomicBoolean(false)
         AutofillLogger.i(
             "AF",
             "onFillRequest received",
@@ -196,6 +200,7 @@ class MonicaAutofillServiceNg : AutofillService() {
                 val response = withContext(Dispatchers.Default) {
                     processFillRequest(request, cancellationSignal, requestId)
                 }
+                if (cancellationSignal.isCanceled || !completed.compareAndSet(false, true)) return@launch
                 AutofillLogger.i(
                     "AF",
                     "onFillRequest callback success",
@@ -207,7 +212,10 @@ class MonicaAutofillServiceNg : AutofillService() {
                     )
                 )
                 callback.onSuccess(response)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                if (cancellationSignal.isCanceled || !completed.compareAndSet(false, true)) return@launch
                 AutofillLogger.e(
                     "AF",
                     "onFillRequest failed",
@@ -222,6 +230,7 @@ class MonicaAutofillServiceNg : AutofillService() {
             }
         }
         cancellationSignal.setOnCancelListener {
+            completed.set(true)
             AutofillLogger.w(
                 "AF",
                 "onFillRequest cancelled by system",
@@ -322,7 +331,7 @@ class MonicaAutofillServiceNg : AutofillService() {
             it.hint == FieldHint.PASSWORD || it.hint == FieldHint.NEW_PASSWORD
         }
         val focusedSyntheticItems = if (hasAccountTarget || hasPasswordTarget) {
-            buildFocusedSyntheticItems(structure, parsed.items, hasPasswordTarget)
+            buildFocusedSyntheticItems(structure, parsed.items, hasPasswordTarget, parsed.scopeAutofillIds)
         } else {
             emptyList()
         }
@@ -333,7 +342,8 @@ class MonicaAutofillServiceNg : AutofillService() {
         // 布局/动画时序而不可见、被解析器连同账号一起丢弃，导致登录目标「时有时无」。
         // 识别到登录字段时缓存（账号+密码）；后续同包请求若缺失密码、且缓存的所有登录
         // 字段 id 仍存在于当前结构（可见或不可见均可）时，整体回补，保证面板稳定出现。
-        val pkgKey = parsed.applicationId ?: fallbackPackage
+        val pkgKey = listOf(parsed.applicationId ?: fallbackPackage, parsed.webScheme, parsed.webDomain)
+            .joinToString("|")
         val currentPasswordItems = parsed.items.filter {
             it.hint == FieldHint.PASSWORD || it.hint == FieldHint.NEW_PASSWORD
         }
@@ -344,7 +354,7 @@ class MonicaAutofillServiceNg : AutofillService() {
             } else if (currentHasLoginContext) {
                 val cached = passwordMemoryByPackage[pkgKey]
                 if (cached != null && cached.isNotEmpty() &&
-                    cached.all { structureContainsAutofillId(structure, it.id) }
+                    cached.all { it.id in parsed.scopeAutofillIds }
                 ) {
                     val baseIndex = parsed.items.maxOfOrNull { it.traversalIndex } ?: 0
                     val recovered = cached
@@ -1318,6 +1328,7 @@ class MonicaAutofillServiceNg : AutofillService() {
         structure: AssistStructure,
         existingItems: List<EnhancedAutofillStructureParserV2.ParsedItem>,
         hasPasswordTarget: Boolean,
+        scopeAutofillIds: Set<AutofillId>,
     ): List<EnhancedAutofillStructureParserV2.ParsedItem> {
         val existingIds = existingItems.map { it.id }.toSet()
         val out = mutableListOf<EnhancedAutofillStructureParserV2.ParsedItem>()
@@ -1326,6 +1337,7 @@ class MonicaAutofillServiceNg : AutofillService() {
                 node = structure.getWindowNodeAt(index).rootViewNode,
                 existingIds = existingIds,
                 hasPasswordTarget = hasPasswordTarget,
+                scopeAutofillIds = scopeAutofillIds,
                 out = out,
             )
         }
@@ -1336,10 +1348,12 @@ class MonicaAutofillServiceNg : AutofillService() {
         node: AssistStructure.ViewNode,
         existingIds: Set<AutofillId>,
         hasPasswordTarget: Boolean,
+        scopeAutofillIds: Set<AutofillId>,
         out: MutableList<EnhancedAutofillStructureParserV2.ParsedItem>,
     ) {
         if (node.isFocused &&
             node.autofillId != null &&
+            node.autofillId in scopeAutofillIds &&
             !existingIds.contains(node.autofillId)
         ) {
             val inferredHint = inferFocusedFieldHint(node, hasPasswordTarget)
@@ -1360,6 +1374,7 @@ class MonicaAutofillServiceNg : AutofillService() {
                     node = it,
                     existingIds = existingIds,
                     hasPasswordTarget = hasPasswordTarget,
+                    scopeAutofillIds = scopeAutofillIds,
                     out = out,
                 )
             }
@@ -1370,6 +1385,19 @@ class MonicaAutofillServiceNg : AutofillService() {
         node: AssistStructure.ViewNode,
         hasPasswordTarget: Boolean,
     ): FieldHint? {
+        if (!node.isEnabled || node.visibility != View.VISIBLE || parser.isSearchField(node)) return null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+            node.importantForAutofill == View.IMPORTANT_FOR_AUTOFILL_NO
+        ) return null
+        val signals = buildList {
+            add(node.hint.orEmpty())
+            add(node.idEntry.orEmpty())
+            node.autofillHints?.let(::addAll)
+            node.htmlInfo?.attributes?.filter {
+                it.first in setOf("autocomplete", "name", "id", "placeholder", "aria-label")
+            }?.mapTo(this) { it.second.orEmpty() }
+        }.joinToString(" ")
+        if (AutofillDetectionPolicy.matchesOtpField(signals)) return null
         val inputType = node.inputType
         val classBits = inputType and InputType.TYPE_MASK_CLASS
         if (classBits == InputType.TYPE_CLASS_TEXT) {
@@ -1396,7 +1424,9 @@ class MonicaAutofillServiceNg : AutofillService() {
         // 非密码/邮箱/电话类的聚焦文本框：仅当屏幕上已存在密码框（登录上下文）时，
         // 才当作账号字段合成，用于补全漏识别的账号框（如影视类 App）。
         // 无密码上下文的普通文本框（搜索框/备注/昵称等）不合成，避免误弹密码建议。
-        return if (hasPasswordTarget) FieldHint.USERNAME else null
+        val editableText = node.autofillType == View.AUTOFILL_TYPE_TEXT &&
+            (classBits == InputType.TYPE_CLASS_TEXT || classBits == InputType.TYPE_CLASS_NUMBER)
+        return if (hasPasswordTarget && editableText) FieldHint.USERNAME else null
     }
 
     /**

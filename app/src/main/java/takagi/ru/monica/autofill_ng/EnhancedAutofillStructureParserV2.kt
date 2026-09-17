@@ -24,6 +24,9 @@ class EnhancedAutofillStructureParserV2 {
         val webDomain: String? = null,
         val webView: Boolean = false,
         val items: List<ParsedItem>,
+        // Includes unclassified nodes, but only from the selected window/origin.
+        // Compatibility fallbacks must not re-add nodes from another form scope.
+        val scopeAutofillIds: Set<AutofillId> = emptySet(),
     )
 
     data class ParsedItem(
@@ -105,6 +108,9 @@ class EnhancedAutofillStructureParserV2 {
         val webDomain: String? = null,
         val webView: Boolean = false,
         val items: List<RawParsedItem>,
+        val hasFocus: Boolean = false,
+        val focusedWebViewNodeId: Int? = null,
+        val nodeIds: Set<AutofillId> = emptySet(),
     )
 
     private data class RawParsedItem(
@@ -144,7 +150,12 @@ class EnhancedAutofillStructureParserV2 {
         var nodesWithAutofillId: Int = 0,
         var nodesWithoutAutofillId: Int = 0,
         var totalNodesVisited: Int = 0,
+        val webScopes: MutableMap<Int, WebScope> = mutableMapOf(),
+        val nodeScopes: MutableMap<AutofillId, Int?> = mutableMapOf(),
+        val allowFocusedUnknown: Boolean = false,
     )
+
+    private data class WebScope(var domain: String?, var scheme: String?)
 
     private class AutofillHintMatcher(
         val hint: InternalHint,
@@ -524,9 +535,11 @@ class EnhancedAutofillStructureParserV2 {
     ): ParsedStructure {
         var applicationId: String? = structure.activityComponent?.packageName
         var rawStructure: RawParsedStructure? = null
-        val parseContext = ParseContext()
+        val parseContext = ParseContext(allowFocusedUnknown = allowWeakTargets && !requireExplicitWeakLoginSignal)
 
-        for (i in 0 until structure.windowNodeCount) {
+        // The last window is the topmost one. Prefer its focused field over
+        // a login form left behind a dialog; do not combine different windows.
+        for (i in structure.windowNodeCount - 1 downTo 0) {
             val windowNode = structure.getWindowNodeAt(i)
             val appIdCandidate = windowNode.title?.toString()?.split("/")?.firstOrNull()
             if (!appIdCandidate.isNullOrBlank()) {
@@ -547,17 +560,29 @@ class EnhancedAutofillStructureParserV2 {
                 rawStructure = nodeStructure
             }
             val hasItems = nodeStructure.items.any { it.hint != InternalHint.OFF }
-            if (hasItems) {
+            if (nodeStructure.hasFocus || (hasItems && rawStructure?.items?.none { it.hint != InternalHint.OFF } == true)) {
                 rawStructure = nodeStructure
+            }
+            if (nodeStructure.hasFocus) {
                 break
             }
         }
 
-        val allowOnlyWebViewItems = rawStructure?.webView == true
-        var candidateItems = rawStructure?.items.orEmpty()
-        if (allowOnlyWebViewItems) {
-            candidateItems = candidateItems.filter { it.parentWebViewNodeId != null }
+        val selectedScopeId = if (rawStructure?.hasFocus == true) {
+            rawStructure.focusedWebViewNodeId
+        } else {
+            rawStructure?.items?.firstOrNull { it.hint != InternalHint.OFF }?.parentWebViewNodeId
         }
+        val selectedWebScope = selectedScopeId?.let(parseContext.webScopes::get)
+        val scopeAutofillIds = rawStructure?.nodeIds.orEmpty()
+            .filterTo(mutableSetOf()) { parseContext.nodeScopes[it] == selectedScopeId }
+        val candidateItems = rawStructure?.items.orEmpty()
+            .filter { it.parentWebViewNodeId == selectedScopeId }
+        rawStructure = rawStructure?.copy(
+            webView = selectedScopeId != null,
+            webDomain = selectedWebScope?.domain,
+            webScheme = selectedWebScope?.scheme,
+        )
 
         val confidenceFilteredItems = candidateItems.let { list ->
             if (allowWeakTargets) return@let list
@@ -811,7 +836,7 @@ class EnhancedAutofillStructureParserV2 {
         }
 
         val effectiveWebDomain = rawStructure?.webDomain.takeUnless { isInSelfHostedServer }
-            ?: extractDomainFromStructureText(structure)
+            ?: if (rawStructure?.webView == true && !isInSelfHostedServer) extractDomainFromStructureText(structure) else null
         if (effectiveWebDomain != null && rawStructure?.webDomain == null && !isInSelfHostedServer) {
             Log.d("MonicaAutofill", "webDomain recovered from structure text: $effectiveWebDomain")
         }
@@ -831,6 +856,7 @@ class EnhancedAutofillStructureParserV2 {
             webScheme = rawStructure?.webScheme.takeUnless { isInSelfHostedServer },
             webView = if (isInSelfHostedServer) false else rawStructure?.webView == true,
             items = items.sortedBy { it.traversalIndex },
+            scopeAutofillIds = scopeAutofillIds,
         )
     }
 
@@ -856,7 +882,12 @@ class EnhancedAutofillStructureParserV2 {
 
     private fun scanNodeForUrlDomain(node: AssistStructure.ViewNode, depth: Int): String? {
         if (depth > 6) return null
-        val text = node.text?.toString()?.trim()
+        // Page text (including a value typed by the user) is not evidence of
+        // origin. Only a browser's address-bar node can supply this fallback.
+        val addressBar = node.idEntry.orEmpty().lowercase(Locale.ROOT).let {
+            it in setOf("url_bar", "location_bar_edit_text", "mozac_browser_toolbar_url_view", "url_bar_title")
+        }
+        val text = node.text?.toString()?.trim().takeIf { addressBar }
         if (!text.isNullOrBlank()) {
             val domain = extractDomainFromUrl(text)
             if (domain != null) return domain
@@ -907,7 +938,27 @@ class EnhancedAutofillStructureParserV2 {
 
         val out = mutableListOf<RawParsedItem>()
         webView = node.className == "android.webkit.WebView"
-        val webViewNodeId = node.id.takeIf { webView } ?: parentWebViewNodeId
+        val inheritedScope = parentWebViewNodeId?.let(context.webScopes::get)
+        val changesOrigin = webDomain != null && inheritedScope?.domain != null &&
+            !webDomain.equals(inheritedScope.domain, ignoreCase = true)
+        // View ids are often NO_ID for multiple WebViews. Traversal identity
+        // keeps their virtual fields (and cross-origin subtrees) separate.
+        val webViewNodeId = if (webView || changesOrigin || (webDomain != null && parentWebViewNodeId == null)) {
+            context.totalNodesVisited.also { context.webScopes[it] = WebScope(webDomain, webScheme) }
+        } else {
+            if (inheritedScope != null && inheritedScope.domain == null && webDomain != null) {
+                inheritedScope.domain = webDomain
+                inheritedScope.scheme = webScheme
+            }
+            parentWebViewNodeId
+        }
+        var hasFocus = node.isFocused
+        var focusedWebViewNodeId = webViewNodeId.takeIf { hasFocus }
+        val nodeIds = mutableSetOf<AutofillId>()
+        node.autofillId?.let {
+            nodeIds += it
+            context.nodeScopes[it] = webViewNodeId
+        }
 
         context.totalNodesVisited++
         if (node.autofillId != null) {
@@ -927,6 +978,18 @@ class EnhancedAutofillStructureParserV2 {
             val inputOut = parseNodeByAndroidInput(node)
             val labelOut = parseNodeByLabel(node)
             outBuilders += inputOut + labelOut
+
+            // An explicit system "Autofill" request can open the picker for
+            // an unlabelled account field. Automatic reparsing stays conservative.
+            if (outBuilders.isEmpty() && context.allowFocusedUnknown && node.isFocused && node.isEnabled &&
+                node.autofillType == View.AUTOFILL_TYPE_TEXT &&
+                node.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_CLASS_TEXT &&
+                node.inputType and InputType.TYPE_MASK_VARIATION in setOf(
+                    InputType.TYPE_TEXT_VARIATION_NORMAL, InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT,
+                )
+            ) {
+                outBuilders += ParsedItemBuilder(Accuracy.LOWEST, InternalHint.USERNAME, reason = "manual-focused-text")
+            }
 
             // 搜索框识别与排除：搜索框不应作为登录凭据字段。否则在「页面存在密码框即整页按登录
             // 上下文处理」的策略下，聚焦搜索框也会弹出密码条目（Edge 访问 GitHub 时顶部搜索框误弹）。
@@ -1010,6 +1073,11 @@ class EnhancedAutofillStructureParserV2 {
             webDomain = webDomain ?: childStructure.webDomain
             webScheme = webScheme ?: childStructure.webScheme
             out += childStructure.items
+            nodeIds += childStructure.nodeIds
+            if (childStructure.hasFocus) {
+                hasFocus = true
+                focusedWebViewNodeId = childStructure.focusedWebViewNodeId
+            }
         }
 
         return RawParsedStructure(
@@ -1017,6 +1085,9 @@ class EnhancedAutofillStructureParserV2 {
             webDomain = webDomain,
             webView = webView,
             items = out,
+            hasFocus = hasFocus,
+            focusedWebViewNodeId = focusedWebViewNodeId,
+            nodeIds = nodeIds,
         )
     }
 
@@ -1388,6 +1459,22 @@ class EnhancedAutofillStructureParserV2 {
         }
 
         val out = when {
+            AutofillDetectionPolicy.matchesOtpField(hint) ->
+                ParsedItemBuilder(
+                    accuracy = Accuracy.HIGH,
+                    hint = InternalHint.OTP_CODE,
+                    reason = "label:$hint",
+                )
+
+            // Compound labels such as "account password" describe a password,
+            // even when a nonstandard form exposes it as plain text.
+            AutofillDetectionPolicy.matchesPasswordField(hint) ->
+                ParsedItemBuilder(
+                    accuracy = Accuracy.MEDIUM,
+                    hint = InternalHint.PASSWORD,
+                    reason = "label:$hint",
+                )
+
             autofillLabelEmailTranslations.any { it in hint } ->
                 ParsedItemBuilder(
                     accuracy = Accuracy.MEDIUM,
@@ -1406,13 +1493,6 @@ class EnhancedAutofillStructureParserV2 {
                 ParsedItemBuilder(
                     accuracy = Accuracy.MEDIUM,
                     hint = InternalHint.USERNAME,
-                    reason = "label:$hint",
-                )
-
-            autofillLabelPasswordTranslations.any { it in hint } ->
-                ParsedItemBuilder(
-                    accuracy = Accuracy.MEDIUM,
-                    hint = InternalHint.PASSWORD,
                     reason = "label:$hint",
                 )
 
@@ -1700,7 +1780,9 @@ class EnhancedAutofillStructureParserV2 {
             }
         }
         return candidates.any { value ->
-            autofillLabelLoginTranslations.any { term -> value.contains(term, ignoreCase = true) }
+            AutofillDetectionPolicy.matchesExplicitAccountField(value) ||
+                AutofillDetectionPolicy.matchesPhoneFieldName(value) ||
+                autofillLabelLoginTranslations.any { term -> value.contains(term, ignoreCase = true) }
         }
     }
 
@@ -1716,7 +1798,10 @@ class EnhancedAutofillStructureParserV2 {
      * - aria-label / placeholder / title / name / id / 节点 hint(label) 含搜索相关词
      *   （search / 搜索 / 查询 / 查找 / recherche / buscar / suche 等）
      */
-    private fun isSearchField(node: AssistStructure.ViewNode): Boolean {
+    internal fun isSearchField(node: AssistStructure.ViewNode): Boolean {
+        if (AutofillDetectionPolicy.matchesSearchField(node.hint.orEmpty()) ||
+            AutofillDetectionPolicy.matchesSearchField(node.idEntry.orEmpty())
+        ) return true
         val html = node.htmlInfo ?: return false
         val tag = html.tag?.lowercase(Locale.ENGLISH).orEmpty()
         if (tag != "input" && tag != "search" && tag != "textarea") return false
@@ -1765,14 +1850,14 @@ class EnhancedAutofillStructureParserV2 {
             it.hint == InternalHint.PASSWORD || it.hint == InternalHint.NEW_PASSWORD
         }
         if (hasPassword) return items
-        val anyPromotable = items.any { it.hasPasswordTerm && it.hint != InternalHint.OFF }
+        val promotableHints = setOf(
+            InternalHint.USERNAME, InternalHint.EMAIL_ADDRESS,
+            InternalHint.PHONE_NUMBER, InternalHint.UNKNOWN,
+        )
+        val anyPromotable = items.any { it.hasPasswordTerm && it.hint in promotableHints }
         if (!anyPromotable) return items
         return items.map { item ->
-            if (item.hasPasswordTerm &&
-                item.hint != InternalHint.OFF &&
-                item.hint != InternalHint.PASSWORD &&
-                item.hint != InternalHint.NEW_PASSWORD
-            ) {
+            if (item.hasPasswordTerm && item.hint in promotableHints) {
                 item.copy(hint = InternalHint.PASSWORD, accuracy = Accuracy.LOW)
             } else {
                 item

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>input{display:block;box-sizing:border-box;width:95%;height:56px;margin:16px 4px;font-size:20px}</style>
+<label for="field1">工号</label><input id="field1" autocomplete="username" placeholder="工号">
+<div id="holder"><label for="field2">密码</label><input id="field2" type="password" autocomplete="current-password" placeholder="密码"></div>
+<script>
+let replaced = false;
+function report() {
+  Fixture.report(document.getElementById('field1').value, document.getElementById('field2').value);
+}
+document.addEventListener('input', event => {
+  if (__DYNAMIC__ && event.target.id === 'field1' && !replaced) {
+    replaced = true;
+    document.getElementById('holder').innerHTML = '<label for="field2">密码</label><input id="field2" type="password" autocomplete="current-password" placeholder="密码">';
+  }
+  report();
+});
+document.addEventListener('change', report);
+report();
+</script>
+</html>
