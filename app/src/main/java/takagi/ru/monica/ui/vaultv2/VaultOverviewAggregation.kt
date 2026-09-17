@@ -5,8 +5,9 @@ import takagi.ru.monica.rustcore.RustVaultOverviewCore
 internal const val OVERVIEW_HEADER = 6
 internal const val OVERVIEW_ROW_WIDTH = 8
 internal const val OVERVIEW_PREVIEW_LIMIT = 8
-// Device measurements include JNI and result validation; smaller batches stay cheaper in Kotlin.
-internal const val OVERVIEW_NATIVE_THRESHOLD = 1024
+// Rust wins once the overview has a few hundred rows, including JNI and result validation.
+// Keeping a small Kotlin path avoids JNI overhead for genuinely tiny snapshots.
+internal const val OVERVIEW_NATIVE_THRESHOLD = 256
 
 internal data class VaultOverviewAggregation(
     val visible: IntArray,
