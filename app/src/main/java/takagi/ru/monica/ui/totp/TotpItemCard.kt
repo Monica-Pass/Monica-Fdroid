@@ -57,6 +57,7 @@ internal fun TotpItemCard(
         isSelectionMode = isSelectionMode,
         isSelected = isSelected,
         compactTile = compactTile,
+        uniformAuthenticatorLayout = true,
         sharedTickSeconds = sharedTickSeconds,
         sharedProgressTimeMillis = sharedProgressTimeMillis,
         appSettings = appSettings,

@@ -5,9 +5,9 @@ import takagi.ru.monica.rustcore.RustVaultOverviewCore
 internal const val OVERVIEW_HEADER = 6
 internal const val OVERVIEW_ROW_WIDTH = 8
 internal const val OVERVIEW_PREVIEW_LIMIT = 8
-// Rust wins once the overview has a few hundred rows, including JNI and result validation.
-// Keeping a small Kotlin path avoids JNI overhead for genuinely tiny snapshots.
-internal const val OVERVIEW_NATIVE_THRESHOLD = 256
+// API 32 emulator measurements: JNI costs more at 256/512 rows and is roughly tied at 1,000.
+// The measured aggregation crossover is below 10,000; full snapshot/startup costs vary separately.
+internal const val OVERVIEW_NATIVE_THRESHOLD = 10_000
 
 internal data class VaultOverviewAggregation(
     val visible: IntArray,

@@ -181,6 +181,16 @@ fun PaymentScreen(
                         context = context,
                         snackbarHostState = snackbarHostState
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    PaymentLinkButton(
+                        platform = stringResource(R.string.payment_platform_liberapay),
+                        url = "https://liberapay.com/JoyinJoester",
+                        icon = Icons.Default.Euro,
+                        context = context,
+                        snackbarHostState = snackbarHostState
+                    )
                 }
             }
             
@@ -269,8 +279,8 @@ private fun PaymentLinkButton(
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(platform)
-        Spacer(modifier = Modifier.weight(1f))
+        Text(platform, modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.width(8.dp))
         Icon(
             imageVector = Icons.Default.OpenInNew,
             contentDescription = null,

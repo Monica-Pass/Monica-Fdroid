@@ -1,0 +1,4 @@
+<resources>
+    <string name="generator_create_username">Tạo mục với tên người dùng này</string>
+    <string name="generator_create_password">Tạo mục với mật khẩu này</string>
+</resources>

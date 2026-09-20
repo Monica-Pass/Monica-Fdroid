@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="gpg_title">"Chiave GPG"</string>
+    <string name="gpg_entry_title">"Titolo"</string>
+    <string name="gpg_name">"Nome"</string>
+    <string name="gpg_email">"Email (facoltativa)"</string>
+    <string name="gpg_error">"Impossibile elaborare la chiave. Controlla i dati dell’identità, il file della chiave e l’accesso all’archivio, poi riprova."</string>
+    <string name="gpg_storage">"Posizioni di archiviazione (%1$d)"</string>
+    <string name="gpg_generate">"Genera chiave"</string>
+    <string name="gpg_import">"Importa chiave"</string>
+    <string name="gpg_save">"Salva nell’archivio"</string>
+    <string name="gpg_no_expiry">"Senza scadenza"</string>
+    <string name="gpg_days">"%1$d giorni"</string>
+    <string name="gpg_passphrase">"Passphrase (facoltativa)"</string>
+    <string name="gpg_copy_fingerprint">"Copia impronta"</string>
+    <string name="gpg_copy_public">"Copia chiave pubblica"</string>
+    <string name="gpg_copy_private">"Copia chiave privata"</string>
+    <string name="gpg_export_public">"Esporta chiave pubblica"</string>
+    <string name="gpg_export_private">"Esporta chiave privata"</string>
+    <string name="gpg_show_private">"Mostra chiave privata"</string>
+    <string name="gpg_hide_private">"Nascondi chiave privata"</string>
+    <string name="gpg_add_title">"Nuova chiave GPG"</string>
+    <string name="gpg_edit_title">"Modifica chiave GPG"</string>
+    <string name="gpg_empty">"Genera o importa una chiave"</string>
+    <string name="gpg_ready">"Chiave aggiunta"</string>
+    <string name="gpg_options">"Opzioni di generazione"</string>
+    <string name="gpg_expiry">"Scadenza"</string>
+    <string name="gpg_actions">"Azioni della chiave GPG"</string>
+    <string name="gpg_export_pair">"Esporta coppia di chiavi"</string>
+    <string name="gpg_create_entry">"Crea nuova voce GPG"</string>
+    <string name="gpg_name_invalid">"Inserisci un nome (1–128 caratteri, senza parentesi angolari né interruzioni di riga)."</string>
+    <string name="gpg_email_invalid">"Inserisci un indirizzo email valido oppure lascia vuoto questo campo."</string>
+    <string name="gpg_generate_error">"Impossibile generare la chiave. Riprova."</string>
+    <string name="gpg_import_error">"Impossibile importare la chiave. Seleziona un file di chiave OpenPGP valido (massimo 1 MB)."</string>
+    <string name="gpg_load_error">"Impossibile leggere questa chiave. Controlla l’archivio e riapri la voce."</string>
+    <string name="gpg_save_error">"Impossibile salvare la chiave. Verifica che l’archivio selezionato sia scrivibile."</string>
+    <string name="gpg_export_error">"Impossibile esportare la chiave. Scegli una posizione scrivibile e riprova."</string>
+</resources>

@@ -400,6 +400,11 @@ fun MdbxManagerScreen(
                 },
                 contentKey = { it::class }
             ) { current ->
+            // AnimatedContent retains the outgoing page until its exit finishes.
+            // Resolve its database from that page, not from the new navigation target.
+            val displayedDatabase = (current as? MdbxManagerPage.DatabasePage)?.databaseId?.let { id ->
+                databases.firstOrNull { it.id == id }
+            }
             when (current) {
                 MdbxManagerPage.Hub -> {
                     MdbxManagerHubPage(
@@ -448,7 +453,7 @@ fun MdbxManagerScreen(
                     )
                 }
                 is MdbxManagerPage.Detail -> {
-                    selectedDatabase?.let { db ->
+                    displayedDatabase?.let { db ->
                         MdbxVaultDetailPage(
                             database = db,
                             isDefault = db.isDefault,
@@ -514,7 +519,7 @@ fun MdbxManagerScreen(
                     val state = conflictDialogState as? MdbxViewModel.MdbxConflictDialogState.Visible
                     MdbxConflictPage(
                         state = state,
-                        databaseName = selectedDatabase?.name ?: "MDBX",
+                        databaseName = displayedDatabase?.name ?: "MDBX",
                         onResolve = { conflictId, resolution ->
                             viewModel.resolveConflict(current.databaseId, conflictId, resolution)
                         }
@@ -525,7 +530,7 @@ fun MdbxManagerScreen(
                     MdbxSnapshotPage(
                         state = state,
                         engineAlwaysCreatesFullSnapshots =
-                            selectedDatabase?.engineTypeEnum == MdbxEngineType.RUST_MDBX2,
+                            displayedDatabase?.engineTypeEnum == MdbxEngineType.RUST_MDBX2,
                         onShowDiff = { commitId -> viewModel.showCommitDiff(current.databaseId, commitId) },
                         onShowSnapshotStructure = { snapshotId ->
                             viewModel.showSnapshotStructure(current.databaseId, snapshotId)
@@ -554,7 +559,7 @@ fun MdbxManagerScreen(
                     val state = deltaDialogState as? MdbxViewModel.MdbxDeltaDialogState.Visible
                     LaunchedEffect(current.databaseId, current.snapshotId) {
                         if (state == null || state.databaseId != current.databaseId) {
-                            selectedDatabase?.let(viewModel::showDeltaHistory)
+                            displayedDatabase?.let(viewModel::showDeltaHistory)
                         } else if (state.selectedStructureSnapshotId != current.snapshotId) {
                             viewModel.showSnapshotStructure(current.databaseId, current.snapshotId)
                         }
@@ -583,7 +588,7 @@ fun MdbxManagerScreen(
                     )
                 }
                 is MdbxManagerPage.Health -> {
-                    selectedDatabase?.let { db ->
+                    displayedDatabase?.let { db ->
                         MdbxHealthDetailPage(
                             database = db,
                             diagnostics = vaultDiagnostics[db.id],
@@ -620,7 +625,7 @@ fun MdbxManagerScreen(
                     }
                 }
                 is MdbxManagerPage.Attachments -> {
-                    selectedDatabase?.let { db ->
+                    displayedDatabase?.let { db ->
                         MdbxAttachmentDetailPage(
                             database = db,
                             diagnostics = vaultDiagnostics[db.id],
@@ -629,7 +634,7 @@ fun MdbxManagerScreen(
                     }
                 }
                 is MdbxManagerPage.Maintenance -> {
-                    selectedDatabase?.let { db ->
+                    displayedDatabase?.let { db ->
                         MdbxMaintenancePage(
                             database = db,
                             diagnostics = vaultDiagnostics[db.id],

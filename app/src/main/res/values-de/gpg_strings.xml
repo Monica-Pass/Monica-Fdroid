@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">GPG-Schlüssel</string>
+    <string name="gpg_entry_title">Titel</string>
+    <string name="gpg_name">Name</string>
+    <string name="gpg_email">E-Mail (optional)</string>
+    <string name="gpg_error">Schlüssel konnte nicht verarbeitet werden. Bitte erneut versuchen.</string>
+    <string name="gpg_storage">Speicherorte (%1$d)</string>
+    <string name="gpg_generate">Schlüssel erzeugen</string>
+    <string name="gpg_import">Schlüssel importieren</string>
+    <string name="gpg_save">Im Tresor speichern</string>
+    <string name="gpg_no_expiry">Läuft nie ab</string>
+    <string name="gpg_days">%1$d Tage</string>
+    <string name="gpg_passphrase">Passphrase (optional)</string>
+    <string name="gpg_copy_fingerprint">Fingerabdruck kopieren</string>
+    <string name="gpg_copy_public">Öffentlichen Schlüssel kopieren</string>
+    <string name="gpg_copy_private">Privaten Schlüssel kopieren</string>
+    <string name="gpg_export_public">Öffentlichen Schlüssel exportieren</string>
+    <string name="gpg_export_private">Privaten Schlüssel exportieren</string>
+    <string name="gpg_show_private">Privaten Schlüssel anzeigen</string>
+    <string name="gpg_hide_private">Privaten Schlüssel ausblenden</string>
+    <string name="gpg_add_title">Neuer GPG-Schlüssel</string>
+    <string name="gpg_edit_title">GPG-Schlüssel bearbeiten</string>
+    <string name="gpg_empty">Schlüssel erzeugen oder importieren</string>
+    <string name="gpg_ready">Schlüssel hinzugefügt</string>
+    <string name="gpg_options">Erzeugungsoptionen</string>
+    <string name="gpg_expiry">Gültigkeit</string>
+    <string name="gpg_actions">GPG-Schlüsselaktionen</string>
+    <string name="gpg_export_pair">Schlüsselpaar exportieren</string>
+    <string name="gpg_create_entry">Neuen GPG-Eintrag erstellen</string>
+    <string name="gpg_name_invalid">Namen mit 1–128 Zeichen ohne spitze Klammern oder Zeilenumbrüche eingeben.</string>
+    <string name="gpg_email_invalid">Gültige E-Mail-Adresse eingeben oder das Feld leer lassen.</string>
+    <string name="gpg_generate_error">Schlüssel konnte nicht erzeugt werden. Bitte erneut versuchen.</string>
+    <string name="gpg_import_error">Import fehlgeschlagen. Eine gültige OpenPGP-Schlüsseldatei bis 1 MB auswählen.</string>
+    <string name="gpg_load_error">Schlüssel konnte nicht gelesen werden. Tresor prüfen und Eintrag erneut öffnen.</string>
+    <string name="gpg_save_error">Speichern fehlgeschlagen. Prüfen, ob der gewählte Tresor beschreibbar ist.</string>
+    <string name="gpg_export_error">Export fehlgeschlagen. Einen beschreibbaren Speicherort wählen.</string>
+</resources>

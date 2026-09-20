@@ -1,0 +1,469 @@
+liberapay-build.log
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:compileDebugAidl UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig
+> Task :mdbx-engine:preBuild UP-TO-DATE
+> Task :mdbx-engine:preDebugBuild UP-TO-DATE
+> Task :mdbx-engine:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :mdbx-engine:generateDebugResValues UP-TO-DATE
+> Task :mdbx-engine:generateDebugResources UP-TO-DATE
+> Task :mdbx-engine:packageDebugResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:mergeDebugResources
+> Task :app:packageDebugResources
+> Task :app:parseDebugLocalResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :mdbx-engine:extractDeepLinksDebug UP-TO-DATE
+> Task :mdbx-engine:processDebugManifest UP-TO-DATE
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :mdbx-engine:compileDebugLibraryResources UP-TO-DATE
+> Task :mdbx-engine:parseDebugLocalResources UP-TO-DATE
+> Task :mdbx-engine:generateDebugRFile UP-TO-DATE
+warn: removing resource takagi.ru.monica:string/storage_picker_edit_multi_append_hint without required default value.
+
+warn: removing resource takagi.ru.monica:string/storage_picker_edit_multi_append_hint without required default value.
+
+warn: removing resource takagi.ru.monica:string/storage_picker_edit_multi_append_hint without required default value.
+
+> Task :app:processDebugResources
+> Task :mdbx-engine:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :mdbx-engine:compileDebugKotlin UP-TO-DATE
+> Task :mdbx-engine:javaPreCompileDebug UP-TO-DATE
+> Task :mdbx-engine:compileDebugJavaWithJavac NO-SOURCE
+> Task :mdbx-engine:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :app:kspDebugKotlin
+> Task :app:compileDebugKotlin
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/attachments/ui/AttachmentPreviewDialog.kt:84:43 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillAuthenticationActivity.kt:126:30 'fun <T : Parcelable!> getParcelableArrayListExtra(p0: String!): ArrayList<T!>?' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillAuthenticationActivity.kt:255:36 'fun setValue(p0: AutofillId, p1: AutofillValue?): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillBlockedRequest.kt:37:5 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillCipherCallbackActivity.kt:93:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillCipherCallbackActivity.kt:559:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivity.kt:117:34 'fun <T : Parcelable!> getParcelableArrayListExtra(p0: String!): ArrayList<T!>?' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivity.kt:145:29 'fun setValue(p0: AutofillId, p1: AutofillValue?): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivity.kt:158:33 'fun setValue(p0: AutofillId, p1: AutofillValue?): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivityV2.kt:4523:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivityV2.kt:4575:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivityV2.kt:4635:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivityV2.kt:4686:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillSaveActivity.kt:441:48 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillUnlockActivity.kt:56:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/AutofillUnlockActivity.kt:232:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/BiometricAuthActivity.kt:176:36 'fun setValue(p0: AutofillId, p1: AutofillValue?, p2: RemoteViews): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/BiometricAuthActivity.kt:185:36 'fun setValue(p0: AutofillId, p1: AutofillValue?, p2: RemoteViews): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/EnhancedAutofillStructureParserV2.kt:331:36 'static field AUTOFILL_HINT_PHONE: String' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/EnhancedAutofillStructureParserV2.kt:407:36 'static field AUTOFILL_HINT_NAME: String' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/PasswordSuggestionActivity.kt:150:44 'fun setValue(p0: AutofillId, p1: AutofillValue?, p2: RemoteViews): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/builder/AutofillDatasetBuilder.kt:103:24 'constructor(p0: RemoteViews): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/builder/AutofillDatasetBuilder.kt:106:52 'fun setInlinePresentation(p0: InlinePresentation): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/builder/AutofillDatasetBuilder.kt:110:17 'fun setValue(p0: AutofillId, p1: AutofillValue?, p2: RemoteViews): Dataset.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/ui/InlinePasswordDetailContent.kt:78:37 'val Icons.Outlined.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/ui/InlinePasswordDetailContent.kt:181:39 'val Icons.Outlined.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/ui/PasswordListItem.kt:608:43 'val Icons.Filled.KeyboardArrowRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowRight.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/autofill_ng/ui/components/PasswordFormComponents.kt:168:39 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/api/BitwardenApiFactory.kt:49:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/service/BitwardenSyncService.kt:86:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenLoginScreen.kt:199:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenLoginScreen.kt:284:39 'constructor(capitalization: KeyboardCapitalization = ..., autoCorrect: Boolean, keyboardType: KeyboardType = ..., imeAction: ImeAction = ..., platformImeOptions: PlatformImeOptions? = ..., showKeyboardOnFocus: Boolean? = ..., hintLocales: LocaleList? = ...): KeyboardOptions' is deprecated. Please use the new constructor that takes optional autoCorrectEnabled parameter.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenLoginScreen.kt:314:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenLoginScreen.kt:503:44 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenSettingsScreen.kt:117:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenSettingsScreen.kt:570:45 'val Icons.Outlined.Logout: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Logout.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/SyncQueueScreen.kt:61:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/bitwarden/ui/SyncQueueScreen.kt:382:45 'val Icons.Outlined.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/credentialexchange/CredentialExchangeErrors.kt:57:81 'field versionCode: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/credentialexchange/CredentialExportActivity.kt:120:49 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/data/dedup/DedupMergeService.kt:293:17 Condition is always 'false'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ime/ImeBiometricAuthActivity.kt:117:9 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ime/MonicaInputMethodService.kt:253:23 'var navigationBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/passkey/PasskeyAuthActivity.kt:812:61 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/security/SecurityManager.kt:798:10 'fun setUserAuthenticationValidityDurationSeconds(p0: Int): KeyGenParameterSpec.Builder' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:113:8 'interface ClipboardManager : Any' is deprecated. Use Clipboard instead, which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:1890:49 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:1900:53 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:2360:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:2608:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:2757:36 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:2769:16 'interface ClipboardManager : Any' is deprecated. Use Clipboard instead, which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:3008:16 'interface ClipboardManager : Any' is deprecated. Use Clipboard instead, which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:3187:16 'interface ClipboardManager : Any' is deprecated. Use Clipboard instead, which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:4575:40 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt:4786:40 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt:280:61 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/base/BaseMonicaActivity.kt:133:20 'var isStatusBarContrastEnforced: Boolean' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/cardwallet/CardFaceImageLoader.kt:171:21 Condition is always 'true'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/BottomSheetStability.kt:80:38 'val LocalOverscrollConfiguration: ProvidableCompositionLocal<OverscrollConfiguration?>' is deprecated. Providing `OverscrollConfiguration` through `LocalOverscrollConfiguration` to disable / configure overscroll has been replaced with `LocalOverscrollFactory` and `rememberPlatformOverscrollFactory`. To disable overscroll, instead of `LocalOverscrollConfiguration provides null`, use `LocalOverscrollFactory provides null`. To change the glow color / padding, instead of `LocalOverscrollConfiguration provides OverscrollConfiguration(myColor, myPadding)`, use `LocalOverscrollFactory provides rememberPlatformOverscrollFactory(myColor, myPadding)`.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/CustomFieldComponents.kt:236:57 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/CustomFieldComponents.kt:357:104 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/CustomFieldComponents.kt:553:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/CustomFieldComponents.kt:582:100 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/DualPhotoPicker.kt:542:30 'fun rememberTransformableState(onTransformation: (@ParameterName(...) Float, @ParameterName(...) Offset, @ParameterName(...) Float) -> Unit): TransformableState' is deprecated. Prefer remembering a TransformableState with a onTransformation lambda that takes the centroid. This centroid (if specified) is the point at which zooming or rotation should happen around which allows for more natural transformations.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/ExpressiveTopBar.kt:300:69 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/MarkdownPreviewText.kt:78:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/MarkdownPreviewText.kt:397:5 'fun ClickableText(text: AnnotatedString, modifier: Modifier = ..., style: TextStyle = ..., softWrap: Boolean = ..., overflow: TextOverflow = ..., maxLines: Int = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., onClick: (Int) -> Unit): Unit' is deprecated. Use Text or BasicText and pass an AnnotatedString that contains a LinkAnnotation. Check LinkAnnotation's documentation for more details and samples.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PasswordEntryPickerBottomSheet.kt:288:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PasswordEntryPickerBottomSheet.kt:329:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PasswordEntryPickerBottomSheet.kt:370:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PasswordEntryPickerBottomSheet.kt:413:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PasswordStrengthIndicator.kt:328:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PermissionCard.kt:184:27 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/PermissionStatsCard.kt:72:17 'fun LinearProgressIndicator(progress: Float, modifier: Modifier = ..., color: Color = ..., trackColor: Color = ..., strokeCap: StrokeCap = ...): Unit' is deprecated. Use the overload that takes `progress` as a lambda.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/UnifiedCategoryFilterBottomSheet.kt:519:58 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/components/UnifiedCategoryFilterChipMenu.kt:538:75 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/main/navigation/BottomNavModel.kt:30:75 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/main/navigation/BottomNavModel.kt:31:73 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveMixedSupport.kt:515:21 Condition is always 'false'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveMixedSupport.kt:551:21 Condition is always 'false'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/password/PasswordDatabaseFiltersSection.kt:93:75 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/password/PasswordListTopSection.kt:468:105 Condition is always 'true'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/password/PasswordListTopSection.kt:511:45 Condition is always 'true'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditApiTokenScreen.kt:164:60 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt:756:60 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt:790:49 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt:1108:60 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt:1268:56 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt:1290:56 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBillingAddressScreen.kt:449:56 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditBillingAddressScreen.kt:474:52 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt:723:60 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt:747:49 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt:1024:56 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt:1046:56 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditNoteScreen.kt:478:26 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is deprecated. Moved to lifecycle-runtime-compose library in androidx.lifecycle.compose package.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditNoteSections.kt:331:52 'val Icons.Filled.FormatListBulleted: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.FormatListBulleted.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:2971:72 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:2983:68 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:3601:42 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:4648:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:4689:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:4730:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:4773:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:5908:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:6020:35 'val Icons.Filled.Chat: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Chat.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:6021:31 'val Icons.Filled.Chat: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Chat.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt:6023:31 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditSshKeyScreen.kt:737:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditSshKeyScreen.kt:777:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt:433:13 Condition is always 'false'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt:802:72 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt:815:68 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt:941:64 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt:978:53 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AddEditWifiScreen.kt:653:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ApiTokenDetailScreen.kt:132:92 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillProtectionScreen.kt:237:45 'val Icons.Outlined.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsScreen.kt:109:26 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is deprecated. Moved to lifecycle-runtime-compose library in androidx.lifecycle.compose package.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsScreen.kt:163:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsScreen.kt:280:39 'val Icons.Outlined.Input: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Input.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsScreen.kt:684:48 'val Icons.Outlined.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:110:26 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is deprecated. Moved to lifecycle-runtime-compose library in androidx.lifecycle.compose package.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:219:58 'val Icons.Outlined.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:282:58 'val Icons.Outlined.Input: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Input.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:354:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:407:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:468:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:543:39 'val Icons.Outlined.Input: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Input.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:547:43 'val Icons.Outlined.Input: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Input.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/AutofillSettingsV2Screen.kt:614:43 'val Icons.Outlined.Input: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Input.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/BankCardDetailScreen.kt:186:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/BankCardDetailScreen.kt:594:34 'fun rememberTransformableState(onTransformation: (@ParameterName(...) Float, @ParameterName(...) Offset, @ParameterName(...) Float) -> Unit): TransformableState' is deprecated. Prefer remembering a TransformableState with a onTransformation lambda that takes the centroid. This centroid (if specified) is the point at which zooming or rotation should happen around which allows for more natural transformations.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/BillingAddressDetailScreen.kt:115:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ChangePasswordScreen.kt:116:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ColorSchemeSelectionScreen.kt:113:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/CommonAccountTemplatesScreen.kt:257:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/CommonAccountTemplatesScreen.kt:1116:29 'fun requestSingleUpdate(p0: String, p1: LocationListener, p2: Looper?): Unit' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/CustomColorSettingsScreen.kt:238:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/DedupEngineScreen.kt:414:52 'val Icons.Filled.KeyboardArrowRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowRight.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/DedupEngineScreen.kt:440:52 'val Icons.Filled.KeyboardArrowRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowRight.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/DedupEngineScreen.kt:911:40 'val Icons.Filled.KeyboardArrowRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowRight.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/DeveloperSettingsScreen.kt:196:43 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/DocumentDetailScreen.kt:171:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/DocumentDetailScreen.kt:260:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ExportDataScreen.kt:162:36 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ExportDataScreen.kt:172:55 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ExportOptionCard.kt:114:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ExtensionsScreen.kt:179:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ExtensionsScreen.kt:297:42 'val Icons.Filled.CallMerge: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.CallMerge.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ForgotPasswordScreen.kt:43:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/GeneratorSshKeySection.kt:111:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/GeneratorSshKeySection.kt:158:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/GpgKeyScreen.kt:143:82 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/GpgKeyScreen.kt:207:52 'val Icons.Filled.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/GpgKeyScreen.kt:274:48 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ImportDataScreen.kt:301:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ImportDataScreen.kt:797:71 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ImportDataScreen.kt:848:40 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeEntryDetailScreen.kt:95:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeEntryDetailScreen.kt:504:48 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeEntryEditorScreen.kt:1418:57 'val Icons.Outlined.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:1170:52 'val Icons.Filled.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DriveFileMove.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:1191:52 'val Icons.Filled.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DriveFileMove.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:1209:52 'val Icons.Filled.Sort: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Sort.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:1709:32 'val Icons.Filled.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DriveFileMove.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:1821:68 'val Icons.Filled.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DriveFileMove.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:1942:68 'val Icons.Filled.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DriveFileMove.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/KeePassNativeManagerScreen.kt:3643:51 'val Icons.Outlined.Notes: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Notes.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassOneDriveBrowser.kt:865:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassScreen.kt:249:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassScreen.kt:695:56 'val Icons.Filled.Label: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Label.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassScreen.kt:1117:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassScreen.kt:1652:64 'val Icons.Filled.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.DriveFileMove.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassWebDavBrowser.kt:1079:18 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/MasterPasswordLockingSettingsScreen.kt:120:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/NoteDetailScreen.kt:80:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/NoteDetailScreen.kt:224:50 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/NoteListContentSection.kt:127:57 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/NoteListScreen.kt:661:87 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/OneDriveBackupScreen.kt:623:64 'val Icons.Filled.Login: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Login.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PasskeyListScreen.kt:1881:57 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt:1777:57 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt:2340:46 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt:2341:45 'val Icons.Filled.Chat: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Chat.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PasswordFieldCustomizationScreen.kt:307:61 'val Icons.Filled.PlaylistAdd: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.PlaylistAdd.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PasswordFieldCustomizationScreen.kt:703:30 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PaymentScreen.kt:57:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PaymentScreen.kt:285:41 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PermissionManagementScreen.kt:139:43 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/PermissionManagementScreen.kt:156:43 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/QuickSetupScreen.kt:461:54 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/QuickSetupScreen.kt:750:98 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/QuickSetupScreen.kt:1335:48 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/QuickSetupScreen.kt:1336:47 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/ResetPasswordScreen.kt:72:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SecurityQuestionsSetupScreen.kt:436:26 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes ExposedDropdownMenuAnchorType and enabled parameters.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SecurityQuestionsSetupScreen.kt:480:40 'val Icons.Filled.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.HelpOutline.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SecurityQuestionsSetupScreen.kt:558:58 'val Icons.Filled.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.HelpOutline.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SecurityQuestionsVerificationScreen.kt:299:40 'val Icons.Filled.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.HelpOutline.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SecurityQuestionsVerificationScreen.kt:334:58 'val Icons.Filled.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.HelpOutline.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SendScreen.kt:167:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:867:48 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:1991:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:2006:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:2021:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:2036:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:2051:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:2482:48 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:2817:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SettingsScreen.kt:3009:21 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SupportAuthorScreen.kt:74:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SupportAuthorScreen.kt:257:57 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SupportAuthorScreen.kt:275:57 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/SyncBackupScreen.kt:63:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/TimelineScreen.kt:1110:33 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/TimelineScreen.kt:2728:62 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/screens/TimelineScreen.kt:2935:62 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/theme/Theme.kt:1240:20 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/theme/Theme.kt:1241:20 'var navigationBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/totp/TotpListContent.kt:239:26 'val LocalLifecycleOwner: ProvidableCompositionLocal<LifecycleOwner>' is deprecated. Moved to lifecycle-runtime-compose library in androidx.lifecycle.compose package.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/totp/TotpListContent.kt:823:59 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultOverviewScreen.kt:442:28 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/util/DataExportImportManager.kt:1086:13 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/util/DataExportImportManager.kt:1135:13 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/util/DataExportImportManager.kt:1168:27 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/util/PhotoPickerHelper.kt:260:56 'fun get(p0: String!): Any?' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/util/PhotoPickerHelper.kt:278:48 'fun get(p0: String!): Any?' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/util/StratumDecryptor.kt:73:24 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/OneDriveAuthManager.kt:79:29 'fun acquireTokenSilent(p0: (Array<String!>..Array<out String!>), p1: IAccount, p2: String): IAuthenticationResult!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:6:8 'class NetworkInfo : Any, Parcelable' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:3316:53 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:3323:54 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:4151:71 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:4351:68 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:6276:53 'val activeNetworkInfo: NetworkInfo?' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt:6278:61 'val isConnected: Boolean' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:57:26 'val _passwordLength: MutableStateFlow<Int>' is deprecated. Use passphrase states instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:58:32 'val _firstLetterUppercase: MutableStateFlow<Boolean>' is deprecated. Use passphraseCapitalize instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:59:36 'val _includeNumbersInPassword: MutableStateFlow<Boolean>' is deprecated. Use passphraseIncludeNumber instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:60:27 'val _customSeparator: MutableStateFlow<String>' is deprecated. Use passphraseDelimiter instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:61:40 'val _separatorCountsTowardsLength: MutableStateFlow<Boolean>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:62:25 'val _segmentLength: MutableStateFlow<Int>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:151:42 'val _passwordLength: MutableStateFlow<Int>' is deprecated. Use passphrase states instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:155:52 'val _firstLetterUppercase: MutableStateFlow<Boolean>' is deprecated. Use passphraseCapitalize instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:159:56 'val _includeNumbersInPassword: MutableStateFlow<Boolean>' is deprecated. Use passphraseIncludeNumber instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:163:46 'val _customSeparator: MutableStateFlow<String>' is deprecated. Use passphraseDelimiter instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:167:60 'val _separatorCountsTowardsLength: MutableStateFlow<Boolean>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:171:41 'val _segmentLength: MutableStateFlow<Int>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:175:45 'val _passwordResult: MutableStateFlow<String>' is deprecated. Use passphraseResult instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:226:17 'val _passwordLength: MutableStateFlow<Int>' is deprecated. Use passphrase states instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:227:17 'val _firstLetterUppercase: MutableStateFlow<Boolean>' is deprecated. Use passphraseCapitalize instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:228:17 'val _includeNumbersInPassword: MutableStateFlow<Boolean>' is deprecated. Use passphraseIncludeNumber instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:229:17 'val _customSeparator: MutableStateFlow<String>' is deprecated. Use passphraseDelimiter instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:230:17 'val _separatorCountsTowardsLength: MutableStateFlow<Boolean>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:231:17 'val _segmentLength: MutableStateFlow<Int>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:369:9 'val _passwordLength: MutableStateFlow<Int>' is deprecated. Use passphrase states instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:374:9 'val _firstLetterUppercase: MutableStateFlow<Boolean>' is deprecated. Use passphraseCapitalize instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:379:9 'val _includeNumbersInPassword: MutableStateFlow<Boolean>' is deprecated. Use passphraseIncludeNumber instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:384:9 'val _customSeparator: MutableStateFlow<String>' is deprecated. Use passphraseDelimiter instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:389:9 'val _separatorCountsTowardsLength: MutableStateFlow<Boolean>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:394:9 'val _segmentLength: MutableStateFlow<Int>' is deprecated. No longer used.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:399:9 'val _passwordResult: MutableStateFlow<String>' is deprecated. Use passphraseResult instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/GeneratorViewModel.kt:472:9 'val _passwordResult: MutableStateFlow<String>' is deprecated. Use passphraseResult instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt:584:10 This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt:615:10 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/main/java/takagi/ru/monica/viewmodel/SecurityAnalysisViewModel.kt:152:18 This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :mdbx-engine:mergeDebugShaders UP-TO-DATE
+> Task :mdbx-engine:compileDebugShaders NO-SOURCE
+> Task :mdbx-engine:generateDebugAssets UP-TO-DATE
+> Task :mdbx-engine:packageDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :mdbx-engine:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :mdbx-engine:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:dexBuilderDebug
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :mdbx-engine:mergeDebugJniLibFolders UP-TO-DATE
+> Task :mdbx-engine:mergeDebugNativeLibs UP-TO-DATE
+> Task :mdbx-engine:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:kspDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestKotlin
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/attachments/crypto/BitwardenAttachmentKeyResolverTest.kt:111:30 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/localization/NyaResourceCoverageTest.kt:47:20 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'java.io.File?'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/localization/PolishResourceCoverageTest.kt:71:20 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'java.io.File?'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/repository/MdbxKeyPayloadTest.kt:54:31 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'kotlin.String?'.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/security/DeveloperVerificationIntegrationGuardTest.kt:9:37 Java type mismatch: inferred type is 'kotlin.String?', but 'kotlin.String' was expected.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/service/AccessibilityCredentialFillTest.kt:36:38 'static fun obtain(p0: View!): AccessibilityNodeInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/service/AccessibilityCredentialFillTest.kt:44:42 'static fun obtain(p0: View!): AccessibilityNodeInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/service/AccessibilityCredentialFillTest.kt:140:43 'static fun obtain(): AccessibilityNodeInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/service/AccessibilityCredentialFillTest.kt:174:46 'static fun obtain(p0: View!): AccessibilityNodeInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/service/AccessibilityCredentialFillTest.kt:193:46 'static fun obtain(p0: View!): AccessibilityNodeInfo!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/steam/SteamMiniProfileBackgroundTest.kt:83:25 'fun createTempDir(prefix: String = ..., suffix: String? = ..., directory: File? = ...): File' is deprecated. Avoid creating temporary directories in the default temp location with this function due to too wide permissions on the newly created directory. Use kotlin.io.path.createTempDirectory instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/utils/MdbxSyncSidecarStoreTest.kt:14:20 'fun createTempDir(prefix: String = ..., suffix: String? = ..., directory: File? = ...): File' is deprecated. Avoid creating temporary directories in the default temp location with this function due to too wide permissions on the newly created directory. Use kotlin.io.path.createTempDirectory instead.
+w: file:///C:/Users/joyins/Desktop/Monica-all/Monica-main/Monica%20for%20Android/app/src/test/java/takagi/ru/monica/utils/MdbxSyncSidecarStoreTest.kt:51:20 'fun createTempDir(prefix: String = ..., suffix: String? = ..., directory: File? = ...): File' is deprecated. Avoid creating temporary directories in the default temp location with this function due to too wide permissions on the newly created directory. Use kotlin.io.path.createTempDirectory instead.
+
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :mdbx-engine:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :app:testDebugUnitTest
+
+BUILD SUCCESSFUL in 19m 2s
+67 actionable tasks: 25 executed, 42 up-to-date
+
+
+liberapay-repack.log
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:compileDebugAidl UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig SKIPPED
+> Task :mdbx-engine:preBuild UP-TO-DATE
+> Task :mdbx-engine:preDebugBuild UP-TO-DATE
+> Task :mdbx-engine:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :mdbx-engine:generateDebugResValues UP-TO-DATE
+> Task :mdbx-engine:generateDebugResources UP-TO-DATE
+> Task :mdbx-engine:packageDebugResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:mergeDebugResources
+> Task :app:packageDebugResources
+> Task :app:parseDebugLocalResources
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :mdbx-engine:extractDeepLinksDebug UP-TO-DATE
+> Task :mdbx-engine:processDebugManifest UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :mdbx-engine:compileDebugLibraryResources UP-TO-DATE
+> Task :mdbx-engine:parseDebugLocalResources UP-TO-DATE
+> Task :mdbx-engine:generateDebugRFile UP-TO-DATE
+warn: removing resource takagi.ru.monica:string/storage_picker_edit_multi_append_hint without required default value.
+
+warn: removing resource takagi.ru.monica:string/storage_picker_edit_multi_append_hint without required default value.
+
+warn: removing resource takagi.ru.monica:string/storage_picker_edit_multi_append_hint without required default value.
+
+> Task :app:processDebugResources
+> Task :mdbx-engine:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :mdbx-engine:compileDebugKotlin SKIPPED
+> Task :mdbx-engine:javaPreCompileDebug UP-TO-DATE
+> Task :mdbx-engine:compileDebugJavaWithJavac NO-SOURCE
+> Task :mdbx-engine:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :app:kspDebugKotlin SKIPPED
+> Task :app:compileDebugKotlin SKIPPED
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :mdbx-engine:mergeDebugShaders UP-TO-DATE
+> Task :mdbx-engine:compileDebugShaders NO-SOURCE
+> Task :mdbx-engine:generateDebugAssets UP-TO-DATE
+> Task :mdbx-engine:packageDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :mdbx-engine:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :mdbx-engine:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:dexBuilderDebug UP-TO-DATE
+> Task :app:mergeProjectDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :mdbx-engine:mergeDebugJniLibFolders UP-TO-DATE
+> Task :mdbx-engine:mergeDebugNativeLibs UP-TO-DATE
+> Task :mdbx-engine:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 43s
+53 actionable tasks: 7 executed, 46 up-to-date
+
+
+liberapay-repack-hashes.txt
+PASS: 1992 source/BuildConfig/R class hashes unchanged
+
+
+liberapay-plus-intent.log
+      Intent { act=android.intent.action.VIEW dat=https://liberapay.com/JoyinJoester flg=0x800000 cmp=com.android.chrome/com.google.android.apps.chrome.IntentDispatcher }

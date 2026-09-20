@@ -1296,7 +1296,15 @@ fun CardWalletScreen(
                                             isSelectionMode = true
                                         },
                                         onManage = { managedStackId = displayItem.stack.id },
-                                        onCoverBounds = { stackCoverBounds[displayItem.stack.id] = it },
+                                        // Keep the settled list coordinate while a card detail is covering the wallet.
+                                        // During the detail transition the list is translated; recording
+                                        // that transient window position makes the stack return a few
+                                        // pixels down/right after the detail is dismissed.
+                                        onCoverBounds = { bounds ->
+                                            if (!isWalletDetailVisible) {
+                                                stackCoverBounds[displayItem.stack.id] = bounds
+                                            }
+                                        },
                                         coverVisible = expandedStackId != displayItem.stack.id || stackCoverRevealed ||
                                             (isWalletDetailVisible && hasOpenedStackDetail),
                                         controlsVisible = expandedStackId != displayItem.stack.id ||

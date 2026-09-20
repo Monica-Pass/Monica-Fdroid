@@ -4324,20 +4324,30 @@ class KeePassKdbxService(
         plainPassword: String,
         customFields: List<KeePassCustomFieldData> = emptyList()
     ): Entry {
-        val base = buildPasswordEntryFieldPatch(entry, plainPassword, customFields).applyTo(existingEntry)
+        val base = buildPasswordEntryFieldPatch(entry, plainPassword, customFields, existingEntry).applyTo(existingEntry)
         return applyPasswordEntryPresentation(base, entry)
     }
 
     private fun buildPasswordEntryFieldPatch(
         entry: PasswordEntry,
         plainPassword: String,
-        customFields: List<KeePassCustomFieldData> = emptyList()
+        customFields: List<KeePassCustomFieldData> = emptyList(),
+        existingEntry: Entry? = null
     ): KeePassEntryFieldPatch {
         val replacementFields = buildEntryFields(entry, plainPassword, customFields)
         return KeePassEntryFieldPatch.fromEntryFields(
             replacementFields = replacementFields,
-            removeManagedField = KeePassFieldRegistry::isPasswordEntryOverlayField,
-            removeFieldNames = replacementFields.keys + customFields.map { it.title.trim() }
+            removeManagedField = { name ->
+                KeePassFieldRegistry.isPasswordEntryOverlayField(name) ||
+                    (entry.loginType == takagi.ru.monica.data.model.GpgEntryFields.TYPE &&
+                        takagi.ru.monica.data.model.GpgEntryFields.owns(name))
+            },
+            // Explicit removals survive conversion to the persisted change-set patch.
+            // GPG custom fields are not part of the generic PASSWORD managed scope.
+            removeFieldNames = replacementFields.keys + customFields.map { it.title.trim() } +
+                if (entry.loginType == takagi.ru.monica.data.model.GpgEntryFields.TYPE) {
+                    existingEntry?.fields?.keys.orEmpty().filter(takagi.ru.monica.data.model.GpgEntryFields::owns)
+                } else emptyList()
         )
     }
 
@@ -4853,7 +4863,7 @@ class KeePassKdbxService(
             )
         }
 
-        val fieldPatch = buildPasswordEntryFieldPatch(entry, plainPassword, customFields)
+        val fieldPatch = buildPasswordEntryFieldPatch(entry, plainPassword, customFields, matchedContext.entry)
         val resolvedDatabaseId = requireNotNull(databaseId) {
             "Foreground KeePass password update requires a database id"
         }
@@ -5818,6 +5828,7 @@ class KeePassKdbxService(
             }
         )
         val (resolvedLoginType, resolvedWifiJson) = when {
+            getFieldValue(entry, "monica_gpg_type", resolutionContext) == "GPG_KEY" -> "GPG_KEY" to ""
             monicaLoginType.equals("WIFI", ignoreCase = true) && monicaWifiJson.isNotBlank() ->
                 "WIFI" to monicaWifiJson
             monicaLoginType.equals("WIFI", ignoreCase = true) -> {

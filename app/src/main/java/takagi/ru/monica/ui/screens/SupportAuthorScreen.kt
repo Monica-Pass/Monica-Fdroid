@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -277,6 +278,23 @@ fun SupportAuthorScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(stringResource(R.string.support_via_afdian))
+                    }
+
+                    FilledTonalButton(
+                        onClick = { openLink("https://liberapay.com/JoyinJoester") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Euro,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.payment_platform_liberapay))
                     }
                 }
             }

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="bitwarden_message_delete_queue_failed">"Impossibile mettere in coda la cancellazione di Bitwarden"</string>
+    <string name="bitwarden_message_conflict_detail">"Questa voce è cambiata sia localmente che sul server"</string>
+    <string name="bitwarden_message_empty_vault">"Il server non ha restituito dati, ma rimangono voci locali %1$d. La sincronizzazione viene interrotta per proteggere i dati. Controllare il server e l\'account prima di continuare."</string>
+    <string name="runtime_kdbx_decode_failed">"Impossibile leggere il database KDBX"</string>
+</resources>

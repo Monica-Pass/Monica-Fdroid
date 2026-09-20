@@ -24,6 +24,7 @@ object LocaleHelper {
             Language.SPANISH -> Locale("es", "ES")
             Language.FRENCH -> Locale.FRENCH
             Language.POLISH -> Locale.forLanguageTag("pl")
+            Language.ITALIAN -> Locale.ITALIAN
             Language.NYA -> Locale("zh", "NY")
         }
 
@@ -118,6 +119,7 @@ object LocaleHelper {
             "es" -> Language.SPANISH
             "fr" -> Language.FRENCH
             "pl" -> Language.POLISH
+            "it" -> Language.ITALIAN
             else -> Language.SYSTEM
         }
     }

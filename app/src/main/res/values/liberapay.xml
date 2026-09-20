@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand name and international currency identifiers apply in every locale. -->
+    <string name="payment_platform_liberapay" translatable="false">Liberapay · EUR</string>
+</resources>

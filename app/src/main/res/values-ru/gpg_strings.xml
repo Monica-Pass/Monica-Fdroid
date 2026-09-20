@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">Ключ GPG</string>
+    <string name="gpg_entry_title">Название</string>
+    <string name="gpg_name">Имя</string>
+    <string name="gpg_email">Электронная почта (необязательно)</string>
+    <string name="gpg_error">Не удалось обработать ключ. Повторите попытку.</string>
+    <string name="gpg_storage">Места хранения (%1$d)</string>
+    <string name="gpg_generate">Создать ключ</string>
+    <string name="gpg_import">Импортировать ключ</string>
+    <string name="gpg_save">Сохранить в хранилище</string>
+    <string name="gpg_no_expiry">Без срока действия</string>
+    <string name="gpg_days">%1$d дн.</string>
+    <string name="gpg_passphrase">Парольная фраза (необязательно)</string>
+    <string name="gpg_copy_fingerprint">Копировать отпечаток</string>
+    <string name="gpg_copy_public">Копировать открытый ключ</string>
+    <string name="gpg_copy_private">Копировать закрытый ключ</string>
+    <string name="gpg_export_public">Экспортировать открытый ключ</string>
+    <string name="gpg_export_private">Экспортировать закрытый ключ</string>
+    <string name="gpg_show_private">Показать закрытый ключ</string>
+    <string name="gpg_hide_private">Скрыть закрытый ключ</string>
+    <string name="gpg_add_title">Новый ключ GPG</string>
+    <string name="gpg_edit_title">Изменить ключ GPG</string>
+    <string name="gpg_empty">Создайте или импортируйте ключ</string>
+    <string name="gpg_ready">Ключ добавлен</string>
+    <string name="gpg_options">Параметры создания</string>
+    <string name="gpg_expiry">Срок действия</string>
+    <string name="gpg_actions">Действия с ключом GPG</string>
+    <string name="gpg_export_pair">Экспортировать пару ключей</string>
+    <string name="gpg_create_entry">Создать запись GPG</string>
+    <string name="gpg_name_invalid">Введите имя от 1 до 128 символов без угловых скобок и переносов строк.</string>
+    <string name="gpg_email_invalid">Введите корректный адрес почты или оставьте поле пустым.</string>
+    <string name="gpg_generate_error">Не удалось создать ключ. Повторите попытку.</string>
+    <string name="gpg_import_error">Ошибка импорта. Выберите один корректный файл ключа OpenPGP размером до 1 МБ.</string>
+    <string name="gpg_load_error">Не удалось прочитать ключ. Проверьте хранилище и откройте запись снова.</string>
+    <string name="gpg_save_error">Не удалось сохранить ключ. Проверьте доступ на запись в хранилище.</string>
+    <string name="gpg_export_error">Не удалось экспортировать ключ. Выберите место с доступом на запись.</string>
+</resources>

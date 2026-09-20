@@ -158,6 +158,8 @@ data class PasswordEntry(
      * 是否为 WIFI 类型条目
      */
     fun isWifiEntry(): Boolean = loginType.equals("WIFI", ignoreCase = true)
+
+    fun isGpgKeyEntry(): Boolean = loginType.equals("GPG_KEY", ignoreCase = true)
     
     /**
      * 获取SSO提供商枚举

@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="attachment_error_bitwarden_locked">"Il vault Bitwarden è bloccato o la sessione è scaduta. Sbloccalo o accedi di nuovo."</string>
+    <string name="attachment_error_remote_data">"Il server ha restituito informazioni incomplete sull\'allegato. Sincronizza il vault e riprova."</string>
+    <string name="attachment_error_unsupported_encryption">"Questo allegato utilizza un formato di crittografia non supportato (tipo %1$d). Esportarlo con il client ufficiale e caricarlo di nuovo."</string>
+    <string name="attachment_error_unknown">"L\'operazione di allegato non è riuscita. Riprovare."</string>
+    <string name="attachment_error_decryption_failed">"Decrittografia dell\'allegato o verifica dell\'integrità non riuscita. Sincronizza il vault e riprova."</string>
+    <string name="password_batch_attachment_failure">"Non è stato possibile trasferire allegati per %1$d item(s). %2$s"</string>
+</resources>

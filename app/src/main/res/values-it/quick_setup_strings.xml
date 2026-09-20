@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="qs_step_presets_title">"Inizia con un preset"</string>
+    <string name="qs_step_presets_subtitle">"Scegli un layout. Puoi regolarlo nei passaggi successivi."</string>
+    <string name="qs_dock_subtitle">"Scegli le tue pagine Dock e il loro ordine."</string>
+    <string name="qs_step_customize_title">"Ottimizza le tue pagine"</string>
+    <string name="qs_step_customize_subtitle">"Espandere solo ciò che si desidera modificare. Queste opzioni sono separate dal Dock."</string>
+    <string name="qs_step_protect_title">"Sicurezza &amp; riempimento automatico"</string>
+    <string name="qs_step_protect_subtitle">"Proteggi il tuo archivio, quindi rendi più facile l\'accesso."</string>
+    <string name="qs_ready_title">"Pronti ad andare"</string>
+    <string name="qs_ready_subtitle">"Ecco il tuo layout. Puoi modificarlo in qualsiasi momento in Impostazioni."</string>
+    <string name="qs_save_failed">"Impossibile salvare le impostazioni. Riprova."</string>
+    <string name="qs_use_preset">"Usa preset"</string>
+    <string name="qs_enter_monica">"Apri Monica"</string>
+    <string name="qs_current_layout">"Disposizione corrente"</string>
+    <string name="qs_data_optional">"È possibile collegare un database o importare dati ora o farlo in seguito in Impostazioni."</string>
+    <string name="qs_preset_bitwarden_preview">"Bitwarden · Anteprima"</string>
+    <string name="qs_preset_bitwarden_preview_desc">"Apri la panoramica del vault, con Invia e Generatore nel Dock."</string>
+    <string name="qs_preset_bitwarden_list">"Bitwarden · Elenco"</string>
+    <string name="qs_preset_bitwarden_list_desc">"Vai direttamente alla lista dei vault, con Invia e Generatore nel Dock."</string>
+    <string name="qs_preset_authenticator">"Autenticatore"</string>
+    <string name="qs_preset_authenticator_desc">"Authenticator e Steam, focalizzati sui codici di verifica."</string>
+    <string name="qs_preset_paged">"Pagine separate"</string>
+    <string name="qs_preset_paged_desc">"Password, Authenticator, Wallet e Note sulle proprie pagine."</string>
+    <string name="qs_preset_everyday">"Tutti i giorni"</string>
+    <string name="qs_preset_everyday_desc">"Tenere le password, l\'autenticazione e il generatore a portata di mano."</string>
+    <string name="qs_preset_minimal">"Minimo"</string>
+    <string name="qs_preset_minimal_desc">"Basta password e generatore per un Dock più semplice."</string>
+    <string name="qs_keep_layout">"Mantieni il layout corrente"</string>
+    <string name="qs_keep_layout_desc">"Continuare con il layout esistente e regolarlo secondo necessità."</string>
+    <string name="qs_presets_hint">"Le impostazioni rimangono nel Dock. I preset funzionano con qualsiasi database; collega il tuo nel passaggio dei dati."</string>
+    <string name="qs_move_up">"Muoviti"</string>
+    <string name="qs_move_down">"Spostati verso il basso"</string>
+    <string name="qs_settings_kept">"Sempre disponibile"</string>
+    <string name="qs_vault_overview">"Avvia il archivio con la panoramica"</string>
+    <string name="qs_import_from_apps">"Importa da un\'altra app"</string>
+    <string name="qs_import_from_apps_desc">"Trasferire password e passkey, quindi tornare alla configurazione."</string>
+</resources>

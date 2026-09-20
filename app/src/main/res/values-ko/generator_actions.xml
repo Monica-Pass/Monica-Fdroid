@@ -1,0 +1,4 @@
+<resources>
+    <string name="generator_create_username">이 사용자 이름으로 항목 만들기</string>
+    <string name="generator_create_password">이 비밀번호로 항목 만들기</string>
+</resources>

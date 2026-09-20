@@ -482,5 +482,6 @@ enum class GeneratorType {
     PASSWORD,   // 原有：基于单词的密码生成（保持兼容）
     PASSPHRASE, // 新增：Diceware 密码短语生成器
     PIN,        // 原有：PIN码
+    GPG_KEY,
     SSH_KEY     // 新增：SSH 密钥（RSA / Ed25519）
 }

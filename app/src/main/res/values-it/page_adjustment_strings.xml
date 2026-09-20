@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="wallet_stack_loop_title">"Loop pile di carte"</string>
+    <string name="wallet_stack_loop_desc">"Scorri attraverso una pila di carte in entrambe le direzioni. L\'ultima carta si collega alla prima."</string>
+    <string name="page_adjustment_preview_games">"Giochi"</string>
+    <string name="page_adjustment_preview_folder">"Cartella 1"</string>
+    <string name="page_adjustment_preview_subfolder">"Sottocartella"</string>
+</resources>

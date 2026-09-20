@@ -1,0 +1,4 @@
+<resources>
+    <string name="generator_create_username">Create entry with this username</string>
+    <string name="generator_create_password">Create entry with this password</string>
+</resources>

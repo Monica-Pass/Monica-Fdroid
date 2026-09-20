@@ -42,7 +42,8 @@ enum class Language {
     FRENCH,
     POLISH,
     NYA,
-    TRADITIONAL_CHINESE
+    TRADITIONAL_CHINESE,
+    ITALIAN
 }
 
 enum class ProgressBarStyle {

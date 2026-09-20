@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">Clé GPG</string>
+    <string name="gpg_entry_title">Titre</string>
+    <string name="gpg_name">Nom</string>
+    <string name="gpg_email">Adresse e-mail (facultative)</string>
+    <string name="gpg_error">Impossible de traiter la clé. Réessayez.</string>
+    <string name="gpg_storage">Emplacements (%1$d)</string>
+    <string name="gpg_generate">Générer une clé</string>
+    <string name="gpg_import">Importer une clé</string>
+    <string name="gpg_save">Enregistrer dans le coffre</string>
+    <string name="gpg_no_expiry">Sans expiration</string>
+    <string name="gpg_days">%1$d jours</string>
+    <string name="gpg_passphrase">Phrase secrète (facultative)</string>
+    <string name="gpg_copy_fingerprint">Copier l’empreinte</string>
+    <string name="gpg_copy_public">Copier la clé publique</string>
+    <string name="gpg_copy_private">Copier la clé privée</string>
+    <string name="gpg_export_public">Exporter la clé publique</string>
+    <string name="gpg_export_private">Exporter la clé privée</string>
+    <string name="gpg_show_private">Afficher la clé privée</string>
+    <string name="gpg_hide_private">Masquer la clé privée</string>
+    <string name="gpg_add_title">Nouvelle clé GPG</string>
+    <string name="gpg_edit_title">Modifier la clé GPG</string>
+    <string name="gpg_empty">Générer ou importer une clé</string>
+    <string name="gpg_ready">Clé ajoutée</string>
+    <string name="gpg_options">Options de génération</string>
+    <string name="gpg_expiry">Expiration</string>
+    <string name="gpg_actions">Actions de la clé GPG</string>
+    <string name="gpg_export_pair">Exporter la paire de clés</string>
+    <string name="gpg_create_entry">Créer une entrée GPG</string>
+    <string name="gpg_name_invalid">Saisissez un nom de 1 à 128 caractères sans chevrons ni sauts de ligne.</string>
+    <string name="gpg_email_invalid">Saisissez une adresse e-mail valide ou laissez ce champ vide.</string>
+    <string name="gpg_generate_error">Impossible de générer la clé. Réessayez.</string>
+    <string name="gpg_import_error">Importation impossible. Sélectionnez un fichier de clé OpenPGP valide de 1 Mo maximum.</string>
+    <string name="gpg_load_error">Lecture impossible. Vérifiez le coffre et rouvrez l’entrée.</string>
+    <string name="gpg_save_error">Enregistrement impossible. Vérifiez que le coffre autorise l’écriture.</string>
+    <string name="gpg_export_error">Exportation impossible. Choisissez un emplacement accessible en écriture.</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="keepass_conflict_review">"Rivedere e fondere"</string>
+    <string name="keepass_conflict_banner_title">"I cambiamenti devono fondersi"</string>
+    <string name="keepass_conflict_banner_summary">"Rivedere entrambe le versioni per continuare la sincronizzazione."</string>
+    <string name="keepass_conflict_merge_sync">"Unisci e sincronizza"</string>
+    <string name="keepass_conflict_comparing">"Confronto di entrambe le versioni…"</string>
+    <string name="keepass_conflict_merging">"Fusione e sincronizzazione…"</string>
+    <string name="keepass_conflict_refresh">"Aggiorna confronto"</string>
+    <string name="keepass_conflict_merge_help">"Le modifiche a voci o campi diversi sono combinate. Scegli una versione quando lo stesso campo è cambiato su entrambi i lati."</string>
+    <string name="keepass_conflict_auto_merge">"Pronti a fondersi"</string>
+    <string name="keepass_conflict_other_options">"Altre opzioni"</string>
+    <string name="keepass_conflict_recovery_hint">"Le versioni originali sono conservate in copie di recupero del database."</string>
+    <string name="keepass_conflict_keep_local_confirm">"Sostituisci il database remoto con l\'intera versione locale? Le modifiche solo in remoto rimarranno in una copia di ripristino."</string>
+    <string name="keepass_conflict_use_remote_confirm">"Sostituisci il database locale con l\'intera versione remota? Le modifiche locali rimarranno in una copia di ripristino."</string>
+    <string name="keepass_conflict_selected_count">"%1$d di conflitti %2$d selezionati"</string>
+    <string name="keepass_conflict_no_changes">"Entrambe le versioni contengono gli stessi dati."</string>
+    <string name="keepass_conflict_protected_value">"Valore protetto"</string>
+    <string name="keepass_conflict_properties_value">"Proprietà di questa versione"</string>
+    <string name="keepass_conflict_kind_entry">"Entrata"</string>
+    <string name="keepass_conflict_kind_group">"Cartella"</string>
+    <string name="keepass_conflict_kind_metadata">"Impostazioni del database"</string>
+    <string name="keepass_conflict_kind_deleted_object">"Cancellazione record"</string>
+    <string name="keepass_conflict_kind_binary">"Allegati"</string>
+    <string name="keepass_conflict_kind_icon">"Icona personalizzata"</string>
+    <string name="keepass_conflict_change_added">"Aggiunto"</string>
+    <string name="keepass_conflict_change_modified">"Modificato"</string>
+    <string name="keepass_conflict_change_moved">"Spostato"</string>
+    <string name="keepass_conflict_change_deleted">"Eliminato"</string>
+    <string name="keepass_conflict_change_unchanged">"immutato"</string>
+</resources>

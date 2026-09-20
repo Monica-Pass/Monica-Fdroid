@@ -2065,6 +2065,7 @@ class MdbxVaultStore(
             .put("bound_note_room_id", entry.boundNoteId)
             .put("bound_note_entry_id", resolveBoundNoteEntryId(entry))
             .put("login_type", entry.loginType)
+            .put("ssh_key_data", entry.sshKeyData)
             .put(
                 "authenticator_key",
                 portableSensitiveValueForMdbx(

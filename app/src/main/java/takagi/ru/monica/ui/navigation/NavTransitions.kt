@@ -12,7 +12,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 
 /**
- * Monica Android 导航过渡动画，对齐 Keyguard 的 NavigationAnimation 实现。
+ * Monica Android 导航过渡动画。短过渡让复杂编辑页先显示首帧，避免新建操作出现明显停顿。
  *
  * 进入（GoForward）：新页面从右侧 1/8 屏宽滑入 + fadeIn，
  *                   旧页面向左 1/12 屏宽滑出 + fadeOut。
@@ -22,11 +22,11 @@ import androidx.compose.animation.slideOutHorizontally
  * easing 使用 CubicBezierEasing(0.6, 0.0, 0.4, 1.0)，与 Keyguard 一致。
  */
 
-private const val DURATION_FORWARD = 300
-private const val DURATION_BACK = 280
-internal const val EASY_NOTES_FADE_DURATION = 300
-internal const val EASY_NOTES_SCALE_DURATION = 400
-internal const val EASY_NOTES_INITIAL_SCALE = 0.9f
+private const val DURATION_FORWARD = 170
+private const val DURATION_BACK = 150
+internal const val EASY_NOTES_FADE_DURATION = 160
+internal const val EASY_NOTES_SCALE_DURATION = 180
+internal const val EASY_NOTES_INITIAL_SCALE = 0.98f
 
 private val navEasing = CubicBezierEasing(0.6f, 0.0f, 0.4f, 1.0f)
 

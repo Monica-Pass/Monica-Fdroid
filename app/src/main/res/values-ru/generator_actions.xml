@@ -1,0 +1,4 @@
+<resources>
+    <string name="generator_create_username">Создать запись с этим именем пользователя</string>
+    <string name="generator_create_password">Создать запись с этим паролем</string>
+</resources>

@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="export_message_empty">"Il file di backup esportato è vuoto"</string>
+    <string name="export_message_empty_zip">"Il backup ZIP non ha contenuti"</string>
+    <string name="export_message_open_failed">"Impossibile aprire la destinazione di esportazione"</string>
+    <string name="export_message_incomplete">"L\'esportazione è incompleta: %1$d/%2$d bytes"</string>
+    <string name="export_message_invalid_encrypted">"Il backup scritto ha un formato crittografato non valido"</string>
+    <string name="export_message_verify_failed">"Impossibile verificare il file esportato"</string>
+    <string name="export_message_backup_summary">"Backup esportato: %1$d password e %2$d immagini"</string>
+    <string name="import_message_aegis_unencrypted">"Questa importazione ha bisogno di un\'esportazione Aegis JSON non crittografata"</string>
+    <string name="import_message_aegis_missing">"File Aegis non valido: mancante %1$s"</string>
+    <string name="import_message_aegis_empty_slots">"File Aegis non valido: gli slot sono vuoti"</string>
+    <string name="import_message_aegis_slot_type">"Tipo di slot Aegis non supportato: %1$s"</string>
+    <string name="import_message_aegis_no_totp">"Nessuna voce TOTP valida trovata nel file Aegis"</string>
+    <string name="import_message_aegis_failed">"Impossibile importare il file Aegis: %1$s"</string>
+    <string name="import_message_key_length">"La chiave crittografata ha una lunghezza non valida"</string>
+    <string name="import_message_steam_missing">"Dati di Steam Guard non validi: mancante %1$s"</string>
+    <string name="import_message_steam_device_id">"ID dispositivo non valido. Formato atteso: android:xxxx"</string>
+    <string name="import_message_steam_secret">"Formato shared_secret di Steam non valido"</string>
+    <string name="import_message_steam_exists">"Questo autenticatore Steam Guard esiste già"</string>
+    <string name="export_message_empty_mafile">"Il maFile esportato è vuoto"</string>
+    <string name="crypto_message_encrypt_failed">"Crittografia non riuscita: %1$s"</string>
+    <string name="crypto_message_decrypt_failed">"Decrittografia non riuscita: %1$s"</string>
+    <string name="crypto_message_file_too_small">"Il file crittografato è troppo piccolo e può essere danneggiato"</string>
+    <string name="crypto_message_invalid_file">"Formato file crittografato non valido"</string>
+    <string name="crypto_message_password_or_corrupt">"Password errata o dati crittografati danneggiati"</string>
+    <string name="crypto_message_invalid_text">"Formato di testo crittografato non valido"</string>
+    <string name="photo_message_camera_failed">"Impossibile aprire la fotocamera: %1$s"</string>
+    <string name="photo_message_gallery_missing">"Non è disponibile nessuna app per la galleria"</string>
+    <string name="photo_message_gallery_failed">"Impossibile aprire la galleria: %1$s"</string>
+    <string name="photo_message_data_failed">"Impossibile leggere l\'immagine restituita: %1$s"</string>
+    <string name="photo_message_file_missing">"Il file della foto è vuoto o mancante"</string>
+    <string name="photo_message_not_selected">"Nessuna immagine selezionata"</string>
+</resources>

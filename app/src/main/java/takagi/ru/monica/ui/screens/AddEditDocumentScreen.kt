@@ -105,7 +105,7 @@ fun AddEditDocumentScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val database = remember { PasswordDatabase.getDatabase(context) }
-    val securityManager = remember { SecurityManager(context) }
+    val securityManager = takagi.ru.monica.ui.rememberUiSecurityManager()
     val bitwardenRepository = remember { BitwardenRepository.getInstance(context) }
     val localKeePassViewModel: LocalKeePassViewModel = viewModel {
         LocalKeePassViewModel(
@@ -116,7 +116,7 @@ fun AddEditDocumentScreen(
     }
     val settingsManager = remember { SettingsManager(context) }
     val appSettings by settingsManager.settingsFlow.collectAsState(initial = AppSettings())
-    val commonAccountPreferences = remember { CommonAccountPreferences(context) }
+    val commonAccountPreferences = remember(context, securityManager) { CommonAccountPreferences(context, securityManager) }
     
     var title by rememberSaveable { mutableStateOf("") }
     var documentNumber by rememberSaveable { mutableStateOf("") }

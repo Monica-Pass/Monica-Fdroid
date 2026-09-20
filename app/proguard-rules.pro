@@ -42,8 +42,25 @@
 # CameraX
 -dontwarn androidx.camera.**
 
+# Google Play services (Auth / Credentials)
+-dontwarn com.google.android.gms.**
+
+# ProviderFactory reads this class name from Manifest metadata, then reflects
+# its public Context constructor. Provider Events beta01 has no consumer rule
+# for it; without this rule R8 removes the adapter and both transfer APIs fail.
+-keep class androidx.credentials.providerevents.playservices.ProviderEventsApiProviderPlayServices {
+    public <init>(android.content.Context);
+}
+
 # ZXing
 -dontwarn com.google.zxing.**
+
+# Bouncy Castle discovers algorithm Mappings and JCA service implementations by
+# class name. R8 otherwise removes/renames them, so release GPG generation fails
+# with NoSuchAlgorithmException (RSA for provider BC), although debug works.
+# Preserve the provider adapters; the remaining crypto/OpenPGP code can shrink.
+-keep class org.bouncycastle.jcajce.provider.** { *; }
+-keep class org.bouncycastle.jce.provider.** { *; }
 
 # WebDAV (Sardine)
 -dontwarn com.thegrizzlylabs.sardineandroid.**
@@ -61,12 +78,11 @@
     public static final ** CREATOR;
 }
 
-# Rust JNI uses statically exported Java_* symbols, so R8 must not rename these facades.
+# Rust JNI uses statically exported Java_* symbols, so R8 must not rename this facade.
 -keep class takagi.ru.monica.rustcore.RustPasswordListCore { *; }
 -keep class takagi.ru.monica.rustcore.RustListSortCore { *; }
 -keep class takagi.ru.monica.rustcore.RustWalletStackCore { *; }
 -keep class takagi.ru.monica.rustcore.RustVaultPickerCore { *; }
--keep class takagi.ru.monica.rustcore.RustVaultOverviewCore { *; }
 -keep class takagi.ru.monica.rustcore.RustAutofillCore { *; }
 
 # 移除日志 (Release构建)

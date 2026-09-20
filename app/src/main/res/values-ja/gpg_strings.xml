@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">GPG 鍵</string>
+    <string name="gpg_entry_title">タイトル</string>
+    <string name="gpg_name">名前</string>
+    <string name="gpg_email">メールアドレス（任意）</string>
+    <string name="gpg_error">鍵を処理できませんでした。再試行してください。</string>
+    <string name="gpg_storage">保存先（%1$d）</string>
+    <string name="gpg_generate">鍵を生成</string>
+    <string name="gpg_import">鍵をインポート</string>
+    <string name="gpg_save">保管庫に保存</string>
+    <string name="gpg_no_expiry">有効期限なし</string>
+    <string name="gpg_days">%1$d 日</string>
+    <string name="gpg_passphrase">パスフレーズ（任意）</string>
+    <string name="gpg_copy_fingerprint">フィンガープリントをコピー</string>
+    <string name="gpg_copy_public">公開鍵をコピー</string>
+    <string name="gpg_copy_private">秘密鍵をコピー</string>
+    <string name="gpg_export_public">公開鍵をエクスポート</string>
+    <string name="gpg_export_private">秘密鍵をエクスポート</string>
+    <string name="gpg_show_private">秘密鍵を表示</string>
+    <string name="gpg_hide_private">秘密鍵を隠す</string>
+    <string name="gpg_add_title">GPG 鍵を新規作成</string>
+    <string name="gpg_edit_title">GPG 鍵を編集</string>
+    <string name="gpg_empty">鍵を生成またはインポート</string>
+    <string name="gpg_ready">鍵を追加しました</string>
+    <string name="gpg_options">生成オプション</string>
+    <string name="gpg_expiry">有効期限</string>
+    <string name="gpg_actions">GPG 鍵の操作</string>
+    <string name="gpg_export_pair">鍵ペアをエクスポート</string>
+    <string name="gpg_create_entry">GPG エントリを新規作成</string>
+    <string name="gpg_name_invalid">山括弧や改行を含まない 1～128 文字の名前を入力してください。</string>
+    <string name="gpg_email_invalid">有効なメールアドレスを入力するか、空欄にしてください。</string>
+    <string name="gpg_generate_error">鍵を生成できませんでした。再試行してください。</string>
+    <string name="gpg_import_error">インポートできません。有効な OpenPGP 鍵ファイルを 1 つ選択してください（最大 1 MB）。</string>
+    <string name="gpg_load_error">鍵を読み取れません。保管庫を確認してエントリを開き直してください。</string>
+    <string name="gpg_save_error">保存できません。選択した保管庫が書き込み可能か確認してください。</string>
+    <string name="gpg_export_error">エクスポートできません。書き込み可能な保存先を選択してください。</string>
+</resources>

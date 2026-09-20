@@ -156,7 +156,7 @@ class AutofillUnlockActivity : AppCompatActivity() {
             )
             val passwordIdsInOrder = pendingRequest.passwordIds
             val passwords = withContext(Dispatchers.IO) {
-                val byId = passwordRepository.getAllPasswordEntries().first().associateBy { it.id }
+                val byId = passwordRepository.getAllPasswordEntries().first().filterNot { it.isGpgKeyEntry() }.associateBy { it.id }
                 passwordIdsInOrder.mapNotNull(byId::get)
             }
             val filledData = FilledDataBuilderNg(

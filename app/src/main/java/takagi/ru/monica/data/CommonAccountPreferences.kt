@@ -25,9 +25,10 @@ private val Context.commonAccountDataStore: DataStore<Preferences> by preference
  * 
  * 存储用户常用的邮箱、手机号等信息，方便在新建条目时快速填入
  */
-class CommonAccountPreferences(private val context: Context) {
-    private val appContext = context.applicationContext
-    private val securityManager = SecurityManager(appContext)
+class CommonAccountPreferences(
+    private val context: Context,
+    private val securityManager: SecurityManager = SecurityManager(context.applicationContext)
+) {
     
     companion object {
         private val KEY_DEFAULT_EMAIL = stringPreferencesKey("default_email")

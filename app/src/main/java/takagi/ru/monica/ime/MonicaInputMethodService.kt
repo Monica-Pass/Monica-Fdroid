@@ -706,7 +706,7 @@ class MonicaInputMethodService : InputMethodService() {
                 bitwardenVaults = bitwardenVaults
             )
             val passwordEntries = database.passwordEntryDao()
-                .getAllPasswordEntriesSync()
+                .getAllPasswordEntriesSync().filterNot { it.isGpgKeyEntry() }
             val passwordResults = passwordEntries
                 .mapNotNull { entry ->
                     entry.toImeEntryOrNull(

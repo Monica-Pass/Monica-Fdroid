@@ -1,9 +1,10 @@
 package takagi.ru.monica.data.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 
 @Serializable
 data class SshKeyData(
@@ -13,7 +14,9 @@ data class SshKeyData(
     val privateKeyOpenSsh: String = "",
     val fingerprintSha256: String = "",
     val comment: String = "",
-    val format: String = FORMAT_OPENSSH
+    val format: String = FORMAT_OPENSSH,
+    val schema: String = SCHEMA_V1,
+    @Transient val additionalFields: Map<String, JsonElement> = emptyMap()
 ) {
     fun isEmpty(): Boolean {
         return algorithm.isBlank() &&
@@ -23,6 +26,7 @@ data class SshKeyData(
     }
 
     companion object {
+        const val SCHEMA_V1 = "monica.ssh-key.v1"
         const val ALGORITHM_ED25519 = "ED25519"
         const val ALGORITHM_RSA = "RSA"
         const val FORMAT_OPENSSH = "OPENSSH"
@@ -37,13 +41,19 @@ object SshKeyDataCodec {
 
     fun decode(raw: String?): SshKeyData? {
         if (raw.isNullOrBlank()) return null
-        return runCatching { json.decodeFromString<SshKeyData>(raw) }
+        return runCatching {
+            val fields = json.parseToJsonElement(raw).jsonObject
+            json.decodeFromJsonElement<SshKeyData>(fields).let { data ->
+                val known = json.encodeToJsonElement(data).jsonObject.keys
+                data.copy(additionalFields = fields.filterKeys { it !in known })
+            }
+        }
             .getOrNull()
             ?.takeUnless { it.isEmpty() }
     }
 
     fun encode(data: SshKeyData?): String {
         if (data == null || data.isEmpty()) return ""
-        return json.encodeToString(data)
+        return JsonObject(data.additionalFields + json.encodeToJsonElement(data).jsonObject).toString()
     }
 }

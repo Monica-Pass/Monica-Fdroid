@@ -1,5 +1,6 @@
 package takagi.ru.monica.transfer
 
+import takagi.ru.monica.repository.readMdbxSshKeyData
 import android.content.Context
 import app.keemobile.kotpass.database.modifiers.binaries
 import kotlinx.coroutines.Dispatchers
@@ -171,6 +172,7 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                             else security.decryptDataIfMonicaCiphertext(data.optString("password"))),
                         notes = data.optString("notes"), appPackageName = data.optString("app_package_name"),
                         appName = data.optString("app_name"), authenticatorKey = security.encryptData(data.optString("authenticator_key")),
+                        sshKeyData = data.readMdbxSshKeyData(previous?.sshKeyData.orEmpty()),
                         loginType = data.optString("login_type", "PASSWORD"), categoryId = data.category(),
                         sortOrder = data.optInt("sort_order"),
                         mdbxDatabaseId = source.databaseId, replicaGroupId = entry.entryId, isDeleted = entry.deleted,

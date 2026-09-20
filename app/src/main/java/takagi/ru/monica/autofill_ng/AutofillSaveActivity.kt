@@ -146,7 +146,7 @@ class AutofillSaveActivity : ComponentActivity() {
                 }
                 
                 // 检查是否已存在相同的密码
-                val existingPasswords = passwordRepository.getAllPasswordEntries().first()
+                val existingPasswords = passwordRepository.getAllPasswordEntries().first().filterNot { it.isGpgKeyEntry() }
                 val encryptedPassword = securityManager.encryptData(password)
                 val existing = existingPasswords.firstOrNull { entry ->
                     // 优先匹配包名

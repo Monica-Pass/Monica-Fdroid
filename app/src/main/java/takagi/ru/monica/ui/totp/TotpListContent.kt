@@ -1275,8 +1275,8 @@ private fun TotpItemsPane(
                 .fillMaxSize()
                 .offset { androidx.compose.ui.unit.IntOffset(0, contentPullOffset) }
                 .then(pullAction.gestureModifier),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(
                 items = localTotpItems,
@@ -1381,7 +1381,6 @@ private fun TotpItemsPane(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
             item {

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="entry_message_bitwarden_unavailable">"Bitwarden non è disponibile"</string>
+    <string name="entry_message_unsupported_type">"Questa operazione non supporta questo tipo di articolo"</string>
+    <string name="entry_message_ownership_conflict">"Risolvere i vincoli di archiviazione in conflitto prima di spostare questo elemento a Monica"</string>
+    <string name="entry_message_local_copy_failed">"Impossibile creare una copia locale in Monica"</string>
+    <string name="entry_message_attachments_incomplete">"Non tutti gli allegati sono stati copiati"</string>
+    <string name="entry_message_bitwarden_sync_id_missing">"L\'elemento Bitwarden non ha un ID di sincronizzazione"</string>
+    <string name="entry_message_keepass_source_delete_failed">"Impossibile eliminare l\'elemento KeePass originale"</string>
+    <string name="entry_message_source_delete_failed">"Impossibile eliminare l\'elemento originale"</string>
+    <string name="entry_message_storage_save_failed">"Impossibile salvare nella posizione selezionata"</string>
+    <string name="entry_message_from_password">"Dalla password: %1$s"</string>
+    <string name="entry_message_passkey_android_required">"Il supporto completo per Passkey richiede Android 14 o versioni successive. Questo dispositivo: %1$s"</string>
+    <string name="entry_message_passkey_save_failed">"Impossibile salvare Passkey: %1$s"</string>
+    <string name="entry_message_passkey_missing">"Passkey non trovato"</string>
+    <string name="entry_message_passkey_update_failed">"Impossibile aggiornare Passkey: %1$s"</string>
+    <string name="entry_message_passkey_ownership_failed">"Impossibile aggiornare l\'associazione MDBX Passkey: %1$s"</string>
+    <string name="entry_message_passkey_binding_failed">"Impossibile aggiornare l\'associazione: %1$s"</string>
+    <string name="entry_message_passkey_usage_failed">"Impossibile aggiornare la cronologia di utilizzo: %1$s"</string>
+    <string name="entry_message_passkey_delete_failed">"Impossibile eliminare Passkey: %1$s"</string>
+    <string name="entry_message_category_path_invalid">"Percorso cartella non valido"</string>
+    <string name="entry_message_category_move_into_self">"Una cartella non può essere spostata in se stessa o in una delle sue sottocartelle"</string>
+    <string name="entry_message_category_missing">"Cartella non trovata"</string>
+    <string name="entry_message_category_exists">"Una cartella con questo nome esiste già nella destinazione"</string>
+    <string name="entry_message_category_move_conflict">"Spostarsi sarebbe in conflitto con una cartella esistente"</string>
+    <string name="entry_message_category_name_required">"Inserisci il nome di una cartella"</string>
+    <string name="entry_message_category_name_separator">"Un nome di cartella non può contenere /"</string>
+    <string name="entry_message_category_rename_conflict">"La ridenominazione sarebbe in conflitto con una cartella esistente"</string>
+    <string name="entry_message_saved">"Salvato"</string>
+</resources>

@@ -1,5 +1,6 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.repository.readMdbxSshKeyData
 import takagi.ru.monica.data.ApiTokenPayload
 import takagi.ru.monica.data.NativeApiToken
 import takagi.ru.monica.data.NativeApiTokenSummary
@@ -4078,6 +4079,7 @@ class MdbxViewModel(
                 null
             },
             loginType = payload.optString("login_type", "PASSWORD"),
+            sshKeyData = payload.readMdbxSshKeyData(existing?.sshKeyData.orEmpty()),
             createdAt = existing?.createdAt ?: Date(),
             updatedAt = existing?.updatedAt ?: Date(),
             isFavorite = existing?.isFavorite ?: false,

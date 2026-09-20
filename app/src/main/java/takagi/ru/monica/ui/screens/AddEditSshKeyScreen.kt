@@ -138,16 +138,17 @@ fun AddEditSshKeyScreen(
 
     // 表单状态
     var loadedEntry by remember { mutableStateOf<PasswordEntry?>(null) }
+    var keyMetadata by remember(passwordId) { mutableStateOf(SshKeyData()) }
     var initialLoadDone by remember { mutableStateOf(passwordId == null || passwordId <= 0L) }
     var title by rememberSaveable { mutableStateOf("") }
     var algorithm by rememberSaveable { mutableStateOf(SshKeyGenerator.DEFAULT_ALGORITHM) }
     var rsaKeySize by rememberSaveable { mutableStateOf(SshKeyGenerator.DEFAULT_RSA_KEY_SIZE) }
-    var publicKey by rememberSaveable { mutableStateOf("") }
-    var privateKey by rememberSaveable { mutableStateOf("") }
-    var fingerprint by rememberSaveable { mutableStateOf("") }
+    var publicKey by remember { mutableStateOf("") }
+    var privateKey by remember { mutableStateOf("") }
+    var fingerprint by remember { mutableStateOf("") }
     var comment by rememberSaveable { mutableStateOf("") }
     var isFavorite by rememberSaveable { mutableStateOf(false) }
-    var privateKeyVisible by rememberSaveable { mutableStateOf(false) }
+    var privateKeyVisible by remember { mutableStateOf(false) }
     var isGenerating by remember { mutableStateOf(false) }
 
     // 存储目标（多选）
@@ -221,6 +222,7 @@ fun AddEditSshKeyScreen(
         isFavorite = entry.isFavorite
         val sshData = SshKeyDataCodec.decode(entry.sshKeyData)
         if (sshData != null) {
+            keyMetadata = sshData
             algorithm = sshData.algorithm.ifBlank { SshKeyGenerator.DEFAULT_ALGORITHM }
             rsaKeySize = sshData.keySize.takeIf { it in SshKeyGenerator.RSA_ALLOWED_KEY_SIZES }
                 ?: SshKeyGenerator.DEFAULT_RSA_KEY_SIZE
@@ -267,6 +269,7 @@ fun AddEditSshKeyScreen(
             }
             isGenerating = false
             generated.onSuccess { data ->
+                keyMetadata = data
                 publicKey = data.publicKeyOpenSsh
                 privateKey = data.privateKeyOpenSsh
                 fingerprint = data.fingerprintSha256
@@ -282,17 +285,17 @@ fun AddEditSshKeyScreen(
         }
     }
 
-    fun currentSshData(): SshKeyData = SshKeyData(
+    fun currentSshData(): SshKeyData = keyMetadata.copy(
         algorithm = algorithm,
         keySize = when (algorithm) {
             SshKeyData.ALGORITHM_RSA -> rsaKeySize
             else -> 256
         },
         publicKeyOpenSsh = publicKey.trim(),
-        privateKeyOpenSsh = privateKey.trim(),
+        privateKeyOpenSsh = privateKey,
         fingerprintSha256 = fingerprint.trim(),
         comment = comment.trim(),
-        format = SshKeyData.FORMAT_OPENSSH
+        format = keyMetadata.format
     )
 
     fun onSave() {
@@ -355,6 +358,7 @@ fun AddEditSshKeyScreen(
                             current = EntryTypeChipOption.SSH_KEY,
                             onSelect = { option ->
                                 when (option) {
+                                    EntryTypeChipOption.GPG_KEY -> Unit // Hidden here; creation starts in the password editor.
                                     EntryTypeChipOption.API_TOKEN -> onNavigateToApiToken()
                                     EntryTypeChipOption.PASSWORD -> onNavigateToPassword()
                                     EntryTypeChipOption.WIFI -> onNavigateToWifi()

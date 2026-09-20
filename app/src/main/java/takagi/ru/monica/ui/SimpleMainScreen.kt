@@ -1026,6 +1026,7 @@ fun SimpleMainScreen(
         GeneratorType.PASSWORD -> passwordGeneratorResult
         GeneratorType.PASSPHRASE -> passphraseGeneratorResult
         GeneratorType.PIN -> pinGeneratorResult
+        GeneratorType.GPG_KEY -> ""
         GeneratorType.SSH_KEY -> sshKeyGeneratorResult?.fingerprintSha256.orEmpty()
     }
 

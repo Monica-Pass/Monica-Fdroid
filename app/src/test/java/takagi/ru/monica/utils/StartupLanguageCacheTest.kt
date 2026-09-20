@@ -12,6 +12,7 @@ class StartupLanguageCacheTest {
     @Test
     fun cachedLanguageParsingFailsSafelyToSystemLanguage() {
         assertEquals(Language.CHINESE, parseStartupLanguage("CHINESE"))
+        assertEquals(Language.ITALIAN, parseStartupLanguage("ITALIAN"))
         assertEquals(Language.CLASSICAL_CHINESE, parseStartupLanguage("CLASSICAL_CHINESE"))
         assertEquals(Language.SYSTEM, parseStartupLanguage("unsupported"))
         assertEquals(Language.SYSTEM, parseStartupLanguage(null))

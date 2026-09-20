@@ -145,7 +145,7 @@ fun AddEditNoteScreen(
     val context = LocalContext.current
     val draftStore = remember { NoteDraftStore.init(context) }
     val biometricHelper = remember { BiometricHelper(context) }
-    val securityManager = remember { SecurityManager(context) }
+    val securityManager = takagi.ru.monica.ui.rememberUiSecurityManager()
     val database = remember { PasswordDatabase.getDatabase(context) }
     val localKeePassViewModel: LocalKeePassViewModel = viewModel {
         LocalKeePassViewModel(

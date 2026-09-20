@@ -119,7 +119,7 @@ fun AddEditBankCardScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val database = remember { PasswordDatabase.getDatabase(context) }
-    val securityManager = remember { SecurityManager(context) }
+    val securityManager = takagi.ru.monica.ui.rememberUiSecurityManager()
     val bitwardenRepository = remember { BitwardenRepository.getInstance(context) }
     val localKeePassViewModel: LocalKeePassViewModel = viewModel {
         LocalKeePassViewModel(
@@ -130,7 +130,7 @@ fun AddEditBankCardScreen(
     }
     val settingsManager = remember { SettingsManager(context) }
     val appSettings by settingsManager.settingsFlow.collectAsState(initial = AppSettings())
-    val commonAccountPreferences = remember { CommonAccountPreferences(context) }
+    val commonAccountPreferences = remember(context, securityManager) { CommonAccountPreferences(context, securityManager) }
     val commonBillingAddress by commonAccountPreferences.billingAddress.collectAsState(initial = BillingAddress())
     val hasCommonBillingAddress = !commonBillingAddress.isEmpty()
     

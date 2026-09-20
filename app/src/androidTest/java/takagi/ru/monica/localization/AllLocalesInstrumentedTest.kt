@@ -50,6 +50,7 @@ class AllLocalesInstrumentedTest {
             Language.SPANISH to "Cancelar",
             Language.FRENCH to "Annuler",
             Language.POLISH to "Anuluj",
+            Language.ITALIAN to "Annulla",
         )
         assertEquals(languages.toSet(), cancelLabels.keys)
         languages.forEach { language ->

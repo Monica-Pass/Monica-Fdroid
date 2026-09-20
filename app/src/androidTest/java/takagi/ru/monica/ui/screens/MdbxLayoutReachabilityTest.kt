@@ -258,6 +258,53 @@ class MdbxLayoutReachabilityTest {
     }
 
     @Test
+    fun returningFromDatabaseDetailNeverShowsEmptyVaultDuringExit() {
+        val backing = File.createTempFile("mdbx-return-", ".mdbx", context.cacheDir)
+        try {
+            Fixture().use { fixture ->
+                val database = databases.first().copy(filePath = backing.absolutePath)
+                fixture.insert(database)
+                show(shell = false) {
+                    MdbxManagerScreen(fixture.model, onNavigateBack = {},
+                        onNavigateToLocalCreate = {}, onNavigateToLocalOpen = {},
+                        onNavigateToWebDavCreate = {}, onNavigateToWebDavOpen = {},
+                        onNavigateToOneDriveCreate = {}, onNavigateToOneDriveOpen = {})
+                }
+                compose.waitUntil(5_000) { fixture.model.allDatabases.value.any { it.id == database.id } }
+                compose.onNodeWithText(label(R.string.mdbx_ui_local_databases)).performClick()
+                repeat(2) { round ->
+                    compose.onNodeWithTag("mdbx_database_${database.id}").performClick()
+                    compose.waitForIdle()
+                    compose.onNodeWithText(label(R.string.mdbx_ui_database_information)).assertIsDisplayed()
+                    compose.mainClock.autoAdvance = false
+                    if (round == 0) {
+                        compose.onNodeWithContentDescription(label(R.string.back)).performClick()
+                    } else {
+                        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+                    }
+                    // Inspect frames while the outgoing detail and incoming list coexist.
+                    repeat(6) { frame ->
+                        compose.mainClock.advanceTimeBy(32)
+                        compose.waitForIdle()
+                        if (round == 0 && frame == 1) capture("mdbx-return-mid-transition.png")
+                        compose.onNodeWithText(label(R.string.mdbx_no_vaults)).assertDoesNotExist()
+                        if (frame < 3) {
+                            compose.onAllNodesWithText(database.name).assertCountEquals(2)
+                        }
+                    }
+                    compose.mainClock.advanceTimeBy(400)
+                    compose.mainClock.autoAdvance = true
+                    compose.onNodeWithTag("mdbx_database_${database.id}").assertIsDisplayed()
+                }
+                capture("mdbx-return-settled.png")
+            }
+        } finally {
+            compose.mainClock.autoAdvance = true
+            backing.delete()
+        }
+    }
+
+    @Test
     fun allSixProductionFormsKeepSubmissionVisibleWithLargeText() {
         val page = mutableIntStateOf(0)
         fontScale.floatValue = 1.5f
@@ -357,6 +404,7 @@ class MdbxLayoutReachabilityTest {
         private val room = Room.inMemoryDatabaseBuilder(context, PasswordDatabase::class.java).build()
         val model = MdbxViewModel(context.applicationContext as Application, room.localMdbxDatabaseDao(), room.mdbxRemoteSourceDao(),
             room.passwordEntryDao(), room.secureItemDao(), room.passkeyDao(), room.attachmentDao(), room.customFieldDao(), SecurityManager(context))
+        fun insert(database: LocalMdbxDatabase) = runBlocking { room.localMdbxDatabaseDao().insertDatabase(database) }
         override fun close() {
             runBlocking { model.viewModelScope.coroutineContext[Job]?.cancelAndJoin() }
             room.close()

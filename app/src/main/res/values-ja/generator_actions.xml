@@ -1,0 +1,4 @@
+<resources>
+    <string name="generator_create_username">このユーザー名で項目を作成</string>
+    <string name="generator_create_password">このパスワードで項目を作成</string>
+</resources>

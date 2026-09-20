@@ -1683,6 +1683,7 @@ class Mdbx2Repository(
             .put("bound_note_room_id", entry.boundNoteId)
             .put("bound_note_entry_id", resolveBoundNoteEntryId(entry))
             .put("login_type", entry.loginType)
+            .put("ssh_key_data", entry.sshKeyData)
             .put("authenticator_key", decryptSensitiveValue(entry.authenticatorKey, "authenticator_key", entry.id))
             .put("passkey_bindings", entry.passkeyBindings)
             .put("custom_fields", passwordCustomFieldsPayload(entry.id))

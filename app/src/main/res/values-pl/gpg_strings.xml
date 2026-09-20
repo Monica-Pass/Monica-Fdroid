@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">Klucz GPG</string>
+    <string name="gpg_entry_title">Tytuł</string>
+    <string name="gpg_name">Nazwa</string>
+    <string name="gpg_email">E-mail (opcjonalnie)</string>
+    <string name="gpg_error">Nie udało się przetworzyć klucza. Spróbuj ponownie.</string>
+    <string name="gpg_storage">Miejsca zapisu (%1$d)</string>
+    <string name="gpg_generate">Generuj klucz</string>
+    <string name="gpg_import">Importuj klucz</string>
+    <string name="gpg_save">Zapisz w sejfie</string>
+    <string name="gpg_no_expiry">Nigdy nie wygasa</string>
+    <string name="gpg_days">%1$d dni</string>
+    <string name="gpg_passphrase">Hasło klucza (opcjonalnie)</string>
+    <string name="gpg_copy_fingerprint">Kopiuj odcisk</string>
+    <string name="gpg_copy_public">Kopiuj klucz publiczny</string>
+    <string name="gpg_copy_private">Kopiuj klucz prywatny</string>
+    <string name="gpg_export_public">Eksportuj klucz publiczny</string>
+    <string name="gpg_export_private">Eksportuj klucz prywatny</string>
+    <string name="gpg_show_private">Pokaż klucz prywatny</string>
+    <string name="gpg_hide_private">Ukryj klucz prywatny</string>
+    <string name="gpg_add_title">Nowy klucz GPG</string>
+    <string name="gpg_edit_title">Edytuj klucz GPG</string>
+    <string name="gpg_empty">Wygeneruj lub importuj klucz</string>
+    <string name="gpg_ready">Dodano klucz</string>
+    <string name="gpg_options">Opcje generowania</string>
+    <string name="gpg_expiry">Ważność</string>
+    <string name="gpg_actions">Operacje klucza GPG</string>
+    <string name="gpg_export_pair">Eksportuj parę kluczy</string>
+    <string name="gpg_create_entry">Utwórz wpis GPG</string>
+    <string name="gpg_name_invalid">Wpisz nazwę o długości 1–128 znaków bez nawiasów ostrych i nowych wierszy.</string>
+    <string name="gpg_email_invalid">Wpisz poprawny adres e-mail lub pozostaw pole puste.</string>
+    <string name="gpg_generate_error">Nie udało się wygenerować klucza. Spróbuj ponownie.</string>
+    <string name="gpg_import_error">Import nie powiódł się. Wybierz jeden poprawny plik klucza OpenPGP do 1 MB.</string>
+    <string name="gpg_load_error">Nie można odczytać klucza. Sprawdź sejf i otwórz wpis ponownie.</string>
+    <string name="gpg_save_error">Nie można zapisać klucza. Sprawdź możliwość zapisu w wybranym sejfie.</string>
+    <string name="gpg_export_error">Nie można eksportować klucza. Wybierz miejsce z prawem zapisu.</string>
+</resources>

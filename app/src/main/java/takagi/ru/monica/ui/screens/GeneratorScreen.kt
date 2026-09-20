@@ -16,7 +16,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -148,6 +150,21 @@ fun GeneratorScreen(
     
     // 从ViewModel收集状态
     val selectedGenerator by viewModel.selectedGenerator.collectAsState()
+    val gpgEditor: takagi.ru.monica.viewmodel.GpgEditorViewModel = viewModel(key = "gpg:generator")
+    var saveGpg by remember { mutableStateOf(false) }
+    var generatedDraft by remember { mutableStateOf<AddEditPasswordInitialDraft?>(null) }
+    generatedDraft?.let { draft ->
+        GeneratorEntryDialog(onDismiss = { generatedDraft = null }) {
+            AddEditPasswordScreen(viewModel = passwordViewModel, passwordId = null, initialDraft = draft,
+                onSaveCompleted = { generatedDraft = null }, onNavigateBack = { generatedDraft = null })
+        }
+    }
+    if (saveGpg) {
+        GeneratorEntryDialog(onDismiss = { saveGpg = false }) {
+            GpgKeyScreen(passwords = passwordViewModel, editor = gpgEditor,
+                onBack = { saveGpg = false }, onSaved = { saveGpg = false })
+        }
+    }
     val symbolLength by viewModel.symbolLength.collectAsState()
     val includeUppercase by viewModel.includeUppercase.collectAsState()
     val includeLowercase by viewModel.includeLowercase.collectAsState()
@@ -317,6 +334,7 @@ fun GeneratorScreen(
                 val result = PasswordGenerator.generatePinCode(pinLength)
                 viewModel.updatePinResult(result)
             }
+            GeneratorType.GPG_KEY -> gpgEditor.generate()
             GeneratorType.SSH_KEY -> {
                 if (isSshKeyGenerating) return@regenerate
                 scope.launch {
@@ -431,6 +449,7 @@ fun GeneratorScreen(
                 val result = PasswordGenerator.generatePinCode(pinLength)
                 viewModel.updatePinResult(result)
             }
+            GeneratorType.GPG_KEY -> Unit
             GeneratorType.SSH_KEY -> {
                 // 生成 SSH 密钥可能比较慢 (RSA 4096 1-3s)，放到默认调度器。
                 val request = buildSshKeyRequest(sshKeyAlgorithm, sshKeyRsaSize)
@@ -460,6 +479,7 @@ fun GeneratorScreen(
             GeneratorType.PASSWORD -> passwordResult
             GeneratorType.PASSPHRASE -> passphraseResult
             GeneratorType.PIN -> pinResult
+            GeneratorType.GPG_KEY -> ""
             GeneratorType.SSH_KEY -> sshKeyResult?.fingerprintSha256.orEmpty()
         }
         val resultCardTitle = when (selectedGenerator) {
@@ -577,7 +597,6 @@ fun GeneratorScreen(
                 state = listState,
                 contentPadding = PaddingValues(bottom = 96.dp),
             ) {
-
             item {
                 Column(
                     modifier = Modifier
@@ -598,6 +617,22 @@ fun GeneratorScreen(
                 }
             }
 
+            if (selectedGenerator == GeneratorType.GPG_KEY && (gpgEditor.key != null || gpgEditor.busy || gpgEditor.failed)) {
+                item {
+                    Column(Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (gpgEditor.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        if (gpgEditor.failed) Text(stringResource(gpgEditor.failure.message), color = MaterialTheme.colorScheme.error)
+                        gpgEditor.key?.let { key ->
+                            GpgGeneratedResult(key) { saveGpg = true }
+                            FilledTonalButton(onClick = { saveGpg = true }) {
+                                Icon(Icons.Default.Save, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.gpg_save))
+                            }
+                        }
+                    }
+                }
+            }
             if (isSshKeyGenerator && (shouldShowSshGenerationProgress || shouldShowResultCard)) {
                 item {
                     if (shouldShowSshGenerationProgress) {
@@ -615,17 +650,9 @@ fun GeneratorScreen(
                             )
                         }
                     } else {
-                        ResultCard(
-                            result = currentResult,
-                            title = resultCardTitle,
-                            showStrengthSection = false,
-                            supportingInfo = resultCardSupportingInfo,
-                            compactProgress = 0f,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 20.dp),
-                            onCopy = copyGeneratedResult
-                        )
+                        sshKeyResult?.let { key ->
+                            SshGeneratedResult(key, Modifier.fillMaxWidth().padding(bottom = 20.dp))
+                        }
                     }
                 }
             } else if (shouldShowResultCard) {
@@ -640,7 +667,9 @@ fun GeneratorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 20.dp - 12.dp * resultCardCompactProgress),
-                            onCopy = copyGeneratedResult
+                            onCopy = copyGeneratedResult,
+                            onCreateUsername = { generatedDraft = AddEditPasswordInitialDraft(username = it) },
+                            onCreatePassword = { generatedDraft = AddEditPasswordInitialDraft(password = it) }
                         )
                     }
                 }
@@ -1124,6 +1153,7 @@ fun GeneratorScreen(
                         )
                     }
                 }
+                    GeneratorType.GPG_KEY -> GpgGenerationForm(gpgEditor)
                     GeneratorType.SSH_KEY -> {
                         GeneratorSshKeySection(
                             algorithm = sshKeyAlgorithm,
@@ -1721,16 +1751,19 @@ private fun FilterChipTab(
  * 优化后的结果显示卡片 - 带流畅动画
  */
 @Composable
-private fun ResultCard(
+internal fun ResultCard(
     result: String,
     title: String? = null,
     showStrengthSection: Boolean = true,
     supportingInfo: String? = null,
     modifier: Modifier = Modifier,
     compactProgress: Float = 0f,
-    onCopy: (String) -> Unit
+    onCopy: (String) -> Unit,
+    onCreateUsername: ((String) -> Unit)? = null,
+    onCreatePassword: ((String) -> Unit)? = null
 ) {
     var showCopied by remember { mutableStateOf(false) }
+    var resultMenu by remember(result) { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
     val progress = compactProgress.coerceIn(0f, 1f)
     // Keep discrete text/layout changes until the continuous size transition is
@@ -1835,8 +1868,10 @@ private fun ResultCard(
     }
     val resultTextScrollState = rememberScrollState()
 
+    Box {
     ElevatedCard(
-        modifier = modifier
+        onClick = { resultMenu = true },
+        modifier = modifier.testTag("generator_result")
             .fillMaxWidth()
             .graphicsLayer { alpha = cardAlpha },
         elevation = CardDefaults.elevatedCardElevation(
@@ -1937,7 +1972,7 @@ private fun ResultCard(
                                 }
                             )
                     ) {
-                        SelectionContainer {
+                        androidx.compose.runtime.key(result) {
                             Text(
                                 text = colorizePassword(result),
                                 style = resultTextStyle,
@@ -2012,6 +2047,26 @@ private fun ResultCard(
                 }
         }
     }
+    DropdownMenu(expanded = resultMenu, onDismissRequest = { resultMenu = false },
+        modifier = Modifier.widthIn(max = 360.dp)) {
+        DropdownMenuItem(text = { Column {
+            Text(stringResource(R.string.copy))
+            Text(result, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall)
+        } }, leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
+            onClick = { resultMenu = false; onCopy(result); showCopied = true })
+        if (onCreateUsername != null || onCreatePassword != null) HorizontalDivider()
+        onCreateUsername?.let { create -> DropdownMenuItem(
+            text = { Text(stringResource(R.string.generator_create_username)) },
+            leadingIcon = { Icon(Icons.Default.Add, null) },
+            onClick = { resultMenu = false; create(result) }) }
+        onCreatePassword?.let { create -> DropdownMenuItem(
+            text = { Text(stringResource(R.string.generator_create_password)) },
+            leadingIcon = { Icon(Icons.Default.Add, null) },
+            onClick = { resultMenu = false; create(result) }) }
+    }
+    }
+
 }
 
 private fun generatorTypeLabel(type: GeneratorType, context: Context): String = when (type) {
@@ -2019,6 +2074,7 @@ private fun generatorTypeLabel(type: GeneratorType, context: Context): String = 
     GeneratorType.PASSWORD -> context.getString(R.string.generator_word)
     GeneratorType.PASSPHRASE -> context.getString(R.string.generator_passphrase)
     GeneratorType.PIN -> context.getString(R.string.generator_pin)
+    GeneratorType.GPG_KEY -> context.getString(R.string.gpg_title)
     GeneratorType.SSH_KEY -> context.getString(R.string.generator_ssh_key)
 }
 
@@ -2027,6 +2083,7 @@ private fun generatorTypeTitle(type: GeneratorType, context: Context): String = 
     GeneratorType.PASSWORD -> context.getString(R.string.password_generator)
     GeneratorType.PASSPHRASE -> context.getString(R.string.passphrase_generator)
     GeneratorType.PIN -> context.getString(R.string.pin_generator)
+    GeneratorType.GPG_KEY -> context.getString(R.string.gpg_title)
     GeneratorType.SSH_KEY -> context.getString(R.string.generator_ssh_key)
 }
 
@@ -2036,6 +2093,7 @@ private fun generatorTypeIcon(type: GeneratorType) = when (type) {
     GeneratorType.PASSWORD -> Icons.Default.Key
     GeneratorType.PASSPHRASE -> Icons.Default.Info
     GeneratorType.PIN -> Icons.Default.Visibility
+    GeneratorType.GPG_KEY -> Icons.Default.Key
     GeneratorType.SSH_KEY -> Icons.Default.Key
 }
 

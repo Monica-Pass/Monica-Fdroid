@@ -54,8 +54,8 @@ android {
         applicationId "takagi.ru.monica.fdroid"
         minSdk 26
         targetSdk 34
-        versionCode 20
-        versionName "1.0.313"
+        versionCode 21
+        versionName "1.0.314"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,9 +75,9 @@ android {
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.313"'
-        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.313"'
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"20"'
+        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.314"'
+        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.314"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"21"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
@@ -146,7 +146,7 @@ android {
         variant.outputs.all { output ->
             // 目标格式: Monica-Android-[架构]-[版本号].APK
             def archTag = resolveArchTag(output)
-            def versionNameTag = sanitizeTag('1.0.313', '0.0.0')
+            def versionNameTag = sanitizeTag('1.0.314', '0.0.0')
             outputFileName = "Monica-Android-${archTag}-${versionNameTag}.apk"
         }
     }
@@ -395,6 +395,7 @@ dependencies {
 
     // BouncyCastle for Argon2 (Bitwarden KDF support)
     implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'org.bouncycastle:bcpg-jdk18on:1.78.1'
     // Native Argon2 backend for Bitwarden Argon2id KDF. This keeps high-memory
     // KDF work off the Android JVM heap.
     implementation('com.lambdapioneer.argon2kt:argon2kt:1.6.0') {

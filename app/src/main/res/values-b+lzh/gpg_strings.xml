@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">GPG 密钥</string>
+    <string name="gpg_entry_title">题名</string>
+    <string name="gpg_name">姓名</string>
+    <string name="gpg_email">电邮（可略）</string>
+    <string name="gpg_error">密钥处置未成，请重试。</string>
+    <string name="gpg_storage">藏处（%1$d）</string>
+    <string name="gpg_generate">造密钥</string>
+    <string name="gpg_import">导入密钥</string>
+    <string name="gpg_save">存入密府</string>
+    <string name="gpg_no_expiry">永不过期</string>
+    <string name="gpg_days">%1$d 日</string>
+    <string name="gpg_passphrase">私钥口令（可略）</string>
+    <string name="gpg_copy_fingerprint">复制指纹</string>
+    <string name="gpg_copy_public">复制公钥</string>
+    <string name="gpg_copy_private">复制私钥</string>
+    <string name="gpg_export_public">导出公钥</string>
+    <string name="gpg_export_private">导出私钥</string>
+    <string name="gpg_show_private">显私钥</string>
+    <string name="gpg_hide_private">隐私钥</string>
+    <string name="gpg_add_title">新建 GPG 密钥</string>
+    <string name="gpg_edit_title">编辑 GPG 密钥</string>
+    <string name="gpg_empty">造钥或导入</string>
+    <string name="gpg_ready">密钥已备</string>
+    <string name="gpg_options">造钥选项</string>
+    <string name="gpg_expiry">有效期</string>
+    <string name="gpg_actions">GPG 密钥操作</string>
+    <string name="gpg_export_pair">导出密钥对</string>
+    <string name="gpg_create_entry">新建 GPG 密钥条目</string>
+    <string name="gpg_name_invalid">姓名须为 1–128 字，勿含尖括号或换行。</string>
+    <string name="gpg_email_invalid">电邮格式有误，请更正或留空。</string>
+    <string name="gpg_generate_error">造钥未成，请重试。</string>
+    <string name="gpg_import_error">导入未成，请选有效 OpenPGP 密钥文件，至多 1 MB。</string>
+    <string name="gpg_load_error">读取密钥未成，请检查密府后重开条目。</string>
+    <string name="gpg_save_error">存钥未成，请确认所选密府可写。</string>
+    <string name="gpg_export_error">导出未成，请另择可写之处重试。</string>
+</resources>

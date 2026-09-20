@@ -5,6 +5,9 @@ import takagi.ru.monica.utils.AppLocaleStringResolver
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.graphics.asAndroidBitmap
+import android.graphics.Bitmap
+import java.io.File
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -100,6 +103,21 @@ class TotpListInteractionTest {
             }
             awaitCard(first)
             awaitCard(second)
+            // Measure the real list wrappers, not a fixture with its own spacing.
+            val firstBounds = card(first).fetchSemanticsNode().boundsInRoot
+            val secondBounds = card(second).fetchSemanticsNode().boundsInRoot
+            val gap = if (layout == AuthenticatorLayoutMode.STANDARD) {
+                secondBounds.top - firstBounds.bottom
+            } else {
+                secondBounds.left - firstBounds.right
+            }
+            assertEquals("Card edge gap must match the 8dp tile gutter",
+                8f * context.resources.displayMetrics.density, gap, 1f)
+            File(context.getExternalFilesDir(null), "authenticator-spacing-${layout.name}.png")
+                .outputStream().use {
+                    compose.onRoot().captureToImage().asAndroidBitmap()
+                        .compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
             card(first).performTouchInput { longClick() }
             awaitSelection(selection, true, 1)
             card(second).performClick()

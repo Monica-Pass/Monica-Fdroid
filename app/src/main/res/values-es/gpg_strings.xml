@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">Clave GPG</string>
+    <string name="gpg_entry_title">Título</string>
+    <string name="gpg_name">Nombre</string>
+    <string name="gpg_email">Correo electrónico (opcional)</string>
+    <string name="gpg_error">No se pudo procesar la clave. Inténtalo de nuevo.</string>
+    <string name="gpg_storage">Ubicaciones (%1$d)</string>
+    <string name="gpg_generate">Generar clave</string>
+    <string name="gpg_import">Importar clave</string>
+    <string name="gpg_save">Guardar en la bóveda</string>
+    <string name="gpg_no_expiry">Nunca caduca</string>
+    <string name="gpg_days">%1$d días</string>
+    <string name="gpg_passphrase">Frase de contraseña (opcional)</string>
+    <string name="gpg_copy_fingerprint">Copiar huella digital</string>
+    <string name="gpg_copy_public">Copiar clave pública</string>
+    <string name="gpg_copy_private">Copiar clave privada</string>
+    <string name="gpg_export_public">Exportar clave pública</string>
+    <string name="gpg_export_private">Exportar clave privada</string>
+    <string name="gpg_show_private">Mostrar clave privada</string>
+    <string name="gpg_hide_private">Ocultar clave privada</string>
+    <string name="gpg_add_title">Nueva clave GPG</string>
+    <string name="gpg_edit_title">Editar clave GPG</string>
+    <string name="gpg_empty">Generar o importar una clave</string>
+    <string name="gpg_ready">Clave añadida</string>
+    <string name="gpg_options">Opciones de generación</string>
+    <string name="gpg_expiry">Caducidad</string>
+    <string name="gpg_actions">Acciones de la clave GPG</string>
+    <string name="gpg_export_pair">Exportar par de claves</string>
+    <string name="gpg_create_entry">Crear entrada GPG</string>
+    <string name="gpg_name_invalid">Introduce un nombre de 1–128 caracteres sin corchetes angulares ni saltos de línea.</string>
+    <string name="gpg_email_invalid">Introduce un correo válido o deja este campo vacío.</string>
+    <string name="gpg_generate_error">No se pudo generar la clave. Inténtalo de nuevo.</string>
+    <string name="gpg_import_error">Error al importar. Selecciona un archivo de clave OpenPGP válido de hasta 1 MB.</string>
+    <string name="gpg_load_error">No se pudo leer la clave. Comprueba la bóveda y vuelve a abrir la entrada.</string>
+    <string name="gpg_save_error">No se pudo guardar. Comprueba que la bóveda permita escritura.</string>
+    <string name="gpg_export_error">No se pudo exportar. Elige una ubicación con permiso de escritura.</string>
+</resources>

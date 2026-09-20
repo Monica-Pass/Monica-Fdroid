@@ -266,11 +266,109 @@ fun AddEditPasswordScreen(
     onSwitchToSshKey: ((Long?) -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
+    var returnLoginType by remember(passwordId) { mutableStateOf(initialLoginType) }
+    var gpgMode by remember(passwordId) { mutableStateOf(initialLoginType == "GPG_KEY") }
+    var entryTypeLoaded by remember(passwordId) { mutableStateOf(passwordId == null || passwordId <= 0) }
+    LaunchedEffect(passwordId) {
+        if (passwordId != null && passwordId > 0) {
+            val fields = viewModel.getCustomFieldsByEntryIdSync(passwordId)
+            gpgMode = fields.any { it.title == takagi.ru.monica.data.model.GpgEntryFields.MARKER && it.value == "GPG_KEY" }
+        }
+        entryTypeLoaded = true
+    }
+    if (!entryTypeLoaded) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        return
+    }
+    if (gpgMode) {
+        GpgKeyScreen(passwords = viewModel, passwordId = passwordId?.takeIf { it > 0 },
+            initialTarget = takagi.ru.monica.ui.components.buildMultiStorageTarget(initialCategoryId,
+                initialKeePassDatabaseId, initialKeePassGroupPath, initialMdbxDatabaseId,
+                initialBitwardenVaultId, initialBitwardenFolderId, initialMdbxFolderId),
+            onBack = onNavigateBack, onSaved = onSaveCompleted,
+            onSelectType = { option ->
+                when (option) {
+                    EntryTypeChipOption.GPG_KEY -> Unit
+                    EntryTypeChipOption.PASSWORD -> { returnLoginType = "PASSWORD"; gpgMode = false }
+                    EntryTypeChipOption.WIFI -> onSwitchToWifi?.invoke(null)
+                    EntryTypeChipOption.SSH_KEY -> onSwitchToSshKey?.invoke(null)
+                    EntryTypeChipOption.API_TOKEN -> onSwitchToApiToken?.invoke(null)
+                    EntryTypeChipOption.BARCODE -> { returnLoginType = LOGIN_TYPE_BARCODE; gpgMode = false }
+                }
+            },
+            getKeePassGroups = localKeePassViewModel?.let { vm -> vm::getGroups }
+                ?: { flowOf(emptyList()) })
+        return
+    }
+    PasswordEntryEditor(
+        viewModel = viewModel,
+        totpViewModel = totpViewModel,
+        bankCardViewModel = bankCardViewModel,
+        noteViewModel = noteViewModel,
+        localKeePassViewModel = localKeePassViewModel,
+        localMdbxViewModel = localMdbxViewModel,
+        mdbxDatabasesFallback = mdbxDatabasesFallback,
+        passwordId = passwordId,
+        initialDraft = initialDraft,
+        forceShowAppBinding = forceShowAppBinding,
+        initialCategoryId = initialCategoryId,
+        initialStorageExplicit = initialStorageExplicit,
+        initialKeePassDatabaseId = initialKeePassDatabaseId,
+        initialKeePassGroupPath = initialKeePassGroupPath,
+        initialMdbxDatabaseId = initialMdbxDatabaseId,
+        initialMdbxFolderId = initialMdbxFolderId,
+        initialBitwardenVaultId = initialBitwardenVaultId,
+        initialBitwardenFolderId = initialBitwardenFolderId,
+        pendingQrResult = pendingQrResult,
+        initialLoginType = returnLoginType,
+        onConsumePendingQrResult = onConsumePendingQrResult,
+        onScanAuthenticatorQrCode = onScanAuthenticatorQrCode,
+        onSaveCompleted = onSaveCompleted,
+        onSwitchToApiToken = onSwitchToApiToken,
+        onSwitchToWifi = onSwitchToWifi,
+        onSwitchToSshKey = onSwitchToSshKey,
+        onNavigateBack = onNavigateBack,
+        onSwitchToGpg = { gpgMode = true }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PasswordEntryEditor(
+    viewModel: PasswordViewModel,
+    totpViewModel: TotpViewModel? = null,
+    bankCardViewModel: BankCardViewModel? = null,
+    noteViewModel: NoteViewModel? = null,
+    localKeePassViewModel: LocalKeePassViewModel? = null,
+    localMdbxViewModel: MdbxViewModel? = null,
+    mdbxDatabasesFallback: List<takagi.ru.monica.data.LocalMdbxDatabase> = emptyList(),
+    passwordId: Long?,
+    initialDraft: AddEditPasswordInitialDraft? = null,
+    forceShowAppBinding: Boolean = false,
+    initialCategoryId: Long? = null,
+    initialStorageExplicit: Boolean = false,
+    initialKeePassDatabaseId: Long? = null,
+    initialKeePassGroupPath: String? = null,
+    initialMdbxDatabaseId: Long? = null,
+    initialMdbxFolderId: String? = null,
+    initialBitwardenVaultId: Long? = null,
+    initialBitwardenFolderId: String? = null,
+    pendingQrResult: String? = null,
+    initialLoginType: String? = null,
+    onConsumePendingQrResult: () -> Unit = {},
+    onScanAuthenticatorQrCode: (() -> Unit)? = null,
+    onSaveCompleted: ((Long?) -> Unit)? = null,
+    onSwitchToApiToken: ((StorageTarget.Mdbx?) -> Unit)? = null,
+    onSwitchToWifi: ((Long?) -> Unit)? = null,
+    onSwitchToSshKey: ((Long?) -> Unit)? = null,
+    onSwitchToGpg: () -> Unit,
+    onNavigateBack: () -> Unit
+) {
     val context = LocalContext.current
     val isEditing = passwordId != null && passwordId > 0
     val coroutineScope = rememberCoroutineScope()
     val database = remember { PasswordDatabase.getDatabase(context) }
-    val securityManager = remember(context) { SecurityManager(context.applicationContext) }
+    val securityManager = takagi.ru.monica.ui.rememberUiSecurityManager()
 
     // 获取设置以读取进度条样式
     val settingsManager = remember { takagi.ru.monica.utils.SettingsManager(context) }
@@ -289,7 +387,7 @@ fun AddEditPasswordScreen(
     val presetCustomFields by settingsManager.presetCustomFieldsFlow.collectAsState(initial = emptyList())
     
     // 常用账号信息
-    val commonAccountPreferences = remember { takagi.ru.monica.data.CommonAccountPreferences(context) }
+    val commonAccountPreferences = remember(context, securityManager) { takagi.ru.monica.data.CommonAccountPreferences(context, securityManager) }
     val commonAccountInfo by commonAccountPreferences.commonAccountInfo.collectAsState(
         initial = takagi.ru.monica.data.CommonAccountInfo()
     )
@@ -2637,6 +2735,7 @@ fun AddEditPasswordScreen(
                         if (onSwitchToWifi != null) {
                             EntryTypeChip(
                                 showApiToken = !isEditing && onSwitchToApiToken != null,
+                                showGpg = !isEditing,
                                 current = if (isBarcodeMode) {
                                     EntryTypeChipOption.BARCODE
                                 } else {
@@ -2644,6 +2743,7 @@ fun AddEditPasswordScreen(
                                 },
                                 onSelect = { option ->
                                     when (option) {
+                                        EntryTypeChipOption.GPG_KEY -> onSwitchToGpg()
                                         EntryTypeChipOption.API_TOKEN -> onSwitchToApiToken?.invoke(
                                             selectedStorageTargets.filterIsInstance<StorageTarget.Mdbx>().firstOrNull())
                                         EntryTypeChipOption.WIFI ->
@@ -3285,8 +3385,8 @@ fun AddEditPasswordScreen(
                             }
                         }
 
-                        // 登录方式选择；批量模式固定为账号密码，避免切换类型后破坏独立凭据。
-                        if (showCommonEditorContent && !isMultiCredentialMode) {
+                        // 登录方式只用于密码条目；二维码和批量凭据保留各自的条目类型。
+                        if (showCommonEditorContent && !isMultiCredentialMode && !isBarcodeMode) {
                             LoginTypeSelector(
                                 loginType = loginType,
                                 ssoProvider = ssoProvider,

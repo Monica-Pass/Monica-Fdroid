@@ -374,7 +374,8 @@ class CipherSyncProcessor(
         val remotePasskeyBindings = customFields["monica_passkey_bindings"].orEmpty()
         val remoteSshKeyData = buildSshKeyDataFromCustomFields(customFields)
         val remoteLoginType = when {
-            isSteamMaFileEntry -> LOGIN_TYPE_STEAM_MAFILE
+            takagi.ru.monica.data.model.GpgEntryFields.isGpg(customFields) -> "GPG_KEY"
+                    isSteamMaFileEntry -> LOGIN_TYPE_STEAM_MAFILE
             remoteSshKeyData.isNotBlank() -> LOGIN_TYPE_SSH_KEY
             customFields["monica_login_type"]?.equals(LOGIN_TYPE_SSH_KEY, ignoreCase = true) == true ->
                 LOGIN_TYPE_SSH_KEY

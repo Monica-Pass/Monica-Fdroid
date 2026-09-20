@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">GPG key</string>
+    <string name="gpg_entry_title">Title</string>
+    <string name="gpg_name">Name</string>
+    <string name="gpg_email">Email (optional)</string>
+    <string name="gpg_error">Could not process the key. Check the identity, key file and storage access, then retry.</string>
+    <string name="gpg_storage">Storage locations (%1$d)</string>
+    <string name="gpg_generate">Generate key</string>
+    <string name="gpg_import">Import key</string>
+    <string name="gpg_save">Save to vault</string>
+    <string name="gpg_no_expiry">Never expires</string>
+    <string name="gpg_days">%1$d days</string>
+    <string name="gpg_passphrase">Passphrase (optional)</string>
+    <string name="gpg_copy_fingerprint">Copy fingerprint</string>
+    <string name="gpg_copy_public">Copy public key</string>
+    <string name="gpg_copy_private">Copy private key</string>
+    <string name="gpg_export_public">Export public key</string>
+    <string name="gpg_export_private">Export private key</string>
+    <string name="gpg_show_private">Show private key</string>
+    <string name="gpg_hide_private">Hide private key</string>
+    <string name="gpg_add_title">New GPG key</string>
+    <string name="gpg_edit_title">Edit GPG key</string>
+    <string name="gpg_empty">Generate or import a key</string>
+    <string name="gpg_ready">Key added</string>
+    <string name="gpg_options">Generation options</string>
+    <string name="gpg_expiry">Expires</string>
+    <string name="gpg_actions">GPG key actions</string>
+    <string name="gpg_export_pair">Export key pair</string>
+    <string name="gpg_create_entry">Create new GPG entry</string>
+    <string name="gpg_name_invalid">Enter a name (1–128 characters, without angle brackets or line breaks).</string>
+    <string name="gpg_email_invalid">Enter a valid email address, or leave this field empty.</string>
+    <string name="gpg_generate_error">Could not generate the key. Please retry.</string>
+    <string name="gpg_import_error">Could not import the key. Select one valid OpenPGP key file (up to 1 MB).</string>
+    <string name="gpg_load_error">Could not read this key. Reopen the entry after checking the vault.</string>
+    <string name="gpg_save_error">Could not save the key. Check that the selected vault is writable.</string>
+    <string name="gpg_export_error">Could not export the key. Choose a writable location and retry.</string>
+</resources>

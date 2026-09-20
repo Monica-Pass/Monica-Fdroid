@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gpg_title">Khóa GPG</string>
+    <string name="gpg_entry_title">Tiêu đề</string>
+    <string name="gpg_name">Tên</string>
+    <string name="gpg_email">Email (không bắt buộc)</string>
+    <string name="gpg_error">Không thể xử lý khóa. Hãy thử lại.</string>
+    <string name="gpg_storage">Vị trí lưu (%1$d)</string>
+    <string name="gpg_generate">Tạo khóa</string>
+    <string name="gpg_import">Nhập khóa</string>
+    <string name="gpg_save">Lưu vào kho</string>
+    <string name="gpg_no_expiry">Không hết hạn</string>
+    <string name="gpg_days">%1$d ngày</string>
+    <string name="gpg_passphrase">Cụm mật khẩu (không bắt buộc)</string>
+    <string name="gpg_copy_fingerprint">Sao chép dấu vân tay</string>
+    <string name="gpg_copy_public">Sao chép khóa công khai</string>
+    <string name="gpg_copy_private">Sao chép khóa riêng tư</string>
+    <string name="gpg_export_public">Xuất khóa công khai</string>
+    <string name="gpg_export_private">Xuất khóa riêng tư</string>
+    <string name="gpg_show_private">Hiện khóa riêng tư</string>
+    <string name="gpg_hide_private">Ẩn khóa riêng tư</string>
+    <string name="gpg_add_title">Khóa GPG mới</string>
+    <string name="gpg_edit_title">Sửa khóa GPG</string>
+    <string name="gpg_empty">Tạo hoặc nhập khóa</string>
+    <string name="gpg_ready">Đã thêm khóa</string>
+    <string name="gpg_options">Tùy chọn tạo khóa</string>
+    <string name="gpg_expiry">Thời hạn</string>
+    <string name="gpg_actions">Thao tác với khóa GPG</string>
+    <string name="gpg_export_pair">Xuất cặp khóa</string>
+    <string name="gpg_create_entry">Tạo mục GPG mới</string>
+    <string name="gpg_name_invalid">Nhập tên dài 1–128 ký tự, không có dấu ngoặc nhọn hoặc xuống dòng.</string>
+    <string name="gpg_email_invalid">Nhập địa chỉ email hợp lệ hoặc để trống.</string>
+    <string name="gpg_generate_error">Không thể tạo khóa. Hãy thử lại.</string>
+    <string name="gpg_import_error">Không thể nhập. Chọn một tệp khóa OpenPGP hợp lệ, tối đa 1 MB.</string>
+    <string name="gpg_load_error">Không thể đọc khóa. Kiểm tra kho rồi mở lại mục.</string>
+    <string name="gpg_save_error">Không thể lưu khóa. Kiểm tra quyền ghi của kho đã chọn.</string>
+    <string name="gpg_export_error">Không thể xuất khóa. Chọn vị trí có quyền ghi.</string>
+</resources>

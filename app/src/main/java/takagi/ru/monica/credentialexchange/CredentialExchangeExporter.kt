@@ -1,5 +1,6 @@
 package takagi.ru.monica.credentialexchange
 
+import takagi.ru.monica.repository.readMdbxSshKeyData
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -68,6 +69,7 @@ class CredentialExchangeExporter(private val context: Context) {
                 PasswordEntry(id = id, title = stored.title, username = data.optString("username"),
                     password = data.getString("password_plain"), website = data.optString("website"),
                     notes = data.optString("notes"), loginType = data.optString("login_type", "PASSWORD"),
+                        sshKeyData = data.readMdbxSshKeyData(),
                     appPackageName = data.optString("app_package_name"), appName = data.optString("app_name"))
             }
             passkeys = entries.filter { it.entryType == "passkey" }.map { stored ->

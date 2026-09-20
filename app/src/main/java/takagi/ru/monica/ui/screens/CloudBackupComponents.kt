@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
@@ -197,7 +198,7 @@ internal fun CloudBackupPrimaryButton(
         if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
         else Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(10.dp))
-        Text(label, modifier = Modifier.weight(1f, fill = false))
+        Text(label, modifier = Modifier.weight(1f, fill = false), textAlign = TextAlign.Center)
     }
 }
 

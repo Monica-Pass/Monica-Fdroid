@@ -651,6 +651,12 @@ fun PasswordDetailScreen(
         }
     ) { paddingValues ->
         passwordEntry?.let { entry ->
+            if (entry.isGpgKeyEntry() || customFields.any {
+                    it.title == takagi.ru.monica.data.model.GpgEntryFields.MARKER && it.value == "GPG_KEY"
+                }) {
+                GpgDetailContent(customFields, displayPasswords[entry.id].orEmpty(), Modifier.padding(paddingValues))
+                return@let
+            }
             val storageInfoEntries = remember(
                 groupPasswords,
                 entry,

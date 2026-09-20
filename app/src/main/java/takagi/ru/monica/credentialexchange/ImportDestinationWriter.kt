@@ -1,5 +1,6 @@
 package takagi.ru.monica.credentialexchange
 
+import takagi.ru.monica.repository.readMdbxSshKeyData
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -98,6 +99,7 @@ class ImportDestinationWriter(
                         website = data.optString("website"), password = security.encryptData(data.getString("password_plain")),
                         notes = data.optString("notes"), appPackageName = data.optString("app_package_name"),
                         appName = data.optString("app_name"), loginType = data.optString("login_type", "PASSWORD"),
+                        sshKeyData = data.readMdbxSshKeyData(),
                         mdbxDatabaseId = destination.databaseId, replicaGroupId = stored.entryId,
                         mdbxFolderId = data.optString("mdbx_folder_id").takeUnless { it.isBlank() || it == "null" },
                         authenticatorKey = data.optString("authenticator_key").takeIf { it.isNotEmpty() }

@@ -1,0 +1,4 @@
+<resources>
+    <string name="generator_create_username">Crea voce con questo nome utente</string>
+    <string name="generator_create_password">Crea voce con questa password</string>
+</resources>

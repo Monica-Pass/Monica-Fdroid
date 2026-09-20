@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.cardwallet
 
+import androidx.compose.animation.EnterExitState
+import takagi.ru.monica.ui.LocalAnimatedVisibilityScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -54,6 +56,7 @@ internal fun WalletStackCard(
     controlsVisible: Boolean = coverVisible,
     modifier: Modifier = Modifier
 ) {
+    val navigation = LocalAnimatedVisibilityScope.current?.transition
     // Keep controls at their list size; reveal them after the moving card has returned.
     val controlsAlpha by animateFloatAsState(
         targetValue = if (controlsVisible) 1f else 0f,
@@ -72,7 +75,16 @@ internal fun WalletStackCard(
                     .aspectRatio(CardFaceImageProcessor.CARD_ASPECT_RATIO)
                     .testTag("wallet_stack_cover")
                     // Keep the full card rectangle even when the list clips an edge.
-                    .onGloballyPositioned { onCoverBounds(Rect(it.positionInWindow(), it.size.toSize())) }
+                    .onGloballyPositioned { coordinates ->
+                        // Read the transition at measurement time: window coordinates include
+                        // navigation scale/translation, while size is the untransformed size.
+                        // Never replace the settled collapse target with that mixed rectangle.
+                        if (navigation == null || (!navigation.isRunning &&
+                                navigation.currentState == EnterExitState.Visible &&
+                                navigation.targetState == EnterExitState.Visible)) {
+                            onCoverBounds(Rect(coordinates.positionInWindow(), coordinates.size.toSize()))
+                        }
+                    }
                     .graphicsLayer { alpha = if (coverVisible) 1f else 0f }
             ) {
                 WalletStackBackplates((entry.cards.size - 1).coerceAtMost(3), Modifier.fillMaxSize())

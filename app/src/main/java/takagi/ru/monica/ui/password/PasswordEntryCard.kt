@@ -101,7 +101,7 @@ fun PasswordEntryCard(
                     .fillMaxWidth()
                     .clip(cardShape)
                     .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-                    .padding(if (isSingleCard) 20.dp else 16.dp),
+                    .padding(if (isSingleCard) 20.dp else 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (iconCardsEnabled) {
@@ -203,7 +203,7 @@ fun PasswordEntryCard(
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(if (isSingleCard) 8.dp else 6.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (isSingleCard) 8.dp else 4.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

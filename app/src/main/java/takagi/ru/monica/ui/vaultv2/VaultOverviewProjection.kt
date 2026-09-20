@@ -11,6 +11,7 @@ import takagi.ru.monica.data.vaultOverviewSourceKey
 import takagi.ru.monica.repository.MdbxStoredFolderEntry
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterSelection
 import takagi.ru.monica.utils.KeePassGroupInfo
+import takagi.ru.monica.utils.decodeKeePassPathForDisplay
 
 internal data class VaultOverviewSource(
     val key: String,
@@ -139,12 +140,24 @@ internal fun prepareVaultOverview(
         addFolder(VaultOverviewFolder("$source/${it.folderId}", it.name, source,
             UnifiedCategoryFilterSelection.MdbxFolderFilter(databaseId, it.folderId)))
     } }
+    // Passkeys carry a path but no group UUID. Resolve both representations to the
+    // same folder identity before assigning numeric indices to Kotlin/Rust aggregation.
+    val keepassFolderKeysByPath = mutableMapOf<Pair<Long, String>, String>()
     keepassGroups.forEach { (databaseId, groups) -> groups.filter { it.path.isNotBlank() }.forEach { group ->
         val source = "keepass:$databaseId"
         val key = "$source/${group.uuid?.takeIf(String::isNotBlank) ?: group.path}"
+        keepassFolderKeysByPath[databaseId to group.path] = key
         addFolder(VaultOverviewFolder(key, group.displayPath, source,
             UnifiedCategoryFilterSelection.KeePassGroupFilter(databaseId, group.path, group.uuid)))
     } }
+    // Also cover the initial snapshot before the group catalogue has loaded. A
+    // two-pass lookup makes identity independent of password/passkey item order.
+    allItems.forEach { item ->
+        val databaseId = item.keepassDatabaseId() ?: return@forEach
+        val path = item.keepassGroupPath()?.takeIf(String::isNotBlank) ?: return@forEach
+        val uuid = item.keepassGroupUuid()?.takeIf(String::isNotBlank) ?: return@forEach
+        keepassFolderKeysByPath.putIfAbsent(databaseId to path, "keepass:$databaseId/$uuid")
+    }
     // Resolve paths and identities once in the background. Native code only sees numeric indices.
     val itemSources = Array(allItems.size) { allItems[it].overviewSource() }
     val itemFolderKeys = arrayOfNulls<String>(allItems.size)
@@ -157,9 +170,15 @@ internal fun prepareVaultOverview(
             source.startsWith("mdbx:") -> item.mdbxFolderId()?.takeIf(String::isNotBlank)?.let { "$source/$it" }
                 ?: item.categoryId()?.let { "$source/category:$it" }
             source.startsWith("keepass:") -> item.keepassGroupPath()?.takeIf(String::isNotBlank)?.let { path ->
-                val key = "$source/${item.keepassGroupUuid()?.takeIf(String::isNotBlank) ?: path}"
-                folders.putIfAbsent(key, VaultOverviewFolder(key, path, source,
-                    UnifiedCategoryFilterSelection.KeePassGroupFilter(item.keepassDatabaseId()!!, path, item.keepassGroupUuid())))
+                val databaseId = item.keepassDatabaseId()!!
+                val uuid = item.keepassGroupUuid()?.takeIf(String::isNotBlank)
+                val key = uuid?.let { "$source/$it" }
+                    ?: keepassFolderKeysByPath[databaseId to path] ?: "$source/$path"
+                val resolvedUuid = uuid ?: key.removePrefix("$source/").takeIf { it != path }
+                folders.getOrPut(key) {
+                    VaultOverviewFolder(key, decodeKeePassPathForDisplay(path), source,
+                        UnifiedCategoryFilterSelection.KeePassGroupFilter(databaseId, path, resolvedUuid))
+                }
                 key
             }
             else -> null

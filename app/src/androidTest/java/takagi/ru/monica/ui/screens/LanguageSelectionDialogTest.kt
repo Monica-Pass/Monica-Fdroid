@@ -111,6 +111,16 @@ class LanguageSelectionDialogTest {
         compose.runOnIdle { assertEquals(listOf(Language.FRENCH), selections) }
     }
 
+    @Test
+    fun italianOptionUsesChineseNicknameAndCanBeSelected() {
+        show(Language.ITALIAN, dark = true, fontScale = 1.5f)
+        compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag("language_option_ITALIAN"))
+        compose.onNodeWithText("超级马里奥语").assertIsDisplayed()
+        compose.onNodeWithTag("language_option_ITALIAN").assertIsSelected().performClick()
+        compose.runOnIdle { assertEquals(listOf(Language.ITALIAN), selections) }
+        capture("language-dialog-italian-dark-large-text.png")
+    }
+
     private fun chineseCloseLabel(): String = context.createConfigurationContext(
         Configuration(context.resources.configuration).apply { setLocale(Locale.SIMPLIFIED_CHINESE) }
     ).getString(R.string.close)

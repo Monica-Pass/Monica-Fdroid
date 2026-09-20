@@ -79,8 +79,8 @@ fun MultiPasswordEntryCard(
                     onClick = { onCardClick?.invoke() },
                     onLongClick = onLongClick
                 )
-                .padding(if (isInExpandedGroup) 16.dp else 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(if (isInExpandedGroup) 12.dp else 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

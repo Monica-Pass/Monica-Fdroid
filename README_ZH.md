@@ -354,6 +354,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ## 💖 支持作者
 
+也可以通过 [Liberapay](https://liberapay.com/JoyinJoester) 使用欧元（EUR）支持 Monica。
+
 如果这个项目对您有帮助,欢迎通过以下方式支持作者的持续开发:
 
 <div align="center">

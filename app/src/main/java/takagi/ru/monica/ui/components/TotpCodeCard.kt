@@ -17,6 +17,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.DisableSelection
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -34,6 +36,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -82,6 +87,7 @@ fun TotpCodeCard(
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     compactTile: Boolean = false,
+    uniformAuthenticatorLayout: Boolean = false,
     boundPasswordSummary: String? = null,
     sharedTickSeconds: Long? = null,
     sharedProgressTimeMillis: Long? = null,
@@ -311,14 +317,65 @@ fun TotpCodeCard(
     val immersiveTertiaryColor = Color.White.copy(alpha = 0.96f)
     val immersiveErrorColor = Color.White
 
+    val density = LocalDensity.current
+    // Reserve the same text slots even when an entry has no account/issuer.
+    // Convert sp through the current density so accessibility font sizes still fit.
+    val infoSlotCount = settings.authenticatorCardDisplayFields.distinct().size
+    val headerHeight = with(density) {
+        (MaterialTheme.typography.titleMedium.lineHeight.toDp() +
+            MaterialTheme.typography.bodySmall.lineHeight.toDp() * infoSlotCount).coerceAtLeast(48.dp)
+    }
+
     if (compactTile) {
+        val counterTile = totpData.otpType == OtpType.HOTP
+        val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val titleStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+        val subtitleStyle = MaterialTheme.typography.labelSmall
+        val codeMaxSize = if (totpData.otpType == OtpType.STEAM) 24.sp else 28.sp
+        val codeStyle = LocalTextStyle.current.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.ExtraBold,
+        )
+        val nextStyle = MaterialTheme.typography.titleSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val tileMetrics = remember(textMeasurer, density, titleStyle, subtitleStyle,
+            codeStyle, nextStyle, infoSlotCount) {
+            // Measure real paragraphs: font metrics and accessibility scaling can exceed
+            // lineHeight.toPx(). Use the same header budget even for entries without an account.
+            fun lineHeight(style: androidx.compose.ui.text.TextStyle) = textMeasurer.measure(
+                text = "Ag09", style = style, softWrap = false, maxLines = 1
+            ).size.height
+            with(density) {
+                val header = (lineHeight(titleStyle) +
+                    if (infoSlotCount > 0) lineHeight(subtitleStyle) else 0)
+                    .coerceAtLeast(32.dp.roundToPx())
+                val gap = 8.dp.roundToPx()
+                // TOTP and Steam share an outer size even when Steam uses smaller code text.
+                val withoutPreview = 12.dp.roundToPx() * 2 + header + gap +
+                    lineHeight(codeStyle.copy(fontSize = 28.sp))
+                val height = withoutPreview.coerceAtLeast(142.dp.roundToPx())
+                val preview = listOf(nextStyle.fontSize, 11.sp, 8.sp).distinct()
+                    .filter { it <= nextStyle.fontSize }
+                    .map { fontSize -> nextStyle.copy(
+                        fontSize = fontSize,
+                        lineHeight = nextStyle.lineHeight * (fontSize.value / nextStyle.fontSize.value)
+                    ) }
+                    .firstOrNull { withoutPreview + gap + lineHeight(it) <= height }
+                height.toDp() to preview
+            }
+        }
         MonicaItemCard(
-            modifier = cardInteractionModifier.heightIn(min = 142.dp),
+            modifier = if (counterTile) cardInteractionModifier.heightIn(min = 142.dp)
+                else cardInteractionModifier.height(tileMetrics.first),
             isSelected = isSelected
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(if (counterTile) Modifier else Modifier.fillMaxHeight())
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -467,15 +524,21 @@ fun TotpCodeCard(
                     remember { mutableFloatStateOf(1f) }
                 }
 
-                Text(
+                // Preserve the release tile layout; fit the code within its existing width.
+                BasicText(
                     text = if (showOtpCode) formatOtpCode(currentCode, totpData.otpType)
                     else formatMaskedOtpCode(currentCode, totpData),
-                    modifier = Modifier.graphicsLayer { alpha = expiryAlpha },
-                    color = if (remainingSeconds in 1..5) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = if (totpData.otpType == OtpType.STEAM) 24.sp else 28.sp,
+                    modifier = Modifier.fillMaxWidth()
+                        .graphicsLayer { alpha = expiryAlpha },
+                    style = codeStyle.copy(
+                        color = if (remainingSeconds in 1..5) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
+                    ),
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 12.sp,
+                        maxFontSize = codeMaxSize,
+                    ),
+                    softWrap = false,
                     maxLines = 1
                 )
 
@@ -487,13 +550,18 @@ fun TotpCodeCard(
                     ) {
                         Text(stringResource(R.string.generate_next))
                     }
-                } else {
-                    Text(
-                        text = formatOtpCode(nextCode, totpData.otpType),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                } else if (tileMetrics.second != null) {
+                    val previewStyle = requireNotNull(tileMetrics.second)
+                    BasicText(
+                        text = if (showOtpCode) formatOtpCode(nextCode, totpData.otpType)
+                            else formatMaskedOtpCode(nextCode, totpData),
+                        modifier = Modifier.fillMaxWidth(),
+                        style = previewStyle,
+                        autoSize = TextAutoSize.StepBased(
+                            minFontSize = 8.sp,
+                            maxFontSize = previewStyle.fontSize,
+                        ),
+                        softWrap = false,
                         maxLines = 1
                     )
                 }
@@ -540,11 +608,13 @@ fun TotpCodeCard(
                 }
             ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(if (uniformAuthenticatorLayout) 12.dp else 10.dp)
             ) {
             // 标题和菜单
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().then(
+                    if (uniformAuthenticatorLayout) Modifier.height(headerHeight) else Modifier
+                ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -624,12 +694,19 @@ fun TotpCodeCard(
                         Text(
                             text = item.title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = if (uniformAuthenticatorLayout) 1 else Int.MAX_VALUE,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        infoLines.forEach { line ->
+                        val displayedInfo = if (uniformAuthenticatorLayout) {
+                            List(infoSlotCount) { infoLines.getOrNull(it).orEmpty() }
+                        } else infoLines
+                        displayedInfo.forEach { line ->
                             Text(
                                 text = line,
                                 style = MaterialTheme.typography.bodySmall,
+                                maxLines = if (uniformAuthenticatorLayout) 1 else Int.MAX_VALUE,
+                                overflow = TextOverflow.Ellipsis,
                                 color = if (hasImmersiveBackground) {
                                     immersiveSecondaryColor
                                 } else {
@@ -799,8 +876,8 @@ fun TotpCodeCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            Spacer(modifier = Modifier.height(8.dp))
+
             // 验证码显示
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -836,34 +913,37 @@ fun TotpCodeCard(
                 }
                 
                 DisableSelection {
-                    Text(
+                    BasicText(
                         text = if (showOtpCode) {
                             formatOtpCode(currentCode, totpData.otpType)
                         } else {
                             formatMaskedOtpCode(currentCode, totpData)
                         },
-                        fontSize = codeFontSize,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.graphicsLayer {
+                        autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = codeFontSize),
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f).height(with(density) { (codeFontSize.value + 12).sp.toDp() }).graphicsLayer {
                             // Read animation state in the layer phase so only
                             // the code glyphs redraw during the final seconds.
                             alpha = expiryBlinkAlpha.value
                         },
-                        color = when {
+                        style = TextStyle(fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.ExtraBold, color = when {
                             totpData.otpType == OtpType.STEAM && hasImmersiveBackground -> immersiveTertiaryColor
                             remainingSeconds <= 5 && hasImmersiveBackground -> immersiveErrorColor
                             hasImmersiveBackground -> immersiveAccentColor
                             totpData.otpType == OtpType.STEAM -> MaterialTheme.colorScheme.tertiary
                             remainingSeconds <= 5 -> MaterialTheme.colorScheme.error
                             else -> MaterialTheme.colorScheme.primary
-                        }
+                        })
                     )
                 }
                 
                 // 下一次验证码预览
                 if (totpData.otpType != OtpType.HOTP) {
-                    Column(horizontalAlignment = Alignment.End) {
+                    Column(
+                        modifier = Modifier.width(88.dp).padding(start = 8.dp),
+                        horizontalAlignment = Alignment.End
+                    ) {
                         // Keep this badge in English for both 2FA and Steam cards.
                         Text(
                             text = "Next",
@@ -876,19 +956,24 @@ fun TotpCodeCard(
                             }
                         )
                         DisableSelection {
-                            Text(
+                            BasicText(
                                 text = if (showOtpCode) {
                                     formatOtpCode(nextCode, totpData.otpType)
                                 } else {
                                     formatMaskedOtpCode(nextCode, totpData)
                                 },
-                                style = MaterialTheme.typography.labelSmall,
-                                fontFamily = FontFamily.Monospace,
-                                color = if (hasImmersiveBackground) {
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 1,
+                                autoSize = TextAutoSize.StepBased(minFontSize = 8.sp,
+                                    maxFontSize = MaterialTheme.typography.labelSmall.fontSize),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                    color = if (hasImmersiveBackground) {
                                     immersiveSecondaryColor
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant
-                                }
+                                })
                             )
                         }
                     }
@@ -904,8 +989,8 @@ fun TotpCodeCard(
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
+            Spacer(modifier = Modifier.height(4.dp))
+
             // 进度条/计数器显示
             // 判断是否需要隐藏进度条（启用统一进度条模式且是标准周期30s/60s）
             val isStandardPeriod = totpData.period == 30 || totpData.period == 60

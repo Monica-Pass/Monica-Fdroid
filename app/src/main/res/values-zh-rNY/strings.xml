@@ -2889,7 +2889,7 @@
     <string name="sync_status_conflict_badge">冲突喵</string>
     <string name="sync_status_local_badge">本地喵</string>
     <string name="bitwarden_synced_item">Bitwarden 同步项喵</string>
-    <string name="sync_status_with_vault"> · %1$s</string>
+    <string name="sync_status_with_vault">\u0020· %1$s</string>
     <string name="sync_last_sync">上次同步：%1$s喵</string>
     <string name="sync_now">立即同步喵</string>
     <string name="sync_status_synced_full">已经叼到 Bitwarden 了喵</string>
@@ -3356,7 +3356,7 @@
     <string name="password_field_customization_reset_system_fields">重置系统字段为默认喵</string>
     <string name="password_field_customization_clear_preset_fields">清空所有预设字段喵</string>
     <string name="password_field_customization_type_label">类型: %1$s喵</string>
-    <string name="password_field_customization_default_value_suffix"> · 默认: %1$s喵</string>
+    <string name="password_field_customization_default_value_suffix">\u0020· 默认: %1$s喵</string>
     <string name="password_field_customization_delete_preset_title">删除预设字段喵</string>
     <string name="password_field_customization_delete_preset_message">确定要删除预设字段「%1$s」吗喵？\n\n已添加的密码中该字段的数据不会被删除喵。</string>
     <string name="password_field_customization_edit_preset_title">编辑预设字段喵</string>

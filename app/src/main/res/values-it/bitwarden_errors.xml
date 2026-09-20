@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="bitwarden_error_certificate_expired">"Il certificato è scaduto. Controllare la data e l\'ora del dispositivo e chiedere all\'amministratore del server di rinnovare il certificato."</string>
+    <string name="bitwarden_error_certificate_not_yet_valid">"Il certificato non è ancora valido. Controllare la data e l\'ora del dispositivo e il periodo di validità del certificato."</string>
+    <string name="bitwarden_error_certificate_hostname">"Il certificato server non corrisponde al dominio immesso. Controllare l\'indirizzo self-hosted e il certificato restituito dal proxy inverso."</string>
+    <string name="bitwarden_error_certificate_untrusted">"Non è stato possibile verificare il certificato del server. Controllare la catena di certificati server completa, le CA attendibili del dispositivo e se un proxy sostituisce i certificati HTTPS. Per un server autofirmato, configurare la CA nelle impostazioni del certificato."</string>
+    <string name="bitwarden_error_tls_handshake">"Non è stato possibile stabilire una connessione TLS sicura. Controllare le versioni di configurazione e protocollo TLS del server o del reverse proxy e il certificato client se mTLS è abilitato."</string>
+    <string name="bitwarden_error_dns">"Non è stato possibile risolvere il dominio del server. Controllare l\'indirizzo ospitato autonomamente, DNS, VPN e le impostazioni del proxy."</string>
+    <string name="bitwarden_error_timeout">"La connessione al server è scaduta. Verifica che il server sia online e controlla porta, rete, VPN e impostazioni proxy."</string>
+    <string name="bitwarden_error_connection">"Non è stato possibile connettersi al server. Controllare l\'indirizzo e la porta, confermare che il servizio è in esecuzione e rivedere le impostazioni del firewall e del proxy."</string>
+    <string name="bitwarden_error_proxy">"Il proxy ha rifiutato la connessione o richiede l\'autenticazione. Controllare l\'indirizzo proxy, la porta e le impostazioni dell\'account."</string>
+    <string name="bitwarden_error_cleartext">"L\'indirizzo del server utilizza HTTP, che l\'attuale politica di sicurezza non consente. Utilizzare un indirizzo HTTPS e controllare la configurazione HTTPS del proxy inverso."</string>
+    <string name="bitwarden_error_network_io">"Un errore di rete ha interrotto la comunicazione con il server. Controllare le impostazioni di rete, VPN e proxy, quindi riprovare."</string>
+</resources>
