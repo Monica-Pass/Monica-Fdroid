@@ -1,7 +1,7 @@
 Monica 1.0.314
-- GPG keys and generator action menus.
-- Italian localization and Liberapay support.
-- Faster entry editors and vault overviews.
-- Compact equal-height authenticator tiles; smaller or hidden previews when space is tight.
-- QR forms no longer switch login types accidentally.
-- Preserve SSH key data and improve KeePass folders, database navigation and card-stack positioning.
+- AI API Keys, GPG, generator menus, Italian, Liberapay.
+- Faster keyboard loading/search; optional PIN shuffle and hidden previews; balanced keys.
+- QR/Code 128 fields, Emoji/app/icon-pack artwork, branded passkeys.
+- Improve editors, previews, authenticator/Steam layouts, QR/SSH data and navigation.
+- MDBX1 upgrades; MDBX2/CLI writes and WebDAV fixes.
+- Fix KDBX missing entries/fields/OTP; native OTP/HOTP, tags, expiry and combined saves.
