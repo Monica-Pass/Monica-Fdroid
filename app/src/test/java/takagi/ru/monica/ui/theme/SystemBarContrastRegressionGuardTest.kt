@@ -1,5 +1,9 @@
 package takagi.ru.monica.ui.theme
 
+import takagi.ru.monica.testing.styleItem
+
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,7 +14,7 @@ class SystemBarContrastRegressionGuardTest {
     fun edgeToEdgeSetupDisablesSystemNavigationBarContrastScrim() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/base/BaseMonicaActivity.kt"
-        ).readText()
+        ).readSourceText()
 
         val edgeToEdgeIndex = source.indexOf("enableEdgeToEdge()")
         val systemBarSetupIndex = source.indexOf("configureEdgeToEdgeSystemBars()")
@@ -28,7 +32,7 @@ class SystemBarContrastRegressionGuardTest {
     fun composeThemeKeepsTransparentNavigationBarAcrossThemeChanges() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/theme/Theme.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             source.contains(
@@ -41,13 +45,10 @@ class SystemBarContrastRegressionGuardTest {
 
     @Test
     fun lightAndDarkThemesDisableNavigationBarContrast() {
-        val lightTheme = projectFile("app/src/main/res/values/themes.xml").readText()
-        val darkTheme = projectFile("app/src/main/res/values-night/themes.xml").readText()
-        val contrastSetting =
-            "<item name=\"android:enforceNavigationBarContrast\">false</item>"
-
-        assertTrue(lightTheme.contains(contrastSetting))
-        assertTrue(darkTheme.contains(contrastSetting))
+        val lightTheme = projectFile("app/src/main/res/values/themes.xml").readSourceText()
+        val darkTheme = projectFile("app/src/main/res/values-night/themes.xml").readSourceText()
+        assertTrue(lightTheme.styleItem("Theme.Monica", "android:enforceNavigationBarContrast") == "false")
+        assertTrue(darkTheme.styleItem("Theme.Monica", "android:enforceNavigationBarContrast") == "false")
     }
 
     private fun projectFile(relativePath: String): File {

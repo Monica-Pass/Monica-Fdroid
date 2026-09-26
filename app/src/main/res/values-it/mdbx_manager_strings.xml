@@ -513,7 +513,7 @@
     <string name="mdbx_ui_repair_cancelled">"La riparazione del database è stata annullata. Non sono state scritte modifiche."</string>
     <string name="mdbx_ui_repair_no_changes">"Nessuna modifica del database deve essere scritta"</string>
     <string name="mdbx_ui_manager_entry_title">"Gestore database MDBX"</string>
-    <string name="mdbx_ui_manager_entry_description">"Gestire i database MDBX locali, WebDAV e OneDrive, inclusi i database delle versioni di test precedenti."</string>
+    <string name="mdbx_ui_manager_entry_description">"Gestisci i database MDBX locali e WebDAV e converti i file MDBX1 in MDBX2."</string>
     <string name="mdbx_ui_database_count">"database %1$s"</string>
     <string name="mdbx_ui_source_count">"%1$s database collegati"</string>
     <string name="mdbx_ui_structure_removed">"Eliminato"</string>

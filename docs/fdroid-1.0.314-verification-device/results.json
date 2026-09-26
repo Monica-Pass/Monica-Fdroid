@@ -1,0 +1,546 @@
+{
+  "date": "2026-09-26",
+  "fdroid_jvm": {
+    "tests": 1942,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "suites": 418,
+    "skipped_cases": [
+      "takagi.ru.monica.steam.SteamInventoryLiveTest.realMaFileEligibilityCheckReturnsInventoryOverview"
+    ]
+  },
+  "fdroid_device_groups": {
+    "native": {
+      "tests": 85,
+      "failures": 0,
+      "skipped": 0,
+      "skipped_cases": []
+    },
+    "keyboard": {
+      "tests": 27,
+      "failures": 0,
+      "skipped": 0,
+      "skipped_cases": []
+    },
+    "features": {
+      "tests": 47,
+      "failures": 0,
+      "skipped": 1,
+      "skipped_cases": [
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest.detailNavigationAfterFolderBrowsingPerformance"
+      ]
+    },
+    "content": {
+      "tests": 4,
+      "failures": 0,
+      "skipped": 0,
+      "skipped_cases": []
+    },
+    "transfer": {
+      "tests": 33,
+      "failures": 0,
+      "skipped": 0,
+      "skipped_cases": []
+    },
+    "ui": {
+      "tests": 41,
+      "failures": 0,
+      "skipped": 0,
+      "skipped_cases": []
+    }
+  },
+  "fdroid_device_total": {
+    "tests": 237,
+    "failures": 0,
+    "skipped": 1
+  },
+  "main_shared_jvm": {
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 7,
+    "skipped_cases": []
+  },
+  "main_shared_device": {
+    "tests": 40,
+    "failures": 0,
+    "skipped": 0,
+    "skipped_cases": []
+  },
+  "release_apk": {
+    "application_id": "takagi.ru.monica.fdroid",
+    "version": "1.0.314",
+    "version_code": 21,
+    "bytes": 57383873,
+    "sha256": "20496f9c0ab6ef94aa12864ff650fc43a39cebc2d9e9e0020a926e327fd3f083",
+    "native_libraries": [
+      {
+        "path": "lib/arm64-v8a/libandroidx.graphics.path.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "41e9a793c43a0f4fddb19e33f346bace464f30f888ba7b9eaf96294ea115bfb6"
+      },
+      {
+        "path": "lib/arm64-v8a/libargon2jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "d241eacac6e5d174167a680437fac1b1d65575b24c6938307f32ba3f87fc8a51"
+      },
+      {
+        "path": "lib/arm64-v8a/libargon2native.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "1c7434c90b999d5560ef6356abe5441a06e7017cda2ead996502c3d72d4f5be7"
+      },
+      {
+        "path": "lib/arm64-v8a/libdatastore_shared_counter.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "d3e48717c9aa147e0ab21063ba0e8e0211cabf8bf40b222640829519edbf58e1"
+      },
+      {
+        "path": "lib/arm64-v8a/libimage_processing_util_jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "f0e4611db0d6b68942d8ba6977519f3dd1cdbffa87b7fc16d8006696ba954af4"
+      },
+      {
+        "path": "lib/arm64-v8a/libjnidispatch.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "abc26e994517bcaa3309acdb0a27373864086c7569c89d3087b8626fada9ef06"
+      },
+      {
+        "path": "lib/arm64-v8a/libmdbx_ffi.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "46e7004d294b871fc13d28b6b194688a9a3c9cfedcbca7f7a767e0af6957f0ae"
+      },
+      {
+        "path": "lib/arm64-v8a/libmonica_rust_jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "57e0864b3f5e1318a3157db6d361725a164dde2ff7dd8bc12639039469ac548d"
+      },
+      {
+        "path": "lib/arm64-v8a/libsurface_util_jni.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "6cb2eac3c68e6a82ce2a5ea5aba86749eb8c609914392e125f6cdfbc208992f8"
+      },
+      {
+        "path": "lib/armeabi-v7a/libandroidx.graphics.path.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "41399eba6fc2a60f6f14642375c1824f3cf25eb8fec7397d753730a3ceda3e2b"
+      },
+      {
+        "path": "lib/armeabi-v7a/libargon2jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "3d5e26fba97523c76dac9d45c6ba0895ab725370dbf8b4d5c12b4f0a292af55f"
+      },
+      {
+        "path": "lib/armeabi-v7a/libargon2native.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "5cc1f366da19827f7381efa61d426dbd88760550cad87a67a657743e9551856a"
+      },
+      {
+        "path": "lib/armeabi-v7a/libdatastore_shared_counter.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "716c5d8d2cac8ca0edf65da8f139c7886b726ac79d542a14edeb94994ba6d3dc"
+      },
+      {
+        "path": "lib/armeabi-v7a/libimage_processing_util_jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "7467e79ba28f412ce46f24dfae5a0479e0bd20b94d834963d1ac4fdb19e406c1"
+      },
+      {
+        "path": "lib/armeabi-v7a/libjnidispatch.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "9652282ef31834281229370a354d56c1522fe36e93625169df99b3e346f76092"
+      },
+      {
+        "path": "lib/armeabi-v7a/libmdbx_ffi.so",
+        "load_alignments": [
+          4096,
+          4096,
+          4096,
+          4096
+        ],
+        "sha256": "13d61d02f87b02971499b307d3a94102171a52f3334737b0d99d4ec48b9e007a"
+      },
+      {
+        "path": "lib/armeabi-v7a/libmonica_rust_jni.so",
+        "load_alignments": [
+          4096,
+          4096,
+          4096,
+          4096
+        ],
+        "sha256": "4f2ace1222fa28f649dd78ec2371618dde24efc4a46b6b005e619a0821b7944a"
+      },
+      {
+        "path": "lib/armeabi-v7a/libsurface_util_jni.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "ee762c748052666a20c3cffbffb8acef9a405b873d13fb1479cef63fff7aaea0"
+      },
+      {
+        "path": "lib/x86_64/libandroidx.graphics.path.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "4e56c996f13670e70082658de7880c4020eabf4f25e43387f88ed78a713fc9f0"
+      },
+      {
+        "path": "lib/x86_64/libargon2jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "053e720a1b1df8e814d479600f9fa3e71556da5f674687cb72f0bd0651286dbf"
+      },
+      {
+        "path": "lib/x86_64/libargon2native.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "89d0c70653791539ac67e0f1ad123d49c0fbd8986f7775bf108e7dbc7d21e2d2"
+      },
+      {
+        "path": "lib/x86_64/libdatastore_shared_counter.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "fb6c9208988c49ae94943bc3236fa763ba584722e044fa4ea9a12d2941027105"
+      },
+      {
+        "path": "lib/x86_64/libimage_processing_util_jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "f5d02c9c50c33a45c2125f63f4d6c954aec0e9b1a6ade25074f146ed92264efe"
+      },
+      {
+        "path": "lib/x86_64/libjnidispatch.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "3809247e9b804a05ed8377b87d545cf5b5e97f960f75e725bc8497b40260e417"
+      },
+      {
+        "path": "lib/x86_64/libmdbx_ffi.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "50ed35aeef0f26bbfc62ccbbbba83738d4d11f056bf698d8373710ed9e401c28"
+      },
+      {
+        "path": "lib/x86_64/libmonica_rust_jni.so",
+        "load_alignments": [
+          16384,
+          16384,
+          16384,
+          16384
+        ],
+        "sha256": "703eb00a11c19e8d9413215bf35d9e4a34583d23a3422f4e10f2744f3418b331"
+      },
+      {
+        "path": "lib/x86_64/libsurface_util_jni.so",
+        "load_alignments": [
+          16384,
+          16384
+        ],
+        "sha256": "84d8ca201f2160b2ca3a5bd2886994f7287ee7cd09fe73b081f5b236dda8496d"
+      }
+    ],
+    "defined_classes_checked": 43817,
+    "forbidden_defined_packages": [],
+    "profiles": [
+      "assets/dexopt/baseline.prof",
+      "assets/dexopt/baseline.profm"
+    ],
+    "debuggable": false,
+    "zip_16k_alignment": "passed"
+  },
+  "independent_kdbx": {
+    "reader": "PyKeePass 4.1.1.post1",
+    "files": [
+      {
+        "version": 3,
+        "fields": 8,
+        "attachments": 1,
+        "history": 1,
+        "result": "passed"
+      },
+      {
+        "version": 4,
+        "fields": 8,
+        "attachments": 1,
+        "history": 1,
+        "result": "passed"
+      }
+    ]
+  },
+  "independent_mdbx": {
+    "reader": "Monica CLI 0.5.0",
+    "result": "passed",
+    "entries": 2,
+    "original_cli_entry_and_android_entry_preserved": true
+  },
+  "release-kdbx-readback": {
+    "result": "passed",
+    "reader": "PyKeePass",
+    "entries": 2,
+    "existing_uuid_preserved": true,
+    "new_empty_password_preserved": true,
+    "attachment_history_fields_tags_expiry_icon_preserved": true,
+    "sha256": "bb723ddc7135ad4b7c3fdea5a40c4e63e0bf23dfb1d39c487610a6316f22345a"
+  },
+  "release-mdbx-readback": {
+    "reader": "Monica CLI 0.5.0",
+    "result": "passed",
+    "android_file_sha256": "39b4fb364b46b85d742d75f9c8547927472869d7a383900fc4f203e24a9ede90",
+    "actual_r8_release_saf_write": true,
+    "original_cli_entry_preserved": true,
+    "library": {
+      "categories": [
+        {
+          "id": "e62b0c23-16f4-3f9a-9517-3ed06fc22d40",
+          "parent": null,
+          "title": "Monica"
+        },
+        {
+          "id": "29d85c04-6410-4b0e-97e7-e9ddc0de6c1d",
+          "parent": null,
+          "title": "Monica Credential Gateway"
+        }
+      ],
+      "entries": [
+        {
+          "category": "29d85c04-6410-4b0e-97e7-e9ddc0de6c1d",
+          "id": "84dbf1c7-9622-42c2-aeb2-8ba90fbb1fda",
+          "kind": "api-token",
+          "title": "CLI 原生条目"
+        },
+        {
+          "category": "e62b0c23-16f4-3f9a-9517-3ed06fc22d40",
+          "id": "23b8f7d0-d3ea-3685-9cc5-e53d0dfff52a",
+          "kind": "login",
+          "title": "Release MDBX created"
+        },
+        {
+          "category": "e62b0c23-16f4-3f9a-9517-3ed06fc22d40",
+          "id": "fb7808cc-c0a0-3142-a969-a472023013be",
+          "kind": "login",
+          "title": "Release MDBX updated"
+        }
+      ]
+    }
+  },
+  "release-mdbx-readback-api36": {
+    "reader": "Monica CLI 0.5.0",
+    "result": "passed",
+    "android_file_sha256": "ff9be001f0ed69218ca2de434bb48cd6b3e0712d5bab438d9f945adfcf8b2c78",
+    "actual_r8_release_saf_write": true,
+    "original_cli_entry_preserved": true,
+    "library": {
+      "categories": [
+        {
+          "id": "e62b0c23-16f4-3f9a-9517-3ed06fc22d40",
+          "parent": null,
+          "title": "Monica"
+        },
+        {
+          "id": "29d85c04-6410-4b0e-97e7-e9ddc0de6c1d",
+          "parent": null,
+          "title": "Monica Credential Gateway"
+        }
+      ],
+      "entries": [
+        {
+          "category": "29d85c04-6410-4b0e-97e7-e9ddc0de6c1d",
+          "id": "84dbf1c7-9622-42c2-aeb2-8ba90fbb1fda",
+          "kind": "api-token",
+          "title": "CLI 原生条目"
+        },
+        {
+          "category": "e62b0c23-16f4-3f9a-9517-3ed06fc22d40",
+          "id": "e7d130b2-b3e0-37ee-b4e2-48850fa0fbc9",
+          "kind": "login",
+          "title": "Release MDBX created"
+        },
+        {
+          "category": "e62b0c23-16f4-3f9a-9517-3ed06fc22d40",
+          "id": "fb7808cc-c0a0-3142-a969-a472023013be",
+          "kind": "login",
+          "title": "Release MDBX updated"
+        }
+      ]
+    }
+  },
+  "release-passkey-verification": {
+    "result": "passed",
+    "actual_r8_release_provider": true,
+    "platform_api": 36,
+    "synthetic_rp": "example.com",
+    "algorithm": "ES256",
+    "origin": "android:apk-key-hash:bhxMeV0GK3TCjD1PoTgzpx3u8Z9lAekX7ms99geXpLA",
+    "credential_id_matched": true,
+    "rp_id_hash_matched": true,
+    "challenge_matched": true,
+    "signature_independently_verified": true,
+    "user_verified": true,
+    "counter_policy": "zero for portable/syncable passkeys (WebAuthn 6.1.1)",
+    "backup_flags_consistent": true
+  },
+  "release-ui-summary": {
+    "gpg": {
+      "result": "passed",
+      "actual_r8_release": true,
+      "generated_algorithm": "RSA 3072",
+      "private_key_passphrase_set": true,
+      "process_restart_reopened": true,
+      "fingerprint_unchanged": true,
+      "fingerprint": "B50C20AB78F57FB01AFDC721C6A3802A94084DAF"
+    },
+    "mdbx": {
+      "result": "passed",
+      "original_fixture_sha256": "25e2adde01f68cc970e16032c6c9033bbfbab8ce95a76fa8c098bd490caf9667",
+      "create_edit_save_reopen": true,
+      "process_restart_reopened": true,
+      "updated_username_preserved": true,
+      "new_empty_password_entry_visible": true
+    },
+    "kdbx": {
+      "result": "passed",
+      "actual_r8_release": true,
+      "new_api36_install_reopened_api35_output": true,
+      "native_entries": 2,
+      "custom_field_case_and_spaces_visible": true,
+      "tags_and_expiry_visible": true
+    },
+    "runtime": {
+      "api": 36,
+      "page_size": 16384,
+      "apk_unchanged": true,
+      "crashes_or_anrs": 0,
+      "fingerprint": "google/sdk_gphone16k_x86_64/emu64xa16k:16/BE2A.250530.026.F3/13894323:user/dev-keys",
+      "prior_api35_experimental_image": {
+        "native_crashes": 3,
+        "aot_also_crashed": true,
+        "unrelated_gboard_null_pc_jit_crash": true,
+        "attribution": "suspected runtime/image issue; no proven app/native root cause; not reproduced on API36"
+      }
+    },
+    "passkey": {
+      "result": "passed",
+      "create_with_enrolled_biometric": true,
+      "get_with_master_password": true,
+      "light_create_and_get_icons_reviewed": true,
+      "dark_get_icon_reviewed": true,
+      "unregistered_biometric_rejected_explicitly": true
+    }
+  },
+  "api36-navigation": {
+    "apk_unchanged": true,
+    "runtime": "api36",
+    "cycles": 10,
+    "result": "passed",
+    "process_unchanged": true,
+    "elapsed_seconds": 130.91
+  },
+  "keyboard_performance": {
+    "rows": 3000,
+    "notes_bytes": 24576000,
+    "loadMs": {
+      "samples": 3,
+      "median": 1098,
+      "min": 1082,
+      "max": 1465
+    },
+    "sortMs": {
+      "samples": 3,
+      "median": 1033,
+      "min": 1032,
+      "max": 1252
+    },
+    "firstQueryMs": {
+      "samples": 3,
+      "median": 5,
+      "min": 4,
+      "max": 23
+    },
+    "cachedQueryMicros": {
+      "samples": 60,
+      "median": 962.0,
+      "min": 834,
+      "max": 3170
+    }
+  },
+  "release_runtime_dependency_boundary": "passed"
+}

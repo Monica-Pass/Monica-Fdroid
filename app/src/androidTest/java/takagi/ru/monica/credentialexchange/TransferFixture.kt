@@ -47,7 +47,9 @@ internal class TransferFixture {
     val root = File(context.filesDir, prefix).apply { mkdirs() }
     val db = PasswordDatabase.getDatabase(context)
     val security = SecurityManager(context)
-    val mdbx = Mdbx2Repository(context, db.localMdbxDatabaseDao(), security)
+    val mdbx = Mdbx2Repository(context, db.localMdbxDatabaseDao(), security,
+        passwordEntryDao = db.passwordEntryDao(), secureItemDao = db.secureItemDao(),
+        customFieldDao = db.customFieldDao())
     val passwords = PasswordRepository(db.passwordEntryDao(), mdbxRepository = mdbx)
     val secureItems = SecureItemRepository(db.secureItemDao(), mdbxRepository = mdbx,
         decryptSensitiveValue = security::decryptDataIfMonicaCiphertext)

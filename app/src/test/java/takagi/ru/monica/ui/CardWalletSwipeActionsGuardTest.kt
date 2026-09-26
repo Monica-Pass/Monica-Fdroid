@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,7 +12,7 @@ class CardWalletSwipeActionsGuardTest {
     fun walletCardsReuseSwipeDeleteAndSelectionWithoutConflictingWithReorder() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/CardWalletScreen.kt"
-        ).readText().replace("\r\n", "\n")
+        ).readSourceText().replace("\r\n", "\n")
         val swipeActionsCall = source
             .substringAfter("SwipeActions(")
             .substringBefore("\n                                    ) {")
@@ -20,14 +22,15 @@ class CardWalletSwipeActionsGuardTest {
         assertTrue(swipeActionsCall.contains("enabled = !isDragging"))
         assertTrue(swipeActionsCall.contains("allowSwipeLeft = !isSelectionMode"))
         assertTrue(swipeActionsCall.contains("allowSwipeRight = true"))
-        assertTrue(swipeActionsCall.contains("cardShape = MonicaItemCardShape"))
+        assertTrue(swipeActionsCall.contains("cardShape = if (walletItem.type == WalletListItemType.BANK_CARD)"))
+        assertTrue(swipeActionsCall.contains("BankCardShape else MonicaItemCardShape"))
     }
 
     @Test
     fun swipeDeleteKeepsExistingConfirmationAndIdentityVerificationPath() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/CardWalletScreen.kt"
-        ).readText().replace("\r\n", "\n")
+        ).readSourceText().replace("\r\n", "\n")
 
         assertTrue(source.contains("itemToDelete?.let { item ->\n        AlertDialog("))
         assertTrue(source.contains("requestDeleteVerification(setOf(item.id))"))
@@ -38,10 +41,10 @@ class CardWalletSwipeActionsGuardTest {
     fun swipeContainerUsesTheSameEightDpShapeAsVaultCards() {
         val cardSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/MonicaItemCard.kt"
-        ).readText().replace("\r\n", "\n")
+        ).readSourceText().replace("\r\n", "\n")
         val swipeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/gestures/SwipeActions.kt"
-        ).readText().replace("\r\n", "\n")
+        ).readSourceText().replace("\r\n", "\n")
 
         assertTrue(cardSource.contains("val MonicaItemCardShape = RoundedCornerShape(8.dp)"))
         assertTrue(swipeSource.contains("cardShape: Shape = RoundedCornerShape(16.dp)"))

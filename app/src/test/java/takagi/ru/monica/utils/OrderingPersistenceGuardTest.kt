@@ -1,5 +1,7 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
@@ -15,19 +17,20 @@ class OrderingPersistenceGuardTest {
     fun cardWalletUsesManualOrderBeforeUpdateTimeAndPersistsOneBatch() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/CardWalletScreen.kt"
-        ).readText()
-        val orderingBlock = source
-            .substringAfter("val allWalletItems = remember(walletItems)")
-            .substringBefore("val nestedScrollConnection")
+        ).readSourceText()
+        val preparation = projectFile("app/src/main/java/takagi/ru/monica/ui/cardwallet/WalletListPreparation.kt").readSourceText()
+        val orderingBlock = projectFile("app/src/main/java/takagi/ru/monica/rustcore/RustListSortCore.kt").readSourceText()
         val dragBlock = source
-            .substringAfter("var walletWasDragging")
+            .substringAfter("LaunchedEffect(reorderableLazyListState.isAnyItemDragging)")
             .substringBefore("LazyColumn(")
 
-        assertTrue(orderingBlock.indexOf("thenBy { it.item.sortOrder }") >= 0)
+        assertTrue(source.contains("val allWalletItems = preparedWalletState.items"))
+        assertTrue(preparation.contains("RustListSortCore.sort(items, tieById = true) { it.item }"))
+        assertTrue(orderingBlock.indexOf("thenBy { itemOf(it).sortOrder }") >= 0)
         assertTrue(
             "Manual order must win over update time or a dragged card immediately jumps back.",
-            orderingBlock.indexOf("thenBy { it.item.sortOrder }") <
-                orderingBlock.indexOf("thenByDescending { it.item.updatedAt.time }")
+            orderingBlock.indexOf("thenBy { itemOf(it).sortOrder }") <
+                orderingBlock.indexOf("thenByDescending { itemOf(it).updatedAt.time }")
         )
         assertTrue(dragBlock.contains("mergeVisibleWalletOrder("))
         assertTrue(dragBlock.contains("bankCardViewModel.updateSortOrders(newOrders)"))
@@ -52,16 +55,16 @@ class OrderingPersistenceGuardTest {
     fun mdbxPersistsAndRestoresManualOrder() {
         val mdbx2 = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/Mdbx2Repository.kt"
-        ).readText()
+        ).readSourceText()
         val legacyMdbx = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val importSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val secureRepository = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/SecureItemRepository.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(mdbx2.countOccurrences(".put(\"sort_order\",") >= 2)
         assertTrue(legacyMdbx.countOccurrences(".put(\"sort_order\",") >= 2)
@@ -88,14 +91,14 @@ class OrderingPersistenceGuardTest {
 
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFilterEditGrid.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(source.contains("GridCells.Fixed(2)"))
         assertTrue(source.contains("shouldShowQuickFilterItem("))
         assertFalse(source.contains("GridCells.Adaptive"))
 
         val chipsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFilterChips.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(
             chipsSource.contains(
                 "if (item == PasswordListQuickFilterItem.AUTHENTICATOR) return false"
@@ -107,13 +110,13 @@ class OrderingPersistenceGuardTest {
     fun staleMdbxSortReferencesAreNarrowlyHandledForPasswordsAndSecureItems() {
         val router = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxRepositoryRouter.kt"
-        ).readText()
+        ).readSourceText()
         val passwordRepository = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val secureRepository = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/SecureItemRepository.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(router.contains("throw MdbxVaultNotFoundException(databaseId)"))
         assertTrue(passwordRepository.contains("catch (error: MdbxVaultNotFoundException)"))
@@ -126,7 +129,7 @@ class OrderingPersistenceGuardTest {
     fun keepassCredentialFieldsUseTheSharedMultilingualKeyboardPolicy() {
         val policy = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/KeePassCredentialKeyboardOptions.kt"
-        ).readText()
+        ).readSourceText()
         val entryPoints = listOf(
             "LocalKeePassScreen.kt",
             "KeePassNativeDatabaseSettingsScreen.kt",
@@ -134,7 +137,7 @@ class OrderingPersistenceGuardTest {
             "LocalKeePassOneDriveBrowser.kt",
             "LocalKeePassWebDavBrowser.kt"
         ).map { name ->
-            projectFile("app/src/main/java/takagi/ru/monica/ui/screens/$name").readText()
+            projectFile("app/src/main/java/takagi/ru/monica/ui/screens/$name").readSourceText()
         }
 
         assertTrue(policy.contains("keyboardType = KeyboardType.Text"))
@@ -147,13 +150,13 @@ class OrderingPersistenceGuardTest {
     fun fullBackupRoundTripsManualOrderWithLegacyDefault() {
         val webDav = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val exportModel = projectFile(
             "app/src/main/java/takagi/ru/monica/util/DataExportImportManager.kt"
-        ).readText()
+        ).readSourceText()
         val restoreApplier = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/BackupRestoreApplier.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(webDav.countOccurrences("val sortOrder: Int = 0") >= 4)
         assertTrue(webDav.contains("sortOrder = password.sortOrder"))

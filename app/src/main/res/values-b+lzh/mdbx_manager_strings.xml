@@ -514,7 +514,7 @@
     <string name="mdbx_ui_repair_cancelled">数据库修复已罢，未写任何变更。</string>
     <string name="mdbx_ui_repair_no_changes">数据库无待写之变更</string>
     <string name="mdbx_ui_manager_entry_title">MDBX 诸库之治</string>
-    <string name="mdbx_ui_manager_entry_description">理本机、WebDAV 与 OneDrive 中之 MDBX 数据库，亦容旧试版诸库。</string>
+    <string name="mdbx_ui_manager_entry_description">理本机及 WebDAV 之 MDBX 库，亦可升 MDBX1 旧库为 MDBX2。</string>
     <string name="mdbx_ui_database_count">密府凡 %1$s 所</string>
     <string name="mdbx_ui_source_count">已连密府 %1$s 所</string>
     <string name="mdbx_ui_structure_removed">已删</string>

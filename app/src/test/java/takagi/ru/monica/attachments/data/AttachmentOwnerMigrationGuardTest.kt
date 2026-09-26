@@ -1,5 +1,7 @@
 package takagi.ru.monica.attachments.data
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,15 +11,15 @@ class AttachmentOwnerMigrationGuardTest {
     fun attachmentSchemaSupportsPasswordAndSecureItemOwners() {
         val model = projectFile(
             "app/src/main/java/takagi/ru/monica/attachments/model/Attachment.kt"
-        ).readText()
+        ).readSourceText()
         val database = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordDatabase.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(model.contains("parentSecureItemId"))
         assertTrue(model.contains("entity = SecureItem::class"))
         assertTrue(model.contains("AttachmentOwner"))
-        assertTrue(database.contains("version = 77"))
+        assertTrue(Regex("version = (\\d+)").find(database)!!.groupValues[1].toInt() >= 77)
         assertTrue(database.contains("MIGRATION_76_77"))
         assertTrue(database.contains("parent_secure_item_id"))
         assertTrue(database.contains("REFERENCES secure_items(id) ON DELETE CASCADE"))

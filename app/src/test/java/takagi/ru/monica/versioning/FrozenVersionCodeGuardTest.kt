@@ -1,5 +1,7 @@
 package takagi.ru.monica.versioning
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -8,10 +10,10 @@ class FrozenVersionCodeGuardTest {
 
     @Test
     fun `fdroid version code matches synchronized release`() {
-        val appBuild = projectFile("app/build.gradle").readText()
+        val appBuild = projectFile("app/build.gradle").readSourceText()
 
-        assertTrue(appBuild.contains("versionCode 20"))
-        assertTrue(appBuild.contains("versionName \"1.0.313\""))
+        assertTrue(appBuild.contains("versionCode 21"))
+        assertTrue(appBuild.contains("versionName \"1.0.314\""))
     }
 
     private fun projectFile(relativePath: String): File {

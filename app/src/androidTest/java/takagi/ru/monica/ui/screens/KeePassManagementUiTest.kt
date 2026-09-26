@@ -177,10 +177,15 @@ class KeePassManagementUiTest {
             databases[4].copy(sourceType = KeePassDatabaseSourceType.REMOTE_GOOGLE_DRIVE))
         show(titleId = R.string.local_keepass_section_title) { KeePassManagementHub(items, googleDriveEnabled = false) { events += it.name } }
         capture("hub-light")
-        listOf(label(R.string.mdbx_ui_local_databases), "WebDAV", "OneDrive", "Google Drive").forEach {
+        val visibleSources = KeePassManagementSource.entries.filter {
+            it != KeePassManagementSource.ONEDRIVE || ONEDRIVE_ENTRY_ENABLED
+        }
+        (listOf(label(R.string.mdbx_ui_local_databases), "WebDAV") +
+            (if (ONEDRIVE_ENTRY_ENABLED) listOf("OneDrive") else emptyList()) + "Google Drive").forEach {
             compose.onNode(hasText(it) and hasClickAction()).assertIsDisplayed().performClick()
         }
-        assertEquals(KeePassManagementSource.entries.map { it.name }, events)
+        assertEquals(visibleSources.map { it.name }, events)
+        if (!ONEDRIVE_ENTRY_ENABLED) compose.onNodeWithText("OneDrive").assertDoesNotExist()
     }
 
     @Test fun realManagerRoutesToLocalCreateAndBothCloudForms() {
@@ -194,7 +199,8 @@ class KeePassManagementUiTest {
             compose.onNodeWithTag("keepass_database_grid").assertDoesNotExist() // Empty source still keeps actions.
             compose.onNodeWithTag("keepass_open_database").assertIsDisplayed()
             compose.onNodeWithContentDescription(label(R.string.go_back)).performClick()
-            listOf("WebDAV" to "webdav", "OneDrive" to "onedrive").forEach { (title, tag) ->
+            (listOf("WebDAV" to "webdav") +
+                (if (ONEDRIVE_ENTRY_ENABLED) listOf("OneDrive" to "onedrive") else emptyList())).forEach { (title, tag) ->
                 compose.onNodeWithText(title).performClick()
                 listOf("keepass_open_database", "keepass_create_database").forEach { action ->
                     compose.onNodeWithTag(action).performClick()

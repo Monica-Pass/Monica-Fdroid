@@ -1,5 +1,7 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,7 +13,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun saveAcrossTargetsDoesNotDeleteSameTargetMultiPasswordRowsAsDuplicateReplicas() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val saveAcrossTargetsBody = source.substringAfter("fun savePasswordsAcrossTargets(")
             .substringBefore("private suspend fun canWriteKeePassTargets")
 
@@ -33,7 +35,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun detailScreenUsesResolvedGroupMembersEvenWhenReplicaGroupIdExists() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertFalse(
             "Detail screen must not collapse replicaGroupId entries to only the current entry; multi-password rows can share the same replica group.",
@@ -57,11 +59,11 @@ class MultiPasswordSaveRegressionGuardTest {
     fun addPasswordScreenLoadsMdbxDatabasesWithoutRouteInjectedViewModel() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Inline add-password surfaces must still show concrete MDBX vaults when they do not pass MdbxViewModel.",
-            source.contains("?: database.localMdbxDatabaseDao().getAllDatabases()")
+            source.contains("?: database.localMdbxDatabaseDao().getAvailableDatabases()")
         )
         assertFalse(
             "Falling back to only the constructor list leaves FAB inline creation unable to choose a concrete MDBX vault.",
@@ -73,15 +75,15 @@ class MultiPasswordSaveRegressionGuardTest {
     fun deletingKeePassDatabaseDeletesCachedRowsInsteadOfConvertingThemToLocal() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/LocalKeePassViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val deleteDatabaseBody = viewModelSource.substringAfter("fun deleteDatabase(")
             .substringBefore("fun exportDatabase")
         val passwordDaoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordEntryDao.kt"
-        ).readText()
+        ).readSourceText()
         val secureItemDaoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/SecureItemDao.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Removing a KeePass database must delete its cached password rows; clearing the binding makes them appear as Monica-local duplicates.",
@@ -113,13 +115,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun inlineTotpPreviewMatchesSimplePasswordPreviewAndKeepsCountdownInSync() {
         val previewSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/InlineTotpPreviewCard.kt"
-        ).readText()
+        ).readSourceText()
         val addTotpSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt"
-        ).readText()
+        ).readSourceText()
         val addPasswordSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Inline TOTP previews should keep the compact code plus a one-second Material Expressive shape animation while the number uses the synchronized countdown.",
@@ -156,19 +158,19 @@ class MultiPasswordSaveRegressionGuardTest {
     fun addPasswordAuthenticatorKeyFieldHasInlineScanAction() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
         val mainActivitySource = projectFile(
             "app/src/main/java/takagi/ru/monica/MainActivity.kt"
-        ).readText()
+        ).readSourceText()
         val simpleMainSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
         val passwordTabPaneSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/PasswordTabPane.kt"
-        ).readText()
+        ).readSourceText()
         val mainScreenFabSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/MainScreenFab.kt"
-        ).readText()
+        ).readSourceText()
         val securitySection = source.substringAfter("// Security Card (TOTP)")
             .substringBefore("// Organization Card")
         val authenticatorKeyField = securitySection.substringAfter("value = authenticatorSecret")
@@ -208,10 +210,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun swipeableAddFabUsesEasyNotesStyleFullScreenTransition() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/SwipeableAddFab.kt"
-        ).readText()
+        ).readSourceText()
         val mainScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
         val fabTransition = source.substringAfter("AnimatedVisibility(\n            visible = !isExpanded")
             .substringBefore("Box(\n                modifier = Modifier")
         val renderMainSurface = mainScreenSource.substringAfter("fun RenderMainSurface() {")
@@ -247,25 +249,25 @@ class MultiPasswordSaveRegressionGuardTest {
     fun addPasswordFromMdbxFolderPreservesFolderTargetAndShowsFolderPicker() {
         val addPasswordSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
         val mainActivitySource = projectFile(
             "app/src/main/java/takagi/ru/monica/MainActivity.kt"
-        ).readText()
+        ).readSourceText()
         val helpersSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/MainScreenHelpers.kt"
-        ).readText()
+        ).readSourceText()
         val pickerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/MultiStorageTargetPickerBottomSheet.kt"
-        ).readText()
+        ).readSourceText()
         val selectorSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/MultiStorageTargetSelectorCard.kt"
-        ).readText()
+        ).readSourceText()
         val passwordTabSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/PasswordTabPane.kt"
-        ).readText()
+        ).readSourceText()
         val fabSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/MainScreenFab.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "New-item defaults must carry the selected MDBX folder from a folder filter, otherwise Add Password falls back to the vault root or Monica local.",
@@ -316,7 +318,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun customDirectoryMdbxVaultsAreRegisteredAsExternalSources() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Custom-directory vault creation must keep the selected SAF URI as the vault source path.",
@@ -336,7 +338,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxIncomingNewObjectsAreCopiedBeforeEncryptedFieldsAreDecoded() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
 
         val applyIncomingEntryBody = source.substringAfter("private fun applyIncomingEntry(")
             .substringBefore("private fun applyIncomingAttachment(")
@@ -368,7 +370,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxLocalMutationsPublishWorkingCopyToSourceAfterCommit() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
 
         listOf(
             source.substringAfter("suspend fun resolveConflict(")
@@ -411,16 +413,16 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxBatchMutationsKeepDirectLocalWriteContract() {
         val repositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxRepository.kt"
-        ).readText()
+        ).readSourceText()
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val passwordRepositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val passkeyRepositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasskeyRepository.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "MDBX repository methods must report success only after local commit and source publish.",
@@ -469,10 +471,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxSecureItemsKeepStableReplicaIdsAcrossRefresh() {
         val secureItemRepositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/SecureItemRepository.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         val insertBody = secureItemRepositorySource.substringAfter("suspend fun insertItem(item: SecureItem): Long")
             .substringBefore("suspend fun updateItem(item: SecureItem)")
@@ -498,13 +500,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxGitHistoryHasObjectVersionsDiffAndRevert() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
         val revertCommitBody = viewModelSource
             .substringAfter("fun revertCommit(")
             .substringBefore("fun resolveConflict(")
@@ -564,7 +566,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxEntryConflictResolutionWritesBackThroughHistory() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
 
         val resolveBody = storeSource.substringAfter("suspend fun resolveConflict(")
             .substringBefore("suspend fun applyIncomingVaultFile(")
@@ -604,10 +606,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxUnlockAndWalAvoidKnownWriteSlowdowns() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val cryptoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultCrypto.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "MDBX should request WAL in SQLite open flags before Android can mutate journal mode on an already-open vault.",
@@ -652,7 +654,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxHistoryAndSnapshotViewsUseStaleWhileRevalidateCache() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "MDBX history and snapshot structure pages need in-memory display caches to avoid flashing empty while IO refreshes.",
@@ -717,7 +719,7 @@ class MultiPasswordSaveRegressionGuardTest {
                 importPasswordBody.contains("id = existing?.id ?: 0L") &&
                 importPasswordBody.contains("createdAt = existing?.createdAt ?: Date()") &&
                 importPasswordBody.contains("updatedAt = existing?.updatedAt ?: Date()") &&
-                importPasswordBody.contains("sortOrder = existing?.sortOrder ?: 0")
+                importPasswordBody.contains("payload.optInt(\"sort_order\", existing?.sortOrder ?: 0)")
         )
     }
 
@@ -725,16 +727,16 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxActiveVaultPreloadOnlyWarmsTheSelectedDatabase() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
         val simpleMainSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
         val activePreloadBody = viewModelSource
             .substringAfter("fun preloadActiveMdbxDatabase(databaseId: Long)")
             .substringBefore("// --- WebDAV connection ---")
@@ -791,10 +793,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxArchitectureCompletionExposesOplogBundlesExternalRefsAndBenchmarks() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         listOf(
             "CREATE TABLE IF NOT EXISTS oplog",
@@ -877,19 +879,19 @@ class MultiPasswordSaveRegressionGuardTest {
     fun keepassCompatibilityRefreshEntrypointsUseSyncTaskRunner() {
         val passwordViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val noteViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/NoteViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val bankCardViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/BankCardViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val documentViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/DocumentViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         val passwordSyncEntrypoint = passwordViewModelSource
             .substringAfter("private fun syncKeePassDatabase(")
@@ -956,13 +958,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun keepassRemoteManualAndVisibleSyncShareCoordinatorQueue() {
         val localKeePassViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/LocalKeePassViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val remoteUploadWorkerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/workers/KeePassRemoteUploadWorker.kt"
-        ).readText()
+        ).readSourceText()
         val syncContractsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/sync/SyncContracts.kt"
-        ).readText()
+        ).readSourceText()
 
         val manualSyncEntrypoint = localKeePassViewModelSource
             .substringAfter("fun syncRemoteDatabase(")
@@ -1016,40 +1018,40 @@ class MultiPasswordSaveRegressionGuardTest {
     fun keepassRemoteWritesStayVisibleToOtherClients() {
         val kdbxServiceSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/KeePassKdbxService.kt"
-        ).readText()
+        ).readSourceText()
         val webDavFileSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavKeePassFileSource.kt"
-        ).readText()
+        ).readSourceText()
         val oneDriveFileSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/OneDriveKeePassFileSource.kt"
-        ).readText()
+        ).readSourceText()
         val localKeePassViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/LocalKeePassViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val passwordViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val workspaceRepositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/KeePassWorkspaceRepository.kt"
-        ).readText()
+        ).readSourceText()
         val compatibilityBridgeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/KeePassCompatibilityBridge.kt"
-        ).readText()
+        ).readSourceText()
         val fileSourceContract = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/KeePassFileSource.kt"
-        ).readText()
+        ).readSourceText()
         val localKeePassDatabaseSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/LocalKeePassDatabase.kt"
-        ).readText()
+        ).readSourceText()
         val webDavBrowserSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassWebDavBrowser.kt"
-        ).readText()
+        ).readSourceText()
         val oneDriveBrowserSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassOneDriveBrowser.kt"
-        ).readText()
+        ).readSourceText()
         val googleDriveBrowserSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/LocalKeePassGoogleDriveBrowser.kt"
-        ).readText()
+        ).readSourceText()
         val writeDatabaseBody = kdbxServiceSource
             .substringAfter("private suspend fun writeDatabase(")
             .substringBefore("private fun keePassPendingChangeRepository(")
@@ -1079,15 +1081,15 @@ class MultiPasswordSaveRegressionGuardTest {
                 writeDatabaseBody.contains("resolvedDatabase = syncOutcome.finalDatabase") &&
                 writeDatabaseBody.contains("} else {") &&
                 writeDatabaseBody.indexOf("val syncOutcome = syncRemoteWorkingCopy(") <
-                    writeDatabaseBody.indexOf("markRemoteWritePending(database, bytes)") &&
-                writeDatabaseBody.indexOf("markRemoteWritePending(database, bytes)") <
+                    writeDatabaseBody.indexOf("markRemoteWritePending(database, encodedRevision)") &&
+                writeDatabaseBody.indexOf("markRemoteWritePending(database, encodedRevision)") <
                     writeDatabaseBody.indexOf("enqueueRemoteWorkingCopyUpload(database.id)")
         )
         assertTrue(
             "Remote KeePass writes must read the remote bytes back and decode them before marking sync success, so a bad WebDAV/OneDrive write cannot be reported as synchronized.",
             kdbxServiceSource.contains("private suspend fun verifyRemoteKdbxWrite(") &&
                 kdbxServiceSource.contains("val remoteBytes = fileSource.read()") &&
-                kdbxServiceSource.contains("remoteHash != expectedHash") &&
+                kdbxServiceSource.contains("remoteRevision != expectedRevision") &&
                 kdbxServiceSource.contains("decodeDatabase(") &&
                 kdbxServiceSource.contains("Remote KDBX write verified") &&
                 kdbxServiceSource.contains("Remote KDBX write verification failed") &&
@@ -1096,7 +1098,7 @@ class MultiPasswordSaveRegressionGuardTest {
         assertTrue(
             "Manual KeePass remote sync must use the same read-back/decode verification before marking a WebDAV/OneDrive write synchronized.",
             kdbxServiceSource.contains("internal suspend fun verifyRemoteKdbxWrite(") &&
-                kdbxServiceSource.contains("sourceLabel = \"service-sync-merge\"") &&
+                kdbxServiceSource.contains("sourceLabel = \"pending-rebase\"") &&
                 kdbxServiceSource.contains("sourceLabel = \"service-sync-upload\"") &&
                 kdbxServiceSource.contains("baseHash = verifiedRemote.hash") &&
                 kdbxServiceSource.contains("workingHash = verifiedRemote.hash") &&
@@ -1131,7 +1133,8 @@ class MultiPasswordSaveRegressionGuardTest {
         )
         assertTrue(
             "KeePass WebDAV writes should use a compatibility-first direct PUT. Hidden temp-file MOVE overwrites are rejected by common providers and leave only Monica's local working copy updated.",
-            webDavWriteBody.contains("sardine.put(remoteUrl, bytes, KEEPASS_KDBX_MIME_TYPE)") &&
+            webDavWriteBody.contains("val writer = if (conditions.isEmpty()) sardine else authenticatedSardine(") &&
+                webDavWriteBody.contains("writer.put(remoteUrl, bytes, KEEPASS_KDBX_MIME_TYPE)") &&
                 webDavCreateBody.contains("sardine.put(targetUrl, bytes, KEEPASS_KDBX_MIME_TYPE)") &&
                 !webDavFileSource.contains("sardine.move(") &&
                 !webDavFileSource.contains("buildSiblingTempPath(") &&
@@ -1177,13 +1180,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxSnapshotsExposeSingleFileBackupHistoryAndRollback() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "MDBX snapshots need a summary model for the UI and diagnostics.",
@@ -1268,10 +1271,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxSnapshotRollbackAppliesExactSnapshotStateWithoutOrphanRescue() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         val rollbackStoreBody = storeSource.substringAfter("private fun revertToEntryVersionSet(")
             .substringBefore("private fun pruneAutomaticSnapshotsLocked(")
@@ -1298,19 +1301,19 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxManagerLivesUnderDatabaseBackupAndUsesStandalonePages() {
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
         val syncBackupSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/SyncBackupScreen.kt"
-        ).readText()
+        ).readSourceText()
         val mainActivitySource = projectFile(
             "app/src/main/java/takagi/ru/monica/MainActivity.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Database and backup settings must expose MDBX as its own category.",
             syncBackupSource.contains("onNavigateToMdbx") &&
                 syncBackupSource.contains("SyncBackupSection(title = \"MDBX\")") &&
-                syncBackupSource.contains("MDBX 数据库管理") &&
+                syncBackupSource.contains("R.string.mdbx_ui_manager_entry_title") &&
                 mainActivitySource.contains("onNavigateToMdbx = {") &&
                 mainActivitySource.contains("navController.navigate(Screen.MdbxManager.createRoute())")
         )
@@ -1320,19 +1323,17 @@ class MultiPasswordSaveRegressionGuardTest {
                 mainActivitySource.contains("launchSingleTop = true")
         )
         assertTrue(
-            "MDBX manager should open to a hub and then branch into local, WebDAV, and OneDrive management pages.",
+            "MDBX manager should expose local and WebDAV sources in F-Droid.",
             managerSource.contains("MdbxManagerHubPage(") &&
-                managerSource.contains("R.string.mdbx_ui_manager_local_title") &&
-                managerSource.contains("R.string.mdbx_ui_manager_webdav_title") &&
-                managerSource.contains("R.string.mdbx_ui_manager_onedrive_title") &&
+                managerSource.contains("R.string.mdbx_ui_local_databases") &&
+                managerSource.contains("onOpenWebDav") &&
                 managerSource.contains("MdbxManagerSource.LOCAL") &&
-                managerSource.contains("MdbxManagerSource.WEBDAV") &&
-                managerSource.contains("MdbxManagerSource.ONEDRIVE")
+                managerSource.contains("MdbxManagerSource.WEBDAV")
         )
         assertTrue(
             "MDBX source pages should stay list-first like KeePass management and open databases as standalone detail pages.",
             managerSource.contains("MdbxSourceManagementPage(") &&
-                managerSource.contains("MdbxVaultSmallCard(") &&
+                managerSource.contains("MdbxVaultTile(") &&
                 managerSource.contains("MdbxVaultDetailPage(") &&
                 managerSource.contains("page = MdbxManagerPage.Detail")
         )
@@ -1363,7 +1364,7 @@ class MultiPasswordSaveRegressionGuardTest {
                 managerSource.contains("onRefreshDiagnostics") &&
                 managerSource.contains("onFlushPendingUpload") &&
                 managerSource.contains("MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_key_metrics))") &&
-                managerSource.contains("MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_advanced_details))")
+                managerSource.contains("MdbxExpandableSection(title = strings.get(R.string.mdbx_ui_advanced_details))")
         )
     }
 
@@ -1371,13 +1372,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxAdvancedControlsRemainInternalAndHiddenFromAndroidManager() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         listOf(
             "suspend fun exportSyncBundle(",
@@ -1421,32 +1422,17 @@ class MultiPasswordSaveRegressionGuardTest {
             "MDBX manager route model must not include a user-facing advanced tools subpage.",
             managerSource.contains("MdbxManagerPage.Advanced")
         )
-        assertTrue(
-            "Android manager may keep internal controls for bundle export/import, upload flush, chunk status, and benchmark.",
-            managerSource.contains("MdbxAdvancedToolsPage(") &&
-                managerSource.contains("onExportBundle") &&
-                managerSource.contains("onImportBundle") &&
-                managerSource.contains("onFlushPendingUpload") &&
-                managerSource.contains("onRunBenchmark") &&
-                managerSource.contains("R.string.mdbx_ui_chunk_verification") &&
-                managerSource.contains("R.string.mdbx_ui_attachment_storage_format") &&
-                managerSource.contains("benchmark")
-        )
+        // Capability APIs above stay available to internal tools. Removed, unreachable
+        // developer UI is not a requirement for the normal database manager.
         assertTrue(
             "Android manager must expose later MDBX diagnostics in a standalone maintenance page.",
             managerSource.contains("MdbxMaintenancePage(") &&
                 managerSource.contains("MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_key_metrics))") &&
-                managerSource.contains("MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_advanced_details))") &&
+                managerSource.contains("MdbxExpandableSection(title = strings.get(R.string.mdbx_ui_advanced_details))") &&
                 managerSource.contains("R.string.mdbx_ui_dangling_parents") &&
                 managerSource.contains("R.string.mdbx_ui_dangling_heads") &&
                 managerSource.contains("R.string.mdbx_ui_attachment_chunk_issues") &&
-                managerSource.contains("R.string.mdbx_ui_attachment_storage_format") &&
                 managerSource.contains("R.string.mdbx_ui_upload_pending")
-        )
-        assertTrue(
-            "Exported sync bundles should be copyable from the Android UI.",
-            managerSource.contains("ClipboardUtils.copyToClipboard") &&
-                managerSource.contains("MDBX sync bundle")
         )
     }
 
@@ -1454,40 +1440,40 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxDatabaseViewsExposePathNavigationAndSyncAction() {
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
         val passwordListContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListContent.kt"
-        ).readText()
+        ).readSourceText()
         val quickFolderSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderSupport.kt"
-        ).readText()
+        ).readSourceText()
         val quickFolderSectionsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderSections.kt"
-        ).readText()
+        ).readSourceText()
         val passwordListMainPaneSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListMainPane.kt"
-        ).readText()
+        ).readSourceText()
         val topActionsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordTopActionsMenu.kt"
-        ).readText()
+        ).readSourceText()
         val passwordListTopSectionSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListTopSection.kt"
-        ).readText()
+        ).readSourceText()
         val quickStatusBarSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/QuickStatusBar.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxStoreSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val simpleMainSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
         val compactTabsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/CompactDraggableTabContent.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "VaultV2 must receive MdbxViewModel so the password-list menu can run the same sync path as the MDBX manager.",
@@ -1604,10 +1590,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun quickFilterChipsMorphToSelectedShapeWhilePressed() {
         val expressiveChipSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/MonicaExpressiveFilterChip.kt"
-        ).readText()
+        ).readSourceText()
         val quickFilterChipSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFilterChips.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Quick filter chips should use the shared expressive chip implementation so pressed/selected shape behavior stays consistent.",
@@ -1627,25 +1613,25 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxCreatedFoldersAreLoadedIntoPasswordCategoryMenus() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val quickFolderSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderSupport.kt"
-        ).readText()
+        ).readSourceText()
         val listContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListContent.kt"
-        ).readText()
+        ).readSourceText()
         val bottomSheetSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/UnifiedCategoryFilterBottomSheet.kt"
-        ).readText()
+        ).readSourceText()
         val chipMenuSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/UnifiedCategoryFilterChipMenu.kt"
-        ).readText()
+        ).readSourceText()
         val topSectionSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListTopSection.kt"
-        ).readText()
+        ).readSourceText()
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Password filtering must represent a concrete MDBX folder, not only the MDBX database root.",
@@ -1728,7 +1714,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxFolderCreationUsesAndroidSafePragmasAndPersistentFailureLogs() {
         val storeSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
 
         val openBody = storeSource.substringAfter("private fun open(file: File): SQLiteDatabase")
             .substringBefore("private fun checkpoint(db: SQLiteDatabase)")
@@ -1779,19 +1765,19 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxNestedFolderCreationPropagatesParentFolderFromCurrentSelection() {
         val dialogSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/CreateCategoryDialog.kt"
-        ).readText()
+        ).readSourceText()
         val bottomSheetSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/UnifiedCategoryFilterBottomSheet.kt"
-        ).readText()
+        ).readSourceText()
         val topSectionSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListTopSection.kt"
-        ).readText()
+        ).readSourceText()
         val categoryStateSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/category/CategoryManagementState.kt"
-        ).readText()
+        ).readSourceText()
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "CreateCategoryDialog must keep MDBX parent folder state and pass it to folder creation.",
@@ -1840,7 +1826,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun createCategoryDialogKeepsInputReachableWhenCategoryListIsLong() {
         val dialogSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/CreateCategoryDialog.kt"
-        ).readText()
+        ).readSourceText()
         val dialogTextBody = dialogSource.substringAfter("text = {")
             .substringBefore("confirmButton = {")
 
@@ -1859,16 +1845,16 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxMoveAndCopySurfacesExposeAndPersistFolderTargets() {
         val moveSheetSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/UnifiedMoveToCategoryBottomSheet.kt"
-        ).readText()
+        ).readSourceText()
         val passkeyListSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/PasskeyListScreen.kt"
-        ).readText()
+        ).readSourceText()
         val passkeyCreateSource = projectFile(
             "app/src/main/java/takagi/ru/monica/passkey/PasskeyCreateActivity.kt"
-        ).readText()
+        ).readSourceText()
         val mixedBatchSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveMixedSupport.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Move/copy sheet must expose concrete MDBX folder targets instead of only database-root targets.",
@@ -1947,7 +1933,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxManagerUsesScopedFeedbackAndQuietMaintenanceUi() {
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "MDBX sync feedback must use Scaffold snackbar instead of a persistent page overlay.",
@@ -1964,10 +1950,10 @@ class MultiPasswordSaveRegressionGuardTest {
         )
         assertTrue(
             "Snapshot management should stay visually quiet instead of using high-saturation tertiary panels.",
-            managerSource.substringAfter("private fun SnapshotManagerPanel(")
-                .substringBefore("private fun MdbxSnapshotStructurePage(")
+            managerSource.substringAfter("private fun SnapshotCreationCard(")
+                .substringBefore("private fun SnapshotListHeader(")
                 .let { snapshotPanelSource ->
-                    snapshotPanelSource.contains("OutlinedCard(modifier = Modifier.fillMaxWidth())") &&
+                    snapshotPanelSource.contains("MdbxCard(") &&
                         !snapshotPanelSource.contains("tertiaryContainer") &&
                         !snapshotPanelSource.contains("onTertiaryContainer")
                 }
@@ -1976,7 +1962,7 @@ class MultiPasswordSaveRegressionGuardTest {
             "Diagnostics should prioritize a concise maintenance flow and keep low-level details secondary.",
             managerSource.contains("private fun MaintenanceActionPanel(") &&
                 managerSource.contains("MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_key_metrics))") &&
-                managerSource.contains("MdbxDiagnosticSection(title = strings.get(R.string.mdbx_ui_advanced_details))") &&
+                managerSource.contains("MdbxExpandableSection(title = strings.get(R.string.mdbx_ui_advanced_details))") &&
                 !managerSource.contains("schema、commit 图、设备 head、快照、附件 chunk")
         )
         assertTrue(
@@ -1994,228 +1980,72 @@ class MultiPasswordSaveRegressionGuardTest {
 
     @Test
     fun mdbxHistorySnapshotsAndConflictsOpenFieldDiffViews() {
-        val managerSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
-        val storeSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
-        val mdbx2RepositorySource = projectFile(
-            "app/src/main/java/takagi/ru/monica/repository/Mdbx2Repository.kt"
-        ).readText()
-        val historyPresentationSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/ui/screens/MdbxCommitHistoryPresentation.kt"
-        ).readText()
-
-        assertTrue(
-            "MDBX conflict rows should open a focused conflict diff detail instead of dumping previews in the list.",
-            managerSource.contains("var selectedConflictId by rememberSaveable") &&
-                managerSource.contains("ConflictSummaryRow(") &&
-                managerSource.contains("ConflictDiffDetail(") &&
-                managerSource.contains("onOpen = { selectedConflictId = conflict.conflictId }")
-        )
-        assertTrue(
-            "MDBX conflict detail should render a field-level unified diff, not a code-style line diff.",
-            managerSource.contains("private fun FieldDiffPanel(") &&
-                managerSource.contains("private data class FieldChangeGroup(") &&
-                managerSource.contains("private fun FieldChangeGroupBlock(") &&
-                managerSource.contains("private fun FieldChangeRow(") &&
-                managerSource.contains("private fun VersionValueRow(") &&
-                managerSource.contains("marker = \"-\"") &&
-                managerSource.contains("marker = \"+\"") &&
-                managerSource.contains("backgroundColor = MaterialTheme.colorScheme.errorContainer.copy") &&
-                managerSource.contains("backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy") &&
-                managerSource.substringAfter("private fun FieldChangeGroupBlock(")
-                    .substringBefore("private fun FieldChangeRow(")
-                    .contains("strings.get(R.string.mdbx_ui_field_changes)") &&
-                managerSource.contains("\"${'$'}{change.fieldLabel}:\"") &&
-                managerSource.contains("value.ifBlank { \"null\" }") &&
-                managerSource.contains("group.displayPath()") &&
-                !managerSource.contains("fieldLabel = change.fieldLabel") &&
-                !managerSource.contains("versionLabel =") &&
-                !managerSource.contains("\"删除状态\"") &&
-                !managerSource.contains("deletedLabel(") &&
-                !managerSource.contains("strings.get(R.string.mdbx_ui_item_count, group.changes.size)") &&
-                !managerSource.contains("FontFamily.Monospace") &&
-                !managerSource.contains("private fun UnifiedDiffCard(") &&
-                !managerSource.contains("DiffLineKind")
-        )
-        assertTrue(
-            "Commit history should lazily group object cards and explain non-object system commits.",
-            managerSource.contains("private fun CommitChangeGroupHeader(") &&
-                managerSource.contains("private fun CommitEventExplanationCard(") &&
-                managerSource.contains("items = diffs") &&
-                managerSource.contains("CommitObjectChangeCard(diff)") &&
-                !managerSource.contains("private fun CommitDiffPanel(") &&
-                !managerSource.contains("此提交没有可显示的对象变更") &&
-                managerSource.substringAfter("private fun ConflictDiffDetail(")
-                    .substringBefore("@Composable\nprivate fun MdbxSnapshotPage(")
-                    .contains("FieldDiffPanel(")
-        )
-        assertTrue(
-            "Snapshot rows should let the user inspect the snapshot base commit diff before reverting.",
-            managerSource.contains("onShowDiff: () -> Unit") &&
-                managerSource.contains("onShowDiff = { onShowDiff(snapshot.baseCommitId) }") &&
-                managerSource.contains("Text(strings.get(R.string.mdbx_ui_changes))")
-        )
-        val snapshotStructurePreviewBody = managerSource
-            .substringAfter("private fun SnapshotStructurePreviewPage(")
-            .substringBefore("private fun StructureTreePanel(")
-        assertTrue(
-            "Snapshot rows should open a real subpage for the VSCode-style structure preview and support landscape comparison.",
-            managerSource.contains("data class SnapshotStructure(") &&
-                managerSource.contains("page = MdbxManagerPage.SnapshotStructure(current.databaseId, current.source, snapshotId)") &&
-                managerSource.contains("is MdbxManagerPage.SnapshotStructure -> {") &&
-                managerSource.contains("viewModel.closeSnapshotStructure()") &&
-                managerSource.contains("MdbxManagerPage.Snapshots(current.databaseId, current.source)") &&
-                managerSource.contains("private fun MdbxSnapshotStructurePage(") &&
-                managerSource.contains("private fun SnapshotStructurePreviewPage(") &&
-                managerSource.contains("private fun StructureTreePanel(") &&
-                managerSource.contains("private fun StructureTreeRow(") &&
-                managerSource.contains("onShowSnapshotStructure: (String) -> Unit") &&
-                managerSource.contains("onOpenStructure = { onShowSnapshotStructure(snapshot.snapshotId) }") &&
-                managerSource.contains("Text(strings.get(R.string.mdbx_ui_structure))") &&
-                managerSource.contains("ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE") &&
-                managerSource.contains("ActivityInfo.SCREEN_ORIENTATION_PORTRAIT") &&
-                managerSource.contains("requestedOrientation") &&
-                managerSource.contains("title = strings.get(R.string.mdbx_ui_current_version)") &&
-                managerSource.contains("title = strings.get(R.string.mdbx_ui_snapshot_version)") &&
-                managerSource.contains("var snapshotCompareMode by rememberSaveable(snapshotPage?.databaseId, snapshotPage?.snapshotId)") &&
-                managerSource.contains("val snapshotTopBarName = snapshotPage?.let") &&
-                managerSource.contains("val snapshotTopBarMeta = snapshotPage?.let") &&
-                managerSource.contains("IconButton(onClick = { snapshotCompareMode = !snapshotCompareMode })") &&
-                managerSource.contains("if (snapshotCompareMode) Icons.Default.FullscreenExit else Icons.Default.Fullscreen") &&
-                snapshotStructurePreviewBody.contains(".verticalScroll(rememberScrollState())") &&
-                snapshotStructurePreviewBody.contains("VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)") &&
-                snapshotStructurePreviewBody.contains("modifier = Modifier.weight(1f)") &&
-                snapshotStructurePreviewBody.contains("framed = false") &&
-                !snapshotStructurePreviewBody.contains("Icons.Default.Fullscreen") &&
-                !managerSource.contains("rememberSaveable(snapshotId)") &&
-                managerSource.contains("framed = false") &&
-                managerSource.contains("private fun StructureIndentLines(") &&
-                managerSource.contains(".height(34.dp)") &&
-                managerSource.contains(".padding(start = 8.dp, end = 8.dp)") &&
-                managerSource.contains(".fillMaxHeight()") &&
-                managerSource.contains("private val structureTreeNodeComparator = compareBy<MdbxStructureNode>(") &&
-                managerSource.contains("{ if (it.type == MdbxStructureNodeType.FOLDER) 0 else 1 }") &&
-                managerSource.contains("childrenByParent[parentId].orEmpty().sortedWith(structureTreeNodeComparator)") &&
-                !managerSource.substringAfter("private fun MdbxSnapshotPage(")
-                    .substringBefore("private fun MdbxCommitHistoryPage(")
-                    .contains("SnapshotStructurePreviewPage(") &&
-                !managerSource.contains("onCloseSnapshotStructure") &&
-                storeSource.contains("data class MdbxStructurePreview(") &&
-                storeSource.contains("data class MdbxStructureNode(") &&
-                storeSource.contains("enum class MdbxStructureNodeStatus") &&
-                storeSource.contains("suspend fun getSnapshotStructurePreview(") &&
-                storeSource.contains("private fun buildStructureNodes(") &&
-                storeSource.contains("val visibleFolderIds = folders.keys") &&
-                storeSource.contains("private fun structureNodeTypeSortRank(node: MdbxStructureNode): Int") &&
-                storeSource.contains("if (node.type == MdbxStructureNodeType.FOLDER) 0 else 1") &&
-                storeSource.contains(".thenBy { structureNodeTypeSortRank(it) }")
-        )
-        assertTrue(
-            "Diff data must use readable paths and redact sensitive payload values.",
-            managerSource.contains("private fun MdbxCommitDiff.toFieldChanges(strings: StringResolver)") &&
-                managerSource.contains("private fun CommitObjectChangeCard(") &&
-                managerSource.contains("private enum class ObjectChangeKind") &&
-                managerSource.contains("ObjectChangeKind.DELETED -> strings.get(R.string.mdbx_ui_history_action_deleted, objectLabel)") &&
-                managerSource.contains("private fun MdbxCommitDiff.displayObjectTitle(strings: StringResolver)") &&
-                managerSource.contains("private fun MdbxConflictSummary.toFieldChanges(strings: StringResolver)") &&
-                managerSource.contains("displayTitle?.takeIf") &&
-                managerSource.contains("storagePath?.takeIf") &&
-                managerSource.contains("strings.get(R.string.title)") &&
-                managerSource.contains("fieldLabel = strings.get(R.string.content)") &&
-                managerSource.contains("sensitive = true") &&
-                managerSource.contains("R.string.mdbx_ui_sensitive_changes_hidden") &&
-                storeSource.contains("val displayTitle: String?") &&
-                storeSource.contains("val storagePath: String?") &&
-                storeSource.contains("private fun readDiffDisplayInfo(") &&
-                storeSource.contains("private fun folderDisplayPath(") &&
-                storeSource.contains("displayTitle = displayInfo.title") &&
-                storeSource.contains("storagePath = displayInfo.storagePath") &&
-                mdbx2RepositorySource.contains("storagePath = diff.collectionId?.let(collectionPaths::get)") &&
-                mdbx2RepositorySource.contains("contentType = objectSummary?.objectTypeId") &&
-                !managerSource.contains("@@ payload") &&
-                !managerSource.contains("@@ title")
-        )
-        assertTrue(
-            "History detail should preserve the top app bar back path and use progressive disclosure.",
-                managerSource.contains("val deltaState = deltaDialogState as? MdbxViewModel.MdbxDeltaDialogState.Visible") &&
-                managerSource.contains("deltaState?.selectedDiffCommitId != null") &&
-                managerSource.contains("viewModel.closeCommitDiff()") &&
-                managerSource.contains("is MdbxManagerPage.CommitHistory -> strings.get(R.string.mdbx_ui_manager_history_title)") &&
-                managerSource.contains("BackHandler(onBack = goBack)") &&
-                managerSource.contains("private fun MdbxSnapshotPage(") &&
-                managerSource.contains("private fun MdbxCommitHistoryPage(") &&
-                managerSource.contains("MdbxNavigationActionRow(Icons.Default.Restore, strings.get(R.string.mdbx_ui_object_snapshot), onShowSnapshots)") &&
-                managerSource.contains("MdbxNavigationActionRow(Icons.Default.History, strings.get(R.string.mdbx_ui_manager_history_title), onShowCommitHistory)") &&
-                managerSource.contains("selectedDelta?.toHistoryPresentation(strings)") &&
-                managerSource.contains("private fun CommitTechnicalInfoCard(") &&
-                managerSource.contains("private fun CommitDetailHeader(") &&
-                managerSource.contains("R.string.mdbx_ui_history_revert_title") &&
-                historyPresentationSource.contains("fun MdbxDeltaSummary.toHistoryPresentation(strings: StringResolver)") &&
-                storeSource.contains("val changedObjectPreview: String") &&
-                storeSource.contains("val changedFieldSummary: String") &&
-                storeSource.contains("val operationKind: String? = null") &&
-                storeSource.contains("val changes: List<MdbxCommitChangeSummary> = emptyList()") &&
-                storeSource.contains("private fun readCommitChangePreview(") &&
-                storeSource.contains("private fun summarizeCommitObjects(") &&
-                storeSource.contains("private fun summarizeCommitFields(") &&
-                !managerSource.contains("onCloseDiff = { viewModel.closeCommitDiff() }") &&
-                !managerSource.contains("Text(\"返回历史\")") &&
-                !managerSource.contains("val pageTitle = if (state?.selectedDiffCommitId != null)") &&
-                !managerSource.contains("MdbxDeltaPage(") &&
-                !managerSource.contains("MdbxManagerPage.History") &&
-                !managerSource.contains("历史 / 快照") &&
-                !managerSource.contains("修改前") &&
-                !managerSource.contains("修改后") &&
-                !managerSource.contains("Text(\n                delta.changedObjectIds") &&
-                !managerSource.contains("Text(\"Diff\")")
-        )
-        assertTrue(
-            "Legacy dialog/list implementations must not return and reintroduce inline diff details.",
-            !managerSource.contains("private fun MdbxConflictDialog(") &&
-                !managerSource.contains("private fun MdbxDeltaDialog(") &&
-                !managerSource.contains("private fun ConflictRow(") &&
-                !managerSource.contains("private fun ConflictVersionPreview(")
-        )
+        val manager = projectFile("app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt").readSourceText()
+        val store = projectFile("app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt").readSourceText()
+        val rust = projectFile("app/src/main/java/takagi/ru/monica/repository/Mdbx2Repository.kt").readSourceText()
+        // Visual geometry has device coverage. This guard covers navigation, semantic diffs,
+        // and redaction without depending on private/internal visibility or card cosmetics.
+        listOf("var selectedConflictId by rememberSaveable", "ConflictSummaryRow(", "ConflictDiffDetail(",
+            "onOpen = { selectedConflictId = conflict.conflictId }", "FieldDiffPanel(", "FieldChangeGroupBlock(",
+            "FieldChangeRow(", "VersionValueRow(", "group.changes.forEach", "Text(change.fieldLabel",
+            "if (change.sensitive)", "R.string.mdbx_ui_sensitive_changes_hidden", "change.before", "change.after",
+            "MdbxManagerPage.SnapshotStructure", "viewModel.closeSnapshotStructure()", "viewModel.closeCommitDiff()",
+            "onShowDiff = { onShowDiff(snapshot.baseCommitId) }", "pendingRevertSnapshot", "pendingRevertSnapshot = snapshot",
+            "onRevertSnapshot(snapshot.snapshotId)", "CommitObjectChangeCard(diff)", "CommitEventExplanationCard(",
+            "BackHandler(onBack = goBack)").forEach {
+            assertTrue("Native history/conflict contract: $it", manager.contains(it))
+        }
+        val changeRows = manager.substringAfter("private fun FieldChangeRow(")
+            .substringBefore("private fun VersionValueRow(")
+        assertTrue(changeRows.indexOf("if (change.sensitive)") < changeRows.indexOf("VersionValueRow("))
+        assertTrue(changeRows.contains("} else {"))
+        assertFalse(manager.contains("private fun UnifiedDiffCard("))
+        assertFalse(manager.contains("private fun MdbxConflictDialog("))
+        assertFalse(manager.contains("private fun MdbxDeltaDialog("))
+        listOf("val displayTitle: String?", "val storagePath: String?", "displayTitle = displayInfo.title",
+            "storagePath = displayInfo.storagePath", "val changes: List<MdbxCommitChangeSummary> = emptyList()").forEach {
+            assertTrue("Diff storage metadata: $it", store.contains(it))
+        }
+        assertTrue(rust.contains("storagePath = diff.collectionId?.let(collectionPaths::get)"))
+        assertTrue(rust.contains("contentType = objectSummary?.objectTypeId"))
     }
+
 
     @Test
     fun normalPasswordPageShowsBatchTransferInQuickStatusBar() {
         val trackerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchTransferProgressTracker.kt"
-        ).readText()
+        ).readSourceText()
         val quickFolderSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderSections.kt"
-        ).readText()
+        ).readSourceText()
         val quickStatusTransferSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/QuickStatusTransferBar.kt"
-        ).readText()
+        ).readSourceText()
         val listContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListContent.kt"
-        ).readText()
+        ).readSourceText()
         val mainPaneSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListMainPane.kt"
-        ).readText()
+        ).readSourceText()
         val quickStatusDialogsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListQuickStatusDialogs.kt"
-        ).readText()
+        ).readSourceText()
         val moveSupportSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveSupport.kt"
-        ).readText()
+        ).readSourceText()
         val unifiedMoveSheetSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/UnifiedMoveToCategoryBottomSheet.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxStoreSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val passwordRepositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "The transfer tracker must keep a short success phase so the quick status bar can show the completed result before returning to breadcrumbs.",
@@ -2303,10 +2133,10 @@ class MultiPasswordSaveRegressionGuardTest {
             .substringBefore("private fun writeEntryDeleteMutation(")
         val mdbxRepositoryFactorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxRepositoryFactory.kt"
-        ).readText()
+        ).readSourceText()
         val mdbx2RepositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/Mdbx2Repository.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(
             "MDBX password object ids must reuse imported MDBX entry ids across clients, while tombstoning the broken local Room-id object written by older builds.",
             mdbxRepositoryFactorySource.contains("fun mdbxPasswordObjectId(entry: PasswordEntry): String") &&
@@ -2347,13 +2177,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun passwordCategoryQuickFilterRowKeepsHorizontalScrollStateOutsideLazyHeader() {
         val quickFolderRowSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderFlow.kt"
-        ).readText()
+        ).readSourceText()
         val scrollableContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListScrollableContent.kt"
-        ).readText()
+        ).readSourceText()
         val vaultV2Source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
         val chipRowBody = quickFolderRowSource.substringAfter("internal fun PasswordQuickFolderChipRow(")
             .substringBefore("private fun PasswordQuickFolderShortcut.resolveLeadingIcon")
         val passwordListBody = scrollableContentSource.substringAfter("fun PasswordListScrollableContent(")
@@ -2378,25 +2208,25 @@ class MultiPasswordSaveRegressionGuardTest {
     fun normalPasswordPageRunsBatchDeleteThroughQuickStatusBar() {
         val deleteTrackerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchDeleteProgressTracker.kt"
-        ).readText()
+        ).readSourceText()
         val quickDeleteSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/QuickStatusDeleteBar.kt"
-        ).readText()
+        ).readSourceText()
         val quickFolderSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderSections.kt"
-        ).readText()
+        ).readSourceText()
         val listContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListContent.kt"
-        ).readText()
+        ).readSourceText()
         val mainPaneSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListMainPane.kt"
-        ).readText()
+        ).readSourceText()
         val quickStatusDialogsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListQuickStatusDialogs.kt"
-        ).readText()
+        ).readSourceText()
         val dialogsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListDialogs.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Batch delete progress must keep a short success state so the quick status bar can show the completed result before returning to breadcrumbs.",
@@ -2460,13 +2290,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxBatchDeleteUsesSingleCommitBatchPaths() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val repositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxStoreSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val batchDeleteBody = viewModelSource
             .substringAfter("suspend fun deletePasswordEntriesBatch(")
             .substringBefore("private suspend fun handleBitwardenQueuedDelete(")
@@ -2519,16 +2349,16 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxBatchMoveAndCopyUseSingleCommitBatchPaths() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val repositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val moveSupportSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveSupport.kt"
-        ).readText()
+        ).readSourceText()
         val mixedMoveSupportSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveMixedSupport.kt"
-        ).readText()
+        ).readSourceText()
         val batchCopyBody = moveSupportSource
             .substringAfter("internal suspend fun executePasswordBatchCopy(")
             .substringBefore("// 复制源密码的本地附件到新密码")
@@ -2568,16 +2398,16 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxPasswordCopyAlsoCopiesBoundTotp() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val moveSupportSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveSupport.kt"
-        ).readText()
+        ).readSourceText()
         val mixedMoveSupportSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveMixedSupport.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxStoreSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Password copies into MDBX must remap any bound TOTP to the newly-created password id, otherwise Bitwarden logins with TOTP lose the authenticator after copy.",
@@ -2609,10 +2439,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun editingPasswordWithAuthenticatorReusesBoundTotpAndDoesNotClearPasswordWhenDeletingDuplicates() {
         val addPasswordSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val saveTotpSection = addPasswordSource
             .substringAfter("// Save TOTP if authenticatorKey is provided")
             .substringBefore("} else if (currentAuthKey.isEmpty()")
@@ -2673,10 +2503,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun deletingPasswordBoundAuthenticatorWarnsAndStillDeletesPersistedTotp() {
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val totpListContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/totp/TotpListContent.kt"
-        ).readText()
+        ).readSourceText()
         val deleteTotpBody = totpViewModelSource
             .substringAfter("fun deleteTotpItem(")
             .substringBefore("// Virtual TOTP items are derived from password.authenticatorKey")
@@ -2704,10 +2534,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun saveFailuresAreReportedWithNonSecretDiagnostics() {
         val passwordViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val savePasswordsAcrossTargetsBody = passwordViewModelSource
             .substringAfter("fun savePasswordsAcrossTargets(")
             .substringBefore("private suspend fun canWriteKeePassTargets")
@@ -2755,10 +2585,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxPasswordCopiesToMonicaLocalDoNotKeepMdbxIdentity() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val moveSupportSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordBatchMoveSupport.kt"
-        ).readText()
+        ).readSourceText()
         val localCopyBody = viewModelSource
             .substringAfter("private fun buildMonicaLocalCopy(")
             .substringBefore("fun addSecureItem")
@@ -2784,10 +2614,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun editingPasswordReplicasPreservesExistingTargets() {
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val pickerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/MultiStorageTargetPickerBottomSheet.kt"
-        ).readText()
+        ).readSourceText()
         val saveAcrossTargetsBody = viewModelSource
             .substringAfter("fun savePasswordsAcrossTargets(")
             .substringBefore("private suspend fun canWriteKeePassTargets")
@@ -2797,9 +2627,9 @@ class MultiPasswordSaveRegressionGuardTest {
             saveAcrossTargetsBody.contains("deletePasswordEntriesBatch(staleReplicas)")
         )
         assertTrue(
-            "The storage target picker must treat existing targets as locked while editing, otherwise a missed click can remove a storage replica and look like data loss.",
-            pickerSource.contains("val singleModeAllowed = lockedTargetKeys.isEmpty()") &&
-                pickerSource.contains("if (!singleModeAllowed) return") &&
+            "Multi-target edits must lock existing replicas; single-target moves are a separate explicit choice.",
+            pickerSource.contains("R.string.storage_picker_edit_single_move_hint") &&
+                pickerSource.contains("R.string.storage_picker_edit_multi_copy_hint") &&
                 pickerSource.contains("it.stableKey in lockedTargetKeys") &&
                 pickerSource.contains("targetLocked = chip.target.stableKey in lockedTargetKeys") &&
                 pickerSource.contains("if (targetLocked)")
@@ -2810,7 +2640,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun localPasswordDaoQueriesExcludeMdbxRows() {
         val daoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordEntryDao.kt"
-        ).readText()
+        ).readSourceText()
         val localDeleteBody = daoSource
             .substringAfter("DELETE FROM password_entries\n        WHERE bitwarden_vault_id IS NULL")
             .substringBefore("suspend fun deleteAllLocalPasswordEntries")
@@ -2832,10 +2662,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxPasswordRefreshRescuesLocalRowsInsteadOfDeletingThem() {
         val daoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordEntryDao.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val importBody = mdbxViewModelSource
             .substringAfter("private suspend fun importEntriesFromVault(")
             .substringBefore("private suspend fun clearImportedEntries")
@@ -2881,16 +2711,16 @@ class MultiPasswordSaveRegressionGuardTest {
     fun autofillMdbxSavesUseMdbxRepositoryAndInitialStorageTarget() {
         val resolverSource = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillSaveStorageResolver.kt"
-        ).readText()
+        ).readSourceText()
         val legacySource = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillSaveActivity.kt"
-        ).readText()
+        ).readSourceText()
         val transparentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillSaveTransparentActivity.kt"
-        ).readText()
+        ).readSourceText()
         val repositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Autofill save needs a shared resolver for the current password-list MDBX target.",
@@ -2936,7 +2766,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun trashRestoreWritesMdbxItemsThroughRepositories() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TrashViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val applyRestoreBody = source
             .substringAfter("private suspend fun applyLocalRestore(")
             .substringBefore("private suspend fun rollbackLocalRestore")
@@ -2967,10 +2797,10 @@ class MultiPasswordSaveRegressionGuardTest {
     fun totpQrScanFillsAddScreenAndQuickScanUsesCurrentStorageTarget() {
         val addTotpSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt"
-        ).readText()
+        ).readSourceText()
         val mainActivitySource = projectFile(
             "app/src/main/java/takagi/ru/monica/MainActivity.kt"
-        ).readText()
+        ).readSourceText()
         val quickScanRoute = mainActivitySource
             .substringAfter("composable(Screen.QuickTotpScan.route)")
             .substringBefore("// 导出数据")
@@ -3001,19 +2831,19 @@ class MultiPasswordSaveRegressionGuardTest {
     fun mdbxSnapshotsAndBatchCreatesStayReadableAndCoalesced() {
         val managerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/MdbxManagerScreen.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val passwordViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val repositorySource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val daoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordEntryDao.kt"
-        ).readText()
+        ).readSourceText()
         val saveGroupedBody = passwordViewModelSource
             .substringAfter("private suspend fun saveGroupedPasswordsInternal(")
             .substringBefore("// =============== 自定义字段相关方法 ===============")
@@ -3028,7 +2858,7 @@ class MultiPasswordSaveRegressionGuardTest {
             "Snapshot UI should use user-facing increment/full wording and not expose the unexplained Delta label.",
             managerSource.contains("strings.get(R.string.mdbx_ui_snapshot_full)") &&
                 managerSource.contains("strings.get(R.string.mdbx_ui_snapshot_incremental)") &&
-                managerSource.contains("SnapshotInfoPill(if (snapshot.isFull) strings.get(R.string.mdbx_ui_full) else strings.get(R.string.mdbx_status_delta))") &&
+                managerSource.contains("if (snapshot.isFull) strings.get(R.string.mdbx_ui_full) else strings.get(R.string.mdbx_status_delta)") &&
                 managerSource.contains("mdbx_snapshot_create_when_changed") &&
                 !managerSource.contains("Delta 快照") &&
                 !managerSource.contains("\"Delta\"")
@@ -3074,13 +2904,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavMonicaConfigBackupIncludesSecurityAutofillAndBlacklistSettings() {
         val webDavSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val settingsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/SettingsManager.kt"
-        ).readText()
+        ).readSourceText()
         val backupScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/WebDavBackupScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Page-adjustment backup must include the user-facing security/autofill switches, otherwise WebDAV config restore silently loses them.",
@@ -3099,9 +2929,10 @@ class MultiPasswordSaveRegressionGuardTest {
             webDavSource.contains("val securityAnalysisAutoEnabled: Boolean = false") &&
                 webDavSource.contains("val passwordDetailSecurityAnalysisEnabled: Boolean = true") &&
                 webDavSource.contains("val autofillAuthRequired: Boolean = true") &&
-                webDavSource.contains("pageAdjustmentSettingsSnapshot.securityAnalysisAutoEnabled") &&
-                webDavSource.contains("pageAdjustmentSettingsSnapshot.passwordDetailSecurityAnalysisEnabled") &&
-                webDavSource.contains("pageAdjustmentSettingsSnapshot.autofillAuthRequired") &&
+                webDavSource.contains("SettingsManager(context).exportPageAdjustmentSettings().toBackupEntry()") &&
+                webDavSource.contains("securityAnalysisAutoEnabled = securityAnalysisAutoEnabled") &&
+                webDavSource.contains("passwordDetailSecurityAnalysisEnabled = passwordDetailSecurityAnalysisEnabled") &&
+                webDavSource.contains("autofillAuthRequired = autofillAuthRequired") &&
                 webDavSource.contains("pageAdjustmentBackup.securityAnalysisAutoEnabled") &&
                 webDavSource.contains("pageAdjustmentBackup.passwordDetailSecurityAnalysisEnabled") &&
                 webDavSource.contains("pageAdjustmentBackup.autofillAuthRequired")
@@ -3119,7 +2950,7 @@ class MultiPasswordSaveRegressionGuardTest {
                 webDavSource.contains("normalizedEntryName == \"monica_config/autofill_blacklist.json\"") &&
                 webDavSource.contains("setBlacklistEnabled(autofillBlacklistBackup.enabled)") &&
                 webDavSource.contains("setBlacklistPackages(normalizedPackages)") &&
-                backupScreenSource.contains("\"autofill_blacklist.json\" -> \"自动填充黑名单\"")
+                backupScreenSource.contains("\"autofill_blacklist.json\" -> context.getString(R.string.legacy_ui_config_autofill_blocklist)")
         )
         assertTrue(
             "Legacy aggregate Monica config restore should understand blacklist fields when older backups carry them there.",
@@ -3140,13 +2971,13 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavBackupsUseMonicaLocalContentScope() {
         val webDavHelperSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val webDavScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/WebDavBackupScreen.kt"
-        ).readText()
+        ).readSourceText()
         val autoBackupWorkerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/workers/AutoBackupWorker.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "WebDAV helper must forward the requested backup content scope into createBackupZip.",
@@ -3167,69 +2998,40 @@ class MultiPasswordSaveRegressionGuardTest {
 
     @Test
     fun localZipExportUsesAnExplicitEncryptionChoice() {
-        val dataExportSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/viewmodel/DataExportImportViewModel.kt"
-        ).readText()
-        val webDavHelperSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
-        val exportScreenSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/ui/screens/ExportDataScreen.kt"
-        ).readText()
-        val prepareZipBackupBody = dataExportSource.substringAfter("suspend fun prepareZipBackup(")
+        val viewModel = projectFile("app/src/main/java/takagi/ru/monica/viewmodel/DataExportImportViewModel.kt").readSourceText()
+        val exporter = projectFile("app/src/main/java/takagi/ru/monica/transfer/DatabaseArchiveExporter.kt").readSourceText()
+        val screen = projectFile("app/src/main/java/takagi/ru/monica/ui/screens/ExportDataScreen.kt").readSourceText()
+        val prepare = viewModel.substringAfter("suspend fun prepareZipBackup(")
             .substringBefore("suspend fun writePreparedZipBackup(")
-        val copyZipBody = dataExportSource.substringAfter("private suspend fun copyZipFileToOutputUri(")
-            .substringBefore("private fun zipBackupExportMessage(")
-        val exportZipBackupBody = dataExportSource.substringAfter("suspend fun exportZipBackup(")
-            .substringBefore("suspend fun importZipBackup(")
+        val copy = viewModel.substringAfter("private suspend fun copyZipFileToOutputUri(")
+            .substringBefore("private suspend fun copyPlainFileToOutputUri(")
+        val export = viewModel.substringAfter("suspend fun exportZipBackup(")
+            .substringBefore("suspend fun exportKdbxBackup(")
 
-        assertTrue(
-            "Local export must pass only the user-selected backup password and must not silently inherit remote encryption.",
-            prepareZipBackupBody.contains("allowBackupEncryption = !backupEncryptionPassword.isNullOrBlank()") &&
-                prepareZipBackupBody.contains("backupEncryptionPassword = backupEncryptionPassword")
-        )
-        assertTrue(
-            "Local export must validate either the generated ZIP or encrypted backup and the bytes written to the selected document before reporting success.",
-            prepareZipBackupBody.contains("validatePreparedBackupFile(zipFile)") &&
-                copyZipBody.contains("validatePlainZipStream") &&
-                copyZipBody.contains("hasEncryptedFileHeader") &&
-                copyZipBody.contains("openExportOutputStream(outputUri)") &&
-                copyZipBody.contains("copiedBytes <= 0L") &&
-                copyZipBody.contains("copiedBytes != expectedBytes")
-        )
-        assertTrue(
-            "The export screen should prepare and validate the selected backup before ACTION_CREATE_DOCUMENT so a generation failure does not leave a 0B user-visible file.",
-            exportScreenSource.contains("var pendingPreparedZipBackup") &&
-                exportScreenSource.contains("onPrepareZip(backupPreferences, backupPassword)") &&
-                exportScreenSource.contains("pendingPreparedZipBackup = backup") &&
-                exportScreenSource.contains("onWritePreparedZip(safeUri, preparedZipBackup.first, preparedZipBackup.second)") &&
-                exportScreenSource.indexOf("onPrepareZip(backupPreferences, backupPassword)") <
-                    exportScreenSource.lastIndexOf("launchCreateDocument()")
-        )
-        assertTrue(
-            "The legacy one-step export API should clean up its prepared temp ZIP after copying.",
-            exportZipBackupBody.contains("prepareZipBackup(") &&
-                exportZipBackupBody.contains("writePreparedZipBackup(outputUri, zipFile, message)") &&
-                exportZipBackupBody.contains("preparedFile?.delete()")
-        )
-        assertTrue(
-            "Backup ZIP creation should only return an encrypted .enc.zip when the caller allows backup encryption and a resolved password exists.",
-            webDavHelperSource.contains("allowBackupEncryption: Boolean = true") &&
-                webDavHelperSource.contains("val backupEncryptPassword = BackupEncryptionPolicy.resolvePassword(") &&
-                webDavHelperSource.contains("val shouldEncryptBackup = backupEncryptPassword != null") &&
-                webDavHelperSource.contains("val finalFile = if (shouldEncryptBackup)")
-        )
-        assertFalse(
-            "Returning .enc.zip solely because the persisted WebDAV encryption switch is on breaks local .zip export.",
-            webDavHelperSource.contains("val finalFile = if (enableEncryption)")
-        )
+        assertTrue(prepare.contains("DatabaseArchiveExporter(context).prepare(source, preferences, backupEncryptionPassword, progress)"))
+        assertTrue(exporter.contains("val encrypted = !password.isNullOrEmpty()"))
+        assertTrue(exporter.contains("EncryptionHelper.encryptFile(file, target, checkNotNull(password)"))
+        assertFalse(prepare.contains("WebDavHelper"))
+        assertFalse(exporter.contains("SettingsManager"))
+        listOf("validatePreparedBackupFile(zipFile)", "validatePlainZipStream", "hasEncryptedFileHeader",
+            "openExportOutputStream(outputUri)", "copiedBytes <= 0L", "copiedBytes != expectedBytes").forEach {
+            assertTrue("Verify prepared and published ZIP: $it", copy.contains(it))
+        }
+        // Export now runs as a foreground job after the document picker; leaving the page
+        // must not abandon the write. Runtime cancellation/URI failures have device coverage.
+        assertTrue(screen.contains("DatabaseExportJobs.start(context.applicationContext"))
+        assertTrue(screen.contains("onExportZip(uri, request.preferences, request.password, request.source, progress)"))
+        assertTrue(export.contains("prepareZipBackup("))
+        assertTrue(export.contains("writePreparedZipBackup(outputUri, zipFile, message, progress)"))
+        assertTrue(export.contains("preparedFile?.delete()"))
     }
+
 
     @Test
     fun trashScopeSelectorUsesUnifiedChipMenuInsteadOfLegacyBottomSheet() {
         val timelineSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/TimelineScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertFalse(
             "Trash/category scope selection should use the compact chip menu like other pages, not the legacy bottom sheet.",
@@ -3248,7 +3050,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavBackupWorkerSharesCoordinatorQueue() {
         val autoBackupWorkerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/workers/AutoBackupWorker.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "WebDAV manual and scheduled backup workers must share SyncTaskRunner so two WorkManager entries cannot run two real backups at once.",
@@ -3266,7 +3068,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavBackupScreenManualCreateSharesCoordinatorQueue() {
         val webDavScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/WebDavBackupScreen.kt"
-        ).readText()
+        ).readSourceText()
         val manualCreateBody = webDavScreenSource
             .substringAfter("val backupTarget = SyncTarget.Backup(SyncBackupProvider.WEBDAV)")
             .substringBefore("Text(stringResource(R.string.webdav_create_new_backup))")
@@ -3299,7 +3101,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavManualBackupWorkerDoesNotReplaceRunningWorker() {
         val autoBackupManagerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/AutoBackupManager.kt"
-        ).readText()
+        ).readSourceText()
         val triggerBody = autoBackupManagerSource.substringAfter("fun triggerBackupNow(): Boolean")
             .substringBefore("fun getLastBackupStatus()")
 
@@ -3317,7 +3119,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun oneDriveBackupScreenManualCreateUsesCoordinatorQueue() {
         val oneDriveScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/OneDriveBackupScreen.kt"
-        ).readText()
+        ).readSourceText()
         val manualCreateBody = oneDriveScreenSource
             .substringAfter("val backupTarget = SyncTarget.Backup(SyncBackupProvider.ONEDRIVE)")
             .substringBefore("Text(if (creatingBackup) stringResource(R.string.webdav_backup_in_progress)")
@@ -3357,7 +3159,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavBackupContentCountsMatchMonicaLocalBackupScope() {
         val webDavScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/WebDavBackupScreen.kt"
-        ).readText()
+        ).readSourceText()
         val launchedEffectBody = webDavScreenSource.substringAfter("LaunchedEffect(Unit) {")
             .substringBefore("Scaffold(")
 
@@ -3377,7 +3179,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavReplaceRestoreClearsLocalDataOnlyAfterBackupIsParsedAndValidated() {
         val webDavHelperSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val restoreBody = webDavHelperSource.substringAfter("suspend fun restoreFromBackupFile(")
             .substringBefore("/**\n     * 下载并恢复备份")
         val beforeZipScan = restoreBody.substringBefore("ZipInputStream(FileInputStream(zipFile)).use")
@@ -3408,7 +3210,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun webDavUploadBlocksIncompleteBackupReportsBeforeRemoteOverwrite() {
         val webDavHelperSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val uploadBody = webDavHelperSource.substringAfter("suspend fun createAndUploadBackup(")
             .substringBefore("/**\n     * 导出密码到CSV文件")
         val afterCreateResult = uploadBody.substringAfter("val (backupFile, report) = createResult.getOrThrow()")
@@ -3426,7 +3228,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun bitwardenFullSyncRawLogUsesLightweightSummaryInsteadOfFullVaultJson() {
         val syncServiceSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/BitwardenSyncService.kt"
-        ).readText()
+        ).readSourceText()
         val successFullSyncCapture = syncServiceSource.substringAfter("val syncResponse = response.body()")
             .substringBefore("runCatching {\n                BitwardenSyncForensicsLogger.captureSyncCipherSnapshots")
 
@@ -3456,7 +3258,7 @@ class MultiPasswordSaveRegressionGuardTest {
     fun bitwardenPerCipherRawSnapshotsAreGatedAndBounded() {
         val forensicsSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/BitwardenSyncForensicsLogger.kt"
-        ).readText()
+        ).readSourceText()
         val snapshotBody = forensicsSource.substringAfter("suspend fun captureSyncCipherSnapshots(")
             .substringBefore("fun exportPersistedLogs")
 

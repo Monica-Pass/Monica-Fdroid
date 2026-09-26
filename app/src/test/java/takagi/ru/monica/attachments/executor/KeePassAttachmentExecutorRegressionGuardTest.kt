@@ -1,5 +1,7 @@
 package takagi.ru.monica.attachments.executor
 
+import takagi.ru.monica.testing.readSourceText
+
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,7 +13,7 @@ class KeePassAttachmentExecutorRegressionGuardTest {
     fun keepassAttachmentOperationsDoNotRequireWarmServiceCache() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/attachments/executor/KeePassAttachmentExecutor.kt"
-        ).readText()
+        ).readSourceText()
 
         assertFalse(
             "KeePass attachments must not gate upload/download/delete on cache-only unlock state. " +
@@ -32,7 +34,7 @@ class KeePassAttachmentExecutorRegressionGuardTest {
 
         val localKeePassViewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/LocalKeePassViewModel.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(
             "The user-facing KeePass ViewModel should register its active service for attachment reuse.",
             localKeePassViewModel.contains("AttachmentContainer.registerKeePassService(kdbxService)")
@@ -40,7 +42,7 @@ class KeePassAttachmentExecutorRegressionGuardTest {
 
         val attachmentContainer = projectFile(
             "app/src/main/java/takagi/ru/monica/attachments/AttachmentContainer.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(
             "AttachmentContainer should pass a service provider so remembered facades see the latest KeePass service.",
             attachmentContainer.contains("kdbxServiceProvider = { keepassService(app) }") &&
@@ -52,7 +54,7 @@ class KeePassAttachmentExecutorRegressionGuardTest {
     fun pendingDraftsCanFlushToKeePassAfterNewEntryIsSaved() {
         val editSection = projectFile(
             "app/src/main/java/takagi/ru/monica/attachments/ui/AttachmentsEditSection.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(
             "Draft attachment flush must accept a KeePass target instead of always writing LOCAL attachments.",
             editSection.contains("attachmentSource: AttachmentSource = AttachmentSource.LOCAL") &&
@@ -63,10 +65,10 @@ class KeePassAttachmentExecutorRegressionGuardTest {
 
         val addEditScreen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
         assertTrue(
             "New KeePass password saves must resolve the generated entry UUID before flushing pending attachments.",
-            addEditScreen.contains("val savedEntry = viewModel.getPasswordEntryById(firstPasswordId)") &&
+            addEditScreen.contains("val savedEntry = viewModel.getPasswordEntryById(attachmentOwnerId)") &&
                 addEditScreen.contains("val draftKeePassContext = savedEntry?.let") &&
                 addEditScreen.contains("AttachmentSource.KEEPASS") &&
                 addEditScreen.contains("keepassContext = draftKeePassContext")

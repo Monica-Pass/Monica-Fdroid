@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.cardwallet
 
+import takagi.ru.monica.testing.readSourceText
+
 import androidx.compose.ui.graphics.vector.PathParser
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -56,10 +58,10 @@ class CardBrandIconTest {
     fun cardBrandIconAvoidsXmlVectorResourceLoadingOnWalletHotPath() {
         val source = projectFile(
             "src/main/java/takagi/ru/monica/ui/cardwallet/CardBrandIcon.kt"
-        ).readText()
+        ).readSourceText()
         val logoSource = projectFile(
             "src/main/java/takagi/ru/monica/ui/cardwallet/CardBrandLibraryLogo.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Card-brand icons should be rendered from library SVG paths in Compose so Android 16 cannot crash in XmlVectorParser.",
@@ -78,11 +80,11 @@ class CardBrandIconTest {
     fun cardBrandIconFrameFollowsAppThemeInsteadOfSystemTheme() {
         val source = projectFile(
             "src/main/java/takagi/ru/monica/ui/cardwallet/CardBrandIcon.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Card-brand frame should follow Monica's active Material theme so app light mode keeps a white frame even when the system is dark.",
-            source.contains("MaterialTheme.colorScheme.surface.luminance()")
+            source.contains("MaterialTheme.colorScheme.background.luminance()")
         )
         assertFalse(source.contains("isSystemInDarkTheme"))
     }

@@ -513,7 +513,7 @@
     <string name="mdbx_ui_repair_cancelled">データベースの修復をキャンセルしました。変更は書き込まれていません。</string>
     <string name="mdbx_ui_repair_no_changes">書き込む必要のあるデータベースの変更はありません</string>
     <string name="mdbx_ui_manager_entry_title">MDBX データベース管理</string>
-    <string name="mdbx_ui_manager_entry_description">旧テスト版のデータベースを含め、ローカル、WebDAV、OneDrive の MDBX データベースを管理します。</string>
+    <string name="mdbx_ui_manager_entry_description">ローカルと WebDAV の MDBX データベースを管理し、MDBX1 ファイルを MDBX2 に移行します。</string>
     <string name="mdbx_ui_database_count">データベース %1$s 個</string>
     <string name="mdbx_ui_source_count">接続済みデータベース %1$s 個</string>
     <string name="mdbx_ui_structure_removed">削除済み</string>

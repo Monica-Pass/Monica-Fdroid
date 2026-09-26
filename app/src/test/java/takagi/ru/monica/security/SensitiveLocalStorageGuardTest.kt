@@ -1,5 +1,7 @@
 package takagi.ru.monica.security
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.nio.file.Paths
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -147,7 +149,7 @@ class SensitiveLocalStorageGuardTest {
         val operationLogger = projectFile("app/src/main/java/takagi/ru/monica/utils/OperationLogger.kt")
         val database = projectFile("app/src/main/java/takagi/ru/monica/data/PasswordDatabase.kt")
 
-        assertTrue(operationLogger.contains("sanitizeChanges(itemType, changes)"))
+        assertTrue(operationLogger.contains("sanitizeChanges(itemType, immutableChanges)"))
         assertTrue(operationLogger.contains("sanitizeItemTitle(itemType, itemTitle, itemId)"))
         assertTrue(operationLogger.contains("requiresSensitiveLogRedaction"))
         assertTrue(operationLogger.contains("\"<redacted>\""))
@@ -172,7 +174,7 @@ class SensitiveLocalStorageGuardTest {
         while (cursor.parent != null) {
             val candidate = cursor.resolve(relativePath).toFile()
             if (candidate.exists()) {
-                return candidate.readText()
+                return candidate.readSourceText()
             }
             cursor = cursor.parent
         }

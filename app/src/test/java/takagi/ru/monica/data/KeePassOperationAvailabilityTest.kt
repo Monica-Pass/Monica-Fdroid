@@ -38,9 +38,11 @@ class KeePassOperationAvailabilityTest {
     fun remoteDatabaseAllowsWritableSyncedLocalCopies() {
         val inSync = remoteDatabase(lastSyncStatus = KeePassSyncStatus.IN_SYNC)
         val pendingUpload = remoteDatabase(lastSyncStatus = KeePassSyncStatus.PENDING_UPLOAD)
+        val failedUpload = remoteDatabase(lastSyncStatus = KeePassSyncStatus.FAILED)
 
         assertTrue(inSync.writeOperationAvailability().canOperate)
         assertTrue(pendingUpload.writeOperationAvailability().canOperate)
+        assertTrue("A failed upload must retain writable offline content", failedUpload.writeOperationAvailability().canOperate)
     }
 
     @Test
@@ -49,8 +51,7 @@ class KeePassOperationAvailabilityTest {
             KeePassSyncStatus.LOCAL_ONLY to KeePassOperationBlockReason.NEEDS_REFRESH,
             KeePassSyncStatus.REMOTE_CHANGED to KeePassOperationBlockReason.NEEDS_REFRESH,
             KeePassSyncStatus.SYNCING to KeePassOperationBlockReason.SYNCING,
-            KeePassSyncStatus.CONFLICT to KeePassOperationBlockReason.CONFLICT,
-            KeePassSyncStatus.FAILED to KeePassOperationBlockReason.FAILED
+            KeePassSyncStatus.CONFLICT to KeePassOperationBlockReason.CONFLICT
         )
 
         blockedStates.forEach { (status, reason) ->

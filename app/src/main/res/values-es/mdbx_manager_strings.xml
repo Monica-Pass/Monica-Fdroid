@@ -513,7 +513,7 @@
     <string name="mdbx_ui_repair_cancelled">Se canceló la reparación de la base de datos. No se escribieron cambios.</string>
     <string name="mdbx_ui_repair_no_changes">No hay cambios que escribir en la base de datos</string>
     <string name="mdbx_ui_manager_entry_title">Gestor de bases de datos MDBX</string>
-    <string name="mdbx_ui_manager_entry_description">Gestiona bases de datos MDBX locales, en WebDAV y en OneDrive, incluidas las de versiones de prueba antiguas.</string>
+    <string name="mdbx_ui_manager_entry_description">Gestiona bases MDBX locales y en WebDAV, y convierte archivos MDBX1 a MDBX2.</string>
     <string name="mdbx_ui_database_count">%1$s bases de datos</string>
     <string name="mdbx_ui_source_count">%1$s bases de datos conectadas</string>
     <string name="mdbx_ui_structure_removed">Eliminado</string>

@@ -7,12 +7,15 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
+import org.junit.Before
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.RuntimeEnvironment
+import takagi.ru.monica.webdav.WebDavGateway
 import takagi.ru.monica.webdav.WebDavBackoffState
 import takagi.ru.monica.webdav.WebDavErrorClassifier
 import takagi.ru.monica.webdav.WebDavErrorKind
@@ -20,7 +23,19 @@ import takagi.ru.monica.webdav.WebDavErrorKind
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class)
 class WebDavMdbxDirectoryTest {
-    @After fun resetBackoff() { WebDavBackoffState.resetForTest() }
+    private val context get() = RuntimeEnvironment.getApplication()
+    private var previouslyAllowedHttp = false
+
+    @Before fun allowFixtureServer() {
+        previouslyAllowedHttp = WebDavHelper.isInsecureHttpAllowed(context)
+        WebDavGateway.attach(context)
+        WebDavHelper.setInsecureHttpAllowed(context, true)
+    }
+
+    @After fun resetBackoff() {
+        WebDavBackoffState.resetForTest()
+        WebDavHelper.setInsecureHttpAllowed(context, previouslyAllowedHttp)
+    }
 
     @Test
     fun existingParentsAreNotRecheckedForEverySegment() = runBlocking {

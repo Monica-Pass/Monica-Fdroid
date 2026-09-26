@@ -1,5 +1,7 @@
 package takagi.ru.monica.steam
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -10,10 +12,10 @@ class SteamExternalVaultStorageGuardTest {
     fun storageSourcesAndPreferencesIncludeKeePassAndBitwarden() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/data/SteamStorageSource.kt"
-        ).readText()
+        ).readSourceText()
         val preferences = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/ui/SteamQrAccountPreference.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("data class KeePass"))
         assertTrue(source.contains("data class Bitwarden"))
@@ -25,10 +27,10 @@ class SteamExternalVaultStorageGuardTest {
     fun externalStoresUseMarkerAndRealMaFileAttachments() {
         val keepass = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/data/SteamKeePassAccountStore.kt"
-        ).readText()
+        ).readSourceText()
         val bitwarden = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/data/SteamBitwardenAccountStore.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(keepass.contains("SteamExternalMaFileContract.MARKER_FIELD"))
         assertTrue(keepass.contains("addAttachmentToEntry("))
@@ -52,12 +54,12 @@ class SteamExternalVaultStorageGuardTest {
         assertFalse(bitwardenUpsertBody.contains("requestLocalMutationSync("))
         val repository = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/repository/BitwardenRepository.kt"
-        ).readText()
-        assertTrue(repository.contains("BitwardenCipherKeyResolver.resolveCipherKey("))
+        ).readSourceText()
+        assertTrue(repository.contains("BitwardenAttachmentKeyResolver.resolve(cipher, vaultKey)"))
         assertTrue(repository.contains("BitwardenAttachmentMetadataDecoder.decodeForStorage("))
         val attachmentExecutor = projectFile(
             "app/src/main/java/takagi/ru/monica/attachments/executor/BitwardenAttachmentExecutor.kt"
-        ).readText()
+        ).readSourceText()
         val downloadBody = attachmentExecutor
             .substringAfter("suspend fun download(")
             .substringBefore("suspend fun remove(")
@@ -76,13 +78,13 @@ class SteamExternalVaultStorageGuardTest {
 
         val passwordRepository = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/PasswordRepository.kt"
-        ).readText()
+        ).readSourceText()
         val cipherSync = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/CipherSyncProcessor.kt"
-        ).readText()
+        ).readSourceText()
         val passwordViewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(passwordRepository.contains("withoutExternalSteamMaFileEntries"))
         assertTrue(cipherSync.contains("SteamExternalMaFileContract.isMarked"))
@@ -93,10 +95,10 @@ class SteamExternalVaultStorageGuardTest {
     fun steamUiExposesExternalSourcesAndRoutesMutations() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt"
-        ).readText()
+        ).readSourceText()
         val viewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/ui/SteamViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(screen.contains("SteamStorageSource.KeePass(database.id)"))
         assertTrue(screen.contains("SteamStorageSource.Bitwarden(vault.id)"))

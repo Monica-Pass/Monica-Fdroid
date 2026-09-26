@@ -513,5 +513,5 @@
     <string name="mdbx_ui_repair_cancelled">已取消数据库处理，未写入任何修改喵</string>
     <string name="mdbx_ui_repair_no_changes">数据库状态没有需要写入的变化喵</string>
     <string name="mdbx_ui_manager_entry_title">MDBX 数据库管理喵</string>
-    <string name="mdbx_ui_manager_entry_description">管理本地、WebDAV 和 OneDrive MDBX 数据库，兼容旧测试版库喵</string>
+    <string name="mdbx_ui_manager_entry_description">管理本地和 WebDAV MDBX 数据库，也可把 MDBX1 文件升级为 MDBX2 喵。</string>
 </resources>

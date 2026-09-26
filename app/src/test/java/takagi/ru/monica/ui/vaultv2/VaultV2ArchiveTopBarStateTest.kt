@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.vaultv2
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,13 +13,13 @@ class VaultV2ArchiveTopBarStateTest {
     fun archiveReturnAdaptsToOverviewAndClassicList() {
         val pane = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
         val topBar = pane.substringAfter("ExpressiveTopBar(")
             .substringBefore("VaultV2QuickStatusBar(")
 
         assertFalse(topBar.contains("navigationIcon = if (state.isArchiveView)"))
-        assertTrue(topBar.contains("navigationIcon = if (appSettings.vaultOverviewEnabled)"))
-        assertTrue(topBar.contains("IconButton(onClick = ::closeOverviewList)"))
+        assertTrue(pane.contains("state.overviewListOpen || appSettings.vaultOverviewEnabled -> closeOverviewList()"))
+        assertTrue(pane.contains("if (state.isArchiveView) state.closeArchiveView(scrollToTop = false)"))
         val archiveActionIndex = topBar.indexOf("if (state.isArchiveView && !appSettings.vaultOverviewEnabled)")
         val searchActionIndex = topBar.indexOf("IconButton(onClick = { isSearchExpanded = true })")
         assertTrue(archiveActionIndex >= 0)
@@ -59,7 +61,7 @@ class VaultV2ArchiveTopBarStateTest {
     fun scrollPositionPersistenceDoesNotInvalidateTheWholePaneOnEveryScrollFrame() {
         val paneState = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2PaneState.kt"
-        ).readText()
+        ).readSourceText()
 
         assertFalse(paneState.contains("var scrollIndex by mutableIntStateOf"))
         assertFalse(paneState.contains("var scrollOffset by mutableIntStateOf"))

@@ -513,7 +513,7 @@
     <string name="mdbx_ui_repair_cancelled">已取消数据库处理，未写入任何修改</string>
     <string name="mdbx_ui_repair_no_changes">数据库状态没有需要写入的变化</string>
     <string name="mdbx_ui_manager_entry_title">MDBX 数据库管理</string>
-    <string name="mdbx_ui_manager_entry_description">管理本地、WebDAV 和 OneDrive MDBX 数据库，兼容旧测试版库</string>
+    <string name="mdbx_ui_manager_entry_description">管理本地和 WebDAV MDBX 数据库，支持将 MDBX1 文件升级为 MDBX2。</string>
     <string name="mdbx_ui_database_count">%1$s 个数据库</string>
     <string name="mdbx_ui_source_count">已连接 %1$s 个数据库</string>
     <string name="mdbx_ui_structure_removed">已删除</string>

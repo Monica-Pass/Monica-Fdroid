@@ -513,7 +513,7 @@
     <string name="mdbx_ui_repair_cancelled">Đã hủy sửa cơ sở dữ liệu. Không có thay đổi nào được ghi.</string>
     <string name="mdbx_ui_repair_no_changes">Không có thay đổi cơ sở dữ liệu cần ghi</string>
     <string name="mdbx_ui_manager_entry_title">Trình quản lý cơ sở dữ liệu MDBX</string>
-    <string name="mdbx_ui_manager_entry_description">Quản lý cơ sở dữ liệu MDBX cục bộ, WebDAV và OneDrive, kể cả cơ sở dữ liệu từ phiên bản thử nghiệm cũ.</string>
+    <string name="mdbx_ui_manager_entry_description">Quản lý cơ sở dữ liệu MDBX cục bộ và WebDAV, đồng thời nâng cấp tệp MDBX1 lên MDBX2.</string>
     <string name="mdbx_ui_database_count">%1$s cơ sở dữ liệu</string>
     <string name="mdbx_ui_source_count">%1$s cơ sở dữ liệu đã kết nối</string>
     <string name="mdbx_ui_structure_removed">Đã xóa</string>

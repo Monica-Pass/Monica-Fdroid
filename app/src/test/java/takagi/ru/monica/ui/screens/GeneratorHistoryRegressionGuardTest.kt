@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,7 +13,7 @@ class GeneratorHistoryRegressionGuardTest {
     fun generatedValuesEnterHistoryOnlyAfterCopy() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/GeneratorScreen.kt"
-        ).readText()
+        ).readSourceText()
         val regenerateBody = source
             .substringAfter("val regenerateNow: () -> Unit = regenerate@{")
             .substringBefore("LaunchedEffect(externalRefreshRequestKey)")
@@ -31,9 +33,15 @@ class GeneratorHistoryRegressionGuardTest {
                 copyGeneratedResultBody.contains("selectedGenerator.name")
         )
         assertTrue(
-            "Both normal and SSH result cards should use the same copy-and-history path.",
-            Regex("onCopy = copyGeneratedResult").findAll(source).count() >= 2
+            "Normal generated values use the copy-and-history path.",
+            source.contains("onCopy = copyGeneratedResult")
         )
+        // SSH private-key copies use the sensitive clipboard path and must not enter the
+        // ordinary password generator history.
+        val sshResult = projectFile("app/src/main/java/takagi/ru/monica/ui/screens/SshGeneratedResult.kt").readSourceText()
+        assertTrue(source.contains("SshGeneratedResult(key,"))
+        assertTrue(sshResult.contains("sensitive = sensitive"))
+        assertFalse(sshResult.contains("appendGeneratorHistory("))
         assertTrue(
             "Duplicate suppression should inspect full history, not the currently filtered view.",
             source.contains("val latest = historyList.firstOrNull()") &&

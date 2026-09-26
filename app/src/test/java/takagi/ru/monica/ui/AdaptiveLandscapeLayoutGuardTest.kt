@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,10 +12,10 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun vaultAndSteamReceiveTheExistingWindowWidthContract() {
         val mainScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
         val steamSource = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(mainScreenSource.contains("VaultV2TabPane("))
         assertTrue(mainScreenSource.contains("isCompactWidth = isCompactWidth"))
@@ -26,7 +28,7 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun vaultWideLayoutOwnsBothTheListAndTheDetailPane() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2TabPane.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("if (isCompactWidth)"))
         assertTrue(source.contains(".width(wideListPaneWidth)"))
@@ -38,7 +40,7 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun steamKeepsCompactNavigationAndUsesListDetailForWideTokenPages() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("SteamAdaptiveContent("))
         assertTrue(source.contains("SteamWideCodeContent("))
@@ -50,7 +52,7 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun vaultWideDetailOccupancyParticipatesInFabVisibility() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/MainScreenFab.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("BottomNavItem.VaultV2 -> vaultV2HasWideDetail"))
     }
@@ -59,13 +61,13 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun vaultWideHistoryUsesTheFullTabSurfaceInsteadOfTheListColumn() {
         val mainScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
         val vaultSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(mainScreenSource.contains("if (passwordHistoryPageMode.isVisible)"))
-        assertTrue(mainScreenSource.contains("useEmbeddedHistoryPages = isCompactWidth"))
+        assertTrue(mainScreenSource.contains("useEmbeddedHistoryPages = false"))
         assertTrue(vaultSource.contains("useEmbeddedHistoryPages: Boolean = true"))
         assertTrue(vaultSource.contains("onOpenHistory"))
         assertTrue(vaultSource.contains("onOpenTrashPage"))
@@ -75,7 +77,7 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun vaultRoutesEveryAggregatedEntryTypeToTheWideDetailHost() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("onOpenPassword = handlePasswordDetailOpen"))
         assertTrue(source.contains("onOpenTotp = handleTotpOpen"))
@@ -95,7 +97,7 @@ class AdaptiveLandscapeLayoutGuardTest {
     fun steamWideModeIsLimitedToTokenMasterDetailAndKeepsOtherSectionsReadable() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/steam/ui/SteamScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("selectedSection == SteamSection.CODE"))
         assertTrue(source.contains("SteamReadableSectionFrame(isCompactWidth)"))

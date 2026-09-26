@@ -1,5 +1,7 @@
 package takagi.ru.monica.data
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,10 +13,10 @@ class TimelineSnapshotIntegrationGuardTest {
     fun roomDatabaseRegistersVersion73SnapshotMigration() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordDatabase.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("TimelineVersionSnapshot::class"))
-        assertTrue(source.contains("version = 73"))
+        assertTrue(Regex("version = (\\d+)").find(source)!!.groupValues[1].toInt() >= 73)
         assertTrue(source.contains("Migration(72, 73)"))
         assertTrue(source.contains("CREATE TABLE IF NOT EXISTS timeline_version_snapshots"))
         assertTrue(source.contains("MIGRATION_72_73"))
@@ -24,7 +26,7 @@ class TimelineSnapshotIntegrationGuardTest {
     fun snapshotPayloadNeverUsesCompatibilityFallbackWhenMasterPasswordExists() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
 
         val encryptBlock = source.substringAfter("fun encryptTimelineSnapshot")
             .substringBefore("fun decryptTimelineSnapshot")
@@ -44,7 +46,7 @@ class TimelineSnapshotIntegrationGuardTest {
     fun ordinaryTimelineBackupDoesNotExportEncryptedSnapshots() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val timelineBackupBlock = source.substringAfter("val allLogs = operationLogDao.getAllLogsSync()")
             .substringBefore("OperationLogger.logWebDavUpload")
 
@@ -57,9 +59,10 @@ class TimelineSnapshotIntegrationGuardTest {
     fun loggerSeparatesRedactedAuditFromEncryptedSnapshot() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/OperationLogger.kt"
-        ).readText()
+        ).readSourceText()
 
-        assertTrue(source.contains("val sanitizedChanges = sanitizeChanges(itemType, changes)"))
+        assertTrue(source.contains("val immutableChanges = changes.toList()"))
+        assertTrue(source.contains("val sanitizedChanges = sanitizeChanges(itemType, immutableChanges)"))
         assertTrue(source.contains("snapshotChanges: List<FieldChange> = changes"))
         assertTrue(source.contains("encryptTimelineSnapshot"))
         assertTrue(source.contains("Skipped incomplete encrypted timeline snapshot"))
@@ -69,7 +72,7 @@ class TimelineSnapshotIntegrationGuardTest {
     fun restoreAndCopyRefuseStaleOrKeePassBoundVersions() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TimelineViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(source.contains("if (current != expectedValue(change)) return false"))
         assertTrue(source.contains("matchesCurrentEncryptedSnapshotState(log, snapshotChanges)"))

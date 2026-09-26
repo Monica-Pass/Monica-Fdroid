@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fdroid_cloud_provider_unavailable">%1$s non è disponibile nella versione F-Droid. Usa WebDAV.</string>
+    <string name="webdav_allow_insecure_http">Consenti connessioni HTTP non sicure</string>
+    <string name="webdav_allow_insecure_http_description">Disattivato per impostazione predefinita. Attivalo solo per un server HTTP fidato, come un NAS locale senza HTTPS. Se disattivato, WebDAV blocca le connessioni HTTP.</string>
+</resources>

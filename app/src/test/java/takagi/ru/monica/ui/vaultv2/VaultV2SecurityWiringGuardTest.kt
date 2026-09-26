@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.vaultv2
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -25,7 +27,7 @@ class VaultV2SecurityWiringGuardTest {
         val signature = pane
             .substringAfter("fun VaultV2Pane(")
             .substringBefore(") {")
-        val itemCard = pane.substringAfter("private fun VaultV2ItemCard(")
+        val itemCard = pane.substringAfter("internal fun VaultV2ItemCard(")
 
         assertTrue(signature.contains("securityManager: SecurityManager,"))
         assertTrue(signature.contains("biometricEnabled: Boolean,"))
@@ -50,6 +52,6 @@ class VaultV2SecurityWiringGuardTest {
         return File(
             directory,
             "app/src/main/java/takagi/ru/monica/$relativePath"
-        ).readText()
+        ).readSourceText()
     }
 }

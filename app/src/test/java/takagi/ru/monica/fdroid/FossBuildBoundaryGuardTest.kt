@@ -1,5 +1,7 @@
 package takagi.ru.monica.fdroid
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,7 +13,7 @@ class FossBuildBoundaryGuardTest {
             .first { File(it, "settings.gradle").isFile }
     }
 
-    private fun source(path: String) = File(root, path).readText()
+    private fun source(path: String) = File(root, path).readSourceText()
 
     @Test
     fun `proprietary service bridges stay outside the fdroid build`() {
@@ -51,7 +53,10 @@ class FossBuildBoundaryGuardTest {
         assertTrue(File(root, "rust-jni/Cargo.lock").isFile)
         assertTrue(mdbxGradle.contains("90005c8c608c952093a4522ffa507a562e2e39a4"))
         assertTrue(mdbxGradle.contains("'--profile', 'mdbx3-release'"))
-        assertFalse(File(root, "app/src/main/jniLibs").exists())
-        assertFalse(File(root, "mdbx-engine/src/main/jniLibs").exists())
+        // Gradle/IDE may retain empty source-set directories. It is bundled binary
+        // files, rather than those empty directories, that break a source-only build.
+        for (path in listOf("app/src/main/jniLibs", "mdbx-engine/src/main/jniLibs")) {
+            assertFalse("Prebuilt runtime in $path", File(root, path).walkTopDown().any { it.isFile })
+        }
     }
 }

@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,16 +13,17 @@ class MultiCredentialPasswordCreationGuardTest {
     fun newPasswordKeepsSingleEditorAndEnablesMenuBasedBatchMode() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
         val viewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(screen.contains("val isMultiCredentialMode = usesCredentialCards && credentialUsernames.size > 1"))
         assertTrue(screen.contains("multiCredentialEditorSectionName"))
-        assertTrue(screen.contains("credentialMenuExpanded"))
+        assertTrue(screen.contains("showCredentialPicker"))
+        assertTrue(screen.contains("PasswordCredentialPickerSheet("))
         assertTrue(screen.contains("showCommonCredentialEditor"))
-        assertTrue(screen.contains("showCredentialEditor(index)"))
+        assertTrue(screen.contains("onSelect = ::showCredentialEditor"))
         assertTrue(screen.contains("if (usesCredentialCards)"))
         assertTrue(screen.contains("R.string.add_credential"))
         assertTrue(screen.contains("viewModel.saveCredentialsAcrossTargets("))
@@ -37,7 +40,7 @@ class MultiCredentialPasswordCreationGuardTest {
     fun editingKeepsLegacyGroupedPasswordEditor() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(screen.contains("if (isEditing)"))
         assertTrue(screen.contains("val canAddIndependentCredential"))
@@ -55,10 +58,10 @@ class MultiCredentialPasswordCreationGuardTest {
     fun batchEditorKeepsOnlyCustomFieldsCommonAndScopesPersonalMetadataPerCredential() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText()
+        ).readSourceText()
         val viewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(screen.contains("CredentialMetadataDraft"))
         assertTrue(screen.contains("credentialMetadataDrafts"))

@@ -513,7 +513,7 @@
     <string name="mdbx_ui_repair_cancelled">Datenbankreparatur abgebrochen. Es wurden keine Änderungen geschrieben.</string>
     <string name="mdbx_ui_repair_no_changes">Keine Datenbankänderungen zu schreiben</string>
     <string name="mdbx_ui_manager_entry_title">MDBX-Datenbankverwaltung</string>
-    <string name="mdbx_ui_manager_entry_description">Verwalten Sie lokale, WebDAV- und OneDrive-MDBX-Datenbanken, einschließlich Datenbanken älterer Testversionen.</string>
+    <string name="mdbx_ui_manager_entry_description">Lokale MDBX-Datenbanken und Datenbanken auf WebDAV verwalten sowie MDBX1-Dateien in MDBX2 umwandeln.</string>
     <string name="mdbx_ui_database_count">%1$s Datenbanken</string>
     <string name="mdbx_ui_source_count">%1$s verbundene Datenbanken</string>
     <string name="mdbx_ui_structure_removed">Gelöscht</string>

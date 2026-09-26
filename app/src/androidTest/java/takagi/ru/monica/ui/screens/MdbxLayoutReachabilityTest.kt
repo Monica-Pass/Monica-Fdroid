@@ -235,7 +235,7 @@ class MdbxLayoutReachabilityTest {
     }
 
     @Test
-    fun realManagerRoutesAllSixCreateOpenActionsToTheirStorageSource() {
+    fun realManagerRoutesSupportedCreateOpenActionsAndHidesOneDrive() {
         Fixture().use { fixture ->
             show(shell = false) {
                 MdbxManagerScreen(
@@ -245,7 +245,8 @@ class MdbxLayoutReachabilityTest {
                     onNavigateToOneDriveCreate = { events += "onedrive:create" }, onNavigateToOneDriveOpen = { events += "onedrive:open" }
                 )
             }
-            listOf(label(R.string.mdbx_ui_local_databases), "WebDAV", "OneDrive").forEach { title ->
+            compose.onNodeWithText("OneDrive").assertDoesNotExist()
+            listOf(label(R.string.mdbx_ui_local_databases), "WebDAV").forEach { title ->
                 compose.onNodeWithText(title).performClick()
                 compose.onAllNodesWithTag("mdbx_open_database").assertCountEquals(1)
                 compose.onAllNodesWithTag("mdbx_create_database").assertCountEquals(1)
@@ -253,7 +254,7 @@ class MdbxLayoutReachabilityTest {
                 compose.onNodeWithTag("mdbx_create_database").assertIsDisplayed().performClick()
                 compose.onNodeWithContentDescription(label(R.string.back)).performClick()
             }
-            compose.runOnIdle { assertEquals(listOf("local:open", "local:create", "webdav:open", "webdav:create", "onedrive:open", "onedrive:create"), events) }
+            compose.runOnIdle { assertEquals(listOf("local:open", "local:create", "webdav:open", "webdav:create"), events) }
         }
     }
 

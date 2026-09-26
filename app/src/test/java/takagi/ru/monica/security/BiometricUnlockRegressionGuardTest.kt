@@ -1,5 +1,7 @@
 package takagi.ru.monica.security
 
+import takagi.ru.monica.testing.readSourceText
+
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,7 +13,7 @@ class BiometricUnlockRegressionGuardTest {
     fun mainPasswordLoginUsesFullVaultUnlockPath() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val authenticateBody = source.substringAfter("fun authenticate(password: String): Boolean {")
             .substringBefore("fun restoreAuthenticatedUiState()")
 
@@ -29,7 +31,7 @@ class BiometricUnlockRegressionGuardTest {
     fun mdkWrapperRebuildHandlesInvalidatedAndUnrecoverableKeystoreKeys() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val persistBody = source.substringAfter("private fun persistKeystoreWrappedMdk(mdk: ByteArray): Boolean {")
             .substringBefore("private fun persistCompatKeystoreWrappedMdk")
         val ensureBody = source.substringAfter("private fun ensureMdkInitializedWithPassword(")
@@ -69,7 +71,7 @@ class BiometricUnlockRegressionGuardTest {
     fun biometricUnlockClearsPreviousMdkCooldownBeforeReadingKeyMaterial() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val biometricBody = source.substringAfter("fun unlockVaultWithBiometric(): Boolean {")
             .substringBefore("fun isVaultRuntimeUnlocked()")
 
@@ -83,7 +85,7 @@ class BiometricUnlockRegressionGuardTest {
     fun emptyRuntimeMdkCacheCannotMaskReadableKeystoreWrapper() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val getMdkBody = source.substringAfter("private fun getMdkForCrypto(): ByteArray? {")
             .substringBefore("private val DATA_PREFIX_MDK")
         val getOrCreateBody = source.substringAfter("private fun getOrCreateMdkBytes(): ByteArray {")
@@ -117,7 +119,7 @@ class BiometricUnlockRegressionGuardTest {
     fun compatDataEncryptionDoesNotUsePredictableMasterKeyString() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val encryptDataBody = source.substringAfter("fun encryptData(data: String): String {")
             .substringBefore("/**\n     * Compatibility helper")
         val legacyCompatBody = source.substringAfter("fun encryptDataLegacyCompat(data: String): String {")
@@ -158,19 +160,19 @@ class BiometricUnlockRegressionGuardTest {
     fun compatDataPrefixIsRecognizedAtPasswordBoundaries() {
         val autofillSecretResolver = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillSecretResolver.kt"
-        ).readText()
+        ).readSourceText()
         val accountFillPolicy = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AccountFillPolicy.kt"
-        ).readText()
+        ).readSourceText()
         val dataExportImportViewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/DataExportImportViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val bitwardenSyncService = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/BitwardenSyncService.kt"
-        ).readText()
+        ).readSourceText()
         val webDavHelper = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "C2 compat ciphertext must be recognized anywhere password payloads are classified.",
@@ -190,7 +192,7 @@ class BiometricUnlockRegressionGuardTest {
     fun monicaCiphertextDetectionRequiresExplicitPrefix() {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val detectorBody = source.substringAfter("fun looksLikeMonicaCiphertext(value: String): Boolean {")
             .substringBefore("fun decryptDataIfMonicaCiphertext")
         val conditionalDecryptBody = source.substringAfter("fun decryptDataIfMonicaCiphertext(value: String): String {")
@@ -219,10 +221,10 @@ class BiometricUnlockRegressionGuardTest {
     fun totpFieldEncryptionCompatibilityReadsThroughSingleHelper() {
         val resolverSource = projectFile(
             "app/src/main/java/takagi/ru/monica/util/TotpDataResolver.kt"
-        ).readText()
+        ).readSourceText()
         val viewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "TOTP resolver must support optional field decrypt before parsing so old plaintext and new ciphertext share one path.",
@@ -250,16 +252,16 @@ class BiometricUnlockRegressionGuardTest {
     fun sharedDatabaseAndSyncBoundariesDoNotExportLocalOnlyTotpCiphertext() {
         val mdbxStoreSource = projectFile(
             "app/src/main/java/takagi/ru/monica/repository/MdbxVaultStore.kt"
-        ).readText()
+        ).readSourceText()
         val bitwardenSyncSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/BitwardenSyncService.kt"
-        ).readText()
+        ).readSourceText()
         val webDavHelperSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val keePassKdbxSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/KeePassKdbxService.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "MDBX write boundary must preserve current plaintext data, but decrypt explicitly-prefixed Monica ciphertext before writing shared payloads.",
@@ -286,7 +288,8 @@ class BiometricUnlockRegressionGuardTest {
             webDavHelperSource.contains("portablePasswordForBackup(") &&
                 webDavHelperSource.contains("portableSecureItemForBackup(") &&
                 webDavHelperSource.contains("portableSensitiveBackupValue(") &&
-                webDavHelperSource.contains("securityManager.decryptData(value)") &&
+                webDavHelperSource.contains("PortableSecretExportPolicy.resolve(") &&
+                webDavHelperSource.contains("decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext") &&
                 webDavHelperSource.contains(".map { portablePasswordForBackup(it, securityManager) }") &&
                 webDavHelperSource.contains(".map { portableSecureItemForBackup(it, securityManager) }")
         )
@@ -302,16 +305,16 @@ class BiometricUnlockRegressionGuardTest {
     fun totpNewWritesStoreLocalCiphertextWithoutBreakingPortableBoundaries() {
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val passwordViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val bitwardenSyncSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/BitwardenSyncService.kt"
-        ).readText()
+        ).readSourceText()
         val cipherSyncSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/CipherSyncProcessor.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Standalone TOTP saves must encrypt new Room itemData writes, while keeping plaintext JSON only as the portable business value.",
@@ -344,28 +347,28 @@ class BiometricUnlockRegressionGuardTest {
     fun bankCardAndDocumentItemDataUseEncryptedLocalStorageWithPortableBoundaries() {
         val codecSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/model/CardWalletDataCodec.kt"
-        ).readText()
+        ).readSourceText()
         val bankCardViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/BankCardViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val documentViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/DocumentViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val cipherSyncSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/CipherSyncProcessor.kt"
-        ).readText()
+        ).readSourceText()
         val cipherUploadSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/service/CipherUploadProcessor.kt"
-        ).readText()
+        ).readSourceText()
         val webDavHelperSource = projectFile(
             "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt"
-        ).readText()
+        ).readSourceText()
         val autofillStructuredSource = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillStructuredDataSupport.kt"
-        ).readText()
+        ).readSourceText()
         val mdbxViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Card wallet codec must support conditional field decrypt before parsing old plaintext or new ciphertext.",
@@ -424,7 +427,7 @@ class BiometricUnlockRegressionGuardTest {
         )
 
         files.forEach { relativePath ->
-            val source = projectFile(relativePath).readText()
+            val source = projectFile(relativePath).readSourceText()
             assertFalse(
                 "$relativePath must not directly decode SecureItem.itemData as plaintext TOTP; encrypted fields must pass through TotpDataResolver.",
                 source.contains("Json.decodeFromString<TotpData>") ||
@@ -433,7 +436,7 @@ class BiometricUnlockRegressionGuardTest {
             )
         }
 
-        val combinedSource = files.joinToString("\n") { projectFile(it).readText() }
+        val combinedSource = files.joinToString("\n") { projectFile(it).readSourceText() }
         assertTrue(
             "High-traffic TOTP surfaces should explicitly route stored itemData through the compatibility resolver.",
             combinedSource.contains("TotpDataResolver.parseStoredItemData") &&
@@ -448,8 +451,11 @@ class BiometricUnlockRegressionGuardTest {
             .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .filterNot { it.invariantSeparatorsPath.endsWith("util/TotpDataResolver.kt") }
+            // This compatibility decoder validates plaintext from an already decrypted KDBX
+            // entry. Treating malformed native JSON as a raw OTP secret would hide the entry.
+            .filterNot { it.invariantSeparatorsPath.endsWith("keepass/KeePassSecureItemPayload.kt") }
             .mapNotNull { file ->
-                val source = file.readText()
+                val source = file.readSourceText()
                 val directlyParsesTotp =
                     source.contains("Json.decodeFromString<TotpData>") ||
                         source.contains("json.decodeFromString<TotpData>") ||
@@ -469,22 +475,22 @@ class BiometricUnlockRegressionGuardTest {
     fun legacySensitiveFieldMigrationRunsAfterUnlockAndOnlyTouchesLocalRoomCache() {
         val migrationSource = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SensitiveFieldMigrationManager.kt"
-        ).readText()
+        ).readSourceText()
         val mainActivitySource = projectFile(
             "app/src/main/java/takagi/ru/monica/MainActivity.kt"
-        ).readText()
+        ).readSourceText()
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val securityManagerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val passwordDaoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/PasswordEntryDao.kt"
-        ).readText()
+        ).readSourceText()
         val secureItemDaoSource = projectFile(
             "app/src/main/java/takagi/ru/monica/data/SecureItemDao.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Legacy sensitive-field migration must keep resumable progress outside Room schema migrations.",
@@ -563,91 +569,91 @@ class BiometricUnlockRegressionGuardTest {
     fun pageSwitchHotPathsDoNotRunAuthOrBitwardenSyncWorkOnMainThread() {
         val mainActivitySource = projectFile(
             "app/src/main/java/takagi/ru/monica/MainActivity.kt"
-        ).readText()
+        ).readSourceText()
         val monicaContentBody = mainActivitySource
             .substringAfter("fun MonicaContent(")
             .substringBefore("DisposableEffect(lifecycleOwner)")
         val bitwardenOrchestratorSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/sync/BitwardenSyncOrchestrator.kt"
-        ).readText()
+        ).readSourceText()
         val bitwardenViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/viewmodel/BitwardenViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val bitwardenAutoSyncEffectSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/ui/BitwardenAutoSyncEffect.kt"
-        ).readText()
+        ).readSourceText()
         val bitwardenPageAutoSyncSchedulerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/bitwarden/sync/BitwardenPageAutoSyncScheduler.kt"
-        ).readText()
+        ).readSourceText()
         val cardWalletScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/CardWalletScreen.kt"
-        ).readText()
+        ).readSourceText()
         val walletListPreparationSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/cardwallet/WalletListPreparation.kt"
-        ).readText()
+        ).readSourceText()
         val passkeyListScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/PasskeyListScreen.kt"
-        ).readText()
+        ).readSourceText()
         val sendScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/SendScreen.kt"
-        ).readText()
+        ).readSourceText()
         val passwordListContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordListContent.kt"
-        ).readText()
+        ).readSourceText()
         val vaultV2PaneSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt"
-        ).readText()
+        ).readSourceText()
         val totpListContentForSyncSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/totp/TotpListContent.kt"
-        ).readText()
+        ).readSourceText()
         val securityManagerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt"
-        ).readText()
+        ).readSourceText()
         val totpCodeCardSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/TotpCodeCard.kt"
-        ).readText()
+        ).readSourceText()
         val bankCardCardSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/BankCardCard.kt"
-        ).readText()
+        ).readSourceText()
         val documentCardSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/DocumentCard.kt"
-        ).readText()
+        ).readSourceText()
         val bankCardViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/BankCardViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val documentViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/DocumentViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val totpViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/TotpViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val passwordViewModelSource = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readText()
+        ).readSourceText()
         val totpListContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/totp/TotpListContent.kt"
-        ).readText()
+        ).readSourceText()
         val authenticatorTabPaneSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/AuthenticatorTabPane.kt"
-        ).readText()
+        ).readSourceText()
         val passwordDetailScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt"
-        ).readText()
+        ).readSourceText()
         val addEditPasswordScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readText().replace("\r\n", "\n")
+        ).readSourceText().replace("\r\n", "\n")
         val addEditBankCardScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt"
-        ).readText()
+        ).readSourceText()
         val addEditDocumentScreenSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt"
-        ).readText()
+        ).readSourceText()
         val cardWalletDetailPaneContentSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/cardwallet/CardWalletDetailPaneContent.kt"
-        ).readText()
+        ).readSourceText()
         val commonNameSuggestionSheetSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/components/CommonNameSuggestionSheet.kt"
-        ).readText()
+        ).readSourceText()
 
         assertTrue(
             "Authenticated Compose recompositions must reuse an authenticated access state instead of re-running lock policy on every frame.",
@@ -841,10 +847,10 @@ class BiometricUnlockRegressionGuardTest {
     fun autofillPasswordSelectionReturnPathDoesNotBlockMainThread() {
         val pickerSource = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivityV2.kt"
-        ).readText()
+        ).readSourceText()
         val listItemSource = projectFile(
             "app/src/main/java/takagi/ru/monica/autofill_ng/ui/PasswordListItem.kt"
-        ).readText()
+        ).readSourceText()
         val handleBody = pickerSource.substringAfter("private fun handleAutofill(password: PasswordEntry, forceAddUri: Boolean) {")
             .substringBefore("private suspend fun preparePasswordAutofill(")
         val prepareBody = pickerSource.substringAfter("private suspend fun preparePasswordAutofill(")

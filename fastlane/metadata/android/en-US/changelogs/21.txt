@@ -1,7 +1,8 @@
 Monica 1.0.314
 - AI API Keys, GPG, generator menus, Italian, Liberapay.
-- Faster keyboard loading/search; optional PIN shuffle and hidden previews; balanced keys.
-- QR/Code 128 fields, Emoji/app/icon-pack artwork, branded passkeys.
-- Improve editors, previews, authenticator/Steam layouts, QR/SSH data and navigation.
-- MDBX1 upgrades; MDBX2/CLI writes and WebDAV fixes.
-- Fix KDBX missing entries/fields/OTP; native OTP/HOTP, tags, expiry and combined saves.
+- Faster keyboard loading/search; optional PIN shuffle/hidden previews; balanced keys.
+- QR/Code 128, Emoji/app/icon-pack icons, branded passkeys.
+- Improve editors, previews, authenticator/Steam layouts and navigation.
+- MDBX1 upgrades; MDBX2/CLI writes and sync fixes; retain contact/card fields.
+- KDBX entries/OTP, native management and exact empty passwords.
+- Backups retain content; safer duplicate imports.
