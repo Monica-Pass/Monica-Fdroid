@@ -84,15 +84,20 @@ class SnowLeopardLanguageInstrumentedTest {
         if (icon != null) {
             // Android may select android:roundIcon according to the launcher configuration.
             assertTrue(activity.icon == icon || activity.icon == R.mipmap.ic_launcher_snow_leopard_round)
-            val bitmap = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
-            activity.loadIcon(context.packageManager).apply {
-                setBounds(0, 0, bitmap.width, bitmap.height)
-                draw(Canvas(bitmap))
+            // Keep comparable exports at launcher, review and zoomed inspection sizes.
+            for (size in listOf(128, 256, 512)) {
+                val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+                activity.loadIcon(context.packageManager).apply {
+                    setBounds(0, 0, size, size)
+                    draw(Canvas(bitmap))
+                }
+                val name = if (size == 256) "snow-leopard-launcher-icon.png"
+                    else "snow-leopard-launcher-icon-$size.png"
+                File(context.filesDir, name).outputStream().use {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+                bitmap.recycle()
             }
-            File(context.filesDir, "snow-leopard-launcher-icon.png").outputStream().use {
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-            }
-            bitmap.recycle()
         }
     }
 }

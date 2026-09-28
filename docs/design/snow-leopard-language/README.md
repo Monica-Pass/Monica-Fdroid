@@ -38,3 +38,5 @@
 - [更新后的系统图标实际渲染](device/snow-leopard-launcher-icon-updated.png)
 - [本次 Canvas 草图渲染](icon-refresh-canvas.png)
 - [图片替换验证记录](icon-refresh-verification.json)
+
+后续图标清晰度调整：再次从原图裁切、优化缩放过滤与预览像素尺寸。当前资源、母版及验证见[雪豹图标清晰度调整](../snow-leopard-icon-clarity/README.md)；上文的尺寸和验证为前次更新记录。

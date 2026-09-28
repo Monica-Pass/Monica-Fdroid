@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -37,6 +38,7 @@ internal fun AppLauncherIconSettings(
     onIconSelected: (AppLauncherIcon) -> Unit,
 ) {
     val context = LocalContext.current
+    val previewSizePx = with(LocalDensity.current) { 56.dp.roundToPx() }
     Column(modifier = Modifier.settingsSearchAnchor(stringResource(R.string.icon_settings_app_icon_title)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.icon_settings_app_icon_title),
@@ -67,9 +69,9 @@ internal fun AppLauncherIconSettings(
                         R.mipmap.ic_launcher_snow_leopard_round
                     } else R.mipmap.ic_launcher_modern
                 }
-                val bitmap = remember(context, iconRes) {
+                val bitmap = remember(context, iconRes, previewSizePx) {
                     requireNotNull(ContextCompat.getDrawable(context, iconRes))
-                        .toBitmap(160, 160).asImageBitmap()
+                        .toBitmap(previewSizePx, previewSizePx).asImageBitmap()
                 }
                 val topRadius = if (index == 0) 28.dp else 4.dp
                 val bottomRadius = if (index == AppLauncherIcon.entries.lastIndex) 28.dp else 4.dp
