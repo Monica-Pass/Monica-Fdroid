@@ -21,11 +21,11 @@ import takagi.ru.monica.util.TotpDataResolver
 class SensitiveFieldMigrationManager(
     context: Context,
     private val database: PasswordDatabase,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val passwordEntryDao: takagi.ru.monica.data.PasswordEntryDao = database.passwordEntryDao(),
+    private val secureItemDao: takagi.ru.monica.data.SecureItemDao = database.secureItemDao(),
 ) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val passwordEntryDao = database.passwordEntryDao()
-    private val secureItemDao = database.secureItemDao()
 
     suspend fun runUnlockedSmallBatch() {
         migrationMutex.withLock {
@@ -86,7 +86,8 @@ class SensitiveFieldMigrationManager(
                     }
                 ) ?: return@process MigrationRecordResult.Processed
 
-                passwordEntryDao.updateAuthenticatorKey(entry.id, encrypted)
+                // The batch can be stale after an edit, restore, or sync. Never replace a newer value.
+                passwordEntryDao.compareAndSetAuthenticatorKey(entry.id, rawValue, encrypted)
                 MigrationRecordResult.Processed
             }
         )
@@ -112,7 +113,7 @@ class SensitiveFieldMigrationManager(
                     }
                 ) ?: return@process MigrationRecordResult.Processed
 
-                secureItemDao.updateItemData(item.id, encrypted)
+                secureItemDao.compareAndSetItemData(item.id, item.itemData, encrypted)
                 MigrationRecordResult.Processed
             }
         )
@@ -141,6 +142,7 @@ class SensitiveFieldMigrationManager(
                 val id = recordId(record)
                 val result = runCatching { processRecord(record) }
                     .getOrElse { error ->
+                        if (error is kotlinx.coroutines.CancellationException) throw error
                         recordBlocked(domain, id, error)
                         return
                     }

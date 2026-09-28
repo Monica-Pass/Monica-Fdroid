@@ -3193,17 +3193,15 @@ class MultiPasswordSaveRegressionGuardTest {
                 beforeZipScan.contains("deleteAllLocalPasskeys()")
         )
         assertTrue(
-            "Replace-local restore must clear local data only after parse succeeds and the backup contains core restorable data.",
-            webDavHelperSource.contains("private suspend fun clearLocalDataForOverwriteRestore") &&
-                afterRestoreCounts.contains("val hasRestorableCoreData") &&
+            "Parsing must validate and defer replacement until the transactional apply phase.",
+            afterRestoreCounts.contains("val hasRestorableCoreData") &&
                 afterRestoreCounts.contains("failedItems.isNotEmpty()") &&
                 afterRestoreCounts.contains("!hasRestorableCoreData") &&
-                afterRestoreCounts.contains("clearLocalDataForOverwriteRestore(backupFile.name)") &&
-                afterRestoreCounts.indexOf("failedItems.isNotEmpty()") <
-                    afterRestoreCounts.indexOf("clearLocalDataForOverwriteRestore(backupFile.name)") &&
-                afterRestoreCounts.indexOf("!hasRestorableCoreData") <
-                    afterRestoreCounts.indexOf("clearLocalDataForOverwriteRestore(backupFile.name)")
+                restoreBody.contains("overwriteLocal = overwrite") &&
+                !restoreBody.contains("clearLocalDataForOverwriteRestore")
         )
+        val replacement = projectFile("app/src/main/java/takagi/ru/monica/utils/LocalBackupReplacement.kt").readSourceText()
+        assertTrue(replacement.contains("database.withTransaction") && replacement.contains("currentCoroutineContext().ensureActive()"))
     }
 
     @Test

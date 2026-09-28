@@ -3146,6 +3146,7 @@
     <string name="timeline_date_today">Today</string>
     <string name="timeline_date_yesterday">Yesterday</string>
     <string name="timeline_date_this_week">This week</string>
+    <!-- Java SimpleDateFormat pattern: reorder d (day) and M (month), but do not translate the tokens. -->
     <string name="timeline_date_month_day">MM-dd</string>
     <string name="timeline_empty_hint">Your operation history will appear here</string>
     <string name="timeline_search_hint">Search activity history</string>

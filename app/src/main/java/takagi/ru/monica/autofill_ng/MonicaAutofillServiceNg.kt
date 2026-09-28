@@ -671,11 +671,8 @@ class MonicaAutofillServiceNg : AutofillService() {
             matchedPasswords = passwordsForResponse.size,
         )
 
-        val inlineRequest = if (autofillPreferences.isInlineSuggestionsEnabled.first()) {
-            getInlineRequest(request)
-        } else {
-            null
-        }
+        val inlineSuggestionsEnabled = autofillPreferences.isInlineSuggestionsEnabled.first()
+        val passwordSuggestionEnabled = autofillPreferences.isPasswordSuggestionEnabled.first()
         val currentSettings = settingsManager.settingsFlow.first()
         val autofillAuthRequired = currentSettings.autofillAuthRequired &&
             DeveloperVerificationPolicy.requiresIdentityVerification(currentSettings)
@@ -701,6 +698,11 @@ class MonicaAutofillServiceNg : AutofillService() {
                 "webDomain" to (webDomain ?: "none"),
             )
         )
+        // Keep API 30 objects out of coroutine spill slots. Even a null inline
+        // request is cast back to InlineSuggestionsRequest on resume, which
+        // throws NoClassDefFoundError on Android 10. All suspending reads must
+        // finish before obtaining it; response construction below is synchronous.
+        val inlineRequest = if (inlineSuggestionsEnabled) getInlineRequest(request) else null
         val response = bwCompatProcessor.process(
             packageName = packageName,
             uri = requestUri,
@@ -710,7 +712,7 @@ class MonicaAutofillServiceNg : AutofillService() {
             passwords = passwordsForResponse,
             fieldSignatureKey = fieldSignatureKey,
             preferDirectAutoFill = isPasswordOnlyLogin && passwordsForResponse.size == 1,
-            passwordSuggestionEnabled = autofillPreferences.isPasswordSuggestionEnabled.first(),
+            passwordSuggestionEnabled = passwordSuggestionEnabled,
             requireAuthentication = effectiveAuthenticationRequired,
         )
 

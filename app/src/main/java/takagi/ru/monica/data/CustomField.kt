@@ -104,7 +104,9 @@ data class CustomFieldDraft(
     val isPreset: Boolean = false,      // 是否为预设字段（来自设置中的预设模板）
     val isRequired: Boolean = false,    // 是否必填
     val presetId: String? = null,       // 关联的预设字段ID
-    val placeholder: String = ""        // 占位提示
+    val placeholder: String = "",       // 占位提示
+    // Retain the type of secure-item fields while using the shared editor.
+    val secureFieldType: takagi.ru.monica.data.model.SecureCustomFieldType? = null
 ) {
     /**
      * 转换为 CustomField 实体

@@ -379,6 +379,9 @@ interface PasswordEntryDao {
     @Query("UPDATE password_entries SET authenticatorKey = :authenticatorKey WHERE id = :id")
     suspend fun updateAuthenticatorKey(id: Long, authenticatorKey: String)
 
+    @Query("UPDATE password_entries SET authenticatorKey = :replacement WHERE id = :id AND authenticatorKey = :expected")
+    suspend fun compareAndSetAuthenticatorKey(id: Long, expected: String, replacement: String): Int
+
     /**
      * 更新绑定的通行密钥元数据
      */

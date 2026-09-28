@@ -97,6 +97,8 @@ fun TotpCodeCard(
     backgroundContent: (@Composable BoxScope.() -> Unit)? = null,
     immersiveBackgroundVisible: Boolean = backgroundContent != null,
     cardVerticalPadding: Dp? = null,
+    showContentDetails: Boolean = false,
+    cardShape: androidx.compose.ui.graphics.Shape = MonicaItemCardShape,
     codeSectionSpacing: Dp = 8.dp,
     progressSectionSpacing: Dp = 4.dp
 ) {
@@ -114,6 +116,12 @@ fun TotpCodeCard(
         ) ?: TotpData(secret = "")
     }
     val totpData = remember(resolvedTotpData) { normalizeTotpData(resolvedTotpData) }
+    var showContentDetail by remember(item.id) { mutableStateOf(false) }
+    if (showContentDetail) {
+        TotpContentDetailSheet(item.title, totpData, item.notes,
+            onDismiss = { showContentDetail = false }, onEdit = onEdit)
+    }
+
     
     // 列表页面提供共享秒级时间源时，卡片不再订阅 50ms 备用 ticker。
     // 平滑视觉由进度条内部动画完成，验证码与卡片主体仅按秒更新。
@@ -470,6 +478,14 @@ fun TotpCodeCard(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
                             ) {
+                                if (showContentDetails || settings.passwordContentEditorEnabled || item.notes.isNotBlank()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.entry_content_details)) },
+                                        onClick = { expanded = false; showContentDetail = true },
+                                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                    )
+                                }
+
                                 onToggleFavorite?.let { toggleFavorite ->
                                     DropdownMenuItem(
                                         text = { Text(stringResource(if (item.isFavorite) R.string.remove_from_favorites else R.string.add_to_favorites)) },
@@ -576,6 +592,7 @@ fun TotpCodeCard(
     MonicaItemCard(
         modifier = cardInteractionModifier,
         isSelected = isSelected,
+        shape = cardShape,
         transparentContainer = hasImmersiveBackground
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -759,7 +776,7 @@ fun TotpCodeCard(
                             checked = isSelected,
                             onCheckedChange = { onToggleSelect?.invoke() }
                         )
-                    } else if (onDelete != null) {
+                    } else if (onDelete != null || showContentDetails || settings.passwordContentEditorEnabled || item.notes.isNotBlank()) {
                         // 菜单按钮
                         var expanded by remember { mutableStateOf(false) }
                         
@@ -775,6 +792,14 @@ fun TotpCodeCard(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
                             ) {
+                                if (showContentDetails || settings.passwordContentEditorEnabled || item.notes.isNotBlank()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.entry_content_details)) },
+                                        onClick = { expanded = false; showContentDetail = true },
+                                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                    )
+                                }
+
                                 // 收藏选项
                                 if (onToggleFavorite != null) {
                                     DropdownMenuItem(
@@ -861,7 +886,7 @@ fun TotpCodeCard(
                                     )
                                 }
                                 
-                                DropdownMenuItem(
+                                if (onDelete != null) DropdownMenuItem(
                                     text = { Text(stringResource(R.string.delete)) },
                                     onClick = {
                                         expanded = false
@@ -934,10 +959,10 @@ fun TotpCodeCard(
                         style = TextStyle(fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.ExtraBold, color = when {
                             totpData.otpType == OtpType.STEAM && hasImmersiveBackground -> immersiveTertiaryColor
-                            remainingSeconds <= 5 && hasImmersiveBackground -> immersiveErrorColor
+                            totpData.otpType != OtpType.HOTP && remainingSeconds <= 5 && hasImmersiveBackground -> immersiveErrorColor
                             hasImmersiveBackground -> immersiveAccentColor
                             totpData.otpType == OtpType.STEAM -> MaterialTheme.colorScheme.tertiary
-                            remainingSeconds <= 5 -> MaterialTheme.colorScheme.error
+                            totpData.otpType != OtpType.HOTP && remainingSeconds <= 5 -> MaterialTheme.colorScheme.error
                             else -> MaterialTheme.colorScheme.primary
                         })
                     )
@@ -1298,4 +1323,3 @@ private fun formatOtpCode(code: String, otpType: OtpType): String {
         }
     }
 }
-

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="customization_group_library">Library &amp; lists</string>
+    <string name="customization_group_cards">Cards &amp; wallet</string>
+    <string name="customization_group_fields_icons">Fields &amp; icons</string>
+    <string name="permission_summary_title">Permissions on your terms</string>
+    <string name="permission_summary_hint">Enable only the permissions needed for the features you use. Some are granted automatically by Android.</string>
+    <string name="permission_summary_granted">%1$d permissions granted</string>
+    <string name="permission_refresh_status">Refresh status</string>
+    <string name="permission_action_request">Request permission</string>
+    <string name="permission_action_none">No action needed</string>
+    <string name="permission_action_for">%1$s: %2$s</string>
+    <string name="permission_help_actions">Use Request permission to ask Android for access, or Open settings to manage services and granted permissions.\n\nItems marked No action needed or Unavailable have no action button. Enable only what you need.\n\nStatuses refresh when you return from system settings. You can also tap Refresh status to check again.</string>
+</resources>

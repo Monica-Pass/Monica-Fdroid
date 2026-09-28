@@ -2,6 +2,7 @@ package takagi.ru.monica.ime
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.Image
@@ -50,6 +51,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.Input
 import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -60,7 +62,6 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Check
@@ -87,6 +88,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -468,7 +470,7 @@ private fun MonicaImeToolbar(
         val undo = uiState.pendingClearedInput != null
         ImeToolbarItem(stringResource(if (undo) R.string.ime_clear_all_undo_action else R.string.autofill),
             "ime_toolbar_more", undo, if (undo) onUndoDeleteAll else onOpenAutofillSettings) {
-            Icon(if (undo) Icons.AutoMirrored.Filled.Undo else Icons.Default.MoreHoriz, null, Modifier.size(22.dp))
+            Icon(if (undo) Icons.AutoMirrored.Filled.Undo else Icons.AutoMirrored.Filled.Input, null, Modifier.size(22.dp))
         }
         ImeToolbarItem(stringResource(R.string.ime_hide_keyboard), "ime_toolbar_hide", false, onDismiss) {
             Icon(Icons.Default.KeyboardArrowDown, null, Modifier.size(22.dp))
@@ -479,13 +481,17 @@ private fun MonicaImeToolbar(
 @Composable
 private fun RowScope.ImeToolbarItem(label: String, tag: String, selected: Boolean,
     onClick: () -> Unit, content: @Composable () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    // Keep the full cell tappable; draw feedback only inside the circular surface.
     Box(Modifier.weight(1f).height(48.dp).testTag(tag)
-        .clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = label },
+        .clickable(interactionSource = interactionSource, indication = null, role = Role.Button, onClick = onClick)
+        .semantics { contentDescription = label },
         contentAlignment = Alignment.Center) {
         Surface(Modifier.size(40.dp), shape = CircleShape,
             color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
             contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant) {
-            Box(contentAlignment = Alignment.Center) { content() }
+            Box(Modifier.fillMaxSize().indication(interactionSource, ripple()),
+                contentAlignment = Alignment.Center) { content() }
         }
     }
 }

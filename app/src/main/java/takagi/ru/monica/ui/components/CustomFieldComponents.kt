@@ -91,7 +91,8 @@ fun CustomFieldEditCard(
     onFieldChange: (CustomFieldDraft) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    saveTextState: Boolean = true
+    saveTextState: Boolean = true,
+    groupShape: androidx.compose.ui.graphics.Shape? = null
 ) {
     // 编辑模式：新字段（标题或值为空）默认编辑，已保存字段默认查看
     var isEditing by remember { mutableStateOf(field.title.isBlank() || field.value.isBlank()) }
@@ -139,12 +140,12 @@ fun CustomFieldEditCard(
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(18.dp),
+            .padding(vertical = if (groupShape == null) 6.dp else 1.dp),
+        shape = groupShape ?: RoundedCornerShape(18.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (groupShape == null) 2.dp else 0.dp)
     ) {
         if (isEditing) {
             // ========== 编辑模式 ==========
@@ -158,6 +159,7 @@ fun CustomFieldEditCard(
                 ) {
                     OutlinedTextField(
                         saveTextState = saveTextState,
+                        entryContentStyle = groupShape != null,
                         value = field.title,
                         onValueChange = {
                             if (!field.isPreset) {
@@ -207,6 +209,7 @@ fun CustomFieldEditCard(
                 // 字段值输入
                 OutlinedTextField(
                     saveTextState = saveTextState,
+                    entryContentStyle = groupShape != null,
                     value = field.value,
                     onValueChange = { onFieldChange(field.copy(value = it)) },
                     label = { Text(stringResource(R.string.custom_field_value)) },
@@ -538,127 +541,61 @@ fun AddCustomFieldButton(
 // 详情页面组件 (Detail Screen Components)
 // =====================================================
 
-/**
- * 单个自定义字段详情展示卡片 (独立卡片样式)
- * 
- * 每个自定义字段独立为一个 ElevatedCard，与编辑页风格一致
- */
+/** Standalone use of the same field row used inside information sections. */
 @Composable
 fun CustomFieldDetailCard(
     field: CustomField,
     onCopy: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    groupShape: androidx.compose.ui.graphics.Shape? = null,
+    onCreateSend: ((title: String, text: String) -> Unit)? = null,
 ) {
-    var valueVisible by remember(field.id, field.isProtected) { mutableStateOf(!field.isProtected) }
-    val clipboardManager = LocalClipboardManager.current
-    
-    ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .animateMonicaContentSize()
-                .clickable { 
-                    clipboardManager.setText(AnnotatedString(field.value))
-                    onCopy(field.title)
-                }
-                .padding(16.dp)
-        ) {
-            // 标题行
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (field.isProtected) Icons.Default.Lock else Icons.Default.Label,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = field.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                
-                // 操作按钮
-                Row {
-                    if (field.isProtected) {
-                        IconButton(
-                            onClick = { valueVisible = !valueVisible },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (valueVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (valueVisible) {
-                                    stringResource(R.string.custom_field_hide_content)
-                                } else {
-                                    stringResource(R.string.custom_field_show_content)
-                                },
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    IconButton(
-                        onClick = { 
-                            clipboardManager.setText(AnnotatedString(field.value))
-                            onCopy(field.title)
-                        },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = stringResource(R.string.copy),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // 字段值
-            Text(
-                text = if (valueVisible || !field.isProtected) {
-                    field.value
-                } else {
-                    "••••••••"
-                },
-                maxLines = if (valueVisible || !field.isProtected) Int.MAX_VALUE else 1,
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            // 敏感数据标记
-            if (field.isProtected) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.custom_field_sensitive),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
-                    )
-                }
+    DetailCardSurface(modifier, shape = groupShape ?: RoundedCornerShape(24.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            CustomFieldDetailRow(field, onCopy, onCreateSend)
+        }
+    }
+}
+
+@Composable
+private fun CustomFieldDetailRow(
+    field: CustomField,
+    onCopy: (String) -> Unit,
+    onCreateSend: ((String, String) -> Unit)?,
+) {
+    var valueVisible by remember(field.entryId, field.id, field.value, field.isProtected) {
+        mutableStateOf(!field.isProtected)
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val label = field.title.ifBlank { stringResource(R.string.custom_field_new_field) }
+    DetailField(
+        label = label, value = field.value, context = context,
+        displayValue = if (valueVisible) field.value else "••••••••",
+        protected = field.isProtected, visible = valueVisible,
+        onToggleVisibility = { valueVisible = !valueVisible },
+        onCreateSend = onCreateSend,
+        onCopy = {
+            takagi.ru.monica.utils.ClipboardUtils.copyToClipboard(
+                context = context, text = field.value, label = label, sensitive = field.isProtected)
+            onCopy(label)
+        },
+        showDescription = stringResource(R.string.custom_field_show_content),
+        hideDescription = stringResource(R.string.custom_field_hide_content),
+    )
+}
+
+/** Embedded content for sections that already own a surface and padding. */
+@Composable
+internal fun CustomFieldDetailRows(
+    fields: List<CustomField>,
+    onCopyField: (String, String) -> Unit = { _, _ -> },
+    onCreateSend: ((String, String) -> Unit)? = null,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        fields.forEachIndexed { index, field ->
+            androidx.compose.runtime.key(field.entryId, field.id, index) {
+                if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                CustomFieldDetailRow(field, { label -> onCopyField(label, field.value) }, onCreateSend)
             }
         }
     }
@@ -680,13 +617,15 @@ fun CustomFieldEditorSection(
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
     onExpandedChange: (Boolean) -> Unit = {},
-    saveTextState: Boolean = true
+    saveTextState: Boolean = true,
+    contentStyle: Boolean = rememberEntryContentStyle(),
 ) {
     Column(modifier = modifier) {
         fields.forEachIndexed { index, field ->
             androidx.compose.runtime.key(field.id) {
             CustomFieldEditCard(
                 saveTextState = saveTextState,
+                groupShape = if (contentStyle) entryGroupShape(index, fields.size) else null,
                 index = index,
                 field = field,
                 onFieldChange = { updated ->
@@ -703,6 +642,9 @@ fun CustomFieldEditorSection(
             }
         }
         
+        if (contentStyle) {
+            EntryContentFieldButton(fields, onFieldsChange)
+        } else {
         AddCustomFieldButton(
             onClick = {
                 val newList = fields.toMutableList()
@@ -715,28 +657,27 @@ fun CustomFieldEditorSection(
                 onFieldsChange(newList)
             }
         )
+        }
     }
 }
 
-/**
- * 自定义字段详情展示 (容器样式 - 渲染为独立卡片)
- * 
- * 保持旧 API 兼容，内部渲染为独立卡片
- */
+/** Custom fields form one section, in either editor style. */
 @Composable
 fun CustomFieldDisplayCard(
     fields: List<CustomField>,
     modifier: Modifier = Modifier,
-    onCopyField: (String, String) -> Unit = { _, _ -> }
+    onCopyField: (String, String) -> Unit = { _, _ -> },
+    onCreateSend: ((title: String, text: String) -> Unit)? = null,
 ) {
     if (fields.isEmpty()) return
-    
-    Column(modifier = modifier) {
-        fields.forEach { field ->
-            CustomFieldDetailCard(
-                field = field,
-                onCopy = { fieldName -> onCopyField(fieldName, field.value) }
-            )
+    DetailCardSurface(modifier) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.EditNote, null, tint = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.custom_field_title), style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
+            CustomFieldDetailRows(fields, onCopyField, onCreateSend)
         }
     }
 }

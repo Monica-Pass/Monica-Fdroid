@@ -4179,6 +4179,15 @@ class PasswordViewModel internal constructor(
     /**
      * Get linked TOTP data for a password entry
      */
+    /** Read-only fallback for passwords whose OTP has no separate authenticator item. */
+    fun resolvePasswordDetailAuthenticator(entry: PasswordEntry): TotpData? {
+        if (entry.authenticatorKey.isBlank()) return null
+        val raw = runCatching { securityManager.decryptDataIfMonicaCiphertext(entry.authenticatorKey) }
+            .getOrNull() ?: return null
+        return TotpDataResolver.fromAuthenticatorKey(raw, entry.title, entry.username)
+            ?.takeIf { it.secret.isNotBlank() }
+    }
+
     fun getLinkedTotpFlow(passwordId: Long): Flow<TotpData?> {
         val itemFlow = secureItemRepository?.getItemsByType(ItemType.TOTP) ?: return flowOf(null)
         return combine(itemFlow, repository.getAllPasswordEntries()) { items, passwords ->

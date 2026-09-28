@@ -164,7 +164,7 @@ fun AddEditBankCardScreen(
     var hasBillingAddress by remember { mutableStateOf(false) }
     var billingAddress by remember { mutableStateOf(BillingAddress()) }
     var showBillingAddressDialog by remember { mutableStateOf(false) }
-    var customFields by remember { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
+    var customFields by rememberSaveable(stateSaver = takagi.ru.monica.ui.components.EntryFieldDraftSaver) { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
     var cardFaceConfig by remember { mutableStateOf<CardFaceConfig?>(null) }
     var originalCardFaceConfig by remember { mutableStateOf<CardFaceConfig?>(null) }
     var pendingCardFaceBytes by remember { mutableStateOf<ByteArray?>(null) }
@@ -820,6 +820,27 @@ fun AddEditBankCardScreen(
                         }
                     }
                     
+if (appSettings.passwordContentEditorEnabled) {
+    takagi.ru.monica.ui.components.EntryPaymentFields(
+        cardNumber, cardholderName,
+        takagi.ru.monica.ui.components.EntryPaymentFormat.joinExpiry(expiryMonth, expiryYear), cvv,
+        onNumber = { cardNumber = it },
+        onHolder = { cardholderName = it },
+        onExpiry = { input ->
+            val (month, year) = takagi.ru.monica.ui.components.EntryPaymentFormat.splitExpiry(input)
+            expiryMonth = month
+            expiryYear = year
+        },
+        onCvv = { cvv = it },
+    )
+    if (showCommonNameAction) {
+        TextButton(onClick = { shouldLoadCommonNameAnalysis = true; showCommonNamePicker = true }) {
+            Icon(Icons.Default.Person, null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.cardholder_name))
+        }
+    }
+} else {
                     // Card Number
                     OutlinedTextField(
                         value = cardNumber,
@@ -970,6 +991,8 @@ fun AddEditBankCardScreen(
                         },
                         shape = RoundedCornerShape(12.dp)
                     )
+}
+
                 }
             }
 

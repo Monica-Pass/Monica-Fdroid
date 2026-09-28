@@ -52,6 +52,7 @@ class AutofillFlowInstrumentedTest {
     private var oldIme: String? = null
     private var accessibilityEnabledByTest = false
     private val insertedIds = mutableListOf<Long>()
+    private var oldPreferences: List<Boolean>? = null
 
     @Before fun setUp() = runBlocking {
         assumeTrue("Use a dedicated Android test user and opt in explicitly",
@@ -64,6 +65,8 @@ class AutofillFlowInstrumentedTest {
         }
         oldIme = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
         oldSettings = settings.settingsFlow.first()
+        oldPreferences = listOf(preferences.isAutofillEnabled.first(),
+            preferences.isPasswordSuggestionEnabled.first(), preferences.isV2RespectAutofillOffEnabled.first())
         security = SecurityManager(context)
         if (!security.isMasterPasswordSet()) security.setMasterPassword(MASTER_PASSWORD)
         check(security.unlockVaultWithPassword(MASTER_PASSWORD)) {
@@ -98,6 +101,11 @@ class AutofillFlowInstrumentedTest {
             AutofillSessionGrants.clear()
         }
         oldIme?.let { selectIme(it) }
+        oldPreferences?.let {
+            preferences.setAutofillEnabled(it[0])
+            preferences.setPasswordSuggestionEnabled(it[1])
+            preferences.setV2RespectAutofillOffEnabled(it[2])
+        }
         if (accessibilityEnabledByTest) {
             val user = android.os.Process.myUid() / 100000
             val component = ComponentName(context, MonicaAccessibilityService::class.java)
@@ -114,6 +122,77 @@ class AutofillFlowInstrumentedTest {
         open("standard")
         fillFromSystem(NATIVE_TITLE)
         expectStatus("user=OK password=OK")
+    }
+
+    @Test fun dropdownAllowsComposingAndTypingWithoutRefocusing() {
+        repeat(10) {
+            open("standard")
+            focusFirstField()
+            waitNode { it.text?.toString() == NATIVE_TITLE }
+            typeUsernameFromKeyboard()
+        }
+    }
+
+    @Test fun lockedDropdownAllowsTypingWithoutOpeningVerification() = runBlocking {
+        settings.updateAutofillAuthRequired(true)
+        SessionManager.markLocked()
+        AutofillSessionGrants.clear()
+        repeat(10) {
+            open("standard")
+            focusFirstField()
+            waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) }
+            typeUsernameFromKeyboard()
+        }
+    }
+
+    @Test fun webDropdownAllowsComposingAndTypingWithoutRefocusing() {
+        repeat(5) {
+            open("web")
+            waitNode { it.contentDescription?.toString() == "fixture-status" && it.text?.contains("web=READY") == true }
+            focusFirstField(web = true)
+            waitNode { it.text?.toString() == WEB_TITLE }
+            typeUsernameFromKeyboard()
+        }
+    }
+
+    @Test fun cancellingVerificationAllowsTypingAfterOneFieldTap() = runBlocking {
+        settings.updateAutofillAuthRequired(true)
+        SessionManager.markLocked()
+        AutofillSessionGrants.clear()
+        open("standard")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        tap(waitNode { it.text?.toString() == context.getString(R.string.cancel) })
+        expectStatus("user=EMPTY password=EMPTY")
+        // Cancelling authentication dismisses the IME on some Android versions.
+        // One normal tap may reopen it; no second tap or explicit dismissal of
+        // the returned dropdown should be necessary to type.
+        waitNode { it.contentDescription?.toString() == "fixture-field-0" && it.isFocused }
+        focusFirstField()
+        typeUsernameFromKeyboard()
+    }
+
+    private fun tapIme(key: String) {
+        tap(waitNode { it.contentDescription?.toString() == "fixture-ime-$key" })
+    }
+
+    @Test fun passwordDropdownAllowsTypingWithoutRefocusing() {
+        repeat(5) {
+            open("password")
+            focusFirstField()
+            waitNode { it.text?.toString() == NATIVE_TITLE }
+            tapIme("password")
+            expectStatus("user=ABSENT password=OK")
+        }
+    }
+
+    private fun typeUsernameFromKeyboard() {
+        // Actual keyboard taps and InputConnection composition; ACTION_SET_TEXT
+        // would bypass the focus/input-connection failure reported by the user.
+        tapIme("prefix")
+        expectStatus("user=BAD password=EMPTY")
+        tapIme("suffix")
+        expectStatus("user=OK password=EMPTY")
     }
 
     @Test fun systemAutofillWithoutVerificationStillWorksAfterSessionLock() {

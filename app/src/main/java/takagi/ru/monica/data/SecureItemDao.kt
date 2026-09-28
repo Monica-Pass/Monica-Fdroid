@@ -62,6 +62,9 @@ interface SecureItemDao {
     @Query("UPDATE secure_items SET itemData = :itemData WHERE id = :id")
     suspend fun updateItemData(id: Long, itemData: String)
 
+    @Query("UPDATE secure_items SET itemData = :replacement WHERE id = :id AND itemData = :expected")
+    suspend fun compareAndSetItemData(id: Long, expected: String, replacement: String): Int
+
     @Query(
         """
         SELECT * FROM secure_items

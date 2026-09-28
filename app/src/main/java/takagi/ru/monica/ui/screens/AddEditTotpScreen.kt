@@ -591,7 +591,7 @@ fun AddEditTotpScreen(
             )
         }
         val primaryTarget = effectiveTargets.first()
-        val totpData = TotpData(
+        val totpData = (resolvedInitialData ?: TotpData(secret = "")).copy(
             secret = secret.trim(),
             issuer = issuer.trim(),
             accountName = accountName.trim(),
@@ -608,7 +608,7 @@ fun AddEditTotpScreen(
             customIconUpdatedAt = customIconUpdatedAt,
             boundPasswordId = boundPasswordId,
             categoryId = selectedCategoryId,
-            keepassDatabaseId = keepassDatabaseId
+            keepassDatabaseId = keepassDatabaseId,
         )
         val originalUploaded = if (originalCustomIconType == PASSWORD_ICON_TYPE_UPLOADED) {
             normalizedIconFileName(originalCustomIconValue)
@@ -871,15 +871,15 @@ fun AddEditTotpScreen(
                             }
 
                             if (!isEditing) {
-                                Row(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     FilledTonalButton(
                                         onClick = onScanQrCode,
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Icon(
@@ -891,7 +891,7 @@ fun AddEditTotpScreen(
                                     }
                                     OutlinedButton(
                                         onClick = { showImportUriDialog = true },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Icon(
@@ -1582,4 +1582,3 @@ private fun VaultOptionItem(
         }
     }
 }
-

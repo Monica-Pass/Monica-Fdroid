@@ -64,6 +64,8 @@ class MonicaImeUiTest {
     private lateinit var editor: EditText
     private var density = 1f
     private var contentLocale = Locale.SIMPLIFIED_CHINESE
+    private var autofillOpenCount = 0
+    private var undoCount = 0
 
     private fun showKeyboard(
         width: Dp = 360.dp,
@@ -74,7 +76,10 @@ class MonicaImeUiTest {
         contentLocale = language
         compose.setContent {
             val context = LocalContext.current
-            val configuration = Configuration(LocalConfiguration.current).apply { setLocale(language) }
+            val configuration = Configuration(LocalConfiguration.current).apply {
+                setLocale(language)
+                this.fontScale = fontScale
+            }
             val localizedContext = context.createConfigurationContext(configuration)
             density = LocalDensity.current.density
             CompositionLocalProvider(
@@ -113,12 +118,12 @@ class MonicaImeUiTest {
                                 } else commit(value)
                             },
                             onBackspace = { state = state.copy(query = removeLastImeSearchCharacter(state.query)) },
-                            onDeleteAll = {}, onUndoDeleteAll = {},
+                            onDeleteAll = {}, onUndoDeleteAll = { undoCount++ },
                             onEnter = { state = state.copy(isSearchEditing = false) },
                             onSpace = {},
                             onShiftToggle = { state = state.copy(isUppercase = !state.isUppercase) },
                             onKeyboardModeChange = { state = state.copy(keyboardMode = it) },
-                            onOpenUnlockApp = {}, onOpenAutofillSettings = {},
+                            onOpenUnlockApp = {}, onOpenAutofillSettings = { autofillOpenCount++ },
                             onSearchEditRequested = { state = state.startVaultSearch() },
                             onSearchEditFinished = { state = state.copy(isSearchEditing = false) },
                             onSearchCleared = { state = state.copy(query = "") },
@@ -162,6 +167,78 @@ class MonicaImeUiTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         File(context.getExternalFilesDir("ime-ui-tests"), "$name.png").outputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+    }
+
+    @Test fun toolbarPressFeedbackStaysCircularInDarkMode() {
+        showKeyboard(dark = true)
+        assertCircularToolbarPresses("dark")
+    }
+
+    @Test fun toolbarPressFeedbackStaysCircularOnNarrowLightKeyboard() {
+        showKeyboard(width = 320.dp, fontScale = 1.5f)
+        assertCircularToolbarPresses("light-narrow")
+    }
+
+    @Test fun autofillShortcutKeepsItsFullTouchTargetAndTemporaryUndoAction() {
+        showKeyboard()
+        val shortcut = compose.onNodeWithTag("ime_toolbar_more")
+        shortcut.assertHasClickAction()
+        // This corner is outside the visible 40dp circle but inside the existing touch target.
+        shortcut.performTouchInput { down(Offset(1f, 1f)); up() }
+        compose.runOnIdle {
+            assertEquals(1, autofillOpenCount)
+            assertEquals(0, undoCount)
+            state = state.copy(pendingClearedInput = "Synthetic cleared input")
+        }
+        compose.onNodeWithContentDescription(text(R.string.ime_clear_all_undo_action)).performClick()
+        compose.runOnIdle {
+            assertEquals(1, autofillOpenCount)
+            assertEquals(1, undoCount)
+            state = state.copy(pendingClearedInput = null)
+        }
+        shortcut.performClick()
+        compose.runOnIdle { assertEquals(2, autofillOpenCount) }
+    }
+
+    private fun assertCircularToolbarPresses(mode: String) {
+        listOf("keyboard", "passwords", "authenticators", "documents", "generator", "more", "hide").forEach { name ->
+            val button = compose.onNodeWithTag("ime_toolbar_$name")
+            val before = button.captureToImage().asAndroidBitmap()
+            button.performTouchInput { down(center) }
+            try {
+                compose.mainClock.advanceTimeBy(400)
+                // Material ripples use Android's rendering clock, not Compose's test clock.
+                android.os.SystemClock.sleep(400)
+                val pressed = button.captureToImage().asAndroidBitmap()
+                if (name == "passwords" || name == "more") capture("toolbar-$mode-$name-pressed")
+                var outsideChanged = 0
+                var insideChanged = 0
+                val radius = 20f * density
+                for (y in 0 until before.height) for (x in 0 until before.width) {
+                    val a = before.getPixel(x, y)
+                    val b = pressed.getPixel(x, y)
+                    val delta = listOf(0, 8, 16).maxOf { shift ->
+                        kotlin.math.abs(((a shr shift) and 255) - ((b shr shift) and 255))
+                    }
+                    if (delta <= 3) continue
+                    val dx = x + 0.5f - before.width / 2f
+                    val dy = y + 0.5f - before.height / 2f
+                    val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                    if (distance > radius + density * 1.5f) outsideChanged++
+                    if (distance < radius - density * 1.5f) insideChanged++
+                }
+                assertEquals("$mode/$name: rectangular feedback outside the circle", 0, outsideChanged)
+                assertTrue("$mode/$name: retain visible feedback inside the circle", insideChanged > 10)
+            } finally {
+                button.performTouchInput { cancel() }
+                compose.mainClock.advanceTimeBy(400)
+                android.os.SystemClock.sleep(400)
+            }
+        }
+        compose.runOnIdle {
+            assertEquals(MonicaImePanel.PASSWORDS, state.activePanel)
+            assertEquals(0, autofillOpenCount)
         }
     }
 

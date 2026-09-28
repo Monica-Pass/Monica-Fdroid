@@ -161,8 +161,8 @@ class SteamBoundaryGuardTest {
         assertTrue(helperSource.contains("isSteamMaFileBackupEntry(normalizedEntryName)"))
         assertTrue(helperSource.contains("restoreSteamMaFilePayload(tempFile)"))
         assertTrue(helperSource.contains("steamMaFiles = steamMaFiles"))
-        assertTrue(helperSource.contains("if (steamMaFiles.isNotEmpty())"))
-        assertTrue(helperSource.contains("clearSteamAccounts = true"))
+        assertTrue(applierSource.contains("if (steamMaFiles.isNotEmpty())"))
+        assertTrue(applierSource.contains("steamDatabase = if (content.steamMaFiles.isEmpty()) null else SteamDatabase.getDatabase(context)"))
         assertFalse(helperSource.contains("getDatabasePath(\"steam_database\")"))
 
         assertTrue(applierSource.contains("SteamAccountRepository("))

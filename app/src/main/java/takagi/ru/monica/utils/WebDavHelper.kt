@@ -484,6 +484,7 @@ private data class PageAdjustmentSettingsBackupEntry(
     val passkeyPageIconEnabled: Boolean = true,
     val unmatchedIconHandlingStrategy: String = "DEFAULT_ICON",
     val passwordFieldSettingsVersion: Int = 0,
+    val passwordContentEditorEnabled: Boolean = false,
     val separateUsernameAccountEnabled: Boolean = false,
     val presetCustomFieldsJson: String = "[]",
     val passwordFieldVisibility: PageAdjustmentPasswordFieldVisibilityBackupEntry =
@@ -828,6 +829,7 @@ class WebDavHelper(
             passkeyPageIconEnabled = passkeyPageIconEnabled,
             unmatchedIconHandlingStrategy = unmatchedIconHandlingStrategy,
             passwordFieldSettingsVersion = passwordFieldSettingsVersion,
+            passwordContentEditorEnabled = passwordContentEditorEnabled,
             separateUsernameAccountEnabled = separateUsernameAccountEnabled,
             presetCustomFieldsJson = presetCustomFieldsJson,
             passwordFieldVisibility = PageAdjustmentPasswordFieldVisibilityBackupEntry(
@@ -3182,36 +3184,6 @@ class WebDavHelper(
         return entries.toList()
     }
 
-    private suspend fun clearLocalDataForOverwriteRestore(
-        backupFileName: String,
-        clearSteamAccounts: Boolean = false
-    ): Result<Unit> {
-        return try {
-            android.util.Log.d(
-                "WebDavHelper",
-                "Overwrite restore validated, clearing Monica local data only: file=$backupFileName, " +
-                    "clearSteamAccounts=$clearSteamAccounts"
-            )
-            val database = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
-            database.passwordEntryDao().deleteAllLocalPasswordEntries()
-            database.secureItemDao().deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.TOTP)
-            database.secureItemDao().deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.BANK_CARD)
-            database.secureItemDao().deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.DOCUMENT)
-            database.secureItemDao().deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.BILLING_ADDRESS)
-            database.secureItemDao().deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.PAYMENT_ACCOUNT)
-            database.secureItemDao().deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.NOTE)
-            database.passkeyDao().deleteAllLocalPasskeys()
-            if (clearSteamAccounts) {
-                SteamDatabase.getDatabase(context).steamAccountDao().deleteAll()
-            }
-            android.util.Log.d("WebDavHelper", "Monica local data cleared successfully for overwrite restore")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            android.util.Log.e("WebDavHelper", "Failed to clear Monica local data: ${e.message}")
-            Result.failure(Exception(strings.get(R.string.backup_local_clear_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
-        }
-    }
-
     /**
      * 从备份文件恢复数据 (通用方法，用于 WebDAV 下载后恢复和本地导入)
      * @param backupFile 本地备份文件（ZIP）
@@ -4187,6 +4159,7 @@ class WebDavHelper(
                                                     pageAdjustmentBackup.unmatchedIconHandlingStrategy,
                                                 passwordFieldSettingsVersion =
                                                     pageAdjustmentBackup.passwordFieldSettingsVersion,
+                                                passwordContentEditorEnabled = pageAdjustmentBackup.passwordContentEditorEnabled,
                                                 separateUsernameAccountEnabled =
                                                     pageAdjustmentBackup.separateUsernameAccountEnabled,
                                                 presetCustomFieldsJson =
@@ -4750,17 +4723,8 @@ class WebDavHelper(
                             Exception(strings.get(R.string.backup_empty_replace_blocked))
                         )
                     }
-                    val clearResult = if (steamMaFiles.isNotEmpty()) {
-                        clearLocalDataForOverwriteRestore(
-                            backupFileName = backupFile.name,
-                            clearSteamAccounts = true
-                        )
-                    } else {
-                        clearLocalDataForOverwriteRestore(backupFile.name)
-                    }
-                    clearResult.getOrElse { error ->
-                        return@withContext Result.failure(error)
-                    }
+                    // Defer all local record replacement to the transactional apply phase.
+
                 }
                 
                 val report = RestoreReport(
@@ -4772,6 +4736,7 @@ class WebDavHelper(
                 )
                 
                 Result.success(RestoreResult(
+                    overwriteLocal = overwrite,
                     content = BackupContent(
                         passwords = if (isDatabaseExport) passwords.map { entry ->
                             val security = takagi.ru.monica.security.SecurityManager(context)
@@ -6331,6 +6296,7 @@ data class RestoreResult(
     val monicaConfigRestoreSkipped: Boolean = false,
     val restoredMonicaConfigEntries: Int = 0,
     val restartRecommended: Boolean = false,
+    val overwriteLocal: Boolean = false,
 )
 
 

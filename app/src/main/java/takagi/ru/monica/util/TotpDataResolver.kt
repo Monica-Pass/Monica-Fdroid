@@ -3,6 +3,7 @@ package takagi.ru.monica.util
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import takagi.ru.monica.data.model.OtpType
 import takagi.ru.monica.data.model.TotpData
@@ -26,7 +27,8 @@ object TotpDataResolver {
         depth: Int = 0
     ): TotpData? {
         val normalizedKey = rawKey.trim()
-        if (normalizedKey.isBlank()) return null
+        if (normalizedKey.isBlank() || isStoredCiphertext(normalizedKey)) return null
+        if (normalizedKey.startsWith('{') || normalizedKey.startsWith('[')) return null
 
         val parsedFromUri = parseUriTotpData(normalizedKey)
         val initialData = if (parsedFromUri != null) {
@@ -100,8 +102,11 @@ object TotpDataResolver {
         decryptIfNeeded: ((String) -> String)? = null
     ): TotpData? {
         val resolvedItemData = decryptIfNeeded?.let { decrypt ->
-            runCatching { decrypt(itemData) }.getOrDefault(itemData)
+            try { decrypt(itemData) } catch (cancelled: java.util.concurrent.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) { return null }
         } ?: itemData
+        if (isStoredCiphertext(resolvedItemData.trim())) return null
 
         runCatching {
             json.decodeFromString<TotpData>(resolvedItemData)
@@ -117,6 +122,9 @@ object TotpDataResolver {
         runCatching {
             json.parseToJsonElement(resolvedItemData) as? JsonObject
         }.getOrNull()?.let { obj ->
+            // A malformed record must not terminate the shared authenticator list flow.
+            if (listOf("secret", "key", "issuer", "serviceName", "account", "accountName", "period", "digits", "algorithm")
+                    .any { obj[it] != null && obj[it] !is JsonPrimitive }) return null
             val secret = obj["secret"]?.jsonPrimitive?.content
                 ?: obj["key"]?.jsonPrimitive?.content
                 ?: ""
@@ -150,6 +158,9 @@ object TotpDataResolver {
             fallbackAccountName = fallbackAccountName
         )
     }
+
+    private fun isStoredCiphertext(value: String): Boolean =
+        value.startsWith("MDK|") || value.startsWith("V2|") || value.startsWith("C2|")
 
     fun toBitwardenPayload(title: String, data: TotpData): String {
         val rawSteamSharedSecret = data.steamSharedSecretBase64.trim()

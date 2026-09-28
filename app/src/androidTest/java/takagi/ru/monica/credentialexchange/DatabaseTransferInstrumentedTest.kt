@@ -45,13 +45,17 @@ class DatabaseTransferInstrumentedTest {
     }
 
     /** A legacy Monica archive, so migration tests do not just round-trip the new writer. */
-    private fun TransferFixture.archive(suffix: String): File {
+    private fun TransferFixture.archive(suffix: String, expiry: String = "09/2030"): File {
         val passwordId = 771001L
         val noteId = 771002L
         val key = checkNotNull(CxfPasskeyMaterial.decode(pair.private.encoded))
         val password = JSONObject().put("id", passwordId).put("title", "$prefix-$suffix")
             .put("username", rawUsername).put("password", rawPassword).put("website", website)
             .put("creditCardNumber", "4111111111111111").put("creditCardCVV", "123")
+            .put("creditCardHolder", "ALICE EXAMPLE").put("creditCardExpiry", expiry)
+            .put("email", "alice@example.invalid|backup@example.invalid").put("phone", "+44 20 7946 0000")
+            .put("addressLine", "12 Example Street").put("city", "London").put("state", "Greater London")
+            .put("zipCode", "SW1A 1AA").put("country", "UK").put("notes", "第一行\n  缩进与空格  \n")
             .put("customFields", org.json.JSONArray().put(JSONObject().put("title", "Extra")
                 .put("value", "field-$suffix").put("isProtected", true)))
         val passkey = JSONObject().put("credentialId", credentialId).put("rpId", rpId).put("rpName", "$prefix-$suffix")
@@ -77,6 +81,19 @@ class DatabaseTransferInstrumentedTest {
         return File(root, "$suffix.enc.zip").also {
             EncryptionHelper.encryptFile(plain, it, archivePassword, AppLocaleStringResolver(context)).getOrThrow()
         }
+    }
+
+    private fun assertContentFields(entry: PasswordEntry) {
+        assertEquals("ALICE EXAMPLE", entry.creditCardHolder)
+        assertEquals("09/2030", entry.creditCardExpiry)
+        assertEquals("alice@example.invalid|backup@example.invalid", entry.email)
+        assertEquals("+44 20 7946 0000", entry.phone)
+        assertEquals("12 Example Street", entry.addressLine)
+        assertEquals("London", entry.city)
+        assertEquals("Greater London", entry.state)
+        assertEquals("SW1A 1AA", entry.zipCode)
+        assertEquals("UK", entry.country)
+        assertEquals("第一行\n  缩进与空格  \n", entry.notes)
     }
 
     @Test fun encryptedZipAsksBeforeCopyingAndWrongPasswordWritesNothingForEveryDestination() = runBlocking {
@@ -114,10 +131,23 @@ class DatabaseTransferInstrumentedTest {
                     // the KDBX writer itself encrypts its protected fields.
                     assertEquals("4111111111111111", imported.creditCardNumber)
                     assertEquals("123", imported.creditCardCVV)
+                    assertContentFields(imported)
                     assertEquals(0, model.importZipBackup(Uri.fromFile(file), archivePassword, target).getOrThrow())
                     assertEquals(key, importedKeys(target).single())
                 }
             } finally { helper.setEncryptionConfig(previous.enabled, previous.password) }
+        }
+    }
+
+    @Test fun sameLoginWithDifferentPaymentContentIsNotCollapsedByImportDeduplication() = runBlocking {
+        scenario {
+            val target = ImportDestination.Local
+            model.importZipBackup(Uri.fromFile(archive("content-duplicate")), archivePassword, target).getOrThrow()
+            model.importZipBackup(Uri.fromFile(archive("content-duplicate", "10/2031")), archivePassword, target).getOrThrow()
+            val rows = importedPasswords(target)
+            assertEquals(2, rows.size)
+            assertEquals(setOf("09/2030", "10/2031"), rows.map { it.creditCardExpiry }.toSet())
+            assertEquals(0, model.importZipBackup(Uri.fromFile(archive("content-duplicate", "10/2031")), archivePassword, target).getOrThrow())
         }
     }
 
@@ -140,6 +170,7 @@ class DatabaseTransferInstrumentedTest {
                         assertEquals(rawPassword, security.decryptDataIfMonicaCiphertext(selected.single().password))
                         assertEquals("4111111111111111", selected.single().creditCardNumber)
                         assertEquals("123", selected.single().creditCardCVV)
+                        assertContentFields(selected.single())
                         assertEquals("field-${source.kind.name}", restored.content.customFieldsMap.getValue(selected.single().id).single().value)
                         val keys = restored.content.passkeys.filter { it.credentialId == credentialId }
                         assertEquals(1, keys.size)

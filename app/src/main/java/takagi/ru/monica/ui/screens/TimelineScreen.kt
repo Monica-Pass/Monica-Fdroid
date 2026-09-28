@@ -448,7 +448,7 @@ private fun HistoryPillTabItem(
  * 将时间线事件按日期分组并聚合相同类型的连续操作
  */
 @Composable
-private fun groupAndAggregateEvents(events: List<TimelineEvent>): List<TimelineGroup> {
+internal fun groupAndAggregateEvents(events: List<TimelineEvent>): List<TimelineGroup> {
     if (events.isEmpty()) return emptyList()
     
     val calendar = Calendar.getInstance()

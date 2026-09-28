@@ -59,17 +59,31 @@ object BackupRestoreApplier {
     ): RestoreApplyStats = ChangeTriggeredBackupScheduler.withoutTriggering {
         try {
             destinationWriter?.validate()
-            val stats = applyRestoreResultInternal(
-            context = context,
-            restoreResult = restoreResult,
-            passwordRepository = passwordRepository,
-            secureItemRepository = secureItemRepository,
-            localOnlyDedup = localOnlyDedup,
+            suspend fun apply(): RestoreApplyStats = applyRestoreResultInternal(
+                context = context,
+                restoreResult = restoreResult,
+                passwordRepository = passwordRepository,
+                secureItemRepository = secureItemRepository,
+                localOnlyDedup = localOnlyDedup || restoreResult.overwriteLocal,
                 logTag = logTag,
                 destinationWriter = destinationWriter,
                 progress = progress,
             )
-            progress.report(TransferProgress(TransferPhase.WRITING))
+            val stats = if (restoreResult.overwriteLocal) {
+                require(destinationWriter == null) { "Local replacement cannot target an external database" }
+                require(restoreResult.report.failedItems.isEmpty()) { "Incomplete backup cannot replace local data" }
+                val content = restoreResult.content
+                require(content.passwords.isNotEmpty() || content.secureItems.isNotEmpty() ||
+                    content.passkeys.isNotEmpty() || content.steamMaFiles.isNotEmpty()) { "Empty replacement backup" }
+                require(content.nativeTokens.isEmpty()) { "Native tokens require an explicit database destination" }
+                LocalBackupReplacement.apply(
+                    database = PasswordDatabase.getDatabase(context),
+                    steamDatabase = if (content.steamMaFiles.isEmpty()) null else SteamDatabase.getDatabase(context),
+                ) {
+                    apply().also { progress.report(TransferProgress(TransferPhase.WRITING)) }
+                }
+            } else apply()
+            if (!restoreResult.overwriteLocal) progress.report(TransferProgress(TransferPhase.WRITING))
             destinationWriter?.finish()
             if (destinationWriter == null) stats else stats.copy(
                 passwordImported = stats.passwordImported - destinationWriter.uncommittedPasswordCount,
@@ -98,6 +112,10 @@ object BackupRestoreApplier {
         destinationWriter: ImportDestinationWriter?,
         progress: TransferProgressReporter,
     ): RestoreApplyStats {
+        fun supplementalFailure() {
+            destinationWriter?.recordSupplementalFailure()
+            check(!restoreResult.overwriteLocal) { "Replacement supplemental data could not be restored" }
+        }
         val content = restoreResult.content
         val passwords = content.passwords
         val passwordHistory = content.passwordHistory
@@ -186,7 +204,7 @@ object BackupRestoreApplier {
                     passwordSkipped++
                 }
             } catch (e: Exception) {
-                if (e is CancellationException) throw e
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
                 passwordFailed++
                 val detail = "${password.title} (${password.username}): ${e.message}"
                 failedPasswordDetails.add(detail)
@@ -228,7 +246,7 @@ object BackupRestoreApplier {
                         }
                     }
                 } catch (e: Exception) {
-                if (e is CancellationException) throw e
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
                     android.util.Log.w(logTag, "Failed to update ssoRefEntryId: ${e.message}")
                 }
             }
@@ -257,8 +275,8 @@ object BackupRestoreApplier {
                             customFieldCount++
                         }
                     } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                        destinationWriter?.recordSupplementalFailure()
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
+                        supplementalFailure()
                     android.util.Log.w(logTag, "Failed to restore custom fields for password $originalId -> $newId: ${e.message}")
                     }
                 }
@@ -284,13 +302,13 @@ object BackupRestoreApplier {
                 val mappedParentId = passwordIdMap[originalPasswordId]
                 if (mappedParentId == null) {
                     attachmentUnmappedParent++
-                    destinationWriter?.recordSupplementalFailure()
+                    supplementalFailure()
                     return@forEach
                 }
                 val payload = content.portableAttachments.payloads[entry.payloadPath]
                 if (payload == null || !payload.isFile) {
                     attachmentMissingPayload++
-                    destinationWriter?.recordSupplementalFailure()
+                    supplementalFailure()
                     return@forEach
                 }
                 val existingForParent = attachmentDao.getAllByParent(mappedParentId)
@@ -310,8 +328,8 @@ object BackupRestoreApplier {
                     attachmentDao.insert(attachment)
                     attachmentRestored++
                 } catch (e: Exception) {
-                    destinationWriter?.recordSupplementalFailure()
-                if (e is CancellationException) throw e
+                    supplementalFailure()
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
                     android.util.Log.w(
                         logTag,
                         "Portable attachment restore failed for ${entry.payloadPath} -> parent $mappedParentId: ${e.message}"
@@ -335,13 +353,13 @@ object BackupRestoreApplier {
                 val mappedParentId = passwordIdMap[originalPasswordId]
                 if (mappedParentId == null) {
                     attachmentUnmappedParent++
-                    destinationWriter?.recordSupplementalFailure()
+                    supplementalFailure()
                     return@forEach
                 }
                 val blob = java.io.File(storageDir, entry.localPath)
                 if (!blob.isFile) {
                     attachmentMissingBlob++
-                    destinationWriter?.recordSupplementalFailure()
+                    supplementalFailure()
                     return@forEach
                 }
                 val existingForParent = attachmentDao.getAllByParent(mappedParentId)
@@ -363,8 +381,8 @@ object BackupRestoreApplier {
                     attachmentDao.insert(attachment)
                     attachmentRestored++
                 } catch (e: Exception) {
-                    destinationWriter?.recordSupplementalFailure()
-                if (e is CancellationException) throw e
+                    supplementalFailure()
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
                     android.util.Log.w(
                         logTag,
                         "Legacy attachment upsert failed for ${entry.localPath} -> parent $mappedParentId: ${e.message}"
@@ -396,7 +414,7 @@ object BackupRestoreApplier {
                     )
                     historyCount++
                 } catch (e: Exception) {
-                if (e is CancellationException) throw e
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
                     android.util.Log.w(
                         logTag,
                         "Failed to restore password history for password ${historyEntry.entryId} -> $mappedEntryId: ${e.message}"
@@ -439,7 +457,7 @@ object BackupRestoreApplier {
                     val data = TotpDataResolver.parseStoredItemData(portable, fallbackIssuer = exportItem.title,
                         decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext)
                         ?: throw IllegalArgumentException("Unable to parse TOTP data")
-                    json.encodeToString(data.copy(categoryId = null, keepassDatabaseId = null))
+                    PortableTotpBackupCodec.withBindings(portable, data.copy(categoryId = null, keepassDatabaseId = null))
                 } else exportItem.itemData
                 val existingItem = secureItemRepository.findDuplicateSecureItem(
                     itemType,
@@ -447,10 +465,11 @@ object BackupRestoreApplier {
                     exportItem.title,
                     localOnly = localOnlyDedup,
                     includeCandidate = {
-                        destinationWriter == null ||
-                            (destinationWriter.destination.contains(it) && it.notes == exportItem.notes)
+                        (destinationWriter == null && (itemType != ItemType.TOTP ||
+                            (it.notes == exportItem.notes && it.title == exportItem.title))) ||
+                            (destinationWriter != null && destinationWriter.destination.contains(it) && it.notes == exportItem.notes)
                     },
-                    requireSamePayload = destinationWriter != null,
+                    requireSamePayload = destinationWriter != null || itemType == ItemType.TOTP,
                     deletedOnly = destinationWriter != null && exportItem.isDeleted
                 )
 
@@ -475,17 +494,17 @@ object BackupRestoreApplier {
                                 val newBoundId = passwordIdMap[totpData.boundPasswordId]
                                 if (newBoundId != null) {
                                     val updatedTotpData = totpData.copy(boundPasswordId = newBoundId)
-                                    val updatedJson = json.encodeToString(updatedTotpData)
+                                    val updatedJson = PortableTotpBackupCodec.withBindings(finalItemData, updatedTotpData)
                                     finalItemData = updatedJson
                                     android.util.Log.d(logTag, "Updated TOTP binding to Password ID $newBoundId")
                                 } else if (destinationWriter != null) {
-                                    finalItemData = json.encodeToString(totpData.copy(boundPasswordId = null,
+                                    finalItemData = PortableTotpBackupCodec.withBindings(finalItemData, totpData.copy(boundPasswordId = null,
                                         categoryId = null, keepassDatabaseId = null))
                                 }
                             }
                         } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                            android.util.Log.w(logTag, "Failed to parse/update TOTP data: ${e.message}")
+                            // Report this row as failed; never count unreadable OTP data as restored.
+                            throw e
                         }
                     }
 
@@ -520,7 +539,7 @@ object BackupRestoreApplier {
                     secureItemSkipped++
                 }
             } catch (e: Exception) {
-                if (e is CancellationException) throw e
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
                 secureItemFailed++
                 val detail = "${exportItem.title} (${exportItem.itemType}): ${e.message}"
                 failedSecureItemDetails.add(detail)
@@ -571,8 +590,8 @@ object BackupRestoreApplier {
                         passkeySkipped++
                     }
                 } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                    if (e is CancellationException) throw e
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
+                    if (e is CancellationException || restoreResult.overwriteLocal) throw e
                     passkeyFailed++
                     android.util.Log.e(
                         logTag,
@@ -588,7 +607,7 @@ object BackupRestoreApplier {
             content = content,
             secureItemIdMap = secureItemIdMap,
             logTag = logTag,
-            onFailure = { destinationWriter?.recordSupplementalFailure() }
+            onFailure = { supplementalFailure() }
         )
 
         var steamAccountImported = 0
@@ -605,8 +624,8 @@ object BackupRestoreApplier {
                     else destinationWriter.insertSteam(payload)
                     steamAccountImported++
                 } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                    if (e is CancellationException) throw e
+                if (e is CancellationException || restoreResult.overwriteLocal) throw e
+                    if (e is CancellationException || restoreResult.overwriteLocal) throw e
                     steamAccountFailed++
                     android.util.Log.e(
                         logTag,

@@ -1,8 +1,13 @@
 package takagi.ru.monica.ui.icons
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -22,6 +27,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -49,9 +55,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import takagi.ru.monica.R
 import takagi.ru.monica.ui.components.EmojiIconInputDialog
+import takagi.ru.monica.ui.components.BarcodePreviewCard
 import takagi.ru.monica.ui.components.InstalledIconPickerBottomSheet
 import takagi.ru.monica.ui.components.PasswordFieldActionMenuButton
 import takagi.ru.monica.ui.components.rememberPasswordFieldActionMenuState
+import takagi.ru.monica.ui.theme.MonicaTheme
+import com.journeyapps.barcodescanner.BarcodeEncoder
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class PasswordCustomIconsInstrumentedTest {
@@ -161,11 +171,57 @@ class PasswordCustomIconsInstrumentedTest {
             assertEquals("GIFT-1234567890", it.text)
             assertEquals(BarcodeFormat.QR_CODE, it.barcodeFormat)
         }
+        captureBarcodePage("field-light-qr")
         compose.onNodeWithText(label(R.string.field_barcode_format_linear)).performScrollTo().performClick()
         decodeDisplayedBarcode().also {
             assertEquals("GIFT-1234567890", it.text)
             assertEquals(BarcodeFormat.CODE_128, it.barcodeFormat)
         }
+        captureBarcodePage("field-light-code128")
+    }
+
+    @Test
+    fun darkFieldBarcodeKeepsSquareWhitePaperAndFullHeightBars() {
+        showFieldMenu("GIFT-1234567890", dark = true)
+        assertEquals("GIFT-1234567890", decodeDisplayedBarcode().text)
+        captureBarcodePage("field-dark-qr")
+        compose.onNodeWithText(label(R.string.field_barcode_format_linear)).performScrollTo().performClick()
+        assertEquals("GIFT-1234567890", decodeDisplayedBarcode().text)
+        captureBarcodePage("field-dark-code128")
+    }
+
+    @Test
+    fun oversizedLinearBarcodeOffersQrInsteadOfSqueezingTheBars() {
+        val value = "W".repeat(80)
+        showFieldMenu(value)
+        assertEquals(value, decodeDisplayedBarcode().text)
+        compose.onNodeWithText(label(R.string.field_barcode_format_linear)).performScrollTo().performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithText(label(R.string.field_barcode_linear_too_wide)).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText(label(R.string.field_barcode_linear_too_wide)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription(label(R.string.field_action_show_barcode)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.field_barcode_format_qr)).performScrollTo().performClick()
+        assertEquals(value, decodeDisplayedBarcode().text)
+    }
+
+    @Test
+    fun sharedPreviewPreservesTheSavedBarcodeLayout() {
+        val bitmap = BarcodeEncoder().encodeBitmap("GIFT-1234567890", BarcodeFormat.CODE_128, 1100, 360)
+        compose.setContent {
+            MonicaTheme(darkTheme = true) {
+                BarcodePreviewCard(
+                    bitmap = bitmap,
+                    contentDescription = "Saved barcode preview",
+                    imageModifier = Modifier.fillMaxWidth().height(160.dp),
+                    modifier = Modifier.padding(16.dp),
+                    placeholder = {},
+                )
+            }
+        }
+        val displayed = compose.onNodeWithContentDescription("Saved barcode preview").captureToImage().asAndroidBitmap()
+        assertSquareWhitePaper(displayed)
+        assertEquals("GIFT-1234567890", decode(displayed).text)
     }
 
     @Test
@@ -194,9 +250,9 @@ class PasswordCustomIconsInstrumentedTest {
         }
     }
 
-    private fun showFieldMenu(value: String, restoration: StateRestorationTester? = null) {
+    private fun showFieldMenu(value: String, restoration: StateRestorationTester? = null, dark: Boolean = false) {
         val content: @Composable () -> Unit = {
-            MaterialTheme {
+            MonicaTheme(darkTheme = dark) {
                 PasswordFieldActionMenuButton(
                     state = rememberPasswordFieldActionMenuState(),
                     label = "Membership",
@@ -220,6 +276,41 @@ class PasswordCustomIconsInstrumentedTest {
             .performScrollTo()
             .captureToImage()
             .asAndroidBitmap()
+        assertSquareWhitePaper(bitmap)
+        val result = decode(bitmap)
+        if (result.barcodeFormat == BarcodeFormat.CODE_128) {
+            val center = bitmap.height / 2
+            val blackRows = (0 until bitmap.height).filter { y ->
+                (0 until bitmap.width).any { x -> bitmap.getPixel(x, y) == Color.BLACK }
+            }
+            // A fixed 360px matrix must retain its height and identical bars from top to bottom.
+            assertEquals(360, blackRows.size)
+            assertTrue("Barcode stripes must not be clipped or stretched", blackRows.all { y ->
+                (0 until bitmap.width).all { x -> bitmap.getPixel(x, y) == bitmap.getPixel(x, center) }
+            })
+        }
+        return result
+    }
+
+    private fun assertSquareWhitePaper(bitmap: Bitmap) {
+        assertTrue("Barcode paper needs an uninterrupted white border, including all four corners",
+            (0 until bitmap.width).all { x ->
+                (0 until 4).all { inset -> bitmap.getPixel(x, inset) == Color.WHITE &&
+                    bitmap.getPixel(x, bitmap.height - 1 - inset) == Color.WHITE }
+            } && (0 until bitmap.height).all { y ->
+                (0 until 4).all { inset -> bitmap.getPixel(inset, y) == Color.WHITE &&
+                    bitmap.getPixel(bitmap.width - 1 - inset, y) == Color.WHITE }
+            })
+    }
+
+    private fun captureBarcodePage(name: String) {
+        val bitmap = compose.onNode(isDialog()).captureToImage().asAndroidBitmap()
+        File(context.getExternalFilesDir(null), "barcode-$name.png").outputStream().use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+    }
+
+    private fun decode(bitmap: Bitmap): com.google.zxing.Result {
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         val source = RGBLuminanceSource(bitmap.width, bitmap.height, pixels)

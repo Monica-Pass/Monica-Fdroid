@@ -17,7 +17,7 @@ class WebDavBillingAddressBackupGuardTest {
         assertTrue(source.contains("ItemType.BILLING_ADDRESS -> File(foldersRootDir, \"${'$'}folderKey/billing_addresses\")"))
         assertTrue(source.contains("ItemType.BILLING_ADDRESS -> \"billing_address\""))
         assertTrue(source.contains("restoreCardWalletItemFromJson(tempFile, ItemType.BILLING_ADDRESS)"))
-        assertTrue(source.contains("deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.BILLING_ADDRESS)"))
+        assertTrue(projectFile("app/src/main/java/takagi/ru/monica/utils/LocalBackupReplacement.kt").contains("database.secureItemDao().deleteAllLocalItemsByType(it)"))
         assertTrue(source.contains("billingAddresses = cardWalletItems.count { it.itemType == ItemType.BILLING_ADDRESS }"))
         assertTrue(source.contains("billingAddresses = if (restoredBillingAddressCount > 0) restoredBillingAddressCount else billingAddressItems"))
     }
@@ -31,7 +31,7 @@ class WebDavBillingAddressBackupGuardTest {
         assertTrue(source.contains("ItemType.PAYMENT_ACCOUNT -> File(foldersRootDir, \"${'$'}folderKey/payment_accounts\")"))
         assertTrue(source.contains("ItemType.PAYMENT_ACCOUNT -> \"payment_account\""))
         assertTrue(source.contains("restoreCardWalletItemFromJson(tempFile, ItemType.PAYMENT_ACCOUNT)"))
-        assertTrue(source.contains("deleteAllLocalItemsByType(takagi.ru.monica.data.ItemType.PAYMENT_ACCOUNT)"))
+        assertTrue(projectFile("app/src/main/java/takagi/ru/monica/utils/LocalBackupReplacement.kt").contains("database.secureItemDao().deleteAllLocalItemsByType(it)"))
         assertTrue(source.contains("paymentAccounts = cardWalletItems.count { it.itemType == ItemType.PAYMENT_ACCOUNT }"))
         assertTrue(source.contains("paymentAccounts = if (restoredPaymentAccountCount > 0) restoredPaymentAccountCount else paymentAccountItems"))
     }

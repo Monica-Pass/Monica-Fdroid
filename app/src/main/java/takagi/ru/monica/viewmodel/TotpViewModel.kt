@@ -184,6 +184,7 @@ class TotpViewModel internal constructor(
     @Volatile
     private var mergedParsedSnapshot = emptyMap<Long, Pair<SecureItem, TotpData?>>()
     private var passwordTotpSnapshot = emptyMap<Long, Pair<PasswordEntry, TotpData?>>()
+    private var parsedSessionUnlocked: Boolean? = null
 
     private fun requestBitwardenMutationSync(vaultId: Long?) {
         vaultId?.let { bitwardenRepository?.requestLocalMutationSync(it) }
@@ -382,8 +383,15 @@ class TotpViewModel internal constructor(
     private val allTotpItemsSharingStarted = SharingStarted.WhileSubscribed(5000)
     private val allTotpItemsSource: SharedFlow<List<SecureItem>> = combine(
         repository.getItemsByType(ItemType.TOTP),
-        passwordRepository.getActiveAuthenticatorEntries().distinctUntilChanged()
-    ) { storedTotps, allPasswords ->
+        passwordRepository.getActiveAuthenticatorEntries().distinctUntilChanged(),
+        takagi.ru.monica.security.SessionManager.isUnlocked
+    ) { storedTotps, allPasswords, unlocked ->
+        if (parsedSessionUnlocked != unlocked) {
+            parsedTotpDataCache.clear()
+            mergedParsedSnapshot = emptyMap()
+            passwordTotpSnapshot = emptyMap()
+            parsedSessionUnlocked = unlocked
+        }
         mergeStoredAndVirtualTotps(
             storedTotps = storedTotps,
             allPasswords = allPasswords
@@ -580,8 +588,16 @@ class TotpViewModel internal constructor(
     }
 
     private fun resolvePasswordAuthenticatorTotp(password: PasswordEntry): TotpData? {
+        val rawKey = try {
+            decryptStoredSensitiveValue(password.authenticatorKey)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Keep other stored and virtual authenticators visible; retry on unlock or a row change.
+            return null
+        }
         return TotpDataResolver.fromAuthenticatorKey(
-            rawKey = decryptStoredSensitiveValue(password.authenticatorKey),
+            rawKey = rawKey,
             fallbackIssuer = password.website.takeIf { it.isNotBlank() } ?: password.title,
             fallbackAccountName = password.username.takeIf { it.isNotBlank() } ?: password.title
         )?.copy(

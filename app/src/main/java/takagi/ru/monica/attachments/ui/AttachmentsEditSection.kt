@@ -231,7 +231,10 @@ fun AttachmentsEditSection(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(Icons.Default.AttachFile, contentDescription = null)
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
@@ -239,11 +242,6 @@ fun AttachmentsEditSection(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = { picker.launch(arrayOf("*/*")) }) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text(stringResource(R.string.attachments_add))
-                }
             }
             visiblePersistedAttachments.forEach { attachment ->
                 EditRow(
@@ -277,6 +275,14 @@ fun AttachmentsEditSection(
                         pendingDrafts!!.removeAt(index)
                     }
                 )
+            }
+            TextButton(
+                onClick = { picker.launch(arrayOf("*/*")) },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.size(4.dp))
+                Text(stringResource(R.string.attachments_add))
             }
         }
     }

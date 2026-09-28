@@ -75,15 +75,28 @@ fun PasswordFieldCustomizationScreen(
     ) { paddingValues ->
         LazyColumn(
             state = androidx.compose.foundation.lazy.rememberLazyListState(
-                initialFirstVisibleItemIndex = if ((LocalSettingsSearchNavigation.current?.focusTitleRes ?: 0) != 0) 2 else 0
+                // The style picker is a separate item before the existing field section.
+                // Compose the field card first so its requested row can bring itself into view.
+                initialFirstVisibleItemIndex = when (LocalSettingsSearchNavigation.current?.focusTitleRes ?: 0) {
+                    0, R.string.entry_editor_style -> 0
+                    else -> 3
+                }
             ),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
+            item("editor_style") {
+                Box(Modifier.settingsSearchAnchor(stringResource(R.string.entry_editor_style))) {
+                    takagi.ru.monica.ui.components.EntryContentStylePicker(
+                        enabled = settings.passwordContentEditorEnabled,
+                        onChange = viewModel::updatePasswordContentEditorEnabled,
+                    )
+                }
+            }
             // 说明卡片
             item {
                 Card(

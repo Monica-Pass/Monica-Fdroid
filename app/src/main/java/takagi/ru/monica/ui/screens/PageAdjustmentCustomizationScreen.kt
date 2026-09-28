@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LinearScale
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Speed
@@ -120,6 +121,9 @@ import takagi.ru.monica.data.SecureItem
 import takagi.ru.monica.data.UnifiedProgressBarMode
 import takagi.ru.monica.data.UnmatchedIconHandlingStrategy
 import takagi.ru.monica.data.model.TotpData
+import takagi.ru.monica.ui.components.SettingsSubpageHeading
+import takagi.ru.monica.ui.components.SettingsSubpageRow
+import takagi.ru.monica.ui.components.SettingsSubpageTopBar
 import takagi.ru.monica.ui.components.TotpCodeCard
 import takagi.ru.monica.ui.password.appendAggregateContentQuickFilterItems
 import takagi.ru.monica.ui.password.PasswordEntryCard
@@ -143,95 +147,79 @@ fun PageAdjustmentCustomizationScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.page_adjust_custom_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
+            SettingsSubpageTopBar(stringResource(R.string.page_adjust_custom_title), onNavigateBack)
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
+                .verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
                 text = stringResource(R.string.page_adjust_custom_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
-
-            SwitchSettingsCard(
+            SettingsSubpageHeading(stringResource(R.string.customization_group_library))
+            SettingsSubpageRow(
                 title = stringResource(R.string.vault_v2_hierarchical_layout_title),
                 subtitle = stringResource(R.string.vault_v2_hierarchical_layout_desc),
+                icon = Icons.Default.Folder, index = 0, count = 3,
                 checked = settings.vaultV2LayoutMode == takagi.ru.monica.data.VaultV2LayoutMode.HIERARCHICAL,
                 onCheckedChange = { enabled ->
                     viewModel.updateVaultV2LayoutMode(
-                        if (enabled) {
-                            takagi.ru.monica.data.VaultV2LayoutMode.HIERARCHICAL
-                        } else {
-                            takagi.ru.monica.data.VaultV2LayoutMode.CLASSIC
-                        }
+                        if (enabled) takagi.ru.monica.data.VaultV2LayoutMode.HIERARCHICAL
+                        else takagi.ru.monica.data.VaultV2LayoutMode.CLASSIC
                     )
                 }
             )
-
-            SwitchSettingsCard(
+            SettingsSubpageRow(
                 title = stringResource(R.string.vault_overview_enabled_title),
                 subtitle = stringResource(R.string.vault_overview_enabled_desc),
+                icon = Icons.Default.GridView, index = 1, count = 3,
                 checked = settings.vaultOverviewEnabled,
                 onCheckedChange = viewModel::updateVaultOverviewEnabled
             )
-
-            SwitchSettingsCard(
+            SettingsSubpageRow(
+                title = stringResource(R.string.password_list_customization_title),
+                subtitle = stringResource(R.string.password_list_customization_subtitle),
+                icon = Icons.Default.FilterList, index = 2, count = 3,
+                onClick = onNavigateToPasswordListCustomization
+            )
+            SettingsSubpageHeading(stringResource(R.string.customization_group_cards))
+            SettingsSubpageRow(
+                title = stringResource(R.string.password_card_adjust_title),
+                subtitle = stringResource(R.string.password_card_adjust_subtitle),
+                icon = Icons.Default.Apps, index = 0, count = 3,
+                onClick = onNavigateToPasswordCardAdjustment
+            )
+            SettingsSubpageRow(
+                title = stringResource(R.string.authenticator_card_adjust_title),
+                subtitle = stringResource(R.string.authenticator_card_adjust_subtitle),
+                icon = Icons.Default.Security, index = 1, count = 3,
+                onClick = onNavigateToAuthenticatorCardAdjustment
+            )
+            SettingsSubpageRow(
                 title = stringResource(R.string.wallet_stack_loop_title),
                 subtitle = stringResource(R.string.wallet_stack_loop_desc),
+                icon = Icons.Default.CreditCard, index = 2, count = 3,
                 checked = settings.walletStackLoopEnabled,
                 onCheckedChange = viewModel::updateWalletStackLoopEnabled,
                 modifier = Modifier.testTag("wallet_stack_loop_setting")
             )
-
-            PageAdjustmentEntryCard(
-                title = stringResource(R.string.password_list_customization_title),
-                subtitle = stringResource(R.string.password_list_customization_subtitle),
-                icon = Icons.Default.FilterList,
-                onClick = onNavigateToPasswordListCustomization
-            )
-
-            PageAdjustmentEntryCard(
-                title = stringResource(R.string.password_card_adjust_title),
-                subtitle = stringResource(R.string.password_card_adjust_subtitle),
-                icon = Icons.Default.Apps,
-                onClick = onNavigateToPasswordCardAdjustment
-            )
-
-            PageAdjustmentEntryCard(
-                title = stringResource(R.string.authenticator_card_adjust_title),
-                subtitle = stringResource(R.string.authenticator_card_adjust_subtitle),
-                icon = Icons.Default.Security,
-                onClick = onNavigateToAuthenticatorCardAdjustment
-            )
-
-            PageAdjustmentEntryCard(
+            SettingsSubpageHeading(stringResource(R.string.customization_group_fields_icons))
+            SettingsSubpageRow(
                 title = stringResource(R.string.password_field_customization_title),
                 subtitle = stringResource(R.string.extensions_password_field_customization_desc),
-                icon = Icons.Default.Tune,
+                icon = Icons.Default.Tune, index = 0, count = 2,
                 onClick = onNavigateToPasswordFieldCustomization
             )
-
-            PageAdjustmentEntryCard(
+            SettingsSubpageRow(
                 title = stringResource(R.string.icon_settings_title),
                 subtitle = stringResource(R.string.icon_settings_subtitle),
-                icon = Icons.Default.Key,
+                icon = androidx.compose.material.icons.Icons.Default.Palette, index = 1, count = 2,
                 onClick = onNavigateToIconSettings
             )
         }

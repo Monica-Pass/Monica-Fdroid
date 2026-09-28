@@ -1,10 +1,13 @@
 package takagi.ru.monica.utils
 
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import takagi.ru.monica.data.model.TotpData
 
 /** Removes installation-bound encryption from both the TOTP payload and its nested secret fields. */
 internal object PortableTotpBackupCodec {
@@ -17,6 +20,17 @@ internal object PortableTotpBackupCodec {
         "steamIdentitySecret",
         "steamRawJson"
     )
+
+    /** Change installation-specific bindings without rebuilding (and truncating) the OTP payload. */
+    fun withBindings(payload: String, data: TotpData): String {
+        val original = runCatching { json.parseToJsonElement(payload) as? JsonObject }.getOrNull()
+            ?: return json.encodeToString(data)
+        return JsonObject(original + mapOf(
+            "boundPasswordId" to (data.boundPasswordId?.let(::JsonPrimitive) ?: JsonNull),
+            "categoryId" to (data.categoryId?.let(::JsonPrimitive) ?: JsonNull),
+            "keepassDatabaseId" to (data.keepassDatabaseId?.let(::JsonPrimitive) ?: JsonNull),
+        )).toString()
+    }
 
     fun encode(
         storedItemData: String,

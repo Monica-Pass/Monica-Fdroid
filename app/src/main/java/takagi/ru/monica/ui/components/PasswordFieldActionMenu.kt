@@ -12,10 +12,10 @@ package takagi.ru.monica.ui.components
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.rememberScrollState
@@ -41,8 +40,6 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -69,11 +66,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontFamily
@@ -135,7 +128,8 @@ fun PasswordFieldActionMenuButton(
     onToggleVisibility: (() -> Unit)? = null,
     onCreateSend: ((title: String, text: String) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    iconSize: androidx.compose.ui.unit.Dp = 20.dp
+    iconSize: androidx.compose.ui.unit.Dp = 20.dp,
+    onCopy: (() -> Unit)? = null,
 ) {
     Box(modifier = modifier) {
         IconButton(onClick = { state.open() }) {
@@ -157,11 +151,12 @@ fun PasswordFieldActionMenuButton(
             isVisible = isVisible,
             onToggleVisibility = onToggleVisibility,
             onCreateSend = onCreateSend,
-            offset = PasswordFieldActionMenuOffset
+            offset = PasswordFieldActionMenuOffset,
+            onCopy = onCopy,
         )
     }
 
-    PasswordFieldActionDialogs(state = state, label = label, value = value, context = context)
+    PasswordFieldActionDialogs(state = state, label = label, value = value, context = context, onCopy = onCopy)
 }
 
 @Composable
@@ -198,14 +193,16 @@ private fun PasswordFieldActionDialogs(
     state: PasswordFieldActionMenuState,
     label: String,
     value: String,
-    context: Context
+    context: Context,
+    onCopy: (() -> Unit)? = null,
 ) {
     if (state.showLargeDisplay) {
         LargeFieldValueDialog(
             label = label,
             value = value,
             context = context,
-            onDismiss = { state.showLargeDisplay = false }
+            onDismiss = { state.showLargeDisplay = false },
+            onCopy = onCopy,
         )
     }
 
@@ -229,7 +226,8 @@ private fun PasswordFieldActionDropdown(
     isVisible: Boolean,
     onToggleVisibility: (() -> Unit)?,
     onCreateSend: ((title: String, text: String) -> Unit)?,
-    offset: DpOffset
+    offset: DpOffset,
+    onCopy: (() -> Unit)? = null,
 ) {
     MaterialTheme(
         shapes = MaterialTheme.shapes.copy(
@@ -265,7 +263,7 @@ private fun PasswordFieldActionDropdown(
                 },
                 leadingIcon = { Icon(MonicaIcons.Action.copy, contentDescription = null) },
                 onClick = {
-                    copyPasswordDetailFieldValue(context, label, value)
+                    if (onCopy != null) onCopy() else copyPasswordDetailFieldValue(context, label, value)
                     state.expanded = false
                 }
             )
@@ -336,7 +334,8 @@ private fun LargeFieldValueDialog(
     label: String,
     value: String,
     context: Context,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onCopy: (() -> Unit)? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -368,7 +367,7 @@ private fun LargeFieldValueDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { copyPasswordDetailFieldValue(context, label, value) }) {
+            TextButton(onClick = { if (onCopy != null) onCopy() else copyPasswordDetailFieldValue(context, label, value) }) {
                 Text(stringResource(R.string.copy))
             }
         }
@@ -399,15 +398,22 @@ private fun FieldBarcodePage(
     onDismiss: () -> Unit
 ) {
     var format by rememberSaveable(value) { mutableStateOf(FieldBarcodeFormat.QR_CODE) }
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val availableWidth = with(LocalDensity.current) { (screenWidth - 40.dp).roundToPx().coerceAtLeast(1) }
+    val density = LocalDensity.current
+    var previewWidthPx by remember { mutableStateOf(0) }
+    val availableWidth = with(density) {
+        // Match each padding's pixel rounding to the measured card, including in split screen.
+        (previewWidthPx - 2 * BarcodePreviewCardPadding.roundToPx() -
+            2 * BarcodePreviewPaperPadding.roundToPx()).coerceAtLeast(0)
+    }
     var contentHeightPx by remember { mutableStateOf(0) }
     val qrImageSize = with(LocalDensity.current) {
         (contentHeightPx.toDp() - 48.dp).coerceIn(48.dp, 280.dp)
     }
     var rendered by remember(value, format, availableWidth) { mutableStateOf(FieldBarcodeRender(loading = true)) }
     LaunchedEffect(value, format, availableWidth) {
-        rendered = withContext(Dispatchers.Default) { encodeFieldBarcode(value, format, availableWidth) }
+        if (availableWidth > 0) {
+            rendered = withContext(Dispatchers.Default) { encodeFieldBarcode(value, format, availableWidth) }
+        }
     }
     val bitmap = rendered.bitmap
 
@@ -472,51 +478,39 @@ private fun FieldBarcodePage(
                         }
                     }
 
-                    Card(
-                        shape = RoundedCornerShape(28.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(if (format == FieldBarcodeFormat.QR_CODE) 24.dp else 0.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (bitmap != null) {
-                                val imageModifier = if (format == FieldBarcodeFormat.QR_CODE) {
-                                    Modifier.size(qrImageSize)
-                                } else {
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(bitmap.width.toFloat() / bitmap.height)
-                                }
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = stringResource(R.string.field_action_show_barcode),
-                                    filterQuality = FilterQuality.None,
-                                    modifier = imageModifier
-                                        .background(Color.White, RoundedCornerShape(18.dp))
-                                        .padding(if (format == FieldBarcodeFormat.QR_CODE) 14.dp else 0.dp)
-                                )
-                            } else if (rendered.loading) {
-                                CircularProgressIndicator(modifier = Modifier.padding(24.dp))
-                            } else {
-                                Text(
-                                    text = stringResource(
-                                        if (rendered.needsWiderScreen) {
-                                            R.string.field_barcode_linear_too_wide
-                                        } else if (format == FieldBarcodeFormat.CODE_128) {
-                                            R.string.field_barcode_linear_failed
-                                        } else {
-                                            R.string.field_action_barcode_failed
-                                        }
-                                    ),
-                                    color = MaterialTheme.colorScheme.error,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(16.dp),
-                                )
+                    val imageModifier = if (format == FieldBarcodeFormat.QR_CODE) {
+                        Modifier.widthIn(max = qrImageSize).fillMaxWidth().aspectRatio(1f)
+                    } else {
+                        Modifier.fillMaxWidth().height(
+                            // Reserve the white border without shrinking the encoded matrix.
+                            with(density) {
+                                ((bitmap?.height ?: 360) + 2 * BarcodePreviewPaperPadding.roundToPx()).toDp()
                             }
+                        )
+                    }
+                    BarcodePreviewCard(
+                        bitmap = bitmap,
+                        contentDescription = stringResource(R.string.field_action_show_barcode),
+                        imageModifier = imageModifier,
+                        modifier = Modifier.onSizeChanged { previewWidthPx = it.width },
+                    ) {
+                        if (rendered.loading) {
+                            CircularProgressIndicator(modifier = Modifier.padding(24.dp))
+                        } else {
+                            Text(
+                                text = stringResource(
+                                    if (rendered.needsWiderScreen) {
+                                        R.string.field_barcode_linear_too_wide
+                                    } else if (format == FieldBarcodeFormat.CODE_128) {
+                                        R.string.field_barcode_linear_failed
+                                    } else {
+                                        R.string.field_action_barcode_failed
+                                    }
+                                ),
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(16.dp),
+                            )
                         }
                     }
 

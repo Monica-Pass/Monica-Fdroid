@@ -2,8 +2,6 @@ package takagi.ru.monica.ui.screens
 
 import android.graphics.Bitmap
 import android.widget.Toast
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
@@ -46,8 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +54,7 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import takagi.ru.monica.R
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.ui.components.BarcodePreviewCard
 import takagi.ru.monica.ui.icons.MonicaIcons
 import takagi.ru.monica.utils.ClipboardUtils
 import takagi.ru.monica.viewmodel.PasswordViewModel
@@ -187,43 +184,22 @@ fun BarcodeDetailScreen(
                 }
             }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (generatedBitmap != null) {
-                        val imageModifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                if (mode == BarcodeRenderMode.QR_CODE) {
-                                    Modifier.aspectRatio(1f)
-                                } else {
-                                    Modifier.height(160.dp)
-                                }
-                            )
-                            .background(Color.White)
-                            .padding(12.dp)
-                        Image(
-                            bitmap = generatedBitmap.asImageBitmap(),
-                            contentDescription = stringResource(R.string.barcode_detail_title),
-                            modifier = imageModifier,
-                            contentScale = ContentScale.Fit
-                        )
+            BarcodePreviewCard(
+                bitmap = generatedBitmap,
+                contentDescription = stringResource(R.string.barcode_detail_title),
+                imageModifier = Modifier.fillMaxWidth().then(
+                    if (mode == BarcodeRenderMode.QR_CODE) {
+                        Modifier.aspectRatio(1f)
                     } else {
-                        Text(
-                            text = stringResource(R.string.barcode_render_failed),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Modifier.height(160.dp)
                     }
-                }
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.barcode_render_failed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
 
             Card(

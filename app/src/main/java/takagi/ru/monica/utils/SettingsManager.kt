@@ -143,6 +143,7 @@ data class PageAdjustmentSettingsSnapshot(
     val passkeyPageIconEnabled: Boolean = true,
     val unmatchedIconHandlingStrategy: String = takagi.ru.monica.data.UnmatchedIconHandlingStrategy.DEFAULT_ICON.name,
     val passwordFieldSettingsVersion: Int = 0,
+    val passwordContentEditorEnabled: Boolean = false,
     val separateUsernameAccountEnabled: Boolean = false,
     val presetCustomFieldsJson: String = "[]",
     val passwordFieldVisibility: PageAdjustmentPasswordFieldVisibilitySnapshot =
@@ -284,6 +285,7 @@ class SettingsManager(private val context: Context) {
 
         // 智能去重
         private val SMART_DEDUPLICATION_ENABLED_KEY = booleanPreferencesKey("smart_deduplication_enabled")
+        private val PASSWORD_CONTENT_EDITOR_ENABLED_KEY = booleanPreferencesKey("password_content_editor_enabled")
         private val SEPARATE_USERNAME_ACCOUNT_ENABLED_KEY = booleanPreferencesKey("separate_username_account_enabled")
         private val KEEPASS_DX_LIKE_MUTATION_ENABLED_KEY = booleanPreferencesKey("keepass_dx_like_mutation_enabled")
         private val LAST_PASSWORD_CATEGORY_FILTER_TYPE_KEY = stringPreferencesKey("last_password_category_filter_type")
@@ -721,6 +723,7 @@ class SettingsManager(private val context: Context) {
             ),
             reduceAnimations = preferences[REDUCE_ANIMATIONS_KEY] ?: false,
             smartDeduplicationEnabled = preferences[SMART_DEDUPLICATION_ENABLED_KEY] ?: true,
+            passwordContentEditorEnabled = preferences[PASSWORD_CONTENT_EDITOR_ENABLED_KEY] ?: false,
             separateUsernameAccountEnabled = preferences[SEPARATE_USERNAME_ACCOUNT_ENABLED_KEY] ?: false,
             keepassDxLikeMutationEnabled = preferences[KEEPASS_DX_LIKE_MUTATION_ENABLED_KEY] ?: false,
             lastPasswordCategoryFilterType = preferences[LAST_PASSWORD_CATEGORY_FILTER_TYPE_KEY] ?: "all",
@@ -1425,6 +1428,7 @@ class SettingsManager(private val context: Context) {
             passkeyPageIconEnabled = settings.passkeyPageIconEnabled,
             unmatchedIconHandlingStrategy = settings.unmatchedIconHandlingStrategy.name,
             passwordFieldSettingsVersion = 1,
+            passwordContentEditorEnabled = settings.passwordContentEditorEnabled,
             separateUsernameAccountEnabled = settings.separateUsernameAccountEnabled,
             presetCustomFieldsJson = normalizedPresetCustomFieldsJson,
             passwordFieldVisibility = PageAdjustmentPasswordFieldVisibilitySnapshot(
@@ -1618,6 +1622,7 @@ class SettingsManager(private val context: Context) {
             preferences[AUTHENTICATOR_PAGE_ICON_ENABLED_KEY] = snapshot.authenticatorPageIconEnabled
             preferences[PASSKEY_PAGE_ICON_ENABLED_KEY] = snapshot.passkeyPageIconEnabled
             preferences[UNMATCHED_ICON_HANDLING_STRATEGY_KEY] = parsedUnmatchedIconStrategy.name
+            preferences[PASSWORD_CONTENT_EDITOR_ENABLED_KEY] = snapshot.passwordContentEditorEnabled
             if (shouldRestorePasswordFieldSettings) {
                 preferences[SEPARATE_USERNAME_ACCOUNT_ENABLED_KEY] =
                     snapshot.separateUsernameAccountEnabled
@@ -1734,6 +1739,10 @@ class SettingsManager(private val context: Context) {
         dataStore.edit { preferences ->
             preferences[SMART_DEDUPLICATION_ENABLED_KEY] = enabled
         }
+    }
+
+    suspend fun updatePasswordContentEditorEnabled(enabled: Boolean) {
+        dataStore.edit { it[PASSWORD_CONTENT_EDITOR_ENABLED_KEY] = enabled }
     }
 
     suspend fun updateSeparateUsernameAccountEnabled(enabled: Boolean) {

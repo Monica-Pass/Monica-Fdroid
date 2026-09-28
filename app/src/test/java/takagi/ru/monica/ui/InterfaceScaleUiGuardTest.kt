@@ -26,7 +26,7 @@ class InterfaceScaleUiGuardTest {
         assertTrue(settingsScreen.contains("InterfaceScaleSettingsItem("))
         assertTrue(settingsScreen.contains("InterfaceScaleSelectionSheet("))
         assertTrue(settingsScreen.contains("viewModel.updateInterfaceScalePercent("))
-        assertTrue(settingsScreen.contains("R.string.interface_scale_title"))
+        assertTrue(content.contains("R.string.interface_scale_title"))
     }
 
     @Test

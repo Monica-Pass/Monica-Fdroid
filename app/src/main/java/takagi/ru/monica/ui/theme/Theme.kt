@@ -8,7 +8,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.ColorScheme as MaterialColorScheme
@@ -1248,11 +1248,20 @@ fun MonicaTheme(
         }
     }
 
+    val entryContext = LocalContext.current
+    val entrySettingsManager = remember(entryContext) { takagi.ru.monica.utils.SettingsManager(entryContext) }
+    val entrySettings by entrySettingsManager.settingsFlow.collectAsState(initial = null)
+    CompositionLocalProvider(
+        takagi.ru.monica.ui.components.LocalEntryContentStyle provides (entrySettings?.passwordContentEditorEnabled == true),
+        takagi.ru.monica.ui.components.LocalEntryFieldMotion provides
+            (entrySettings?.passwordContentEditorEnabled == true && entrySettings?.reduceAnimations == false),
+    ) {
     MaterialTheme(
         colorScheme = finalColorScheme,
         typography = Typography,
         content = content
     )
+    }
 }
 
 private fun MaterialColorScheme.withPureBlackSurfaces(): MaterialColorScheme {

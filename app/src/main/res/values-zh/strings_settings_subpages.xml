@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="customization_group_library">密码库与列表</string>
+    <string name="customization_group_cards">卡片与钱包</string>
+    <string name="customization_group_fields_icons">字段与图标</string>
+    <string name="permission_summary_title">按需开启权限</string>
+    <string name="permission_summary_hint">仅开启你使用的功能所需权限，部分权限由 Android 自动授予。</string>
+    <string name="permission_summary_granted">已授予 %1$d 项权限</string>
+    <string name="permission_refresh_status">刷新状态</string>
+    <string name="permission_action_request">申请权限</string>
+    <string name="permission_action_none">无需操作</string>
+    <string name="permission_action_for">%1$s：%2$s</string>
+    <string name="permission_help_actions">点击“申请权限”向 Android 发起授权，或点击“打开设置”管理服务及已授予的权限。\n\n显示“无需操作”或“不可用”的项目没有操作按钮，按需开启即可。\n\n从系统设置返回后会自动刷新，也可点击“刷新状态”重新检查。</string>
+</resources>

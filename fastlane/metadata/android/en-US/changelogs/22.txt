@@ -1,0 +1,10 @@
+Monica 1.0.315
+- Optional on-demand editor; classic default.
+- Unified fields, payment and OTP cards.
+- Preserve OTP types, metadata and actions; re-hide secrets.
+- Improve large-text and attachment layouts.
+- Redesign customization and permission settings.
+- Fix French timeline and older Android autofill crashes.
+- Round keyboard feedback; clearer autofill icon.
+- Unclipped barcodes; complete 11 locales.
+- Safer restore: rollback, retain OTP data, isolate bad rows, protect edits.

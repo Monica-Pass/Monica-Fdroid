@@ -227,8 +227,8 @@ fun BankCardDetailScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .verticalScroll(scrollState)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 cardData?.let { data ->
                     CardFaceDetailHeader(
@@ -242,13 +242,7 @@ fun BankCardDetailScreen(
 
                 cardData?.let { data ->
                     // Card Details Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        )
-                    ) {
+                    takagi.ru.monica.ui.components.DetailCardSurface() {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -259,6 +253,11 @@ fun BankCardDetailScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             
+                            if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+                                takagi.ru.monica.ui.components.EntryPaymentDetails(
+                                    data.cardNumber, data.cardholderName,
+                                    takagi.ru.monica.ui.components.EntryPaymentFormat.joinExpiry(data.expiryMonth, data.expiryYear), data.cvv)
+                            } else {
                             // Card Number
                             InfoFieldWithCopy(
                                 label = stringResource(R.string.card_number),
@@ -300,6 +299,7 @@ fun BankCardDetailScreen(
                             )
                             
                             // Bank Name
+                            }
                             if (data.bankName.isNotEmpty()) {
                                 InfoFieldWithCopy(
                                     label = stringResource(R.string.bank_name),
@@ -313,13 +313,7 @@ fun BankCardDetailScreen(
                     // Billing Address
                     if (data.billingAddress.isNotEmpty()) {
                         val billingAddress = CardWalletDataCodec.parseBillingAddress(data.billingAddress)
-                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                            )
-                         ) {
+                         takagi.ru.monica.ui.components.DetailCardSurface() {
                              Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -351,13 +345,7 @@ fun BankCardDetailScreen(
                         data.customerServicePhone.isNotBlank() ||
                         data.pin.isNotBlank()
                     ) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                            )
-                        ) {
+                        takagi.ru.monica.ui.components.DetailCardSurface() {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -437,13 +425,7 @@ fun BankCardDetailScreen(
                 
                 // 银行卡照片
                 if (frontImageBitmap != null || backImageBitmap != null) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        )
-                    ) {
+                    takagi.ru.monica.ui.components.DetailCardSurface() {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -694,66 +676,7 @@ fun BankCardDetailScreen(
 private fun BankCardCustomFieldsCard(
     fields: List<takagi.ru.monica.data.CustomField>,
     context: Context,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    if (fields.isEmpty()) return
-
-    val visibilityState = remember(fields) { mutableStateMapOf<Int, Boolean>() }
-
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.EditNote,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.custom_field_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            fields.forEachIndexed { index, field ->
-                if (index > 0) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
-
-                val label = field.title.ifBlank { stringResource(R.string.custom_field_new_field) }
-                val isVisible = visibilityState[index] ?: false
-
-                if (field.isProtected) {
-                    PasswordField(
-                        label = label,
-                        value = field.value,
-                        visible = isVisible,
-                        onToggleVisibility = {
-                            visibilityState[index] = !isVisible
-                        },
-                        context = context
-                    )
-                } else {
-                    InfoFieldWithCopy(
-                        label = label,
-                        value = field.value,
-                        context = context
-                    )
-                }
-            }
-        }
-    }
+    takagi.ru.monica.ui.components.CustomFieldDisplayCard(fields, modifier)
 }

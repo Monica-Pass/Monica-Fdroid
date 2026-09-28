@@ -1,5 +1,11 @@
 package takagi.ru.monica.ui.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,6 +63,7 @@ fun OutlinedTextField(
     shape: Shape = OutlinedTextFieldDefaults.shape,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
     saveTextState: Boolean = true,
+    entryContentStyle: Boolean = false,
 ) {
     val textState = if (saveTextState) rememberSaveable(stateSaver = TextFieldValueStateSaver) {
         mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
@@ -103,7 +110,7 @@ fun OutlinedTextField(
         maxLines = maxLines,
         minLines = minLines,
         interactionSource = interactionSource,
-        shape = shape,
+        shape = rememberEntryFieldShape(shape, interactionSource, entryContentStyle && enabled && !readOnly),
         colors = colors,
     )
 }
@@ -133,6 +140,7 @@ fun OutlinedTextField(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     shape: Shape = OutlinedTextFieldDefaults.shape,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
+    entryContentStyle: Boolean = false,
 ) {
     MaterialOutlinedTextField(
         value = value,
@@ -156,7 +164,21 @@ fun OutlinedTextField(
         maxLines = maxLines,
         minLines = minLines,
         interactionSource = interactionSource,
-        shape = shape,
+        shape = rememberEntryFieldShape(shape, interactionSource, entryContentStyle && enabled && !readOnly),
         colors = colors,
     )
+}
+
+/** Morph the outline only: text metrics, cursor, hit box and scroll position stay stable. */
+@Composable
+private fun rememberEntryFieldShape(base: Shape, source: MutableInteractionSource, editable: Boolean): Shape {
+    if (!editable || !LocalEntryContentStyle.current) return base
+    val focused by source.collectIsFocusedAsState()
+    val motion = LocalEntryFieldMotion.current && !takagi.ru.monica.ui.LocalReduceAnimations.current
+    val radius by animateDpAsState(
+        targetValue = if (focused) 22.dp else 12.dp,
+        animationSpec = if (motion) spring(dampingRatio = 0.58f, stiffness = 420f) else snap(),
+        label = "entryFieldFocusShape",
+    )
+    return RoundedCornerShape(radius)
 }

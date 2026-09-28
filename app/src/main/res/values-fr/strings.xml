@@ -2833,7 +2833,8 @@
     <string name="timeline_date_today">Aujourd\'hui</string>
     <string name="timeline_date_yesterday">Hier</string>
     <string name="timeline_date_this_week">Cette semaine</string>
-    <string name="timeline_date_month_day">MM-jj</string>
+    <!-- Java SimpleDateFormat pattern: keep d (day) and M (month) tokens untranslated. -->
+    <string name="timeline_date_month_day">dd/MM</string>
     <string name="timeline_empty_hint">L\'historique de vos opérations apparaîtra ici</string>
     <string name="timeline_search_hint">Rechercher dans l’historique…</string>
     <string name="timeline_op_create">Créer</string>

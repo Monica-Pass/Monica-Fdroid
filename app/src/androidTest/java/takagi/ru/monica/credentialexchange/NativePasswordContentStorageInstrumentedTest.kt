@@ -191,6 +191,18 @@ class NativePasswordContentStorageInstrumentedTest {
                 assertEquals("12 Example Street", reopened.addressLine)
                 assertEquals("alice@example.invalid", reopened.email)
                 assertEquals("synthetic hint", db.customFieldDao().getFieldsByEntryIdSync(reopened.id).single().value)
+                // The ordinary editor obtains raw rows; only the password is separately decoded.
+                val editorEntry = requireNotNull(passwords.getRawPasswordEntryById(reopened.id))
+                assertEquals(cardNumber, editorEntry.creditCardNumber)
+                assertEquals("123", editorEntry.creditCardCVV)
+                save(passwords, editorEntry.copy(password = "", title = "$prefix-edited-after-sync"),
+                    StorageTarget.Mdbx(target.databaseId, null))
+                Mdbx2NativeReadSessions.clear()
+                val native = mdbx.readStoredEntries(target.databaseId).single { !it.deleted }
+                assertEquals("$prefix-edited-after-sync", native.title)
+                val payload = JSONObject(native.payloadJson)
+                assertEquals(cardNumber, payload.getString("credit_card_number_plain"))
+                assertEquals("123", payload.getString("credit_card_cvv_plain"))
             } finally { manager.viewModelScope.cancel() }
         }
     }

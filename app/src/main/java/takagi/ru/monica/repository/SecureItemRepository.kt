@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -430,7 +431,7 @@ class SecureItemRepository(
         } else {
             secureItemDao.getActiveItemsByTypeSync(itemType)
         }).filter(includeCandidate).filter { candidate ->
-            !requireSamePayload || sameImportedPayload(candidate.itemData, itemData)
+            !requireSamePayload || sameImportedPayload(candidate.itemData, itemData, itemType)
         }
         
         return when (itemType) {
@@ -634,14 +635,23 @@ class SecureItemRepository(
         }
     }
 
-    private fun sameImportedPayload(left: String, right: String): Boolean {
+    private fun sameImportedPayload(left: String, right: String, itemType: ItemType): Boolean {
         val plainLeft = runCatching { decryptSensitiveValue?.invoke(left) ?: left }.getOrNull() ?: return false
         val plainRight = runCatching { decryptSensitiveValue?.invoke(right) ?: right }.getOrNull() ?: return false
         if (plainLeft == plainRight) return true
         return runCatching {
             val bindingFields = setOf("boundPasswordId", "categoryId", "keepassDatabaseId")
-            Json.parseToJsonElement(plainLeft).jsonObject.filterKeys { it !in bindingFields } ==
-                Json.parseToJsonElement(plainRight).jsonObject.filterKeys { it !in bindingFields }
+            fun canonical(value: String): Map<String, kotlinx.serialization.json.JsonElement> {
+                val original = runCatching { Json.parseToJsonElement(value).jsonObject }.getOrNull()
+                if (itemType != ItemType.TOTP) return requireNotNull(original).filterKeys { it !in bindingFields }
+                val data = requireNotNull(TotpDataResolver.parseStoredItemData(value))
+                require(data.secret.isNotBlank())
+                val withDefaults = Json { encodeDefaults = true }
+                val normalized = withDefaults.parseToJsonElement(withDefaults.encodeToString(data)).jsonObject
+                // Supply historical defaults, but preserve unknown fields when deciding to skip a backup row.
+                return (normalized + original.orEmpty()).filterKeys { it !in bindingFields }
+            }
+            canonical(plainLeft) == canonical(plainRight)
         }.getOrDefault(false)
     }
 

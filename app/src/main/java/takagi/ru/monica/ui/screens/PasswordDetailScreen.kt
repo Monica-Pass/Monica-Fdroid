@@ -2,8 +2,6 @@ package takagi.ru.monica.ui.screens
 
 import takagi.ru.monica.ui.components.localizedName
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -77,13 +75,10 @@ import takagi.ru.monica.viewmodel.BitwardenSyncSnapshotPreviewStatus
 import takagi.ru.monica.viewmodel.NoteViewModel
 import takagi.ru.monica.viewmodel.PasswordViewModel
 import takagi.ru.monica.viewmodel.PasskeyViewModel
-import takagi.ru.monica.util.TotpGenerator
 import takagi.ru.monica.data.model.TotpData
 import takagi.ru.monica.data.model.PasskeyBinding
 import takagi.ru.monica.data.model.PasskeyBindingCodec
 import takagi.ru.monica.ui.model.SecretValueState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -253,7 +248,6 @@ fun PasswordDetailScreen(
         }
     }
     val bitwardenSyncRawHistory by bitwardenSyncRawHistoryFlow.collectAsState(initial = emptyList())
-    val customFieldVisibility = remember { mutableStateMapOf<Long, Boolean>() }
     val usernameAliasFallbackTitle = stringResource(R.string.autofill_username)
     val hasAliasMeta = customFields.any {
         it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE && it.value == MONICA_USERNAME_ALIAS_META_VALUE
@@ -395,36 +389,18 @@ fun PasswordDetailScreen(
     }
     val boundNote by boundNoteFlow.collectAsState(initial = null)
     var showBoundNotePicker by remember { mutableStateOf(false) }
-    var totpCode by remember { mutableStateOf("") }
-    var totpProgress by remember { mutableStateOf(1f) }
-    
-    // 定时更新TOTP验证码
-    LaunchedEffect(linkedTotp, settings.validatorSmoothProgress) {
-        if (linkedTotp != null) {
-            var lastCodeSecond = Long.MIN_VALUE
-            while (isActive) {
-                linkedTotp?.let { totp ->
-                    val nowSecond = System.currentTimeMillis() / 1000L
-                    if (nowSecond != lastCodeSecond) {
-                        totpCode = TotpGenerator.generateOtp(totp)
-                        lastCodeSecond = nowSecond
-                    }
-                    totpProgress = TotpGenerator.getProgress(totp.period)
-                }
-                delay(if (settings.validatorSmoothProgress) 100 else 1_000)
-            }
-        }
+    val detailTotp = remember(passwordEntry?.id, passwordEntry?.authenticatorKey, linkedTotp) {
+        linkedTotp ?: passwordEntry?.let(viewModel::resolvePasswordDetailAuthenticator)
     }
+
     
     
     // 折叠面板状态
     var personalInfoExpanded by remember { mutableStateOf(true) }
     var addressInfoExpanded by remember { mutableStateOf(true) }
-    var paymentInfoExpanded by remember { mutableStateOf(true) }
     
     // 密码可见性
     var passwordVisible by remember { mutableStateOf(false) }
-    var cvvVisible by remember { mutableStateOf(false) }
     var isResyncingUnreadablePassword by remember { mutableStateOf(false) }
     var unavailablePasswordSources by remember { mutableStateOf<Map<Long, PasswordSource>>(emptyMap()) }
 
@@ -451,7 +427,6 @@ fun PasswordDetailScreen(
         passwordEntry = entry
         personalInfoExpanded = hasPersonalInfo(entry)
         addressInfoExpanded = hasAddressInfo(entry)
-        paymentInfoExpanded = hasPaymentInfo(entry)
 
         if (entry.keepassDatabaseId != null && !entry.keepassEntryUuid.isNullOrBlank()) {
             launch(Dispatchers.IO) {
@@ -784,8 +759,8 @@ fun PasswordDetailScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item("header") {
                     HeaderSection(
@@ -855,7 +830,7 @@ fun PasswordDetailScreen(
                 if (settings.passwordDetailSecurityAnalysisEnabled) {
                     item("security_analysis") {
                         PasswordDetailSecurityAnalysisCard(
-                            hasTwoFactor = linkedTotp != null || entry.authenticatorKey.isNotBlank(),
+                            hasTwoFactor = detailTotp != null,
                             hasBoundPasskey = boundPasskeys.isNotEmpty() || entry.passkeyBindings.isNotBlank(),
                             passkeyAvailable = isPasskeyAvailableForEntry(
                                 entry = entry,
@@ -875,13 +850,23 @@ fun PasswordDetailScreen(
                     }
                 }
 
+                detailTotp?.let { data ->
+                    item("totp") {
+                        takagi.ru.monica.ui.components.PasswordAuthenticatorCard(
+                            entry, data, settings, onEdit = { onEditPassword(entry.id) })
+                    }
+                }
+                if (hasPaymentInfo(entry)) {
+                    item("payment_info") {
+                        takagi.ru.monica.ui.components.PasswordPaymentCard(entry, onCreateSend)
+                    }
+                }
+
                 if (displayCustomFields.isNotEmpty()) {
                     item("custom_fields") {
-                        CustomFieldsCard(
+                        takagi.ru.monica.ui.components.CustomFieldDisplayCard(
                             fields = displayCustomFields,
-                            visibilityState = customFieldVisibility,
-                            context = context,
-                            onCreateSend = onCreateSend
+                            onCreateSend = onCreateSend,
                         )
                     }
                 }
@@ -944,16 +929,8 @@ fun PasswordDetailScreen(
                     )
                 }
 
-                if (entry.appPackageName.isNotEmpty() || entry.appName.isNotEmpty() || linkedTotp != null) {
-                    item("totp") {
-                        TotpCard(
-                            entry = entry,
-                            totpData = linkedTotp,
-                            code = totpCode,
-                            progress = totpProgress,
-                            context = context
-                        )
-                    }
+                if (entry.appPackageName.isNotEmpty() || entry.appName.isNotEmpty()) {
+                    item("linked_apps") { LinkedAppsCard(entry) }
                 }
 
                 if (boundPasskeys.isNotEmpty() || bindingSummaries.isNotEmpty()) {
@@ -995,25 +972,6 @@ fun PasswordDetailScreen(
                             onToggle = { addressInfoExpanded = !addressInfoExpanded }
                         ) {
                             AddressInfoContent(entry = entry)
-                        }
-                    }
-                }
-
-                if (hasPaymentInfo(entry)) {
-                    item("payment_info") {
-                        CollapsibleSection(
-                            title = stringResource(R.string.payment_info),
-                            icon = MonicaIcons.Data.creditCard,
-                            expanded = paymentInfoExpanded,
-                            onToggle = { paymentInfoExpanded = !paymentInfoExpanded }
-                        ) {
-                            PaymentInfoContent(
-                                entry = entry,
-                                cvvVisible = cvvVisible,
-                                onToggleCvvVisibility = { cvvVisible = !cvvVisible },
-                                context = context,
-                                onCreateSend = onCreateSend
-                            )
                         }
                     }
                 }
@@ -1742,13 +1700,7 @@ private fun WebsiteCard(
     websites: List<String>,
     context: Context
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1934,13 +1886,7 @@ private fun StorageInfoCard(
     onOpenPassword: (Long) -> Unit,
     onEditPassword: (Long) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -2075,13 +2021,7 @@ private fun TimeInfoCard(
     createdAt: String,
     updatedAt: String
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -2152,13 +2092,7 @@ private fun BasicInfoCard(
     separatedUsername: String,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -2372,107 +2306,15 @@ private fun getSsoProviderIcon(provider: SsoProvider): androidx.compose.ui.graph
 // 🔑 2FA / TOTP 高亮卡片
 // ============================================
 @Composable
-private fun TotpCard(
-    entry: PasswordEntry,
-    totpData: TotpData?,
-    code: String,
-    progress: Float,
-    context: Context
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = MonicaIcons.Security.key,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = if (totpData != null) stringResource(R.string.dynamic_verification_code) else stringResource(R.string.linked_app),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            
-            // 如果只有TOTP数据，显示验证码
-            if (totpData != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = code.chunked(3).joinToString(" "),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            letterSpacing = 4.sp
-                        )
-                    }
-                    
-                    IconButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("2FA Code", code)
-                            clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, context.getString(R.string.copied, context.getString(R.string.verification_code)), Toast.LENGTH_SHORT).show()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = MonicaIcons.Action.copy,
-                            contentDescription = stringResource(R.string.copy),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-                
-                // 进度条
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
-                )
-            }
-            
-            // 显示关联应用信息
-            val linkedApps = entry.linkedAppBindings()
-            if (linkedApps.isNotEmpty()) {
-                if (totpData != null) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
-                        thickness = 1.dp
-                    )
-                }
-                
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    linkedApps.forEach { app ->
-                        Text(
-                            text = app.appName.ifBlank { app.packageName },
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = app.packageName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                        )
-                    }
-                }
+private fun LinkedAppsCard(entry: PasswordEntry) {
+    val apps = entry.linkedAppBindings()
+    if (apps.isEmpty()) return
+    takagi.ru.monica.ui.components.DetailCardSurface {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.linked_app), style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold)
+            apps.forEach { app ->
+                InfoField(app.appName.ifBlank { app.packageName }, app.packageName)
             }
         }
     }
@@ -2573,6 +2415,11 @@ private fun PersonalInfoContent(
     context: Context,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
+    if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+        takagi.ru.monica.ui.components.EntryContactDetails(entry.email.split("|"), entry.phone.split("|"), onCreateSend = onCreateSend)
+        return
+    }
+
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -2621,6 +2468,11 @@ private fun PersonalInfoContent(
 // ============================================
 @Composable
 private fun AddressInfoContent(entry: PasswordEntry) {
+    if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+        takagi.ru.monica.ui.components.EntryAddressDetails(entry.addressLine, entry.city, entry.state, entry.zipCode, entry.country)
+        return
+    }
+
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -2686,98 +2538,14 @@ private fun AddressInfoContent(entry: PasswordEntry) {
 // ============================================
 // 💳 支付信息内容
 // ============================================
-@Composable
-private fun PaymentInfoContent(
-    entry: PasswordEntry,
-    cvvVisible: Boolean,
-    onToggleCvvVisibility: () -> Unit,
-    context: Context,
-    onCreateSend: ((title: String, text: String) -> Unit)?
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (entry.creditCardNumber.isNotEmpty()) {
-            InfoFieldWithCopy(
-                label = stringResource(R.string.credit_card_number),
-                value = FieldValidation.maskCreditCard(entry.creditCardNumber),
-                copyValue = entry.creditCardNumber,
-                context = context,
-                onCreateSend = onCreateSend
-            )
-        }
-        
-        if (entry.creditCardHolder.isNotEmpty()) {
-            InfoField(
-                label = stringResource(R.string.card_holder),
-                value = entry.creditCardHolder
-            )
-        }
-        
-        // 有效期和 CVV
-        if (entry.creditCardExpiry.isNotEmpty() || entry.creditCardCVV.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (entry.creditCardExpiry.isNotEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        InfoField(
-                            label = stringResource(R.string.expiry_date),
-                            value = entry.creditCardExpiry
-                        )
-                    }
-                }
-                if (entry.creditCardCVV.isNotEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        PasswordField(
-                            label = stringResource(R.string.cvv),
-                            value = entry.creditCardCVV,
-                            visible = cvvVisible,
-                            onToggleVisibility = onToggleCvvVisibility,
-                            context = context,
-                            onCreateSend = onCreateSend
-                        )
-                    }
-                }
-            }
-        }
-        
-        // 安全提示
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = MonicaIcons.Security.lock,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            )
-            Text(
-                text = stringResource(R.string.credit_card_encrypted),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
+
 
 // ============================================
 // 📝 备注卡片
 // ============================================
 @Composable
 private fun NotesCard(notes: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -2817,13 +2585,7 @@ private fun BoundNoteCard(
         }.orEmpty()
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -2914,73 +2676,6 @@ private fun BoundNoteCard(
     }
 }
 
-@Composable
-private fun CustomFieldsCard(
-    fields: List<CustomField>,
-    visibilityState: MutableMap<Long, Boolean>,
-    context: Context,
-    onCreateSend: ((title: String, text: String) -> Unit)?
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.EditNote,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.custom_field_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            fields.forEachIndexed { index, field ->
-                if (index > 0) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
-
-                val label = field.title.ifBlank { stringResource(R.string.custom_field_new_field) }
-                val isVisible = visibilityState[field.id] ?: false
-
-                if (field.isProtected) {
-                    PasswordField(
-                        label = label,
-                        value = field.value,
-                        visible = isVisible,
-                        onToggleVisibility = {
-                            visibilityState[field.id] = !isVisible
-                        },
-                        context = context,
-                        onCreateSend = onCreateSend
-                    )
-                } else {
-                    InfoFieldWithCopy(
-                        label = label,
-                        value = field.value,
-                        context = context,
-                        onCreateSend = onCreateSend
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ============================================
 // 🔧 可折叠区块组件
 // ============================================
@@ -2992,13 +2687,7 @@ private fun CollapsibleSection(
     onToggle: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(modifier = Modifier.fillMaxWidth()) {
             // 标题栏
             Row(
@@ -3196,13 +2885,7 @@ private fun PasswordListCard(
     context: Context,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -3252,7 +2935,7 @@ internal fun PasswordItemRow(
     canDelete: Boolean,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
-    var visible by remember { mutableStateOf(false) }
+    var visible by remember(entry.id, displayPassword, unavailableSource) { mutableStateOf(false) }
     val actionMenuState = rememberPasswordFieldActionMenuState()
     val isUnavailable = unavailableSource != null
     val recoverableBitwardenSource = (unavailableSource as? PasswordSource.Bitwarden)
@@ -3287,6 +2970,18 @@ internal fun PasswordItemRow(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (hasPasswordValue && !isUnavailable) {
+            PasswordField(
+                label = if (showIndex) stringResource(R.string.password) + " $index" else stringResource(R.string.password),
+                value = displayPassword, visible = visible, onToggleVisibility = { visible = !visible },
+                context = context, onCreateSend = onCreateSend,
+            )
+            if (canDelete) {
+                TextButton(onClick = onDelete, modifier = Modifier.align(Alignment.End)) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            }
+        } else {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -3374,6 +3069,8 @@ internal fun PasswordItemRow(
             maxLines = if (visible || isUnavailable || !hasPasswordValue) Int.MAX_VALUE else 1,
             color = MaterialTheme.colorScheme.onSurface
             )
+        }
+
         }
 
         if (showSecurityAnalysis && hasPasswordValue && !isUnavailable) {

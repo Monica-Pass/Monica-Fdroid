@@ -9,8 +9,6 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,7 +16,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import takagi.ru.monica.data.model.PermissionCategory
+import takagi.ru.monica.data.model.PermissionStats
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,7 +36,7 @@ import takagi.ru.monica.viewmodel.PermissionViewModel
  * 权限管理主界面
  * Permission management main screen
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PermissionManagementScreen(
     onNavigateBack: () -> Unit,
@@ -43,8 +47,7 @@ fun PermissionManagementScreen(
     val permissionStats by viewModel.permissionStats.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    var showHelpDialog by remember { mutableStateOf(false) }
-    var showInfoCard by remember { mutableStateOf(true) }
+    var showHelpDialog by rememberSaveable { mutableStateOf(false) }
     var pendingRuntimePermission by remember { mutableStateOf<PermissionInfo?>(null) }
     var deniedRuntimePermission by remember { mutableStateOf<PermissionInfo?>(null) }
 
@@ -52,11 +55,6 @@ fun PermissionManagementScreen(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
         viewModel.refreshPermissions()
-        Toast.makeText(
-            context,
-            context.getString(R.string.permission_status_refreshed),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     val runtimePermissionLauncher = rememberLauncherForActivityResult(
@@ -113,98 +111,19 @@ fun PermissionManagementScreen(
         }
     }
 
-    // 准备共享元素 Modifier
-    val sharedTransitionScope = takagi.ru.monica.ui.LocalSharedTransitionScope.current
-    val animatedVisibilityScope = takagi.ru.monica.ui.LocalAnimatedVisibilityScope.current
-    
-    var sharedModifier: Modifier = Modifier
-    if (false && sharedTransitionScope != null && animatedVisibilityScope != null) {
-        with(sharedTransitionScope!!) {
-            sharedModifier = Modifier.sharedBounds(
-                sharedContentState = rememberSharedContentState(key = "permission_settings_card"),
-                animatedVisibilityScope = animatedVisibilityScope!!,
-                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-            )
-        }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshPermissions()
     }
 
-    Scaffold(
-        modifier = sharedModifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.permission_management_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.refreshPermissions() },
-                        enabled = !isLoading
-                    ) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.refresh)
-                        )
-                    }
-                    IconButton(onClick = { showHelpDialog = true }) {
-                        Icon(
-                            Icons.Default.Help,
-                            contentDescription = stringResource(R.string.help)
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                // 信息卡片
-                if (showInfoCard) {
-                    PermissionInfoCard(
-                        onDismiss = { showInfoCard = false }
-                    )
-                }
-
-                // 权限统计
-                permissionStats?.let { stats ->
-                    PermissionStatsCard(stats = stats)
-                }
-
-                // 按分类显示权限
-                permissionsByCategory.forEach { (category, permissions) ->
-                    PermissionCategorySection(
-                        category = category,
-                        permissions = permissions,
-                        onPermissionClick = ::handlePermissionClick
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
-            // 加载指示器
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(48.dp)
-                )
-            }
-        }
-    }
+    PermissionManagementContent(
+        permissionsByCategory = permissionsByCategory,
+        permissionStats = permissionStats,
+        isLoading = isLoading,
+        onNavigateBack = onNavigateBack,
+        onRefresh = viewModel::refreshPermissions,
+        onHelp = { showHelpDialog = true },
+        onPermissionClick = ::handlePermissionClick,
+    )
 
     // 帮助对话框
     if (showHelpDialog) {
@@ -242,6 +161,42 @@ fun PermissionManagementScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+internal fun PermissionManagementContent(
+    permissionsByCategory: Map<PermissionCategory, List<PermissionInfo>>,
+    permissionStats: PermissionStats?,
+    isLoading: Boolean,
+    onNavigateBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onHelp: () -> Unit,
+    onPermissionClick: (PermissionInfo) -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            SettingsSubpageTopBar(stringResource(R.string.permission_management_title), onNavigateBack) {
+                IconButton(onClick = onHelp) {
+                    Icon(Icons.Default.HelpOutline, stringResource(R.string.help))
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(Modifier.fillMaxSize().padding(paddingValues)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp).padding(top = 8.dp, bottom = 24.dp)) {
+                PermissionStatsCard(permissionStats, onRefresh, isLoading)
+                permissionsByCategory.forEach { (category, permissions) ->
+                    if (permissions.isNotEmpty()) {
+                        PermissionCategorySection(category, permissions, onPermissionClick)
+                    }
+                }
+            }
+            if (isLoading && permissionsByCategory.isEmpty()) {
+                CircularProgressIndicator(Modifier.align(Alignment.Center))
+            }
+        }
     }
 }
 

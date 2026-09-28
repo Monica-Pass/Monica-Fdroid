@@ -603,6 +603,7 @@ data class AppSettings(
     val passwordFieldVisibility: PasswordFieldVisibility = PasswordFieldVisibility(), // 添加密码页面字段定制
     val reduceAnimations: Boolean = false, // 减少动画 - 解决部分设备（如 HyperOS 2/Android 15）动画卡顿问题
     val smartDeduplicationEnabled: Boolean = true, // 智能去重（在“所有”视图中合并显示相同密码）
+    val passwordContentEditorEnabled: Boolean = false, // Optional presentation; saved fields do not depend on this flag.
     val separateUsernameAccountEnabled: Boolean = false, // 用户名/账号分离（实验）
     val keepassDxLikeMutationEnabled: Boolean = false, // KeePass DX-like 写入管线（实验）
     val lastPasswordCategoryFilterType: String = "all", // 上次密码列表分类类型

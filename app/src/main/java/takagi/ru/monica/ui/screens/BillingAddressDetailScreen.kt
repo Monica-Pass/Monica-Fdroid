@@ -172,6 +172,10 @@ fun BillingAddressDetailScreen(
                     if (data.company.isNotBlank()) {
                         InfoFieldWithCopy(label = stringResource(R.string.document_company_label), value = data.company, context = context)
                     }
+                    if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+                        takagi.ru.monica.ui.components.EntryAddressDetails(data.streetAddress, data.city,
+                            data.stateProvince, data.postalCode, data.country, data.apartment)
+                    } else {
                     if (data.streetAddress.isNotBlank()) {
                         InfoFieldWithCopy(label = stringResource(R.string.street_address), value = data.streetAddress, context = context)
                     }
@@ -190,16 +194,23 @@ fun BillingAddressDetailScreen(
                     if (data.country.isNotBlank()) {
                         InfoFieldWithCopy(label = stringResource(R.string.country), value = data.country, context = context)
                     }
+                    }
+
                 }
 
                 if (data.email.isNotBlank() || data.phone.isNotBlank()) {
                     DetailCard(title = stringResource(R.string.billing_address_contact_title)) {
+                        if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+                            takagi.ru.monica.ui.components.EntryContactDetails(listOf(data.email), listOf(data.phone))
+                        } else {
                         if (data.email.isNotBlank()) {
                             InfoFieldWithCopy(label = stringResource(R.string.email), value = data.email, context = context)
                         }
                         if (data.phone.isNotBlank()) {
                             InfoFieldWithCopy(label = stringResource(R.string.phone), value = data.phone, context = context)
                         }
+                    }
+
                     }
                 }
 
@@ -301,13 +312,7 @@ private fun DetailCard(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface() {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -324,68 +329,9 @@ private fun DetailCard(
 
 @Composable
 private fun BillingAddressCustomFieldsCard(
-    fields: List<CustomField>,
+    fields: List<takagi.ru.monica.data.CustomField>,
     context: Context,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    if (fields.isEmpty()) return
-
-    val visibilityState = remember(fields) { mutableStateMapOf<Int, Boolean>() }
-
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            androidx.compose.foundation.layout.Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.EditNote,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.custom_field_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            fields.forEachIndexed { index, field ->
-                if (index > 0) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
-
-                val label = field.title.ifBlank { stringResource(R.string.custom_field_new_field) }
-                val isVisible = visibilityState[index] ?: false
-
-                if (field.isProtected) {
-                    PasswordField(
-                        label = label,
-                        value = field.value,
-                        visible = isVisible,
-                        onToggleVisibility = {
-                            visibilityState[index] = !isVisible
-                        },
-                        context = context
-                    )
-                } else {
-                    InfoFieldWithCopy(
-                        label = label,
-                        value = field.value,
-                        context = context
-                    )
-                }
-            }
-        }
-    }
+    takagi.ru.monica.ui.components.CustomFieldDisplayCard(fields, modifier)
 }

@@ -137,7 +137,8 @@ object CardWalletDataCodec {
                 id = CustomFieldDraft.nextTempId(),
                 title = field.label,
                 value = field.value,
-                isProtected = field.isProtected()
+                isProtected = field.isProtected(),
+                secureFieldType = field.type
             )
         }
     }
@@ -151,6 +152,8 @@ object CardWalletDataCodec {
                     value = draft.value,
                     type = if (draft.isProtected) {
                         SecureCustomFieldType.HIDDEN
+                    } else if (draft.secureFieldType == SecureCustomFieldType.BOOLEAN) {
+                        SecureCustomFieldType.BOOLEAN
                     } else {
                         SecureCustomFieldType.TEXT
                     }

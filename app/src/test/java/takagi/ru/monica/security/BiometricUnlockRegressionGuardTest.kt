@@ -531,10 +531,10 @@ class BiometricUnlockRegressionGuardTest {
         )
         assertTrue(
             "Migration must use DAO column updates instead of repositories, so MDBX/Bitwarden/KeePass/autofill chains do not see a user edit.",
-            migrationSource.contains("passwordEntryDao.updateAuthenticatorKey") &&
-                migrationSource.contains("secureItemDao.updateItemData") &&
-                passwordDaoSource.contains("UPDATE password_entries SET authenticatorKey = :authenticatorKey WHERE id = :id") &&
-                secureItemDaoSource.contains("UPDATE secure_items SET itemData = :itemData WHERE id = :id")
+            migrationSource.contains("passwordEntryDao.compareAndSetAuthenticatorKey") &&
+                migrationSource.contains("secureItemDao.compareAndSetItemData") &&
+                passwordDaoSource.contains("UPDATE password_entries SET authenticatorKey = :replacement WHERE id = :id AND authenticatorKey = :expected") &&
+                secureItemDaoSource.contains("UPDATE secure_items SET itemData = :replacement WHERE id = :id AND itemData = :expected")
         )
         assertFalse(
             "The migration manager must not depend on sync repositories or shared database writers.",
@@ -771,12 +771,18 @@ class BiometricUnlockRegressionGuardTest {
                 passwordDetailScreenSource.contains("initialDetailDataLoaded = false") &&
                 passwordDetailScreenSource.contains("if (!initialDetailDataLoaded) return@LaunchedEffect")
         )
+        val passwordAuthenticatorSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ui/components/PasswordRelatedContent.kt"
+        ).readText()
+        val codeCardSource = projectFile(
+            "app/src/main/java/takagi/ru/monica/ui/components/TotpCodeCard.kt"
+        ).readText()
         assertTrue(
-            "Password detail linked TOTP should not regenerate the HMAC code every 100ms; only progress needs smooth ticking.",
-            passwordDetailScreenSource.contains("var lastCodeSecond = Long.MIN_VALUE") &&
-                passwordDetailScreenSource.contains("if (nowSecond != lastCodeSecond)") &&
-                passwordDetailScreenSource.contains("TotpGenerator.generateOtp(totp)") &&
-                passwordDetailScreenSource.contains("delay(if (settings.validatorSmoothProgress) 100 else 1_000)")
+            "Password detail must reuse the authenticator renderer, whose HMAC result is cached per generation window.",
+            passwordDetailScreenSource.contains("PasswordAuthenticatorCard(") &&
+                passwordAuthenticatorSource.contains("TotpCodeCard(") &&
+                codeCardSource.contains("val currentCode = remember(generationWindow, totpData, settings.totpTimeOffset)") &&
+                codeCardSource.contains("val nextCode = remember(generationWindow, totpData, settings.totpTimeOffset)")
         )
         assertTrue(
             "Password detail linked TOTP lookup must parse encrypted authenticator items off the main thread.",

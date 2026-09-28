@@ -124,7 +124,7 @@ fun AddEditBillingAddressScreen(
     var mdbxDatabaseId by rememberSaveable { mutableStateOf(initialMdbxDatabaseId) }
     var mdbxFolderId by rememberSaveable { mutableStateOf(initialMdbxFolderId) }
     var showStorageTargetSheet by remember { mutableStateOf(false) }
-    var customFields by remember { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
+    var customFields by rememberSaveable(stateSaver = takagi.ru.monica.ui.components.EntryFieldDraftSaver) { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
     val selectedStorageTargets = remember { mutableStateListOf<StorageTarget>() }
 
     fun syncStorageState(targets: List<StorageTarget>) {
@@ -350,6 +350,22 @@ fun AddEditBillingAddressScreen(
             }
 
             InfoCard(title = stringResource(R.string.street_address)) {
+                if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+                    takagi.ru.monica.ui.components.EntryAddressFields(
+                        street = streetAddress, city = city, region = stateProvince,
+                        postalCode = postalCode, country = country,
+                        onStreet = { streetAddress = it }, onCity = { city = it },
+                        onRegion = { stateProvince = it }, onPostalCode = { postalCode = it },
+                        onCountry = { country = it },
+                        additionalStreet = {
+                            OutlinedTextField(value = apartment, onValueChange = { apartment = it },
+                                label = { Text(stringResource(R.string.apartment)) },
+                                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                                shape = RoundedCornerShape(12.dp))
+                        },
+                    )
+                } else {
+
                 OutlinedTextField(
                     value = streetAddress,
                     onValueChange = { streetAddress = it },
@@ -408,9 +424,16 @@ fun AddEditBillingAddressScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
-            }
+
+                }
+}
 
             InfoCard(title = stringResource(R.string.billing_address_contact_title)) {
+                if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
+                    takagi.ru.monica.ui.components.EntryContactFields(listOf(email), listOf(phone),
+                        onEmails = { email = it.firstOrNull().orEmpty() },
+                        onPhones = { phone = it.firstOrNull().orEmpty() }, allowMultiple = false)
+                } else {
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -431,6 +454,8 @@ fun AddEditBillingAddressScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     shape = RoundedCornerShape(12.dp)
                 )
+                    }
+
             }
 
             InfoCard(title = stringResource(R.string.custom_field_title)) {

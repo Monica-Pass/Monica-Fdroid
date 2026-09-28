@@ -598,6 +598,10 @@ class SettingsViewModel(
         }
     }
 
+    fun updatePasswordContentEditorEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.updatePasswordContentEditorEnabled(enabled) }
+    }
+
     fun updateSeparateUsernameAccountEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.updateSeparateUsernameAccountEnabled(enabled)

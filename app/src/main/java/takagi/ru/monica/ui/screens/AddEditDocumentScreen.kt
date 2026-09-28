@@ -148,7 +148,7 @@ fun AddEditDocumentScreen(
     var notes by rememberSaveable { mutableStateOf("") }
     var isFavorite by rememberSaveable { mutableStateOf(false) }
     var showDocumentTypeMenu by remember { mutableStateOf(false) }
-    var customFields by remember { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
+    var customFields by rememberSaveable(stateSaver = takagi.ru.monica.ui.components.EntryFieldDraftSaver) { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
     val pendingAttachmentDrafts = remember { mutableStateListOf<AttachmentPendingDraft>() }
     var existingDocumentItem by remember(documentId) { mutableStateOf<SecureItem?>(null) }
     var identityDetailsExpanded by rememberSaveable { mutableStateOf(false) }
