@@ -8,4 +8,4 @@ Monica 1.0.314
 - Safer backups/imports.
 - MDBX future types; safer conflicts; history details.
 - Vault sorting: name, created or updated.
-- Snow Leopard: a playful Chinese language for one release only.
+- Snow Leopard: updated icon; playful Chinese for one release only.
