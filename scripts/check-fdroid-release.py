@@ -72,11 +72,14 @@ def main():
     if filename_version != version:
         fail("The APK filename version must match versionName.")
 
+    release_check = bool(requested_tag)
     notes_path = ROOT / "Monica F-Droid发行说明.md"
-    if not notes_path.is_file() or not notes_path.read_text(encoding="utf-8").startswith(
-        f"# Monica for Android (F-Droid) {version}\n"
-    ):
+    notes = notes_path.read_text(encoding="utf-8") if notes_path.is_file() else ""
+    version_heading = f"# Monica for Android (F-Droid) {version}"
+    if version_heading not in notes.splitlines():
         fail("Update the root F-Droid release notes to match versionName.")
+    if release_check and not notes.startswith(version_heading + "\n"):
+        fail("Finalize the unreleased notes under the new version heading before tagging.")
 
     changelog_root = ROOT / "fastlane/metadata/android"
     changelogs = list(changelog_root.glob(f"*/changelogs/{code}.txt"))
@@ -90,10 +93,16 @@ def main():
     if git("rev-parse", "--is-shallow-repository") != "false":
         fail("Fetch full history and tags before checking release version ordering.")
     current_commit = git("rev-parse", "HEAD")
+    published_version = False
     for tag in git("tag", "--list").splitlines():
         if tag == expected_tag:
             if git("rev-parse", f"refs/tags/{tag}^{{commit}}") != current_commit:
-                fail(f"{tag} already identifies another commit; prepare a new version instead.")
+                if release_check:
+                    fail(f"{tag} already identifies another commit; prepare a new version instead.")
+                published_version = True
+                tagged_source = git("show", f"refs/tags/{tag}:{GRADLE_PATH}")
+                if int(literal(VERSION_CODE, tagged_source, "published versionCode")) != code:
+                    fail("A new versionCode also requires a new versionName.")
             continue
         tagged_source = git("show", f"refs/tags/{tag}:{GRADLE_PATH}", allow_missing=True)
         if not tagged_source:
@@ -102,8 +111,13 @@ def main():
         if tagged_codes and code <= max(map(int, tagged_codes)):
             fail(f"versionCode {code} must exceed the code in the existing tag {tag}.")
 
+    status = (
+        f"Development metadata checked: `{expected_tag}` is already published; "
+        "prepare a new version and finalize release notes before the next tag."
+        if published_version else f"Metadata checked: `{expected_tag}` / `{app_id}`, versionCode `{code}`."
+    )
     summary = (
-        f"Ready: `{expected_tag}` / `{app_id}`, versionCode `{code}`.\n\n"
+        status + "\n\n"
         "Static version fields, existing tags and F-Droid changelog files checked. "
         "No APK build, tag creation or Release publication was performed. "
         "F-Droid builds and publication are handled separately by F-Droid.\n"
