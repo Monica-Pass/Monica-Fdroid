@@ -12,6 +12,7 @@
 
 ## 存储规则
 
+- 未设置 OTP 时，快照的验证器值保持为空；不能把空值加密成非空载荷，否则无 OTP 的 MDBX 项目导出 KDBX 会触发无效参数校验。
 - MDBX 的密码载荷在 `authenticator_key` 保存完整内容，不能只截取 secret。Android 本地缓存按敏感值加密。
 - Bitwarden 的 login.totp 使用完整内部载荷，再通过现有条目加密上传。服务端储存能力与其他客户端的验证码生成能力分别看待。
 - KeePass 的 `otp` 字段受保护。TOTP/HOTP 同时写入可兼容的原生字段；非 SHA1 或非 6 位 HOTP 不伪造原生 HmacOtp 参数。Steam 保留 encoder 标记。

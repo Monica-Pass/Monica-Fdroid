@@ -248,6 +248,8 @@ class DatabaseTransferInstrumentedTest {
                     it.fields["MonicaPasskeyData"] == null }
                 assertEquals(listOf("$prefix-${source.kind.name}"), passwordRows.map { it.fields.getValue("Title").content })
                 assertEquals(rawPassword, passwordRows.single().fields.getValue("Password").content)
+                assertFalse("An absent OTP must stay absent when exporting a database",
+                    passwordRows.single().fields.keys.any(takagi.ru.monica.keepass.KeePassTotpCodec::isOtpField))
                 val keyField = takagi.ru.monica.keepass.KeePassDxPasskeyCodec.FIELD_CREDENTIAL_ID
                 val exportedKey = rows.single { it.fields[keyField]?.content == credentialId }
                 assertKeySigns(exportedKey.fields.getValue(takagi.ru.monica.keepass.KeePassDxPasskeyCodec.FIELD_PRIVATE_KEY).content)

@@ -173,7 +173,9 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                         password = security.encryptData(if (data.has("password_plain")) data.getString("password_plain")
                             else security.decryptDataIfMonicaCiphertext(data.optString("password"))),
                         notes = data.optString("notes"), appPackageName = data.optString("app_package_name"),
-                        appName = data.optString("app_name"), authenticatorKey = security.encryptData(data.optString("authenticator_key")),
+                        appName = data.optString("app_name"),
+                        authenticatorKey = data.optString("authenticator_key").takeIf { it.isNotBlank() }
+                            ?.let(security::encryptData).orEmpty(),
                         sshKeyData = data.readMdbxSshKeyData(previous?.sshKeyData.orEmpty()),
                         loginType = data.optString("login_type", "PASSWORD"), categoryId = data.category(),
                         sortOrder = data.optInt("sort_order"),
