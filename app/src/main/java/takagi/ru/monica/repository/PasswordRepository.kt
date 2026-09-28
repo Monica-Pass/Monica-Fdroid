@@ -190,6 +190,7 @@ class PasswordRepository(
     }
 
     suspend fun updateMdbxDatabaseForPasswords(ids: List<Long>, databaseId: Long?, folderId: String? = null) {
+        passwordEntryDao.getPasswordsByIds(ids).forEach(MdbxUnknownEntry::requireEditable)
         if (ids.isEmpty()) return
         val existingEntries = passwordEntryDao.getPasswordsByIds(ids)
         if (databaseId != null) {
@@ -265,6 +266,7 @@ class PasswordRepository(
     }
     
     suspend fun insertPasswordEntry(entry: PasswordEntry): Long {
+        MdbxUnknownEntry.requireEditable(entry)
         val normalizedEntry = BitwardenMutationStateHelper.normalizePasswordInsert(entry)
         return commitRoomThenMirror(
             roomCommit = {
@@ -293,6 +295,7 @@ class PasswordRepository(
     }
 
     suspend fun insertPasswordEntries(entries: List<PasswordEntry>): List<Long> {
+        entries.forEach(MdbxUnknownEntry::requireEditable)
         if (entries.isEmpty()) return emptyList()
         val normalizedEntries = entries.map(BitwardenMutationStateHelper::normalizePasswordInsert)
         return commitRoomThenMirror(
@@ -330,6 +333,8 @@ class PasswordRepository(
     }
     
     suspend fun updatePasswordEntry(entry: PasswordEntry) {
+        MdbxUnknownEntry.requireEditable(entry)
+        passwordEntryDao.getPasswordEntryById(entry.id)?.let(MdbxUnknownEntry::requireEditable)
         val existingEntry = if (entry.id != 0L) passwordEntryDao.getPasswordEntryById(entry.id) else null
         val normalizedEntry = BitwardenMutationStateHelper.normalizePasswordUpdate(existingEntry, entry).let { candidate ->
             if (candidate.mdbxDatabaseId != null) {
@@ -363,6 +368,8 @@ class PasswordRepository(
     }
 
     suspend fun updatePasswordEntries(entries: List<PasswordEntry>) {
+        entries.forEach(MdbxUnknownEntry::requireEditable)
+        passwordEntryDao.getPasswordsByIds(entries.map { it.id }).forEach(MdbxUnknownEntry::requireEditable)
         if (entries.isEmpty()) return
         val existingEntriesById = passwordEntryDao
             .getPasswordsByIds(entries.map { it.id })
@@ -405,6 +412,8 @@ class PasswordRepository(
     }
     
     suspend fun deletePasswordEntry(entry: PasswordEntry) {
+        MdbxUnknownEntry.requireEditable(entry)
+        passwordEntryDao.getPasswordEntryById(entry.id)?.let(MdbxUnknownEntry::requireEditable)
         commitMirrorThenRoom(
             mirrorCommit = { mdbxRepository?.deletePassword(entry) },
             roomCommit = { passwordEntryDao.deletePasswordEntry(entry) },
@@ -413,6 +422,8 @@ class PasswordRepository(
     }
 
     suspend fun deletePasswordEntries(entries: List<PasswordEntry>) {
+        entries.forEach(MdbxUnknownEntry::requireEditable)
+        passwordEntryDao.getPasswordsByIds(entries.map { it.id }).forEach(MdbxUnknownEntry::requireEditable)
         if (entries.isEmpty()) return
         val mdbxEntries = entries.filter { it.mdbxDatabaseId != null }
         commitMirrorThenRoom(
@@ -423,6 +434,7 @@ class PasswordRepository(
     }
     
     suspend fun deletePasswordEntryById(id: Long) {
+        passwordEntryDao.getPasswordEntryById(id)?.let(MdbxUnknownEntry::requireEditable)
         val entry = passwordEntryDao.getPasswordEntryById(id)
         commitMirrorThenRoom(
             mirrorCommit = { entry?.let { mdbxRepository?.deletePassword(it) } },
@@ -551,7 +563,7 @@ class PasswordRepository(
     private suspend fun mirrorSortOrderEntries(entries: List<PasswordEntry>) {
         val repository = mdbxRepository ?: return
         entries
-            .filter { it.mdbxDatabaseId != null }
+            .filter { it.mdbxDatabaseId != null && !MdbxUnknownEntry.isProjection(it) }
             .groupBy { it.mdbxDatabaseId }
             .values
             .forEach { group ->

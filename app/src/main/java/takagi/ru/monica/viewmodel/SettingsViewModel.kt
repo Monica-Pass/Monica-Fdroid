@@ -435,6 +435,10 @@ class SettingsViewModel(
         }
     }
 
+    fun updateVaultListSort(sort: takagi.ru.monica.data.VaultListSort) {
+        viewModelScope.launch { settingsManager.updateVaultListSort(sort) }
+    }
+
     fun updateVaultOverviewEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsManager.updateVaultOverviewEnabled(enabled) }
     }

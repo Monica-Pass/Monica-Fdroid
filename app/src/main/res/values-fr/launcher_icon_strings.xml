@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launcher_icon_default">Icône par défaut</string>
+    <string name="launcher_icon_blue_star">Grok bot</string>
+    <string name="launcher_icon_selection_description">Choisissez votre icône sur l’écran d’accueil. Vous pouvez revenir en arrière à tout moment.</string>
+    <string name="launcher_icon_refresh_hint">Le lanceur peut prendre quelques secondes pour actualiser l’icône.</string>
+    <string name="launcher_icon_language_hint">L’icône par défaut suit la langue du léopard des neiges.</string>
+</resources>

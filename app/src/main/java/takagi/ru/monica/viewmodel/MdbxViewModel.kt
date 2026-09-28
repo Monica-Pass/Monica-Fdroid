@@ -79,6 +79,7 @@ import takagi.ru.monica.repository.MdbxHealthRepairStatus
 import takagi.ru.monica.repository.MdbxSnapshotSummary
 import takagi.ru.monica.repository.MdbxStoredAttachment
 import takagi.ru.monica.repository.MdbxStoredVaultEntry
+import takagi.ru.monica.repository.MdbxUnknownEntry
 import takagi.ru.monica.repository.MdbxAttachmentCekPayload
 import takagi.ru.monica.repository.MdbxStructurePreview
 import takagi.ru.monica.repository.MdbxSyncBundle
@@ -3018,35 +3019,36 @@ class MdbxViewModel(
         conflictId: String,
         resolution: MdbxConflictResolution
     ) {
+        val current = _conflictDialogState.value as? MdbxConflictDialogState.Visible ?: return
+        if (current.databaseId != databaseId || current.isLoading ||
+            current.conflicts.none { it.conflictId == conflictId }) return
+        // Mark busy before launching: rapid taps cannot submit the same choice twice.
+        val pending = current.copy(isLoading = true)
+        _conflictDialogState.value = pending
         viewModelScope.launch {
-            if (!requireCapability(databaseId, MdbxCapability.CONFLICTS, "Conflict resolution")) {
-                return@launch
-            }
-            val current = _conflictDialogState.value as? MdbxConflictDialogState.Visible
-            _conflictDialogState.value = current?.copy(isLoading = true)
-                ?: MdbxConflictDialogState.Hidden
             try {
+                if (!requireCapability(databaseId, MdbxCapability.CONFLICTS, "Conflict resolution")) return@launch
                 withContext(Dispatchers.IO) {
                     vaultStore.resolveConflict(databaseId, conflictId, resolution)
-                    importEntriesFromVault(databaseId)
+                    // The chosen native deletion state is authoritative; never rescue
+                    // stale Room entries back into the vault after resolving a deletion.
+                    importEntriesFromVault(databaseId, orphanPolicy = MdbxImportOrphanPolicy.APPLY_REMOTE_STATE)
                 }
-                val refreshedConflicts = withContext(Dispatchers.IO) {
-                    vaultStore.listConflicts(databaseId)
-                }
-                val refreshedDiagnostic = withContext(Dispatchers.IO) {
-                    vaultStore.getVaultDiagnostics(databaseId)
-                }
+                val refreshedConflicts = withContext(Dispatchers.IO) { vaultStore.listConflicts(databaseId) }
+                val refreshedDiagnostic = withContext(Dispatchers.IO) { vaultStore.getVaultDiagnostics(databaseId) }
                 applyVaultDiagnostic(databaseId, refreshedDiagnostic)
-                _conflictDialogState.value = current?.copy(
-                    conflicts = refreshedConflicts,
-                    isLoading = false
-                ) ?: MdbxConflictDialogState.Hidden
+                if (_conflictDialogState.value === pending) {
+                    _conflictDialogState.value = current.copy(conflicts = refreshedConflicts, isLoading = false)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _conflictDialogState.value = current?.copy(isLoading = false)
-                    ?: MdbxConflictDialogState.Hidden
                 _operationState.value = OperationState.Error(
                     "Failed to resolve conflict: ${e.message ?: "unknown error"}"
                 )
+            } finally {
+                // Do not reopen a dismissed page or overwrite another database's state.
+                if (_conflictDialogState.value === pending) _conflictDialogState.value = current
             }
         }
     }
@@ -3322,7 +3324,7 @@ class MdbxViewModel(
         val activeSecureItemEntryIds = mutableSetOf<String>()
         val activePasskeyEntryIds = mutableSetOf<String>()
         val deletedPasswordEntryIds = entries
-            .filter { it.deleted && it.entryType == "login" }
+            .filter { it.deleted && MdbxUnknownEntry.projectsAsPassword(it.entryType) }
             .map { it.entryId }
             .toSet()
         val deletedSecureItemEntryIds = entries
@@ -3334,7 +3336,7 @@ class MdbxViewModel(
             .map { it.entryId }
             .toSet()
         val vaultActivePasswordEntryIds = entries
-            .filter { !it.deleted && it.entryType == "login" }
+            .filter { !it.deleted && MdbxUnknownEntry.projectsAsPassword(it.entryType) }
             .map { it.entryId }
         val vaultActiveSecureItemEntryIds = entries
             .filter { !it.deleted && it.entryType in mdbxSecureItemEntryTypes }
@@ -3346,6 +3348,14 @@ class MdbxViewModel(
         }
         val importMs = measureTimeMillis {
             entries.filterNot { it.deleted }.forEach { stored ->
+                if (MdbxUnknownEntry.isUnknown(stored.entryType)) {
+                    activePasswordEntryIds += stored.entryId
+                    val existing = existingPasswordsByEntryId[stored.entryId]
+                    val projection = MdbxUnknownEntry.project(databaseId, stored, existing)
+                    if (existing == null) passwordEntryDao.insertPasswordEntry(projection)
+                    else if (existing != projection) passwordEntryDao.updatePasswordEntry(projection)
+                    return@forEach
+                }
                 val payload = runCatching { JSONObject(stored.payloadJson) }.getOrNull()
                     ?: return@forEach
                 payloadByEntryId[stored.entryId] = payload
@@ -3391,7 +3401,12 @@ class MdbxViewModel(
                 .filterKeys { it !in activePasswordEntryIds }
                 .values
                 .let { orphanedRows ->
-                    val (remoteDeletedRows, missingRemoteRows) = orphanedRows.partition {
+                    // Read-only projections have no local edits to rescue. Follow native deletion/type changes.
+                    orphanedRows.filter(MdbxUnknownEntry::isProjection).forEach {
+                        passwordEntryDao.deletePasswordEntryById(it.id)
+                    }
+                    val (remoteDeletedRows, missingRemoteRows) = orphanedRows
+                        .filterNot(MdbxUnknownEntry::isProjection).partition {
                         it.replicaGroupId in deletedPasswordEntryIds
                     }
                     if (orphanedRows.isNotEmpty()) {
@@ -3837,6 +3852,7 @@ class MdbxViewModel(
     }
 
     private fun PasswordEntry.withNormalizedMdbxPasswordEntryId(): PasswordEntry {
+        if (MdbxUnknownEntry.isProjection(this)) return this
         val normalizedEntryId = replicaGroupId
             ?.takeIf { it.isMdbxPasswordObjectId() }
             ?: id.takeIf { it > 0L }?.let { "password:$it" }
@@ -3918,12 +3934,13 @@ class MdbxViewModel(
         payload: JSONObject,
         existing: PasswordEntry?
     ): Long {
-        val plainPassword = payload.optString("password_plain")
-            .takeIf { it.isNotEmpty() }
-            ?: payload.optString("password").takeIf { it.isNotEmpty() }?.let { value ->
+        val plainPassword = if (payload.has("password_plain") && !payload.isNull("password_plain")) {
+            payload.getString("password_plain")
+        } else {
+            payload.optString("password").takeIf { it.isNotEmpty() }?.let { value ->
                 runCatching { securityManager.decryptData(value) }.getOrDefault(value)
-            }
-            ?: ""
+            }.orEmpty()
+        }
         val entry = PasswordEntry(
             id = existing?.id ?: 0L,
             title = stored.title,

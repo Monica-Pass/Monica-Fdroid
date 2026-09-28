@@ -525,9 +525,13 @@ internal class Mdbx2RemoteSyncCoordinator(
                             expectedBase = currentStream.checkpoint,
                             expectedResume = currentStream.resume
                         )
-                        if (apply.missingParentCount > 0u) {
+                        if (apply.missingParentCount > 0u || apply.missingStateDependencies) {
                             stream = currentStream.copy(
-                                blockedReason = "waiting for ${apply.missingParentCount} parent commit(s)"
+                                blockedReason = if (apply.missingStateDependencies) {
+                                    "waiting for referenced state from another stream (foreign key constraint)"
+                                } else {
+                                    "waiting for ${apply.missingParentCount} parent commit(s)"
+                                }
                             )
                             state = state.withRemoteStream(stream)
                             stateStore.write(databaseId, state)

@@ -58,7 +58,7 @@ class VaultV2VisibleListStateTest {
             )
         )
 
-        assertEquals(listOf(parent, child), result.filteredItems)
+        assertEquals(listOf(child, parent), result.filteredItems)
     }
 
     private fun config(

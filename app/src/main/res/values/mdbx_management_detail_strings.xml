@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_conflict_choice_effect">This resolves the conflicting fields using the selected version, including a conflicting deletion. The result will be shared on the next sync. Review your choice before continuing.</string>
+    <string name="mdbx_conflict_confirm_choice">Confirm choice</string>
+    <string name="mdbx_conflict_values_unavailable">Historical values cannot be previewed here. Check the item on the source devices before choosing.</string>
+    <string name="mdbx_conflict_show_values">Show version comparison</string>
+    <string name="mdbx_conflict_version_help">Local: this device at the time of the conflict.\nIncoming: the received version, which may not be the latest.</string>
+    <string name="mdbx_copy_parameters">Copy parameters</string>
+    <string name="mdbx_snapshot_retention_help">Automatic snapshots may be pruned. Manual snapshots stay until you delete them.</string>
+</resources>

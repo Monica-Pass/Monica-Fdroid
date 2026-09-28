@@ -1,0 +1,6 @@
+<resources>
+    <string name="mdbx_unknown_read_only">此类型暂不支持编辑。你仍可查看全部数据。</string>
+    <string name="mdbx_unknown_unavailable">无法读取此项目。请解锁数据库后重新打开详情。</string>
+    <string name="mdbx_unknown_show">显示字段值</string>
+    <string name="mdbx_unknown_hide">隐藏字段值</string>
+</resources>

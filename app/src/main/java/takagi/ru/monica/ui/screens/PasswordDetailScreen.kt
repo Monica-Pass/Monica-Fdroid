@@ -580,6 +580,11 @@ fun PasswordDetailScreen(
         }
     }
     
+    passwordEntry?.takeIf(takagi.ru.monica.repository.MdbxUnknownEntry::isProjection)?.let { entry ->
+        MdbxUnknownEntryScreen(entry, ::requestNavigateBack)
+        return
+    }
+
     Scaffold(
         modifier = Modifier,
         containerColor = MaterialTheme.colorScheme.surface,

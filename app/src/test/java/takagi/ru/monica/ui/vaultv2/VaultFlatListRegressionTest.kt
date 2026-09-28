@@ -24,7 +24,7 @@ class VaultFlatListRegressionTest {
         val source = listOf(File("app/$path"), File(path)).first { it.exists() }.readText()
         val sections = source.substringAfter("val sectionedItems = remember(")
             .substringBefore("val showQuickFiltersInList")
-        assertTrue(sections.contains("buildVaultV2Sections(filteredItems)"))
+        assertTrue(sections.contains("buildVaultV2SortedSections(filteredItems, appSettings.vaultListSort)"))
         assertFalse(sections.contains("stackCardMode"))
         assertFalse(source.contains("buildVaultV2StackedSections("))
         assertFalse(source.contains("VaultV2PasswordStackCard("))

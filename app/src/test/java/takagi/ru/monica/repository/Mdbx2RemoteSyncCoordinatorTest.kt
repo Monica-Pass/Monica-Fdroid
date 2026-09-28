@@ -23,6 +23,34 @@ import takagi.ru.monica.utils.MdbxRemoteWriteMode
 class Mdbx2RemoteSyncCoordinatorTest {
 
     @Test
+    fun referencedStateWaitsWithoutAcknowledgementAndResumesAfterDependencyArrives() = runBlocking {
+        val root = tempDirectory("mdbx2-state-dependencies")
+        try {
+            val transport = MemoryTransport()
+            val engine = FakeEngine("vault-a", "receiver").apply { requireState = true }
+            val dao = FakeStateDao()
+            val sync = coordinator(root, engine, dao)
+            val path = "vaults/main.mdbx"
+            sync.registerDownloadedBootstrap(1, path)
+            val before = engine.checkpoint()
+            publishFixtureSegment(root, transport, path, "a-dependent-state", "c1", "c2")
+            val waiting = sync.synchronize(1, path, transport)
+            assertEquals(1, waiting.blockedStreams)
+            assertEquals(before, engine.checkpoint())
+            val saved = MdbxSyncStateStore(dao).read(1)
+            assertEquals(0L, saved.remoteStreams.single().nextSequence)
+            assertTrue(saved.remoteStreams.single().blockedReason!!.contains("referenced state"))
+            publishFixtureSegment(root, transport, path, "z-state-owner", "c0", "c1")
+            val resumed = coordinator(root, engine, dao).synchronize(1, path, transport)
+            assertEquals(0, resumed.blockedStreams)
+            assertEquals(2, resumed.appliedCommits)
+            assertEquals(2, resumed.downloadedSegments)
+            assertEquals("c2", engine.checkpoint().commitInventory)
+            assertEquals(0, sync.synchronize(1, path, transport).downloadedSegments)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
     fun localChangesDuringDirectoryListingRemainPendingForNextSync() = runBlocking {
         val root = tempDirectory("mdbx2-coordinator-edit-during-list")
         try {
@@ -689,6 +717,7 @@ class Mdbx2RemoteSyncCoordinatorTest {
         private val blobWrites = linkedMapOf<String, ByteArrayOutputStream>()
         private val knownCommits = mutableSetOf("c0")
         var requireParents = false
+        var requireState = false
         private val queuedPages = ArrayDeque<String>()
         private var paginating = false
         private var pageGeneration = 0
@@ -758,6 +787,10 @@ class Mdbx2RemoteSyncCoordinatorTest {
             val before = checkpoint()
             val info = inspectSegment(source)
             require(info.base == expectedBase)
+            if (requireState && info.base.commitInventory !in knownCommits) {
+                return Mdbx2SegmentApplyResult(expectedBase, expectedResume, 0u, 0u, 0u, 0u,
+                    before, before, missingStateDependencies = true)
+            }
             if (requireParents && info.base.commitInventory !in knownCommits) {
                 return Mdbx2SegmentApplyResult(expectedBase, expectedResume, 0u, 0u, 0u, 2u, before, before)
             }

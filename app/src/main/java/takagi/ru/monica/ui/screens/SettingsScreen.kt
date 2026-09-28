@@ -1517,7 +1517,7 @@ fun SettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val githubUrl = "https://github.com/Monica-Pass/Monica"
-                    val websiteUrl = "https://joyinjoester.github.io/Monica/"
+                    val websiteUrl = "https://monica-pass.github.io/MonicaDocs/"
                     val iconSourceUrl = "https://github.com/stratumauth/app/tree/v1.4.0/icons"
                     val iconReleaseUrl = "https://github.com/stratumauth/app/releases/tag/v1.4.0"
                     val fullVersion = BuildConfig.FULL_VERSION_NAME.ifBlank { BuildConfig.VERSION_NAME }

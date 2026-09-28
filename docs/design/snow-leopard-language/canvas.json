@@ -1,0 +1,337 @@
+{
+  "title": "Monica · 中文分类 · 芝士雪豹语",
+  "brief": "沿用现有语言弹窗，中文展开后新增芝士雪豹语，位于喵喵语之后。展开不切换语言，点选立即应用。",
+  "frame": "phone",
+  "platform": "android",
+  "paletteKey": "purple",
+  "theme": {
+    "dark": false,
+    "bothModes": true,
+    "contrast": "standard",
+    "shape": "rounded",
+    "font": "system",
+    "motion": "expressive"
+  },
+  "frames": [
+    {
+      "id": "language",
+      "name": "中文子分类",
+      "x": 0,
+      "y": 0,
+      "bg": "surface"
+    }
+  ],
+  "groups": [
+    {
+      "id": "item-0",
+      "x": 16,
+      "y": 84,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-0",
+          "kind": "box",
+          "variant": "text",
+          "size": 380,
+          "size2": 646,
+          "fill": "surfaceContainerLow",
+          "radiusTop": 28,
+          "radiusBottom": 28
+        }
+      ]
+    },
+    {
+      "id": "item-1",
+      "x": 40,
+      "y": 116,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-1",
+          "kind": "text",
+          "variant": "text",
+          "label": "语言",
+          "size": 24,
+          "bold": true
+        }
+      ]
+    },
+    {
+      "id": "item-2",
+      "x": 332,
+      "y": 103,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-2",
+          "kind": "iconButton",
+          "variant": "text",
+          "icon": "close",
+          "size": 48,
+          "label": "关闭"
+        }
+      ]
+    },
+    {
+      "id": "item-3",
+      "x": 48,
+      "y": 186,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-3",
+          "kind": "text",
+          "variant": "text",
+          "label": "跟随系统",
+          "size": 16
+        }
+      ]
+    },
+    {
+      "id": "item-4",
+      "x": 32,
+      "y": 230,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-4",
+          "kind": "box",
+          "variant": "text",
+          "size": 348,
+          "size2": 56,
+          "fill": "secondaryContainer",
+          "radiusTop": 24,
+          "radiusBottom": 24
+        }
+      ]
+    },
+    {
+      "id": "item-5",
+      "x": 48,
+      "y": 247,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-5",
+          "kind": "text",
+          "variant": "text",
+          "label": "中文 · 芝士雪豹语",
+          "size": 16,
+          "bold": true
+        }
+      ]
+    },
+    {
+      "id": "item-6",
+      "x": 324,
+      "y": 234,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-6",
+          "kind": "iconButton",
+          "variant": "text",
+          "icon": "expand_less",
+          "size": 48,
+          "label": "收起中文选项"
+        }
+      ]
+    },
+    {
+      "id": "item-7",
+      "x": 40,
+      "y": 302,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-7",
+          "kind": "box",
+          "variant": "text",
+          "size": 340,
+          "size2": 54,
+          "fill": "surfaceContainer",
+          "radiusTop": 20,
+          "radiusBottom": 4
+        }
+      ]
+    },
+    {
+      "id": "item-8",
+      "x": 56,
+      "y": 318,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-8",
+          "kind": "text",
+          "variant": "text",
+          "label": "简体中文",
+          "size": 16
+        }
+      ]
+    },
+    {
+      "id": "item-9",
+      "x": 40,
+      "y": 360,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-9",
+          "kind": "box",
+          "variant": "text",
+          "size": 340,
+          "size2": 54,
+          "fill": "surfaceContainer",
+          "radiusTop": 4,
+          "radiusBottom": 4
+        }
+      ]
+    },
+    {
+      "id": "item-10",
+      "x": 56,
+      "y": 376,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-10",
+          "kind": "text",
+          "variant": "text",
+          "label": "繁體中文",
+          "size": 16
+        }
+      ]
+    },
+    {
+      "id": "item-11",
+      "x": 40,
+      "y": 418,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-11",
+          "kind": "box",
+          "variant": "text",
+          "size": 340,
+          "size2": 54,
+          "fill": "surfaceContainer",
+          "radiusTop": 4,
+          "radiusBottom": 4
+        }
+      ]
+    },
+    {
+      "id": "item-12",
+      "x": 56,
+      "y": 434,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-12",
+          "kind": "text",
+          "variant": "text",
+          "label": "喵喵语",
+          "size": 16
+        }
+      ]
+    },
+    {
+      "id": "item-13",
+      "x": 40,
+      "y": 476,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-13",
+          "kind": "box",
+          "variant": "text",
+          "size": 340,
+          "size2": 54,
+          "fill": "secondaryContainer",
+          "radiusTop": 4,
+          "radiusBottom": 4
+        }
+      ]
+    },
+    {
+      "id": "item-14",
+      "x": 56,
+      "y": 492,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-14",
+          "kind": "text",
+          "variant": "text",
+          "label": "芝士雪豹语",
+          "size": 16
+        }
+      ]
+    },
+    {
+      "id": "item-15",
+      "x": 326,
+      "y": 479,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-15",
+          "kind": "iconButton",
+          "variant": "text",
+          "icon": "check",
+          "size": 48,
+          "label": "已选中"
+        }
+      ]
+    },
+    {
+      "id": "item-16",
+      "x": 40,
+      "y": 534,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-16",
+          "kind": "box",
+          "variant": "text",
+          "size": 340,
+          "size2": 54,
+          "fill": "surfaceContainer",
+          "radiusTop": 4,
+          "radiusBottom": 20
+        }
+      ]
+    },
+    {
+      "id": "item-17",
+      "x": 56,
+      "y": 550,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-17",
+          "kind": "text",
+          "variant": "text",
+          "label": "文言文",
+          "size": 16
+        }
+      ]
+    },
+    {
+      "id": "item-18",
+      "x": 48,
+      "y": 632,
+      "axis": "y",
+      "items": [
+        {
+          "id": "item-18",
+          "kind": "text",
+          "variant": "text",
+          "label": "English",
+          "size": 16
+        }
+      ]
+    }
+  ]
+}

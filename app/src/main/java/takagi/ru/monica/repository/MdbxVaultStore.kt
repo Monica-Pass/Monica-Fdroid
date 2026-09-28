@@ -308,7 +308,8 @@ data class MdbxStoredVaultEntry(
     val entryType: String,
     val title: String,
     val payloadJson: String,
-    val deleted: Boolean
+    val deleted: Boolean,
+    val collectionId: String? = null
 )
 
 private data class MdbxEntryMutation(

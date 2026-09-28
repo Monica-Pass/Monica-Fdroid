@@ -4,6 +4,8 @@ import android.content.Context
 import java.io.File
 import takagi.ru.monica.webdav.WebDavErrorClassifier
 import takagi.ru.monica.webdav.WebDavErrorKind
+import takagi.ru.monica.webdav.MdbxWebDavRetry
+import takagi.ru.monica.webdav.WebDavGateway
 
 class WebDavMdbxRemoteTransport internal constructor(
     serverUrl: String,
@@ -11,18 +13,19 @@ class WebDavMdbxRemoteTransport internal constructor(
     password: String,
     strings: StringResolver
 ) : MdbxRemoteTransport {
+    private val retry = MdbxWebDavRetry(WebDavGateway.hostOf(serverUrl))
     private val source = WebDavMdbxFileSource(serverUrl, username, password, strings = strings)
 
     override suspend fun testConnection() {
-        source.testConnection().getOrThrow()
+        retry.run { source.testConnection().getOrThrow() }
     }
 
     override suspend fun stat(path: String): MdbxRemoteObject? =
-        source.statPath(MdbxRemoteSyncPaths.normalizePath(path))?.toRemoteObject()
+        retry.run { source.statPath(MdbxRemoteSyncPaths.normalizePath(path))?.toRemoteObject() }
 
     override suspend fun list(path: String?): List<MdbxRemoteObject> =
         try {
-            source.listDirectory(path?.let(MdbxRemoteSyncPaths::normalizePath))
+            retry.run { source.listDirectory(path?.let(MdbxRemoteSyncPaths::normalizePath)) }
         } catch (error: Throwable) {
             if (WebDavErrorClassifier.classify(error).kind == WebDavErrorKind.NotFound) {
                 emptyList()
@@ -33,11 +36,11 @@ class WebDavMdbxRemoteTransport internal constructor(
             .map(FileSourceEntry::toRemoteObject)
 
     override suspend fun ensureDirectory(path: String) {
-        source.ensureDirectoryPath(MdbxRemoteSyncPaths.normalizePath(path))
+        retry.run { source.ensureDirectoryPath(MdbxRemoteSyncPaths.normalizePath(path)) }
     }
 
     override suspend fun readTo(path: String, destination: File) {
-        source.readFileTo(MdbxRemoteSyncPaths.normalizePath(path), destination)
+        retry.run { source.readFileTo(MdbxRemoteSyncPaths.normalizePath(path), destination) }
     }
 
     override suspend fun writeFrom(
@@ -45,9 +48,10 @@ class WebDavMdbxRemoteTransport internal constructor(
         source: File,
         mode: MdbxRemoteWriteMode,
         expectedVersion: String?
-    ): MdbxRemoteObject = this.source
+    ): MdbxRemoteObject = retry.run { this.source
         .writeFileFrom(MdbxRemoteSyncPaths.normalizePath(path), source, mode, expectedVersion)
         .toRemoteObject()
+    }
 }
 
 class OneDriveMdbxRemoteTransport(

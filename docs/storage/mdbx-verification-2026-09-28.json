@@ -1,0 +1,52 @@
+{
+  "main": {
+    "unit": {
+      "tests": 210,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "unitSuites": 52,
+    "new": {
+      "passed": 6,
+      "seconds": 29.831
+    },
+    "regression": {
+      "passed": 26,
+      "seconds": 41.417
+    },
+    "releasePackaged": true
+  },
+  "fdroid": {
+    "unit": {
+      "tests": 210,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "unitSuites": 52,
+    "new": {
+      "passed": 6,
+      "seconds": 23.253
+    },
+    "regression": {
+      "passed": 26,
+      "seconds": 36.314
+    },
+    "releasePackaged": true
+  },
+  "live": {
+    "passed": 1,
+    "seconds": 87.918,
+    "provider": "Mdbx2RepositorySyncSessionProvider"
+  },
+  "cleanup": {
+    "originalEncryptedVaultUnchanged": true,
+    "isolatedCloudContentRemoved": true,
+    "emptyTopLevelFolderRemains": true,
+    "topLevelDeleteHttpStatus": 403,
+    "privateDeviceFixturesRemoved": true,
+    "privateLocalCopiesRemoved": true,
+    "taskStartedEmulatorStopped": true
+  }
+}

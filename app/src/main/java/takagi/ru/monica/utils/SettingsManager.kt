@@ -38,6 +38,7 @@ import takagi.ru.monica.data.ThemeMode
 import takagi.ru.monica.data.UnifiedProgressBarMode
 import takagi.ru.monica.data.AutofillSource
 import takagi.ru.monica.data.AuthenticatorLayoutMode
+import takagi.ru.monica.data.VaultListSort
 import takagi.ru.monica.data.VaultV2LayoutMode
 import takagi.ru.monica.data.VaultOverviewConfig
 import takagi.ru.monica.data.QuickSetupPreset
@@ -121,6 +122,7 @@ data class PageAdjustmentSettingsSnapshot(
     val authenticatorCardHideCodeByDefault: Boolean = false,
     val authenticatorLayoutMode: String = AuthenticatorLayoutMode.STANDARD.name,
     val vaultV2LayoutMode: String = VaultV2LayoutMode.CLASSIC.name,
+    val vaultListSort: String = VaultListSort.TITLE_ASC.name,
     val vaultOverviewEnabled: Boolean = true,
     val vaultOverviewConfig: String = "{}",
     val validatorProgressBarStyle: String = ProgressBarStyle.LINEAR.name,
@@ -233,6 +235,7 @@ class SettingsManager(private val context: Context) {
         private val AUTHENTICATOR_CARD_DISPLAY_FIELDS_KEY = stringPreferencesKey("authenticator_card_display_fields") // 验证器卡片显示字段
         private val AUTHENTICATOR_CARD_HIDE_CODE_BY_DEFAULT_KEY = booleanPreferencesKey("authenticator_card_hide_code_by_default") // 验证器卡片默认隐藏验证码
         private val AUTHENTICATOR_LAYOUT_MODE_KEY = stringPreferencesKey("authenticator_layout_mode")
+        private val VAULT_LIST_SORT_KEY = stringPreferencesKey("vault_list_sort")
         private val VAULT_V2_LAYOUT_MODE_KEY = stringPreferencesKey("vault_v2_layout_mode")
         private val VAULT_OVERVIEW_ENABLED_KEY = booleanPreferencesKey("vault_overview_enabled")
         private val VAULT_OVERVIEW_CONFIG_KEY = stringPreferencesKey("vault_overview_config")
@@ -651,6 +654,7 @@ class SettingsManager(private val context: Context) {
             vaultV2LayoutMode = VaultV2LayoutMode.fromStoredValue(
                 preferences[VAULT_V2_LAYOUT_MODE_KEY]
             ),
+            vaultListSort = VaultListSort.fromStoredValue(preferences[VAULT_LIST_SORT_KEY]),
             vaultOverviewEnabled = preferences[VAULT_OVERVIEW_ENABLED_KEY] ?: true,
             vaultOverviewConfig = VaultOverviewConfig.decode(preferences[VAULT_OVERVIEW_CONFIG_KEY]),
             passwordListQuickFiltersEnabled = preferences[PASSWORD_LIST_QUICK_FILTERS_ENABLED_KEY] ?: false,
@@ -769,6 +773,18 @@ class SettingsManager(private val context: Context) {
             preferences[LANGUAGE_KEY] = language.name
         }
         StartupLanguageCache.write(context, language)
+        refreshLauncherEntryForLanguage()
+    }
+
+    /**
+     * 芝士雪豹语会连带替换桌面图标。语言变更后按最新语言与现有图标/名称偏好
+     * 重新应用可见启动入口；切换失败不影响语言本身生效。
+     */
+    private suspend fun refreshLauncherEntryForLanguage() {
+        runCatching {
+            val settings = settingsFlow.first()
+            AppLauncherIconManager.apply(context, settings.appLauncherIcon, settings.appLauncherLabel)
+        }
     }
 
     suspend fun updateBitwardenUploadAll(enabled: Boolean) {
@@ -1174,6 +1190,10 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun updateVaultListSort(sort: VaultListSort) {
+        dataStore.edit { it[VAULT_LIST_SORT_KEY] = sort.name }
+    }
+
     suspend fun updateVaultOverviewEnabled(enabled: Boolean) {
         dataStore.edit { it[VAULT_OVERVIEW_ENABLED_KEY] = enabled }
     }
@@ -1326,9 +1346,11 @@ class SettingsManager(private val context: Context) {
     }
 
     suspend fun exportPageAdjustmentSettings(): PageAdjustmentSettingsSnapshot {
-        val settings = settingsFlow.first()
+        // Read one committed snapshot: the shared UI flow may still replay the previous edit.
+        val preferences = dataStore.data.first()
+        val settings = mapPreferencesToAppSettings(preferences)
         val normalizedPresetCustomFieldsJson = runCatching {
-            val rawPresetCustomFieldsJson = dataStore.data.first()[PRESET_CUSTOM_FIELDS_KEY] ?: "[]"
+            val rawPresetCustomFieldsJson = preferences[PRESET_CUSTOM_FIELDS_KEY] ?: "[]"
             PresetCustomField.listToJson(PresetCustomField.listFromJson(rawPresetCustomFieldsJson))
         }.getOrDefault("[]")
         return PageAdjustmentSettingsSnapshot(
@@ -1382,6 +1404,7 @@ class SettingsManager(private val context: Context) {
             authenticatorCardHideCodeByDefault = settings.authenticatorCardHideCodeByDefault,
             authenticatorLayoutMode = settings.authenticatorLayoutMode.name,
             vaultV2LayoutMode = settings.vaultV2LayoutMode.name,
+            vaultListSort = settings.vaultListSort.name,
             vaultOverviewEnabled = settings.vaultOverviewEnabled,
             vaultOverviewConfig = settings.vaultOverviewConfig.encode(),
             validatorProgressBarStyle = settings.validatorProgressBarStyle.name,
@@ -1565,6 +1588,7 @@ class SettingsManager(private val context: Context) {
                 snapshot.authenticatorCardHideCodeByDefault
             preferences[AUTHENTICATOR_LAYOUT_MODE_KEY] =
                 AuthenticatorLayoutMode.fromStoredValue(snapshot.authenticatorLayoutMode).name
+            preferences[VAULT_LIST_SORT_KEY] = VaultListSort.fromStoredValue(snapshot.vaultListSort).name
             preferences[VAULT_V2_LAYOUT_MODE_KEY] =
                 VaultV2LayoutMode.fromStoredValue(snapshot.vaultV2LayoutMode).name
             preferences[VAULT_OVERVIEW_ENABLED_KEY] = snapshot.vaultOverviewEnabled

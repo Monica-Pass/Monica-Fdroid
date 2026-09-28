@@ -463,6 +463,7 @@ private data class PageAdjustmentSettingsBackupEntry(
     val authenticatorCardHideCodeByDefault: Boolean = false,
     val authenticatorLayoutMode: String = takagi.ru.monica.data.AuthenticatorLayoutMode.STANDARD.name,
     val vaultV2LayoutMode: String = takagi.ru.monica.data.VaultV2LayoutMode.CLASSIC.name,
+    val vaultListSort: String = takagi.ru.monica.data.VaultListSort.TITLE_ASC.name,
     val vaultOverviewEnabled: Boolean = true,
     val vaultOverviewConfig: String = "{}",
     val validatorProgressBarStyle: String = "LINEAR",
@@ -806,6 +807,7 @@ class WebDavHelper(
             authenticatorCardHideCodeByDefault = authenticatorCardHideCodeByDefault,
             authenticatorLayoutMode = authenticatorLayoutMode,
             vaultV2LayoutMode = vaultV2LayoutMode,
+            vaultListSort = vaultListSort,
             vaultOverviewEnabled = vaultOverviewEnabled,
             vaultOverviewConfig = vaultOverviewConfig,
             validatorProgressBarStyle = validatorProgressBarStyle,
@@ -4147,6 +4149,7 @@ class WebDavHelper(
                                                     pageAdjustmentBackup.authenticatorCardHideCodeByDefault,
                                                 authenticatorLayoutMode =
                                                     pageAdjustmentBackup.authenticatorLayoutMode,
+                                                vaultListSort = pageAdjustmentBackup.vaultListSort,
                                                 vaultV2LayoutMode =
                                                     pageAdjustmentBackup.vaultV2LayoutMode,
                                                 vaultOverviewEnabled = pageAdjustmentBackup.vaultOverviewEnabled,

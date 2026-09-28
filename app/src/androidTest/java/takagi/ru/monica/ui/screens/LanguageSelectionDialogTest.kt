@@ -121,6 +121,34 @@ class LanguageSelectionDialogTest {
         capture("language-dialog-italian-dark-large-text.png")
     }
 
+    @Test
+    fun snowLeopardLivesInsideChineseAndSelectingItDoesNotDismissTheDialog() {
+        show(Language.CHINESE)
+        compose.onNodeWithTag("language_option_SNOW_LEOPARD").assertDoesNotExist()
+        compose.onNodeWithTag("language_chinese_expand").performClick()
+        compose.runOnIdle { assertTrue(selections.isEmpty()) }
+        compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag("language_option_SNOW_LEOPARD"))
+        compose.onNodeWithTag("language_option_SNOW_LEOPARD").assertIsDisplayed()
+        compose.onNodeWithText("芝士雪豹语").assertIsDisplayed()
+        capture("language-snow-leopard-chinese-group.png")
+        compose.onNodeWithTag("language_option_SNOW_LEOPARD").performClick()
+        compose.runOnIdle {
+            assertEquals(listOf(Language.SNOW_LEOPARD), selections)
+            assertEquals(0, dismissals)
+        }
+    }
+
+    @Test
+    fun snowLeopardSelectionIsVisibleInChineseGroupWithLargeText() {
+        show(Language.SNOW_LEOPARD, dark = true, fontScale = 1.5f)
+        compose.onNodeWithTag("language_chinese_primary").assertIsSelected()
+        compose.onNodeWithText("芝士雪豹语").assertIsDisplayed()
+        compose.onNodeWithTag("language_chinese_expand").performClick()
+        compose.onNodeWithTag("language_options").performScrollToNode(hasTestTag("language_option_SNOW_LEOPARD"))
+        compose.onNodeWithTag("language_option_SNOW_LEOPARD").assertIsDisplayed().assertIsSelected()
+        capture("language-snow-leopard-dark-large-text.png")
+    }
+
     private fun chineseCloseLabel(): String = context.createConfigurationContext(
         Configuration(context.resources.configuration).apply { setLocale(Locale.SIMPLIFIED_CHINESE) }
     ).getString(R.string.close)

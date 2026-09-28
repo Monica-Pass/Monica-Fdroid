@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_conflict_choice_effect">将使用所选版本解决冲突字段，包括存在冲突的删除状态。下次同步会把处理结果传到其他设备，请确认选择。</string>
+    <string name="mdbx_conflict_confirm_choice">确认选择</string>
+    <string name="mdbx_conflict_values_unavailable">暂不能预览两份历史值，请先在来源设备核对项目，再选择保留版本。</string>
+    <string name="mdbx_conflict_show_values">查看版本对比</string>
+    <string name="mdbx_conflict_version_help">本机：发生冲突时此设备的版本。\n传入：同步收到的版本，可能不是最新。</string>
+    <string name="mdbx_copy_parameters">复制参数</string>
+    <string name="mdbx_snapshot_retention_help">自动快照可能按保留策略清理；手动快照会保留，直到你将其删除。</string>
+</resources>

@@ -108,7 +108,6 @@ import kotlinx.serialization.json.Json
 import takagi.ru.monica.R
 import takagi.ru.monica.data.AddButtonBehaviorMode
 import takagi.ru.monica.data.AddButtonMenuAction
-import takagi.ru.monica.data.AppLauncherIcon
 import takagi.ru.monica.data.AuthenticatorCardDisplayField
 import takagi.ru.monica.data.AuthenticatorLayoutMode
 import takagi.ru.monica.data.ItemType
@@ -2463,13 +2462,6 @@ private data class IconSettingOption(
     val onCheckedChange: (Boolean) -> Unit
 )
 
-private data class AppLauncherIconOption(
-    val value: AppLauncherIcon,
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IconSettingsScreen(
@@ -2479,17 +2471,6 @@ fun IconSettingsScreen(
     val settings by viewModel.settings.collectAsState()
     var pageToggleExpanded by rememberSaveable { mutableStateOf(true) }
     var unmatchedStrategyExpanded by rememberSaveable { mutableStateOf(true) }
-
-    val appLauncherOptions = listOf(
-        AppLauncherIconOption(
-            value = AppLauncherIcon.MODERN,
-            title = stringResource(R.string.icon_settings_app_icon_modern_title),
-            subtitle = stringResource(R.string.icon_settings_app_icon_modern_subtitle),
-            icon = Icons.Default.Apps
-        )
-    )
-    val selectedAppLauncherLabel = appLauncherOptions.first().title
-        ?: appLauncherOptions.first().title
 
     val unmatchedStrategyOptions = listOf(
         UnmatchedIconHandlingStrategy.DEFAULT_ICON to stringResource(R.string.icon_settings_unmatched_strategy_default),
@@ -2548,6 +2529,12 @@ fun IconSettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            AppLauncherIconSettings(
+                selectedIcon = settings.appLauncherIcon,
+                language = settings.language,
+                onIconSelected = viewModel::updateAppLauncherIcon,
+            )
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(

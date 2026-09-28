@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_sort">排序方式</string>
+    <string name="vault_sort_scope">适用于全部项目、文件夹和搜索结果</string>
+    <string name="vault_sort_title_asc">名称：A → Z</string>
+    <string name="vault_sort_title_desc">名称：Z → A</string>
+    <string name="vault_sort_created_desc">创建时间：新 → 旧</string>
+    <string name="vault_sort_created_asc">创建时间：旧 → 新</string>
+    <string name="vault_sort_updated_desc">更新时间：新 → 旧</string>
+    <string name="vault_sort_updated_asc">更新时间：旧 → 新</string>
+    <string name="vault_sort_unknown_date">日期未知</string>
+</resources>

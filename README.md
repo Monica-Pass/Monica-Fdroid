@@ -65,6 +65,8 @@ Monica 是一个聚合 **Bitwarden** 与 **KeePass** 的本地密码库（Local 
 - 内置 TOTP: 在同一应用内完成密码与二次验证码管理。
 
 ### MDBX 本地数据库格式
+
+跨端开发与 AI 适配请先遵守 [Monica MDBX 存储兼容契约](docs/storage/MDBX-CROSS-CLIENT-CONTRACT.zh-CN.md)，其中区分了核心格式、业务类型、未知字段保留和同步验收要求。
 MDBX 是 Monica 正在推进的本地优先加密 vault 格式。它不是简单的密码表，而是围绕嵌套文件夹、附件、提交历史、冲突检测、tombstone 删除链路、快照恢复和 Tiga 安全模式设计的数据库格式。
 
 如果你要在其他客户端接入 MDBX，请先读 [MDBX workspace 说明](mdbx/README.md) 和 [MDBX 客户端接入指南](mdbx/CLIENT_INTEGRATION_GUIDE.zh-CN.md)。完整格式规范在 [mdbx/docs](mdbx/docs/README.zh-CN.md)。

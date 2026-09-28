@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vault_sort">Sort by</string>
+    <string name="vault_sort_scope">Applies to all items, folders and search results</string>
+    <string name="vault_sort_title_asc">Name: A → Z</string>
+    <string name="vault_sort_title_desc">Name: Z → A</string>
+    <string name="vault_sort_created_desc">Created: newest first</string>
+    <string name="vault_sort_created_asc">Created: oldest first</string>
+    <string name="vault_sort_updated_desc">Updated: newest first</string>
+    <string name="vault_sort_updated_asc">Updated: oldest first</string>
+    <string name="vault_sort_unknown_date">Unknown date</string>
+</resources>

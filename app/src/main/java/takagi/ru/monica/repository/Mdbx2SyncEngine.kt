@@ -103,7 +103,8 @@ internal data class Mdbx2SegmentApplyResult(
     val missingParentCount: UInt,
     // Both snapshots are captured under the same local lock as the Rust apply.
     val localCheckpointBefore: MdbxSyncCheckpointState,
-    val localCheckpointAfter: MdbxSyncCheckpointState
+    val localCheckpointAfter: MdbxSyncCheckpointState,
+    val missingStateDependencies: Boolean = false
 )
 
 internal enum class Mdbx2BlobAvailability {
@@ -200,12 +201,15 @@ private class NativeMdbx2SyncEngine(
                 expectedResume = expectedResume?.toFfi()
             )
         } catch (error: MdbxFfiException.Storage) {
-            // This FFI version throws after atomically rolling back a segment
-            // with missing parents. Defer only this exact dependency error;
-            // authentication, corruption and other storage errors stay fatal.
+            // Native apply rolls back the entire segment. Auxiliary state can
+            // reference objects/operations arriving in a different stream even
+            // when all commit parents are present. Neither failure acknowledges
+            // the segment; retry only after another stream has made progress.
             val missing = MISSING_PARENTS_DETAIL.matchEntire(error.detail)
                 ?.groupValues?.get(1)?.toUIntOrNull()
-                ?.takeIf { it > 0u } ?: throw error
+                ?.takeIf { it > 0u }
+            val missingState = error.detail == "database error: FOREIGN KEY constraint failed"
+            if (missing == null && !missingState) throw error
             val after = vault.incrementalSyncCheckpoint().toState()
             if (after != before) throw error
             return@mutate Mdbx2SegmentApplyResult(
@@ -214,9 +218,10 @@ private class NativeMdbx2SyncEngine(
                 appliedCommits = 0u,
                 skippedCommits = 0u,
                 conflictCount = 0u,
-                missingParentCount = missing,
+                missingParentCount = missing ?: 0u,
                 localCheckpointBefore = before,
-                localCheckpointAfter = after
+                localCheckpointAfter = after,
+                missingStateDependencies = missingState
             )
         }
         Mdbx2SegmentApplyResult(

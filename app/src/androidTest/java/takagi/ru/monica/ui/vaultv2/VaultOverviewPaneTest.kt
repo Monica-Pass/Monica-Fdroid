@@ -109,7 +109,7 @@ class VaultOverviewPaneTest {
             SideEffect { keyboardVisible = imeVisible }
             LaunchedEffect(settingsModel, followOverviewSettings) {
                 if (followOverviewSettings) settingsModel.settings.collect { persisted ->
-                    appSettings = appSettings.copy(vaultOverviewConfig = persisted.vaultOverviewConfig)
+                    appSettings = appSettings.copy(vaultOverviewConfig = persisted.vaultOverviewConfig, vaultListSort = persisted.vaultListSort)
                 }
             }
             MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
@@ -404,6 +404,105 @@ class VaultOverviewPaneTest {
         compose.waitUntil(10_000) { runBlocking { database.passwordEntryDao().getPasswordEntryById(1)?.isDeleted == true } }
         compose.waitUntil(10_000) { state.overviewSnapshot?.favorites?.none { it.key == "password:1" } == true }
         assertFalse(runBlocking { database.passwordEntryDao().getPasswordEntryById(2)!!.isDeleted })
+    }
+
+    @Test fun sortingChangesRealRowsAndSurvivesOverviewReturn() {
+        prepareSortEntries()
+        showPane(followOverviewSettings = true, expectedOverviewCount = 3)
+        openOverviewNode("overview_all_items")
+        awaitSortOrder(1, 3, 2)
+        openSortSheet()
+        sortScreenshot("vault-sort-sheet.png")
+        Espresso.pressBack()
+        awaitSortOrder(1, 3, 2)
+        listOf(
+            VaultListSort.TITLE_DESC to listOf(2, 3, 1),
+            VaultListSort.CREATED_DESC to listOf(1, 2, 3),
+            VaultListSort.CREATED_ASC to listOf(3, 2, 1),
+            VaultListSort.UPDATED_DESC to listOf(2, 3, 1),
+            VaultListSort.UPDATED_ASC to listOf(1, 3, 2),
+        ).forEach { (mode, ids) ->
+            chooseSort(mode)
+            awaitSortOrder(*ids.toIntArray())
+        }
+        chooseSort(VaultListSort.CREATED_DESC)
+        awaitSortOrder(1, 2, 3)
+        sortScreenshot("vault-sort-created.png")
+        Espresso.pressBack()
+        compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
+        openOverviewNode("overview_all_items")
+        awaitSortOrder(1, 2, 3)
+        assertEquals(VaultListSort.CREATED_DESC, runBlocking { SettingsManager(context).settingsFlow.first().vaultListSort })
+        runBlocking {
+            assertEquals(3000L, database.passwordEntryDao().getPasswordEntryById(1)!!.createdAt.time)
+            assertEquals(1000L, database.passwordEntryDao().getPasswordEntryById(1)!!.updatedAt.time)
+        }
+    }
+
+    @Test fun folderAndSearchUseSavedSortInHierarchicalLayout() {
+        prepareSortEntries()
+        runBlocking {
+            database.categoryDao().insert(Category(id = 144, name = "Sort fixture"))
+            listOf(1L, 2L).forEach { id ->
+                val entry = database.passwordEntryDao().getPasswordEntryById(id)!!
+                database.passwordEntryDao().updatePasswordEntry(entry.copy(categoryId = 144))
+            }
+        }
+        appSettings = appSettings.copy(vaultV2LayoutMode = VaultV2LayoutMode.HIERARCHICAL)
+        showPane(followOverviewSettings = true, expectedOverviewCount = 3)
+        compose.waitUntil(10_000) { state.overviewSnapshot?.folders?.any { it.name == "Sort fixture" } == true }
+        val key = state.overviewSnapshot!!.folders.first { it.name == "Sort fixture" }.key
+        openOverviewNode("overview_folder_$key")
+        chooseSort(VaultListSort.UPDATED_DESC)
+        awaitSortOrder(2, 1)
+        compose.onNodeWithTag("vault_item_password:3").assertDoesNotExist()
+        compose.onNodeWithContentDescription(context.getString(R.string.search)).performClick()
+        compose.onNode(hasSetTextAction()).performTextInput("fixture")
+        compose.onNode(hasSetTextAction()).performImeAction()
+        compose.waitUntil(5_000) { !keyboardVisible }
+        awaitSortOrder(2, 1)
+        compose.onNodeWithTag("vault_item_password:3").assertDoesNotExist()
+        sortScreenshot("vault-sort-folder-search.png")
+    }
+
+    private fun prepareSortEntries() = runBlocking {
+        settings.updateVaultListSort(VaultListSort.TITLE_ASC)
+        database.passwordEntryDao().deleteAllPasswordEntries()
+        listOf(
+            Triple("Alpha", 3, 1), Triple("Zebra", 2, 3), Triple("Beta", 1, 2),
+        ).forEachIndexed { index, (title, created, updated) ->
+            database.passwordEntryDao().insertPasswordEntry(PasswordEntry(
+                id = index + 1L, title = title, username = "fixture", website = "", password = "",
+                createdAt = java.util.Date(created * 1000L), updatedAt = java.util.Date(updated * 1000L)))
+        }
+    }
+
+    private fun openSortSheet() {
+        compose.onNodeWithContentDescription(context.getString(R.string.more_options)).performClick()
+        compose.onNodeWithTag("vault_sort_menu").performClick()
+        compose.onNodeWithTag("vault_sort_sheet").assertIsDisplayed()
+    }
+
+    private fun chooseSort(mode: VaultListSort) {
+        openSortSheet()
+        compose.onNodeWithTag("vault_sort_${mode.name}").performScrollTo().performClick()
+        compose.waitUntil(10_000) { appSettings.vaultListSort == mode }
+    }
+
+    private fun awaitSortOrder(vararg ids: Int) {
+        compose.waitUntil(15_000) {
+            val nodes = ids.map { id -> compose.onAllNodesWithTag("vault_item_password:$id").fetchSemanticsNodes().singleOrNull() }
+            nodes.all { it != null } && nodes.map { it!!.boundsInRoot.top }.zipWithNext().all { (a,b) -> a < b }
+        }
+        ids.forEach { compose.onNodeWithTag("vault_item_password:$it").assertIsDisplayed() }
+    }
+
+    private fun sortScreenshot(name: String) {
+        compose.waitForIdle()
+        Thread.sleep(400)
+        File(context.filesDir, name).outputStream().use {
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
     }
 
     private fun capture(name: String) {

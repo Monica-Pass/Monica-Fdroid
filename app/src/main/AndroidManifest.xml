@@ -181,6 +181,51 @@
             </intent-filter>
         </activity-alias>
 
+        <activity-alias
+            android:name=".BlueStarVisibleLauncherAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_blue_star"
+            android:roundIcon="@mipmap/ic_launcher_blue_star_round"
+            android:label="@string/app_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".BlueStarVisibleLauncherAliasMonica"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_blue_star"
+            android:roundIcon="@mipmap/ic_launcher_blue_star_round"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Easter-egg launcher entry shown while the Cheese Snow Leopard language is
+             selected. Always disabled here; AppLauncherIconManager toggles exactly one
+             visible alias on at runtime. -->
+        <activity-alias
+            android:name=".SnowLeopardVisibleLauncherAlias"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_snow_leopard"
+            android:roundIcon="@mipmap/ic_launcher_snow_leopard_round"
+            android:label="@string/app_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <service
             android:name=".transfer.DatabaseExportService"
             android:exported="false"

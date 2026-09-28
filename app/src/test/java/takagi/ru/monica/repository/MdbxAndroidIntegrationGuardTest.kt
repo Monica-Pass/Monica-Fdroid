@@ -206,7 +206,7 @@ class MdbxAndroidIntegrationGuardTest {
                     .contains("orphanPolicy = MdbxImportOrphanPolicy.APPLY_REMOTE_STATE") &&
                 viewModelSource.substringAfter("fun resolveConflict(")
                     .substringBefore("fun dismissConflictDialog()")
-                    .contains("importEntriesFromVault(databaseId)")
+                    .contains("importEntriesFromVault(databaseId, orphanPolicy = MdbxImportOrphanPolicy.APPLY_REMOTE_STATE)")
         )
     }
 

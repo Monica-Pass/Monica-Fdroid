@@ -42,6 +42,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Badge
@@ -121,6 +122,7 @@ import takagi.ru.monica.bitwarden.sync.isUserVisibleSyncInProgress
 import takagi.ru.monica.bitwarden.ui.BitwardenAutoSyncEffect
 import takagi.ru.monica.bitwarden.ui.UnlockVaultDialog
 import takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel
+import takagi.ru.monica.data.VaultListSort
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.CategorySelectionUiMode
 import takagi.ru.monica.data.VaultOverviewModule
@@ -418,6 +420,7 @@ internal data class VaultV2VisibleSnapshotKey(
 	val isArchiveView: Boolean,
 	val overviewItemType: VaultV2ItemType? = null,
 	val nativeOnly: Boolean = false,
+	val sort: VaultListSort = VaultListSort.TITLE_ASC,
 )
 
 private data class VaultV2SecondaryLists(
@@ -452,6 +455,7 @@ internal data class VaultV2VisibleListConfig(
 	val isArchiveView: Boolean,
 	val overviewItemType: VaultV2ItemType? = null,
 	val nativeOnly: Boolean = false,
+	val sort: VaultListSort = VaultListSort.TITLE_ASC,
 )
 
 private const val VAULT_V2_FAST_SCROLL_LOG_TAG = "VaultV2FastScroll"
@@ -1433,10 +1437,8 @@ internal fun buildVaultV2VisibleListState(
 			value.contains(config.normalizedQuery, ignoreCase = true)
 		}
 	}.toList()
-	val groupedItems = filteredItems.groupBy { item -> firstLetterGroup(item.sortKey) }
-	val sectionedItems = groupedItems.keys
-		.sortedWith(compareBy<String> { if (it == "#") 1 else 0 }.thenBy { it })
-		.map { section -> section to groupedItems[section].orEmpty() }
+	val sortedItems = sortVaultV2Items(filteredItems, config.sort)
+	val sectionedItems = buildVaultV2SortedSections(sortedItems, config.sort)
 	var itemStartIndex = 0
 	var lazyIndex = 0
 	val sectionLayouts = sectionedItems.map { (sectionTitle, itemsInSection) ->
@@ -1451,7 +1453,7 @@ internal fun buildVaultV2VisibleListState(
 		}
 	}
 	return VaultV2VisibleListState(
-		filteredItems = filteredItems,
+		filteredItems = sortedItems,
 		sectionedItems = sectionedItems,
 		sectionLayouts = sectionLayouts,
 	)
@@ -1620,6 +1622,7 @@ fun VaultV2Pane(
 	var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
 	var isStorageFilterSheetVisible by rememberSaveable { mutableStateOf(false) }
 	var isTopActionsMenuExpanded by rememberSaveable { mutableStateOf(false) }
+	var showSortSheet by rememberSaveable { mutableStateOf(false) }
 	var showBitwardenUnlockDialog by rememberSaveable { mutableStateOf(false) }
 	var showClearBitwardenCacheDialog by rememberSaveable { mutableStateOf(false) }
 	var nativeOnly by rememberSaveable { mutableStateOf(false) }
@@ -1704,6 +1707,20 @@ fun VaultV2Pane(
 	val quickStatusDeleteState by PasswordBatchDeleteProgressTracker.progress.collectAsState()
 	val database = remember(context) { PasswordDatabase.getDatabase(context) }
 	val isAuthenticated by passwordViewModel.isAuthenticated.collectAsState()
+	if (showSortSheet && isAuthenticated && !showOverview) {
+		VaultV2SortSheet(
+			sort = appSettings.vaultListSort,
+			onSelect = { sort ->
+				showSortSheet = false
+				if (sort != appSettings.vaultListSort) {
+					settingsViewModel.updateVaultListSort(sort)
+					state.requestScrollToTop()
+				}
+			},
+			onDismiss = { showSortSheet = false },
+		)
+	}
+	LaunchedEffect(isAuthenticated) { if (!isAuthenticated) showSortSheet = false }
 	val attachmentParentIds by database.attachmentDao()
 		.observeParentsWithActiveAttachments()
 		.collectAsState(initial = emptyList())
@@ -2765,6 +2782,7 @@ fun VaultV2Pane(
 	}
 	val overviewItemType = state.overviewItemType?.let { runCatching { VaultV2ItemType.valueOf(it) }.getOrNull() }
 	val visibleSnapshotKey = remember(
+		appSettings.vaultListSort,
 		overviewItemType,
 		nativeTokens.onlyTokens,
 		storageSelection,
@@ -2789,6 +2807,7 @@ fun VaultV2Pane(
 		state.isArchiveView,
 	) {
 		VaultV2VisibleSnapshotKey(
+			sort = appSettings.vaultListSort,
 			overviewItemType = overviewItemType,
 			nativeOnly = nativeTokens.onlyTokens,
 			storageSelection = storageSelection,
@@ -2829,6 +2848,7 @@ fun VaultV2Pane(
 		}
 	}
 	val visibleListConfig = remember(
+		appSettings.vaultListSort,
 		overviewItemType,
 		nativeTokens.onlyTokens,
 		storageSelection,
@@ -2853,6 +2873,7 @@ fun VaultV2Pane(
 		state.isArchiveView,
 	) {
 		VaultV2VisibleListConfig(
+			sort = appSettings.vaultListSort,
 			overviewItemType = overviewItemType,
 			nativeOnly = nativeTokens.onlyTokens,
 			storageSelection = storageSelection,
@@ -3005,8 +3026,10 @@ fun VaultV2Pane(
 		baseFilteredItems
 	}
 	// This page always shows individual rows, independently of password-page stack settings.
-	val sectionedItems = remember(showOverview, filteredItems) {
-		if (showOverview) emptyList() else buildVaultV2Sections(filteredItems)
+	val unknownSortDate = stringResource(R.string.vault_sort_unknown_date)
+	val sectionedItems = remember(showOverview, filteredItems, appSettings.vaultListSort, unknownSortDate) {
+		if (showOverview) emptyList() else buildVaultV2SortedSections(filteredItems, appSettings.vaultListSort)
+			.map { (title, items) -> title.ifEmpty { unknownSortDate } to items }
 	}
 	val showQuickFiltersInList = !state.isArchiveView && (hasVisibleQuickFilters || nativeTokens.visible)
 	val showCategoryQuickFiltersInList =
@@ -3110,7 +3133,7 @@ fun VaultV2Pane(
 				vaultV2SectionTitleForLazyIndex(
 					sectionLayouts = sectionLayouts,
 					lazyIndex = listState.firstVisibleItemIndex,
-				)?.take(2)?.uppercase(Locale.ROOT) ?: sectionLayouts.first().title
+				) ?: sectionLayouts.first().title
 			}
 		}
 	}
@@ -3542,6 +3565,10 @@ fun VaultV2Pane(
 						expanded = isAuthenticated && isTopActionsMenuExpanded,
 						onDismissRequest = { isTopActionsMenuExpanded = false }
 						) {
+							VaultV2SortMenuItem(appSettings.vaultListSort) {
+								isTopActionsMenuExpanded = false
+								showSortSheet = true
+							}
 							selectedKeePassDatabaseId?.let { keepassDatabaseId ->
 								KeepassRefreshTopActionsMenuItem(
 									onClick = {
@@ -3706,6 +3733,7 @@ fun VaultV2Pane(
 				VaultV2QuickStatusBar(
 					pathLabel = storageFilterLabel,
 					currentSectionLabel = currentSectionIndicatorLabel,
+					dateSort = !appSettings.vaultListSort.isAlphabetical,
 					breadcrumbs = pathBreadcrumbs,
 					currentFilter = categoryMenuFilter,
 					mdbxSyncState = mdbxQuickStatusSyncState,
@@ -3837,7 +3865,7 @@ fun VaultV2Pane(
 					vaultV2SectionTitleForLazyIndex(
 						sectionLayouts = sectionLayouts,
 						lazyIndex = lazyIndex,
-					)?.trim()?.take(2)?.uppercase(Locale.ROOT)
+					)?.trim()
 				},
 				onInteractionChange = state::updateFastScrollbarInteraction,
 			)
@@ -4783,6 +4811,7 @@ private fun VaultV2List(
 
 @Composable
 private fun VaultV2QuickStatusBar(
+	dateSort: Boolean,
 	pathLabel: String,
 	currentSectionLabel: String,
 	breadcrumbs: List<PasswordQuickFolderBreadcrumb>,
@@ -4806,7 +4835,7 @@ private fun VaultV2QuickStatusBar(
 	QuickStatusBar(
 		itemSpacing = 4.dp,
 		indicator = {
-			VaultV2QuickStatusIndicator(currentSectionLabel = currentSectionLabel)
+			VaultV2QuickStatusIndicator(currentSectionLabel = currentSectionLabel, dateSort = dateSort)
 		},
 		breadcrumb = {
 			VaultV2BreadcrumbPath(
@@ -4827,6 +4856,7 @@ private fun VaultV2QuickStatusBar(
 
 @Composable
 private fun VaultV2QuickStatusIndicator(
+	dateSort: Boolean,
 	currentSectionLabel: String
 ) {
 	Surface(
@@ -4838,7 +4868,9 @@ private fun VaultV2QuickStatusIndicator(
 		modifier = Modifier.size(32.dp)
 	) {
 		Box(contentAlignment = Alignment.Center) {
-			Text(
+			if (dateSort) {
+				Icon(Icons.Default.DateRange, contentDescription = currentSectionLabel, modifier = Modifier.size(20.dp))
+			} else Text(
 				text = currentSectionLabel.ifBlank { "#" },
 				style = MaterialTheme.typography.labelLarge,
 				fontWeight = FontWeight.SemiBold,
