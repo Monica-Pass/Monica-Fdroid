@@ -36,6 +36,15 @@
           "crates/mdbx-storage/src/repo/operation_coordinator.rs": "1e729e00255f030ea201556029ae7d1427faf4c9aa1ea8f259001d94d164fe73",
           "crates/mdbx-ffi/src/sync_facade.rs": "2c4db43550b8f3b81cc4d16c733fc635013e8b9d070b1bfaf17f6b40695fbfc3"
         }
+      },
+      {
+        "base_commit": "90005c8c608c952093a4522ffa507a562e2e39a4",
+        "patch": "patches/90005c8-json-precision.patch",
+        "patch_sha256": "e0fb20c6c44a8a9237fb5e9cd6a011673303188073ef115f8ffadd1d94233d37",
+        "files": {
+          "Cargo.toml": "a957865c151120d18f527c861c7c457f9c24ebeab75bf0b5579c6be08600af37"
+        },
+        "description": "Enable serde_json arbitrary_precision so FFI reads and writes preserve JSON integer and decimal lexemes. No FFI or storage schema change."
       }
     ]
   },
@@ -55,6 +64,9 @@
   },
   "verification": {
     "source_hashes": "Vendored files use LF-normalized SHA-256; upstream_file_hashes retain the original Android working-tree hashes. Source content matches after newline normalization.",
-    "fdroid_build": "Not run; user requested source changes and submission only."
+    "fdroid_build": "Gradle source build, debug APK and instrumentation APK passed. 210 JVM and 5 actual APK device tests passed; independent CLI return passed. All three stripped native ABI outputs equal main runtime. Cargo used incremental cache.",
+    "runtime_contract_date": "2026-09-28",
+    "environment": "Monica_Issue136_API_32, API32 x86_64 emulator; isolated harness x86_64, actual APK arm64-v8a via native bridge",
+    "scope_limits": "No physical device or live cloud; historical Android adapters outside selected regressions are not certified."
   }
 }
