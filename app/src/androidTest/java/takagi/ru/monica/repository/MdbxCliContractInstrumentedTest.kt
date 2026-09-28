@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
+import java.util.zip.ZipInputStream
 import kotlinx.serialization.json.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -15,27 +16,83 @@ import uniffi.mdbx_ffi.*
 @RunWith(AndroidJUnit4::class)
 class MdbxCliContractInstrumentedTest {
     @Test fun cliObjectsVersionsBlobsAndPortableCopiesRoundtripThroughPackagedRuntime() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val input = File(context.filesDir, "mdbx-cli-contract-input")
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val arguments = InstrumentationRegistry.getArguments()
+        val temporary = File(context.cacheDir, "mdbx-cli-contract-${UUID.randomUUID()}")
+        check(temporary.mkdirs())
+        try {
+            fun privatePath(value: String): File = File(value).canonicalFile.also { file ->
+                check(listOf(context.filesDir, context.cacheDir).any { parent ->
+                    file.path.startsWith(parent.canonicalPath + File.separator)
+                }) { "Contract paths must stay inside the test app's private directories" }
+            }
+            val destination = arguments.getString("monicaContractOutputDir")?.let(::privatePath)
+            check(destination == null || !destination.exists()) { "Choose a new explicit contract output directory" }
+            val input = arguments.getString("monicaContractInputDir")?.let(::privatePath)
+                ?: File(temporary, "input").also { folder ->
+                    check(folder.mkdirs())
+                    ZipInputStream(instrumentation.context.assets.open("mdbx-cli-contract-v1.zip")).use { zip ->
+                        var total = 0L
+                        while (true) {
+                            val entry = zip.nextEntry ?: break
+                            val file = File(folder, entry.name).canonicalFile
+                            check(file.path.startsWith(folder.canonicalPath + File.separator))
+                            if (entry.isDirectory) {
+                                check(file.mkdirs() || file.isDirectory)
+                            } else {
+                                check(file.parentFile!!.mkdirs() || file.parentFile!!.isDirectory)
+                                file.outputStream().use { output ->
+                                    val buffer = ByteArray(8192)
+                                    while (true) {
+                                        val count = zip.read(buffer)
+                                        if (count < 0) break
+                                        total += count
+                                        check(total <= 16 * 1024 * 1024) { "Synthetic fixture is too large" }
+                                        output.write(buffer, 0, count)
+                                    }
+                                }
+                            }
+                            zip.closeEntry()
+                        }
+                    }
+                }
+            val output = File(temporary, "output").apply { check(mkdirs()) }
+            runContract(input, output, temporary)
+            if (destination != null) check(output.copyRecursively(destination))
+        } finally {
+            check(temporary.deleteRecursively())
+        }
+    }
+
+    private fun runContract(input: File, output: File, workingDirectory: File) {
         val manifest = Json.parseToJsonElement(File(input, "manifest.json").readText()).jsonObject
         val password = manifest.getValue("password").jsonPrimitive.content
+        check(password == "Synthetic cross-client contract 20260928!") { "Only synthetic contract fixtures are accepted" }
         val expected = manifest.getValue("objects").jsonArray
         val attachment = manifest.getValue("attachment").jsonObject
         val parent = manifest.getValue("parent").jsonPrimitive.content
         val child = manifest.getValue("child").jsonPrimitive.content
-        val output = File(context.filesDir, "mdbx-cli-contract-output").apply { mkdirs() }
         Mdbx2NativeRuntime.ensureLoaded()
         fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).toList()
         for (name in listOf("fixture.mdbx", "portable.mdbx")) {
             val original = File(input, name)
             val before = hash(original)
-            val working = File(output, "work-${UUID.randomUUID()}.mdbx")
+            val working = File(workingDirectory, "work-${UUID.randomUUID()}.mdbx")
             original.copyTo(working)
             File(input, "$name.blobs").copyRecursively(File("${working.absolutePath}.blobs"))
-            assertTrue(runCatching { openVault(working.absolutePath, "wrong-synthetic-password", "negative-control") }.isFailure)
+            val wrongPassword = runCatching {
+                openVault(working.absolutePath, "wrong-synthetic-password", "negative-control").use {
+                    fail("Wrong password unexpectedly opened the vault")
+                }
+            }.exceptionOrNull()
+            assertTrue("Expected the native authentication error", wrongPassword is MdbxFfiException.Storage)
+            assertEquals("validation error: incorrect credential",
+                (wrongPassword as MdbxFfiException.Storage).detail)
             val native = openVault(working.absolutePath, password, "android-contract-reader")
-            val androidId = UUID.randomUUID().toString()
-            val deleted = UUID.randomUUID().toString()
+            val androidPlan = manifest.getValue("android").jsonObject
+            val androidId = androidPlan.getValue("id").jsonPrimitive.content
+            val deleted = androidPlan.getValue("deleted").jsonPrimitive.content
             val cliToken = expected.map { it.jsonObject }.single {
                 it.getValue("type").jsonPrimitive.content == "api-token" &&
                     it.getValue("version").jsonPrimitive.int == 1
@@ -45,7 +102,7 @@ class MdbxCliContractInstrumentedTest {
                 Json.parseToJsonElement(cliToken.getValue("payload").jsonPrimitive.content).jsonObject.forEach { (key, value) -> put(key, value) }
                 put("note", "Android roundtrip")
             }.toString()
-            val androidPayload = """{"schema":"monica.gateway.credential.v1","name":"android-fixture","provider":"github","api_base":"https://api.github.com","token":"synthetic-android-no-access-token","note":"Android edited","androidExtension":{"null":null,"bits":[0,false]}}"""
+            val androidPayload = """{"schema":"monica.gateway.credential.v1","name":"android-fixture","provider":"github","api_base":"https://api.github.com","token":"synthetic-android-no-access-token","note":"Android edited","androidExtension":{"null":null,"bits":[0,false],"literal":{"${'$'}serde_json::private::Number":"123"},"decimal":1.2345678901234567890123456789}}"""
             try {
                 val categories = native.listCollectionSummaries(100u, null).items
                 assertEquals(parent, categories.single { it.collectionId == child }.groupId)
@@ -84,7 +141,7 @@ class MdbxCliContractInstrumentedTest {
                 assertFalse(native.listObjectSummaries(child, null, 100u, null).items.any { it.objectId == deleted })
             } finally { native.close() }
             val returned = File(output, "android-$name")
-            check(!returned.exists()) { "Use a fresh synthetic output directory" }
+            check(!returned.exists())
             createPortableBackup(working.absolutePath, returned.absolutePath)
             File("${working.absolutePath}.blobs").copyRecursively(File("${returned.absolutePath}.blobs"))
             val reopened = openVault(returned.absolutePath, password, "android-independent-copy-reader")
@@ -92,11 +149,6 @@ class MdbxCliContractInstrumentedTest {
                 assertEquals(parent, reopened.revealObject(androidId).`object`!!.collectionId)
                 assertEquals(Json.parseToJsonElement(androidPayload), Json.parseToJsonElement(reopened.revealObject(androidId).`object`!!.payloadJson))
             } finally { reopened.close() }
-            File(output, "android-$name.json").writeText(buildJsonObject {
-                put("id", androidId); put("collection", parent); put("payload", androidPayload)
-                put("deleted", deleted); put("cliId", cliId); put("cliPayload", cliPayload)
-                put("cliCollection", child)
-            }.toString())
             assertEquals(before, hash(original))
         }
     }

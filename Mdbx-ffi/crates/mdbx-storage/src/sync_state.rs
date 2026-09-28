@@ -74,7 +74,7 @@ impl Default for SyncStateLimits {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct SyncStatePayload {
     pub format: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -114,6 +114,67 @@ pub struct SyncStatePayload {
     #[serde(flatten, default, skip_serializing_if = "BTreeMap::is_empty")]
     pub extensions: BTreeMap<String, serde_json::Value>,
 }
+
+// Avoid serde's flattened Value buffering: extension keys are literal JSON,
+// including keys that serde uses internally for Number and RawValue.
+impl<'de> Deserialize<'de> for SyncStatePayload {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::{Error, MapAccess, Visitor};
+        use serde_json::value::RawValue;
+        struct RawFields;
+        impl<'de> Visitor<'de> for RawFields {
+            type Value = BTreeMap<String, Box<RawValue>>;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a sync state object")
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let mut fields = BTreeMap::new();
+                while let Some((key, value)) = map.next_entry::<String, Box<RawValue>>()? {
+                    if fields.insert(key, value).is_some() {
+                        return Err(A::Error::custom("duplicate sync state field"));
+                    }
+                }
+                Ok(fields)
+            }
+        }
+        fn take<T: serde::de::DeserializeOwned, E: serde::de::Error>(
+            fields: &mut BTreeMap<String, Box<RawValue>>,
+            key: &'static str,
+            required: bool,
+        ) -> Result<T, E> {
+            match fields.remove(key) {
+                Some(raw) => serde_json::from_str(raw.get()).map_err(E::custom),
+                None if required => Err(E::missing_field(key)),
+                None => serde_json::from_str("null").map_err(E::custom),
+            }
+        }
+        let mut fields = deserializer.deserialize_map(RawFields)?;
+        Ok(Self {
+            format: take(&mut fields, "format", true)?,
+            key_epoch_state: take(&mut fields, "key_epoch_state", false)?,
+            tiga_vault_state: take(&mut fields, "tiga_vault_state", false)?,
+            tiga_policy_overrides: take(&mut fields, "tiga_policy_overrides", false)?,
+            tiga_policy_exceptions: take(&mut fields, "tiga_policy_exceptions", false)?,
+            security_audit_events: take(&mut fields, "security_audit_events", false)?,
+            projects: take(&mut fields, "projects", true)?,
+            entries: take(&mut fields, "entries", true)?,
+            object_relations: take(&mut fields, "object_relations", false)?,
+            object_labels: take(&mut fields, "object_labels", false)?,
+            object_label_assignments: take(&mut fields, "object_label_assignments", false)?,
+            attachments: take(&mut fields, "attachments", true)?,
+            attachment_chunks: take(&mut fields, "attachment_chunks", true)?,
+            project_tags: take(&mut fields, "project_tags", false)?,
+            tombstones: take(&mut fields, "tombstones", false)?,
+            tombstone_acknowledgements: take(&mut fields, "tombstone_acknowledgements", false)?,
+            purge_receipts: take(&mut fields, "purge_receipts", false)?,
+            branches: take(&mut fields, "branches", true)?,
+            extensions: fields.into_iter().map(|(key, raw)| {
+                mdbx_core::json::from_str(raw.get()).map(|value| (key, value)).map_err(D::Error::custom)
+            }).collect::<Result<_, _>>()?,
+        })
+    }
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct KeyEpochState {
@@ -473,7 +534,7 @@ pub(crate) fn load_sync_state_extensions(
     let mut extensions = BTreeMap::new();
     for row in rows {
         let (key, value_json) = row?;
-        let value = serde_json::from_slice(&value_json).map_err(|error| {
+        let value = mdbx_core::json::from_slice(&value_json).map_err(|error| {
             rusqlite::Error::FromSqlConversionFailure(
                 1,
                 rusqlite::types::Type::Blob,
@@ -1466,6 +1527,21 @@ mod tests {
         writer.write_all(b"1234").unwrap();
         assert!(writer.write_all(b"5").is_err());
         assert_eq!(writer.bytes, b"1234");
+    }
+
+    #[test]
+    fn literal_extension_keys_and_precise_numbers_survive_state_roundtrip() {
+        let (conn, _) = setup();
+        let mut state = collect_sync_state(&conn).unwrap();
+        let literal = mdbx_core::json::from_str(r#"{"$serde_json::private::Number":"123","nested":{"$serde_json::private::RawValue":"null"},"n":123456789012345678901234567890,"f":1.2345678901234567890123456789}"#).unwrap();
+        state.extensions.insert("com.example.future".into(), literal.clone());
+        let encoded = serialize_state_bounded(&state, SyncStateLimits::default()).unwrap();
+        let decoded: SyncStatePayload = serde_json::from_slice(&encoded).unwrap();
+        assert_eq!(decoded.extensions["com.example.future"], literal);
+        let reencoded = serialize_state_bounded(&decoded, SyncStateLimits::default()).unwrap();
+        assert_eq!(encoded, reencoded);
+        let duplicate = String::from_utf8(encoded.clone()).unwrap().replacen("{", "{\"format\":\"duplicate\",", 1);
+        assert!(serde_json::from_str::<SyncStatePayload>(&duplicate).is_err());
     }
 
     #[test]

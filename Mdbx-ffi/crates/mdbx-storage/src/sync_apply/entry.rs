@@ -297,7 +297,7 @@ fn entry_payload_json(
     payload_ct: &[u8],
 ) -> StorageResult<serde_json::Value> {
     let plaintext = EntryRepo::decrypt_payload_blob(conn, entry_id, payload_ct)?;
-    serde_json::from_slice(&plaintext).map_err(|e| {
+    mdbx_core::json::from_slice(&plaintext).map_err(|e| {
         StorageError::Validation(format!(
             "entry {} payload is not valid JSON: {}",
             entry_id, e

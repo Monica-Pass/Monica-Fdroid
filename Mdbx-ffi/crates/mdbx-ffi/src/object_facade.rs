@@ -381,11 +381,11 @@ pub(crate) fn parse_relation_kind(relation_kind: &str) -> Result<RelationKindId,
 }
 
 pub(crate) fn parse_payload_json(payload_json: &str) -> Result<serde_json::Value, MdbxFfiError> {
-    serde_json::from_str(payload_json).map_err(MdbxFfiError::from)
+    mdbx_core::json::from_str(payload_json).map_err(MdbxFfiError::from)
 }
 
 fn entry_record_from_entry(entry: &mdbx_core::model::Entry) -> Result<EntryRecord, MdbxFfiError> {
-    let payload: serde_json::Value = serde_json::from_slice(&entry.payload_ct)?;
+    let payload: serde_json::Value = mdbx_core::json::from_slice(&entry.payload_ct)?;
     Ok(EntryRecord {
         entry_id: entry.entry_id.clone(),
         project_id: entry.project_id.clone(),
@@ -404,7 +404,7 @@ fn entry_record_from_entry(entry: &mdbx_core::model::Entry) -> Result<EntryRecor
 fn object_record_from_entry(
     entry: &mdbx_core::model::Entry,
 ) -> Result<MdbxObjectRecord, MdbxFfiError> {
-    let payload: serde_json::Value = serde_json::from_slice(&entry.payload_ct)?;
+    let payload: serde_json::Value = mdbx_core::json::from_slice(&entry.payload_ct)?;
     Ok(MdbxObjectRecord {
         object_id: entry.entry_id.clone(),
         collection_id: entry.project_id.clone(),
@@ -470,7 +470,7 @@ fn object_summary_from_core(summary: ObjectSummary) -> MdbxObjectSummary {
 fn object_relation_record(
     relation: &mdbx_core::model::ObjectRelation,
 ) -> Result<MdbxObjectRelationRecord, MdbxFfiError> {
-    let payload: serde_json::Value = serde_json::from_slice(&relation.payload_ct)?;
+    let payload: serde_json::Value = mdbx_core::json::from_slice(&relation.payload_ct)?;
     Ok(MdbxObjectRelationRecord {
         relation_id: relation.relation_id.clone(),
         source_object_id: relation.source_object_id.clone(),
@@ -516,7 +516,7 @@ fn object_label_record(
         String::from_utf8(label.name_ct.clone()).map_err(|error| MdbxFfiError::Serialization {
             message: error.to_string(),
         })?;
-    let payload: serde_json::Value = serde_json::from_slice(&label.payload_ct)?;
+    let payload: serde_json::Value = mdbx_core::json::from_slice(&label.payload_ct)?;
     Ok(MdbxObjectLabelRecord {
         label_id: label.label_id.clone(),
         collection_id: label.collection_id.clone(),

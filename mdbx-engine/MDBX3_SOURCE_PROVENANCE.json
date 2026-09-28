@@ -3,7 +3,7 @@
   "upstream_android_commit": "cc9ecaaa1a2cb10d55e0d4506a8c824386b96452",
   "source": {
     "repository": "https://github.com/Monica-Pass/Mdbx",
-    "commit": "d1d3cc4fdff4e33fcb70099b3e7df36eeae43ba4",
+    "commit": "90005c8c608c952093a4522ffa507a562e2e39a4",
     "tree": "15559f82628560cb4020a2b54aa9aa16651add9e",
     "build_script_fix": "90005c8c608c952093a4522ffa507a562e2e39a4",
     "local_overlay": {
@@ -45,8 +45,40 @@
           "Cargo.toml": "a957865c151120d18f527c861c7c457f9c24ebeab75bf0b5579c6be08600af37"
         },
         "description": "Enable serde_json arbitrary_precision so FFI reads and writes preserve JSON integer and decimal lexemes. No FFI or storage schema change."
+      },
+      {
+        "base_commit": "90005c8c608c952093a4522ffa507a562e2e39a4",
+        "patch": "patches/90005c8-json-literal-keys.patch",
+        "patch_sha256": "8ce59d57462f33d6b5d5cd914b54b03aeb14baab9f2834d4ee30607b31df83b3",
+        "files": {
+          "Cargo.toml": "8e4cfc3d0da2b1b182a62d33611dead8da92db5f3c678cf1a021cebe9f3ef931",
+          "crates/mdbx-core/src/lib.rs": "87f151875952e1ad8fff19111208f8da90fd08b7fe31267c4d4dfd89c9bcf6d2",
+          "crates/mdbx-core/src/json.rs": "0c87f40be5b85a69528e1c9f6f5e60f4a4af531fa2259e722b5a8f90258e90ec",
+          "crates/mdbx-ffi/src/object_facade.rs": "8ddb80eb7e7499884161bef1909c3203391a5f3b64a0e19266bf3b110f3436a7",
+          "crates/mdbx-storage/src/import/kdbx_export.rs": "e27f426b61b79bd4568facc3776a1750bededa121131a58a7429ce7afaab8a92",
+          "crates/mdbx-storage/src/repo/operation_coordinator.rs": "9fddbfe35e468225962c9811ed53de65dfe1a4d30697d434beed9018cea9854a",
+          "crates/mdbx-storage/src/sync_apply/entry.rs": "9ea4e7db177add6da77be6db60d63ba9c2a3fd53b5556767a2b75a1465d686c7",
+          "crates/mdbx-storage/src/sync_state.rs": "667b29478f4faf5e6fb92a3d724fecc06fd6b6ee9385c7b94309608c456502f9"
+        },
+        "hash_encoding": "UTF-8, LF-normalized",
+        "description": "Shared lossless JSON parser preserves literal internal-marker keys and precise numbers in FFI, writes, merges, exports and sync extensions. No FFI or database schema change."
       }
-    ]
+    ],
+    "final_overlay_files": {
+      "Cargo.toml": "8e4cfc3d0da2b1b182a62d33611dead8da92db5f3c678cf1a021cebe9f3ef931",
+      "crates/mdbx-core/src/lib.rs": "87f151875952e1ad8fff19111208f8da90fd08b7fe31267c4d4dfd89c9bcf6d2",
+      "crates/mdbx-core/src/json.rs": "0c87f40be5b85a69528e1c9f6f5e60f4a4af531fa2259e722b5a8f90258e90ec",
+      "crates/mdbx-ffi/src/object_facade.rs": "8ddb80eb7e7499884161bef1909c3203391a5f3b64a0e19266bf3b110f3436a7",
+      "crates/mdbx-storage/src/import/kdbx_export.rs": "e27f426b61b79bd4568facc3776a1750bededa121131a58a7429ce7afaab8a92",
+      "crates/mdbx-storage/src/repo/operation_coordinator.rs": "9fddbfe35e468225962c9811ed53de65dfe1a4d30697d434beed9018cea9854a",
+      "crates/mdbx-storage/src/sync_apply/entry.rs": "9ea4e7db177add6da77be6db60d63ba9c2a3fd53b5556767a2b75a1465d686c7",
+      "crates/mdbx-storage/src/sync_state.rs": "667b29478f4faf5e6fb92a3d724fecc06fd6b6ee9385c7b94309608c456502f9"
+    },
+    "previous_source_identity": {
+      "commit": "d1d3cc4fdff4e33fcb70099b3e7df36eeae43ba4",
+      "tree": "15559f82628560cb4020a2b54aa9aa16651add9e",
+      "build_script_fix": "90005c8c608c952093a4522ffa507a562e2e39a4"
+    }
   },
   "runtime": {
     "name": "MDBX3",
@@ -63,10 +95,49 @@
     "prebuilt_libraries": false
   },
   "verification": {
-    "source_hashes": "Vendored files use LF-normalized SHA-256; upstream_file_hashes retain the original Android working-tree hashes. Source content matches after newline normalization.",
-    "fdroid_build": "Gradle source build, debug APK and instrumentation APK passed. 210 JVM and 5 actual APK device tests passed; independent CLI return passed. All three stripped native ABI outputs equal main runtime. Cargo used incremental cache.",
-    "runtime_contract_date": "2026-09-28",
-    "environment": "Monica_Issue136_API_32, API32 x86_64 emulator; isolated harness x86_64, actual APK arm64-v8a via native bridge",
-    "scope_limits": "No physical device or live cloud; historical Android adapters outside selected regressions are not certified."
-  }
+    "validated_at": "2026-09-28",
+    "status": "passed-scoped-review-fix-validation",
+    "environment": "Monica_Issue136_API_32, API 32, x86_64; actual ARM64 APK via native bridge",
+    "app_version": "1.0.314",
+    "packaged_native_sha256": "836d4638679d7a85c00488c2de687d47507c4b6d2613b898b6fc28a530d78347",
+    "jvm_tests": 210,
+    "actual_app_device_regressions": 5,
+    "default_contract_repeat": 1,
+    "dynamic_contract_test": 1,
+    "cli_return_verification": "passed, two outputs, each with three corruption rejection controls",
+    "shared_core_rust_tests": 965,
+    "verified_api_checksums": 239,
+    "isolated_harness_tests": 5,
+    "physical_device_validation": "not-run",
+    "live_cloud_validation": "not-run",
+    "source_reconstruction": "167 Rust/Cargo files match exact archive plus four overlays after LF normalization",
+    "scope_limits": "Not a full historical Android Adapter audit; no independent clean-build reproducibility claim.",
+    "native_artifacts": {
+      "x86_64": {
+        "source_build_sha256": "03e8e5ac3dc3184884885d86c151d5f8269af442e5067672491ba9d4529b26d8",
+        "normalized_sha256": "78c0badc8839559d8c019d4b0965c09c502ceda48e3c9e5a9ef7f3f5e1678e15",
+        "matches_main_after_same_strip": true
+      },
+      "arm64-v8a": {
+        "source_build_sha256": "836d4638679d7a85c00488c2de687d47507c4b6d2613b898b6fc28a530d78347",
+        "normalized_sha256": "11f9cbb9dd82e5928211ff4a144fab2ec7fbb5038128d3a0842e5a38fd9b8c0f",
+        "matches_main_after_same_strip": true
+      },
+      "armeabi-v7a": {
+        "source_build_sha256": "525bf6ea9433369ed256e35724a3f0d71c15293c46baefedc3db42c02795af72",
+        "normalized_sha256": "471776c55fdcdfefab053ef43dff6cc43bdd1808f5a73a1d9d68a5d7524ce6cd",
+        "matches_main_after_same_strip": true
+      }
+    },
+    "cache": "Cargo target cache reused; raw F-Droid APK library keeps extra symbol metadata, identical after the same llvm-strip command"
+  },
+  "verification_history": [
+    {
+      "source_hashes": "Vendored files use LF-normalized SHA-256; upstream_file_hashes retain the original Android working-tree hashes. Source content matches after newline normalization.",
+      "fdroid_build": "Gradle source build, debug APK and instrumentation APK passed. 210 JVM and 5 actual APK device tests passed; independent CLI return passed. All three stripped native ABI outputs equal main runtime. Cargo used incremental cache.",
+      "runtime_contract_date": "2026-09-28",
+      "environment": "Monica_Issue136_API_32, API32 x86_64 emulator; isolated harness x86_64, actual APK arm64-v8a via native bridge",
+      "scope_limits": "No physical device or live cloud; historical Android adapters outside selected regressions are not certified."
+    }
+  ]
 }

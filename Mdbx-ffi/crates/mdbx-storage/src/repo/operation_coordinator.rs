@@ -873,7 +873,7 @@ impl TryFrom<&WriteCommand> for PreparedWriteCommand {
                     project_id: project_id.clone(),
                     entry_type: parse_object_type_id(entry_type)?,
                     title: title.clone(),
-                    payload: serde_json::from_str(payload_json)?,
+                    payload: mdbx_core::json::from_str(payload_json)?,
                 })
             }
             WriteCommand::UpdateEntry {
@@ -890,7 +890,7 @@ impl TryFrom<&WriteCommand> for PreparedWriteCommand {
                     project_id: project_id.clone(),
                     entry_type: parse_object_type_id(entry_type)?,
                     title: title.clone(),
-                    payload: serde_json::from_str(payload_json)?,
+                    payload: mdbx_core::json::from_str(payload_json)?,
                 })
             }
             WriteCommand::DeleteEntry {
@@ -954,7 +954,7 @@ impl TryFrom<&WriteCommand> for PreparedWriteCommand {
                     source_object_id: source_object_id.clone(),
                     target_object_id: target_object_id.clone(),
                     relation_kind,
-                    payload: serde_json::from_str(payload_json)?,
+                    payload: mdbx_core::json::from_str(payload_json)?,
                     payload_schema_version: *payload_schema_version,
                 })
             }
@@ -970,7 +970,7 @@ impl TryFrom<&WriteCommand> for PreparedWriteCommand {
                 Ok(Self::UpdateObjectRelation {
                     relation_id: relation_id.clone(),
                     relation_kind,
-                    payload: serde_json::from_str(payload_json)?,
+                    payload: mdbx_core::json::from_str(payload_json)?,
                     payload_schema_version: *payload_schema_version,
                 })
             }
@@ -995,7 +995,7 @@ impl TryFrom<&WriteCommand> for PreparedWriteCommand {
                     label_id: label_id.clone(),
                     collection_id: collection_id.clone(),
                     name: name.clone(),
-                    payload: serde_json::from_str(payload_json)?,
+                    payload: mdbx_core::json::from_str(payload_json)?,
                     payload_schema_version: *payload_schema_version,
                 })
             }
@@ -1011,7 +1011,7 @@ impl TryFrom<&WriteCommand> for PreparedWriteCommand {
                 Ok(Self::UpdateObjectLabel {
                     label_id: label_id.clone(),
                     name: name.clone(),
-                    payload: serde_json::from_str(payload_json)?,
+                    payload: mdbx_core::json::from_str(payload_json)?,
                     payload_schema_version: *payload_schema_version,
                 })
             }

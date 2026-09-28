@@ -199,7 +199,7 @@ impl KdbxExporter {
         Option<String>,
         Vec<(String, String)>,
     ) {
-        let payload: serde_json::Value = match serde_json::from_slice(&entry.payload_ct) {
+        let payload: serde_json::Value = match mdbx_core::json::from_slice(&entry.payload_ct) {
             Ok(v) => v,
             Err(e) => {
                 warnings.push(format!("failed to parse login payload: {}", e));
@@ -242,7 +242,7 @@ impl KdbxExporter {
 
     /// 从 Note entry 的 payload 中提取文本内容。
     fn extract_note_text(entry: &mdbx_core::model::Entry, warnings: &mut Vec<String>) -> String {
-        let payload: serde_json::Value = match serde_json::from_slice(&entry.payload_ct) {
+        let payload: serde_json::Value = match mdbx_core::json::from_slice(&entry.payload_ct) {
             Ok(v) => v,
             Err(e) => {
                 warnings.push(format!("failed to parse note payload: {}", e));
