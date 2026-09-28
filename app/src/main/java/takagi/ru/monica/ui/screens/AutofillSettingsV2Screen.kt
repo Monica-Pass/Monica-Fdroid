@@ -1126,7 +1126,7 @@ private fun OtpDurationDialog(
     val options = listOf(15, 30, 60, 120)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.autofill_otp_notification_duration)) },
+        title = { Text(text = stringResource(R.string.autofill_otp_notification_duration), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.autofill_otp_notification_duration))) },
         text = {
             Column(
                 modifier = Modifier

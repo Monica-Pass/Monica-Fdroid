@@ -413,8 +413,7 @@ fun AddButtonCustomizationScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.add_button_mode_title),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                            style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.add_button_mode_title)))
                         Text(
                             text = stringResource(R.string.add_button_mode_subtitle),
                             style = MaterialTheme.typography.bodySmall,
@@ -454,8 +453,7 @@ fun AddButtonCustomizationScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.add_button_actions_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                                style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.add_button_actions_title)))
                             Text(
                                 text = stringResource(R.string.add_button_actions_desc),
                                 style = MaterialTheme.typography.bodySmall,
@@ -1053,8 +1051,7 @@ fun PasswordListCustomizationScreen(
                                     Text(
                                         text = stringResource(R.string.password_list_quick_access_switch_title),
                                         style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                                    )
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer)
                                 }
                             }
                         }
@@ -1287,7 +1284,7 @@ private fun PageAdjustmentEntryCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
@@ -1543,8 +1540,7 @@ fun PasswordCardAdjustmentScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.password_card_show_authenticator_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                        style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_show_authenticator_title)))
                     Text(
                         text = stringResource(R.string.password_card_show_authenticator_desc),
                         style = MaterialTheme.typography.bodySmall,
@@ -1594,8 +1590,7 @@ fun PasswordCardAdjustmentScreen(
                                     MaterialTheme.colorScheme.onSurface
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
+                                }, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_hide_other_content_when_authenticator_title)))
                             Text(
                                 text = stringResource(R.string.password_card_hide_other_content_when_authenticator_desc),
                                 style = MaterialTheme.typography.bodySmall,
@@ -1618,8 +1613,7 @@ fun PasswordCardAdjustmentScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.stack_mode_menu_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                        style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.stack_mode_menu_title)))
                     SingleChoiceSegmentedButtonRow(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1668,7 +1662,7 @@ fun PasswordCardAdjustmentScreen(
                         Text(
                             text = stringResource(R.string.group_mode_menu_title),
                             style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.settingsSearchAnchor(stringResource(R.string.group_mode_menu_title)).weight(1f)
                         )
                         Icon(
                             imageVector = if (groupModeExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -1778,8 +1772,7 @@ fun PasswordCardAdjustmentScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.website_stack_match_mode_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                        style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.website_stack_match_mode_title)))
                     Text(
                         text = stringResource(R.string.website_stack_match_mode_desc),
                         style = MaterialTheme.typography.bodySmall,
@@ -1818,8 +1811,7 @@ fun PasswordCardAdjustmentScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.password_card_display_mode_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                        style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_display_mode_title)))
                     Text(
                         text = stringResource(R.string.password_card_display_field_desc),
                         style = MaterialTheme.typography.bodySmall,
@@ -2118,7 +2110,7 @@ fun AuthenticatorCardAdjustmentScreen(
 
                     ListItem(
                         headlineContent = {
-                            Text(text = stringResource(R.string.unified_progress_bar_title))
+                            Text(text = stringResource(R.string.unified_progress_bar_title), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.unified_progress_bar_title)))
                         },
                         supportingContent = {
                             Text(text = stringResource(R.string.unified_progress_bar_description))
@@ -2154,7 +2146,7 @@ fun AuthenticatorCardAdjustmentScreen(
 
                     ListItem(
                         headlineContent = {
-                            Text(text = stringResource(R.string.validator_progress_bar_style))
+                            Text(text = stringResource(R.string.validator_progress_bar_style), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.validator_progress_bar_style)))
                         },
                         supportingContent = {
                             Text(text = validatorProgressBarStyleDisplayName(settings.validatorProgressBarStyle))
@@ -2186,7 +2178,7 @@ fun AuthenticatorCardAdjustmentScreen(
 
                     ListItem(
                         headlineContent = {
-                            Text(text = stringResource(R.string.smooth_progress_bar_title))
+                            Text(text = stringResource(R.string.smooth_progress_bar_title), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.smooth_progress_bar_title)))
                         },
                         supportingContent = {
                             Text(text = stringResource(R.string.smooth_progress_bar_description))
@@ -2213,7 +2205,7 @@ fun AuthenticatorCardAdjustmentScreen(
 
                     ListItem(
                         headlineContent = {
-                            Text(text = stringResource(R.string.haptic_feedback))
+                            Text(text = stringResource(R.string.haptic_feedback), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.haptic_feedback)))
                         },
                         supportingContent = {
                             Text(text = stringResource(R.string.haptic_feedback_description))
@@ -2241,7 +2233,7 @@ fun AuthenticatorCardAdjustmentScreen(
 
                         ListItem(
                             headlineContent = {
-                                Text(text = stringResource(R.string.validator_vibration))
+                                Text(text = stringResource(R.string.validator_vibration), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.validator_vibration)))
                             },
                             supportingContent = {
                                 Text(text = stringResource(R.string.validator_vibration_description))
@@ -2271,7 +2263,7 @@ fun AuthenticatorCardAdjustmentScreen(
 
                         ListItem(
                             headlineContent = {
-                                Text(text = stringResource(R.string.copy_next_code_when_expiring))
+                                Text(text = stringResource(R.string.copy_next_code_when_expiring), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.copy_next_code_when_expiring)))
                             },
                             supportingContent = {
                                 Text(text = stringResource(R.string.copy_next_code_when_expiring_description))
@@ -2301,8 +2293,7 @@ fun AuthenticatorCardAdjustmentScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.authenticator_card_display_content_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                        style = MaterialTheme.typography.titleMedium, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.authenticator_card_display_content_title)))
                     Text(
                         text = stringResource(R.string.authenticator_card_display_field_desc),
                         style = MaterialTheme.typography.bodySmall,
@@ -2426,7 +2417,7 @@ private fun ValidatorProgressBarStyleDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.validator_progress_bar_style)) },
+        title = { Text(text = stringResource(R.string.validator_progress_bar_style), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.validator_progress_bar_style))) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 ProgressBarStyle.values().forEach { style ->
@@ -2563,8 +2554,7 @@ fun IconSettingsScreen(
                         Text(
                             text = stringResource(R.string.icon_settings_master_switch),
                             style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                            color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.icon_settings_master_switch)))
                         Switch(
                             checked = settings.iconCardsEnabled,
                             onCheckedChange = viewModel::updateIconCardsEnabled
@@ -2695,7 +2685,7 @@ private fun SwitchSettingsCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().settingsSearchAnchor(title),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f)
         )
@@ -2736,8 +2726,13 @@ private fun ExpandableSettingsCard(
     headerTrailing: (@Composable () -> Unit)? = null,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
 ) {
+    val searchFocus = LocalSettingsSearchNavigation.current?.focusTitleRes ?: 0
+    LaunchedEffect(searchFocus) {
+        if (searchFocus != 0 && expansionEnabled && !expanded) onExpandedChange(true)
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().settingsSearchAnchor(title),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f)
         )
@@ -2793,7 +2788,7 @@ private fun StaticInfoCard(
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().settingsSearchAnchor(title),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f)
         )

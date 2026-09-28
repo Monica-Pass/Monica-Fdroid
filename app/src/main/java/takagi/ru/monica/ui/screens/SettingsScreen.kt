@@ -437,229 +437,44 @@ fun SettingsScreen(
     )
     val languageSubtitle = getLanguageDisplayName(settings.language, context)
 
-    fun searchTexts(vararg resIds: Int): Array<String> = resIds.map(context::getString).toTypedArray()
-
-    val themeSearchTexts = buildList {
-        ThemeMode.values().forEach { theme ->
-            add(getThemeDisplayName(theme, context))
-        }
-        add(context.getString(R.string.oled_pure_black))
-        add(context.getString(R.string.oled_pure_black_description))
-        add(context.getString(R.string.oled_pure_black_dark_mode_hint))
-    }.toTypedArray()
-
-    val colorSchemeSearchTexts = buildList {
-        add(context.getString(R.string.color_scheme_description))
-        takagi.ru.monica.data.ColorScheme.values().forEach { scheme ->
-            add(getColorSchemeDisplayName(scheme, context))
-        }
-    }.toTypedArray()
-
-    val languageSearchTexts = Language.values().map { language ->
-        getLanguageDisplayName(language, context)
-    }.toTypedArray()
-
-    val syncBackupSubSettingsSearchTexts = searchTexts(
-        R.string.sync_backup_common_sync,
-        R.string.webdav_backup,
-        R.string.webdav_backup_description,
-        R.string.sync_backup_bitwarden_sync_title,
-        R.string.sync_backup_bitwarden_sync_desc,
-        R.string.sync_backup_database_tools,
-        R.string.dedup_engine_title,
-        R.string.dedup_engine_entry_desc,
-        R.string.sync_backup_keepass_tools,
-        R.string.local_keepass_database,
-        R.string.local_keepass_database_description,
-        R.string.sync_backup_import_export_low_freq,
-        R.string.export_data,
-        R.string.export_data_description,
-        R.string.import_data,
-        R.string.import_data_description
-    )
-
-    val autofillSubSettingsSearchTexts = searchTexts(
-        R.string.autofill_v2_title,
-        R.string.autofill_system_settings_title,
-        R.string.autofill_fill_behavior_title,
-        R.string.autofill_v2_set_system_service,
-        R.string.autofill_v2_set_system_service_desc,
-        R.string.autofill_system_passkey_settings,
-        R.string.autofill_system_passkey_settings_desc,
-        R.string.autofill_v2_enable_service,
-        R.string.autofill_v2_enable_service_desc,
-        R.string.autofill_v2_default_scope_title,
-        R.string.autofill_v2_default_scope_desc,
-        R.string.autofill_v2_default_keepass_title,
-        R.string.autofill_v2_default_keepass_desc,
-        R.string.autofill_v2_default_bitwarden_title,
-        R.string.autofill_v2_default_bitwarden_desc,
-        R.string.autofill_v2_strict_match,
-        R.string.autofill_v2_strict_match_desc,
-        R.string.autofill_v2_subdomain_match,
-        R.string.autofill_v2_subdomain_match_desc,
-        R.string.autofill_domain_strategy_title,
-        R.string.autofill_v2_respect_off,
-        R.string.autofill_v2_respect_off_desc,
-        R.string.autofill_save_enable,
-        R.string.autofill_save_enable_desc,
-        R.string.autofill_save_update_duplicate,
-        R.string.autofill_save_update_duplicate_desc,
-        R.string.autofill_save_show_notification,
-        R.string.autofill_save_show_notification_desc,
-        R.string.autofill_save_smart_title,
-        R.string.autofill_save_smart_title_desc,
-        R.string.autofill_save_app_info,
-        R.string.autofill_save_app_info_desc,
-        R.string.autofill_save_website_info,
-        R.string.autofill_save_website_info_desc,
-        R.string.autofill_otp_settings_title,
-        R.string.autofill_show_otp_notification,
-        R.string.autofill_show_otp_notification_desc,
-        R.string.autofill_otp_notification_duration,
-        R.string.autofill_otp_notification_duration_desc,
-        R.string.autofill_auto_copy_otp,
-        R.string.autofill_auto_copy_otp_desc,
-        R.string.autofill_save_blocked_targets_title,
-        R.string.autofill_save_blocked_targets_manage,
-        R.string.autofill_blacklist_title,
-        R.string.autofill_blacklist_manage,
-        R.string.autofill_blocked_fields_title,
-        R.string.autofill_blocked_fields_manage
-    )
-
-    val bottomNavSubSettingsSearchTexts = buildList {
-        add(context.getString(R.string.bottom_nav_reorder_hint))
-        add(context.getString(R.string.bottom_nav_toggle_subtitle))
-        BottomNavContentTab.values()
-            .filterNot { it == BottomNavContentTab.PASSKEY }
-            .forEach { tab ->
-            add(context.getString(tab.toLabelRes()))
-        }
-    }.toTypedArray()
-
-    val extensionsSubSettingsSearchTexts = searchTexts(
-        R.string.display_options_menu_title,
-        R.string.password_card_display_mode_title,
-        R.string.display_mode_all,
-        R.string.display_mode_title_username,
-        R.string.display_mode_title_only,
-        R.string.smart_deduplication,
-        R.string.smart_deduplication_desc,
-        R.string.extensions_totp_settings,
-        R.string.validator_vibration,
-        R.string.validator_vibration_description,
-        R.string.copy_next_code_when_expiring,
-        R.string.copy_next_code_when_expiring_description,
-        R.string.notification_validator_title,
-        R.string.select_validator_to_display,
-        R.string.no_validators_available
-    )
-
-    val developerSubSettingsSearchTexts = searchTexts(
-        R.string.developer_log_debugging,
-        R.string.developer_view_logs,
-        R.string.developer_view_logs_desc,
-        R.string.developer_clear_log_buffer,
-        R.string.developer_clear_log_buffer_desc,
-        R.string.developer_share_logs,
-        R.string.developer_share_logs_desc,
-        R.string.developer_functions,
-        R.string.developer_disable_password_verification,
-        R.string.developer_disable_password_verification_desc,
-        R.string.developer_bitwarden_forensics_toggle,
-        R.string.developer_bitwarden_forensics_toggle_desc,
-        R.string.developer_bitwarden_forensics_raw_toggle,
-        R.string.developer_bitwarden_forensics_raw_toggle_desc,
-        R.string.developer_bitwarden_forensics_dir,
-        R.string.developer_bitwarden_forensics_clear_dir,
-        R.string.developer_bitwarden_forensics_clear_dir_desc,
-        R.string.developer_autofill_debug,
-        R.string.developer_launch_autofill_v2_test,
-        R.string.developer_launch_autofill_v2_desc,
-        R.string.developer_session_status,
-        R.string.developer_system_logs,
-        R.string.developer_filter_all,
-        R.string.developer_filter_errors,
-        R.string.developer_filter_warnings
-    )
-
-    val pageCustomizationSubSettingsSearchTexts = searchTexts(
-        R.string.password_list_customization_title,
-        R.string.password_list_customization_subtitle,
-        R.string.password_card_adjust_title,
-        R.string.password_card_adjust_subtitle,
-        R.string.authenticator_card_adjust_title,
-        R.string.authenticator_card_adjust_subtitle,
-        R.string.password_field_customization_title,
-        R.string.extensions_password_field_customization_desc,
-        R.string.icon_settings_title,
-        R.string.icon_settings_subtitle,
-        R.string.add_button_customization_title,
-        R.string.add_button_customization_desc,
-        R.string.add_button_mode_title,
-        R.string.add_button_mode_subtitle,
-        R.string.add_button_actions_title,
-        R.string.add_button_actions_desc,
-        R.string.password_page_aggregate_switch_title,
-        R.string.password_page_aggregate_switch_desc,
-        R.string.password_list_quick_filters_switch_title,
-        R.string.password_list_quick_filters_switch_desc,
-        R.string.password_list_quick_folder_path_banner_switch_title,
-        R.string.password_list_quick_folder_path_banner_switch_desc,
-        R.string.password_list_system_back_to_parent_folder_switch_title,
-        R.string.password_list_system_back_to_parent_folder_switch_desc,
-        R.string.password_card_show_authenticator_title,
-        R.string.password_card_show_authenticator_desc,
-        R.string.password_card_hide_other_content_when_authenticator_title,
-        R.string.password_card_hide_other_content_when_authenticator_desc,
-        R.string.stack_mode_menu_title,
-        R.string.wallet_stack_loop_title,
-        R.string.wallet_stack_loop_desc,
-        R.string.group_mode_menu_title,
-        R.string.website_stack_match_mode_title,
-        R.string.website_stack_match_mode_desc,
-        R.string.authenticator_card_display_content_title,
-        R.string.authenticator_card_display_field_desc,
-        R.string.unified_progress_bar_title,
-        R.string.unified_progress_bar_description,
-        R.string.validator_progress_bar_style,
-        R.string.smooth_progress_bar_title,
-        R.string.smooth_progress_bar_description,
-        R.string.icon_settings_page_switches_title,
-        R.string.icon_settings_page_switches_desc,
-        R.string.icon_settings_app_icon_title,
-        R.string.icon_settings_unmatched_strategy_title,
-        R.string.icon_settings_source_title,
-        R.string.icon_settings_source_desc,
-        R.string.icon_settings_priority_title,
-        R.string.icon_settings_priority_desc
-    )
-
-    fun matchesSettingsItem(
-        sectionTitle: String,
-        title: String,
-        subtitle: String? = null,
-        vararg extraSearchTexts: String?
-    ): Boolean = matchesSettingsSearch(
-        settingsSearchQuery,
-        sectionTitle,
-        title,
-        subtitle,
-        *extraSearchTexts
-    )
-
-    val showMonicaPlusCard = !settings.isPlusActivated && matchesSettingsSearch(
-        settingsSearchQuery,
-        context.getString(R.string.monica_plus_title),
-        context.getString(R.string.monica_plus_card_desc)
-    )
-    val showSecurityAnalysisCard = matchesSettingsSearch(
-        settingsSearchQuery,
-        securityTitle,
-        context.getString(R.string.security_analysis),
-        context.getString(R.string.security_analysis_description)
-    )
+    val searchNavigation = LocalSettingsSearchNavigation.current
+    val searchFocusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val searchKeyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val searchLocale = LocalConfiguration.current.locales.toLanguageTags()
+    val searchEntries = remember(context, searchLocale, settings.isPlusActivated) {
+        settingsSearchEntries(context, settings.isPlusActivated)
+    }
+    val searchResults = remember(settingsSearchQuery, searchEntries) {
+        searchSettings(searchEntries, settingsSearchQuery)
+    }
+    val showMonicaPlusCard = !settings.isPlusActivated
+    val showSecurityAnalysisCard = settingsSearchQuery.isBlank()
+    val showMasterPasswordLockingItem = true
+    val showScreenshotProtectionItem = true
+    val showPermissionManagementItem = true
+    val showSecuritySection = true
+    val showSyncBackupItem = true
+    val showAutofillItem = true
+    val showTrashItem = true
+    val showClearDataItem = true
+    val showDataManagementSection = true
+    val showThemeItem = true
+    val showColorSchemeItem = true
+    val showInterfaceScaleItem = true
+    val showLanguageItem = true
+    val showBottomNavItem = true
+    val showExtensionsItem = true
+    val showPageCustomizationItem = true
+    val showAppearanceSection = true
+    val showVersionItem = true
+    val showUpdateCheckItem = true
+    val showPreviewFeaturesItem = true
+    val showDeveloperSettingsItem = true
+    val securityItemCount = 3
+    val dataManagementItemCount = 4
+    val appearanceItemCount = 7
+    val aboutItemCount = 2
+    val developerItemCount = 2
     val density = LocalDensity.current
     val securityPullTriggerDistance = remember(density) {
         with(density) { SecurityAnalysisPullTriggerDistance.toPx() }
@@ -668,180 +483,13 @@ fun SettingsScreen(
         with(density) { SecurityAnalysisPullMaxDistance.toPx() }
     }
     val securityPullState = rememberPullToActionState(
-        enabled = settingsSearchQuery.isBlank() && showSecurityAnalysisCard,
+        enabled = settingsSearchQuery.isBlank(),
         triggerDistance = securityPullTriggerDistance,
         maxDragDistance = securityPullMaxDistance,
         onTriggered = onSecurityAnalysis,
         canStartPull = { scrollState.value == 0 }
     )
 
-    val showMasterPasswordLockingItem = matchesSettingsItem(
-        securityTitle,
-        masterPasswordLockingTitle,
-        masterPasswordLockingDescription,
-        context.getString(R.string.biometric_unlock),
-        biometricSubtitle,
-        context.getString(R.string.auto_lock),
-        autoLockSubtitle,
-        context.getString(R.string.security_questions),
-        context.getString(R.string.security_questions_description),
-        context.getString(R.string.reset_master_password),
-        context.getString(R.string.reset_password_description)
-    )
-    val showScreenshotProtectionItem = matchesSettingsItem(
-        securityTitle,
-        context.getString(R.string.screenshot_protection),
-        screenshotProtectionSubtitle
-    )
-    val showPermissionManagementItem = matchesSettingsItem(
-        securityTitle,
-        context.getString(R.string.permission_management_title),
-        context.getString(R.string.permission_management_subtitle)
-    )
-    val showSecuritySection = listOf(
-        showMasterPasswordLockingItem,
-        showScreenshotProtectionItem,
-        showPermissionManagementItem
-    ).any { it }
-
-    val showSyncBackupItem = matchesSettingsItem(
-        dataManagementTitle,
-        context.getString(R.string.sync_backup_title),
-        context.getString(R.string.sync_backup_description),
-        *syncBackupSubSettingsSearchTexts
-    )
-    val showAutofillItem = matchesSettingsItem(
-        dataManagementTitle,
-        context.getString(R.string.autofill),
-        context.getString(R.string.autofill_subtitle),
-        *autofillSubSettingsSearchTexts
-    )
-    val showTrashItem = matchesSettingsItem(
-        dataManagementTitle,
-        context.getString(R.string.trash_bin),
-        trashSubtitle
-    )
-    val showClearDataItem = matchesSettingsItem(
-        dataManagementTitle,
-        context.getString(R.string.clear_all_data),
-        context.getString(R.string.clear_all_data_subtitle)
-    )
-    val showDataManagementSection = listOf(
-        showSyncBackupItem,
-        showAutofillItem,
-        showTrashItem,
-        showClearDataItem
-    ).any { it }
-
-    val showThemeItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.theme),
-        themeSubtitle,
-        *themeSearchTexts
-    )
-    val showColorSchemeItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.color_scheme),
-        colorSchemeSubtitle,
-        *colorSchemeSearchTexts
-    )
-    val showInterfaceScaleItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.interface_scale_title),
-        interfaceScaleSubtitle,
-        context.getString(R.string.interface_scale_description),
-        "DPI"
-    )
-    val showLanguageItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.language),
-        languageSubtitle,
-        *languageSearchTexts
-    )
-    val showBottomNavItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.bottom_nav_settings),
-        context.getString(R.string.bottom_nav_settings_entry_subtitle),
-        *bottomNavSubSettingsSearchTexts
-    )
-    val showExtensionsItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.extensions_title),
-        context.getString(R.string.extensions_description),
-        *extensionsSubSettingsSearchTexts
-    )
-    val showPageCustomizationItem = matchesSettingsItem(
-        appearanceTitle,
-        context.getString(R.string.page_adjust_custom_title),
-        context.getString(R.string.page_adjust_custom_subtitle),
-        *pageCustomizationSubSettingsSearchTexts
-    )
-    val showAppearanceSection = listOf(
-        showThemeItem,
-        showColorSchemeItem,
-        showInterfaceScaleItem,
-        showLanguageItem,
-        showBottomNavItem,
-        showExtensionsItem,
-        showPageCustomizationItem
-    ).any { it }
-
-    val showVersionItem = matchesSettingsItem(
-        aboutTitle,
-        context.getString(R.string.version),
-        installedVersion
-    )
-    val showUpdateCheckItem = matchesSettingsItem(
-        aboutTitle,
-        context.getString(R.string.update_check_title),
-        context.getString(R.string.update_check_subtitle),
-        context.getString(R.string.update_check_latest_release)
-    )
-    val showPreviewFeaturesItem = matchesSettingsItem(
-        developerTitle,
-        context.getString(R.string.preview_features_title),
-        context.getString(R.string.preview_features_description)
-    )
-    val showDeveloperSettingsItem = matchesSettingsItem(
-        developerTitle,
-        context.getString(R.string.developer_settings),
-        context.getString(R.string.developer_settings_subtitle),
-        *developerSubSettingsSearchTexts
-    )
-    val hasVisibleResults = listOf(
-        showMonicaPlusCard,
-        showSecurityAnalysisCard,
-        showSecuritySection,
-        showDataManagementSection,
-        showAppearanceSection,
-        showVersionItem,
-        showUpdateCheckItem,
-        showPreviewFeaturesItem,
-        showDeveloperSettingsItem
-    ).any { it }
-    val securityItemCount = listOf(
-        showMasterPasswordLockingItem,
-        showScreenshotProtectionItem,
-        showPermissionManagementItem
-    ).count { it }
-    val dataManagementItemCount = listOf(
-        showSyncBackupItem,
-        showAutofillItem,
-        showTrashItem,
-        showClearDataItem
-    ).count { it }
-    val appearanceItemCount = listOf(
-        showThemeItem,
-        showColorSchemeItem,
-        showInterfaceScaleItem,
-        showLanguageItem,
-        showBottomNavItem,
-        showExtensionsItem,
-        showPageCustomizationItem
-    ).count { it }
-    val aboutItemCount = listOf(showVersionItem, showUpdateCheckItem).count { it }
-    val developerItemCount = listOf(showPreviewFeaturesItem, showDeveloperSettingsItem).count { it }
-    
     Scaffold(
         contentWindowInsets = if (showTopBar) {
             WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
@@ -916,6 +564,13 @@ fun SettingsScreen(
                 onQueryChange = { settingsSearchQuery = it }
             )
 
+            if (settingsSearchQuery.isNotBlank()) {
+                SettingsSearchResults(searchResults) { result ->
+                    searchFocusManager.clearFocus()
+                    searchKeyboard?.hide()
+                    checkNotNull(searchNavigation) { "Settings search requires navigation" }.open(result)
+                }
+            } else {
             batchDeleteProgress?.let { progress ->
                 PasswordBatchDeleteProgressCard(progress = progress)
             }
@@ -1322,33 +977,8 @@ fun SettingsScreen(
                 }
             }
 
-            if (!hasVisibleResults) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SearchOff,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.no_results),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.settings_search_empty_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
+            } // Regular settings are hidden while search results are displayed.
+
             Spacer(modifier = Modifier.height(32.dp))
             
             // Bottom padding spacer for edge-to-edge scrolling
@@ -2322,7 +1952,7 @@ fun SettingsItem(
     Card(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .padding(horizontal = if (isInSection) 0.dp else 16.dp, vertical = if (isInSection) 0.dp else 4.dp),
         shape = sectionShape
             ?: if (isInSection) RoundedCornerShape(10.dp) else RoundedCornerShape(16.dp),
@@ -2388,7 +2018,7 @@ fun SettingsItemWithSwitch(
     val isInSection = LocalSettingsSectionContent.current
     Card(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .padding(horizontal = if (isInSection) 0.dp else 16.dp, vertical = if (isInSection) 0.dp else 4.dp),
         shape = if (isInSection) RoundedCornerShape(10.dp) else RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(

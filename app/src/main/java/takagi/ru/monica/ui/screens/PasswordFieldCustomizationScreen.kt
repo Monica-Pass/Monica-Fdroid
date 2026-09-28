@@ -74,6 +74,9 @@ fun PasswordFieldCustomizationScreen(
         }
     ) { paddingValues ->
         LazyColumn(
+            state = androidx.compose.foundation.lazy.rememberLazyListState(
+                initialFirstVisibleItemIndex = if ((LocalSettingsSearchNavigation.current?.focusTitleRes ?: 0) != 0) 2 else 0
+            ),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -419,7 +422,7 @@ private fun FieldToggleItem(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

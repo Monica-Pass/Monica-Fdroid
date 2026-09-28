@@ -72,7 +72,7 @@ fun ExtensionsScreen(
     if (showDisplayModeDialog) {
         AlertDialog(
             onDismissRequest = { showDisplayModeDialog = false },
-            title = { Text(stringResource(R.string.password_card_display_mode_title)) },
+            title = { Text(stringResource(R.string.password_card_display_mode_title), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_display_mode_title))) },
             text = {
                 Column {
                     takagi.ru.monica.data.PasswordCardDisplayMode.values().forEach { mode ->
@@ -119,7 +119,7 @@ fun ExtensionsScreen(
     if (showClipboardAutoClearDialog) {
         AlertDialog(
             onDismissRequest = { showClipboardAutoClearDialog = false },
-            title = { Text(stringResource(R.string.clipboard_auto_clear_title)) },
+            title = { Text(stringResource(R.string.clipboard_auto_clear_title), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.clipboard_auto_clear_title))) },
             text = {
                 Column {
                     clipboardAutoClearOptions.forEach { seconds ->
@@ -271,8 +271,7 @@ fun ExtensionsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.password_card_display_mode_title),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                            style = MaterialTheme.typography.bodyLarge, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_display_mode_title)))
                         Text(
                             text = when (passwordCardDisplayMode) {
                                 takagi.ru.monica.data.PasswordCardDisplayMode.SHOW_ALL -> 
@@ -454,7 +453,7 @@ private fun ExtensionClickableItem(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -511,7 +510,7 @@ private fun ExtensionChoiceItem(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -574,7 +573,7 @@ private fun ExtensionSegmentedItem(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -649,7 +648,7 @@ private fun ExtensionSwitchItem(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().settingsSearchAnchor(title)
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -727,7 +726,7 @@ private fun NotificationValidatorExtensionCard(
     }
 
     Column(
-        modifier = Modifier.animateContentSize()
+        modifier = Modifier.settingsSearchAnchor(stringResource(R.string.notification_validator_title)).animateContentSize()
     ) {
         // Header with Switch
         Row(
@@ -763,8 +762,7 @@ private fun NotificationValidatorExtensionCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = if (enabled) MaterialTheme.colorScheme.onSurface 
-                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 Text(
                     text = if (enabled) stringResource(R.string.notification_validator_enabled) 
                            else stringResource(R.string.notification_validator_disabled),

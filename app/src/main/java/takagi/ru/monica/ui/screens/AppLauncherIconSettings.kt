@@ -37,7 +37,7 @@ internal fun AppLauncherIconSettings(
     onIconSelected: (AppLauncherIcon) -> Unit,
 ) {
     val context = LocalContext.current
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = Modifier.settingsSearchAnchor(stringResource(R.string.icon_settings_app_icon_title)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.icon_settings_app_icon_title),
             style = MaterialTheme.typography.titleMedium,

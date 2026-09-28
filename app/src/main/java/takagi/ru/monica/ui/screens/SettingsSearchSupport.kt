@@ -13,20 +13,10 @@ import takagi.ru.monica.ui.components.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
-
-internal fun matchesSettingsSearch(
-    query: String,
-    vararg texts: String?
-): Boolean {
-    val normalizedQuery = query.trim()
-    if (normalizedQuery.isEmpty()) return true
-    return texts.any { text ->
-        !text.isNullOrBlank() && text.contains(normalizedQuery, ignoreCase = true)
-    }
-}
 
 @Composable
 internal fun SettingsSearchField(
@@ -38,6 +28,7 @@ internal fun SettingsSearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier
+            .testTag("settings_search_input")
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         singleLine = true,

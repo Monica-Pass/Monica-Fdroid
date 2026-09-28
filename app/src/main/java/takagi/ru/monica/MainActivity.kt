@@ -1070,10 +1070,13 @@ fun MonicaContent(
         }
     }
 
+    val settingsSearchNavigation = takagi.ru.monica.ui.screens.rememberSettingsSearchNavigation(navController)
+
     // Emergency safe mode: disable global shared transition lookahead to avoid
     // "Placement happened before lookahead" crashes on affected devices/builds.
     @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
     androidx.compose.runtime.CompositionLocalProvider(
+        takagi.ru.monica.ui.screens.LocalSettingsSearchNavigation provides settingsSearchNavigation,
         takagi.ru.monica.ui.LocalUiSecurityManager provides securityManager,
         takagi.ru.monica.ui.LocalSharedTransitionScope provides null,
         takagi.ru.monica.ui.LocalReduceAnimations provides true,
