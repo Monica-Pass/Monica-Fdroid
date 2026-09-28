@@ -3,6 +3,7 @@ package takagi.ru.monica.ui.screens
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -22,6 +23,8 @@ import takagi.ru.monica.R
 internal fun SettingsSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
+    active: Boolean,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -34,10 +37,16 @@ internal fun SettingsSearchField(
         singleLine = true,
         shape = MaterialTheme.shapes.extraLarge,
         leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null
-            )
+            if (active) {
+                IconButton(onClick = onClose, modifier = Modifier.testTag("settings_search_close")) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
+            } else {
+                Icon(imageVector = Icons.Default.Search, contentDescription = null)
+            }
         },
         trailingIcon = if (query.isNotEmpty()) {
             {

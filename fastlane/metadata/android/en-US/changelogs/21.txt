@@ -1,11 +1,11 @@
 Monica 1.0.314
 - API Keys, GPG, Italian, Liberapay.
-- Faster keyboard; PIN shuffle/hidden previews.
-- QR/Code 128, custom icons, branded passkeys.
-- Layouts, Grok bot icon; search cards locate settings.
-- MDBX1 upgrades; MDBX2/CLI sync and field fixes.
-- KDBX entries/OTP, native manager and empty passwords.
-- Safer backups/imports.
-- MDBX future types; safer conflicts; history details.
+- Fast keyboard; PIN shuffle/hidden previews.
+- QR/Code 128, icons, branded passkeys.
+- Layouts, Grok bot; search cards, back to close.
+- MDBX upgrades/sync; precise JSON, literal fields.
+- KDBX entries/OTP, manager, empty passwords.
+- Safer backups/imports; CLI roundtrip tests.
+- MDBX future types, safer conflicts, history.
 - Vault sorting: name, created or updated.
-- Sharper Snow Leopard icon; playful Chinese for one release only.
+- Sharper Snow Leopard; no splash border. One-release playful Chinese.

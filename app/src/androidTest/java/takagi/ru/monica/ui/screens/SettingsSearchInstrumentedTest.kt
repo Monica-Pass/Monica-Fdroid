@@ -2,6 +2,9 @@ package takagi.ru.monica.ui.screens
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
@@ -16,6 +19,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -56,12 +62,14 @@ class SettingsSearchInstrumentedTest {
     private lateinit var nav: NavHostController
     private lateinit var searchNavigation: SettingsSearchNavigation
     private var destructiveCalls = 0
+    private var parentBackCalls = 0
+    private lateinit var backDispatcher: OnBackPressedDispatcher
 
     @After fun finish() {
         compose.runOnIdle { store.clear() }
     }
 
-    @Composable private fun Root() {
+    @Composable private fun Root(showTopBar: Boolean = true) {
         SettingsScreen(
             viewModel = model,
             onNavigateBack = { nav.popBackStack() },
@@ -69,13 +77,16 @@ class SettingsSearchInstrumentedTest {
             onSecurityQuestions = { destructiveCalls++ },
             onNavigateToMasterPasswordLocking = {},
             onClearAllData = { _, _, _, _, _, _ -> destructiveCalls++ },
+            showTopBar = showTopBar,
         )
     }
 
-    private fun show(dark: Boolean = false, large: Boolean = false, plus: Boolean = false) {
+    private fun show(dark: Boolean = false, large: Boolean = false, plus: Boolean = false, showTopBar: Boolean = true) {
         val configuration = Configuration(context.resources.configuration).apply { setLocale(Locale.SIMPLIFIED_CHINESE) }
         val localized = context.createConfigurationContext(configuration)
         compose.setContent {
+            backDispatcher = checkNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
+            BackHandler { parentBackCalls++ }
             nav = rememberNavController()
             val navigation = rememberSettingsSearchNavigation(nav)
             searchNavigation = navigation
@@ -89,8 +100,8 @@ class SettingsSearchInstrumentedTest {
                 MonicaTheme(darkTheme = dark) {
                     Box(Modifier.width(if (large) 320.dp else 390.dp).fillMaxHeight()) {
                         NavHost(navController = nav, startDestination = "search-test") {
-                            composable("search-test") { Root() }
-                            composable(Screen.Settings.route) { Root() }
+                            composable("search-test") { Root(showTopBar) }
+                            composable(Screen.Settings.route) { Root(showTopBar) }
                             composable(Screen.AutofillSettings.route) {
                                 AutofillSettingsV2Screen(
                                     onNavigateBack = { nav.popBackStack() },
@@ -142,8 +153,9 @@ class SettingsSearchInstrumentedTest {
         compose.onNode(SemanticsMatcher.expectValue(SettingsSearchTarget, true), useUnmergedTree = true).assertIsDisplayed()
         capture("settings-search-keyboard-target.png")
         assertEquals(before, runBlocking { takagi.ru.monica.autofill_ng.AutofillPreferences(context).imeKeyboardOptions.first() })
-        compose.runOnIdle { nav.popBackStack() }
+        compose.runOnIdle { backDispatcher.onBackPressed() }
         compose.onNodeWithTag("settings_search_input").assertTextContains("键盘 隐藏")
+        compose.onNodeWithTag("settings_search_result_ime_hide_pin_preview_title").assertIsDisplayed()
     }
 
     @Test fun destructiveResultOnlyLocatesTheOriginalEntry() {
@@ -190,6 +202,51 @@ class SettingsSearchInstrumentedTest {
         query("不可能存在的设置项")
         compose.onAllNodes(hasToggleableState()).assertCountEquals(0)
         capture("settings-search-empty.png")
+    }
+
+    @Test fun backClosesSearchBeforeDelegatingToTheParentPage() {
+        show(showTopBar = false)
+        query("键盘 隐藏")
+        compose.onNodeWithTag("settings_search_close").assertIsDisplayed()
+        compose.runOnIdle { backDispatcher.onBackPressed() }
+        compose.onNodeWithTag("settings_search_input")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
+            .assertIsNotFocused()
+        compose.onNodeWithTag("settings_search_results").assertDoesNotExist()
+        compose.onNodeWithTag("settings_search_close").assertDoesNotExist()
+        assertEquals("search-test", nav.currentDestination?.route)
+        assertEquals(0, parentBackCalls)
+        capture("settings-search-back-closed.png")
+        compose.runOnIdle { backDispatcher.onBackPressed() }
+        assertEquals(1, parentBackCalls)
+    }
+
+    @Test fun emptyFocusedSearchAndWhitespaceCanBeClosedWithoutLeavingSettings() {
+        show(showTopBar = false)
+        compose.onNodeWithTag("settings_search_input").performScrollTo().performClick()
+        compose.onNodeWithTag("settings_search_close").assertIsDisplayed()
+        compose.runOnIdle { backDispatcher.onBackPressed() }
+        compose.onNodeWithTag("settings_search_input").assertIsNotFocused()
+        compose.onNodeWithTag("settings_search_close").assertDoesNotExist()
+        query("   ")
+        compose.onNodeWithTag("settings_search_close").performClick()
+        compose.onNodeWithTag("settings_search_input")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
+            .assertIsNotFocused()
+        assertEquals("search-test", nav.currentDestination?.route)
+        assertEquals(0, parentBackCalls)
+    }
+
+    @Test fun searchBackArrowRemainsReachableInDarkNarrowLargeText() {
+        show(dark = true, large = true, showTopBar = false)
+        query("ＧＲＯＫ bot")
+        capture("settings-search-back-dark-large.png")
+        compose.onNodeWithTag("settings_search_close").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("settings_search_input")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString("")))
+            .assertIsNotFocused()
+        compose.onNodeWithTag("settings_search_results").assertDoesNotExist()
+        assertEquals(0, parentBackCalls)
     }
 
     @Test fun everyIndexedSpecificSettingHasOneVisibleTargetOnItsRealPage() {

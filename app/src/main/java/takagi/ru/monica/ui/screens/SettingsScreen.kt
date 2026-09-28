@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -201,6 +203,7 @@ fun SettingsScreen(
     var developerPasswordError by remember { mutableStateOf(false) }
     var showWeakBiometricWarning by remember { mutableStateOf(false) }
     var settingsSearchQuery by rememberSaveable { mutableStateOf("") }
+    var settingsSearchFocused by remember { mutableStateOf(false) }
 
     val startUpdateCheck: () -> Unit = {
         if (!isCheckingUpdate) {
@@ -440,6 +443,13 @@ fun SettingsScreen(
     val searchNavigation = LocalSettingsSearchNavigation.current
     val searchFocusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val searchKeyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val isSettingsSearchActive = settingsSearchFocused || settingsSearchQuery.isNotEmpty()
+    val closeSettingsSearch: () -> Unit = {
+        settingsSearchQuery = ""
+        searchFocusManager.clearFocus()
+        searchKeyboard?.hide()
+    }
+    BackHandler(enabled = isSettingsSearchActive, onBack = closeSettingsSearch)
     val searchLocale = LocalConfiguration.current.locales.toLanguageTags()
     val searchEntries = remember(context, searchLocale, settings.isPlusActivated) {
         settingsSearchEntries(context, settings.isPlusActivated)
@@ -511,7 +521,9 @@ fun SettingsScreen(
                             .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onNavigateBack) {
+                        IconButton(onClick = {
+                            if (isSettingsSearchActive) closeSettingsSearch() else onNavigateBack()
+                        }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = context.getString(R.string.back))
                         }
                         
@@ -561,7 +573,10 @@ fun SettingsScreen(
 
             SettingsSearchField(
                 query = settingsSearchQuery,
-                onQueryChange = { settingsSearchQuery = it }
+                onQueryChange = { settingsSearchQuery = it },
+                active = isSettingsSearchActive,
+                onClose = closeSettingsSearch,
+                modifier = Modifier.onFocusChanged { settingsSearchFocused = it.isFocused }
             )
 
             if (settingsSearchQuery.isNotBlank()) {
