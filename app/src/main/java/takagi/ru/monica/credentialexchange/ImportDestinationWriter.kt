@@ -167,6 +167,7 @@ class ImportDestinationWriter(
 
     private fun KeePassEntryData.toPasswordProjection() = PasswordEntry(
         title = title, username = username, website = url, password = password, notes = notes,
+        authenticatorKey = authenticatorKey.takeIf { it.isNotBlank() }?.let(security::encryptData).orEmpty(),
         appPackageName = appPackageName, appName = appName, email = email, phone = phone,
         addressLine = addressLine, city = city, state = state, zipCode = zipCode, country = country,
         creditCardNumber = creditCardNumber, creditCardHolder = creditCardHolder,

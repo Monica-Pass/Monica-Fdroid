@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="otp_algorithm">算法</string>
+    <string name="otp_parameters_invalid">请检查验证器参数后再保存。</string>
+</resources>

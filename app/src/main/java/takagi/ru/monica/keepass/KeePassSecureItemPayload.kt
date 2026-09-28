@@ -47,7 +47,10 @@ internal data class KeePassSecureItemPayload(val type: ItemType, val data: Strin
             return if (standard != null && stored != null) stored.copy(
                 secret = standard.secret, issuer = standard.issuer, accountName = standard.accountName,
                 period = standard.period, digits = standard.digits, algorithm = standard.algorithm,
-                otpType = standard.otpType, counter = standard.counter, link = standard.link
+                otpType = standard.otpType, counter = standard.counter, link = standard.link,
+                pin = standard.pin.ifBlank {
+                    stored.pin.takeIf { stored.otpType == standard.otpType && stored.secret == standard.secret }.orEmpty()
+                }
             ) else standard ?: stored
         }
     }

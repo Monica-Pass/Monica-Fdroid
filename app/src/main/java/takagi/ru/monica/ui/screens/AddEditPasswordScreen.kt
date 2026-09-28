@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -135,6 +136,9 @@ import takagi.ru.monica.ui.icons.rememberUploadedPasswordIcon
 import takagi.ru.monica.ui.password.UsernameSuggestionPanel
 import takagi.ru.monica.ui.password.UsernameSuggestionState
 import takagi.ru.monica.ui.password.buildUsernameSuggestionState
+import takagi.ru.monica.util.OtpParametersDraft
+import takagi.ru.monica.ui.components.OtpTypeSelector
+import takagi.ru.monica.ui.components.OtpParameterFields
 import takagi.ru.monica.util.TotpDataResolver
 import takagi.ru.monica.util.PasswordGenerator as AdvancedPasswordGenerator
 import takagi.ru.monica.utils.PasswordWebsiteCodec
@@ -470,6 +474,9 @@ private fun PasswordEntryEditor(
         mutableStateListOf(CredentialMetadataDraft())
     }
     
+    var authenticatorParametersJson by rememberSaveable { mutableStateOf(OtpParametersDraft().encode()) }
+    val authenticatorParameters = remember(authenticatorParametersJson) { OtpParametersDraft.decode(authenticatorParametersJson) }
+    var showAuthenticatorParameters by rememberSaveable { mutableStateOf(false) }
     var authenticatorSecret by rememberSaveable { mutableStateOf("") }
     var selectedAuthenticatorOtpTypeName by rememberSaveable { mutableStateOf(OtpType.TOTP.name) }
     var passkeyBindings by rememberSaveable { mutableStateOf("") }
@@ -497,6 +504,9 @@ private fun PasswordEntryEditor(
     }
     val credentialAuthenticatorOtpTypes = rememberSaveable(saver = takagi.ru.monica.utils.StringListSaver) {
         mutableStateListOf(OtpType.TOTP.name)
+    }
+    val credentialAuthenticatorParameters = rememberSaveable(saver = takagi.ru.monica.utils.StringListSaver) {
+        mutableStateListOf(OtpParametersDraft().encode())
     }
     val credentialAuthenticatorPayloads = rememberSaveable(saver = takagi.ru.monica.utils.StringListSaver) {
         mutableStateListOf("")
@@ -711,7 +721,8 @@ private fun PasswordEntryEditor(
         selectedAuthenticatorOtpType,
         title,
         authenticatorAccountName,
-        authenticatorPayloadOverride
+        authenticatorPayloadOverride,
+        authenticatorParameters
     ) {
         authenticatorPayloadOverride
             ?.takeIf { it.isNotBlank() }
@@ -719,7 +730,8 @@ private fun PasswordEntryEditor(
                 secret = authenticatorSecret,
                 otpType = selectedAuthenticatorOtpType,
                 issuer = title,
-                accountName = authenticatorAccountName
+                accountName = authenticatorAccountName,
+                parameters = authenticatorParameters
             )
     }
     val authenticatorPreviewTotpData = remember(authenticatorKey, title, authenticatorAccountName) {
@@ -818,8 +830,15 @@ private fun PasswordEntryEditor(
     val fieldAccountLabel = stringResource(R.string.field_account)
     val fieldEmailLabel = stringResource(R.string.field_email)
     val fieldPhoneLabel = stringResource(R.string.field_phone)
-    var authenticatorTypeExpanded by remember { mutableStateOf(false) }
     val isBarcodeMode = loginType.equals(LOGIN_TYPE_BARCODE, ignoreCase = true)
+
+    fun applyAuthenticatorParameters(parameters: OtpParametersDraft) {
+        authenticatorEditedByUser = true
+        existingTotpId = null
+        selectedExistingTotpTitle = ""
+        authenticatorPayloadOverride = null
+        authenticatorParametersJson = parameters.encode()
+    }
 
     fun applyAuthenticatorInput(rawValue: String) {
         authenticatorEditedByUser = true
@@ -837,7 +856,8 @@ private fun PasswordEntryEditor(
         }
         if (parsed != null) {
             authenticatorSecret = parsed.secret
-            selectedAuthenticatorOtpTypeName = parsed.otpType.toPasswordScreenOtpType().name
+            selectedAuthenticatorOtpTypeName = parsed.otpType.name
+            authenticatorParametersJson = OtpParametersDraft.from(parsed).encode()
             authenticatorPayloadOverride = trimmed
         } else {
             authenticatorSecret = rawValue
@@ -853,7 +873,8 @@ private fun PasswordEntryEditor(
                 selectedExistingTotpTitle = ""
                 val imported = scanResult.item.totpData
                 authenticatorSecret = imported.secret
-                selectedAuthenticatorOtpTypeName = imported.otpType.toPasswordScreenOtpType().name
+                selectedAuthenticatorOtpTypeName = imported.otpType.name
+                authenticatorParametersJson = OtpParametersDraft.from(imported).encode()
                 authenticatorPayloadOverride = TotpDataResolver.toBitwardenPayload(
                     title = scanResult.item.label,
                     data = imported
@@ -879,7 +900,8 @@ private fun PasswordEntryEditor(
                     selectedExistingTotpTitle = ""
                     val imported = first.totpData
                     authenticatorSecret = imported.secret
-                    selectedAuthenticatorOtpTypeName = imported.otpType.toPasswordScreenOtpType().name
+                    selectedAuthenticatorOtpTypeName = imported.otpType.name
+                    authenticatorParametersJson = OtpParametersDraft.from(imported).encode()
                     authenticatorPayloadOverride = TotpDataResolver.toBitwardenPayload(
                         title = first.label,
                         data = imported
@@ -945,7 +967,8 @@ private fun PasswordEntryEditor(
             .ifBlank { normalized.issuer }
             .ifBlank { normalized.accountName }
         authenticatorSecret = normalized.secret
-        selectedAuthenticatorOtpTypeName = normalized.otpType.toPasswordScreenOtpType().name
+        selectedAuthenticatorOtpTypeName = normalized.otpType.name
+        authenticatorParametersJson = OtpParametersDraft.from(normalized).encode()
         authenticatorPayloadOverride = payload.takeIf { it.isNotBlank() && it != normalized.secret }
         if (title.isBlank()) {
             title = normalized.issuer.ifBlank { candidate.item.title }.ifBlank { title }
@@ -1350,6 +1373,7 @@ private fun PasswordEntryEditor(
         while (credentialAuthenticatorOtpTypes.size < targetCount) {
             credentialAuthenticatorOtpTypes.add(OtpType.TOTP.name)
         }
+        while (credentialAuthenticatorParameters.size < targetCount) credentialAuthenticatorParameters.add(OtpParametersDraft().encode())
         while (credentialAuthenticatorPayloads.size < targetCount) credentialAuthenticatorPayloads.add("")
         while (credentialExistingTotpIds.size < targetCount) credentialExistingTotpIds.add("")
         while (credentialExistingTotpTitles.size < targetCount) credentialExistingTotpTitles.add("")
@@ -1364,6 +1388,7 @@ private fun PasswordEntryEditor(
         while (credentialAuthenticatorOtpTypes.size > targetCount) credentialAuthenticatorOtpTypes.removeAt(
             credentialAuthenticatorOtpTypes.lastIndex
         )
+        while (credentialAuthenticatorParameters.size > targetCount) credentialAuthenticatorParameters.removeAt(credentialAuthenticatorParameters.lastIndex)
         while (credentialAuthenticatorPayloads.size > targetCount) credentialAuthenticatorPayloads.removeAt(
             credentialAuthenticatorPayloads.lastIndex
         )
@@ -1392,6 +1417,7 @@ private fun PasswordEntryEditor(
         ensureCredentialScopedDraftCount()
         credentialAuthenticatorSecrets[index] = authenticatorSecret
         credentialAuthenticatorOtpTypes[index] = selectedAuthenticatorOtpTypeName
+        credentialAuthenticatorParameters[index] = authenticatorParametersJson
         credentialAuthenticatorPayloads[index] = authenticatorPayloadOverride.orEmpty()
         credentialExistingTotpIds[index] = existingTotpId?.toString().orEmpty()
         credentialExistingTotpTitles[index] = selectedExistingTotpTitle
@@ -1405,6 +1431,7 @@ private fun PasswordEntryEditor(
         selectedAuthenticatorCredentialIndex = index
         authenticatorSecret = credentialAuthenticatorSecrets[index]
         selectedAuthenticatorOtpTypeName = credentialAuthenticatorOtpTypes[index]
+        authenticatorParametersJson = credentialAuthenticatorParameters[index]
         authenticatorPayloadOverride = credentialAuthenticatorPayloads[index].takeIf { it.isNotEmpty() }
         existingTotpId = credentialExistingTotpIds[index].toLongOrNull()
         selectedExistingTotpTitle = credentialExistingTotpTitles[index]
@@ -1418,6 +1445,7 @@ private fun PasswordEntryEditor(
         passwords.add(passwordValue)
         credentialAuthenticatorSecrets.add("")
         credentialAuthenticatorOtpTypes.add(OtpType.TOTP.name)
+        credentialAuthenticatorParameters.add(OtpParametersDraft().encode())
         credentialAuthenticatorPayloads.add("")
         credentialExistingTotpIds.add("")
         credentialExistingTotpTitles.add("")
@@ -1498,6 +1526,7 @@ private fun PasswordEntryEditor(
         removePasswordFieldAt(index)
         credentialAuthenticatorSecrets.removeAt(index)
         credentialAuthenticatorOtpTypes.removeAt(index)
+        credentialAuthenticatorParameters.removeAt(index)
         credentialAuthenticatorPayloads.removeAt(index)
         credentialExistingTotpIds.removeAt(index)
         credentialExistingTotpTitles.removeAt(index)
@@ -1566,7 +1595,8 @@ private fun PasswordEntryEditor(
             secret = secret,
             otpType = otpType,
             issuer = title,
-            accountName = credentialUsernames[index]
+            accountName = credentialUsernames[index],
+            parameters = OtpParametersDraft.decode(credentialAuthenticatorParameters[index])
         )
     }
 
@@ -1876,7 +1906,8 @@ private fun PasswordEntryEditor(
                             )
                         }
                         authenticatorSecret = authenticatorDraft.secret
-                        selectedAuthenticatorOtpTypeName = authenticatorDraft.otpType.toPasswordScreenOtpType().name
+                        selectedAuthenticatorOtpTypeName = authenticatorDraft.otpType.name
+                        authenticatorParametersJson = authenticatorDraft.parameters.encode()
                         originalAuthenticatorKey = resolvedAuthenticatorKey
                         authenticatorPayloadOverride = resolvedAuthenticatorKey
                             .takeIf { it.isNotBlank() && it != authenticatorDraft.secret }
@@ -2134,6 +2165,23 @@ private fun PasswordEntryEditor(
                     selectedAuthenticatorCredentialIndex = 0
                 }
                 persistCurrentAuthenticatorDraft()
+            }
+            val invalidCredential = if (usesCredentialCards) credentialUsernames.indices.firstOrNull { index ->
+                credentialAuthenticatorSecrets[index].isNotBlank() && credentialAuthenticatorEditedFlags[index] == "1" &&
+                    !OtpParametersDraft.decode(credentialAuthenticatorParameters[index]).isValid(
+                        runCatching { OtpType.valueOf(credentialAuthenticatorOtpTypes[index]) }.getOrDefault(OtpType.TOTP))
+            } else null
+            val invalidCurrent = authenticatorSecret.isNotBlank() && authenticatorEditedByUser &&
+                !authenticatorParameters.isValid(selectedAuthenticatorOtpType)
+            if (!isBarcodeMode && (invalidCredential != null || invalidCurrent)) {
+                invalidCredential?.let { index ->
+                    selectedCredentialEditorIndex = index
+                    loadCredentialAuthenticatorDraft(index)
+                    if (isMultiCredentialMode) multiCredentialEditorSectionName = MultiCredentialEditorSection.CREDENTIAL.name
+                }
+                showAuthenticatorParameters = true
+                Toast.makeText(context, R.string.otp_parameters_invalid, Toast.LENGTH_SHORT).show()
+                return@handleSave
             }
             isSaving = true // 防止重复点击
             val normalizedPasswords = if (isBarcodeMode) {
@@ -2898,6 +2946,7 @@ private fun PasswordEntryEditor(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("password_editor_list")
                     .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = listContentPadding
@@ -3618,7 +3667,7 @@ private fun PasswordEntryEditor(
                                         }
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().testTag("password_otp_secret"),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                                 supportingText = {
@@ -3629,59 +3678,29 @@ private fun PasswordEntryEditor(
                                 shape = RoundedCornerShape(12.dp)
                             )
 
-                            ExposedDropdownMenuBox(
-                                expanded = authenticatorTypeExpanded,
-                                onExpandedChange = { authenticatorTypeExpanded = it }
-                            ) {
-                                OutlinedTextField(
-                                    value = when (selectedAuthenticatorOtpType) {
-                                        OtpType.STEAM -> stringResource(R.string.otp_type_steam)
-                                        else -> stringResource(R.string.otp_type_totp)
-                                    },
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text(stringResource(R.string.otp_type)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = if (selectedAuthenticatorOtpType == OtpType.STEAM) {
-                                                Icons.Default.Games
-                                            } else {
-                                                Icons.Default.Shield
-                                            },
-                                            contentDescription = null
-                                        )
-                                    },
-                                    trailingIcon = {
-                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = authenticatorTypeExpanded)
-                                    },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth()
-                                        .padding(top = 10.dp),
-                                    shape = RoundedCornerShape(12.dp)
+                            OtpTypeSelector(
+                                type = selectedAuthenticatorOtpType,
+                                onChange = { type ->
+                                    selectedAuthenticatorOtpTypeName = type.name
+                                    applyAuthenticatorParameters(authenticatorParameters.selectType(type))
+                                },
+                                modifier = Modifier.padding(top = 10.dp),
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            OtpParameterFields(
+                                type = selectedAuthenticatorOtpType, draft = authenticatorParameters,
+                                onChange = ::applyAuthenticatorParameters, includeAdvanced = false,
+                            )
+                            TextButton(modifier = Modifier.testTag("password_otp_advanced"),
+                                onClick = { showAuthenticatorParameters = !showAuthenticatorParameters }) {
+                                Text(stringResource(R.string.advanced_options))
+                                Icon(if (showAuthenticatorParameters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                            }
+                            MonicaExpandableContent(expanded = showAuthenticatorParameters) {
+                                OtpParameterFields(
+                                    type = selectedAuthenticatorOtpType, draft = authenticatorParameters,
+                                    onChange = ::applyAuthenticatorParameters, includeRequired = false,
                                 )
-
-                                ExposedDropdownMenu(
-                                    expanded = authenticatorTypeExpanded,
-                                    onDismissRequest = { authenticatorTypeExpanded = false }
-                                ) {
-                                    listOf(
-                                        OtpType.TOTP to R.string.otp_type_totp,
-                                        OtpType.STEAM to R.string.otp_type_steam
-                                    ).forEach { (type, labelRes) ->
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(labelRes)) },
-                                            onClick = {
-                                                authenticatorEditedByUser = true
-                                                selectedAuthenticatorOtpTypeName = type.name
-                                                existingTotpId = null
-                                                selectedExistingTotpTitle = ""
-                                                authenticatorPayloadOverride = null
-                                                authenticatorTypeExpanded = false
-                                            }
-                                        )
-                                    }
-                                }
                             }
 
                             if (totpViewModel != null) {
@@ -5418,61 +5437,6 @@ private tailrec fun Context.findPasswordEditorActivity(): Activity? = when (this
     is Activity -> this
     is ContextWrapper -> baseContext.findPasswordEditorActivity()
     else -> null
-}
-
-private data class PasswordScreenAuthenticatorDraft(
-    val secret: String,
-    val otpType: OtpType
-)
-
-private fun resolvePasswordScreenAuthenticatorDraft(
-    rawKey: String,
-    fallbackIssuer: String = "",
-    fallbackAccountName: String = ""
-): PasswordScreenAuthenticatorDraft {
-    val resolved = TotpDataResolver.fromAuthenticatorKey(
-        rawKey = rawKey,
-        fallbackIssuer = fallbackIssuer,
-        fallbackAccountName = fallbackAccountName
-    )
-    return if (resolved != null) {
-        PasswordScreenAuthenticatorDraft(
-            secret = resolved.secret,
-            otpType = resolved.otpType
-        )
-    } else {
-        PasswordScreenAuthenticatorDraft(
-            secret = rawKey.trim(),
-            otpType = OtpType.TOTP
-        )
-    }
-}
-
-private fun buildPasswordScreenAuthenticatorPayload(
-    secret: String,
-    otpType: OtpType,
-    issuer: String,
-    accountName: String
-): String {
-    val normalizedSecret = TotpDataResolver.normalizeBase32Secret(secret)
-    if (normalizedSecret.isBlank()) return ""
-    if (otpType == OtpType.TOTP) return normalizedSecret
-
-    return TotpDataResolver.toBitwardenPayload(
-        title = issuer,
-        data = TotpData(
-            secret = normalizedSecret,
-            issuer = issuer.trim(),
-            accountName = accountName.trim(),
-            otpType = otpType,
-            digits = if (otpType == OtpType.STEAM) 5 else 6,
-            period = 30
-        )
-    )
-}
-
-private fun OtpType.toPasswordScreenOtpType(): OtpType {
-    return if (this == OtpType.STEAM) OtpType.STEAM else OtpType.TOTP
 }
 
 /**

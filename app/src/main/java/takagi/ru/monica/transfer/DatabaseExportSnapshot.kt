@@ -119,6 +119,8 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                         id = id, title = entry.title, username = entry.username, website = entry.url,
                         // Keep literal cipher-like passwords distinct from app-encrypted values.
                         password = security.encryptData(entry.password), notes = entry.notes,
+                        authenticatorKey = entry.authenticatorKey.takeIf { it.isNotBlank() }
+                            ?.let(security::encryptData).orEmpty(),
                         appPackageName = entry.appPackageName, appName = entry.appName, email = entry.email,
                         phone = entry.phone, sshKeyData = entry.sshKeyData, loginType = entry.loginType,
                         addressLine = entry.addressLine, city = entry.city, state = entry.state,

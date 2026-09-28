@@ -223,7 +223,9 @@ data class KeePassEntryData(
     /** [takagi.ru.monica.data.model.WifiData] 的 JSON，仅在 WIFI 条目上有值。 */
     val wifiMetadata: String = "",
     val customFields: List<KeePassCustomFieldData> = emptyList(),
-    val hasPasskeyFields: Boolean = false
+    val hasPasskeyFields: Boolean = false,
+    /** Complete OTP payload read from the native entry, before local encryption. */
+    val authenticatorKey: String = ""
 )
 
 data class KeePassCustomFieldData(
@@ -4454,10 +4456,12 @@ class KeePassKdbxService(
         existingEntry: Entry? = null
     ): KeePassEntryFieldPatch {
         val replacementFields = buildEntryFields(entry, plainPassword, customFields)
+        val replacesOtp = entry.authenticatorKey.isNotBlank()
         return KeePassEntryFieldPatch.fromEntryFields(
             replacementFields = replacementFields,
             removeManagedField = { name ->
                 KeePassFieldRegistry.isPasswordEntryOverlayField(name) ||
+                    (replacesOtp && KeePassTotpCodec.isOtpField(name)) ||
                     (entry.isApiKeyEntry() && takagi.ru.monica.data.model.ApiKeyEntryFields.owns(name)) ||
                     (entry.loginType == takagi.ru.monica.data.model.GpgEntryFields.TYPE &&
                         takagi.ru.monica.data.model.GpgEntryFields.owns(name))
@@ -4465,6 +4469,9 @@ class KeePassKdbxService(
             // Explicit removals survive conversion to the persisted change-set patch.
             // GPG custom fields are not part of the generic PASSWORD managed scope.
             removeFieldNames = replacementFields.keys + customFields.map { it.title.trim() } +
+                (if (replacesOtp) existingEntry?.fields?.keys.orEmpty().filter {
+                    KeePassTotpCodec.isOtpField(it)
+                } else emptyList()) +
                 (if (entry.isApiKeyEntry()) {
                     existingEntry?.fields?.keys.orEmpty().filter(takagi.ru.monica.data.model.ApiKeyEntryFields::owns)
                 } else emptyList()) +
@@ -4575,6 +4582,17 @@ class KeePassKdbxService(
             }
         }
         appendKeePassCustomFields(pairs, customFields)
+        if (entry.authenticatorKey.isNotBlank()) {
+            val raw = securityManager.decryptDataIfMonicaCiphertext(entry.authenticatorKey)
+            val data = requireNotNull(TotpDataResolver.fromAuthenticatorKey(raw, entry.title, entry.username))
+            val otpFields = KeePassTotpCodec.toKeePassFields(data, entry.title)
+            require(otpFields.isNotEmpty()) { "Invalid or unsupported password OTP parameters" }
+            pairs.removeAll { KeePassTotpCodec.isOtpField(it.first) || it.first == FIELD_MONICA_TOTP_DATA }
+            otpFields.forEach { (name, value) ->
+                pairs += name to if (KeePassTotpCodec.isSecretField(name))
+                    EntryValue.Encrypted(EncryptedValue.fromString(value)) else EntryValue.Plain(value)
+            }
+        }
         return EntryFields.of(*pairs.toTypedArray())
     }
 
@@ -6006,7 +6024,9 @@ class KeePassKdbxService(
             ssoRefEntryId = ssoRefEntryId,
             wifiMetadata = resolvedWifiJson,
             customFields = customFields,
-            hasPasskeyFields = hasPasskeyFields
+            hasPasskeyFields = hasPasskeyFields,
+            authenticatorKey = parseStandardTotpFromEntry(entry, resolutionContext)
+                ?.let { TotpDataResolver.toBitwardenPayload(title, it) }.orEmpty()
         )
         return result(
             data = data,

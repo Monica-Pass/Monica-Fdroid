@@ -46,6 +46,9 @@ import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.LocalKeePassDatabase
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.bitwarden.BitwardenVault
+import takagi.ru.monica.ui.components.OtpTypeSelector
+import takagi.ru.monica.ui.components.OtpParameterFields
+import takagi.ru.monica.util.OtpParametersDraft
 import takagi.ru.monica.data.model.OtpType
 import takagi.ru.monica.data.model.StorageTarget
 import takagi.ru.monica.data.model.TotpData
@@ -347,7 +350,6 @@ fun AddEditTotpScreen(
     
     var showAdvanced by remember { mutableStateOf(false) }
     var showAssociation by remember { mutableStateOf(false) }
-    var expandedOtpType by remember { mutableStateOf(false) }
     var showPasswordSelectionDialog by remember { mutableStateOf(false) }
     var showImportUriDialog by remember { mutableStateOf(false) }
     var otpUriInput by rememberSaveable { mutableStateOf("") }
@@ -360,8 +362,9 @@ fun AddEditTotpScreen(
     // 根据OTP类型自动调整digits
     LaunchedEffect(selectedOtpType) {
         when (selectedOtpType) {
-            OtpType.STEAM -> digits = "5"
-            OtpType.TOTP, OtpType.HOTP, OtpType.YANDEX, OtpType.MOTP -> {
+            OtpType.STEAM -> { digits = "5"; period = "30"; algorithm = "SHA1" }
+            OtpType.MOTP -> { digits = "6"; period = "10"; algorithm = "SHA1" }
+            OtpType.TOTP, OtpType.HOTP, OtpType.YANDEX -> {
                 if (digits == "5") digits = "6"
             }
         }
@@ -532,7 +535,8 @@ fun AddEditTotpScreen(
         importTotpFromUri(qrValue)
     }
 
-    val canSave = title.isNotBlank() && secret.isNotBlank()
+    val canSave = title.isNotBlank() && secret.isNotBlank() &&
+        OtpParametersDraft(period, digits, algorithm, counter, pin).isValid(selectedOtpType)
     val previewTotpData = remember(secret, issuer, accountName, period, digits, algorithm, selectedOtpType, counter, pin) {
         buildInlinePreviewTotpData(
             secret = secret,
@@ -957,132 +961,23 @@ fun AddEditTotpScreen(
                     onExpandedChange = { showAdvanced = it }
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // OTP Type
-                        ExposedDropdownMenuBox(
-                            expanded = expandedOtpType,
-                            onExpandedChange = { expandedOtpType = it }
-                        ) {
-                            OutlinedTextField(
-                                value = when (selectedOtpType) {
-                                    OtpType.TOTP -> stringResource(R.string.otp_type_totp)
-                                    OtpType.HOTP -> stringResource(R.string.otp_type_hotp)
-                                    OtpType.STEAM -> stringResource(R.string.otp_type_steam)
-                                    OtpType.YANDEX -> stringResource(R.string.otp_type_yandex)
-                                    OtpType.MOTP -> stringResource(R.string.otp_type_motp)
-                                },
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.otp_type)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedOtpType) },
-                                leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) },
-                                modifier = Modifier.menuAnchor().fillMaxWidth(),
-                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            
-                            ExposedDropdownMenu(
-                                expanded = expandedOtpType,
-                                onDismissRequest = { expandedOtpType = false }
-                            ) {
-                                val types = listOf(
-                                    Triple(OtpType.TOTP, R.string.otp_type_totp, R.string.otp_type_description_totp),
-                                    Triple(OtpType.HOTP, R.string.otp_type_hotp, R.string.otp_type_description_hotp),
-                                    Triple(OtpType.STEAM, R.string.otp_type_steam, R.string.otp_type_description_steam),
-                                    Triple(OtpType.YANDEX, R.string.otp_type_yandex, R.string.otp_type_description_yandex),
-                                    Triple(OtpType.MOTP, R.string.otp_type_motp, R.string.otp_type_description_motp)
-                                )
-                                
-                                types.forEach { (type, nameRes, descRes) ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(stringResource(nameRes))
-                                                Text(
-                                                    stringResource(descRes),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            selectedOtpType = type
-                                            expandedOtpType = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // HOTP Counter
-                        if (selectedOtpType == OtpType.HOTP) {
-                            OutlinedTextField(
-                                value = counter,
-                                onValueChange = { counter = it.filter { char -> char.isDigit() } },
-                                label = { Text(stringResource(R.string.initial_counter)) },
-                                leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                supportingText = { Text(stringResource(R.string.hotp_counter_hint)) },
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
-
-                        // mOTP PIN
-                        if (selectedOtpType == OtpType.MOTP) {
-                            OutlinedTextField(
-                                value = pin,
-                                onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) pin = it },
-                                label = { Text(stringResource(R.string.pin_code)) },
-                                leadingIcon = { Icon(Icons.Default.Pin, contentDescription = null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                                supportingText = { Text(stringResource(R.string.motp_pin_hint)) },
-                                isError = pin.isEmpty(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
-
-                        // Period
-                        if (selectedOtpType != OtpType.HOTP) {
-                            OutlinedTextField(
-                                value = period,
-                                onValueChange = { period = it.filter { char -> char.isDigit() } },
-                                label = { Text(stringResource(R.string.time_period_seconds)) },
-                                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                supportingText = { Text(stringResource(R.string.usually_30_seconds)) },
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
-
-                        // Digits
-                        OutlinedTextField(
-                            value = digits,
-                            onValueChange = { 
-                                val newValue = it.filter { char -> char.isDigit() }
-                                if (newValue.isEmpty() || newValue.toInt() in 5..8) {
-                                    digits = newValue
-                                }
+                        OtpTypeSelector(selectedOtpType, onChange = { type ->
+                            selectedOtpType = type
+                            val updated = OtpParametersDraft(period, digits, algorithm, counter, pin).selectType(type)
+                            period = updated.period
+                            digits = updated.digits
+                            algorithm = updated.algorithm
+                        })
+                        OtpParameterFields(
+                            type = selectedOtpType,
+                            draft = OtpParametersDraft(period, digits, algorithm, counter, pin),
+                            onChange = { updated ->
+                                period = updated.period
+                                digits = updated.digits
+                                algorithm = updated.algorithm
+                                counter = updated.counter
+                                pin = updated.pin
                             },
-                            label = { Text(stringResource(R.string.code_digits)) },
-                            leadingIcon = { Icon(Icons.Default.Dialpad, contentDescription = null) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = selectedOtpType != OtpType.STEAM,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            supportingText = { 
-                                Text(
-                                    if (selectedOtpType == OtpType.STEAM) 
-                                        stringResource(R.string.steam_uses_5_chars)
-                                    else 
-                                        stringResource(R.string.usually_6_digits)
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp)
                         )
                     }
                 }

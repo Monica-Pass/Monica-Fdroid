@@ -119,7 +119,9 @@ object TotpUriParser {
             // 格式: otpauth://totp/Label?...
             // 或: otpauth://totp/Issuer:AccountName?...
             val path = parsedUri.path?.removePrefix("/") ?: ""
-            val (label, accountName) = parseLabel(path)
+            val (label, labelAccountName) = parseLabel(path)
+            val accountName = if (issuer.isNotBlank() && label.startsWith("$issuer:"))
+                label.removePrefix("$issuer:") else labelAccountName
 
             // 如果URI中没有issuer参数，尝试从label中提取
             val finalIssuer = if (issuer.isBlank() && label.contains(":")) {
@@ -146,7 +148,7 @@ object TotpUriParser {
                 algorithm = algorithm,
                 otpType = otpType,
                 counter = counter,
-                pin = ""  // PIN码需要用户额外输入
+                pin = parsedUri.getQueryParameter("pin").orEmpty()
             )
 
             return TotpParseResult(
@@ -189,8 +191,8 @@ object TotpUriParser {
     }
 
     private fun parseMotpUri(uri: String): TotpParseResult? {
-        val decoded = Uri.decode(uri)
-        val match = motpRegex.matchEntire(decoded) ?: return null
+        // Split URI components before decoding so encoded ':' and '&' stay inside their values.
+        val match = motpRegex.matchEntire(uri) ?: return null
 
         val issuerRaw = Uri.decode(match.groupValues[1]).trim()
         val accountName = Uri.decode(match.groupValues[2]).trim()
@@ -209,7 +211,7 @@ object TotpUriParser {
                 digits = 6,
                 algorithm = "SHA1",
                 otpType = OtpType.MOTP,
-                pin = ""
+                pin = queryParams["pin"].orEmpty()
             ),
             label = label,
             accountName = accountName
@@ -565,7 +567,7 @@ object TotpUriParser {
      * 格式2: "user@example.com" -> ("user@example.com", "user@example.com")
      */
     private fun parseLabel(label: String): Pair<String, String> {
-        val decodedLabel = Uri.decode(label)
+        val decodedLabel = label
 
         return if (decodedLabel.contains(":")) {
             val parts = decodedLabel.split(":", limit = 2)
@@ -582,7 +584,7 @@ object TotpUriParser {
      * @param totpData OTP数据
      * @return otpauth:// URI字符串
      */
-    fun generateUri(label: String, totpData: TotpData): String {
+    fun generateUri(label: String, totpData: TotpData, includePin: Boolean = false): String {
         if (totpData.otpType == OtpType.MOTP) {
             val issuer = totpData.issuer.ifBlank { label.substringBefore(":", label) }
             val accountName = totpData.accountName.ifBlank {
@@ -591,10 +593,9 @@ object TotpUriParser {
             val encodedIssuer = Uri.encode(issuer)
             val encodedAccountName = Uri.encode(accountName)
             val encodedSecret = Uri.encode(totpData.secret)
-            return "motp://$encodedIssuer:$encodedAccountName?secret=$encodedSecret"
+            val pinParameter = if (includePin && totpData.pin.isNotBlank()) "&pin=${Uri.encode(totpData.pin)}" else ""
+            return "motp://$encodedIssuer:$encodedAccountName?secret=$encodedSecret$pinParameter"
         }
-
-        val encodedLabel = Uri.encode(label)
 
         // 根据OTP类型选择authority
         val authority = when (totpData.otpType) {
@@ -606,7 +607,7 @@ object TotpUriParser {
         val builder = Uri.Builder()
             .scheme("otpauth")
             .authority(authority)
-            .appendPath(encodedLabel)
+            .appendPath(label)
             .appendQueryParameter("secret", totpData.secret)
 
         if (totpData.issuer.isNotBlank()) {
@@ -628,6 +629,10 @@ object TotpUriParser {
 
         if (totpData.algorithm != "SHA1") {
             builder.appendQueryParameter("algorithm", totpData.algorithm)
+        }
+
+        if (includePin && totpData.pin.isNotBlank()) {
+            builder.appendQueryParameter("pin", totpData.pin)
         }
 
         // Steam特殊标记
@@ -666,11 +671,10 @@ object TotpUriParser {
         } else {
             listOf(issuer, accountName).filter { it.isNotBlank() }.joinToString(":")
         }
-        val encodedLabel = Uri.encode(resolvedLabel)
         val builder = Uri.Builder()
             .scheme("otpauth")
             .authority("totp")
-            .appendPath(encodedLabel)
+            .appendPath(resolvedLabel)
             .appendQueryParameter("secret", secret)
 
         if (issuer.isNotBlank()) {

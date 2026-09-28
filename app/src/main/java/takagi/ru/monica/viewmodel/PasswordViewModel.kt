@@ -1750,6 +1750,7 @@ class PasswordViewModel internal constructor(
                     keepassEntryUuid = item.entryUuid,
                     keepassGroupUuid = item.groupUuid,
                     sshKeyData = item.sshKeyData,
+                    authenticatorKey = encodeAuthenticatorKeyForStorage(item.authenticatorKey),
                     loginType = item.loginType,
                     ssoProvider = item.ssoProvider,
                     ssoRefEntryId = item.ssoRefEntryId,
@@ -1790,6 +1791,7 @@ class PasswordViewModel internal constructor(
                     keepassEntryUuid = item.entryUuid,
                     keepassGroupUuid = item.groupUuid,
                     sshKeyData = item.sshKeyData,
+                    authenticatorKey = encodeAuthenticatorKeyForStorage(item.authenticatorKey),
                     loginType = item.loginType,
                     ssoProvider = item.ssoProvider,
                     ssoRefEntryId = item.ssoRefEntryId,
@@ -1817,9 +1819,10 @@ class PasswordViewModel internal constructor(
         imported: PasswordEntry,
         importedPlainPassword: String
     ): Boolean {
-        return copy(password = "", updatedAt = imported.updatedAt) ==
-            imported.copy(password = "") &&
-            decryptForDisplay(password) == importedPlainPassword
+        return copy(password = "", authenticatorKey = "", updatedAt = imported.updatedAt) ==
+            imported.copy(password = "", authenticatorKey = "") &&
+            decryptForDisplay(password) == importedPlainPassword &&
+            decryptStoredSensitiveValue(authenticatorKey) == decryptStoredSensitiveValue(imported.authenticatorKey)
     }
 
     private suspend fun saveKeePassCustomFields(entryId: Long, item: KeePassEntryData) {

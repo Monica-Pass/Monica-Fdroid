@@ -144,7 +144,14 @@ object KeePassTotpCodec {
     }
 
     fun toKeePassFields(data: TotpData, title: String): Map<String, String> {
-        if (data.otpType !in setOf(OtpType.TOTP, OtpType.HOTP, OtpType.STEAM)) return emptyMap()
+        if (data.otpType == OtpType.MOTP) {
+            if (data.secret.isBlank()) return emptyMap()
+            val issuer = encodeUriComponent(data.issuer.ifBlank { title })
+            val account = encodeUriComponent(data.accountName)
+            val pin = if (data.pin.isNotEmpty()) "&pin=${encodeUriComponent(data.pin)}" else ""
+            // Extension URI only: KeePass's TimeOtp generator cannot generate mOTP.
+            return mapOf(FIELD_OTP to "motp://$issuer:$account?secret=${encodeUriComponent(data.secret.trim())}$pin")
+        }
         val normalized = data.copy(
             secret = normalizeSecret(data.secret),
             algorithm = normalizeAlgorithm(data.algorithm) ?: return emptyMap(),
@@ -156,7 +163,10 @@ object KeePassTotpCodec {
 
         return buildMap {
             put(FIELD_OTP, buildOtpAuthUri(normalized, title))
-            if (normalized.otpType == OtpType.HOTP) {
+            if (normalized.otpType == OtpType.YANDEX) {
+                // Preserve the extension without advertising it as native RFC 6238 TOTP.
+                return@buildMap
+            } else if (normalized.otpType == OtpType.HOTP) {
                 put(FIELD_OTP_TYPE, "HOTP")
                 put(FIELD_HOTP_COUNTER, normalized.counter.toString())
                 // KeePass's native HOTP generator supports RFC 4226 (SHA-1, six digits).
@@ -298,14 +308,28 @@ object KeePassTotpCodec {
         fallbackAccount: String,
         fallbackLink: String
     ): TotpData? {
+        if (uri.trim().startsWith("motp://", ignoreCase = true)) {
+            return runCatching {
+                val match = Regex("^motp://(.*?):(.*?)\\?(.*)$", RegexOption.IGNORE_CASE)
+                    .matchEntire(uri.trim()) ?: return null
+                fun decode(value: String) = URLDecoder.decode(value.replace("+", "%2B"), "UTF-8")
+                val params = parseQuery(match.groupValues[3])
+                val secret = params["secret"]?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+                TotpData(secret = secret, issuer = decode(match.groupValues[1]).ifBlank { fallbackIssuer },
+                    accountName = decode(match.groupValues[2]).ifBlank { fallbackAccount },
+                    period = 10, digits = 6, otpType = OtpType.MOTP,
+                    pin = params["pin"].orEmpty(), link = fallbackLink)
+            }.getOrNull()
+        }
         if (!uri.trim().startsWith("otpauth://", ignoreCase = true)) return null
         return runCatching {
             val parsed = URI(uri.trim().replace(" ", "%20"))
             val typeRaw = parsed.host?.lowercase(Locale.ROOT).orEmpty()
-            if (typeRaw !in setOf("totp", "hotp", "steam")) return null
+            if (typeRaw !in setOf("totp", "hotp", "steam", "yaotp")) return null
             val params = parseQuery(parsed.rawQuery.orEmpty())
             val otpType = when {
                 typeRaw == "hotp" -> OtpType.HOTP
+                typeRaw == "yaotp" -> OtpType.YANDEX
                 typeRaw == "steam" || params["encoder"].equals("steam", true) -> OtpType.STEAM
                 else -> OtpType.TOTP
             }
@@ -322,7 +346,8 @@ object KeePassTotpCodec {
             if (!isValidSecret(secret)) return null
 
             val issuer = params["issuer"].orEmpty().ifBlank { labelIssuer }.ifBlank { fallbackIssuer }
-            val account = labelAccount.ifBlank { fallbackAccount }
+            val account = (if (issuer.isNotEmpty() && decodedLabel.startsWith("$issuer:"))
+                decodedLabel.removePrefix("$issuer:") else labelAccount).ifBlank { fallbackAccount }
             val algorithm = normalizeAlgorithm(params["algorithm"].orEmpty()) ?: return null
             val digits = if (otpType == OtpType.STEAM) 5 else params["digits"]?.toIntOrNull()?.takeIf { it in 1..10 } ?: 6
             val period = params["period"]?.toIntOrNull()?.takeIf { it > 0 } ?: 30
@@ -339,13 +364,18 @@ object KeePassTotpCodec {
                 algorithm = algorithm,
                 otpType = otpType,
                 counter = counter,
+                pin = params["pin"].orEmpty(),
                 link = fallbackLink
             )
         }.getOrNull()
     }
 
     private fun buildOtpAuthUri(data: TotpData, title: String): String {
-        val type = if (data.otpType == OtpType.HOTP) "hotp" else "totp"
+        val type = when (data.otpType) {
+            OtpType.HOTP -> "hotp"
+            OtpType.YANDEX -> "yaotp"
+            else -> "totp"
+        }
         val label = encodeUriComponent(
             when {
                 data.issuer.isNotBlank() && data.accountName.isNotBlank() -> "${data.issuer}:${data.accountName}"
@@ -372,6 +402,9 @@ object KeePassTotpCodec {
             }
             if (data.otpType == OtpType.HOTP) {
                 add("counter=${data.counter.coerceAtLeast(0L)}")
+            }
+            if (data.otpType == OtpType.YANDEX && data.pin.isNotEmpty()) {
+                add("pin=${encodeUriComponent(data.pin)}")
             }
         }.joinToString("&")
         return "otpauth://$type/$label?$query"

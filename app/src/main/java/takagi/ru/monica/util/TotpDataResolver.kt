@@ -176,7 +176,9 @@ object TotpDataResolver {
             issuer = normalized.issuer,
             accountName = normalized.accountName
         )
-        return TotpUriParser.generateUri(label, normalized)
+        // Stored password payloads need the PIN as well as the secret. Public QR exports
+        // keep generateUri's default of omitting the PIN.
+        return TotpUriParser.generateUri(label, normalized, includePin = true)
     }
 
     fun hasEquivalentOtpParameters(left: TotpData, right: TotpData): Boolean {
@@ -234,7 +236,9 @@ object TotpDataResolver {
         val queryIssuer = queryParams["issuer"]?.trim().orEmpty()
         val labelIssuer = label.substringBefore(":", missingDelimiterValue = "").trim()
         val issuer = queryIssuer.ifBlank { labelIssuer }
-        val accountName = if (label.contains(":")) {
+        val accountName = if (issuer.isNotBlank() && label.startsWith("$issuer:")) {
+            label.removePrefix("$issuer:").trim()
+        } else if (label.contains(":")) {
             label.substringAfter(":").trim()
         } else {
             label.trim()
@@ -261,7 +265,8 @@ object TotpDataResolver {
             digits = if (otpType == OtpType.STEAM) 5 else requestedDigits,
             algorithm = algorithm,
             otpType = otpType,
-            counter = counter
+            counter = counter,
+            pin = queryParams["pin"].orEmpty()
         )
     }
 

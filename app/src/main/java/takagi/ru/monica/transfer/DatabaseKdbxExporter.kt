@@ -61,8 +61,6 @@ internal class DatabaseKdbxExporter(context: Context) {
                 val fields = snapshot.fields[entry.id].orEmpty().mapIndexed { index, field ->
                     KeePassCustomFieldData(field.title, field.value, field.isProtected, index)
                 }.toMutableList()
-                if (entry.authenticatorKey.isNotBlank()) fields += KeePassCustomFieldData("TOTP Seed",
-                    security.decryptDataIfMonicaCiphertext(entry.authenticatorKey), true)
                 val exported = service.buildEntry(entry, security.decryptDataIfMonicaCiphertext(entry.password), fields)
                 entries += snapshot.categories[entry.categoryId] to exported
                 owners[AttachmentOwner.password(entry.id)] = exported.uuid

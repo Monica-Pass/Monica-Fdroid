@@ -1,3 +1,21 @@
+# 未发布
+
+## 中文
+
+- 密码添加／编辑支持 TOTP、HOTP、Steam、Yandex 和 mOTP，与独立验证器使用相同类型和参数选项；支持计数器、PIN、周期、位数和算法，重新编辑及多凭据切换保留各自参数。
+- 修复密码 OTP 在 KeePass 原生写入、重新打开和导出时参数丢失的问题；Yandex、mOTP 使用受保护的扩展 URI 保存。其他 KeePass 客户端是否能生成这些扩展类型仍取决于其支持范围。
+- 密码内部 OTP 载荷保留所需 PIN，公开二维码继续默认不包含 PIN。
+- 修复 KeePass 密码修改时关联 Steam 元数据可能丢失的问题。
+
+## English
+
+- Password editors now offer the same TOTP, HOTP, Steam, Yandex and mOTP types and parameters as the authenticator editor, preserving parameters when editing or switching credentials.
+- Preserve password OTP parameters in native KeePass writes, reopen and exports. Yandex and mOTP use protected extension URIs; generation in other KeePass clients depends on their support.
+- Internal OTP payloads retain required PINs. Public QR exports continue to omit PINs by default.
+- Preserve existing Steam metadata when editing a KeePass password.
+
+---
+
 # Monica for Android (F-Droid) 1.0.314
 
 ## 中文
