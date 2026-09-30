@@ -18,6 +18,7 @@ object ApiKeyEntryFields {
         if (apiUrl.isNotBlank()) add(CustomFieldDraft(title = API_URL, value = apiUrl.trim()))
     }
 
+    /** For opening web links only; recorded addresses do not need to be navigable URLs. */
     fun isValidOptionalUrl(value: String): Boolean {
         val text = value.trim()
         if (text.isEmpty()) return true
@@ -41,8 +42,7 @@ data class ApiKeyDraft(
     // Prevent accidental logging of a secret-bearing draft.
     override fun toString(): String = "ApiKeyDraft(redacted)"
 
-    val isValid: Boolean get() = provider.isNotBlank() && key.isNotBlank() &&
-        ApiKeyEntryFields.isValidOptionalUrl(website) && ApiKeyEntryFields.isValidOptionalUrl(apiUrl)
+    val isValid: Boolean get() = provider.isNotBlank() && key.isNotBlank()
 
     fun toEntry(original: PasswordEntry? = null): PasswordEntry =
         (original ?: PasswordEntry(title = "", website = "", username = "", password = "")).copy(

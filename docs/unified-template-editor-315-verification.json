@@ -1,0 +1,1043 @@
+{
+  "recorded_at": "2026-09-30T04:39:09.345181+00:00",
+  "status": "implemented_build_and_device_acceptance_passed_with_documented_limits",
+  "editions": [
+    {
+      "root": "Monica-main\\Monica for Android",
+      "build": "passed",
+      "build_log": "main-final-build.log",
+      "unit_suites": [
+        {
+          "name": "takagi.ru.monica.data.ApiKeyEntryFieldsTest",
+          "tests": "7",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.ApiTokenMetadataTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordContentBlocksTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordWalletProjectionTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.TemplateCredentialDraftTest",
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        }
+      ],
+      "unit_note": "35 tests passed; earlier Android-test compilation errors were fixed and superseded by the final build.",
+      "device_passed": 53,
+      "device_skipped": 1,
+      "device_results": {
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#realWalletCardsOpenCompleteBankAndBillingDetails": {
+          "status": 0,
+          "log": "device-main-final-wallet.log"
+        },
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#apiKeyUsesSharedContentAndPreservesExactSecretWhenReopened": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#stackReusesWalletBrowserAndCollapsesWithSystemBack": {
+          "status": 0,
+          "log": "device-main-acceptance-retry.log"
+        },
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#embeddedTemplateCancelDoesNotCommitAndUsesCompleteCoreForm": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiEditingPreservesHiddenFieldsAndAdvancedNetworkSettings": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#barcodeCreationRendersGroupedFieldsAndKeepsSaveReachable": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#storageTargetsRoundTripAndMdbxFilterDefaults": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiUsesCurrentMdbxAndPersistsPasswordInNativeFile": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiMenuIncludesAllTypesAndCarriesMultipleTargets": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#sshUsesInheritedTargetAndExposesCompleteMenuInDarkTheme": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#distinctKindsRepeatSaveReopenAndDisplayWithoutExposingSecrets": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#longPressDragAndConfirmedDeleteActOnTheWholeBlock": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#cancellingNewBlockDoesNotCreatePlaceholder": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#oversizedQrRemainsReadableAndShowsAnErrorInsteadOfLoadingForever": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#createReopenCopyAndEditPreserveKeyAndAllFiveFields": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#lockClearsSecretDraftAndPreventsSave": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#passwordCreationMenuOpensApiKeyForm": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#invalidInputStaysInEditorAndDarkLargeTextRemainsUsable": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#creationTypeMenuOffersGpg": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#publicOnlyResultOmitsPrivateActions": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatorGpgSaveActionIsVisibleInIndependentEditor": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#localizedEditorAndValidationRemainReachable": {
+          "status": 0,
+          "log": "device-main-acceptance-retry.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatorTypeMenuOpensGpgForm": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#actionsRemainReachableInDarkLargeText": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#resultCardAndMoreOpenGroupedActions": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#newEntryAndGenerationSheetRemainUsableInDarkLargeText": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#adaptiveGeneratorProducesAnInteractiveGpgResult": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatorResultCreatesUsernameDraftInIndependentEditor": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generateSaveReloadAndPreserveEncryptedPrivateKey": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatedResultCopiesActualClipboardAndCreatesEntry": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#passwordCardSwipesAndLongPressCreateAndOpenATokenStack": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#mainPagePreloadKeepsTheReaderUsedByTokenDetail": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#createChoosesTheDatabaseAndCategoryWithoutSavingSecretDrafts": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#detailNavigationAfterFolderBrowsingPerformance": {
+          "status": -4,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#editAndReturnKeepNativeIdentityExtensionsAndTheVisibleList": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#detailShowsExistingMetadataWhileStorageIsBusyAndClearsOnLock": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#quickFilterAndNativeRowOpenTheCorrectObject": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#systemBackUsesTheSameCollapsePath": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#draggingLiftsTheOutgoingCardBeforeItSlidesIntoTheBackSlot": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#collapseInterruptsAFlingAndRepeatedTapsDismissOnlyOnce": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#aLargeStackOnlyComposesNearbyCardFaces": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#countCapsuleKeepsItsRestingSizeThroughoutCollapseAndReveal": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#reachingTheFirstCardDoesNotDismissTheStack": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#returningFromDetailsRestoresTheSameFocusedCard": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#browsingKeepsCollapseButtonFixedAndCollapsesToTheBrowsedCard": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#collapseHandsOffTheSameCardBeforeRemovingTheOverlay": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#loopingCollapseHandsOffTheWrappedCardWithMatchingPixelsAndBounds": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.attachments.PasswordDetailM3eTest#walletInformationOpensCompleteFields": {
+          "status": 0,
+          "log": "device-main-acceptance.log"
+        },
+        "takagi.ru.monica.attachments.PasswordDetailM3eTest#realPasswordScreenKeepsWalletFieldsAccessible": {
+          "status": 0,
+          "log": "device-main-acceptance-retry.log"
+        },
+        "takagi.ru.monica.attachments.PasswordDetailM3eTest#walletStackExpandsInSavedOrderAndCollapses": {
+          "status": 0,
+          "log": "device-main-acceptance-retry.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#noteRetainsBodyFormattingTagsUnknownFieldsAndIndependentInlineImage": {
+          "status": 0,
+          "log": "device-main-publish-target-final.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#copiedContentIsPublishedOnlyAfterNativeAttachmentsExist": {
+          "status": 0,
+          "log": "device-main-publish-target-final.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#completeCardCopySurvivesSourceDeletionAndRetriesAcrossTwoPasswords": {
+          "status": 0,
+          "log": "device-main-publish-target-final.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#missingCardFaceDoesNotProduceAPartialCopy": {
+          "status": 0,
+          "log": "device-main-publish-target-final.log"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "C:\\Users\\joyins\\Desktop\\Monica-all\\Monica-main\\Monica for Android\\app\\build\\outputs\\apk\\debug\\Monica-Android-x86_64-1.0.315-26093012-47.APK",
+          "bytes": 82951095,
+          "sha256": "aed11d90a48bb0dc9d77d2a6854e8a20e05138c3baa28d1bc6df9293b3038589"
+        },
+        {
+          "path": "C:\\Users\\joyins\\Desktop\\Monica-all\\Monica-main\\Monica for Android\\app\\build\\outputs\\apk\\androidTest\\debug\\app-debug-androidTest.apk",
+          "bytes": 4441785,
+          "sha256": "561f346cb86a698c69c3385580275a90bbdfac3630eff9516fd5af0c568d7149"
+        }
+      ],
+      "scoped_diff_check": "passed"
+    },
+    {
+      "root": "Monica-main\\fdroid",
+      "build": "passed",
+      "build_log": "fdroid-final-build.log",
+      "unit_suites": [
+        {
+          "name": "takagi.ru.monica.data.ApiKeyEntryFieldsTest",
+          "tests": "7",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.ApiTokenMetadataTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordContentBlocksTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordWalletProjectionTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.TemplateCredentialDraftTest",
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        }
+      ],
+      "unit_note": "35 tests passed; earlier Android-test compilation errors were fixed and superseded by the final build.",
+      "device_passed": 53,
+      "device_skipped": 1,
+      "device_results": {
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#realWalletCardsOpenCompleteBankAndBillingDetails": {
+          "status": 0,
+          "log": "device-fdroid-final-wallet.log"
+        },
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#apiKeyUsesSharedContentAndPreservesExactSecretWhenReopened": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#stackReusesWalletBrowserAndCollapsesWithSystemBack": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.UnifiedTemplateEditorUiTest#embeddedTemplateCancelDoesNotCommitAndUsesCompleteCoreForm": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiEditingPreservesHiddenFieldsAndAdvancedNetworkSettings": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#barcodeCreationRendersGroupedFieldsAndKeepsSaveReachable": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#storageTargetsRoundTripAndMdbxFilterDefaults": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiUsesCurrentMdbxAndPersistsPasswordInNativeFile": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiMenuIncludesAllTypesAndCarriesMultipleTargets": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#sshUsesInheritedTargetAndExposesCompleteMenuInDarkTheme": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#distinctKindsRepeatSaveReopenAndDisplayWithoutExposingSecrets": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#longPressDragAndConfirmedDeleteActOnTheWholeBlock": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#cancellingNewBlockDoesNotCreatePlaceholder": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.PasswordContentBlocksUiTest#oversizedQrRemainsReadableAndShowsAnErrorInsteadOfLoadingForever": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#createReopenCopyAndEditPreserveKeyAndAllFiveFields": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#lockClearsSecretDraftAndPreventsSave": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#passwordCreationMenuOpensApiKeyForm": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.ApiKeyFlowTest#invalidInputStaysInEditorAndDarkLargeTextRemainsUsable": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#creationTypeMenuOffersGpg": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#publicOnlyResultOmitsPrivateActions": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatorGpgSaveActionIsVisibleInIndependentEditor": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#localizedEditorAndValidationRemainReachable": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatorTypeMenuOpensGpgForm": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#actionsRemainReachableInDarkLargeText": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#resultCardAndMoreOpenGroupedActions": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#newEntryAndGenerationSheetRemainUsableInDarkLargeText": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#adaptiveGeneratorProducesAnInteractiveGpgResult": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatorResultCreatesUsernameDraftInIndependentEditor": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generateSaveReloadAndPreserveEncryptedPrivateKey": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.GpgKeyFlowTest#generatedResultCopiesActualClipboardAndCreatesEntry": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#passwordCardSwipesAndLongPressCreateAndOpenATokenStack": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#mainPagePreloadKeepsTheReaderUsedByTokenDetail": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#createChoosesTheDatabaseAndCategoryWithoutSavingSecretDrafts": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#detailNavigationAfterFolderBrowsingPerformance": {
+          "status": -4,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#editAndReturnKeepNativeIdentityExtensionsAndTheVisibleList": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#detailShowsExistingMetadataWhileStorageIsBusyAndClearsOnLock": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.screens.NativeApiTokenUiTest#quickFilterAndNativeRowOpenTheCorrectObject": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#systemBackUsesTheSameCollapsePath": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#draggingLiftsTheOutgoingCardBeforeItSlidesIntoTheBackSlot": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#collapseInterruptsAFlingAndRepeatedTapsDismissOnlyOnce": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#aLargeStackOnlyComposesNearbyCardFaces": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#countCapsuleKeepsItsRestingSizeThroughoutCollapseAndReveal": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#reachingTheFirstCardDoesNotDismissTheStack": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#returningFromDetailsRestoresTheSameFocusedCard": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#browsingKeepsCollapseButtonFixedAndCollapsesToTheBrowsedCard": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#collapseHandsOffTheSameCardBeforeRemovingTheOverlay": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.ui.cardwallet.WalletStackBrowserTest#loopingCollapseHandsOffTheWrappedCardWithMatchingPixelsAndBounds": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.attachments.PasswordDetailM3eTest#walletInformationOpensCompleteFields": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.attachments.PasswordDetailM3eTest#realPasswordScreenKeepsWalletFieldsAccessible": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.attachments.PasswordDetailM3eTest#walletStackExpandsInSavedOrderAndCollapses": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#noteRetainsBodyFormattingTagsUnknownFieldsAndIndependentInlineImage": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#copiedContentIsPublishedOnlyAfterNativeAttachmentsExist": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#completeCardCopySurvivesSourceDeletionAndRetriesAcrossTwoPasswords": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        },
+        "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest#missingCardFaceDoesNotProduceAPartialCopy": {
+          "status": 0,
+          "log": "device-fdroid-acceptance.log"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "C:\\Users\\joyins\\Desktop\\Monica-all\\Monica-main\\fdroid\\app\\build\\outputs\\apk\\debug\\Monica-Android-x86_64-1.0.315.apk",
+          "bytes": 87737634,
+          "sha256": "6d0ca592abe76c9324df2d708f020c51ce672b349e7bc9b575c6d4fc18d11df5"
+        },
+        {
+          "path": "C:\\Users\\joyins\\Desktop\\Monica-all\\Monica-main\\fdroid\\app\\build\\outputs\\apk\\androidTest\\debug\\app-debug-androidTest.apk",
+          "bytes": 4508224,
+          "sha256": "660ea65444e7111280be47958639a20794a4585c69a3900df90cb544552a5322"
+        }
+      ],
+      "scoped_diff_check": "passed"
+    }
+  ],
+  "mirrors": {
+    "source_files": 49,
+    "copies": 4,
+    "match": true,
+    "sha256": {
+      "app/src/androidTest/java/takagi/ru/monica/attachments/PasswordDetailM3eTest.kt": "781782e994213aac2597d1d06b4fbfd097e369b822970d1779ce43037c0b99a0",
+      "app/src/androidTest/java/takagi/ru/monica/credentialexchange/EmbeddedWalletCopyInstrumentedTest.kt": "2cfb2d4f1ae307965f5f9d266ecc6783022f6c0b35ac652bf832c055fbde8283",
+      "app/src/androidTest/java/takagi/ru/monica/credentialexchange/TemplateEditorsDeviceTest.kt": "80548798045dec1540b69ef0dbe67a2e0d6370ce25dd1eab25cdb5781d82023e",
+      "app/src/androidTest/java/takagi/ru/monica/ui/ApiKeyFlowTest.kt": "9036777ded57c61d995015a3743f68af5cc48b3c2987bf8b215a0f863653e207",
+      "app/src/androidTest/java/takagi/ru/monica/ui/GpgKeyFlowTest.kt": "4f4c274c5779920ee9ae89823d63e54a17a73be446717f29b4aaa24fd088a1a9",
+      "app/src/androidTest/java/takagi/ru/monica/ui/PasswordContentBlocksUiTest.kt": "ad203eaec4aec00c0e852f4f66242df5b978713135f47c99d0aed45d89c6fcb4",
+      "app/src/androidTest/java/takagi/ru/monica/ui/UnifiedTemplateEditorUiTest.kt": "82b22b26e497aa4ca6a83b728b828fb1215a8f552ee58413f8a4b735234bd92a",
+      "app/src/androidTest/java/takagi/ru/monica/ui/screens/NativeApiTokenUiTest.kt": "39693598a7115fd6d33465ed793a670ab86c0e3d65f3ce3e940af60b2ea196e2",
+      "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletEditorResult.kt": "acc14e13e57c5a72acead52118ff700973ac57546e57d952c668936d2ddb424b",
+      "app/src/main/java/takagi/ru/monica/data/model/PasswordWalletProjection.kt": "a7b4f9fbb0ba33374f6940b0c3d81f3f46626299f7d316dd1d4c2eab6321a038",
+      "app/src/main/java/takagi/ru/monica/data/model/TemplateCredentialDraft.kt": "642dbbdbd97a740607913f443894a5e0804556261544d8231af7bf8bfd722de1",
+      "app/src/main/java/takagi/ru/monica/ui/cardwallet/CardFaceEditorState.kt": "9a2d4c8a447afa103288ce2a8fc46d9fe6d186e53c6e46763504fcaf211e1049",
+      "app/src/main/java/takagi/ru/monica/ui/cardwallet/WalletStackBrowser.kt": "912b7105bb9f969197ca60090888472bca98b4e1baea4d938182df0b2c0daf2a",
+      "app/src/main/java/takagi/ru/monica/ui/cardwallet/WalletStackCard.kt": "a1d19ec070e50aa6068487fc7b5387401e41bc705a35e7c609d9ded62aab5336",
+      "app/src/main/java/takagi/ru/monica/ui/components/DetailWalletStack.kt": "af63d0285c3ceb3d4bd82be952e077ead5c439801cd91b42490474b0ec54251b",
+      "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletEditorDialog.kt": "a15ea63c8439d6a87608ee61cbff00854f0151da743c70dcefaa3f1a86e88aac",
+      "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletViews.kt": "0719b52bb1a29a280560de8d6458a8a6d9b6994826e97422061fc494bcd8b7c2",
+      "app/src/main/java/takagi/ru/monica/ui/components/EntryTypeChip.kt": "afe34ee60419ac6a82966ccb0265c6afa810aaea493d6b8d4ecf7b119610d0a7",
+      "app/src/main/java/takagi/ru/monica/ui/components/PasswordContentBlockUi.kt": "dfeb1ae16758fba94a3481cdf037b9a41ac6cfcb892127b79af398077a26e9a3",
+      "app/src/main/java/takagi/ru/monica/ui/components/PasswordContentMenu.kt": "37d95dbffecfc198e931c0b3ec01eeb009689605d15f90b3f7ba1a21e486f3d8",
+      "app/src/main/java/takagi/ru/monica/ui/components/TemplateCredentialFields.kt": "881b3c47849a7c7f31802ef05eb9f76730b61694a2741289563c1bb7c96ab9bc",
+      "app/src/main/java/takagi/ru/monica/ui/screens/AddEditApiTokenScreen.kt": "a66d5744b219081acfc97013acf5e309a839d44491e56bdd2108a573f91b2cf8",
+      "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBillingAddressScreen.kt": "3d980d9deb48ec785e3a88127d3318833c91591c1927c337111f32553fae63d2",
+      "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "7936c0444102e5fc5e57bb7178f0a03277eefcd49417e1ba11dca616b171eb9f",
+      "app/src/main/java/takagi/ru/monica/ui/screens/AddEditSshKeyScreen.kt": "2c41087396db985fd879065e73c3e69981d848184ad9fc48cd99e3ee7f8e7a87",
+      "app/src/main/java/takagi/ru/monica/ui/screens/AddEditWifiScreen.kt": "961d4ec1846ab7751c5d693bcf4937c7e315a1935da70a487498f94345d0fea7",
+      "app/src/main/java/takagi/ru/monica/ui/screens/ApiKeyScreen.kt": "f93e3171e04f0b7a3d56d9bf39b221405a65445d8ec6c51412a37c8d04d12c31",
+      "app/src/main/java/takagi/ru/monica/ui/screens/ApiTokenDetailScreen.kt": "fa5be81d73182eb0864bb879c7ae287d6dd97f392abb1199ff27366103ddacad",
+      "app/src/main/java/takagi/ru/monica/ui/screens/BillingAddressDetailScreen.kt": "3c648a51fe17e06630d69c91fc3441f3a0f39dd1bf7d2d66f2b6ac1c9b7d8f12",
+      "app/src/main/java/takagi/ru/monica/ui/screens/EmbeddedTemplateEditorScreen.kt": "86e7f9f54a853affb69198d822ad72db2c4f3d3a648a9074ac3e335d2265bf81",
+      "app/src/main/java/takagi/ru/monica/ui/screens/GpgKeyScreen.kt": "7f0134492eb541ecfe8e27a9b427f0d04de93879b7da32be8605f55bae40a69a",
+      "app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt": "de900cd5dca3343c1869522dd625caa278faab69d3800ef978c50df756ddbbf5",
+      "app/src/main/java/takagi/ru/monica/ui/screens/SshKeyDetailScreen.kt": "c589805e9c9a6d878d7c29a8e7a10bde187d8f6f01d997ff62c3af3d1af3d4ad",
+      "app/src/main/java/takagi/ru/monica/ui/screens/WifiDetailScreen.kt": "129736eb1180b59bfc9f9ff4a77fe4d95e36b0cf608440fa04213a2edc03e3cf",
+      "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "4f626bfe6f8a719f05e60d46174ce69416565df924f42363fc8ab9b87fc449ff",
+      "app/src/main/res/values-b+lzh/content_blocks.xml": "25260dccfdc5b5cfae9f78b334d26d6919d2142fd8c7b66a6c25d0a940b7efff",
+      "app/src/main/res/values-b+zh+Hant/content_blocks.xml": "3ed7a4a80cf43d3bda5345077c20a71a172e4f8e6b3f00370c2a5387f96e663d",
+      "app/src/main/res/values-de/content_blocks.xml": "31597785c78eba677e987dfe88bce256c1871cb8e3e15082e3eb188bfbc0646c",
+      "app/src/main/res/values-es/content_blocks.xml": "006ef5c53ce043c4d06a5bfb923b953f65a03c46afffed2734e311be3c88c599",
+      "app/src/main/res/values-fr/content_blocks.xml": "87b04a4bd6f06a17181bd81b782b75135a9fc7c840f9953e936ad1b09a50d4d6",
+      "app/src/main/res/values-it/content_blocks.xml": "4c133df13003361df7a11bdc5045f663082a7341dcecd912d154c605dd0f5613",
+      "app/src/main/res/values-ja/content_blocks.xml": "b94d8b60a1461c69b29d765c432f6af0df5bfbb0f139e87d57fb54c83d0f652c",
+      "app/src/main/res/values-ko/content_blocks.xml": "dd1f38ded3a0a4b7b3a8b897b2124d4fe80d9eacc9b27db688179ce95f975221",
+      "app/src/main/res/values-pl/content_blocks.xml": "1920543e5511115bdc1f9bd860eabdc33409055d7fe46bf0f3c8ec53e044b425",
+      "app/src/main/res/values-ru/content_blocks.xml": "2f434c4dfe7f6de3e197bbd2c6b0af1b463e86cb00e7254e6d9f3d29104f068d",
+      "app/src/main/res/values-vi/content_blocks.xml": "210bc3a9fb4e70d4c5e532c38304c5f408d27e46479ce2729d4715e8cc7c7525",
+      "app/src/test/java/takagi/ru/monica/data/ApiKeyEntryFieldsTest.kt": "0d57951b68082844592f9b0f9838e103ab4bffa900d5fd3b8872e6bbb888ac5a",
+      "app/src/test/java/takagi/ru/monica/data/model/PasswordWalletProjectionTest.kt": "1b3f2d3b104c3425843a57b81f7d9ed09beb167b671410967f568c3f8bbcbd27",
+      "app/src/test/java/takagi/ru/monica/data/model/TemplateCredentialDraftTest.kt": "70476f0d678129cb4a18e8c7e29ba0b956898ecf6964dd65eba0f54d5d6ec51b"
+    }
+  },
+  "device": {
+    "avd": "Monica_Issue136_API_32",
+    "serial": "emulator-5554",
+    "api": 32,
+    "backup_and_expansion": "User-authorized 6 GiB to 12 GiB; original disks backed up, e2fsck and qemu-img checks passed.",
+    "normal_boot": "ro.debuggable=0, uid=2000, SELinux Enforcing",
+    "data_cleared": false,
+    "preservation": {
+      "takagi.ru.monica": {
+        "integrity": "ok",
+        "tables": {
+          "android_metadata": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0
+          },
+          "password_entries": {
+            "before": 3216,
+            "after": 3216,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "sqlite_sequence": {
+            "before": 11,
+            "after": 11,
+            "original_rows_not_identical": 8
+          },
+          "secure_items": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "categories": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "operation_logs": {
+            "before": 329,
+            "after": 332,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "timeline_version_snapshots": {
+            "before": 58,
+            "after": 61,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "local_keepass_databases": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_remote_sources": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_remote_sync_states": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_group_sync_configs": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "custom_fields": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "password_page_aggregate_stack_entries": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "password_archive_sync_meta": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "password_history_entries": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "passkeys": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_vaults": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_folders": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_sends": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_conflict_backups": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_pending_operations": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_sync_raw_entry_records": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "attachments": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "local_mdbx_databases": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "mdbx_remote_sources": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "mdbx_sync_states": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_pending_changes": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "room_master_table": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          }
+        }
+      },
+      "takagi.ru.monica.fdroid": {
+        "integrity": "ok",
+        "tables": {
+          "android_metadata": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0
+          },
+          "password_entries": {
+            "before": 11,
+            "after": 11,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "sqlite_sequence": {
+            "before": 11,
+            "after": 11,
+            "original_rows_not_identical": 8
+          },
+          "secure_items": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "categories": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "operation_logs": {
+            "before": 263,
+            "after": 264,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "timeline_version_snapshots": {
+            "before": 42,
+            "after": 43,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "local_keepass_databases": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_remote_sources": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_remote_sync_states": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_group_sync_configs": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "custom_fields": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "password_page_aggregate_stack_entries": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "password_archive_sync_meta": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "password_history_entries": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "passkeys": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_vaults": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_folders": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_sends": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_conflict_backups": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_pending_operations": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "bitwarden_sync_raw_entry_records": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "attachments": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "local_mdbx_databases": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "mdbx_remote_sources": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "mdbx_sync_states": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "keepass_pending_changes": {
+            "before": 0,
+            "after": 0,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          },
+          "room_master_table": {
+            "before": 1,
+            "after": 1,
+            "original_rows_not_identical": 0,
+            "original_rows_missing": 0,
+            "changed_columns": []
+          }
+        }
+      },
+      "backup_directory": "D:\\AndroidSDK\\codex-avd-backups\\issue136-before-expand-20260930\\after-editor-tests-20260930-123908"
+    },
+    "screenshots": "C:\\Users\\joyins\\Desktop\\Monica-all\\.codex-tasks\\unified-template-editor-315\\screenshots",
+    "skipped_benchmark": "NativeApiTokenUiTest.detailNavigationAfterFolderBrowsingPerformance is intentionally opt-in; not counted as a pass.",
+    "emulator_stopped_after_tests": true
+  },
+  "limitations": [
+    "Native API-token attachment ownership and wallet copies with assets remain unimplemented; unsupported entry points are hidden.",
+    "Embedded technical blocks share core fields, generation and import; common attachments and content belong to the parent without recursive Add content.",
+    "No cross-device live WebDAV/OneDrive round trip is claimed by this editor acceptance run.",
+    "Editable M3E Canvas retained; online rendering is blocked by connector error unsupported Codex auth method: apikey.",
+    "The newly reported MDBX/WebDAV idle pending-change indicator is deferred at the user request to finish editors first."
+  ]
+}

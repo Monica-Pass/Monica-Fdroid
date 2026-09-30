@@ -202,18 +202,9 @@ class BitwardenRepository(private val context: Context) {
     
     // 加密的 SharedPreferences
     private val securePrefs by lazy {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        
-        EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        takagi.ru.monica.security.SecurePreferencesStore.open(context, PREFS_NAME).preferences
     }
+
     
     // 内存中的密钥缓存（不持久化）
     private val symmetricKeyCache = ConcurrentHashMap<Long, SymmetricCryptoKey>()

@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import androidx.compose.runtime.*
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -79,6 +81,8 @@ class CardFaceCropperTest {
             swipe(center, center - Offset(35f, 180f))
         }
         assertPreviewIsClipped("pan-up")
+        compose.onNodeWithTag("card_face_rotate_left").performClick()
+        assertPreviewIsClipped("rotated")
     }
 
     @Test fun cancelDoesNotApplyAndConfirmReturnsDisplayedRegion() {
@@ -99,7 +103,7 @@ class CardFaceCropperTest {
                 screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
             }
         }
-        compose.onNodeWithText(context.getString(R.string.cancel)).performClick()
+        compose.onNodeWithTag("card_face_crop_cancel").performClick()
         compose.runOnIdle { assertTrue(cancelled); assertNull(result) }
         compose.onNodeWithTag("card_face_crop_canvas").performTouchInput {
             pinch(center - Offset(40f, 0f), center + Offset(40f, 0f),
@@ -108,10 +112,66 @@ class CardFaceCropperTest {
         compose.onNodeWithTag("card_face_crop_canvas").performTouchInput {
             swipe(center, center + Offset(35f, 0f))
         }
-        compose.onNodeWithText(context.getString(R.string.confirm)).performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
         compose.runOnIdle { assertTrue(result!!.width < CardCropGeometry.centered(1600, 1000).width) }
         compose.onNodeWithText(context.getString(R.string.card_face_crop_reset)).performClick()
-        compose.onNodeWithText(context.getString(R.string.confirm)).performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
         compose.runOnIdle { assertEquals(CardCropGeometry.centered(1600, 1000), result) }
+    }
+
+    @Test fun rotateControlsMatchSavedPixelsAndResetAndBusyStates() {
+        val source = Bitmap.createBitmap(400, 700, Bitmap.Config.ARGB_8888)
+        Canvas(source).apply {
+            drawColor(Color.RED)
+            drawRect(0f, 350f, 400f, 700f, Paint().apply { color = Color.BLUE })
+        }
+        var result: CardCropGeometry? = null
+        var busy by mutableStateOf(false)
+        compose.setContent { MonicaTheme { CardFaceCropper(source, busy, null, {}, { result = it }) } }
+        compose.onNodeWithTag("card_face_rotate_right").performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
+        compose.runOnIdle { assertEquals(1, result!!.quarterTurns) }
+        val screen = compose.onRoot().captureToImage().asAndroidBitmap()
+        val bounds = compose.onNodeWithTag("card_face_crop_canvas").fetchSemanticsNode().boundsInRoot
+        val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val middleX = bounds.center.x - root.left
+        val middleY = bounds.center.y - root.top
+        val offset = minOf(bounds.width, bounds.height) / 8f
+        assertEquals(Color.BLUE, screen.getPixel((middleX - offset).toInt(), middleY.toInt()))
+        assertEquals(Color.RED, screen.getPixel((middleX + offset).toInt(), middleY.toInt()))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        File(context.getExternalFilesDir(null), "card-crop-rotated.png").outputStream().use {
+            screen.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        kotlinx.coroutines.runBlocking {
+            val output = CardFaceImageProcessor.crop(source, result!!).getOrThrow()
+            try {
+                assertEquals(Color.BLUE, output.preview.getPixel(output.preview.width / 4, output.preview.height / 2))
+                assertEquals(Color.RED, output.preview.getPixel(output.preview.width * 3 / 4, output.preview.height / 2))
+            } finally { output.preview.recycle(); output.bytes.fill(0) }
+        }
+        compose.onNodeWithTag("card_face_flip_horizontal").performClick()
+        compose.onNodeWithTag("card_face_flip_vertical").performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
+        compose.runOnIdle { assertTrue(result!!.flipHorizontal && result!!.flipVertical); assertEquals(1, result!!.quarterTurns) }
+        compose.onRoot().captureToImage().asAndroidBitmap().let { image ->
+            File(context.getExternalFilesDir(null), "card-crop-mirrored.png").outputStream().use {
+                image.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+        compose.onNodeWithTag("card_face_crop_reset").performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
+        compose.runOnIdle { assertEquals(CardCropGeometry.centered(400, 700), result) }
+        compose.onNodeWithTag("card_face_rotate_right").performClick()
+        compose.onNodeWithTag("card_face_rotate_left").performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
+        compose.runOnIdle { assertEquals(CardCropGeometry.centered(400, 700), result) }
+        compose.onNodeWithTag("card_face_rotate_left").performClick()
+        compose.onNodeWithTag("card_face_crop_reset").performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").performClick()
+        compose.runOnIdle { assertEquals(CardCropGeometry.centered(400, 700), result); busy = true }
+        listOf("card_face_rotate_left", "card_face_rotate_right", "card_face_crop_reset", "card_face_crop_cancel", "card_face_crop_confirm", "card_face_flip_horizontal", "card_face_flip_vertical").forEach {
+            compose.onNodeWithTag(it).assertIsNotEnabled()
+        }
     }
 }

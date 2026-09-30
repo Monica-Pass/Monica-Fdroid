@@ -61,6 +61,7 @@ class VaultOverviewProjectionTest {
         val locked = project(listOf(local, remote), scope = "all", config = config,
             sourceList = sources.map { if (it.key == "bitwarden:2") it.copy(locked = true) else it })
         assertEquals(listOf(local), locked.items)
+        assertEquals(listOf(local), locked.recentItems)
         assertTrue(locked.cards.isEmpty())
         assertEquals(0, locked.sourceCounts["bitwarden:2"])
         assertEquals(0, locked.typeCounts[VaultV2ItemType.BANK_CARD])

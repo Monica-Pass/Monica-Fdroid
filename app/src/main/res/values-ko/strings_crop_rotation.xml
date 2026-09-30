@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">왼쪽으로 90° 회전</string>
+    <string name="card_face_rotate_right">오른쪽으로 90° 회전</string>
+    <string name="card_face_crop_rotation_hint">드래그하여 위치를 조정하고 두 손가락으로 확대하거나 버튼으로 회전 및 반전하세요.</string>
+    <string name="card_face_flip_horizontal">좌우 반전</string>
+    <string name="card_face_flip_vertical">상하 반전</string>
+</resources>

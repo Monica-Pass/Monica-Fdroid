@@ -20,6 +20,7 @@ import takagi.ru.monica.R
 import takagi.ru.monica.data.VaultListSort
 
 internal val VaultListSort.labelResource: Int get() = when (this) {
+    VaultListSort.RECENT_DESC -> R.string.vault_sort_recent_desc
     VaultListSort.TITLE_ASC -> R.string.vault_sort_title_asc
     VaultListSort.TITLE_DESC -> R.string.vault_sort_title_desc
     VaultListSort.CREATED_DESC -> R.string.vault_sort_created_desc

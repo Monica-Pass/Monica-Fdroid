@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_editor_empty">No attachments yet</string>
+    <string name="attachment_editor_hint">Choose files, images or documents</string>
+    <string name="attachment_editor_working">Working…</string>
+</resources>

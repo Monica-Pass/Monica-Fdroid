@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">API Key</string>
+    <string name="content_block_api_token">API 令牌</string>
+    <string name="content_block_ssh">SSH 密钥</string>
+    <string name="content_block_gpg">GPG 密钥</string>
+    <string name="content_block_qr">二维码</string>
+    <string name="content_block_key">密钥</string>
+    <string name="content_block_token">令牌</string>
+    <string name="content_block_provider">服务方</string>
+    <string name="content_block_url">接口地址</string>
+    <string name="content_block_algorithm">算法</string>
+    <string name="content_block_public">公钥</string>
+    <string name="content_block_private">私钥</string>
+    <string name="content_block_fingerprint">指纹</string>
+    <string name="content_block_identity">身份／附记</string>
+    <string name="content_block_content">文字或链接</string>
+    <string name="content_block_import">自文件导入</string>
+    <string name="content_block_export">导出为文件</string>
+    <string name="content_block_unavailable">尚未支持之内容</string>
+    <string name="content_block_preserved">原内容已保留，请以兼容版本编辑。</string>
+    <string name="content_block_save_error">此内容未能保存或读取，请检查文件及大小（至多 256 KiB）。</string>
+    <string name="content_block_more">更多内容</string>
+    <string name="content_block_key_size">钥长</string>
+    <string name="content_block_format">格式</string>
+    <string name="content_block_qr_error">内容过长，无法生成二维码，仍可查看或复制全文。</string>
+</resources>

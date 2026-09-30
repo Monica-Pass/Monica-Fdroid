@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">API キー</string>
+    <string name="content_block_api_token">API トークン</string>
+    <string name="content_block_ssh">SSH 鍵</string>
+    <string name="content_block_gpg">GPG 鍵</string>
+    <string name="content_block_qr">QR コード</string>
+    <string name="content_block_key">キー</string>
+    <string name="content_block_token">トークン</string>
+    <string name="content_block_provider">プロバイダー</string>
+    <string name="content_block_url">API エンドポイント</string>
+    <string name="content_block_algorithm">アルゴリズム</string>
+    <string name="content_block_public">公開鍵</string>
+    <string name="content_block_private">秘密鍵</string>
+    <string name="content_block_fingerprint">フィンガープリント</string>
+    <string name="content_block_identity">ユーザー ID／コメント</string>
+    <string name="content_block_content">テキストまたはリンク</string>
+    <string name="content_block_import">ファイルからインポート</string>
+    <string name="content_block_export">ファイルにエクスポート</string>
+    <string name="content_block_unavailable">未対応のコンテンツ</string>
+    <string name="content_block_preserved">元の内容は保持されています。編集には対応するバージョンを使用してください。</string>
+    <string name="content_block_save_error">内容を保存または読み込めませんでした。ファイルとサイズを確認してください（最大 256 KiB）。</string>
+    <string name="content_block_more">その他のコンテンツ</string>
+    <string name="content_block_key_size">鍵の長さ</string>
+    <string name="content_block_format">形式</string>
+    <string name="content_block_qr_error">内容が長すぎるため QR コードにできません。全文の表示やコピーは可能です。</string>
+</resources>

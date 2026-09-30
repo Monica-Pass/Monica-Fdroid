@@ -17,7 +17,7 @@ import java.util.TimeZone
  * 响应后：
  * - 429 或 503：解析 Retry-After（秒数或 HTTP-date）并
  *   调用 [WebDavBackoffState.recordRateLimit]。
- * - 2xx：调用 [WebDavBackoffState.recordSuccess]，重置该主机 backoff。
+ * - 2xx：调用 [WebDavBackoffState.recordSuccess]，仅重置已过期的 backoff。
  */
 class RateLimitInterceptor(
     private val backoff: WebDavBackoffStateApi = DefaultBackoffStateApi,

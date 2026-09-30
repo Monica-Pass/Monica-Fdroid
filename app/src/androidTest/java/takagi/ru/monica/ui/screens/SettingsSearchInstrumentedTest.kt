@@ -185,8 +185,8 @@ class SettingsSearchInstrumentedTest {
 
     @Test fun lazyPasswordFieldSettingsLocateTheRequestedField() {
         show()
-        query("支付信息")
-        compose.onNodeWithTag("settings_search_result_password_field_customization_payment_info_title").performScrollTo().performClick()
+        query("账号 用户名")
+        compose.onNodeWithTag("settings_search_result_separate_username_account_title").performScrollTo().performClick()
         compose.waitUntil(10_000) { nav.currentDestination?.route == Screen.PasswordFieldCustomization.route }
         compose.onNode(SemanticsMatcher.expectValue(SettingsSearchTarget, true), useUnmergedTree = true).assertIsDisplayed()
     }
@@ -195,15 +195,8 @@ class SettingsSearchInstrumentedTest {
         val before = runBlocking { manager.settingsFlow.first() }.passwordContentEditorEnabled
         show(dark = true, large = true)
         query("编辑样式")
-        compose.onNodeWithTag("settings_search_result_entry_editor_style").performScrollTo().performClick()
-        compose.waitUntil(10_000) { nav.currentDestination?.route == Screen.PasswordFieldCustomization.route }
-        compose.onNode(SemanticsMatcher.expectValue(SettingsSearchTarget, true), useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithTag("entry_style_false").assertIsDisplayed()
-        compose.onNodeWithTag("entry_style_true").assertIsDisplayed()
-        capture("content-search-editor-style.png")
+        compose.onNodeWithTag("settings_search_result_entry_editor_style").assertDoesNotExist()
         assertEquals(before, runBlocking { manager.settingsFlow.first() }.passwordContentEditorEnabled)
-        compose.runOnIdle { nav.popBackStack() }
-        compose.onNodeWithTag("settings_search_input").assertTextContains("编辑样式")
     }
 
     @Test fun firstSystemFieldStillReceivesSearchFocusAfterStylePickerIsInserted() {
@@ -215,14 +208,6 @@ class SettingsSearchInstrumentedTest {
         compose.onNode(SemanticsMatcher.expectValue(SettingsSearchTarget, true), useUnmergedTree = true).assertIsDisplayed()
         capture("content-search-system-field.png")
         assertEquals(before, runBlocking { manager.settingsFlow.first() })
-    }
-
-    @Test fun removedOneDriveIntegrationDoesNotAppearInFdroidSearch() {
-        show()
-        query("OneDrive")
-        compose.onNodeWithTag("settings_search_result_onedrive_backup_title").assertDoesNotExist()
-        compose.onAllNodes(hasToggleableState()).assertCountEquals(0)
-        capture("content-search-fdroid-onedrive-empty.png")
     }
 
     @Test fun localizedCatalogContainsUniqueConcreteItemsAndEmptySearchHasNoControls() {

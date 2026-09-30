@@ -77,6 +77,7 @@ private data class NoteEditDraft(
 )
 
 class NoteEditorViewModel(
+    private val persistDrafts: Boolean = true,
     private val draftStorageProvider: () -> NoteDraftStorage = { NoteDraftStore.get() }
 ) : ViewModel() {
     companion object {
@@ -390,6 +391,7 @@ class NoteEditorViewModel(
     }
 
     fun saveDraftImmediate(noteId: Long) {
+        if (!persistDrafts) return
         currentNoteId = noteId
         draftSaveJob?.cancel()
         val state = _uiState.value
@@ -397,6 +399,7 @@ class NoteEditorViewModel(
     }
 
     fun restoreDraft(noteId: Long) {
+        if (!persistDrafts) return
         currentNoteId = noteId
         val draft = draftStore.loadDraft(noteId) ?: return
         val content = draft.content
@@ -413,6 +416,7 @@ class NoteEditorViewModel(
     }
 
     fun clearDraft(noteId: Long) {
+        if (!persistDrafts) return
         draftSaveJob?.cancel()
         draftStore.clearDraft(noteId)
     }
@@ -451,6 +455,7 @@ class NoteEditorViewModel(
     }
 
     private fun scheduleDraftSave() {
+        if (!persistDrafts) return
         draftSaveJob?.cancel()
         val draftNoteId = currentNoteId
         draftSaveJob = viewModelScope.launch {

@@ -103,7 +103,11 @@ data class MdbxSyncStateSnapshot(
     val bootstrapCheckpoint: MdbxSyncCheckpointState? = null,
     val pendingSegment: MdbxPendingSegmentState? = null,
     val remoteStreams: List<MdbxRemoteStreamState> = emptyList(),
-    val blobTransfers: List<MdbxBlobTransferState> = emptyList()
+    val blobTransfers: List<MdbxBlobTransferState> = emptyList(),
+    // Safe published/received commit inventory, independent of read-audit deltas.
+    // Optional for cursors written by older versions; the transport checkpoint
+    // remains authoritative for what still needs transferring.
+    val syncedCommitInventory: String? = null
 )
 
 /** Room-backed, serialized coordinator state with per-vault update locking. */

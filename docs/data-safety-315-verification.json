@@ -1,0 +1,174 @@
+{
+  "status": "passed_with_limitations",
+  "devicePassedExecutions": 74,
+  "deviceSkipped": 1,
+  "unit": {
+    "tests": 66,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "runs": [
+    {
+      "testPackageId": "takagi.ru.monica.test",
+      "testSha256": "C31325B00CC6B16A3B7E03933F20E3AFA622DF6220FA7504BC36DD745635D60F",
+      "completed": true,
+      "edition": "Main",
+      "appSha256": "5176997D17A02C8681E3C7EC16F51A4DDB62983192B580D52F8D4E50D680C00A",
+      "suite": "BaselineFinal315",
+      "classes": [
+        "takagi.ru.monica.security.SecureStartupInstrumentedTest,takagi.ru.monica.utils.LocalBackupReplacementTest,takagi.ru.monica.credentialexchange.LocalOtpRestoreIntegrityTest,takagi.ru.monica.utils.PasskeyBackupFailureInstrumentedTest,takagi.ru.monica.utils.Mdbx2BackupInstrumentedTest,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest"
+      ],
+      "startedAt": "2026-09-30T03:40:58.6451729+08:00",
+      "packageId": "takagi.ru.monica",
+      "finishedAt": "2026-09-30T03:43:14.8596284+08:00",
+      "passed": 30,
+      "skipped": 0
+    },
+    {
+      "completed": true,
+      "suite": "BaselineFinal315",
+      "testSha256": "903109E754C7B14426F676B66E45B2835F6A3FE4B99707DE3A330A03B69136EB",
+      "finishedAt": "2026-09-30T03:47:28.3596148+08:00",
+      "edition": "Fdroid",
+      "packageId": "takagi.ru.monica.fdroid",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "startedAt": "2026-09-30T03:43:47.8602344+08:00",
+      "appSha256": "14EA09C572174123DD2D278B174318F96CF6D239373A02CB3C04ECFF93D693AA",
+      "classes": [
+        "takagi.ru.monica.security.SecureStartupInstrumentedTest,takagi.ru.monica.utils.LocalBackupReplacementTest,takagi.ru.monica.credentialexchange.LocalOtpRestoreIntegrityTest,takagi.ru.monica.utils.PasskeyBackupFailureInstrumentedTest,takagi.ru.monica.utils.Mdbx2BackupInstrumentedTest,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest,takagi.ru.monica.credentialexchange.CredentialImportAttachmentsInstrumentedTest#zipRestoresPasskeyOtpBindingsAndAttachmentsIntoEachDestination"
+      ],
+      "passed": 31,
+      "skipped": 0
+    },
+    {
+      "startedAt": "2026-09-30T03:48:08.1418566+08:00",
+      "finishedAt": "2026-09-30T03:50:04.0837616+08:00",
+      "suite": "CloudVerified315",
+      "edition": "Main",
+      "testSha256": "F1074DFC192AF3BB8F9A8F4896DD73402DAF2918456B3E048CF55E73A705E688",
+      "testPackageId": "takagi.ru.monica.test",
+      "classes": [
+        "takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest,takagi.ru.monica.credentialexchange.CredentialImportAttachmentsInstrumentedTest#zipRestoresPasskeyOtpBindingsAndAttachmentsIntoEachDestination"
+      ],
+      "appSha256": "5176997D17A02C8681E3C7EC16F51A4DDB62983192B580D52F8D4E50D680C00A",
+      "packageId": "takagi.ru.monica",
+      "completed": true,
+      "passed": 5,
+      "skipped": 1
+    },
+    {
+      "suite": "CloudVerified315",
+      "packageId": "takagi.ru.monica.fdroid",
+      "edition": "Fdroid",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "classes": [
+        "takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#rootFolderAndLegacyRootRemainConfigured,takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#failedLocalWritePreservesCompleteArchive,takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#realWebDavServerFullArchiveRoundTrip,takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#encryptedArchiveRoundTripsThroughWebDavAndGraphHttp"
+      ],
+      "startedAt": "2026-09-30T03:58:20.7267043+08:00",
+      "finishedAt": "2026-09-30T04:00:54.3041822+08:00",
+      "appSha256": "14EA09C572174123DD2D278B174318F96CF6D239373A02CB3C04ECFF93D693AA",
+      "completed": true,
+      "testSha256": "C0F3C94C8AD0AEDE6A31A13EEA2AB0550DF5D4C3DB2FFB32D98FFD260BA6DCF7",
+      "passed": 4,
+      "skipped": 0
+    },
+    {
+      "startedAt": "2026-09-30T04:08:45.4478530+08:00",
+      "suite": "CleanupFinal315",
+      "edition": "Main",
+      "testSha256": "4AEA0000C9DE5F807D2CEE2BFDC943B8F34F787378CA1A230843F3E07B89DDFF",
+      "testPackageId": "takagi.ru.monica.test",
+      "appSha256": "E2AB99E2CAEDE64C7EC6D58F2F9FD4772C6B03DE01EBD691CC15992293F4FCC9",
+      "classes": [
+        "takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#oneDriveCleanupPreservesUnrelatedZipAndJustUploadedArchive,takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#encryptedArchiveRoundTripsThroughWebDavAndGraphHttp"
+      ],
+      "packageId": "takagi.ru.monica",
+      "completed": true,
+      "finishedAt": "2026-09-30T04:10:02.7806649+08:00",
+      "passed": 2,
+      "skipped": 0
+    },
+    {
+      "suite": "CleanupFinal315",
+      "completed": true,
+      "finishedAt": "2026-09-30T04:21:08.8411936+08:00",
+      "testSha256": "67BECD58A876BE87973F7C980BCE97E628624CA5F0072299154AA45BB6421A90",
+      "startedAt": "2026-09-30T04:20:02.1187337+08:00",
+      "packageId": "takagi.ru.monica.fdroid",
+      "classes": [
+        "takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#oneDriveCleanupPreservesUnrelatedZipAndJustUploadedArchive,takagi.ru.monica.utils.CloudFullBackupSafetyInstrumentedTest#encryptedArchiveRoundTripsThroughWebDavAndGraphHttp"
+      ],
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "appSha256": "6564B09BB5CCEECC82EFB16C0B1F76F163977ED77120E5177DFE499965173C92",
+      "edition": "Fdroid",
+      "passed": 2,
+      "skipped": 0
+    }
+  ],
+  "releaseStartup": [
+    {
+      "edition": "Main",
+      "completed": true,
+      "smokeApkSha256": "651DE0CA8C4221F4A802A2ADC026D8660FCC861F0818604F3344063D81C7094D",
+      "finishedAt": "2026-09-30T04:26:21.1945898+08:00",
+      "startedAt": "2026-09-30T04:25:32.9171598+08:00",
+      "screenshotAvailable": false,
+      "originalReleaseSha256": "0B7FB6B1B8085D7C1D6507F4FEB9D1F77550068B9AFD80CE92255C0A9A07A47B"
+    },
+    {
+      "edition": "Fdroid",
+      "screenshotAvailable": false,
+      "finishedAt": "2026-09-30T04:31:57.5990094+08:00",
+      "originalReleaseSha256": "97A6964BEBD54DD40FD886A04AC91669C379E1AD355A0EEE4790792E7D92EC51",
+      "completed": true,
+      "smokeApkSha256": "EBDCB13503B9A005CF97D8EE4CAECADA487DB311690648C631DAEAF79060B5B7",
+      "startedAt": "2026-09-30T04:31:31.3017193+08:00"
+    }
+  ],
+  "sourceSha256": {
+    "Monica-main\\Monica for Android": {
+      "app/src/main/java/takagi/ru/monica/utils/OneDriveBackupHelper.kt": "84c6f7e479b745c3905bee9053c57ee5cc571adf7b7dd226d713a33c3c3e2c80",
+      "app/src/main/java/takagi/ru/monica/utils/AtomicBackupDownload.kt": "38b225b27c2238e13ddf911e17522cdcf2b96ca2a3f96b9b283e53af20c9e186",
+      "app/src/androidTest/java/takagi/ru/monica/utils/CloudFullBackupSafetyInstrumentedTest.kt": "82f16312df487c7b4e0a64f3fe9424d66cb24c6738e9284809fa22344ad305c5",
+      "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt": "eb11b87871c1ed6f7d4400e4b6a1ce473a9d0f5bb525bfae021fcbd1c15d2d6c",
+      "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "21e819be82a8ed33d0a8088fde56db5c668dc4d3fc0e0933512c588b79c75c48",
+      "app/src/main/java/takagi/ru/monica/utils/BackupRetentionPolicy.kt": "c1b3e0651e2880568747d8b46f878122fc157f5c399a0eb1242739cdbf3cbd3d",
+      "app/src/test/java/takagi/ru/monica/utils/BackupRetentionPolicyTest.kt": "0668a118edbf812a3e622dc471cf7be987c1d917e27be7f94ccdbd3261e740b2"
+    },
+    "Monica-main\\fdroid": {
+      "app/src/main/java/takagi/ru/monica/utils/OneDriveBackupHelper.kt": "84c6f7e479b745c3905bee9053c57ee5cc571adf7b7dd226d713a33c3c3e2c80",
+      "app/src/main/java/takagi/ru/monica/utils/AtomicBackupDownload.kt": "38b225b27c2238e13ddf911e17522cdcf2b96ca2a3f96b9b283e53af20c9e186",
+      "app/src/androidTest/java/takagi/ru/monica/utils/CloudFullBackupSafetyInstrumentedTest.kt": "82f16312df487c7b4e0a64f3fe9424d66cb24c6738e9284809fa22344ad305c5",
+      "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt": "7e2981d0a2615933f6b2732a55d775a5a2d7b709b92388464a4a67a4d5c577fc",
+      "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "d8ab63fb908b7ed673ac65ecfc2c1c3b8c29eba63980dab597dbcb9fec3934b4",
+      "app/src/main/java/takagi/ru/monica/utils/BackupRetentionPolicy.kt": "c1b3e0651e2880568747d8b46f878122fc157f5c399a0eb1242739cdbf3cbd3d",
+      "app/src/test/java/takagi/ru/monica/utils/BackupRetentionPolicyTest.kt": "0668a118edbf812a3e622dc471cf7be987c1d917e27be7f94ccdbd3261e740b2"
+    },
+    "experiments\\content-main-integration\\Monica for Android": {
+      "app/src/main/java/takagi/ru/monica/utils/OneDriveBackupHelper.kt": "84c6f7e479b745c3905bee9053c57ee5cc571adf7b7dd226d713a33c3c3e2c80",
+      "app/src/main/java/takagi/ru/monica/utils/AtomicBackupDownload.kt": "38b225b27c2238e13ddf911e17522cdcf2b96ca2a3f96b9b283e53af20c9e186",
+      "app/src/androidTest/java/takagi/ru/monica/utils/CloudFullBackupSafetyInstrumentedTest.kt": "82f16312df487c7b4e0a64f3fe9424d66cb24c6738e9284809fa22344ad305c5",
+      "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt": "1095748bf69039454f58e3d8d885b99cd9f5b03aaad4c6cf48f6b53dacb10551",
+      "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "d8ab63fb908b7ed673ac65ecfc2c1c3b8c29eba63980dab597dbcb9fec3934b4",
+      "app/src/main/java/takagi/ru/monica/utils/BackupRetentionPolicy.kt": "c1b3e0651e2880568747d8b46f878122fc157f5c399a0eb1242739cdbf3cbd3d",
+      "app/src/test/java/takagi/ru/monica/utils/BackupRetentionPolicyTest.kt": "0668a118edbf812a3e622dc471cf7be987c1d917e27be7f94ccdbd3261e740b2"
+    },
+    "experiments\\content-main-integration-fdroid": {
+      "app/src/main/java/takagi/ru/monica/utils/OneDriveBackupHelper.kt": "84c6f7e479b745c3905bee9053c57ee5cc571adf7b7dd226d713a33c3c3e2c80",
+      "app/src/main/java/takagi/ru/monica/utils/AtomicBackupDownload.kt": "38b225b27c2238e13ddf911e17522cdcf2b96ca2a3f96b9b283e53af20c9e186",
+      "app/src/androidTest/java/takagi/ru/monica/utils/CloudFullBackupSafetyInstrumentedTest.kt": "82f16312df487c7b4e0a64f3fe9424d66cb24c6738e9284809fa22344ad305c5",
+      "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt": "7e2981d0a2615933f6b2732a55d775a5a2d7b709b92388464a4a67a4d5c577fc",
+      "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "d8ab63fb908b7ed673ac65ecfc2c1c3b8c29eba63980dab597dbcb9fec3934b4",
+      "app/src/main/java/takagi/ru/monica/utils/BackupRetentionPolicy.kt": "c1b3e0651e2880568747d8b46f878122fc157f5c399a0eb1242739cdbf3cbd3d",
+      "app/src/test/java/takagi/ru/monica/utils/BackupRetentionPolicyTest.kt": "0668a118edbf812a3e622dc471cf7be987c1d917e27be7f94ccdbd3261e740b2"
+    }
+  },
+  "limitations": [
+    "Real OneDrive account unavailable; skipped, not passed",
+    "Android32 x86_64 runtime only; no large archive stress",
+    "Business logic tests use Debug; Release additionally tested for install/startup",
+    "First launch timeout retained; final sequential startup checked",
+    "R8 Kotlin metadata warnings remain"
+  ]
+}

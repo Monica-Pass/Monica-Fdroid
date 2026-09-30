@@ -48,6 +48,7 @@ class FillResponseBuilderNg(
         passwordSuggestionEnabled: Boolean = true,
         requireAuthentication: Boolean = true,
         matchedPasswords: List<PasswordEntry> = emptyList(),
+        postFillOtpPasswordIds: Set<Long> = emptySet(),
     ): FillResponse? {
         val fillableAutofillIds = filledData.fillableAutofillIds
         if (fillableAutofillIds.isEmpty()) {
@@ -82,6 +83,7 @@ class FillResponseBuilderNg(
                         request = request,
                         partition = partition,
                         index = index,
+                        postFillOtpPasswordIds = postFillOtpPasswordIds,
                     )
                 )
                 cipherDatasetCount++
@@ -277,6 +279,7 @@ class FillResponseBuilderNg(
         request: AutofillRequest.Fillable,
         partition: FilledPartition,
         index: Int,
+        postFillOtpPasswordIds: Set<Long>,
     ): android.service.autofill.Dataset {
         val menuPresentation = AutofillDatasetBuilder.RemoteViewsFactory.createPasswordEntry(
             context = context,
@@ -286,27 +289,48 @@ class FillResponseBuilderNg(
 
         val hasInlinePresentation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
             partition.inlinePresentationSpec != null
-        val callbackTargets = buildLoginCallbackTargets(request.partition.views)
-        val authPendingIntent = if (partition.requiresAuthentication || hasInlinePresentation) {
-            createCipherAuthPendingIntent(
-                request = request,
-                partition = partition,
-                callbackTargets = callbackTargets,
-                requireAuthentication = partition.requiresAuthentication,
-            )
-        } else {
-            null
-        }
-        if (partition.requiresAuthentication && authPendingIntent == null) {
-            throw IllegalStateException("Authentication required but cipher callback pending intent is unavailable")
-        }
-
+        // Only real password fills opt into a selection callback. Username-only,
+        // empty, OTP-target, and ordinary direct datasets retain their original behavior.
+        val passwordIds = request.partition.views.filterIsInstance<AutofillView.Login.Password>()
+            .filter { it.data.hint == FieldHint.PASSWORD }
+            .mapTo(hashSetOf()) { it.data.autofillId }
+        val needsOtpCallback = !partition.requiresAuthentication &&
+            partition.autofillCipher.cipherId?.toLongOrNull() in postFillOtpPasswordIds &&
+            request.partition.views.none { it.data.hint == FieldHint.OTP_CODE } &&
+            partition.filledItems.any {
+                it.autofillId in passwordIds && it.value?.isText == true &&
+                    !it.value.textValue.isNullOrBlank()
+            }
         val fields = linkedMapOf<AutofillId, AutofillDatasetBuilder.FieldData?>()
         partition.filledItems.forEach { filledItem ->
             fields[filledItem.autofillId] = AutofillDatasetBuilder.FieldData(
                 value = filledItem.value,
                 presentation = menuPresentation
             )
+        }
+        // Return these exact IDs/values; do not parse a possibly changed AssistStructure
+        // or re-decrypt/reselect a password merely to perform optional OTP actions.
+        val directDataset = if (needsOtpCallback) {
+            AutofillDatasetBuilder.create(menuPresentation = menuPresentation, fields = fields) { null }.build()
+        } else null
+        val callbackTargets = buildLoginCallbackTargets(request.partition.views)
+        val authPendingIntent = if (partition.requiresAuthentication || hasInlinePresentation || needsOtpCallback) {
+            runCatching { createCipherAuthPendingIntent(
+                request = request,
+                partition = partition,
+                callbackTargets = callbackTargets,
+                requireAuthentication = partition.requiresAuthentication,
+                directDataset = directDataset,
+            ) }.getOrElse { error ->
+                if (partition.requiresAuthentication) throw error
+                // Optional OTP/inline presentation cannot remove an otherwise valid fill.
+                null
+            }
+        } else {
+            null
+        }
+        if (partition.requiresAuthentication && authPendingIntent == null) {
+            throw IllegalStateException("Authentication required but cipher callback pending intent is unavailable")
         }
 
         val datasetBuilder = AutofillDatasetBuilder.create(
@@ -333,7 +357,7 @@ class FillResponseBuilderNg(
                 null
             }
         }
-        if (partition.requiresAuthentication && authPendingIntent != null) {
+        if ((partition.requiresAuthentication || needsOtpCallback) && authPendingIntent != null) {
             datasetBuilder.setAuthentication(authPendingIntent.intentSender)
         }
         return datasetBuilder.build()
@@ -447,6 +471,7 @@ class FillResponseBuilderNg(
         partition: FilledPartition,
         callbackTargets: List<AutofillCallbackTarget>,
         requireAuthentication: Boolean,
+        directDataset: android.service.autofill.Dataset? = null,
     ): PendingIntent? {
         val passwordId = partition.autofillCipher.cipherId?.toLongOrNull() ?: return null
         val targets = callbackTargets.ifEmpty {
@@ -468,7 +493,11 @@ class FillResponseBuilderNg(
             rememberLastFilled = true,
             requireAuthentication = requireAuthentication,
         )
-        val pickerIntent = AutofillCipherCallbackActivity.getIntent(context, args)
+        val pickerIntent = AutofillCipherCallbackActivity.getIntent(context, args).apply {
+            if (directDataset != null) {
+                putExtra(AutofillCipherCallbackActivity.EXTRA_DIRECT_DATASET, directDataset)
+            }
+        }
         return PendingIntent.getActivity(
             context,
             Random.nextInt(),

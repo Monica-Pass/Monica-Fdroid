@@ -5,7 +5,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,10 +30,45 @@ fun AutofillStatusCard(
     status: AutofillServiceChecker.ServiceStatus,
     onEnableClick: () -> Unit,
     onTroubleshootClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
 ) {
     val context = LocalContext.current
     
+    if (compact) {
+        var details by rememberSaveable { mutableStateOf(false) }
+        Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column {
+                SettingsPanelRow(
+                    if (status.isSystemEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
+                    status.getSummary(context),
+                    when {
+                        !status.isSystemEnabled -> context.getString(R.string.autofill_status_enable_prompt)
+                        status.isFullyOperational() -> context.getString(R.string.autofill_status_all_functional)
+                        status.compatibilityIssues.isNotEmpty() -> context.getString(R.string.autofill_status_compatibility_issues)
+                        else -> status.recommendations.firstOrNull().orEmpty()
+                    },
+                    onClick = { details = !details })
+                if (details) Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (status.compatibilityIssues + status.recommendations).distinct().forEach { issue ->
+                        Text(issue, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    onTroubleshootClick?.let { action -> TextButton(onClick = action) {
+                        Text(context.getString(R.string.autofill_status_troubleshoot))
+                    } }
+                }
+                if (!status.isSystemEnabled) Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onEnableClick) { Text(context.getString(R.string.autofill_status_go_to_settings)) }
+                }
+            }
+        }
+        return
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(

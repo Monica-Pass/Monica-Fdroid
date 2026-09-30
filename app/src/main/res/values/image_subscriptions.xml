@@ -1,0 +1,22 @@
+<resources>
+    <string name="image_sources_title">Image subscriptions</string>
+    <string name="image_sources_icons">Icons</string>
+    <string name="image_sources_cards">Card artwork</string>
+    <string name="image_sources_add">Add subscription</string>
+    <string name="image_sources_refresh">Refresh</string>
+    <string name="image_sources_remove">Unsubscribe</string>
+    <string name="image_sources_remove_hint">Remove this subscription? Images already used by your items will be kept.</string>
+    <string name="image_sources_name">Name (optional)</string>
+    <string name="image_sources_url">Subscription or image URL</string>
+    <string name="image_sources_formats">HTTPS JSON image packs or PNG, JPEG and WebP image links.</string>
+    <string name="image_sources_empty">Add your first image source</string>
+    <string name="image_sources_count">%1$d images</string>
+    <string name="image_sources_error">Unable to load or save. Check the source, format and connection, then retry. Existing subscriptions and item images are preserved.</string>
+    <string name="image_sources_search">Search images</string>
+    <string name="image_sources_retry">Retry</string>
+    <string name="image_sources_options">Subscription options</string>
+    <string name="image_sources_no_results">No matching images</string>
+    <string name="image_sources_use_hint">Choose images from the custom icon or card artwork editor.</string>
+    <string name="image_sources_choose">Choose from subscriptions</string>
+    <string name="image_sources_settings_hint">Manage icon packs and card artwork sources</string>
+</resources>

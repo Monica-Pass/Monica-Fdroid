@@ -74,7 +74,7 @@ class ExpressiveLazyListScrollbarTest {
         assertTrue(source.contains("ExpressiveScrollbarAxisTracker"))
         assertTrue(source.contains("requestScrollToItem(target.index, target.offset)"))
         assertTrue(source.contains("withFrameNanos"))
-        assertTrue(source.contains("displayedProgress.snapTo(dragProgress)"))
+        assertTrue(source.contains("snapshotFlow { dragProgress }"))
     }
 
     @Test

@@ -27,6 +27,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 
+internal val LocalFilledEntryForm = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 private val TextFieldValueStateSaver: Saver<TextFieldValue, Any> = TextFieldValue.Saver
 
 /**
@@ -80,6 +82,48 @@ fun OutlinedTextField(
         }
     }
 
+    if (LocalFilledEntryForm.current) {
+    androidx.compose.material3.TextField(
+        value = fieldValue,
+        onValueChange = { newValue ->
+            val previousText = fieldValue.text
+            fieldValue = newValue
+            // Keep cursor/selection-only updates local to avoid expensive parent
+            // state updates while dragging the cursor handle near field edges.
+            if (newValue.text != previousText) {
+                onValueChange(newValue.text)
+            }
+        },
+        modifier = modifier.then(rememberBringIntoViewOnFocusModifier()),
+        enabled = enabled,
+        readOnly = readOnly,
+        textStyle = textStyle,
+        label = label,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        prefix = prefix,
+        suffix = suffix,
+        supportingText = supportingText,
+        isError = isError,
+        visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        singleLine = singleLine,
+        maxLines = maxLines,
+        minLines = minLines,
+        interactionSource = interactionSource,
+        shape = if (LocalStandaloneTemplateFields.current) RoundedCornerShape(24.dp)
+            else if (LocalTemplateFieldShape.current) RoundedCornerShape(4.dp) else shape,
+        colors = androidx.compose.material3.TextFieldDefaults.colors(
+            focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer,
+            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
+    )
+    } else {
     MaterialOutlinedTextField(
         value = fieldValue,
         onValueChange = { newValue ->
@@ -113,6 +157,7 @@ fun OutlinedTextField(
         shape = rememberEntryFieldShape(shape, interactionSource, entryContentStyle && enabled && !readOnly),
         colors = colors,
     )
+    }
 }
 
 @Composable
@@ -142,6 +187,40 @@ fun OutlinedTextField(
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
     entryContentStyle: Boolean = false,
 ) {
+    if (LocalFilledEntryForm.current) {
+    androidx.compose.material3.TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.then(rememberBringIntoViewOnFocusModifier()),
+        enabled = enabled,
+        readOnly = readOnly,
+        textStyle = textStyle,
+        label = label,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        prefix = prefix,
+        suffix = suffix,
+        supportingText = supportingText,
+        isError = isError,
+        visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        singleLine = singleLine,
+        maxLines = maxLines,
+        minLines = minLines,
+        interactionSource = interactionSource,
+        shape = if (LocalStandaloneTemplateFields.current) RoundedCornerShape(24.dp)
+            else if (LocalTemplateFieldShape.current) RoundedCornerShape(4.dp) else shape,
+        colors = androidx.compose.material3.TextFieldDefaults.colors(
+            focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainer,
+            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
+    )
+    } else {
     MaterialOutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -167,6 +246,7 @@ fun OutlinedTextField(
         shape = rememberEntryFieldShape(shape, interactionSource, entryContentStyle && enabled && !readOnly),
         colors = colors,
     )
+    }
 }
 
 /** Morph the outline only: text metrics, cursor, hit box and scroll position stay stable. */

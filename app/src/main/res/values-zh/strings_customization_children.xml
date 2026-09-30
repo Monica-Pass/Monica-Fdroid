@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="customization_live_preview">实时预览</string>
+    <string name="customization_filters_navigation">筛选与导航</string>
+    <string name="customization_drag_handle">拖动排序：%1$s</string>
+    <string name="customization_clear_presets_message">清空所有预设字段？已保存项目中的字段会保留。</string>
+</resources>

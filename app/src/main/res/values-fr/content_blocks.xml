@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">Clé API</string>
+    <string name="content_block_api_token">Jeton API</string>
+    <string name="content_block_ssh">Clé SSH</string>
+    <string name="content_block_gpg">Clé GPG</string>
+    <string name="content_block_qr">Code QR</string>
+    <string name="content_block_key">Clé</string>
+    <string name="content_block_token">Jeton</string>
+    <string name="content_block_provider">Fournisseur</string>
+    <string name="content_block_url">Point de terminaison API</string>
+    <string name="content_block_algorithm">Algorithme</string>
+    <string name="content_block_public">Clé publique</string>
+    <string name="content_block_private">Clé privée</string>
+    <string name="content_block_fingerprint">Empreinte</string>
+    <string name="content_block_identity">Identité / commentaire</string>
+    <string name="content_block_content">Texte ou lien</string>
+    <string name="content_block_import">Importer un fichier</string>
+    <string name="content_block_export">Exporter vers un fichier</string>
+    <string name="content_block_unavailable">Contenu non pris en charge</string>
+    <string name="content_block_preserved">Le contenu original est conservé. Utilisez une version compatible pour le modifier.</string>
+    <string name="content_block_save_error">Impossible de lire ou enregistrer ce contenu. Vérifiez le fichier et sa taille (256 KiB maximum).</string>
+    <string name="content_block_more">Autres contenus</string>
+    <string name="content_block_key_size">Taille de clé</string>
+    <string name="content_block_format">Format</string>
+    <string name="content_block_qr_error">Ce contenu est trop long pour un code QR. Vous pouvez toujours le consulter ou le copier intégralement.</string>
+</resources>

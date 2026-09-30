@@ -8,8 +8,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -40,6 +38,9 @@ import takagi.ru.monica.data.model.TotpData
 import takagi.ru.monica.util.TotpDataResolver
 import takagi.ru.monica.util.TotpGenerator
 import takagi.ru.monica.utils.AppLauncherIconManager
+import takagi.ru.monica.notifications.LiveUpdateNotifications
+import takagi.ru.monica.utils.ClipboardUtils
+import java.util.UUID
 
 /**
  * 为"自动填充时通知栏显示验证码"提供支持的前台服务。
@@ -57,12 +58,12 @@ class AutofillOtpNotificationService : Service() {
     private val sessionCounter = AtomicLong(0L)
 
     @Volatile
-    private var latestCode: String = ""
-
-    @Volatile
     private var activeSessionId: Long = 0L
 
     private var isForeground = false
+    private var currentSession: AutofillOtpNotificationSession? = null
+    private var actionToken: String? = null
+    private val actionIntents = mutableListOf<PendingIntent>()
 
     private val strings by lazy { AppLocaleStringResolver(this) }
 
@@ -72,21 +73,29 @@ class AutofillOtpNotificationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        createChannel()
+        runCatching { createChannel() }.onFailure {
+            Log.w(TAG, "OTP notification channel unavailable")
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> handleStart(intent)
-            ACTION_COPY -> handleCopy()
-            ACTION_DISMISS -> stopSelfCompletely()
+            ACTION_START -> runCatching { handleStart(intent) }.onFailure {
+                Log.w(TAG, "OTP notification unavailable")
+                stopSelfCompletely()
+            }
+            ACTION_COPY -> runCatching { if (matchesSession(intent)) handleCopy() }.onFailure {
+                Log.w(TAG, "OTP clipboard unavailable")
+            }
+            ACTION_DISMISS -> if (matchesSession(intent)) stopSelfCompletely()
             else -> {
                 // 没有可处理的指令且尚未启动 —— 直接停止，避免触发 startForeground 超时
                 if (activeSessionId == 0L) stopSelfCompletely()
             }
         }
+        if (activeSessionId == 0L) stopSelf()
         return START_NOT_STICKY
     }
 
@@ -94,6 +103,17 @@ class AutofillOtpNotificationService : Service() {
         super.onDestroy()
         updateJob?.cancel()
         scope.cancel()
+        clearSession()
+    }
+
+    private fun matchesSession(intent: Intent): Boolean =
+        actionToken != null && intent.getStringExtra(EXTRA_SESSION_TOKEN) == actionToken
+
+    private fun clearSession() {
+        currentSession = null
+        actionToken = null
+        actionIntents.forEach { runCatching { it.cancel() } }
+        actionIntents.clear()
     }
 
     // ----- command handlers -----
@@ -114,6 +134,8 @@ class AutofillOtpNotificationService : Service() {
         }
 
         val sessionId = sessionCounter.incrementAndGet()
+        clearSession()
+        actionToken = UUID.randomUUID().toString()
         activeSessionId = sessionId
         val session = AutofillOtpNotificationSession(
             data = data,
@@ -130,7 +152,7 @@ class AutofillOtpNotificationService : Service() {
             nowElapsedMs = SystemClock.elapsedRealtime(),
             nowWallSeconds = System.currentTimeMillis() / 1000L
         )
-        latestCode = initialSnapshot.code
+        currentSession = session
         enterForegroundOrUpdate(
             buildNotification(labelArg, initialSnapshot.code, initialSnapshot.remainingSeconds)
         )
@@ -151,11 +173,10 @@ class AutofillOtpNotificationService : Service() {
                 )
                 if (snapshot.expired) break
 
-                latestCode = snapshot.code
                 runCatching {
-                    val notification = buildNotification(labelArg, snapshot.code, snapshot.remainingSeconds)
                     withContext(Dispatchers.Main.immediate) {
                         if (activeSessionId == sessionId) {
+                            val notification = buildNotification(labelArg, snapshot.code, snapshot.remainingSeconds)
                             getSystemService(NotificationManager::class.java)
                                 ?.notify(NOTIFICATION_ID, notification)
                         }
@@ -165,16 +186,24 @@ class AutofillOtpNotificationService : Service() {
                 }
                 delay(1000)
             }
-            stopSelfCompletely(sessionId)
+            withContext(Dispatchers.Main.immediate) { stopSelfCompletely(sessionId) }
         }
     }
 
     private fun handleCopy() {
-        val code = latestCode
-        if (code.isEmpty()) return
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        if (LiveUpdateNotifications.isDeviceLocked(this)) {
+            Toast.makeText(this, strings.get(R.string.live_update_unlock_to_copy), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val snapshot = currentSession?.snapshot(SystemClock.elapsedRealtime(), System.currentTimeMillis() / 1000L)
             ?: return
-        clipboard.setPrimaryClip(ClipData.newPlainText("OTP Code", code))
+        if (snapshot.expired) {
+            stopSelfCompletely()
+            return
+        }
+        val code = snapshot.code
+        if (code.isEmpty()) return
+        ClipboardUtils.copyToClipboard(this, code, "OTP Code", sensitive = true)
         // Android 13+ 系统会自带剪贴板提示
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             Toast.makeText(this, strings.get(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
@@ -193,15 +222,19 @@ class AutofillOtpNotificationService : Service() {
         val copyPendingIntent = PendingIntent.getService(
             this,
             REQUEST_COPY,
-            Intent(this, AutofillOtpNotificationService::class.java).setAction(ACTION_COPY),
+            Intent(this, AutofillOtpNotificationService::class.java).setAction(ACTION_COPY)
+                .putExtra(EXTRA_SESSION_TOKEN, actionToken),
             pendingIntentFlags()
         )
         val dismissPendingIntent = PendingIntent.getService(
             this,
             REQUEST_DISMISS,
-            Intent(this, AutofillOtpNotificationService::class.java).setAction(ACTION_DISMISS),
+            Intent(this, AutofillOtpNotificationService::class.java).setAction(ACTION_DISMISS)
+                .putExtra(EXTRA_SESSION_TOKEN, actionToken),
             pendingIntentFlags()
         )
+
+        if (actionIntents.isEmpty()) actionIntents.addAll(listOf(copyPendingIntent, dismissPendingIntent))
 
         val title = if (label.isBlank()) {
             strings.get(R.string.autofill_otp_notification_channel)
@@ -220,13 +253,20 @@ class AutofillOtpNotificationService : Service() {
             strings.get(R.string.autofill_otp_copy_action, code)
         }.getOrDefault(strings.get(R.string.copy))
 
-        return builder
+        val publicNotification = Notification.Builder(this, CHANNEL_ID)
+            .setSmallIcon(AppLauncherIconManager.resolveBrandingIconRes(this))
+            .setContentTitle(strings.get(R.string.app_name))
+            .setContentText(strings.get(R.string.live_update_unlock_to_view))
+            .build()
+        val notification = builder
             .setSmallIcon(AppLauncherIconManager.resolveBrandingIconRes(this))
             .setContentTitle("$title (${remainingSeconds}s)")
             .setContentText(spannable)
             .setStyle(Notification.BigTextStyle().bigText(spannable))
             .setOnlyAlertOnce(true)
             .setOngoing(true)
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicNotification)
             .setShowWhen(false)
             .setDeleteIntent(dismissPendingIntent)
             .addAction(
@@ -234,9 +274,15 @@ class AutofillOtpNotificationService : Service() {
                     null,
                     copyActionText,
                     copyPendingIntent
-                ).build()
+                ).apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAuthenticationRequired(true)
+                }.build()
             )
+            .addAction(Notification.Action.Builder(null, strings.get(R.string.close), dismissPendingIntent).build())
             .build()
+        return LiveUpdateNotifications.enhance(
+            this, notification, strings.get(R.string.live_update_seconds, remainingSeconds)
+        )
     }
 
     private fun formatCodeForDisplay(code: String): String = when {
@@ -294,10 +340,11 @@ class AutofillOtpNotificationService : Service() {
         }
         Log.d(TAG, "stop session=${sessionId ?: activeSessionId}")
         activeSessionId = 0L
+        clearSession()
         updateJob?.cancel()
-        getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
+        runCatching { getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID) }
         if (isForeground) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
             isForeground = false
         }
         stopSelf()
@@ -310,6 +357,7 @@ class AutofillOtpNotificationService : Service() {
         private const val REQUEST_COPY = 0
         private const val REQUEST_DISMISS = 1
         private const val DEFAULT_DURATION_SECONDS = 30
+        private const val EXTRA_SESSION_TOKEN = "notification_session"
 
         const val ACTION_START = "takagi.ru.monica.autofill_ng.ACTION_START_OTP_NOTIF"
         const val ACTION_COPY = "takagi.ru.monica.autofill_ng.ACTION_COPY_OTP_NOTIF"
@@ -332,6 +380,8 @@ class AutofillOtpNotificationService : Service() {
             label: String,
             durationSeconds: Int
         ) {
+            // Respect disabled notifications/channels without requesting permission during fill.
+            if (!canShowNotification(context)) return
             val payload = runCatching {
                 Json.encodeToString(totpData)
             }.onFailure {
@@ -344,11 +394,20 @@ class AutofillOtpNotificationService : Service() {
                 putExtra(EXTRA_LABEL, label)
                 putExtra(EXTRA_DURATION_SECONDS, durationSeconds)
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            }.onFailure { Log.w(TAG, "OTP notification service start unavailable") }
         }
+
+        internal fun canShowNotification(context: Context): Boolean = runCatching {
+            val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+            manager.areNotificationsEnabled() &&
+                (Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+                    manager.getNotificationChannel(CHANNEL_ID)?.importance != NotificationManager.IMPORTANCE_NONE)
+        }.getOrDefault(false)
     }
 }

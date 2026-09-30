@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Ruota di 90° a sinistra</string>
+    <string name="card_face_rotate_right">Ruota di 90° a destra</string>
+    <string name="card_face_crop_rotation_hint">Trascina per posizionare, usa due dita per lo zoom o i pulsanti per ruotare e riflettere.</string>
+    <string name="card_face_flip_horizontal">Rifletti orizzontalmente</string>
+    <string name="card_face_flip_vertical">Rifletti verticalmente</string>
+</resources>

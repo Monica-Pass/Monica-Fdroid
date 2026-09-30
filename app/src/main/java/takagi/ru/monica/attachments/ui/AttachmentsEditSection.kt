@@ -1,7 +1,6 @@
 package takagi.ru.monica.attachments.ui
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -16,13 +15,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import kotlinx.coroutines.CancellationException
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -123,38 +121,34 @@ fun AttachmentsEditSection(
     }
 
     var softLimitPending by remember { mutableStateOf<PendingUpload?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun performUpload(uri: Uri, acceptSoftLimit: Boolean) {
-        if (isDraftMode) {
-            // 草稿模式：直接把 Uri 挂到 pendingDrafts（父页面保存后再真正上传）
-            scope.launch {
-                val meta = AttachmentUriMetadata.resolve(context, uri)
-                pendingDrafts!!.add(
-                    AttachmentPendingDraft(
-                        uri = uri,
-                        fileName = meta.fileName,
-                        sizeBytes = meta.sizeBytes.coerceAtLeast(0)
-                    )
-                )
-            }
-            return
-        }
+        if (busy) return
+        busy = true
+        errorMessage = null
         scope.launch {
-            runCatching {
-                facade.addAttachment(
-                    AttachmentFacade.UploadRequest(
-                        owner = requireNotNull(owner),
-                        source = attachmentSource,
-                        uri = uri,
-                        isPlusActivated = isPlusActivated,
-                        bitwardenPremium = bitwardenPremium,
-                        bitwardenContext = bitwardenContext,
-                        keepassContext = keepassContext,
-                        kdbxSoftLimitAccepted = acceptSoftLimit
+            try {
+                if (isDraftMode) {
+                    val meta = AttachmentUriMetadata.resolve(context, uri)
+                    pendingDrafts!!.add(AttachmentPendingDraft(uri, meta.fileName, meta.sizeBytes.coerceAtLeast(0)))
+                } else {
+                    facade.addAttachment(
+                        AttachmentFacade.UploadRequest(
+                            owner = requireNotNull(owner), source = attachmentSource, uri = uri,
+                            isPlusActivated = isPlusActivated, bitwardenPremium = bitwardenPremium,
+                            bitwardenContext = bitwardenContext, keepassContext = keepassContext,
+                            kdbxSoftLimitAccepted = acceptSoftLimit
+                        )
                     )
-                )
-            }.onFailure { e ->
-                Toast.makeText(context, resolveErrorMessage(context, e), Toast.LENGTH_SHORT).show()
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                errorMessage = resolveErrorMessage(context, error)
+            } finally {
+                busy = false
             }
         }
     }
@@ -170,7 +164,12 @@ fun AttachmentsEditSection(
                 android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
         }
-        val meta = AttachmentUriMetadata.resolve(context, uri)
+        val meta = try {
+            AttachmentUriMetadata.resolve(context, uri)
+        } catch (error: Exception) {
+            errorMessage = resolveErrorMessage(context, error)
+            return@rememberLauncherForActivityResult
+        }
         val validation = AttachmentSizeValidator.validate(
             sizeBytes = meta.sizeBytes,
             source = attachmentSource,
@@ -184,7 +183,11 @@ fun AttachmentsEditSection(
                     softLimitBytes = validation.softLimitBytes
                 )
             }
-            else -> performUpload(uri, acceptSoftLimit = false)
+            is AttachmentSizeValidator.Result.TooLarge -> {
+                if (validation.actualBytes < 0) performUpload(uri, acceptSoftLimit = false)
+                else errorMessage = resolveErrorMessage(context, AttachmentError.TooLarge(validation.limitBytes, validation.actualBytes))
+            }
+            AttachmentSizeValidator.Result.Ok -> performUpload(uri, acceptSoftLimit = false)
         }
     }
 
@@ -219,73 +222,39 @@ fun AttachmentsEditSection(
             (hideManagedCardFaces && CardFaceAttachment.isManagedFileName(it.fileName))
     }
     val draftItems = pendingDrafts ?: emptyList()
-    val visibleCount = visiblePersistedAttachments.size + draftItems.size
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.AttachFile, contentDescription = null)
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(
-                    text = stringResource(R.string.attachments_section_title, visibleCount),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            visiblePersistedAttachments.forEach { attachment ->
-                EditRow(
-                    title = attachment.fileName,
-                    secondary = formatSecondaryShort(attachment),
-                    onDelete = {
+    AttachmentEditorContent(
+        items = visiblePersistedAttachments.map { attachment ->
+            AttachmentEditorItem(
+                key = "saved:${attachment.id}", title = attachment.fileName,
+                secondary = formatSecondaryShort(attachment),
+                onRemove = {
+                    if (!busy) {
+                        busy = true
+                        errorMessage = null
                         scope.launch {
-                            runCatching {
-                                facade.deleteAttachment(
-                                    attachmentId = attachment.id,
-                                    bitwardenContext = bitwardenContext,
-                                    keepassContext = keepassContext
-                                )
-                            }
-                                .onFailure { e ->
-                                    Toast.makeText(
-                                        context,
-                                        resolveErrorMessage(context, e),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                            try {
+                                facade.deleteAttachment(attachment.id, bitwardenContext, keepassContext)
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Exception) {
+                                errorMessage = resolveErrorMessage(context, error)
+                            } finally { busy = false }
                         }
                     }
-                )
+                }
+            )
+        } + draftItems.mapIndexed { index, draft ->
+            AttachmentEditorItem("draft:$index", draft.fileName, formatDraftSecondary(draft)) {
+                pendingDrafts?.remove(draft)
             }
-            draftItems.forEachIndexed { index, draft ->
-                EditRow(
-                    title = draft.fileName,
-                    secondary = formatDraftSecondary(draft),
-                    onDelete = {
-                        pendingDrafts!!.removeAt(index)
-                    }
-                )
-            }
-            TextButton(
-                onClick = { picker.launch(arrayOf("*/*")) },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.size(4.dp))
-                Text(stringResource(R.string.attachments_add))
-            }
-        }
-    }
+        },
+        busy = busy,
+        errorMessage = errorMessage,
+        onDismissError = { errorMessage = null },
+        onAdd = { picker.launch(arrayOf("*/*")) },
+        modifier = modifier
+    )
 }
 
 /**
@@ -359,34 +328,6 @@ suspend fun flushPendingDraftsTo(
         }
     }
     return successCount
-}
-
-@Composable
-private fun EditRow(
-    title: String,
-    secondary: String,
-    onDelete: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(24.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = secondary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.attachments_delete))
-        }
-    }
 }
 
 /** 软上限二次确认的挂起项：文件已挑选但等待用户确认。 */

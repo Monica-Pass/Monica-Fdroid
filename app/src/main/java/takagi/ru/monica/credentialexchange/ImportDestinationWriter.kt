@@ -71,7 +71,7 @@ class ImportDestinationWriter(
     private var nativeMdbxPasswords = emptyList<Pair<PasswordEntry, List<CustomField>>>()
     private val pendingPasswordFields = mutableMapOf<Long, List<Triple<String, String, Boolean>>>()
     val acceptsDeletedRecords get() = destination.kind in setOf(ImportDestinationKind.LOCAL, ImportDestinationKind.MDBX)
-    private var knownNativeTokens: MutableList<NativeTokenBackup>? = null
+    private var knownNativeTokens: MutableList<takagi.ru.monica.data.NativeApiToken>? = null
     val isBitwarden get() = destination.bitwardenId != null
 
     suspend fun validate() = withContext(Dispatchers.IO) {
@@ -241,19 +241,28 @@ class ImportDestinationWriter(
         val id = destination.mdbxId ?: return null
         val record = database.localMdbxDatabaseDao().getDatabaseById(id) ?: return null
         if (record.engineTypeEnum != MdbxEngineType.RUST_MDBX2) return null
+        takagi.ru.monica.transfer.NativeTokenBackupAssets.validate(listOf(token))
+        // Validate the entire incoming set even on dedup, so damaged backups never report success.
+        val uploads = token.attachments.map { it.upload() }
+        uploads.forEach { upload -> upload.open().use { /* open authenticates size and hash */ } }
         val repository = Mdbx2Repository(context, database.localMdbxDatabaseDao(), security)
         val existing = knownNativeTokens ?: repository.listNativeApiTokens(id).map { summary ->
-            val value = repository.readNativeApiToken(summary)
-            NativeTokenBackup(summary.title, value.payload, value.extras?.payload ?: ApiTokenMetadata.empty(), summary.isFavorite)
+            repository.readNativeApiToken(summary)
         }.toMutableList().also { knownNativeTokens = it }
         fun same(a: String, b: String) = kotlinx.serialization.json.Json.parseToJsonElement(a) ==
             kotlinx.serialization.json.Json.parseToJsonElement(b)
-        if (existing.any { it.title == token.title && it.favorite == token.favorite &&
-                same(it.payload, token.payload) && same(it.metadata, token.metadata) }) return false
+        val incomingAssets = token.attachments.map { listOf(it.fileName, it.mimeType, it.size.toString(), it.sha256.lowercase()) }.sortedBy { it.joinToString("\u0000") }
+        val duplicate = existing.firstOrNull { value -> value.summary.title == token.title && value.summary.isFavorite == token.favorite &&
+            same(value.payload, token.payload) && same(value.extras?.payload ?: ApiTokenMetadata.empty(), token.metadata) &&
+            value.attachments.map { listOf(it.fileName, it.mimeType, it.size.toString(), it.sha256.lowercase()) }.sortedBy { it.joinToString("\u0000") } == incomingAssets }
+        if (duplicate != null) {
+            duplicate.attachments.forEach { repository.readNativeApiTokenAttachment(duplicate, it.id).fill(0) }
+            return false
+        }
         withContext(NonCancellable) {
-            repository.saveNativeApiToken(id, null, token.title, token.payload,
-                isFavorite = token.favorite, metadata = token.metadata)
-            existing += token
+            val saved = repository.saveNativeApiToken(id, null, token.title, token.payload,
+                isFavorite = token.favorite, metadata = token.metadata, uploads = uploads)
+            existing += repository.readNativeApiToken(saved)
         }
         return true
     }

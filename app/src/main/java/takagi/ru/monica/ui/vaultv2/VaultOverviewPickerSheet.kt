@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.vaultv2
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -53,6 +54,9 @@ import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuDropdown
 import takagi.ru.monica.ui.components.UnifiedDatabaseFilterChipMenu
 import takagi.ru.monica.ui.icons.VaultItemIcon
 
+/** Single-copy mode shares the same search, list and rows as frequent selection. */
+internal data class OverviewPickerCopyAction(val title: String, val onSelect: (VaultV2Item) -> Unit)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun VaultOverviewPickerSheet(
@@ -68,6 +72,7 @@ internal fun VaultOverviewPickerSheet(
     securityManager: SecurityManager,
     onConfigChange: ((VaultOverviewConfig) -> VaultOverviewConfig) -> Unit,
     onDismiss: () -> Unit,
+    copyAction: OverviewPickerCopyAction? = null,
 ) {
     var query by rememberSaveable(cards, currentScope) { mutableStateOf("") }
     var scope by rememberSaveable(cards, currentScope) { mutableStateOf(currentScope) }
@@ -91,6 +96,7 @@ internal fun VaultOverviewPickerSheet(
     val selected = remember(pins) { pins.toHashSet() }
     val recommend = if (cards) config.recommendCards else config.recommendItems
     val listState = rememberLazyListState()
+    val horizontalPadding = if (copyAction != null) 12.dp else 20.dp
     LaunchedEffect(query, scope) { listState.scrollToItem(0) }
     val toggle: (String) -> Unit = { key ->
         onConfigChange { old ->
@@ -112,7 +118,7 @@ internal fun VaultOverviewPickerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        modifier = Modifier.testTag("overview_pin_sheet"),
+        modifier = Modifier.testTag(if (copyAction == null) "overview_pin_sheet" else "embedded_wallet_picker"),
     ) {
         // These locals belong to the dialog's Compose owner, not the activity
         // behind it. Reading them outside the sheet misses its IME and focus.
@@ -125,25 +131,26 @@ internal fun VaultOverviewPickerSheet(
         // Constrain the content, not the sheet surface: its anchors need the
         // full window height to meet the bottom edge and the keyboard correctly.
         Column(Modifier.fillMaxWidth().fillMaxHeight(0.92f)) {
-            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(start = horizontalPadding, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    stringResource(if (cards) R.string.vault_overview_pin_cards else R.string.vault_overview_pin_items),
+                    copyAction?.title ?: stringResource(if (cards) R.string.vault_overview_pin_cards else R.string.vault_overview_pin_items),
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, stringResource(R.string.close)) }
             }
-            if (!imeVisible) Text(
+            if (copyAction == null && !imeVisible) Text(
                 stringResource(R.string.vault_overview_pin_hint),
                 Modifier.padding(start = 20.dp, end = 20.dp, bottom = 14.dp),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (copyAction != null) Spacer(Modifier.height(12.dp))
             TextField(
                 value = query, onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).testTag("overview_pin_search"),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding).testTag("overview_pin_search"),
                 singleLine = true, shape = RoundedCornerShape(24.dp),
                 placeholder = { Text(stringResource(if (cards) R.string.vault_overview_picker_search_cards
-                    else R.string.vault_overview_picker_search_items), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    else if (copyAction != null) R.string.search else R.string.vault_overview_picker_search_items), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
                 trailingIcon = if (query.isNotEmpty()) ({
                     IconButton(onClick = { query = "" }, modifier = Modifier.testTag("overview_pin_clear")) {
@@ -158,7 +165,7 @@ internal fun VaultOverviewPickerSheet(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { hideKeyboard() }),
             )
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+            Row(Modifier.fillMaxWidth().padding(horizontal = horizontalPadding, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) {
                     if (currentScope == "all") {
@@ -189,10 +196,10 @@ internal fun VaultOverviewPickerSheet(
             }
             LazyColumn(
                 state = listState, modifier = Modifier.fillMaxWidth().weight(1f).testTag("overview_pin_list"),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 12.dp),
+                contentPadding = PaddingValues(start = horizontalPadding, end = horizontalPadding, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(GroupedItemDefaults.Spacing),
             ) {
-                if (query.isBlank() && !imeVisible) item(key = "recommend", contentType = "recommend") {
+                if (copyAction == null && query.isBlank() && !imeVisible) item(key = "recommend", contentType = "recommend") {
                     Row(Modifier.fillMaxWidth().padding(bottom = 12.dp).clip(GroupedItemDefaults.SingleShape)
                         .toggleable(value = recommend, role = Role.Switch, interactionSource = remember { MutableInteractionSource() },
                             indication = null, onValueChange = setRecommend)
@@ -217,7 +224,7 @@ internal fun VaultOverviewPickerSheet(
                             Icon(if (source?.locked == true) Icons.Default.Lock else Icons.Default.SearchOff,
                                 null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(stringResource(if (source?.locked == true) R.string.vault_overview_locked_hint
-                                else R.string.vault_overview_empty_pins), style = MaterialTheme.typography.bodyMedium)
+                                else if (copyAction != null) R.string.no_results else R.string.vault_overview_empty_pins), style = MaterialTheme.typography.bodyMedium)
                             if (source?.locked != true) Text(stringResource(R.string.vault_overview_picker_empty_hint),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -225,12 +232,16 @@ internal fun VaultOverviewPickerSheet(
                     else -> itemsIndexed(candidates, key = { _, row -> row.identity }, contentType = { _, _ -> "entry" }) { index, row ->
                         val checked = row.identity in selected
                         OverviewPickerRow(row, sourceByKey[row.source]?.name.takeIf { currentScope == "all" }, checked,
-                            enabled = checked || selected.size < maxPins,
-                            shape = GroupedItemDefaults.shape(index, candidates.size), onToggle = { toggle(row.identity) })
+                            enabled = copyAction != null || checked || selected.size < maxPins,
+                            shape = GroupedItemDefaults.shape(index, candidates.size), selection = copyAction == null,
+                            onToggle = {
+                                if (copyAction != null) { hideKeyboard(); copyAction.onSelect(row.item) }
+                                else toggle(row.identity)
+                            })
                     }
                 }
             }
-            Surface(modifier = Modifier.testTag("overview_pin_footer"), shadowElevation = 0.dp,
+            if (copyAction == null) Surface(modifier = Modifier.testTag("overview_pin_footer"), shadowElevation = 0.dp,
                 color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -253,12 +264,13 @@ internal fun VaultOverviewPickerSheet(
 
 @Composable
 private fun OverviewPickerRow(row: OverviewPickerEntry, sourceName: String?, checked: Boolean, enabled: Boolean,
-    shape: Shape, onToggle: () -> Unit) {
+    shape: Shape, selection: Boolean = true, onToggle: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Surface(shape = shape, color = if (checked) colors.primary.copy(alpha = 0.07f) else colors.surfaceContainerLowest) {
         Row(Modifier.fillMaxWidth().clip(shape)
-            .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, interactionSource = remember { MutableInteractionSource() },
-                indication = null, onValueChange = { onToggle() })
+            .then(if (selection) Modifier.toggleable(value = checked, enabled = enabled, role = Role.Checkbox,
+                interactionSource = remember { MutableInteractionSource() }, indication = null, onValueChange = { onToggle() })
+                else Modifier.clickable(enabled = enabled, role = Role.Button, onClick = onToggle))
             .testTag("overview_pin_row_${row.item.key}").heightIn(min = 80.dp).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
@@ -290,7 +302,7 @@ private fun OverviewPickerRow(row: OverviewPickerEntry, sourceName: String?, che
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            Surface(modifier = Modifier.size(24.dp), shape = CircleShape,
+            if (selection) Surface(modifier = Modifier.size(24.dp), shape = CircleShape,
                 color = if (checked) colors.primary else Color.Transparent,
                 border = if (checked) null else BorderStroke(1.5.dp, colors.outlineVariant)) {
                 if (checked) Icon(Icons.Default.Check, null, Modifier.padding(4.dp), tint = colors.onPrimary)

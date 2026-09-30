@@ -1,0 +1,155 @@
+{
+  "status": "BANK_CARD_AND_NOTE_INTEGRATED_UNRELEASED",
+  "version": "1.0.315",
+  "main_unit": [
+    {
+      "name": "takagi.ru.monica.attachments.EmbeddedWalletAssetDraftTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "takagi.ru.monica.data.model.DeferredEmbeddedContentSaveTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "takagi.ru.monica.viewmodel.NoteEditorViewModelTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "fdroid_unit": [
+    {
+      "name": "takagi.ru.monica.attachments.EmbeddedWalletAssetDraftTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "takagi.ru.monica.data.model.DeferredEmbeddedContentSaveTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "takagi.ru.monica.viewmodel.NoteEditorViewModelTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "main_device_current_regression": {
+    "completed": true,
+    "testSha256": "6272FC3CEAF187944D39EAC45FDE7B9C891636720A7F29012614C27EF045A70F",
+    "finishedAt": "2026-09-29T21:31:48.8387421+08:00",
+    "suite": "EmbeddedWalletRegressionFinal",
+    "edition": "Main",
+    "startedAt": "2026-09-29T21:29:29.0310944+08:00",
+    "testPackageId": "takagi.ru.monica.test",
+    "packageId": "takagi.ru.monica",
+    "classes": [
+      "takagi.ru.monica.ui.PasswordOtpEditorTest#supplementalPaymentAndIdentityPreserveValuesProtectionAndInsertionOrder,takagi.ru.monica.credentialexchange.EmbeddedWalletUiTest#passwordEditorCopiesCardAndReopensIndependentDetails"
+    ],
+    "appSha256": "6DA95F4541BE82B03378AB45A3E1F2EF430AEF46EF92ADBAB285AF284E05B7C6"
+  },
+  "main_device_previous_complete_copy_suite": {
+    "packageId": "takagi.ru.monica",
+    "suite": "EmbeddedWalletComplete",
+    "classes": [
+      "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest,takagi.ru.monica.credentialexchange.EmbeddedWalletUiTest"
+    ],
+    "testSha256": "61EA82493726D1D607B9F03FE067C95433CA76E768A83166D51CF48B199A5E9B",
+    "startedAt": "2026-09-29T21:05:27.4763887+08:00",
+    "finishedAt": "2026-09-29T21:08:58.3235318+08:00",
+    "appSha256": "FFC4F223BF323A391B434332EB42E605BC3B4464102E9348B0796CC41699D867",
+    "testPackageId": "takagi.ru.monica.test",
+    "edition": "Main",
+    "completed": true
+  },
+  "main_extended_regression": {
+    "run": "main-embeddedwalletfinal-device.log",
+    "tests": 15,
+    "initial_failures": 1,
+    "resolution": "The PIN reveal click landed on the floating Save button after scrolling. The corrected scroll helper and the failing case passed in main-embeddedwalletregressionfinal; the other 14 cases passed in the initial run."
+  },
+  "fdroid_device_final": {
+    "edition": "Fdroid",
+    "completed": true,
+    "startedAt": "2026-09-29T21:32:54.7474705+08:00",
+    "finishedAt": "2026-09-29T21:35:38.3377401+08:00",
+    "appSha256": "1DDE175C366E83B05F321AE62A514DBE57FBA46BE67B4330B0408C83740830E2",
+    "classes": [
+      "takagi.ru.monica.credentialexchange.EmbeddedWalletCopyInstrumentedTest,takagi.ru.monica.credentialexchange.EmbeddedWalletUiTest,takagi.ru.monica.ui.PasswordOtpEditorTest#supplementalPaymentAndIdentityPreserveValuesProtectionAndInsertionOrder,takagi.ru.monica.ui.PasswordOtpEditorTest#onDemandPaymentAndAuthenticatorSaveReopenAndAppearTogetherInDetails,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest"
+    ],
+    "packageId": "takagi.ru.monica.fdroid",
+    "testSha256": "3AD160E1A046F5ED73DC8927F7BF1413FADD03EF3A67F7A3E1A1D1A6F14ABA47",
+    "suite": "EmbeddedWalletFinal",
+    "testPackageId": "takagi.ru.monica.fdroid.test"
+  },
+  "source_sha256": {
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletAccess.kt": "8edd0153faf0aa5bcab8c1a0620059dc28e032a54a5cf79f2c3c5da0ca8f3e44",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletAssetDraft.kt": "28ea6e50ab68585b718b2b92ffe8e51bdccc1b6fc6dd25a3dc3720f336cd7b54",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletCopyService.kt": "d4549e7da2ac6a15a8e45dc0693e652fba17b33f22eff5a4e8b24c320a96d41c",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletDraftStore.kt": "bd08a0344db32113d8ca81483d2003068e6c587738df79086d1a75c8d6337f4d",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletEditorResult.kt": "df75feecbeb6e8939747536146f726fb9bcd72256cc552f76acaa1099306d1ef",
+    "app/src/main/java/takagi/ru/monica/attachments/executor/LocalAttachmentExecutor.kt": "85c3067af1ee3d5f123c592c476856fd01582d6c31b27ae6b4ecac8a2a1a19aa",
+    "app/src/main/java/takagi/ru/monica/attachments/facade/AttachmentFacade.kt": "ff9bc508e17f29aef2107078bf050f9f25a08f84f9d51562bd86adbd5feedc3a",
+    "app/src/main/java/takagi/ru/monica/attachments/storage/AttachmentStorage.kt": "f7ca6fda80d126ffc2f67b752a152cc9e01205ba1fd7829f06fd25ae3cadb483",
+    "app/src/main/java/takagi/ru/monica/attachments/ui/AttachmentsDetailSection.kt": "79a5ddb4690c36bab78a4505344d5d422df4bb6c0793844ce7a5b0b09c3b4c65",
+    "app/src/main/java/takagi/ru/monica/data/model/DeferredEmbeddedContentSave.kt": "3d4a9a7b567f4ddff25da158ec6c63cfa5f8675c215d3ee6027d9f3de2a0abc3",
+    "app/src/main/java/takagi/ru/monica/data/model/EmbeddedWalletContent.kt": "3434eb61ce9d8f551ee83dc6b2a3b44d6b2a43c461cb278067b0a6c4ab1da40e",
+    "app/src/main/java/takagi/ru/monica/data/model/SecureItemModels.kt": "c57c89546aab9d834b634bb5469595f5c2ac33ea2302d9d892f8c9002a60fb9e",
+    "app/src/main/java/takagi/ru/monica/ui/components/DualPhotoPicker.kt": "bdcd2cccde49d07f4e27ef2d78fc0d56be6ecb517485af20ec2ceb2dac2d8b5d",
+    "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletEditorDialog.kt": "bbef007b3bd21c9f89cc8f3befae7f31f5a5c1837f0de194948d8cdd0aab85c0",
+    "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletPicker.kt": "56788363e7019c7932d9da979fd74c2579c0992f62197e78cc71ddc0af2de30e",
+    "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletViews.kt": "72b7543784be55b62a2953301ddd99a0368972d8e2bda0071c85c382bc15be5a",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt": "ae598220b20b38c703e7fae1bc386dc1806cdb38a3be163a2305aaa5455f4d88",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditNoteScreen.kt": "c67e48ac66ced977a4b328694f88c9ca5e66f082c5b2a6db6187ea9929f74b92",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "02ef5cc5ee1494af22ac0d5d272e05d113bf3acb8d737ddf8f8519c9f91b8a3b",
+    "app/src/main/java/takagi/ru/monica/ui/screens/BankCardDetailScreen.kt": "bc8424c08b68e9d89e37d7f099661496413f528e9a855cb6640183bbc914bccb",
+    "app/src/main/java/takagi/ru/monica/ui/screens/NoteDetailScreen.kt": "be4673c492aab7734cf41eda032230e16a9749e90456104966710718972f6932",
+    "app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt": "babd722008aef7a6918850989d6d434175714a435b234b19cf798c5d2a8c204d",
+    "app/src/main/java/takagi/ru/monica/viewmodel/NoteEditorViewModel.kt": "a64eaac08e6294bdbb93147b25cd454c438970caf305634181298e5c19d0d08b",
+    "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "7588c4589d7f887a262c8fef63d5fd03e6c18862e4b66d94718c14e3356b03c2",
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/EmbeddedWalletCopyInstrumentedTest.kt": "c7d040d86767620793b0b0658d3ae7a9751a45ef00e6ad57e9588bc14069be72",
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/EmbeddedWalletUiTest.kt": "36604bcfde9b75820edb1232a593647fef77770ee0646b18f28c93132317bacf",
+    "app/src/test/java/takagi/ru/monica/data/model/DeferredEmbeddedContentSaveTest.kt": "c32f4dcf52a7fa55beae4b838f3a371ec7d52ed54f1d14df314baebb86b62212",
+    "app/src/test/java/takagi/ru/monica/data/model/EmbeddedWalletContentTest.kt": "512442d2b29392c08fb453d3e32590e17139abd7ecea61d2ee79662628bddb1e",
+    "app/src/test/java/takagi/ru/monica/attachments/EmbeddedWalletAssetDraftTest.kt": "eb1c36a7d58b0278fd16520d20142f7e2a786e1a4abfe6452e14d6ee405ce3ae",
+    "app/src/main/res/values/strings_embedded_content.xml": "237d888fc6c2838519587ed2c3c0c27a67d1bc975b197844f8e520a7ac4b41c8",
+    "app/src/main/res/values-zh/strings_embedded_content.xml": "9d59b947ad37c9f4fa4984a23a5b95cf6b164cc26e8cb76c2fb054540c75abb1",
+    "app/src/androidTest/java/takagi/ru/monica/ui/PasswordOtpEditorTest.kt": "8fda6d0ccefa403b6663538b9f44cc4996f27dc5689f8bc24097dc9dc5561ee4",
+    "app/src/main/java/takagi/ru/monica/ui/cardwallet/CardFaceEditorState.kt": "47f7e8721e5177237f81dcb881676bc33bece59f3c0fabf9609abfce28fa2be0"
+  },
+  "native_screenshots_reviewed": [
+    "embedded-card-editor-final.png",
+    "embedded-card-in-password-detail.png",
+    "embedded-note-in-password-detail.png"
+  ],
+  "limitations": [
+    "Bitwarden live attachment service and server limits not tested in this integration run",
+    "Feature-specific all-client backup/restore and process-kill fault injection not certified",
+    "Document/address full copy editors and inline default OTP remain separate pending tasks",
+    "Multi-target save commits independently per database"
+  ],
+  "builds": {
+    "main": "BUILD SUCCESSFUL",
+    "fdroid": "BUILD SUCCESSFUL"
+  },
+  "committed_or_pushed": false
+}

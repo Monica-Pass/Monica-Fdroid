@@ -12,8 +12,8 @@ import java.util.concurrent.ConcurrentHashMap
  * - `recordRateLimit` 在每次 429 / 503 响应后调用；
  *   若传入 `retryAfterMillis>0` 则严格遵守服务器指示，否则采用指数退避
  *   `min(60s, 1s * 2^(n-1))`，其中 n 为 60 秒窗口内累计触发次数。
- * - 60 秒窗口内累计 ≥3 次 429 会把主机临时禁用 5 分钟。
- * - `recordSuccess` 在业务成功后调用，清除该主机的所有 backoff 状态。
+ * - 60 秒窗口内累计 ≥3 次 429 / 503 会把主机临时禁用 5 分钟。
+ * - `recordSuccess` 仅在等待期结束后清除 backoff，防止在途请求解除限流。
  *
  * 线程安全：外层 [ConcurrentHashMap] + 每个 [HostState] 的 `synchronized` 块。
  *
@@ -80,11 +80,12 @@ object WebDavBackoffState {
         }
     }
 
-    /** 标记一次业务成功，清除该主机所有 backoff 状态。 */
-    fun recordSuccess(host: String) {
+    /** 成功可重置已过期的退避，但不能提前解除其他并发请求触发的等待。 */
+    fun recordSuccess(host: String, now: Long = System.currentTimeMillis()) {
         if (host.isEmpty()) return
         val state = hosts[host] ?: return
         synchronized(state) {
+            if (now < maxOf(state.blockUntil, state.disableUntil)) return
             state.blockUntil = 0L
             state.disableUntil = 0L
             state.rateLimitTimestamps.clear()

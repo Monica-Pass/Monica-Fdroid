@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.notes.domain.NoteContentCodec
+import kotlinx.serialization.json.jsonObject
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -140,7 +142,11 @@ fun AddEditNoteScreen(
     viewModel: NoteViewModel = viewModel(),
     editorViewModel: NoteEditorViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         key = "note-editor-$noteId"
-    )
+    ),
+    embeddedDraft: takagi.ru.monica.data.model.EmbeddedWalletContent.Snapshot? = null,
+    embeddedImageLoader: (suspend (String) -> Bitmap?)? = null,
+    embeddedAttachmentsContent: (@Composable () -> Unit)? = null,
+    onEmbeddedSave: (suspend (takagi.ru.monica.attachments.EmbeddedWalletEditorResult) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val draftStore = remember { NoteDraftStore.init(context) }
@@ -184,10 +190,10 @@ fun AddEditNoteScreen(
     val editorModeProgress = remember { Animatable(1f) }
     val normalEditorScrollState = rememberScrollState()
     val imageManager = remember { ImageManager(context) }
-    val isEditing = noteId != -1L
+    val isEditing = embeddedDraft == null && noteId != -1L
     val isBitwardenNoteTarget = editorState.selectedStorageTargets.any { it is StorageTarget.Bitwarden } ||
         (editorState.selectedStorageTargets.isEmpty() && editorState.bitwardenVaultId != null)
-    val isMarkdown = true
+    val isMarkdown = embeddedDraft?.itemData?.get("isMarkdown")?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toBooleanStrictOrNull() } ?: true
     val canSave = editorViewModel.canSave()
     val shouldLiftSaveFab = !isFullScreenEditor && !editorState.isMarkdownPreview
     
@@ -195,7 +201,7 @@ fun AddEditNoteScreen(
     val keepassDatabases by database.localKeePassDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
     val bitwardenVaults by database.bitwardenVaultDao().getAllVaultsFlow().collectAsState(initial = emptyList())
     val allNotes by viewModel.allNotes.collectAsState(initial = emptyList())
-    val attachmentOwnerItem = editorState.currentNote?.takeIf { isEditing }
+    val attachmentOwnerItem = if (embeddedDraft != null) null else editorState.currentNote?.takeIf { isEditing }
     val attachmentBitwardenVault = remember(attachmentOwnerItem?.bitwardenVaultId, bitwardenVaults) {
         attachmentOwnerItem?.bitwardenVaultId?.let { vaultId ->
             bitwardenVaults.firstOrNull { it.id == vaultId }
@@ -435,6 +441,10 @@ fun AddEditNoteScreen(
     }
 
     LaunchedEffect(noteId, isEditing) {
+        if (embeddedDraft != null) {
+            editorViewModel.loadForEdit(embeddedDraft.displayItem())
+            return@LaunchedEffect
+        }
         if (!isEditing) {
             hasInitializedReplicaTargets = false
             editorViewModel.resetForNewNote()
@@ -540,7 +550,7 @@ fun AddEditNoteScreen(
     LaunchedEffect(editorState.noteImagePaths) {
         editorState.noteImagePaths.forEach { fileName ->
             if (!noteImageBitmaps.containsKey(fileName)) {
-                val bitmap = imageManager.loadImage(fileName)
+                val bitmap = if (embeddedDraft?.assets?.any { it.name == fileName } == true) embeddedImageLoader?.invoke(fileName) else imageManager.loadImage(fileName)
                 if (bitmap != null) {
                     noteImageBitmaps[fileName] = bitmap
                 }
@@ -582,6 +592,20 @@ fun AddEditNoteScreen(
         if (!editorViewModel.tryStartSaving()) return
         val currentState = editorViewModel.uiState.value
         val payload = editorViewModel.buildSavePayload(isMarkdown = isMarkdown)
+        if (embeddedDraft != null && onEmbeddedSave != null) {
+            scope.launch {
+                try {
+                    val encoded = NoteContentCodec.encode(payload.content, payload.tags, payload.isMarkdown, payload.customFields).first
+                    val data = kotlinx.serialization.json.Json.parseToJsonElement(encoded).jsonObject
+                    onEmbeddedSave(takagi.ru.monica.attachments.EmbeddedWalletEditorResult(
+                        embeddedDraft.edited(payload.title, embeddedDraft.notes, data).withFavorite(currentState.isFavorite),
+                        NoteContentCodec.decodeImagePaths(payload.imagePathsJson), pendingAttachmentDrafts.toList()))
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+                } catch (_: Exception) { Toast.makeText(context, R.string.embedded_copy_failed, Toast.LENGTH_LONG).show()
+                } finally { editorViewModel.stopSaving() }
+            }
+            return
+        }
         val effectiveTargets = currentState.selectedStorageTargets.ifEmpty {
             listOf(
                 buildMultiStorageTarget(
@@ -684,7 +708,7 @@ fun AddEditNoteScreen(
     }
 
     val storageSelectorContent: @Composable () -> Unit = {
-        MultiStorageTargetSelectorCard(
+        if (embeddedDraft == null) MultiStorageTargetSelectorCard(
             selectedTargets = editorState.selectedStorageTargets,
             existingTargetKeys = editorState.existingReplicaTargetKeys,
             categories = categories,
@@ -706,6 +730,7 @@ fun AddEditNoteScreen(
                 bitwardenVaultId = editorState.bitwardenVaultId,
                 bitwardenFolderId = editorState.bitwardenFolderId
             )
+        embeddedAttachmentsContent?.invoke()
         AttachmentsEditSection(
             owner = attachmentOwnerItem?.let { AttachmentOwner.secureItem(it.id) },
             isPlusActivated = appSettings.isPlusActivated,

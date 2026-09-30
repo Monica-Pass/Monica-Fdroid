@@ -69,9 +69,8 @@ class SecurityManager(private val context: Context) {
         SecurityDiagLogger.append("D/$logTag $message")
     }
     
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val secureStore = SecurePreferencesStore.open(context, SecurePreferencesStore.MONICA)
+    private val masterKey = secureStore.masterKey
 
     // Secure Data Key Alias and Prefix
     private val KEY_ALIAS_DATA = "monica_data_key_v2"
@@ -81,13 +80,7 @@ class SecurityManager(private val context: Context) {
     private val WRAPPER_PREFIX_AUTH = "AU|"
     private val WRAPPER_PREFIX_COMPAT = "CP|"
     
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "monica_secure_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val sharedPreferences = secureStore.preferences
     
     companion object {
         private const val MASTER_PASSWORD_HASH_KEY = "master_password_hash"

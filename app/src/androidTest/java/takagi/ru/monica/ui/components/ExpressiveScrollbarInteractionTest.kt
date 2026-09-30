@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Recomposer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -151,5 +152,32 @@ class ExpressiveScrollbarInteractionTest {
             .put("smallestStepPx", deltas.minOrNull()).put("largestStepPx", deltas.maxOrNull()))
         assertTrue("Dragging down must not move mixed-height cards backward: $deltas", deltas.all { it >= 0 })
         assertTrue("Small movements must remain continuous with mixed-height cards: $deltas", deltas.all { it <= 40f * density })
+    }
+
+    @Test fun movingInsideTheSameRowDoesNotRecomposeTheScrollbar() {
+        val state = show(List(20) { 4000 })
+        val scrollbar = compose.onNodeWithTag("scrollbar")
+        scrollbar.performTouchInput {
+            down(Offset(centerX, 20f * density))
+            moveBy(Offset(0f, 28f * density))
+        }
+        compose.mainClock.advanceTimeBy(1000)
+        compose.waitForIdle()
+        val initialIndex = state.firstVisibleItemIndex
+        val initialOffset = state.firstVisibleItemScrollOffset
+        val before = Recomposer.runningRecomposers.value.sumOf { it.changeCount }
+        repeat(20) {
+            scrollbar.performTouchInput { moveBy(Offset(0f, 0.03f)) }
+            settlePointerFrame()
+        }
+        val recompositions = Recomposer.runningRecomposers.value.sumOf { it.changeCount } - before
+        save("composition-drag.json", JSONObject().put("pointerMoves", 20).put("recompositions", recompositions))
+        val indexAfter = state.firstVisibleItemIndex
+        val offsetAfter = state.firstVisibleItemScrollOffset
+        scrollbar.performTouchInput { up() }
+        settlePointerFrame()
+        assertTrue("Fixture must stay inside one row", initialIndex == indexAfter)
+        assertTrue("The list must still follow the pointer", offsetAfter > initialOffset)
+        assertTrue("Position-only updates must use layout/draw, not composition: $recompositions", recompositions <= 2)
     }
 }

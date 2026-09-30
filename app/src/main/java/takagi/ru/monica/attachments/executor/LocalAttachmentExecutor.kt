@@ -86,19 +86,23 @@ class LocalAttachmentExecutor(
 
     /** Writes an already-normalized small payload without creating a plaintext temporary file. */
     suspend fun writeFromBytes(
-        owner: AttachmentOwner,
-        fileName: String,
-        mimeType: String,
-        bytes: ByteArray
-    ): Attachment = withContext(Dispatchers.IO) {
+        owner: AttachmentOwner, fileName: String, mimeType: String, bytes: ByteArray
+    ): Attachment {
         if (bytes.isEmpty()) throw AttachmentError.IoError
+        return bytes.inputStream().use { writeFromStream(owner, fileName, mimeType, it) }
+    }
+
+    /** The caller owns and closes the plaintext stream. No plaintext temporary file. */
+    suspend fun writeFromStream(
+        owner: AttachmentOwner, fileName: String, mimeType: String, stream: InputStream
+    ): Attachment = withContext(Dispatchers.IO) {
         val safeFileName = fileName
             .substringAfterLast('/')
             .substringAfterLast('\\')
             .trim()
             .takeIf(String::isNotEmpty)
             ?: DEFAULT_FILE_NAME
-        val blob = bytes.inputStream().use { storage.writeEncrypted(it) }
+        val blob = storage.writeEncrypted(stream)
         val now = System.currentTimeMillis()
         val wrapped = try {
             keyVault.wrap(blob.cek)

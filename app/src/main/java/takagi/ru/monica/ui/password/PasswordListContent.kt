@@ -451,6 +451,7 @@ fun PasswordListContent(
             database.supports(MdbxCapability.REMOTE_SYNC)
         ) {
             MdbxPathSyncState(
+                lastSyncStatus = database.lastSyncStatus,
                 pendingCount = database.mdbxPathPendingSyncCount(mdbxPendingSyncCounts[database.id]),
                 isSyncing = mdbxOperationState is takagi.ru.monica.viewmodel.MdbxViewModel.OperationState.Loading,
                 onSync = {
@@ -1712,6 +1713,7 @@ fun PasswordListContent(
 
     BindPasswordListSelectionModeChange(
         isSelectionMode = isSelectionMode,
+        selectedProjectCount = takagi.ru.monica.ui.password.selectedPasswordProjectCount(selectedItemKeys, passwordEntries),
         selectedItemKeys = selectedItemKeys,
         selectedPasswords = selectedPasswords,
         selectedSupplementaryItems = selectedSupplementaryItems,
@@ -2037,7 +2039,7 @@ fun PasswordListContent(
         onShowManualStackConfirmDialogChange = { showManualStackConfirmDialog = it },
         selectedItemKeys = selectedItemKeys,
         selectedPasswords = selectedPasswords,
-        selectedCount = selectedItemKeys.size,
+        selectedCount = takagi.ru.monica.ui.password.selectedPasswordProjectCount(selectedItemKeys, passwordEntries),
         selectedManualStackMode = selectedManualStackMode,
         onSelectedManualStackModeChange = { selectedManualStackMode = it },
         onApplyManualStackMode = { dialogMode, itemKeys, passwordIds ->

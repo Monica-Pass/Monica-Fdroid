@@ -7,10 +7,31 @@ import takagi.ru.monica.ui.components.UnifiedCategoryFilterSelection
 import java.util.Date
 
 class VaultV2SortingTest {
+    @Test fun `date sections use full numeric local dates regardless of locale`() {
+        val previousLocale = java.util.Locale.getDefault()
+        val previousZone = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Shanghai"))
+            val time = java.time.Instant.parse("2026-09-28T17:00:00Z").toEpochMilli()
+            for (locale in listOf(java.util.Locale.CHINA, java.util.Locale.US, java.util.Locale("ar"))) {
+                java.util.Locale.setDefault(locale)
+                val items = buildVaultV2PasswordItems(listOf(PasswordEntry(id = 1, title = "Fixture",
+                    username = "", password = "", website = "", createdAt = Date(time), updatedAt = Date(time))))
+                VaultListSort.entries.filterNot { it.isAlphabetical }.forEach { sort ->
+                    assertEquals("2026/09/29", buildVaultV2SortedSections(items, sort).single().first)
+                }
+            }
+        } finally {
+            java.util.Locale.setDefault(previousLocale)
+            java.util.TimeZone.setDefault(previousZone)
+        }
+    }
+
     private val entries = listOf(
         entry(1, "Alpha", 3, 1), entry(2, "Zebra", 2, 3), entry(3, "Beta", 1, 2),
     )
     private val expected = mapOf(
+        VaultListSort.RECENT_DESC to listOf(1L, 2L, 3L),
         VaultListSort.TITLE_ASC to listOf(1L, 3L, 2L),
         VaultListSort.TITLE_DESC to listOf(2L, 3L, 1L),
         VaultListSort.CREATED_DESC to listOf(1L, 2L, 3L),
@@ -91,6 +112,19 @@ class VaultV2SortingTest {
         val native = item.copy(nativeToken = token, passwordEntry = token.asPasswordCard("API Key"))
         assertNull(native.sortTimestamp(VaultListSort.CREATED_DESC))
         assertEquals(9012L, native.sortTimestamp(VaultListSort.UPDATED_DESC))
+    }
+
+    @Test fun recentCombinesCreationAndEditingWithoutChangingStoredDates() {
+        val rows = listOf(entry(1,"Old",1,1), entry(2,"Created",5,0), entry(3,"Edited",1,6))
+        fun sorted(input: List<PasswordEntry>) = buildVaultV2DisplayListState(emptyList(), input, config(VaultListSort.RECENT_DESC))
+            .visibleListState.filteredItems
+        assertEquals(listOf(3L,2L,1L), sorted(rows).map { it.passwordEntry!!.id })
+        val changed = rows.map { if (it.id == 1L) it.copy(updatedAt = Date(7 * 86_400_000L)) else it }
+        assertEquals(listOf(1L,3L,2L), sorted(changed).map { it.passwordEntry!!.id })
+        assertEquals(0L, rows[1].updatedAt.time)
+        val many = buildVaultV2PasswordItems((1L..12L).map { entry(it,"Item $it",it.toInt(),0) })
+        assertEquals((12L downTo 5L).toList(),recentVaultOverviewItems(many).map { it.passwordEntry!!.id })
+        assertTrue(recentVaultOverviewItems(buildVaultV2PasswordItems(listOf(entry(50,"Unknown",0,0)))).isEmpty())
     }
 
     private fun entry(id: Long, title: String, created: Int, updated: Int) = PasswordEntry(

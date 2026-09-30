@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Tourner de 90° à gauche</string>
+    <string name="card_face_rotate_right">Tourner de 90° à droite</string>
+    <string name="card_face_crop_rotation_hint">Glissez pour déplacer, pincez pour zoomer ou utilisez les commandes de rotation et de miroir.</string>
+    <string name="card_face_flip_horizontal">Miroir horizontal</string>
+    <string name="card_face_flip_vertical">Miroir vertical</string>
+</resources>

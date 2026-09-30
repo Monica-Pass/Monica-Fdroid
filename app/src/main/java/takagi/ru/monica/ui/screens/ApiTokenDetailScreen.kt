@@ -37,6 +37,7 @@ import takagi.ru.monica.ui.components.PasswordField
 import takagi.ru.monica.ui.icons.MonicaIcons
 import takagi.ru.monica.viewmodel.MdbxViewModel
 import takagi.ru.monica.viewmodel.NativeApiTokenDetailViewModel
+import takagi.ru.monica.data.model.EmbeddedWalletContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +104,9 @@ fun ApiTokenDetailScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                     Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Icon(Icons.Default.Key, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        val emoji = current?.extras?.payload?.let(ApiTokenMetadata::customFields)?.firstOrNull { it.title == "monica.icon.emoji" }?.value
+                        if (!emoji.isNullOrBlank()) takagi.ru.monica.ui.icons.EmojiIconText(emoji, 36.dp)
+                        else Icon(Icons.Default.Key, null, Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(summary.title, style = MaterialTheme.typography.titleLarge)
                             Text(listOf(provider, stringResource(R.string.entry_type_api_token)).filter(String::isNotBlank).joinToString(" · "),
@@ -138,7 +141,31 @@ fun ApiTokenDetailScreen(
                         .mapIndexed { index, field -> field.toCustomField(0, index).copy(id = field.id) }
                 }
                 key(fieldVisibilityEpoch, current.summary.entryId) {
-                    CustomFieldDisplayCard(customFields)
+                    CustomFieldDisplayCard(customFields.filterNot { takagi.ru.monica.data.model.PasswordContentBlocks.owns(it.title) || it.title == "monica.icon.emoji" || EmbeddedWalletContent.isMetadata(it.title) })
+                    val wallets = customFields.filter { EmbeddedWalletContent.isMetadata(it.title) }.mapNotNull {
+                        (EmbeddedWalletContent.read(it.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+                    }
+                    wallets.forEach { wallet ->
+                        val access = remember(wallet.encode(), current) {
+                            takagi.ru.monica.attachments.EmbeddedWalletAccess.openNative(context, wallet) { name ->
+                                mdbxViewModel.readNativeApiTokenAttachment(current, current.attachments.single { it.fileName == name }.id)
+                            }
+                        }
+                        takagi.ru.monica.ui.components.EmbeddedWalletSavedContent(wallet, nativeAccess = access)
+                    }
+                    val managedNames = wallets.flatMap { it.assets }.map { it.name }.toSet()
+                    val attachments = current.attachments.filterNot { it.fileName in managedNames }
+                    if (attachments.isNotEmpty()) ApiTokenSection(stringResource(R.string.attachments), Icons.Default.AttachFile) {
+                        takagi.ru.monica.attachments.ui.NativeApiTokenAttachmentList(attachments, onRead = { asset, output ->
+                            val bytes = mdbxViewModel.readNativeApiTokenAttachment(current, asset.id)
+                            try { output.write(bytes) } finally { bytes.fill(0) }
+                        })
+                    }
+                    takagi.ru.monica.data.model.PasswordContentBlocks.read(customFields.map { takagi.ru.monica.data.CustomFieldDraft.fromCustomField(it) }).forEach { stored ->
+                        var open by remember(stored) { mutableStateOf(false) }
+                        takagi.ru.monica.ui.components.PasswordContentBlockCard(stored, onClick = { open = true })
+                        if (open) takagi.ru.monica.ui.components.PasswordContentBlockDetail(stored, onDismiss = { open = false })
+                    }
                 }
             }
             if (summary != null) {

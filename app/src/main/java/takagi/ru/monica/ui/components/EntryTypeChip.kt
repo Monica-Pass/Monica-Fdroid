@@ -119,7 +119,9 @@ fun EntryTypeChip(
             text = currentLabel,
             color = contentColor,
             style = MaterialTheme.typography.labelLarge,
-            maxLines = 1
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
         )
         Icon(
             imageVector = Icons.Default.ExpandMore,

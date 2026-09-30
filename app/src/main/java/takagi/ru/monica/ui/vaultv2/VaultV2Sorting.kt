@@ -1,7 +1,7 @@
 package takagi.ru.monica.ui.vaultv2
 
 import takagi.ru.monica.data.VaultListSort
-import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -15,6 +15,9 @@ internal fun VaultV2Item.sortTimestamp(sort: VaultListSort): Long? {
     }
     val updated = nativeToken?.updatedAt ?: passwordEntry?.updatedAt?.time ?:
         totpItem?.updatedAt?.time ?: secureItem?.updatedAt?.time
+    if (sort == VaultListSort.RECENT_DESC) {
+        return listOfNotNull(created, updated).filter { it > 0L }.maxOrNull()
+    }
     // Passkeys have no modification timestamp; lastUsedAt is usage, not an edit.
     return (if (sort == VaultListSort.CREATED_ASC || sort == VaultListSort.CREATED_DESC) created
         else updated ?: created)?.takeIf { it > 0L }
@@ -46,7 +49,7 @@ internal fun buildVaultV2SortedSections(
             if (sort.descending) b.compareTo(a) else a.compareTo(b)
         }).map { it to groups.getValue(it) }
     }
-    val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
+    val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.ROOT)
     return items.groupBy { item ->
         item.sortTimestamp(sort)?.let { dateFormat.format(Date(it)) }.orEmpty()
     }.toList()

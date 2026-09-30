@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-29",
+  "scope": "Recent edits and date fast-scroll labels only",
+  "version": "1.0.315",
+  "device": "Monica_Issue136_API_32 / emulator-5554",
+  "fontScale": 1.5,
+  "unitTestsPerEdition": 23,
+  "deviceTestsPerEdition": 3,
+  "deviceRuns": {
+    "main": {
+      "testSha256": "5F442E5AB14096A4BE9C033B82536DC45DE75612B618614B331EA98CD31B2F5D",
+      "suite": "RecentEdit315Verified",
+      "startedAt": "2026-09-29T18:24:27.6935185+08:00",
+      "edition": "Main",
+      "appSha256": "EECBB2E040BBE5EC5C0345FD56D80A853C91A67EEDB89772E42ACD9256B1191C",
+      "testPackageId": "takagi.ru.monica.test",
+      "packageId": "takagi.ru.monica",
+      "finishedAt": "2026-09-29T18:25:39.3680638+08:00",
+      "classes": [
+        "takagi.ru.monica.ui.PasswordOtpEditorTest#editingOldLocalPasswordMovesItToRecentWithoutChangingCreationDate,takagi.ru.monica.ui.vaultv2.VaultOverviewPaneTest#editedLocalEntryRefreshesRecentInOpenAndReturnedOverview,takagi.ru.monica.ui.vaultv2.VaultDateScrollbarTest"
+      ],
+      "completed": true
+    },
+    "fdroid": {
+      "classes": [
+        "takagi.ru.monica.ui.PasswordOtpEditorTest#editingOldLocalPasswordMovesItToRecentWithoutChangingCreationDate,takagi.ru.monica.ui.vaultv2.VaultOverviewPaneTest#editedLocalEntryRefreshesRecentInOpenAndReturnedOverview,takagi.ru.monica.ui.vaultv2.VaultDateScrollbarTest"
+      ],
+      "startedAt": "2026-09-29T18:26:26.3308766+08:00",
+      "testSha256": "2AF67BBD4D44AA8F6664048E6FA894D799FB35A9546A7BAB972D8040218176CF",
+      "edition": "Fdroid",
+      "completed": true,
+      "suite": "RecentEdit315Verified",
+      "packageId": "takagi.ru.monica.fdroid",
+      "finishedAt": "2026-09-29T18:27:19.8775996+08:00",
+      "appSha256": "B44AE783CCE4769C6894891A66FCDB2A18E452EEC533C35F50D013B0740BCE64",
+      "testPackageId": "takagi.ru.monica.fdroid.test"
+    }
+  },
+  "findings": [
+    "Old local password edit advances updatedAt, preserves createdAt and secret; appears first in recent projection.",
+    "Real overview refreshes when updatedAt changes without title/count changes, both while open and after returning from list. Reported missing-edit symptom not reproduced on this checkout.",
+    "Found and fixed empty-list crash in editor strength display while existing credentials load.",
+    "Date sections use yyyy/MM/dd in local timezone independent of locale. Floating label measures text, escapes narrow scrollbar constraints, stays single-line at 150% font scale."
+  ],
+  "limitations": [
+    "No claim that an unreproduced user-specific recent-edit issue is resolved. No data timestamp rewrite or storage/schema change."
+  ],
+  "deferred": [
+    "Detail authenticator progress, clipping and action menu; user requested interrupted date task first."
+  ]
+}

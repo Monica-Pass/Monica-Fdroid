@@ -1,0 +1,5 @@
+<resources>
+    <string name="entry_content_remove_title">删除%1$s？</string>
+    <string name="entry_content_remove_message">将从当前草稿移除此内容，保存项目后生效。</string>
+    <string name="entry_content_drag">按住拖动排序</string>
+</resources>

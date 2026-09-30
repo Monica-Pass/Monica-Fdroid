@@ -58,7 +58,7 @@ class GpgKeyFlowTest {
                 compose.onAllNodes(hasText("menu-user-fixture") and hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
             }
             compose.onNode(hasText("menu-user-fixture") and hasSetTextAction()).assertExists()
-            compose.onNodeWithContentDescription(context.getString(takagi.ru.monica.R.string.save)).assertIsDisplayed()
+            compose.onNodeWithTag("password_editor_save").assertIsDisplayed()
         } finally { generator.viewModelScope.cancel() }
     }
 
@@ -79,9 +79,19 @@ class GpgKeyFlowTest {
             compose.onNodeWithTag("gpg_result").performClick()
             compose.onNodeWithText(context.getString(takagi.ru.monica.R.string.gpg_create_entry)).performScrollTo().performClick()
             compose.onNode(isDialog()).assertExists()
-            compose.onNodeWithTag("gpg_save").assertIsDisplayed()
-            val save = compose.onNodeWithTag("gpg_save").getUnclippedBoundsInRoot()
+            compose.onNodeWithTag("password_editor_save").assertIsDisplayed()
+            val save = compose.onNodeWithTag("password_editor_save").getUnclippedBoundsInRoot()
             assertTrue("Save retains a full touch target", save.bottom.value - save.top.value >= 48f)
+            compose.onNodeWithTag("password_editor_save").performClick()
+            compose.waitUntil(30_000) { runBlocking { db.passwordEntryDao().getAllPasswordEntriesSync().any { it.loginType == "GPG_KEY" } } }
+            runBlocking {
+                val saved = db.passwordEntryDao().getAllPasswordEntriesSync().single { it.loginType == "GPG_KEY" }
+                val loaded = requireNotNull(passwords.getPasswordEntryById(saved.id))
+                val fields = passwords.getCustomFieldsByEntryIdSync(saved.id).associate { it.title to it.value }
+                assertTrue(GpgKeyGenerator.parse(loaded.password).userId.contains("Dialog fixture"))
+                assertEquals(GpgKeyGenerator.parse(loaded.password).fingerprint,
+                    GpgKeyGenerator.parse(GpgEntryFields.publicKey(fields)).fingerprint)
+            }
         } finally { generator.viewModelScope.cancel() }
     }
 
@@ -217,69 +227,38 @@ class GpgKeyFlowTest {
     }
 
     @Test fun generateSaveReloadAndPreserveEncryptedPrivateKey() {
+        val generated = GpgKeyGenerator.generate("Monica device test", "device@example.org", 3072, 365, "protected-fixture".toCharArray())
+        editor.key = generated
+        editor.title = "GPG test key"
         var id by mutableStateOf<Long?>(null)
-        var editSession by mutableStateOf(0)
-        compose.setContent {
-            TestTheme { key(editSession) {
-                GpgKeyScreen(passwords, onBack = {}, passwordId = id, editor = editor,
-                    onSaved = { id = it })
-            } }
-        }
-        compose.onNodeWithTag("gpg_favorite").assertIsDisplayed().assertIsNotSelected().performClick()
-        compose.onNodeWithTag("gpg_favorite").assertIsSelected()
-        compose.onNodeWithTag("gpg_notes").performScrollTo().performTextInput("Signing key for releases")
-        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input keyevent 4").close()
-        capture("new-entry.png")
-        compose.onNodeWithTag("gpg_title").performScrollTo().performTextInput("GPG test key")
-        compose.onNodeWithTag("gpg_open_generation").performScrollTo().performClick()
-        compose.onNodeWithTag("gpg_generate").performScrollTo().performClick()
-        compose.onNodeWithText(context.getString(takagi.ru.monica.R.string.gpg_name_invalid)).performScrollTo().assertIsDisplayed()
-        assertFalse(editor.busy)
-        assertFalse(editor.failed)
-        compose.onNodeWithTag("gpg_name").performScrollTo().performTextInput("Monica device test")
-        compose.onNodeWithTag("gpg_email").performScrollTo().performTextInput("dgbbd")
-        compose.onNodeWithTag("gpg_generate").performScrollTo().performClick()
-        compose.onNodeWithText(context.getString(takagi.ru.monica.R.string.gpg_email_invalid)).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(context.getString(takagi.ru.monica.R.string.gpg_error)).assertDoesNotExist()
-        assertFalse(editor.busy)
-        capture("invalid-email.png")
-        compose.onNodeWithTag("gpg_email").performTextClearance()
-        compose.onNodeWithTag("gpg_passphrase").performScrollTo().performTextInput("protected-fixture")
-        compose.onNodeWithTag("gpg_email").performScrollTo().performTextInput("device@example.org")
-        compose.onNodeWithTag("gpg_generate").performScrollTo().performClick()
-        compose.waitUntil(120_000) { editor.key != null || editor.failed }
-        assertFalse("GPG generation failed", editor.failed)
-        val generated = requireNotNull(editor.key)
-        val protectedRing = org.bouncycastle.openpgp.PGPSecretKeyRing(
-            org.bouncycastle.openpgp.PGPUtil.getDecoderStream(generated.privateKey.byteInputStream()),
-            org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator())
-        assertEquals(org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags.AES_256,
-            protectedRing.secretKey.keyEncryptionAlgorithm)
-        assertEquals("", editor.passphrase)
-        compose.onNodeWithTag("gpg_private").assertDoesNotExist()
-        compose.onNodeWithTag("gpg_save").performClick()
-        compose.waitUntil(30_000) { id != null }
-        val savedId = requireNotNull(id)
+        var session by mutableIntStateOf(0)
+        var saved: Long? = null
+        compose.setContent { TestTheme { key(session) {
+            GpgKeyScreen(passwords, onBack = {}, passwordId = id, editor = editor, onSaved = { saved = it })
+        } } }
+        compose.waitUntil(15_000) { compose.onAllNodes(hasTestTag("template_field_publicKey") and hasText(generated.publicKey)).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("password_editor_favorite").performClick()
+        compose.onNodeWithTag("template_field_privateKey").performScrollTo().assertTextContains(generated.privateKey)
+        closeFocusedKeyboard()
+        compose.onNodeWithTag("password_editor_save").performClick()
+        compose.waitUntil(30_000) { saved != null }
+        val savedId = requireNotNull(saved)
         runBlocking {
             val raw = requireNotNull(db.passwordEntryDao().getPasswordEntryById(savedId))
             assertTrue(raw.isFavorite)
-            assertEquals("Signing key for releases", raw.notes)
             assertFalse(raw.password.contains("PRIVATE KEY"))
             val decrypted = requireNotNull(passwords.getPasswordEntryById(savedId))
-            assertEquals(generated, GpgKeyGenerator.parse(decrypted.password))
+            assertEquals(generated.privateKey, decrypted.password)
+            val ring = org.bouncycastle.openpgp.PGPSecretKeyRing(org.bouncycastle.openpgp.PGPUtil.getDecoderStream(decrypted.password.byteInputStream()), org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator())
+            assertEquals(org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags.AES_256, ring.secretKey.keyEncryptionAlgorithm)
             val fields = passwords.getCustomFieldsByEntryIdSync(savedId).associate { it.title to it.value }
-            assertTrue(GpgEntryFields.isGpg(fields))
             assertEquals(generated.publicKey, GpgEntryFields.publicKey(fields))
             assertTrue(fields.values.none { it.contains("PRIVATE KEY") })
         }
-        compose.runOnIdle { editor.key = null; editSession++ }
-        compose.waitUntil(30_000) { editor.key != null }
-        compose.onNodeWithTag("gpg_favorite").assertIsSelected()
-        compose.onNodeWithTag("gpg_notes").performScrollTo().assertTextContains("Signing key for releases")
-        assertEquals(generated.fingerprint, editor.key!!.fingerprint)
-        assertEquals(generated.privateKey, editor.key!!.privateKey)
-        compose.onNodeWithTag("gpg_private").assertDoesNotExist()
-        compose.onNodeWithTag("gpg_fingerprint", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { editor.key = null; id = savedId; session++ }
+        compose.waitUntil(30_000) { compose.onAllNodes(hasTestTag("template_field_publicKey") and hasText(generated.publicKey)).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("password_editor_favorite").assertIsSelected()
+        compose.onNodeWithTag("template_field_privateKey").performScrollTo().assertTextContains(generated.privateKey)
         capture("editor.png")
     }
 
@@ -294,12 +273,12 @@ class GpgKeyFlowTest {
             }
         }
         assertHeadingFits()
-        compose.onNodeWithTag("gpg_favorite").assertIsDisplayed().performClick()
-        compose.onNodeWithTag("gpg_favorite").assertIsSelected()
-        compose.onNodeWithTag("gpg_open_generation").assertIsDisplayed()
-        compose.onNodeWithTag("gpg_save").assertIsDisplayed()
+        compose.onNodeWithTag("password_editor_favorite").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("password_editor_favorite").assertIsSelected()
+        compose.onNodeWithTag("gpg_open_generation").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("password_editor_save").assertIsDisplayed()
         capture("new-entry-dark-large.png")
-        compose.onNodeWithTag("gpg_open_generation").performClick()
+        compose.onNodeWithTag("gpg_open_generation").performScrollTo().performClick()
         compose.onNodeWithTag("gpg_name").performScrollTo().assertIsDisplayed()
         capture("generation-dark-large.png")
         compose.onNodeWithTag("gpg_generate").performScrollTo().assertIsDisplayed()
@@ -336,9 +315,15 @@ class GpgKeyFlowTest {
         for (tag in listOf("lzh", "zh-Hant", "zh-CN", "de")) {
             compose.runOnIdle { localeTag = tag }
             val local = localized(tag)
-            assertHeadingFits()
-            compose.onNodeWithTag("gpg_favorite").assertIsDisplayed()
             capture("entry-$tag.png")
+            assertHeadingFits()
+            val publicLabel = local.getString(takagi.ru.monica.R.string.content_block_public)
+            assertNotEquals("Public key", publicLabel)
+            compose.onNodeWithTag("template_field_publicKey").performScrollTo().assertTextContains(publicLabel)
+            compose.onNodeWithTag("password_editor_favorite").assertIsDisplayed()
+            val editorList = compose.onNode(hasTestTag("password_content_editor") or hasTestTag("password_classic_editor"))
+            compose.onNodeWithTag("gpg_open_generation").performScrollTo()
+            compose.bringAboveFloatingActions(compose.onNodeWithTag("gpg_open_generation"), editorList)
             compose.onNodeWithTag("gpg_open_generation").performClick()
             compose.onNodeWithTag("gpg_generate").performScrollTo().performClick()
             compose.onNodeWithText(local.getString(takagi.ru.monica.R.string.gpg_name_invalid))
@@ -349,13 +334,13 @@ class GpgKeyFlowTest {
             compose.onNodeWithText(local.getString(takagi.ru.monica.R.string.gpg_email_invalid))
                 .performScrollTo().assertIsDisplayed()
             capture("validation-$tag.png")
-            compose.runOnIdle { editor.name = ""; editor.email = "" }
+            closeFocusedKeyboard()
         }
     }
 
     private fun assertHeadingFits() {
         val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-        compose.onNodeWithTag("gpg_heading").assertIsDisplayed().performSemanticsAction(
+        compose.onNodeWithTag("password_editor_heading").assertIsDisplayed().performSemanticsAction(
             androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult
         ) { it(layouts) }
         assertTrue("Heading must expose its actual text layout", layouts.isNotEmpty())

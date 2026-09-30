@@ -14,10 +14,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import takagi.ru.monica.ui.components.SettingsPanelGroup
+import takagi.ru.monica.ui.components.SettingsPanelRow
+import takagi.ru.monica.ui.components.settingsPanelSurface
 import takagi.ru.monica.R
 import takagi.ru.monica.data.PasswordSwipeSelectionMode
 import takagi.ru.monica.data.SecureItem
@@ -74,7 +78,7 @@ fun ExtensionsScreen(
             onDismissRequest = { showDisplayModeDialog = false },
             title = { Text(stringResource(R.string.password_card_display_mode_title), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_display_mode_title))) },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     takagi.ru.monica.data.PasswordCardDisplayMode.values().forEach { mode ->
                         Row(
                             Modifier
@@ -118,10 +122,11 @@ fun ExtensionsScreen(
 
     if (showClipboardAutoClearDialog) {
         AlertDialog(
+            modifier = Modifier.testTag("extensions_clipboard_dialog"),
             onDismissRequest = { showClipboardAutoClearDialog = false },
             title = { Text(stringResource(R.string.clipboard_auto_clear_title), modifier = Modifier.settingsSearchAnchor(stringResource(R.string.clipboard_auto_clear_title))) },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     clipboardAutoClearOptions.forEach { seconds ->
                         Row(
                             modifier = Modifier
@@ -147,7 +152,7 @@ fun ExtensionsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showClipboardAutoClearDialog = false }) {
+                TextButton(onClick = { showClipboardAutoClearDialog = false }, modifier = Modifier.testTag("extensions_clipboard_close")) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -198,42 +203,6 @@ fun ExtensionsScreen(
                 )
             }
 
-            // 顶部说明卡片
-            ElevatedCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Extension,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Column {
-                        Text(
-                            stringResource(R.string.extensions_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            stringResource(R.string.extensions_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
-                }
-            }
-
             ExtensionSection(title = stringResource(R.string.quick_init_section_title)) {
                 ExtensionClickableItem(
                     icon = Icons.Default.SettingsSuggest,
@@ -254,44 +223,13 @@ fun ExtensionsScreen(
             }
             
             ExtensionSection(title = stringResource(R.string.display_options_menu_title)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDisplayModeDialog = true }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Dns,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.password_card_display_mode_title),
-                            style = MaterialTheme.typography.bodyLarge, modifier = Modifier.settingsSearchAnchor(stringResource(R.string.password_card_display_mode_title)))
-                        Text(
-                            text = when (passwordCardDisplayMode) {
-                                takagi.ru.monica.data.PasswordCardDisplayMode.SHOW_ALL -> 
-                                    stringResource(R.string.display_mode_all)
-                                takagi.ru.monica.data.PasswordCardDisplayMode.TITLE_USERNAME -> 
-                                    stringResource(R.string.display_mode_title_username)
-                                takagi.ru.monica.data.PasswordCardDisplayMode.TITLE_ONLY -> 
-                                    stringResource(R.string.display_mode_title_only)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ExtensionChoiceItem(Icons.Default.Dns,
+                    stringResource(R.string.password_card_display_mode_title), "",
+                    stringResource(when (passwordCardDisplayMode) {
+                        takagi.ru.monica.data.PasswordCardDisplayMode.SHOW_ALL -> R.string.display_mode_all
+                        takagi.ru.monica.data.PasswordCardDisplayMode.TITLE_USERNAME -> R.string.display_mode_title_username
+                        takagi.ru.monica.data.PasswordCardDisplayMode.TITLE_ONLY -> R.string.display_mode_title_only
+                    }), { showDisplayModeDialog = true })
                 ExtensionSwitchItem(
                     icon = Icons.Default.CallMerge,
                     title = stringResource(R.string.smart_deduplication),
@@ -299,7 +237,7 @@ fun ExtensionsScreen(
                     checked = smartDeduplicationEnabled,
                     onCheckedChange = onSmartDeduplicationEnabledChange
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 ExtensionSwitchItem(
                     icon = Icons.Default.Security,
                     title = stringResource(R.string.password_detail_security_analysis_title),
@@ -307,7 +245,7 @@ fun ExtensionsScreen(
                     checked = passwordDetailSecurityAnalysisEnabled,
                     onCheckedChange = onPasswordDetailSecurityAnalysisEnabledChange
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 ExtensionSegmentedItem(
                     icon = Icons.Default.Swipe,
                     title = stringResource(R.string.swipe_selection_mode),
@@ -351,7 +289,7 @@ fun ExtensionsScreen(
                         enabled = hapticFeedbackEnabled,
                         onCheckedChange = onValidatorVibrationChange
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                     ExtensionSwitchItem(
                         icon = Icons.Default.Update,
                         title = stringResource(R.string.copy_next_code_when_expiring),
@@ -415,30 +353,7 @@ private fun ExtensionSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(vertical = 12.dp)
-        )
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
-        ) {
-            Column {
-                content()
-            }
-        }
-    }
+    SettingsPanelGroup(title, Modifier.padding(horizontal = 12.dp, vertical = 4.dp), content)
 }
 
 /**
@@ -451,53 +366,7 @@ private fun ExtensionClickableItem(
     description: String,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 图标
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        // 文字内容
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        // 右箭头
-        Icon(
-            Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    SettingsPanelRow(icon, title, description, onClick = onClick)
 }
 
 @Composable
@@ -508,58 +377,7 @@ private fun ExtensionChoiceItem(
     value: String,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold
-        )
-        Icon(
-            Icons.Default.KeyboardArrowDown,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    SettingsPanelRow(icon, title, "$value\n$description", onClick = onClick)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -573,32 +391,18 @@ private fun ExtensionSegmentedItem(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
+            .settingsPanelSurface().settingsSearchAnchor(title)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
+            Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -646,63 +450,7 @@ private fun ExtensionSwitchItem(
     enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 图标
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = if (enabled) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        // 文字内容
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f)
-                }
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(8.dp))
-        
-        // 开关
-        Switch(
-            checked = checked,
-            enabled = enabled,
-            onCheckedChange = onCheckedChange
-        )
-    }
+    SettingsPanelRow(icon, title, description, enabled = enabled, checked = checked, onCheckedChange = onCheckedChange)
 }
 
 /**
@@ -759,7 +507,7 @@ private fun NotificationValidatorExtensionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.notification_validator_title),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     color = if (enabled) MaterialTheme.colorScheme.onSurface 
                             else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))

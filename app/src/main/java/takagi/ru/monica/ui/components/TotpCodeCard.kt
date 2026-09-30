@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -83,6 +85,7 @@ fun TotpCodeCard(
     onEdit: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     onCardClick: (() -> Unit)? = null,
+    onActionMenu: (() -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
@@ -297,10 +300,12 @@ fun TotpCodeCard(
         // In selection mode, keep long-press free for list-level drag reorder.
         modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .clickable { onToggleSelect?.invoke() }
     } else {
         modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .combinedClickable(
                 onClick = {
                     if (onCardClick != null) {
@@ -781,7 +786,7 @@ fun TotpCodeCard(
                         var expanded by remember { mutableStateOf(false) }
                         
                         Box {
-                            IconButton(onClick = { expanded = true }) {
+                            IconButton(onClick = { if (onActionMenu != null) onActionMenu() else expanded = true }) {
                                 Icon(
                                     Icons.Default.MoreVert,
                                     contentDescription = stringResource(R.string.more_options)
@@ -1009,7 +1014,7 @@ fun TotpCodeCard(
                     }
                 } else {
                     IconButton(
-                        onClick = { onCopyCode(codeToCopy) }
+                        onClick = { if (onActionMenu != null) onActionMenu() else onCopyCode(codeToCopy) }
                     ) {
                         Icon(
                             Icons.Default.ContentCopy,
@@ -1085,7 +1090,7 @@ fun TotpCodeCard(
                                 } else {
                                     null
                                 },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).then(Modifier.semantics { progressBarRangeInfo = androidx.compose.ui.semantics.ProgressBarRangeInfo(progress, 0f..1f) })
                             )
                             
                             Spacer(modifier = Modifier.width(8.dp))

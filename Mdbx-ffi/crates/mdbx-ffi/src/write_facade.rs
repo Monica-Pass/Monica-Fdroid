@@ -497,11 +497,19 @@ pub(crate) fn execute_composite_write_operation(
     let attachment_ids = attachment_batch_ids(&attachment_commands);
     let mut changed_objects = prepared.changed_objects().to_vec();
     changed_objects.extend(attachment_batch_changes(&attachment_commands));
+    // Attachment mutations have the `change` kind. Combining them with a
+    // generic move/restore needs the aggregate kind, exactly as mixed generic
+    // commands do. The operation still owns one transaction and one commit.
+    let commit_kind = if prepared.commit_kind() == "change" {
+        "change"
+    } else {
+        "multi"
+    };
     let mut operation = CommitOperation::new(
         prepared.operation_id(),
         prepared.operation_kind(),
         prepared.branch_id().map(|_| "").unwrap_or("main"),
-        "change",
+        commit_kind,
         storage_write_operation_scope(&changed_objects),
         changed_objects,
     )

@@ -73,12 +73,12 @@ class NativeApiTokenSyncInstrumentedTest {
             val networkEntered = CompletableDeferred<Unit>()
             val releaseNetwork = CompletableDeferred<Unit>()
             val delayed = object : MdbxRemoteTransport by transport {
-                override suspend fun stat(path: String): MdbxRemoteObject? {
+                override suspend fun list(path: String?): List<MdbxRemoteObject> {
                     if (path == MdbxRemoteSyncPaths.streamsRoot("vaults/network-gate.mdbx")) {
                         networkEntered.complete(Unit)
                         releaseNetwork.await()
                     }
-                    return transport.stat(path)
+                    return transport.list(path)
                 }
             }
             val synchronization = async(Dispatchers.IO) { coordinator.synchronize(databaseId, path, delayed) }
@@ -229,12 +229,12 @@ class NativeApiTokenSyncInstrumentedTest {
             val networkEntered = CompletableDeferred<Unit>()
             val releaseNetwork = CompletableDeferred<Unit>()
             val delayed = object : MdbxRemoteTransport by transport {
-                override suspend fun stat(requestPath: String): MdbxRemoteObject? {
+                override suspend fun list(requestPath: String?): List<MdbxRemoteObject> {
                     if (requestPath == MdbxRemoteSyncPaths.streamsRoot(path)) {
                         networkEntered.complete(Unit)
                         releaseNetwork.await()
                     }
-                    return transport.stat(requestPath)
+                    return transport.list(requestPath)
                 }
             }
             val synchronization = async(Dispatchers.IO) { targetSync.synchronize(targetId, path, delayed) }

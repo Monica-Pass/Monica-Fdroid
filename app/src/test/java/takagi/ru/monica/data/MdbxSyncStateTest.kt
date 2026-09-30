@@ -10,6 +10,19 @@ import org.junit.Test
 class MdbxSyncStateTest {
 
     @Test
+    fun preInventoryCursorRemainsReadableAndPreservesTransportState() = runBlocking {
+        val dao = FakeDao()
+        dao.upsert(MdbxSyncStateEntity(7L, """{"vaultId":"vault-7","exportCheckpoint":{"commitInventory":"commits","deltaInventory":"audits"},"futureField":"ignored"}"""))
+        val store = MdbxSyncStateStore(dao)
+        val old = store.read(7L)
+        assertEquals(null, old.syncedCommitInventory)
+        store.write(7L, old.copy(syncedCommitInventory = "safe-received-commits"))
+        val restarted = MdbxSyncStateStore(dao).read(7L)
+        assertEquals("safe-received-commits", restarted.syncedCommitInventory)
+        assertEquals(old.exportCheckpoint, restarted.exportCheckpoint)
+    }
+
+    @Test
     fun stateSurvivesStoreRestartAndConcurrentUpdatesAreSerialized() = runBlocking {
         val dao = FakeDao()
         val first = MdbxSyncStateStore(dao)

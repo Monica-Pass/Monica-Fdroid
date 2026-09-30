@@ -44,6 +44,28 @@ class KeePassNativeCompatibilityInstrumentedTest {
     private val service = KeePassKdbxService(context, dao, security)
 
     @Test
+    fun passwordCreationAndModificationDatesSurviveKdbx3And4Projection() = runBlocking {
+        val created = Instant.parse("2020-01-01T00:00:00Z")
+        val edited = Instant.parse("2026-09-01T00:00:00Z")
+        val original = entry("Dates", "Password" to "synthetic-password", "otp" to "otpauth://totp/Dates?secret=$SECRET").copy(
+            times = TimeData(created, edited, edited, created, created))
+        for (v3 in listOf(false,true)) fixture(listOf(original),version3=v3) { id ->
+            repeat(2) {
+                KeePassKdbxService.invalidateProcessCache(id)
+                val row = service.readPasswordEntries(id).getOrThrow().single()
+                assertEquals(created.toEpochMilli(),row.createdAtMillis)
+                assertEquals(edited.toEpochMilli(),row.updatedAtMillis)
+                val otp = service.readSecureItems(id,setOf(ItemType.TOTP)).getOrThrow().single().item
+                assertEquals(created.toEpochMilli(),otp.createdAt.time)
+                assertEquals(edited.toEpochMilli(),otp.updatedAt.time)
+                val dates=resolveKeePassEntryDates(row.createdAtMillis,row.updatedAtMillis,java.util.Date(),java.util.Date())
+                assertEquals(created.toEpochMilli(),dates.first.time)
+                assertEquals(edited.toEpochMilli(),dates.second.time)
+            }
+        }
+    }
+
+    @Test
     fun fiveAuthenticatorsInALargeKeePassDatabaseAreAllProjected() = runBlocking {
         val authenticators = listOf(
             entry("URI", "otp" to "otpauth://totp/URI:alice?secret=$SECRET&issuer=URI"),
@@ -59,6 +81,112 @@ class KeePassNativeCompatibilityInstrumentedTest {
                 items.map { it.item.keepassEntryUuid }.toSet())
             items.forEach { assertEquals(SECRET, Json.decodeFromString<TotpData>(it.item.itemData).secret) }
             assertEquals(406, service.readPasswordEntries(id).getOrThrow().size)
+        }
+    }
+
+    @Test
+    fun mixedOtpPasskeysAndRecoveryNotesRemainVisibleAfterReopeningKdbx3And4() = runBlocking {
+        for (version3 in listOf(false, true)) {
+            val keys = List(8) { index -> mixedPasskeyEntry(index, withOtp = index < 4) }
+            val otpOnly = List(2) { entry("OTP only $it", "otp" to "otpauth://totp/Only$it?secret=$SECRET") }
+            fixture(keys + otpOnly, version3 = version3) { id ->
+                repeat(2) {
+                    KeePassKdbxService.invalidateProcessCache(id)
+                    val otp = service.readSecureItems(id, setOf(ItemType.TOTP)).getOrThrow()
+                    assertEquals(6, otp.size)
+                    assertEquals((keys.take(4) + otpOnly).map { it.uuid.toString() }.toSet(),
+                        otp.map { it.item.keepassEntryUuid }.toSet())
+                    val passkeys = service.readPasskeyEntries(id).getOrThrow()
+                    assertEquals(8, passkeys.size)
+                    keys.forEach { source ->
+                        val projected = passkeys.single { it.userName == source.fields.getValue("UserName").content }
+                        assertEquals(source.fields.getValue("Notes").content, projected.notes)
+                        val material = takagi.ru.monica.passkey.PasskeyPrivateKeyStore.resolve(context, projected.privateKeyAlias)
+                        assertEquals(takagi.ru.monica.passkey.PasskeyPrivateKeySupport.exportPkcs8Base64(
+                            source.fields.getValue(KeePassDxPasskeyCodec.FIELD_PRIVATE_KEY).content),
+                            takagi.ru.monica.passkey.PasskeyPrivateKeySupport.exportPkcs8Base64(material))
+                    }
+                    val workspace = service.loadWorkspace(id, allowedSecureItemTypes = setOf(ItemType.TOTP)).getOrThrow()
+                    assertEquals(6, workspace.secureItems.size)
+                    assertEquals(10, workspace.passwords.size)
+                    val reopened = reopen(id).content.group.entries.associateBy { it.uuid }
+                    keys.forEach { source ->
+                        source.fields.forEach { (name, value) ->
+                            assertEquals(value.content, reopened.getValue(source.uuid).fields.getValue(name).content)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun editingAndAddingOtpPreservesPasskeyAndRecoveryNotes() = runBlocking {
+        for (version3 in listOf(false, true)) {
+            val source = mixedPasskeyEntry(0, withOtp = true)
+            val withoutOtp = mixedPasskeyEntry(1, withOtp = false)
+            fixture(listOf(source, withoutOtp), version3 = version3) { id ->
+                val projected = service.readSecureItems(id, setOf(ItemType.TOTP)).getOrThrow().single().item
+                val data = Json.decodeFromString<TotpData>(projected.itemData)
+                service.updateSecureItem(id, projected.copy(itemData = Json.encodeToString(TotpData.serializer(),
+                    data.copy(period = 60)))).getOrThrow()
+                val fields = withoutOtp.fields.map { (name, value) ->
+                    KeePassFieldChange(name, value.content, value is EntryValue.Encrypted)
+                }
+                assertNull(takagi.ru.monica.ui.screens.editableNativeTotpData(fields))
+                val withOtp = takagi.ru.monica.ui.screens.mergeNativeTotpFields(fields, data, "Added OTP")
+                assertEquals(SECRET, takagi.ru.monica.ui.screens.editableNativeTotpData(withOtp)?.secret)
+                service.saveNativeEntryDraft(id, withoutOtp.uuid, null, withOtp,
+                    KeePassNativeEntryPresentationUpdate(), emptyList(), revision(id)).getOrThrow()
+                KeePassKdbxService.invalidateProcessCache(id)
+                val otp = service.readSecureItems(id, setOf(ItemType.TOTP)).getOrThrow()
+                assertEquals(2, otp.size)
+                assertEquals(60, Json.decodeFromString<TotpData>(otp.single {
+                    it.item.keepassEntryUuid == source.uuid.toString() }.item.itemData).period)
+                assertEquals(2, service.readPasskeyEntries(id).getOrThrow().size)
+                val reopened = reopen(id).content.group.entries.associateBy { it.uuid }
+                listOf(source, withoutOtp).forEach { original ->
+                    original.fields.filterKeys { !KeePassTotpCodec.isOtpField(it) }.forEach { (name, value) ->
+                        assertEquals("Editing OTP must preserve $name", value.content,
+                            reopened.getValue(original.uuid).fields.getValue(name).content)
+                    }
+                    val savedFields = reopened.getValue(original.uuid).fields.map { (name, value) ->
+                        KeePassFieldChange(name, value.content, value is EntryValue.Encrypted)
+                    }
+                    assertEquals(SECRET, takagi.ru.monica.ui.screens.editableNativeTotpData(savedFields)?.secret)
+                }
+            }
+        }
+    }
+
+    private fun mixedPasskeyEntry(index: Int, withOtp: Boolean): Entry {
+        val pair = java.security.KeyPairGenerator.getInstance("EC").apply {
+            initialize(java.security.spec.ECGenParameterSpec("secp256r1"))
+        }.generateKeyPair()
+        val pem = "-----BEGIN PRIVATE KEY-----\n" +
+            android.util.Base64.encodeToString(pair.private.encoded, android.util.Base64.NO_WRAP) +
+            "\n-----END PRIVATE KEY-----"
+        val notes = when (index % 4) {
+            0 -> "Synthetic recovery words: alpha beta gamma\nBackup codes: 0000-1111\n备注 <recovery> & \"codes\""
+            1 -> "Recovery codes\r\n  2222-3333\r\n\t4444-5555  "
+            2 -> "Synthetic recovery note ".repeat(300)
+            else -> ""
+        }
+        return entry("Mixed $index", "UserName" to "synthetic-user-$index", "Password" to "synthetic-password",
+            "URL" to "https://example.test", "Notes" to notes,
+            KeePassDxPasskeyCodec.FIELD_PASSKEY to "",
+            KeePassDxPasskeyCodec.FIELD_USERNAME to "synthetic-user-$index",
+            KeePassDxPasskeyCodec.FIELD_PRIVATE_KEY to pem,
+            KeePassDxPasskeyCodec.FIELD_CREDENTIAL_ID to android.util.Base64.encodeToString(
+                UUID.randomUUID().toString().toByteArray(), android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING),
+            KeePassDxPasskeyCodec.FIELD_USER_HANDLE to "c3ludGhldGljLXVzZXI",
+            KeePassDxPasskeyCodec.FIELD_RELYING_PARTY to "example.test",
+            *if (withOtp) arrayOf("otp" to "otpauth://totp/Mixed$index?secret=$SECRET") else emptyArray()
+        ).let { original ->
+            original.copy(fields = EntryFields.of(*original.fields.map { (name, value) ->
+                name to if (name == KeePassDxPasskeyCodec.FIELD_PRIVATE_KEY || (name == "Notes" && index % 2 == 0))
+                    EntryValue.Encrypted(EncryptedValue.fromString(value.content)) else value
+            }.toTypedArray()))
         }
     }
 
@@ -348,6 +476,11 @@ class KeePassNativeCompatibilityInstrumentedTest {
         try {
             block(id)
         } finally {
+            if (entries.any { it.fields[KeePassDxPasskeyCodec.FIELD_PRIVATE_KEY] != null }) {
+                service.readPasskeyEntries(id).getOrNull().orEmpty().forEach {
+                    takagi.ru.monica.passkey.PasskeyPrivateKeyStore.removeIfProtectedReference(context, it.privateKeyAlias)
+                }
+            }
             KeePassKdbxService.invalidateProcessCache(id)
             dao.deleteDatabaseById(id)
             check(file.canonicalFile.parentFile == context.filesDir.canonicalFile && file.name.startsWith("keepass-compatibility-"))

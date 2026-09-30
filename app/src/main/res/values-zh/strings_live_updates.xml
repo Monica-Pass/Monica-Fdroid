@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_update_smart_copy_channel">凭据顺序复制</string>
+    <string name="permission_live_updates_name">实况通知</string>
+    <string name="permission_live_updates_description">显示验证码倒计时和下一项复制</string>
+    <string name="live_update_unlock_to_view">解锁后查看并继续操作</string>
+    <string name="live_update_copy_status">复制</string>
+    <string name="live_update_seconds">%1$d秒</string>
+    <string name="live_update_unlock_to_copy">请先解锁设备再复制</string>
+</resources>

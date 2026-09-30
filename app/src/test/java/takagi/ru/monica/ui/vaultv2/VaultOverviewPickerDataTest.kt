@@ -32,7 +32,7 @@ class VaultOverviewPickerDataTest {
     @Test fun bankMetadataAndAccountSearchDistinguishDuplicateTitlesWithoutIndexingSecrets() {
         val cards = listOf(card(1, "招商银行", "6222021234561234"), card(2, "Work Bank", "4111111111114321", vault = 2))
         prepareOverviewPicker(cards, sources, true, openNative = { null }).use { picker ->
-            assertEquals("招商银行", picker.rows[0].detail)
+            assertEquals("招商银行 · Private holder", picker.rows[0].detail)
             assertEquals("1234", picker.rows[0].cardLast4)
             assertEquals(CardBrand.UNIONPAY, picker.rows[0].cardBrand)
             assertEquals(CardBrand.VISA, picker.rows[1].cardBrand)

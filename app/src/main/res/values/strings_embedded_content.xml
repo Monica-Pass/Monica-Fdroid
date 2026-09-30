@@ -1,0 +1,11 @@
+<resources>
+    <string name="embedded_copy_working">Copying complete content…</string>
+    <string name="embedded_copy_failed">Content copy is incomplete</string>
+    <string name="embedded_copy_failed_message">%1$s could not be copied completely. Your source and draft are retained. Check that the source database is unlocked and attachments are available, then retry.</string>
+    <string name="embedded_copy_note">Copy note</string>
+    <string name="embedded_copy_card">Copy card</string>
+    <string name="embedded_copy_independent">Independent copy · %1$d attachments</string>
+    <string name="embedded_copy_document">Copy document</string>
+    <string name="password_content_document">Identity document</string>
+    <string name="password_content_document_description">Identity fields, card face, photos and attachments</string>
+</resources>

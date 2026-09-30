@@ -88,6 +88,7 @@ import takagi.ru.monica.data.model.isSshKeyEntry
 import takagi.ru.monica.external.ExternalTotpImportController
 import takagi.ru.monica.external.ExternalTotpImportRequest
 import takagi.ru.monica.keepass.KeePassNativeResolvedRoute
+import takagi.ru.monica.ui.components.navigateEntryTemplate
 import takagi.ru.monica.navigation.Screen
 import takagi.ru.monica.data.dedup.DedupMergeService
 import takagi.ru.monica.repository.PasswordRepository
@@ -370,6 +371,7 @@ private fun AnimatedContentScope.AddEditRouteContent(
 }
 
 class MainActivity : BaseMonicaActivity() {
+    private var secureStartupReady = false
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private val externalTotpImportController = ExternalTotpImportController()
 
@@ -387,7 +389,7 @@ class MainActivity : BaseMonicaActivity() {
     override fun onStart() {
         super.onStart()
         takagi.ru.monica.repository.Mdbx2NativeReadSessions.updateForeground(true)
-        takagi.ru.monica.autofill_ng.protection.AutofillProtection.restoreIfEnabled(this)
+        if (secureStartupReady) takagi.ru.monica.autofill_ng.protection.AutofillProtection.restoreIfEnabled(this)
     }
 
     override fun onStop() {
@@ -403,8 +405,28 @@ class MainActivity : BaseMonicaActivity() {
         // 注意：enableEdgeToEdge() 已在基类调用，这里不再重复
 
         // Initialize dependencies
+        val securityManager = when (val startup = takagi.ru.monica.security.SecureStorageStartup.prepare(this)) {
+            is takagi.ru.monica.security.SecureStartupResult.Ready -> startup.manager
+            is takagi.ru.monica.security.SecureStartupResult.Blocked -> {
+                Log.w(TAG, "Secure storage startup blocked: ${startup.failure.reason}")
+                val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure)
+                setContent {
+                    takagi.ru.monica.ui.theme.MonicaTheme {
+                        takagi.ru.monica.ui.screens.SecureStorageRecoveryScreen(
+                            onRetry = { recreate() },
+                            onCopyDiagnostic = {
+                                getSystemService(android.content.ClipboardManager::class.java)
+                                    .setPrimaryClip(android.content.ClipData.newPlainText("Monica diagnostic", diagnostic))
+                            },
+                            onExit = { finish() }
+                        )
+                    }
+                }
+                return
+            }
+        }
+        secureStartupReady = true
         val database = PasswordDatabase.getDatabase(this)
-        val securityManager = SecurityManager(this)
         val mdbxRepository: MdbxRepository = MdbxRepositoryFactory.create(
             context = applicationContext,
             database = database,
@@ -1078,6 +1100,11 @@ fun MonicaContent(
     androidx.compose.runtime.CompositionLocalProvider(
         takagi.ru.monica.ui.screens.LocalSettingsSearchNavigation provides settingsSearchNavigation,
         takagi.ru.monica.ui.LocalUiSecurityManager provides securityManager,
+        takagi.ru.monica.ui.components.LocalTemplateTargets provides
+            takagi.ru.monica.ui.components.decodeTemplateTargets(navBackStackEntry?.savedStateHandle?.get<ArrayList<String>>(takagi.ru.monica.ui.components.TEMPLATE_TARGETS_KEY)),
+        takagi.ru.monica.ui.components.LocalTemplateNavigation provides { type, targets ->
+            navController.navigateEntryTemplate(type, targets)
+        },
         takagi.ru.monica.ui.LocalSharedTransitionScope provides null,
         takagi.ru.monica.ui.LocalReduceAnimations provides true,
         takagi.ru.monica.ui.components.LocalExpansionAnimationsEnabled provides !settings.reduceAnimations,
@@ -4139,7 +4166,7 @@ fun MonicaContent(
         ) {
             val bitwardenViewModel: takagi.ru.monica.bitwarden.viewmodel.BitwardenViewModel = 
                 androidx.lifecycle.viewmodel.compose.viewModel()
-            val bitwardenTotpSuggestions by totpViewModel.parsedTotpItems.collectAsState()
+            val bitwardenTotpSuggestions by totpViewModel.allParsedTotpItems.collectAsState()
             takagi.ru.monica.bitwarden.ui.BitwardenLoginScreen(
                 viewModel = bitwardenViewModel,
                 totpSuggestions = bitwardenTotpSuggestions,

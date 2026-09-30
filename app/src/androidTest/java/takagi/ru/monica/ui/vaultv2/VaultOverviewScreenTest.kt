@@ -115,6 +115,25 @@ class VaultOverviewScreenTest {
         compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
     }
 
+    @Test fun recentModuleOpensEntryAndCanCollapseAndHide() {
+        config = config.copy(order = listOf("RECENT") + config.order.filterNot { it == "RECENT" })
+        showOverview()
+        compose.onNodeWithTag("overview_recent_password:10").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("password:10", route) }
+        compose.onNodeWithTag("return_home").performClick()
+        compose.onNodeWithTag("overview_toggle_RECENT").performClick()
+        compose.onNodeWithTag("overview_recent_password:10").assertDoesNotExist()
+        compose.onNodeWithTag("overview_toggle_RECENT").performClick()
+        compose.onNodeWithTag("overview_recent_password:10").assertIsDisplayed()
+        val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
+        File(context.filesDir,"vault-recent-315.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) }
+        bitmap.recycle()
+        compose.onNodeWithTag("overview_customize").performClick()
+        compose.onNodeWithTag("overview_visible_RECENT").performClick()
+        Espresso.pressBack()
+        compose.onNodeWithTag("overview_recent_password:10").assertDoesNotExist()
+    }
+
     @Test fun cardAndItemPickersAreSeparateAndUseTheExistingCreationFab() {
         showOverview()
         compose.onNodeWithTag("overview_pin_cards").performClick()
@@ -139,7 +158,7 @@ class VaultOverviewScreenTest {
         showOverview()
         compose.onNodeWithTag("overview_customize").performClick()
         compose.onNodeWithTag("overview_move_down_CARDS").performClick()
-        compose.runOnIdle { assertEquals("ITEMS", config.order.first()) }
+        compose.runOnIdle { assertEquals("RECENT", config.order.first()) }
         compose.onNodeWithTag("overview_visible_CARDS").performClick()
         Espresso.pressBack()
         compose.onNodeWithTag("overview_cards").assertDoesNotExist()

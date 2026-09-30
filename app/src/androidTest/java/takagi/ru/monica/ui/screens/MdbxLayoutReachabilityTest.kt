@@ -235,7 +235,7 @@ class MdbxLayoutReachabilityTest {
     }
 
     @Test
-    fun realManagerRoutesSupportedCreateOpenActionsAndHidesOneDrive() {
+    fun realManagerRoutesAllSixCreateOpenActionsToTheirStorageSource() {
         Fixture().use { fixture ->
             show(shell = false) {
                 MdbxManagerScreen(
@@ -245,8 +245,7 @@ class MdbxLayoutReachabilityTest {
                     onNavigateToOneDriveCreate = { events += "onedrive:create" }, onNavigateToOneDriveOpen = { events += "onedrive:open" }
                 )
             }
-            compose.onNodeWithText("OneDrive").assertDoesNotExist()
-            listOf(label(R.string.mdbx_ui_local_databases), "WebDAV").forEach { title ->
+            listOf(label(R.string.mdbx_ui_local_databases), "WebDAV", "OneDrive").forEach { title ->
                 compose.onNodeWithText(title).performClick()
                 compose.onAllNodesWithTag("mdbx_open_database").assertCountEquals(1)
                 compose.onAllNodesWithTag("mdbx_create_database").assertCountEquals(1)
@@ -254,7 +253,7 @@ class MdbxLayoutReachabilityTest {
                 compose.onNodeWithTag("mdbx_create_database").assertIsDisplayed().performClick()
                 compose.onNodeWithContentDescription(label(R.string.back)).performClick()
             }
-            compose.runOnIdle { assertEquals(listOf("local:open", "local:create", "webdav:open", "webdav:create"), events) }
+            compose.runOnIdle { assertEquals(listOf("local:open", "local:create", "webdav:open", "webdav:create", "onedrive:open", "onedrive:create"), events) }
         }
     }
 
@@ -325,6 +324,18 @@ class MdbxLayoutReachabilityTest {
             }
             repeat(6) { index ->
                 compose.runOnIdle { page.intValue = index }
+                // Remote creation settings are gated on WebDAV connection / OneDrive sign-in.
+                // This fixture is deliberately offline; only local creation exposes the slider.
+                if (index % 2 == 0) compose.onNodeWithText(label(R.string.mdbx_ui_database_options)).assertDoesNotExist()
+                if (index == 0) {
+                    compose.onNodeWithTag("tiga_selector").performScrollTo().assertIsDisplayed()
+                    compose.onNodeWithText(label(R.string.mdbx_ui_database_options)).assertDoesNotExist()
+                    MdbxTigaMode.entries.forEach { mode ->
+                        compose.onNodeWithTag("tiga_mode_${mode.name}").performClick()
+                        compose.onNodeWithTag("tiga_selected_mode").assertTextEquals(mode.label)
+                        capture("tiga-create-$index-${mode.name}.png")
+                    }
+                }
                 val action = compose.onNode(hasClickAction() and hasAnyAncestor(hasTestTag("mdbx_form_actions")))
                 action.assertIsDisplayed().assertIsNotEnabled()
                 val before = action.fetchSemanticsNode().boundsInRoot

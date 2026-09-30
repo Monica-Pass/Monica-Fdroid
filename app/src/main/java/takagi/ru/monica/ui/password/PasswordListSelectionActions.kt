@@ -96,6 +96,7 @@ internal fun rememberPasswordListSelectionHandlers(
 @Composable
 internal fun BindPasswordListSelectionModeChange(
     isSelectionMode: Boolean,
+    selectedProjectCount: Int,
     selectedItemKeys: Set<String>,
     selectedPasswords: Set<Long>,
     selectedSupplementaryItems: List<PasswordAggregateListItemUi>,
@@ -113,6 +114,7 @@ internal fun BindPasswordListSelectionModeChange(
 ) {
     LaunchedEffect(
         isSelectionMode,
+        selectedProjectCount,
         selectedItemKeys.size,
         selectedPasswords,
         selectedSupplementaryItems
@@ -123,13 +125,13 @@ internal fun BindPasswordListSelectionModeChange(
         }
         onSelectionModeChange(
             isSelectionMode,
-            selectedItemKeys.size,
+            selectedProjectCount,
             handlers.onExitSelection,
             handlers.onSelectAll,
             favoriteAction,
             handlers.onMoveToCategory.takeIf { selectedItemKeys.isNotEmpty() },
             handlers.onStackSelected.takeIf {
-                selectedItemKeys.size >= 2 &&
+                selectedProjectCount >= 2 &&
                     selectedSupplementaryItems.isEmpty() &&
                     selectedPasswords.size == selectedItemKeys.size
             },

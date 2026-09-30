@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cg_symbols">Random symbols</string>
+    <string name="cg_random_username">Random username</string>
+    <string name="cg_email_alias">Email plus alias</string>
+    <string name="cg_username_title">Username generator</string>
+    <string name="cg_valid_email">Enter a valid email address</string>
+    <string name="cg_invalid_options">Select characters and keep their minimum total within the length.</string>
+    <string name="cg_use">Use</string>
+    <string name="cg_saved_suggestions">Saved suggestions</string>
+    <string name="cg_length">Length</string>
+    <string name="cg_words">Words</string>
+    <string name="cg_minimum">Minimum count</string>
+    <string name="cg_decrease">Decrease</string>
+    <string name="cg_increase">Increase</string>
+</resources>

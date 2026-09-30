@@ -7,6 +7,7 @@ import takagi.ru.monica.data.PasswordEntry
 internal object MdbxPasswordContentFields {
     fun writeTo(payload: JSONObject, entry: PasswordEntry, decryptSensitive: (String) -> String): JSONObject =
         payload.put("email", entry.email)
+            .put("wifi_metadata", entry.wifiMetadata)
             .put("phone", entry.phone)
             .put("address_line", entry.addressLine)
             .put("city", entry.city)
@@ -24,7 +25,19 @@ internal object MdbxPasswordContentFields {
         // strings/nulls clear a value. Card fields follow the readable editor/KDBX model.
         fun value(key: String, old: String): String =
             if (!payload.has(key)) old else if (payload.isNull(key)) "" else payload.getString(key)
+        // Keep the complete raw document, including fields introduced by other clients.
+        // Old writers omitted this field; their payload must not erase a local projection.
+        val wifiKey = listOf("wifi_metadata", "wifiMetadata").firstOrNull { payload.has(it) && !payload.isNull(it) }
+        val wifiMetadata = if (wifiKey == null) fallback.wifiMetadata else when (val raw = payload.get(wifiKey)) {
+            is String -> raw
+            is JSONObject -> raw.toString()
+            else -> throw IllegalArgumentException("Invalid Wi-Fi metadata field type")
+        }
         return entry.copy(
+            wifiMetadata = wifiMetadata,
+            passwordGroupId = if (payload.has("password_group_id"))
+                payload.optString("password_group_id").takeIf { !payload.isNull("password_group_id") && it.isNotBlank() }
+                else fallback.passwordGroupId,
             email = value("email", fallback.email), phone = value("phone", fallback.phone),
             addressLine = value("address_line", fallback.addressLine), city = value("city", fallback.city),
             state = value("state", fallback.state), zipCode = value("zip_code", fallback.zipCode),

@@ -106,11 +106,12 @@ internal fun WalletStackBrowser(
     onRevealCover: () -> Unit,
     onDismiss: () -> Unit,
     onOpenCard: (WalletListItem) -> Unit,
-    onManage: () -> Unit,
+    onManage: (() -> Unit)?,
     title: String? = null,
     reduceAnimations: Boolean = false,
     sourceName: (WalletListItem) -> String? = { null },
     loopEnabled: Boolean = false,
+    cardFace: @Composable (WalletListItem, Modifier) -> Unit = { card, modifier -> WalletStackFace(card, modifier) },
 ) {
     val cards = entry.cards
     if (cards.isEmpty()) return
@@ -333,7 +334,7 @@ internal fun WalletStackBrowser(
                                     }
                                 )
                             }
-                            WalletStackFace(card, Modifier.fillMaxSize())
+                            cardFace(card, Modifier.fillMaxSize())
                             // Wash the artwork while keeping an opaque card surface. Fading the
                             // entire card would let text from cards behind it show through.
                             Box(
@@ -375,7 +376,7 @@ internal fun WalletStackBrowser(
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                IconButton(onClick = { if (isNavigationActive) onManage() }, enabled = !closing) {
+                if (onManage != null) IconButton(onClick = { if (isNavigationActive) onManage() }, enabled = !closing) {
                     Icon(Icons.Default.MoreVert, stringResource(R.string.wallet_stack_manage))
                 }
             }

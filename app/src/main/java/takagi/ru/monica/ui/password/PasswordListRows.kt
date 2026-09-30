@@ -32,6 +32,7 @@ import takagi.ru.monica.ui.password.StackCardMode
 import takagi.ru.monica.ui.password.StackedPasswordGroup
 import takagi.ru.monica.ui.password.contentTypeKey
 import takagi.ru.monica.ui.password.passwordSelectionKey
+import takagi.ru.monica.ui.password.expandPasswordProjectSelection
 import takagi.ru.monica.ui.password.selectionKeysForPasswords
 import takagi.ru.monica.ui.password.toPasswordPageCardItemUi
 import takagi.ru.monica.viewmodel.PasswordViewModel
@@ -74,21 +75,21 @@ internal fun LazyListScope.passwordPageListRows(
         }
     }
 
+    fun updateProjectSelection(keys: Set<String>) {
+        onSelectedItemKeysChange(expandPasswordProjectSelection(keys, passwordEntries))
+    }
+
     fun toggleSelectionForKey(key: String) {
-        onSelectedItemKeysChange(
-            if (key in selectedItemKeys) {
-                selectedItemKeys - key
-            } else {
-                selectedItemKeys + key
-            }
-        )
+        val projectKeys = expandPasswordProjectSelection(setOf(key), passwordEntries)
+        updateProjectSelection(if (projectKeys.all { it in selectedItemKeys })
+            selectedItemKeys - projectKeys else selectedItemKeys + projectKeys)
         onSwipeSelectionAnchorKeyChange(key)
     }
 
     fun toggleSelectionForCards(cards: List<PasswordPageCardItemUi>) {
-        val cardKeys = cards.mapTo(linkedSetOf(), PasswordPageCardItemUi::key)
+        val cardKeys = expandPasswordProjectSelection(cards.mapTo(linkedSetOf(), PasswordPageCardItemUi::key), passwordEntries)
         val allSelected = cardKeys.all { it in selectedItemKeys }
-        onSelectedItemKeysChange(
+        updateProjectSelection(
             if (allSelected) {
                 selectedItemKeys - cardKeys
             } else {
@@ -110,7 +111,7 @@ internal fun LazyListScope.passwordPageListRows(
         val anchorIndex = orderedSelectionKeys.indexOf(anchorKey)
         val targetIndex = orderedSelectionKeys.indexOf(targetKey)
         if (anchorKey == null || anchorIndex == -1 || targetIndex == -1) {
-            onSelectedItemKeysChange(setOf(targetKey))
+            updateProjectSelection(setOf(targetKey))
             onSwipeSelectionAnchorKeyChange(targetKey)
             return
         }
@@ -120,7 +121,7 @@ internal fun LazyListScope.passwordPageListRows(
         } else {
             orderedSelectionKeys.subList(targetIndex, anchorIndex + 1)
         }
-        onSelectedItemKeysChange(range.toSet())
+        updateProjectSelection(range.toSet())
     }
 
     fun selectSwipeRangeToKeys(targetKeys: Set<String>) {
@@ -128,7 +129,7 @@ internal fun LazyListScope.passwordPageListRows(
 
         if (appSettings.passwordSwipeSelectionMode != PasswordSwipeSelectionMode.CONTINUOUS) {
             val allSelected = targetKeys.all { it in selectedItemKeys }
-            onSelectedItemKeysChange(
+            updateProjectSelection(
                 if (allSelected) {
                     selectedItemKeys - targetKeys
                 } else {
@@ -145,7 +146,7 @@ internal fun LazyListScope.passwordPageListRows(
         val anchorIndex = orderedSelectionKeys.indexOf(anchorKey)
         val targetIndex = orderedSelectionKeys.indexOf(targetKey)
         if (anchorKey == null || anchorIndex == -1 || targetIndex == -1) {
-            onSelectedItemKeysChange(targetKeys)
+            updateProjectSelection(targetKeys)
             orderedTargetKeys.firstOrNull()?.let(onSwipeSelectionAnchorKeyChange)
             return
         }
@@ -155,7 +156,7 @@ internal fun LazyListScope.passwordPageListRows(
         } else {
             orderedSelectionKeys.subList(targetIndex, anchorIndex + 1)
         }
-        onSelectedItemKeysChange((range + targetKeys).toSet())
+        updateProjectSelection((range + targetKeys).toSet())
     }
 
     fun openCard(card: PasswordPageCardItemUi) {
@@ -192,7 +193,7 @@ internal fun LazyListScope.passwordPageListRows(
         if (!isSelectionMode) {
             onSelectionModeChange(true)
         }
-        onSelectedItemKeysChange(cards.mapTo(linkedSetOf(), PasswordPageCardItemUi::key))
+        updateProjectSelection(cards.mapTo(linkedSetOf(), PasswordPageCardItemUi::key))
         if (!showBatchDeleteDialog) {
             onShowBatchDeleteDialogChange(true)
         }
@@ -367,7 +368,7 @@ internal fun LazyListScope.passwordPageListRows(
                         if (!isSelectionMode) {
                             onSelectionModeChange(true)
                             val selectionKey = passwordSelectionKey(password.id)
-                            onSelectedItemKeysChange(setOf(selectionKey))
+                            updateProjectSelection(setOf(selectionKey))
                             onSwipeSelectionAnchorKeyChange(selectionKey)
                         }
                     },
@@ -434,7 +435,7 @@ internal fun LazyListScope.passwordPageListRows(
                         haptic.performLongPress()
                         if (!isSelectionMode) {
                             onSelectionModeChange(true)
-                            onSelectedItemKeysChange(setOf(item.key))
+                            updateProjectSelection(setOf(item.key))
                             onSwipeSelectionAnchorKeyChange(item.key)
                         }
                     },

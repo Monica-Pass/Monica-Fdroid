@@ -1,5 +1,6 @@
 package takagi.ru.monica.transfer
 
+import takagi.ru.monica.data.explicitPasswordGroupId
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -51,7 +52,8 @@ internal class DatabaseArchiveExporter(context: Context) {
         }
         val encrypted = !password.isNullOrEmpty()
         check(keys.isEmpty() || encrypted) { strings.get(R.string.passkey_backup_encryption_required, keys.size) }
-        check(attachments.isEmpty() || encrypted) { strings.get(R.string.transfer_attachment_encryption) }
+        check((attachments.isEmpty() && tokens.all { it.attachments.isEmpty() }) || encrypted) { strings.get(R.string.transfer_attachment_encryption) }
+        NativeTokenBackupAssets.validate(tokens)
         val file = File.createTempFile("monica-database-", ".zip", context.cacheDir)
         var encryptedFile: File? = null
         var success = false
@@ -64,11 +66,17 @@ internal class DatabaseArchiveExporter(context: Context) {
                 fun write(name: String, value: String) {
                     zip.putNextEntry(ZipEntry(name))
                     val bytes = value.toByteArray(Charsets.UTF_8)
-                    try { zip.write(bytes) } finally { bytes.fill(0) }
+                    try {
+                        if (name == "native_api_tokens.json") require(bytes.size.toLong() <= NativeTokenBackupAssets.MAX_JSON_BYTES) {
+                            "Native token backup JSON exceeds the supported size"
+                        }
+                        zip.write(bytes)
+                    } finally { bytes.fill(0) }
                     zip.closeEntry()
                 }
                 fun count() { progress.report(TransferProgress(TransferPhase.PACKING, ++written, total)) }
-                write("database_export.json", JSONObject().put("version", 1).put("source", source.kind.name).toString())
+                write("database_export.json", JSONObject().put("version", 1).put("source", source.kind.name)
+                    .put("nativeTokenCount", tokens.size).toString())
                 progress.report(TransferProgress(TransferPhase.PACKING, total = total))
                 for (entry in passwords) {
                     currentCoroutineContext().ensureActive()
@@ -180,6 +188,7 @@ internal class DatabaseArchiveExporter(context: Context) {
     private fun plain(value: String) = PortableSecretExportPolicy.resolve(value, "", security::decryptDataIfMonicaCiphertext)
 
     private fun passwordJson(entry: PasswordEntry, snapshot: DatabaseExportSnapshot) = JSONObject()
+        .put("passwordGroupId", entry.explicitPasswordGroupId())
         .put("id", entry.id).put("title", entry.title).put("username", entry.username).put("password", plain(entry.password))
         .put("website", entry.website).put("notes", entry.notes).put("isFavorite", entry.isFavorite).put("sortOrder", entry.sortOrder)
         .put("categoryName", snapshot.categories[entry.categoryId]).put("appPackageName", entry.appPackageName).put("appName", entry.appName)

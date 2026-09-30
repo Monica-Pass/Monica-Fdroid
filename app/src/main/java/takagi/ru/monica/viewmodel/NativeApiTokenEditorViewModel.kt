@@ -15,6 +15,11 @@ import takagi.ru.monica.data.CustomFieldDraft
 import takagi.ru.monica.data.NativeApiToken
 import takagi.ru.monica.data.NativeApiTokenSummary
 import takagi.ru.monica.security.SessionManager
+import takagi.ru.monica.data.NativeApiTokenAttachment
+import takagi.ru.monica.data.NativeApiTokenAssets
+import takagi.ru.monica.data.NativeApiTokenUpload
+import takagi.ru.monica.data.model.EmbeddedWalletContent
+import takagi.ru.monica.attachments.*
 
 internal data class NativeApiTokenEditorState(
     val databaseId: Long? = null,
@@ -29,10 +34,13 @@ internal data class NativeApiTokenEditorState(
     val failed: Boolean = false,
     val changed: Boolean = false,
     val saved: NativeApiTokenSummary? = null,
+    val preparing: Boolean = false,
+    val pendingAttachments: List<NativeApiTokenAttachment> = emptyList(),
+    val removedAttachmentIds: Set<String> = emptySet(),
 ) {
     override fun toString() = "NativeApiTokenEditorState(redacted)"
 
-    val canSave: Boolean get() = !loading && !saving && databaseId != null &&
+    val canSave: Boolean get() = !loading && !saving && !preparing && databaseId != null &&
         ApiTokenPayload.isValidStorageName(title.trim()) && ApiTokenPayload.isValidForStorage(payload) &&
         ApiTokenMetadata.isValid(metadata) && ApiTokenPayload.text(ApiTokenPayload.decode(payload), "token").let {
             it.length < 16 || !title.contains(it)
@@ -50,6 +58,76 @@ internal class NativeApiTokenEditorViewModel(
         databaseId = initialDatabaseId, folderId = initialFolderId, loading = entryId != null))
     val state = mutableState.asStateFlow()
     private var loadJob: Job? = null
+    private var prepareJob: Job? = null
+    private val context = databases.getApplication<android.app.Application>()
+    private val walletDrafts = EmbeddedWalletDraftStore(context)
+    private val attachmentDrafts = linkedMapOf<String, EmbeddedWalletAssetDraft>()
+
+    fun walletDraft(id: String) = walletDrafts.draft(id)
+
+    fun installWallet(prepared: EmbeddedWalletCopyService.Prepared) {
+        check(!state.value.saving)
+        try {
+            require(prepared.assets.assets.sumOf { it.size } <= NativeApiTokenAssets.MAX_BYTES)
+            val fields = EmbeddedWalletContent.put(ApiTokenMetadata.customFields(state.value.metadata), prepared.snapshot)
+            walletDrafts.add(prepared)
+            changeCustomFields(fields)
+        } catch (error: Throwable) { prepared.close(); throw error }
+    }
+
+    fun copyWallet(item: takagi.ru.monica.data.SecureItem) {
+        if (state.value.saving || state.value.preparing) return
+        mutableState.update { it.copy(preparing = true, failed = false) }
+        prepareJob = viewModelScope.launch {
+            try {
+                val security = takagi.ru.monica.security.SecurityManager(context)
+                val decoded = item.copy(itemData = security.decryptDataIfMonicaCiphertext(item.itemData),
+                    notes = security.decryptDataIfMonicaCiphertext(item.notes))
+                installWallet(EmbeddedWalletCopyService(context).prepare(decoded))
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { mutableState.update { it.copy(failed = true) }
+            } finally { mutableState.update { it.copy(preparing = false) } }
+        }
+    }
+
+    fun addAttachment(uri: android.net.Uri) {
+        if (state.value.saving || state.value.preparing) return
+        mutableState.update { it.copy(preparing = true, failed = false) }
+        prepareJob = viewModelScope.launch {
+            var prepared: EmbeddedWalletAssetDraft? = null
+            try {
+                val info = takagi.ru.monica.attachments.facade.AttachmentUriMetadata.resolve(context, uri)
+                require(info.sizeBytes <= NativeApiTokenAssets.MAX_BYTES)
+                prepared = EmbeddedWalletAssetDraft.prepare(java.io.File(context.cacheDir, "native-token-drafts"), listOf(
+                    EmbeddedWalletAssetDraft.Source(info.fileName, context.contentResolver.getType(uri) ?: "application/octet-stream",
+                        EmbeddedWalletContent.AssetRole.ATTACHMENT, info.sizeBytes.takeIf { it >= 0 }) { output ->
+                        val bytes = requireNotNull(context.contentResolver.openInputStream(uri)).use { NativeApiTokenAssets.readBounded(it) }
+                        try { output.write(bytes) } finally { bytes.fill(0) }
+                    }))
+                val asset = prepared.assets.single()
+                attachmentDrafts[asset.name] = prepared
+                prepared = null
+                mutableState.update { it.copy(pendingAttachments = it.pendingAttachments + NativeApiTokenAttachment(
+                    asset.name, asset.displayName, asset.mimeType, asset.size, asset.sha256), changed = true) }
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { mutableState.update { it.copy(failed = true) }
+            } finally { prepared?.close(); mutableState.update { it.copy(preparing = false) } }
+        }
+    }
+
+    fun removeAttachment(id: String) {
+        if (state.value.saving || state.value.preparing) return
+        attachmentDrafts.remove(id)?.close()
+        mutableState.update { it.copy(pendingAttachments = it.pendingAttachments.filterNot { asset -> asset.id == id },
+            removedAttachmentIds = if (it.original?.attachments?.any { asset -> asset.id == id } == true) it.removedAttachmentIds + id else it.removedAttachmentIds,
+            changed = true, failed = false) }
+    }
+
+    private fun closeDrafts() {
+        walletDrafts.close(); attachmentDrafts.values.forEach { it.close() }; attachmentDrafts.clear()
+    }
+
+    override fun onCleared() { closeDrafts(); super.onCleared() }
 
     init {
         load()
@@ -57,6 +135,8 @@ internal class NativeApiTokenEditorViewModel(
             SessionManager.isUnlocked.drop(1).collect { unlocked ->
                 if (!unlocked) {
                     loadJob?.cancel()
+                    prepareJob?.cancel()
+                    closeDrafts()
                     mutableState.value = NativeApiTokenEditorState(databaseId = state.value.databaseId)
                 }
             }
@@ -135,12 +215,32 @@ internal class NativeApiTokenEditorViewModel(
         mutableState.update { it.copy(saving = true, failed = false) }
         viewModelScope.launch {
             try {
+                val snapshots = ApiTokenMetadata.customFields(snapshot.metadata).mapNotNull {
+                    (EmbeddedWalletContent.read(it.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+                }
+                val uploads = snapshot.pendingAttachments.map { asset ->
+                    val draft = requireNotNull(attachmentDrafts[asset.id])
+                    NativeApiTokenUpload(asset.fileName, asset.mimeType, asset.size, asset.sha256) { draft.open(asset.id) }
+                } + snapshots.mapNotNull { walletDrafts.draft(it.id) }.flatMap { prepared ->
+                    prepared.assets.assets.map { asset ->
+                        NativeApiTokenUpload(asset.name, asset.mimeType, asset.size, asset.sha256) { prepared.assets.open(asset.name) }
+                    }
+                }
+                val retainedAssetNames = snapshots.flatMap { it.assets }.map { it.name }.toSet()
+                val previousAssetNames = ApiTokenMetadata.customFields(snapshot.original?.extras?.payload ?: ApiTokenMetadata.empty()).flatMap {
+                    (EmbeddedWalletContent.read(it.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot?.assets.orEmpty()
+                }.map { it.name }.toSet()
+                val obsoleteAssetIds = snapshot.original?.attachments.orEmpty().filter {
+                    it.fileName in previousAssetNames && it.fileName !in retainedAssetNames
+                }.map { it.id }
                 val saved = databases.saveNativeApiToken(snapshot.databaseId!!, snapshot.original,
                     snapshot.title.trim(), snapshot.payload,
                     if (snapshot.original != null) snapshot.folderId.orEmpty() else snapshot.folderId,
                     isFavorite = snapshot.isFavorite, metadata = ApiTokenMetadata.withCustomFields(snapshot.metadata,
-                        ApiTokenMetadata.customFields(snapshot.metadata).filter { it.shouldPersist() }))
+                        ApiTokenMetadata.customFields(snapshot.metadata).filter { it.shouldPersist() }),
+                    uploads = uploads, removedAttachmentIds = snapshot.removedAttachmentIds + obsoleteAssetIds)
                 mutableState.update { it.copy(saved = saved, changed = false) }
+                closeDrafts()
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { mutableState.update { it.copy(failed = true) }
             } finally { mutableState.update { it.copy(saving = false) } }

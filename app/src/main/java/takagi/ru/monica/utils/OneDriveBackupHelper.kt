@@ -17,7 +17,16 @@ data class OneDriveBackupConfig(
     val folderPath: String
 )
 
-class OneDriveBackupHelper(context: Context) {
+class OneDriveBackupHelper internal constructor(
+    context: Context,
+    private val sourceFactory: ((String, String?) -> OneDriveKeePassFileSource)?
+) {
+    constructor(context: Context) : this(context, null)
+
+    private fun source(accountId: String, path: String? = null): OneDriveKeePassFileSource =
+        sourceFactory?.invoke(accountId, path) ?: OneDriveKeePassFileSource(
+            context = appContext, accountIdentifier = accountId, remotePath = path
+        )
     private val strings = AppLocaleStringResolver(context)
     private val appContext = context.applicationContext
     private val authManager = OneDriveAuthManager(appContext)
@@ -27,7 +36,11 @@ class OneDriveBackupHelper(context: Context) {
         val prefs = preferences()
         migrateLegacyConfigIfNeeded(prefs)
         val accountId = securityManager.getProtectedString(SECURE_KEY_ACCOUNT_ID)?.takeIf { it.isNotBlank() } ?: return null
-        val folderPath = securityManager.getProtectedString(SECURE_KEY_FOLDER_PATH)?.takeIf { it.isNotBlank() } ?: return null
+        // Empty paths represent the drive root. Older saves removed the empty
+        // protected value, so an existing account with no path also means root.
+        val folderPath = OneDriveKeePassFileSource.normalizeOptionalRemotePath(
+            securityManager.getProtectedString(SECURE_KEY_FOLDER_PATH)
+        )
         return OneDriveBackupConfig(
             accountId = accountId,
             displayName = securityManager.getProtectedString(SECURE_KEY_DISPLAY_NAME).orEmpty().ifBlank { "OneDrive" },
@@ -49,7 +62,7 @@ class OneDriveBackupHelper(context: Context) {
         securityManager.putProtectedString(SECURE_KEY_ACCOUNT_ID, session.accountId)
         securityManager.putProtectedString(SECURE_KEY_DISPLAY_NAME, session.displayName)
         securityManager.putProtectedString(SECURE_KEY_USERNAME, session.username)
-        securityManager.putProtectedString(SECURE_KEY_FOLDER_PATH, normalizedFolderPath)
+        securityManager.putProtectedString(SECURE_KEY_FOLDER_PATH, normalizedFolderPath.ifEmpty { "/" })
     }
 
     fun clearConfig() {
@@ -70,26 +83,17 @@ class OneDriveBackupHelper(context: Context) {
     }
 
     suspend fun listDirectory(accountId: String, currentPath: String?): List<FileSourceEntry> {
-        return OneDriveKeePassFileSource(
-            context = appContext,
-            accountIdentifier = accountId
-        ).listDirectory(currentPath)
+        return source(accountId).listDirectory(currentPath)
     }
 
     suspend fun createFolder(accountId: String, currentPath: String?, name: String): FileSourceEntry {
-        return OneDriveKeePassFileSource(
-            context = appContext,
-            accountIdentifier = accountId
-        ).createDirectory(currentPath, name)
+        return source(accountId).createDirectory(currentPath, name)
     }
 
     suspend fun listBackups(): Result<List<BackupFile>> = withContext(Dispatchers.IO) {
         runCatching {
             val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
-            val backups = OneDriveKeePassFileSource(
-                context = appContext,
-                accountIdentifier = config.accountId
-            ).listDirectory(config.folderPath)
+            val backups = source(config.accountId).listDirectory(config.folderPath)
                 .filter { !it.isDirectory && it.name.endsWith(".zip", ignoreCase = true) }
                 .map { entry ->
                     BackupFile(
@@ -117,15 +121,12 @@ class OneDriveBackupHelper(context: Context) {
                 TAG,
                 "Uploading OneDrive backup: sizeBytes=${file.length()}, permanent=$isPermanent"
             )
-            val entry = OneDriveKeePassFileSource(
-                context = appContext,
-                accountIdentifier = config.accountId
-            ).createFileInDirectory(
+            val entry = source(config.accountId).createFileInDirectory(
                 parentPath = config.folderPath,
                 name = targetName,
                 bytes = file.readBytes()
             )
-            cleanupBackups()
+            cleanupBackups(protectedBackupName = entry.name)
                 .onSuccess { deleted ->
                     Log.i(TAG, "OneDrive backup cleanup completed after upload: deleted=$deleted")
                 }
@@ -144,12 +145,8 @@ class OneDriveBackupHelper(context: Context) {
     suspend fun downloadBackup(backupFile: BackupFile, destFile: File): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
             val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
-            val bytes = OneDriveKeePassFileSource(
-                context = appContext,
-                accountIdentifier = config.accountId,
-                remotePath = backupFile.path
-            ).read()
-            destFile.writeBytes(bytes)
+            val bytes = source(config.accountId, backupFile.path).read()
+            writeBackupAtomically(destFile) { it.write(bytes) }
             destFile
         }
     }
@@ -157,10 +154,7 @@ class OneDriveBackupHelper(context: Context) {
     suspend fun deleteBackup(backupFile: BackupFile): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
-            OneDriveKeePassFileSource(
-                context = appContext,
-                accountIdentifier = config.accountId
-            ).deleteEntry(backupFile.path)
+            source(config.accountId).deleteEntry(backupFile.path)
             true
         }
     }
@@ -170,10 +164,7 @@ class OneDriveBackupHelper(context: Context) {
             if (backupFile.isPermanent) return@runCatching true
             val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val newName = backupFile.name.replace(".zip", "_permanent.zip")
-            OneDriveKeePassFileSource(
-                context = appContext,
-                accountIdentifier = config.accountId
-            ).renameEntry(backupFile.path, newName)
+            source(config.accountId).renameEntry(backupFile.path, newName)
             true
         }
     }
@@ -183,18 +174,17 @@ class OneDriveBackupHelper(context: Context) {
             if (!backupFile.isPermanent) return@runCatching true
             val config = getConfig() ?: throw IllegalStateException(strings.get(R.string.cloud_message_onedrive_backup_unconfigured))
             val newName = backupFile.name.replace("_permanent", "")
-            OneDriveKeePassFileSource(
-                context = appContext,
-                accountIdentifier = config.accountId
-            ).renameEntry(backupFile.path, newName)
+            source(config.accountId).renameEntry(backupFile.path, newName)
             true
         }
     }
 
-    suspend fun cleanupBackups(): Result<Int> = withContext(Dispatchers.IO) {
+    suspend fun cleanupBackups(protectedBackupName: String? = null): Result<Int> = withContext(Dispatchers.IO) {
         runCatching {
             val backups = listBackups().getOrThrow()
+                .filter { BackupRetentionPolicy.isManagedTemporaryBackup(it.name) }
             val expiredBackups = BackupRetentionPolicy.expiredTemporaryBackupsToDelete(backups)
+                .filterNot { it.name == protectedBackupName }
             Log.i(
                 TAG,
                 "OneDrive cleanup scan: total=${backups.size}, " +

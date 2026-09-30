@@ -374,13 +374,13 @@ private fun LargeFieldValueDialog(
     )
 }
 
-private data class FieldBarcodeRender(
+internal data class FieldBarcodeRender(
     val bitmap: android.graphics.Bitmap? = null,
     val loading: Boolean = false,
     val needsWiderScreen: Boolean = false,
 )
 
-private fun encodeFieldBarcode(value: String, format: FieldBarcodeFormat, availableWidth: Int): FieldBarcodeRender =
+internal fun encodeFieldBarcode(value: String, format: FieldBarcodeFormat, availableWidth: Int): FieldBarcodeRender =
     runCatching {
         val isQr = format == FieldBarcodeFormat.QR_CODE
         val matrix = createFieldBarcodeMatrix(value, format, if (isQr) 720 else availableWidth, if (isQr) 720 else 360)
@@ -477,6 +477,8 @@ private fun FieldBarcodePage(
                             }
                         }
                     }
+
+                    QrTemplateEntryButton()
 
                     val imageModifier = if (format == FieldBarcodeFormat.QR_CODE) {
                         Modifier.widthIn(max = qrImageSize).fillMaxWidth().aspectRatio(1f)

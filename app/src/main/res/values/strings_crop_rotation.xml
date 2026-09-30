@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Rotate left 90°</string>
+    <string name="card_face_rotate_right">Rotate right 90°</string>
+    <string name="card_face_crop_rotation_hint">Drag to position, pinch to zoom, or rotate and flip using the controls.</string>
+    <string name="card_face_flip_horizontal">Flip horizontally</string>
+    <string name="card_face_flip_vertical">Flip vertically</string>
+</resources>

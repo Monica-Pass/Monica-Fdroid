@@ -1,5 +1,6 @@
 package takagi.ru.monica.repository
 
+import takagi.ru.monica.data.explicitPasswordGroupId
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -198,6 +199,7 @@ class PasswordRepository(
                 entry.copy(
                     mdbxDatabaseId = databaseId,
                     mdbxFolderId = folderId,
+                    passwordGroupId = entry.explicitPasswordGroupId(),
                     replicaGroupId = entry.mdbxPasswordObjectId(),
                     keepassDatabaseId = null,
                     keepassGroupPath = null,
@@ -338,7 +340,8 @@ class PasswordRepository(
         val existingEntry = if (entry.id != 0L) passwordEntryDao.getPasswordEntryById(entry.id) else null
         val normalizedEntry = BitwardenMutationStateHelper.normalizePasswordUpdate(existingEntry, entry).let { candidate ->
             if (candidate.mdbxDatabaseId != null) {
-                candidate.copy(replicaGroupId = candidate.mdbxPasswordObjectId())
+                candidate.copy(replicaGroupId = candidate.mdbxPasswordObjectId(),
+                        passwordGroupId = candidate.explicitPasswordGroupId() ?: existingEntry?.explicitPasswordGroupId())
             } else {
                 candidate
             }
@@ -378,7 +381,8 @@ class PasswordRepository(
             val existingEntry = existingEntriesById[entry.id]
             BitwardenMutationStateHelper.normalizePasswordUpdate(existingEntry, entry).let { candidate ->
                 if (candidate.mdbxDatabaseId != null) {
-                    candidate.copy(replicaGroupId = candidate.mdbxPasswordObjectId())
+                    candidate.copy(replicaGroupId = candidate.mdbxPasswordObjectId(),
+                        passwordGroupId = candidate.explicitPasswordGroupId() ?: existingEntry?.explicitPasswordGroupId())
                 } else {
                     candidate
                 }

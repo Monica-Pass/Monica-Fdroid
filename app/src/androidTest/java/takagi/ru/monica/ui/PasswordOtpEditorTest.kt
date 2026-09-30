@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
@@ -18,6 +19,7 @@ import org.junit.Assert.*
 import org.junit.runner.RunWith
 import takagi.ru.monica.R
 import takagi.ru.monica.data.PasswordDatabase
+import takagi.ru.monica.data.model.EntryContentFields
 import takagi.ru.monica.data.model.OtpType
 import takagi.ru.monica.repository.CustomFieldRepository
 import takagi.ru.monica.repository.PasswordRepository
@@ -57,6 +59,228 @@ class PasswordOtpEditorTest {
     @After fun cleanup() {
         model.viewModelScope.cancel(); db.close()
         runBlocking { takagi.ru.monica.utils.SettingsManager(context).updatePasswordContentEditorEnabled(previousContentEditor) }
+    }
+
+    @Test fun defaultInlineAuthenticatorPreviewsSavesReopensAndClears() {
+        show()
+        scroll("password_otp_secret").assertExists()
+        compose.onNodeWithTag("otp_type_selector").assertDoesNotExist()
+        scroll("password_otp_secret").performTextReplacement("JBSWY3DPEHPK3PXP")
+        compose.waitUntil(10000) { compose.onAllNodesWithTag("password_otp_inline_preview").fetchSemanticsNodes().isNotEmpty() }
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        scroll("password_otp_inline_preview").assertIsDisplayed()
+        capture("inline-otp-default")
+        save()
+        assertEquals(OtpType.TOTP, payload().otpType)
+        compose.runOnIdle { editId = savedId; savedId = null }
+        scroll("password_otp_secret")
+        compose.waitUntil(15000) { compose.onAllNodes(hasTestTag("password_otp_secret") and hasText("JBSWY3DPEHPK3PXP")).fetchSemanticsNodes().isNotEmpty() }
+        scroll("password_otp_secret").performTextReplacement("")
+        compose.onNodeWithTag("password_otp_inline_preview").assertDoesNotExist()
+        save()
+        val entry = runBlocking { requireNotNull(db.passwordEntryDao().getPasswordEntryById(savedId!!)) }
+        assertTrue(security.decryptDataIfMonicaCiphertext(entry.authenticatorKey).isBlank())
+    }
+
+    @Test fun addContentMenuDoesNotOfferDefaultAuthenticator() {
+        show()
+        scroll("password_content_add").performClick()
+        compose.onNodeWithTag("password_content_choose_AUTHENTICATOR").assertDoesNotExist()
+        compose.onNodeWithTag("password_content_choose_PAYMENT").assertExists()
+    }
+
+    @Test fun invalidInlineOtpParametersReopenSettingsBeforeSaving() {
+        show()
+        scroll("password_otp_secret").performTextReplacement("JBSWY3DPEHPK3PXP")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        scroll("password_otp_advanced").performClick()
+        scroll("otp_period").performTextReplacement("0")
+        closeContent()
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.onNodeWithTag("password_editor_save").performClick()
+        compose.onNodeWithTag("content_detail_scroll").assertExists()
+        assertEquals(null, savedId)
+        scroll("otp_period").assertTextContains("0").performTextReplacement("45")
+        save()
+        assertEquals(45, payload().period)
+    }
+
+    @Test fun editingOldLocalPasswordMovesItToRecentWithoutChangingCreationDate() {
+        val oldTime = System.currentTimeMillis() - 20 * 86_400_000L
+        val ids = runBlocking {
+            (0..9).map { index ->
+                db.passwordEntryDao().insertPasswordEntry(takagi.ru.monica.data.PasswordEntry(
+                    title = "Recent fixture $index", username = "alice", website = "",
+                    password = security.encryptData("fixture-only-password"),
+                    createdAt = java.util.Date(oldTime + index * 86_400_000L),
+                    updatedAt = java.util.Date(oldTime + index * 86_400_000L)))
+            }
+        }
+        editId = ids.first()
+        show()
+        compose.waitUntil(20_000) {
+            compose.onAllNodesWithText("Recent fixture 0").fetchSemanticsNodes().isNotEmpty()
+        }
+        scroll("password_editor_value_0").performTextReplacement("edited-fixture-password")
+        val beforeSave = System.currentTimeMillis()
+        save()
+        val stored = runBlocking { requireNotNull(db.passwordEntryDao().getPasswordEntryById(ids.first())) }
+        assertEquals(oldTime, stored.createdAt.time)
+        assertTrue("Edit must persist its modification time", stored.updatedAt.time >= beforeSave)
+        assertEquals("edited-fixture-password", security.decryptDataIfMonicaCiphertext(stored.password))
+        val visible = runBlocking {
+            kotlinx.coroutines.withTimeout(20_000) {
+                model.allPasswordsForUi.first { entries ->
+                    entries.any { it.id == ids.first() && it.updatedAt.time >= beforeSave }
+                }
+            }
+        }
+        val recent = takagi.ru.monica.ui.vaultv2.recentVaultOverviewItems(
+            takagi.ru.monica.ui.vaultv2.buildVaultV2PasswordItems(visible))
+        assertEquals(ids.first(), recent.first().passwordEntry?.id)
+        assertEquals(8, recent.size)
+    }
+
+    @Test fun legacySsoAndDisabledStylePreferenceSurviveUnifiedEditor() {
+        val id = runBlocking {
+            db.passwordEntryDao().insertPasswordEntry(takagi.ru.monica.data.PasswordEntry(
+                title = "Legacy SSO", username = "alice", password = security.encryptData(""),
+                website = "https://example.com", notes = "legacy notes", loginType = "SSO",
+                ssoProvider = "GOOGLE", ssoRefEntryId = 987654L,
+            ))
+        }
+        editId = id
+        show()
+        compose.waitUntil(20_000) {
+            compose.onAllNodesWithTag("password_content_editor").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("password_content_editor").assertExists()
+        scrollTo(hasText(context.getString(R.string.sso_provider_label)))
+        compose.onNodeWithText(context.getString(R.string.login_type_password)).assertDoesNotExist()
+        save()
+        val entry = runBlocking { requireNotNull(db.passwordEntryDao().getPasswordEntryById(id)) }
+        assertEquals("SSO", entry.loginType)
+        assertEquals("GOOGLE", entry.ssoProvider)
+        assertEquals(987654L, entry.ssoRefEntryId)
+        assertEquals("legacy notes", entry.notes)
+        assertEquals("alice", entry.username)
+    }
+
+    @Test fun strengthBadgesExpandEachPasswordCardAndCollapseForEmptyValues() {
+        show()
+        scroll("password_editor_value_0")
+        compose.onNodeWithTag("password_strength_badge_0").assertExists()
+            .assert(hasAnyAncestor(hasTestTag("password_editor_card_0")))
+        val filledHeight = compose.onNodeWithTag("password_editor_card_0").fetchSemanticsNode().boundsInRoot.height
+        scroll("password_editor_value_0").performTextReplacement("")
+        compose.waitForIdle()
+        compose.onNodeWithTag("password_strength_badge_0").assertDoesNotExist()
+        val emptyHeight = compose.onNodeWithTag("password_editor_card_0").fetchSemanticsNode().boundsInRoot.height
+        assertTrue("Badge must occupy space inside the card", filledHeight > emptyHeight)
+        scroll("password_editor_value_0").performTextReplacement("correct-horse-Long-Fixture-89!")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        scrollTo(hasText(context.getString(R.string.add_password)) and hasClickAction()).performClick()
+        scroll("password_editor_value_1").performTextReplacement("123")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.onNodeWithTag("password_strength_badge_1").assertExists()
+            .assert(hasAnyAncestor(hasTestTag("password_editor_card_1")))
+        capture("password-strength-inside-cards")
+        save()
+        val values = runBlocking { db.passwordEntryDao().getActiveEntries().first().map { security.decryptDataIfMonicaCiphertext(it.password) }.toSet() }
+        assertEquals(setOf("correct-horse-Long-Fixture-89!", "123"), values)
+    }
+
+    @Test fun groupedPasswordRowsKeepValuesAfterMiddleRemoval() {
+        show()
+        repeat(2) { scrollTo(hasText(context.getString(R.string.add_password)) and hasClickAction()).performClick() }
+        scroll("password_editor_value_1").performTextReplacement("middle-fixture")
+        scroll("password_editor_value_2").performTextReplacement("last-fixture")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        capture("password-group-three")
+        scroll("password_editor_remove_1").performClick()
+        scroll("password_editor_value_1").assertTextContains("last-fixture")
+        capture("password-group-after-remove")
+        scrollTo(hasText(context.getString(R.string.title_required))).assertExists()
+        capture("credential-title-storage")
+        save()
+        val values = runBlocking { db.passwordEntryDao().getActiveEntries().first().map { security.decryptDataIfMonicaCiphertext(it.password) }.toSet() }
+        assertEquals(setOf("fixture-only-password", "last-fixture"), values)
+    }
+
+    @Test fun unifiedEditorHasNoIntroOrLoginTypePicker() {
+        show()
+        compose.onNodeWithTag("password_content_editor").assertExists()
+        compose.onNodeWithTag("password_classic_editor").assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.password_content_optional_login)).assertDoesNotExist()
+        scrollTo(hasText(context.getString(R.string.add_password)) and hasClickAction())
+        compose.onNodeWithText(context.getString(R.string.login_type_sso)).assertDoesNotExist()
+        capture("compact-filled-credentials")
+        save()
+        val entry = runBlocking { requireNotNull(db.passwordEntryDao().getPasswordEntryById(savedId!!)) }
+        assertEquals("alice", entry.username)
+        assertEquals("fixture-only-password", security.decryptDataIfMonicaCiphertext(entry.password))
+    }
+
+    @Test fun vaultGeneratorSuggestionsArePlaintextAndCanBeApplied() {
+        val wasUnlocked = takagi.ru.monica.security.SessionManager.isUnlocked.value
+        takagi.ru.monica.security.SessionManager.markUnlocked()
+        try {
+            runBlocking {
+                repeat(3) { index ->
+                    db.passwordEntryDao().insertPasswordEntry(takagi.ru.monica.data.PasswordEntry(
+                        title = "Generator fixture $index", website = "", username = "fixture-frequent-account",
+                        password = security.encryptData("Fixture Frequent Secret!")))
+                }
+                db.passwordEntryDao().insertPasswordEntry(takagi.ru.monica.data.PasswordEntry(
+                    title = "Excluded fixture", website = "", username = "excluded-archived-account",
+                    password = security.encryptData("Excluded Archived Secret!"), isArchived = true))
+            }
+            show()
+            scrollTo(hasContentDescription(context.getString(R.string.cg_username_title))).performClick()
+            compose.waitUntil(10_000) { compose.onAllNodesWithText("fixture-frequent-account").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("excluded-archived-account").assertDoesNotExist()
+            compose.onNodeWithText("fixture-frequent-account").performClick()
+            scrollTo(hasContentDescription(context.getString(R.string.password_fill_title))).performClick()
+            compose.waitUntil(10_000) { compose.onAllNodesWithText("Fixture Frequent Secret!").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("Excluded Archived Secret!").assertDoesNotExist()
+            val screenshotDir = File(context.getExternalFilesDir(null), "generator-ui").apply { mkdirs() }
+            File(screenshotDir, "vault-generator-plaintext.png").outputStream().use {
+                compose.onNodeWithTag("credential_generator_scroll").captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            compose.onNodeWithText("Fixture Frequent Secret!").performClick()
+            save()
+            val saved = runBlocking { requireNotNull(db.passwordEntryDao().getPasswordEntryById(savedId!!)) }
+            assertEquals("fixture-frequent-account", saved.username)
+            assertEquals("Fixture Frequent Secret!", security.decryptDataIfMonicaCiphertext(saved.password))
+        } finally {
+            if (!wasUnlocked) takagi.ru.monica.security.SessionManager.markLocked()
+        }
+    }
+
+    @Test fun generatorsApplyOnlyAfterUseAndPersist() {
+        show()
+        fun generated(): String {
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithTag("generator_result").fetchSemanticsNodes().firstOrNull()
+                    ?.config?.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Text)?.any { it.text.isNotEmpty() } == true
+            }
+            return compose.onNodeWithTag("generator_result").fetchSemanticsNode()
+                .config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
+        }
+        scrollTo(hasContentDescription(context.getString(R.string.cg_username_title))).performClick()
+        generated()
+        compose.onNodeWithContentDescription(context.getString(R.string.close)).performClick()
+        scrollTo(hasText("alice")).assertExists()
+        scrollTo(hasContentDescription(context.getString(R.string.cg_username_title))).performClick()
+        val account = generated()
+        compose.onNodeWithTag("generator_apply").performScrollTo().performClick()
+        scrollTo(hasContentDescription(context.getString(R.string.password_fill_title))).performClick()
+        val password = generated()
+        compose.onNodeWithTag("generator_apply").performScrollTo().performClick()
+        save()
+        val entry = runBlocking { requireNotNull(db.passwordEntryDao().getPasswordEntryById(savedId!!)) }
+        assertEquals(account, entry.username)
+        assertEquals(password, security.decryptDataIfMonicaCiphertext(entry.password))
     }
 
     @Test fun totpCreateAndReedit() = verify(OtpType.TOTP)
@@ -122,40 +346,145 @@ class PasswordOtpEditorTest {
         scrollTo(name).performTextReplacement("Recovery phrase")
         scrollTo(value).performTextReplacement("synthetic hidden recovery")
         save()
-        val original = runBlocking { db.customFieldDao().getFieldsByEntryIdSync(savedId!!).single() }
+        val original = runBlocking { db.customFieldDao().getFieldsByEntryIdSync(savedId!!).filterNot { it.title == EntryContentFields.ORDER }.single() }
         assertEquals("Recovery phrase", original.title)
         assertTrue(original.isProtected)
         assertEquals("synthetic hidden recovery", security.decryptDataIfMonicaCiphertext(original.value))
         compose.runOnIdle { editId = savedId; savedId = null }
         val title = hasText("Recovery phrase")
+        addContent("CUSTOM_FIELDS")
         scrollTo(title).assertIsDisplayed()
         compose.onNodeWithText("synthetic hidden recovery").assertDoesNotExist()
         save()
         runBlocking {
-            val saved = db.customFieldDao().getFieldsByEntryIdSync(savedId!!).single()
+            val saved = db.customFieldDao().getFieldsByEntryIdSync(savedId!!).filterNot { it.title == EntryContentFields.ORDER }.single()
             assertEquals(original.title, saved.title)
             assertEquals(original.isProtected, saved.isProtected)
             assertEquals("synthetic hidden recovery", security.decryptDataIfMonicaCiphertext(saved.value))
         }
         // Saving completes the screen; reopen it as navigation does before editing again.
         compose.runOnIdle { editId = savedId; savedId = null; editorOpenCount++ }
+        addContent("CUSTOM_FIELDS")
         scrollTo(title)
         scrollTo(hasContentDescription(context.getString(R.string.delete))).performClick()
         compose.onNodeWithText(context.getString(R.string.delete)).performClick()
         compose.runOnIdle { savedId = null }
         save()
-        runBlocking { assertTrue(db.customFieldDao().getFieldsByEntryIdSync(savedId!!).isEmpty()) }
+        runBlocking { assertTrue(db.customFieldDao().getFieldsByEntryIdSync(savedId!!).none { it.title != EntryContentFields.ORDER }) }
+    }
+
+    @Test fun supplementalPaymentAndIdentityPreserveValuesProtectionAndInsertionOrder() {
+        runBlocking { takagi.ru.monica.utils.SettingsManager(context).updatePasswordContentEditorEnabled(true) }
+        show()
+        compose.waitForIdle()
+        capture("content-editor-top")
+        fun extra(key: String, value: String) {
+            scroll("entry_extra_add").performClick()
+            compose.onNodeWithTag("entry_extra_choose_$key").performScrollTo().performClick()
+            scroll("entry_extra_$key").performTextReplacement(value)
+        }
+        addContent("PAYMENT")
+        extra("pin", "8642")
+        scroll("entry_extra_pin").assert(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.Password))
+        scroll("entry_extra_reveal_pin").performClick()
+        scroll("entry_extra_pin").assertTextContains("8642")
+        addContent("CONTACT")
+        extra("passportNumber", "EX1234567")
+        addContent("ADDRESS")
+        extra("apartment", "Suite 9")
+        save()
+        fun check() = runBlocking {
+            val fields = db.customFieldDao().getFieldsByEntryIdSync(savedId!!)
+            assertEquals("PAYMENT,CONTACT,ADDRESS", fields.single { it.title == EntryContentFields.ORDER }.value)
+            val embedded = fields.single { takagi.ru.monica.data.model.EmbeddedWalletContent.isMetadata(it.title) }
+            val snapshot = (takagi.ru.monica.data.model.EmbeddedWalletContent.read(security.decryptDataIfMonicaCiphertext(embedded.value))
+                as takagi.ru.monica.data.model.EmbeddedWalletContent.ReadResult.Available).snapshot
+            assertTrue(embedded.isProtected)
+            assertEquals("8642", snapshot.itemData["pin"].toString().trim('"'))
+            mapOf("contact.passportNumber" to "EX1234567", "address.apartment" to "Suite 9").forEach { (key, value) ->
+                val field = fields.single { it.title == "monica.content.$key" }
+                assertEquals(value, security.decryptDataIfMonicaCiphertext(field.value))
+                assertEquals(!key.startsWith("address"), field.isProtected)
+            }
+        }
+        check()
+        compose.runOnIdle { editId = savedId; savedId = null }
+        addContent("PAYMENT")
+        scroll("entry_extra_pin").assertExists()
+        closeContent()
+        capture("content-editor-overview")
+        save()
+        check()
+        compose.runOnIdle { editId = savedId; savedId = null; editorOpenCount++ }
+        scrollTo(hasTestTag("content_panel_ADDRESS"))
+        val dragHandle = compose.onNodeWithTag("content_panel_ADDRESS")
+        val distance = compose.onNodeWithTag("content_panel_ADDRESS").fetchSemanticsNode().boundsInRoot.height * 0.65f
+        dragHandle.performTouchInput {
+            down(center)
+            advanceEventTime(700)
+            moveBy(androidx.compose.ui.geometry.Offset(0f, -distance), delayMillis = 150)
+            up()
+        }
+        capture("content-editor-after-drag")
+        save()
+        runBlocking {
+            assertEquals("PAYMENT,ADDRESS,CONTACT", db.customFieldDao().getFieldsByEntryIdSync(savedId!!)
+                .single { it.title == EntryContentFields.ORDER }.value)
+        }
+        compose.runOnIdle { editId = savedId; savedId = null; editorOpenCount++ }
+        scrollTo(hasTestTag("content_actions_CONTACT")).performClick()
+        compose.onNodeWithTag("content_remove").performClick()
+        compose.onNodeWithText(context.getString(R.string.cancel)).performClick()
+        scrollTo(hasTestTag("content_panel_CONTACT")).assertIsDisplayed()
+        scrollTo(hasTestTag("content_actions_CONTACT")).performClick()
+        compose.onNodeWithTag("content_remove").performClick()
+        compose.onNodeWithTag("content_remove_confirm").performClick()
+        compose.onNodeWithTag("content_panel_CONTACT").assertDoesNotExist()
+        save()
+        runBlocking {
+            val fields = db.customFieldDao().getFieldsByEntryIdSync(savedId!!)
+            assertEquals("PAYMENT,ADDRESS", fields.single { it.title == EntryContentFields.ORDER }.value)
+            assertFalse(fields.any { it.title == "monica.content.contact.passportNumber" })
+            val pin = fields.single { it.title == takagi.ru.monica.data.model.EmbeddedWalletContent.fieldName(takagi.ru.monica.data.model.EmbeddedWalletContent.Kind.BANK_CARD) }
+            val copy = takagi.ru.monica.data.model.EmbeddedWalletContent.read(security.decryptDataIfMonicaCiphertext(pin.value))
+                as takagi.ru.monica.data.model.EmbeddedWalletContent.ReadResult.Available
+            assertTrue(pin.isProtected)
+            assertEquals("8642", copy.snapshot.itemData["pin"].toString().trim('"'))
+        }
     }
 
     private fun scrollTo(matcher: SemanticsMatcher): SemanticsNodeInteraction {
-        val editor = compose.onNode(hasTestTag("password_classic_editor") or hasTestTag("password_content_editor"))
+        val editor = activeScroll()
         editor.performScrollToNode(matcher)
-        val node = compose.onNode(matcher)
+        val scoped = if (compose.onAllNodesWithTag("content_detail_scroll").fetchSemanticsNodes().isNotEmpty()) matcher and hasAnyAncestor(hasTestTag("content_detail_scroll")) else matcher
+        val node = compose.onNode(scoped)
         compose.bringAboveFloatingActions(node, editor)
         return node
     }
 
+    private fun closeContent() {
+        if (compose.onAllNodesWithTag("embedded_bank_editor").fetchSemanticsNodes().isNotEmpty()) {
+            androidx.test.espresso.Espresso.closeSoftKeyboard()
+            compose.onNodeWithContentDescription(context.getString(R.string.save)).performClick()
+            compose.waitUntil(15000) { compose.onAllNodesWithTag("embedded_bank_editor").fetchSemanticsNodes().isEmpty() }
+        }
+        if (compose.onAllNodesWithTag("content_detail_back").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithTag("content_detail_back").performClick()
+            compose.waitForIdle()
+        }
+    }
+    private fun activeScroll(): SemanticsNodeInteraction =
+        if (compose.onAllNodesWithTag("content_detail_scroll").fetchSemanticsNodes().isNotEmpty())
+            compose.onNodeWithTag("content_detail_scroll")
+        else compose.onNode(hasTestTag("password_classic_editor") or hasTestTag("password_content_editor"))
+
     private fun addContent(section: String) {
+        if (section == "AUTHENTICATOR") {
+            closeContent()
+            scroll("password_otp_settings").performClick()
+            return
+        }
+        closeContent()
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         scrollTo(hasTestTag("password_content_add")).performClick()
         compose.onNodeWithTag("password_content_choose_$section").performScrollTo().performClick()
@@ -164,11 +493,10 @@ class PasswordOtpEditorTest {
     @Test fun onDemandPaymentAndAuthenticatorSaveReopenAndAppearTogetherInDetails() {
         runBlocking { takagi.ru.monica.utils.SettingsManager(context).updatePasswordContentEditorEnabled(true) }
         show("otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP")
-        scroll("password_content_add").performClick()
-        compose.onNodeWithTag("password_content_choose_ATTACHMENTS").performScrollTo().performClick()
+        addContent("ATTACHMENTS")
         captureAttachmentFooter("content-attachments-large")
-        scroll("password_content_add").performClick()
-        compose.onNodeWithTag("password_content_choose_PAYMENT").performScrollTo().performClick()
+        closeContent()
+        addContent("PAYMENT")
         scroll("entry_payment_number").performTextReplacement("4242 4242 4242 4242")
         scroll("entry_payment_holder").performTextReplacement("ALICE EXAMPLE")
         scroll("entry_payment_expiry").performTextReplacement("09/2030")
@@ -183,10 +511,12 @@ class PasswordOtpEditorTest {
             assertEquals("123", entry.creditCardCVV)
         }
         compose.runOnIdle { editId = savedId; savedId = null }
+        if (compose.onAllNodesWithTag("password_content_editor").fetchSemanticsNodes().isNotEmpty()) addContent("AUTHENTICATOR")
         scroll("otp_type_selector")
         compose.waitUntil(20_000) {
             compose.onAllNodes(hasTestTag("password_otp_secret") and hasText(original.secret)).fetchSemanticsNodes().isNotEmpty()
         }
+        closeContent()
         val paymentTitle = context.getString(R.string.payment_info)
         compose.onNodeWithTag("password_content_editor").performScrollToNode(hasText(paymentTitle))
         compose.bringAboveFloatingActions(compose.onNodeWithText(paymentTitle), compose.onNodeWithTag("password_content_editor"))
@@ -229,10 +559,21 @@ class PasswordOtpEditorTest {
     }
 
     private fun scroll(tag: String): SemanticsNodeInteraction {
-        compose.onNode(hasTestTag("password_classic_editor") or hasTestTag("password_content_editor")).performScrollToNode(hasTestTag(tag))
+        if (tag in setOf("password_otp_secret", "password_otp_settings", "password_otp_inline_preview")) closeContent()
+        else if ((tag.startsWith("otp_") || tag == "password_otp_advanced") &&
+            compose.onAllNodesWithTag("content_detail_scroll").fetchSemanticsNodes().isEmpty()) {
+            scroll("password_otp_settings").performClick()
+        }
+        if (compose.onAllNodesWithTag("embedded_bank_editor").fetchSemanticsNodes().isNotEmpty()) {
+            val node = compose.onNodeWithTag(tag).performScrollTo()
+            compose.bringAboveFloatingActions(node, compose.onNodeWithTag("embedded_bank_editor"))
+            return node
+        }
+        activeScroll().performScrollToNode(hasTestTag(tag))
         return compose.onNodeWithTag(tag).performScrollTo()
     }
     private fun save() {
+        closeContent()
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNode(hasTestTag("password_editor_save") or
             hasContentDescription(context.getString(R.string.save))).performClick()
@@ -246,10 +587,7 @@ class PasswordOtpEditorTest {
     private fun verify(type: OtpType, onDemand: Boolean = false) {
         if (onDemand) runBlocking { takagi.ru.monica.utils.SettingsManager(context).updatePasswordContentEditorEnabled(true) }
         show()
-        if (onDemand) {
-            scroll("password_content_add").performClick()
-            compose.onNodeWithTag("password_content_choose_AUTHENTICATOR").performScrollTo().performClick()
-        }
+        addContent("AUTHENTICATOR")
         scroll("password_otp_secret").performTextReplacement(
             if (type == OtpType.MOTP) "a1b2c3d4e5f60708" else "JBSWY3DPEHPK3PXP")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
@@ -262,15 +600,17 @@ class PasswordOtpEditorTest {
             compose.onNodeWithTag("otp_pin").assert(
                 SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.Password))
         }
+        closeContent()
         androidx.test.espresso.Espresso.closeSoftKeyboard()
+        scroll("otp_type_selector")
         capture((if (onDemand) "content-" else "") + type.name.lowercase())
-        if (type == OtpType.TOTP && !onDemand) captureAttachmentFooter("classic-attachments-large")
         save()
         val original = payload()
         assertEquals(type, original.otpType)
         if (type == OtpType.HOTP) assertEquals(42L, original.counter)
         if (type in listOf(OtpType.MOTP, OtpType.YANDEX)) assertEquals("0421", original.pin)
         compose.runOnIdle { editId = savedId; savedId = null }
+        if (compose.onAllNodesWithTag("password_content_editor").fetchSemanticsNodes().isNotEmpty()) addContent("AUTHENTICATOR")
         scroll("otp_type_selector")
         // Wait for the async existing-entry load, then save again without changing OTP.
         compose.waitUntil(20_000) {
@@ -283,6 +623,7 @@ class PasswordOtpEditorTest {
 
     @Test fun hotpQrRestoresCounterAndAlgorithmBeforeChangingSecret() {
         show("otpauth://hotp/Example:alice?secret=JBSWY3DPEHPK3PXP&counter=99&digits=8&algorithm=SHA512")
+        addContent("AUTHENTICATOR")
         scroll("otp_counter").assertTextContains("99")
         scroll("password_otp_secret").performTextReplacement("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ")
         save()
@@ -295,13 +636,16 @@ class PasswordOtpEditorTest {
 
     @Test fun switchingAndRemovingCredentialsKeepsOtpDraftsSeparate() {
         show()
+        addContent("AUTHENTICATOR")
         scroll("password_otp_secret").performTextReplacement("JBSWY3DPEHPK3PXP")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         scroll("otp_type_selector").performClick()
         compose.onNodeWithTag("otp_type_HOTP").performClick()
         scroll("otp_counter").performTextReplacement("42")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
+        closeContent()
         compose.onNodeWithContentDescription(context.getString(R.string.add_credential)).performClick()
+        addContent("AUTHENTICATOR")
         scroll("password_otp_secret").performTextReplacement("a1b2c3d4e5f60708")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         scroll("otp_type_selector").performClick()
@@ -309,16 +653,20 @@ class PasswordOtpEditorTest {
         scroll("otp_pin").performTextReplacement("0421")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         fun select(index: Int) {
+            closeContent()
             compose.onNodeWithTag("password_credential_switcher").performClick()
             compose.onNodeWithTag("password_credential_$index").performClick()
+            addContent("AUTHENTICATOR")
         }
         select(0)
         scroll("otp_counter").assertTextContains("42")
         select(1)
         scroll("otp_pin").assertTextContains("0421")
+        closeContent()
         compose.onNodeWithTag("password_credential_switcher").performClick()
         compose.onNodeWithTag("password_credential_remove").performClick()
         compose.onNodeWithTag("password_credential_confirm_remove").performClick()
+        addContent("AUTHENTICATOR")
         scroll("otp_counter").assertTextContains("42")
         save()
         assertEquals(OtpType.HOTP, payload().otpType)
@@ -326,7 +674,7 @@ class PasswordOtpEditorTest {
     }
 
     private fun captureAttachmentFooter(name: String) {
-        val editor = compose.onNode(hasTestTag("password_classic_editor") or hasTestTag("password_content_editor"))
+        val editor = activeScroll()
         val buttonText = context.getString(R.string.attachments_add)
         editor.performScrollToNode(hasText(buttonText))
         compose.bringAboveFloatingActions(compose.onNodeWithText(buttonText), editor)
@@ -336,7 +684,7 @@ class PasswordOtpEditorTest {
     private fun capture(name: String) {
         val dir = File(context.getExternalFilesDir(null), "password-otp-ui").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use {
-            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+            compose.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
 }

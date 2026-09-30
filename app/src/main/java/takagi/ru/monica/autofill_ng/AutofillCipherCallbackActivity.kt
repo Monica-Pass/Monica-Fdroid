@@ -9,6 +9,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
+import android.service.autofill.Dataset
 import android.util.Log
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
@@ -42,6 +43,7 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
         private const val EXTRA_ARGS = "extra_args"
         private const val EXTRA_ARGS_BUNDLE = "extra_args_bundle"
         private const val EXTRA_ARGS_TOKEN = "extra_args_token"
+        internal const val EXTRA_DIRECT_DATASET = "monica_direct_dataset"
         private const val TAG = "AutofillCipherCallback"
         private val pendingArgsByToken = ConcurrentHashMap<String, Args>()
 
@@ -53,11 +55,21 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
                 putExtra(
                     EXTRA_ARGS_BUNDLE,
                     Bundle().apply {
-                        classLoader = Args::class.java.classLoader
-                        putParcelable(EXTRA_ARGS, args)
+                        // Android's system process may eagerly unpack PendingIntent extras.
+                        // Only framework types may cross that boundary; a custom Parcelable
+                        // here can cause Android 12 to discard ALL extras, including the token.
+                        putLong("password_id", args.passwordId)
+                        putString("application_id", args.applicationId)
+                        putString("web_domain", args.webDomain)
+                        putString("interaction_id", args.interactionIdentifier)
+                        putStringArrayList("aliases", args.interactionIdentifierAliases)
+                        putParcelableArrayList("autofill_ids", args.autofillIds)
+                        putStringArrayList("autofill_hints", args.autofillHints)
+                        putString("signature", args.fieldSignatureKey)
+                        putBoolean("remember", args.rememberLastFilled)
+                        putBoolean("authenticate", args.requireAuthentication)
                     }
                 )
-                putExtra(EXTRA_ARGS, args)
             }
         }
     }
@@ -106,6 +118,11 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
         )
         lifecycleScope.launch {
             if (rejectBlockedRequest()) return@launch
+            val directDataset = readDirectDataset()
+            if (args != null && !args.requireAuthentication && directDataset != null) {
+                completeDirectAutofill(args, directDataset)
+                return@launch
+            }
             securityManager = SecurityManager(applicationContext)
             settingsManager = SettingsManager(applicationContext)
             biometricAuthHelper = BiometricAuthHelper(this@AutofillCipherCallbackActivity)
@@ -323,6 +340,33 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
                 putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
             }
         )
+        resultPublished = true
+        if (resolvedTargets.hints.any { it.equals(FieldHint.PASSWORD.name, ignoreCase = true) } &&
+            resolvedTargets.hints.none { it.equals(FieldHint.OTP_CODE.name, ignoreCase = true) }
+        ) AutofillOtpActions.launchAfterFill(applicationContext, passwordEntry.id)
+        finishWithoutAnimation()
+    }
+
+    private fun readDirectDataset(): Dataset? = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(EXTRA_DIRECT_DATASET, Dataset::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra<Dataset>(EXTRA_DIRECT_DATASET)
+        }
+    }.getOrNull()
+
+    private suspend fun completeDirectAutofill(args: Args, dataset: Dataset) {
+        if (resultPublished || rejectBlockedRequest()) return
+        // Commit the successful fill before optional database/clipboard/notification work.
+        setResult(Activity.RESULT_OK, Intent().apply {
+            putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
+            }
+        })
+        resultPublished = true
+        AutofillOtpActions.launchAfterFill(applicationContext, args.passwordId)
         finishWithoutAnimation()
     }
 
@@ -336,6 +380,22 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
         intent.getBundleExtra(EXTRA_ARGS_BUNDLE)
             ?.apply { classLoader = Args::class.java.classLoader }
             ?.let { bundle ->
+                if (bundle.containsKey("password_id")) {
+                    @Suppress("DEPRECATION")
+                    return Args(
+                        passwordId = bundle.getLong("password_id"),
+                        applicationId = bundle.getString("application_id"),
+                        webDomain = bundle.getString("web_domain"),
+                        interactionIdentifier = bundle.getString("interaction_id"),
+                        interactionIdentifierAliases = bundle.getStringArrayList("aliases"),
+                        autofillIds = bundle.getParcelableArrayList("autofill_ids"),
+                        autofillHints = bundle.getStringArrayList("autofill_hints"),
+                        fieldSignatureKey = bundle.getString("signature"),
+                        rememberLastFilled = bundle.getBoolean("remember", true),
+                        requireAuthentication = bundle.getBoolean("authenticate", false),
+                    )
+                }
+                // Compatibility with callbacks already issued by an older process.
                 val args = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     bundle.getParcelable(EXTRA_ARGS, Args::class.java)
                 } else {

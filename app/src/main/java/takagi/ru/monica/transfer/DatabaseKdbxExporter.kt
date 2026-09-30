@@ -81,6 +81,7 @@ internal class DatabaseKdbxExporter(context: Context) {
                 added()
             }
             for (token in snapshot.nativeTokens) {
+                check(token.attachments.isEmpty()) { strings.get(R.string.native_token_kdbx_files_unsupported) }
                 val payload = ApiTokenPayload.decode(token.payload)
                 check(payload != null) { strings.get(R.string.transfer_unsupported_token) }
                 entries += null to Entry(uuid = UUID.randomUUID(), fields = EntryFields.of(

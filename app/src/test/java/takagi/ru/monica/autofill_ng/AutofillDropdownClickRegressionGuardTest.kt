@@ -25,8 +25,8 @@ class AutofillDropdownClickRegressionGuardTest {
                 cipherDatasetBody.contains("value = filledItem.value")
         )
         assertTrue(
-            "Locked concrete suggestions may set Dataset authentication so the list stays visible, but unlocked direct-fill suggestions must not be wrapped.",
-            cipherDatasetBody.contains("if (partition.requiresAuthentication && authPendingIntent != null)") &&
+            "Locked concrete suggestions may set Dataset authentication so the list stays visible, but only explicitly opted-in OTP direct-fill suggestions may be wrapped.",
+            cipherDatasetBody.contains("if ((partition.requiresAuthentication || needsOtpCallback) && authPendingIntent != null)") &&
                 cipherDatasetBody.contains("datasetBuilder.setAuthentication(authPendingIntent.intentSender)")
         )
         assertTrue(

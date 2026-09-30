@@ -216,6 +216,7 @@ internal fun VaultOverviewScreen(
                     items(visibleModules, key = { it.name }, contentType = { it.name }) { module ->
                         val collapsed = module.name in config.collapsed
                         val count = when (module) {
+                            VaultOverviewModule.RECENT -> snapshot.recentItems.size
                             VaultOverviewModule.CARDS -> snapshot.cards.size
                             VaultOverviewModule.ITEMS -> snapshot.frequentItems.size
                             VaultOverviewModule.FAVORITES -> snapshot.favorites.size
@@ -295,6 +296,17 @@ internal fun VaultOverviewScreen(
                                                     )
                                                 }
                                             }
+                                        }
+                                    }
+                                }
+                                VaultOverviewModule.RECENT -> {
+                                    if (snapshot.recentItems.isEmpty()) OverviewEmpty(R.string.vault_overview_recent_empty)
+                                    else Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        snapshot.recentItems.forEachIndexed { index, row ->
+                                            OverviewItemRow(item = row,
+                                                shape = GroupedItemDefaults.shape(index, snapshot.recentItems.size),
+                                                selected = false, selectionMode = false,
+                                                onClick = { onOpenItem(row) }, rowTag = "overview_recent_${row.key}")
                                         }
                                     }
                                 }
@@ -505,6 +517,7 @@ internal fun VaultOverviewCustomizationSheet(config: VaultOverviewConfig,
 }
 
 internal fun VaultOverviewModule.titleRes(): Int = when (this) {
+    VaultOverviewModule.RECENT -> R.string.vault_overview_recent
     VaultOverviewModule.CARDS -> R.string.vault_overview_cards
     VaultOverviewModule.ITEMS -> R.string.vault_overview_items
     VaultOverviewModule.FAVORITES -> R.string.vault_overview_favorites

@@ -118,6 +118,7 @@ fun CardFaceCustomizer(
     var preview by remember { mutableStateOf(initialBitmap) }
     var preparedBytes by remember { mutableStateOf(initialImageBytes?.copyOf()) }
     var cropSource by remember { mutableStateOf<Bitmap?>(null) }
+    var showSubscriptions by remember { mutableStateOf(false) }
     // Compose may retain a bitmap in a submitted frame; let GC release crop sources.
     var isProcessing by remember { mutableStateOf(false) }
     var imageError by remember { mutableStateOf<Int?>(null) }
@@ -246,6 +247,13 @@ fun CardFaceCustomizer(
                                 }
                             }
                         }
+                        FilledTonalButton(onClick = { showSubscriptions = true },
+                            enabled = imageSelectionAllowed && !isProcessing && !isSaving,
+                            modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.Image, null, Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.image_sources_choose))
+                        }
                         FilledTonalButton(
                             onClick = { picker.launch(arrayOf("image/jpeg", "image/png", "image/webp")) },
                             enabled = imageSelectionAllowed && !isProcessing && !isSaving,
@@ -334,6 +342,13 @@ fun CardFaceCustomizer(
             }
         }
     }
+    if (showSubscriptions) {
+        takagi.ru.monica.ui.images.ImageSubscriptionBrowser(
+            initialKind = takagi.ru.monica.ui.images.ImageSourceKind.CARD,
+            onDismiss = { showSubscriptions = false },
+            onSelect = { bitmap -> cropSource = bitmap; imageError = null; showSubscriptions = false }
+        )
+    }
 }
 
 @Composable
@@ -357,4 +372,6 @@ private fun DisplayModeOption(
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+
+
 }

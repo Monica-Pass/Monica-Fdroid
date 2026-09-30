@@ -527,6 +527,12 @@ class TotpViewModel internal constructor(
         .map { it.items }
         .stateIn(viewModelScope, allTotpItemsSharingStarted, emptyList())
 
+    // Authentication pickers must not inherit the authenticator page's search/category filters.
+    val allParsedTotpItems: StateFlow<List<ParsedTotpItem>> = allTotpItemsSource
+        .map { items -> items.mapNotNull { item -> parseStoredTotpData(item)?.let { ParsedTotpItem(item, it) } } }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, allTotpItemsSharingStarted, emptyList())
+
     val passwordTitles = passwordRepository.getActivePasswordTitles()
         .flowOn(Dispatchers.Default)
 
@@ -930,7 +936,8 @@ class TotpViewModel internal constructor(
                         keepassGroupUuid = incoming.keepassGroupUuid,
                         isDeleted = isInRecycleBin,
                         deletedAt = if (isInRecycleBin) (existing.deletedAt ?: Date()) else null,
-                        updatedAt = Date()
+                        createdAt = incoming.createdAt.takeIf { it.time > 0 } ?: existing.createdAt,
+                        updatedAt = incoming.updatedAt.takeIf { it.time > 0 } ?: existing.updatedAt
                     )
                     if (!existing.matchesKeePassSecureItemImport(updated)) {
                         repository.updateItem(updated)
@@ -956,7 +963,7 @@ class TotpViewModel internal constructor(
     }
 
     private fun SecureItem.matchesKeePassSecureItemImport(imported: SecureItem): Boolean {
-        return copy(itemData = "", updatedAt = imported.updatedAt) == imported.copy(itemData = "") &&
+        return copy(itemData = "") == imported.copy(itemData = "") &&
             decryptStoredSensitiveValue(itemData) == decryptStoredSensitiveValue(imported.itemData)
     }
     

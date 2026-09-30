@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -87,6 +89,7 @@ import takagi.ru.monica.viewmodel.TotpMigrationSaveResult
 import takagi.ru.monica.utils.RememberedStorageTarget
 import takagi.ru.monica.utils.SettingsManager
 import java.io.File
+import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.ui.components.OutlinedTextField
 
 private const val ICON_PICKER_PAGE_SIZE = 120
@@ -138,6 +141,7 @@ fun AddEditTotpScreen(
     }
     var title by rememberSaveable { mutableStateOf(initialTitle) }
     var notes by rememberSaveable { mutableStateOf(initialNotes) }
+    val editorSections = rememberItemEditorSections()
     var secret by rememberSaveable { mutableStateOf(resolvedInitialData?.secret ?: "") }
     var issuer by rememberSaveable { mutableStateOf(resolvedInitialData?.issuer ?: "") }
     var accountName by rememberSaveable { mutableStateOf(resolvedInitialData?.accountName ?: "") }
@@ -649,6 +653,20 @@ fun AddEditTotpScreen(
     
     val topBarTitle = stringResource(if (isEditing) R.string.edit_totp_title else R.string.add_totp_title)
 
+    val editorListState = rememberLazyListState()
+    val visibleSectionKeys = listOfNotNull(
+        "storage", "identity", "secret", "account",
+        "notes".takeIf { editorSections.visible(it, notes.isNotBlank()) },
+        "advanced".takeIf { editorSections.visible(it, selectedOtpType != OtpType.TOTP || period != "30" || digits != "6" || algorithm != "SHA1" || pin.isNotBlank() || counter != "0") },
+        "association".takeIf { editorSections.visible(it, link.isNotBlank() || associatedApp.isNotBlank() || boundPasswordId != null) },
+        "add_content",
+    )
+    LaunchedEffect(editorSections.focusRequest) {
+        val target = editorSections.focusRequest?.first ?: return@LaunchedEffect
+        val index = visibleSectionKeys.indexOf(target)
+        if (index >= 0) editorListState.animateScrollToItem(index)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -708,15 +726,16 @@ fun AddEditTotpScreen(
                 .imePadding()
         ) {
             LazyColumn(
-                modifier = Modifier
+                state = editorListState,
+                modifier = Modifier.testTag("totp_item_editor")
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 32.dp)
+                contentPadding = PaddingValues(top = 8.dp, bottom = 112.dp)
             ) {
                 // Vault Selector
-                item {
+                item("storage") {
                     MultiStorageTargetSelectorCard(
                         selectedTargets = selectedStorageTargets,
                         existingTargetKeys = existingReplicaTargetKeys,
@@ -731,21 +750,10 @@ fun AddEditTotpScreen(
                     )
                 }
 
-            // Basic Info Card
-            item {
-                InfoCard(title = stringResource(R.string.section_authenticator_info)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Title
-                        if (settings.iconCardsEnabled) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                FilledTonalIconButton(
-                                    onClick = { showCustomIconDialog = true },
-                                    modifier = Modifier.size(48.dp)
-                                ) {
+            item("identity") {
+                ItemEditorIdentity(title, { title = it }, stringResource(R.string.totp_name_required),
+                    Icons.Default.Shield, showIcon = settings.iconCardsEnabled,
+                    onIconClick = { showCustomIconDialog = true }, iconContent = {
                                     when {
                                         selectedSimpleIconBitmap != null -> {
                                             Image(
@@ -797,114 +805,62 @@ fun AddEditTotpScreen(
                                             )
                                         }
                                     }
+                    })
+            }
+            item("secret") {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    InfoCard(title = "") {
+                        OutlinedTextField(
+                            value = secret,
+                            onValueChange = { secret = it.uppercase() },
+                            label = { Text(stringResource(R.string.secret_key_required)) },
+                            placeholder = { Text(stringResource(R.string.secret_key_example)) },
+                            leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null) },
+                            trailingIcon = {
+                                IconButton(onClick = { editorSections.reveal("advanced") },
+                                    modifier = Modifier.testTag("item_editor_otp_settings")) {
+                                    Icon(Icons.Default.MoreVert, stringResource(R.string.advanced_options))
                                 }
-                                OutlinedTextField(
-                                    value = title,
-                                    onValueChange = { title = it },
-                                    label = { Text(stringResource(R.string.totp_name_required)) },
-                                    placeholder = { Text(stringResource(R.string.totp_name_example)) },
-                                    leadingIcon = { Icon(Icons.Default.Label, contentDescription = null) },
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true,
-                                    isError = title.isBlank(),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                            }
-                        } else {
-                            OutlinedTextField(
-                                value = title,
-                                onValueChange = { title = it },
-                                label = { Text(stringResource(R.string.totp_name_required)) },
-                                placeholder = { Text(stringResource(R.string.totp_name_example)) },
-                                leadingIcon = { Icon(Icons.Default.Label, contentDescription = null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                isError = title.isBlank(),
-                                shape = RoundedCornerShape(12.dp)
+                            },
+                            modifier = Modifier.fillMaxWidth().testTag("item_editor_secret"),
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.secret_key_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    MonicaExpandableContent(expanded = inlinePreviewVisible) {
+                        previewTotpData?.let { previewData ->
+                            InlineTotpPreviewCard(
+                                totpData = previewData,
+                                currentSeconds = inlinePreviewCurrentSeconds,
+                                progressTimeMillis = inlinePreviewProgressTimeMillis,
+                                timeOffset = settings.totpTimeOffset,
+                                smoothProgress = settings.validatorSmoothProgress,
+                                modifier = Modifier.testTag("item_editor_otp_preview"),
+                                showHeader = false, showProgress = true
                             )
                         }
-                        
-                        if (title.isBlank()) {
-                            Text(
-                                text = stringResource(R.string.enter_name),
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
+                    }
+                    if (!isEditing) {
+                        FilledTonalButton(onClick = onScanQrCode, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.scan_qr_code))
                         }
-
-                        // Secret Key + Scan
-                        Column {
-                            OutlinedTextField(
-                                value = secret,
-                                onValueChange = { secret = it.uppercase() },
-                                label = { Text(stringResource(R.string.secret_key_required)) },
-                                placeholder = { Text(stringResource(R.string.secret_key_example)) },
-                                leadingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null) },
-                                modifier = Modifier.fillMaxWidth(),
-                                isError = secret.isBlank(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            
-                            Text(
-                                text = stringResource(R.string.secret_key_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (secret.isBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                            )
-
-                            MonicaExpandableContent(
-                                expanded = inlinePreviewVisible
-                            ) {
-                                previewTotpData?.let { previewData ->
-                                    InlineTotpPreviewCard(
-                                        totpData = previewData,
-                                        currentSeconds = inlinePreviewCurrentSeconds,
-                                        progressTimeMillis = inlinePreviewProgressTimeMillis,
-                                        timeOffset = settings.totpTimeOffset,
-                                        smoothProgress = settings.validatorSmoothProgress,
-                                        modifier = Modifier.padding(top = 10.dp),
-                                        showHeader = false,
-                                        showProgress = false
-                                    )
-                                }
-                            }
-
-                            if (!isEditing) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    FilledTonalButton(
-                                        onClick = onScanQrCode,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.QrCodeScanner,
-                                            contentDescription = null
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = stringResource(R.string.scan_qr_code))
-                                    }
-                                    OutlinedButton(
-                                        onClick = { showImportUriDialog = true },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Link,
-                                            contentDescription = null
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = stringResource(R.string.totp_import_uri_action))
-                                    }
-                                }
-                            }
+                        OutlinedButton(onClick = { showImportUriDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.Link, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.totp_import_uri_action))
                         }
-                        
+                    }
+                }
+            }
+            item("account") {
+                InfoCard(title = "") {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         // Issuer
                         OutlinedTextField(
                             value = issuer,
@@ -933,8 +889,9 @@ fun AddEditTotpScreen(
             }
 
             // Notes Card
-            item {
-                InfoCard(title = stringResource(R.string.section_notes)) {
+            if (editorSections.visible("notes", notes.isNotBlank())) item("notes") {
+                ItemEditorOptionalSection(editorSections, "notes", notes.isNotBlank()) {
+InfoCard(title = stringResource(R.string.section_notes)) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // Notes
                         OutlinedTextField(
@@ -951,16 +908,13 @@ fun AddEditTotpScreen(
                     }
                 }
             }
+            }
 
             // Advanced Options
-            item {
-                MonicaExpandableCard(
-                    title = stringResource(R.string.advanced_options),
-                    icon = Icons.Default.Settings,
-                    expanded = showAdvanced,
-                    onExpandedChange = { showAdvanced = it }
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (editorSections.visible("advanced", selectedOtpType != OtpType.TOTP || period != "30" || digits != "6" || algorithm != "SHA1" || pin.isNotBlank() || counter != "0")) item("advanced") {
+                ItemEditorOptionalSection(editorSections, "advanced", selectedOtpType != OtpType.TOTP || period != "30" || digits != "6" || algorithm != "SHA1" || pin.isNotBlank() || counter != "0") {
+                    InfoCard(title = stringResource(R.string.advanced_options)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         OtpTypeSelector(selectedOtpType, onChange = { type ->
                             selectedOtpType = type
                             val updated = OtpParametersDraft(period, digits, algorithm, counter, pin).selectType(type)
@@ -970,6 +924,7 @@ fun AddEditTotpScreen(
                         })
                         OtpParameterFields(
                             type = selectedOtpType,
+                            compact = true,
                             draft = OtpParametersDraft(period, digits, algorithm, counter, pin),
                             onChange = { updated ->
                                 period = updated.period
@@ -980,18 +935,16 @@ fun AddEditTotpScreen(
                             },
                         )
                     }
+
+                    }
                 }
             }
 
             // Association Options
-            item {
-                MonicaExpandableCard(
-                    title = stringResource(R.string.association_options),
-                    icon = Icons.Default.Link,
-                    expanded = showAssociation,
-                    onExpandedChange = { showAssociation = it }
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (editorSections.visible("association", link.isNotBlank() || associatedApp.isNotBlank() || boundPasswordId != null)) item("association") {
+                ItemEditorOptionalSection(editorSections, "association", link.isNotBlank() || associatedApp.isNotBlank() || boundPasswordId != null) {
+                    InfoCard(title = stringResource(R.string.association_options)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         OutlinedTextField(
                             value = link,
                             onValueChange = { link = it },
@@ -1004,6 +957,7 @@ fun AddEditTotpScreen(
                         )
 
                         AppSelectorField(
+                            grouped = true,
                             selectedPackageName = associatedApp,
                             selectedAppName = associatedAppName,
                             onAppSelected = { packageName, name ->
@@ -1013,31 +967,49 @@ fun AddEditTotpScreen(
                         )
 
                         if (passwordViewModel != null) {
-                            OutlinedButton(
+                            FilledTonalButton(
                                 onClick = { showPasswordSelectionDialog = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                                shape = RoundedCornerShape(4.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                )
                             ) {
                                 Icon(Icons.Default.Link, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (boundPasswordId != null) stringResource(R.string.bound_password_change) else stringResource(R.string.bind_password))
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(if (boundPasswordId != null) stringResource(R.string.bound_password_change) else stringResource(R.string.bind_password),
+                                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                                Icon(Icons.Default.ChevronRight, contentDescription = null)
                             }
-                            
+
                             if (boundPasswordId != null) {
                                 TextButton(
-                                    onClick = { 
+                                    onClick = {
                                         boundPasswordId = null
                                         link = ""
                                         associatedApp = ""
                                     },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                                    shape = RoundedCornerShape(4.dp),
+                                    colors = ButtonDefaults.textButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                                 ) {
                                     Text(stringResource(R.string.unbind), color = MaterialTheme.colorScheme.error)
                                 }
                             }
                         }
                     }
+
+                    }
                 }
+            }
+            item("add_content") {
+                ItemEditorAddContent(editorSections, options = listOf(
+                    ItemEditorContentOption("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank())),
+                    ItemEditorContentOption("association", R.string.association_options, Icons.Default.Link, editorSections.visible("association", link.isNotBlank() || associatedApp.isNotBlank() || boundPasswordId != null)),
+                    ItemEditorContentOption("advanced", R.string.advanced_options, Icons.Default.Tune, editorSections.visible("advanced", selectedOtpType != OtpType.TOTP || period != "30" || digits != "6" || algorithm != "SHA1" || pin.isNotBlank() || counter != "0")),
+                ), enabled = !isSaving)
             }
             }
         }
@@ -1129,6 +1101,14 @@ fun AddEditTotpScreen(
 
     if (showCustomIconDialog) {
         CustomIconActionDialog(
+            onSubscribedIconSelected = { fileName ->
+                if (customIconType == PASSWORD_ICON_TYPE_UPLOADED && customIconValue != fileName && !isOriginalUploadedIconFile(customIconValue)) {
+                    PasswordCustomIconStore.deleteIconFile(context, customIconValue)
+                }
+                customIconType = PASSWORD_ICON_TYPE_UPLOADED
+                customIconValue = fileName
+                customIconUpdatedAt = System.currentTimeMillis()
+            },
             showEmojiAction = false,
             showClearAction = customIconType != PASSWORD_ICON_TYPE_NONE,
             onPickFromLibrary = {
@@ -1250,26 +1230,8 @@ private fun InfoCard(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            content()
-        }
+    CompositionLocalProvider(LocalEntryContentStyle provides true) {
+        TemplateFormSection(title) { content() }
     }
 }
 

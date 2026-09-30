@@ -68,7 +68,8 @@ fun BankCardDetailScreen(
     cardId: Long,
     onNavigateBack: () -> Unit,
     onEditCard: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    embeddedAccess: takagi.ru.monica.attachments.EmbeddedWalletAccess? = null
 ) {
     val context = LocalContext.current
     val database = remember { PasswordDatabase.getDatabase(context) }
@@ -91,8 +92,8 @@ fun BankCardDetailScreen(
     val imageManager = remember { ImageManager(context) }
     
     // Load card details and images
-    LaunchedEffect(cardId) {
-        viewModel.getCardById(cardId)?.let { item ->
+    LaunchedEffect(cardId, embeddedAccess) {
+        (embeddedAccess?.snapshot?.displayItem() ?: viewModel.getCardById(cardId))?.let { item ->
             cardItem = item
             cardData = viewModel.parseCardData(item.itemData)
 
@@ -168,11 +169,30 @@ fun BankCardDetailScreen(
             null
         }
     }
-    val cardFaceBitmap = rememberCardFaceBitmap(
+    val standaloneCardFaceBitmap = rememberCardFaceBitmap(
         item = cardItem,
         imageAttachmentName = cardData?.cardFace?.imageAttachmentName,
         maxDimension = 1200
     )
+    var embeddedFace by remember(embeddedAccess) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(embeddedAccess) {
+        val access = embeddedAccess ?: return@LaunchedEffect
+        for (asset in access.snapshot.assets) {
+            val bitmap = when (asset.role) {
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.CARD_FACE,
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.FRONT,
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.BACK -> access.image(asset.name)
+                else -> null
+            }
+            when (asset.role) {
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.CARD_FACE -> embeddedFace = bitmap
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.FRONT -> frontImageBitmap = bitmap
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.BACK -> backImageBitmap = bitmap
+                else -> Unit
+            }
+        }
+    }
+    val cardFaceBitmap = if (embeddedAccess != null) embeddedFace else standaloneCardFaceBitmap
     val cardFaceImageAllowed = attachmentBitwardenVault?.let { vault ->
         BitwardenVaultPremiumStore.isPremium(context, vault.id)
     } ?: true
@@ -191,7 +211,7 @@ fun BankCardDetailScreen(
             )
         },
         floatingActionButton = {
-            ActionStrip(
+            if (embeddedAccess == null) ActionStrip(
                 actions = listOf(
                     ActionStripItem(
                         icon = if (cardItem?.isFavorite == true) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -235,7 +255,8 @@ fun BankCardDetailScreen(
                         previewData = bankCardFacePreviewData(item.title, data),
                         config = data.cardFace,
                         bitmap = cardFaceBitmap,
-                        enabled = !isSavingCardFace,
+                        enabled = embeddedAccess == null && !isSavingCardFace,
+                        showHint = embeddedAccess == null,
                         onClick = { showCardFaceCustomizer = true }
                     )
                 }
@@ -506,10 +527,13 @@ fun BankCardDetailScreen(
                     }
                 }
 
-                AttachmentsDetailSection(
-                    owner = AttachmentOwner.secureItem(item.id),
-                    bitwardenContext = attachmentBitwardenContext,
-                    keepassContext = attachmentKeePassContext,
+                if (embeddedAccess?.isNative == true) takagi.ru.monica.attachments.ui.NativeEmbeddedWalletAttachments(embeddedAccess)
+                else AttachmentsDetailSection(
+                    owner = embeddedAccess?.owner ?: AttachmentOwner.secureItem(item.id),
+                    includedFileNames = embeddedAccess?.snapshot?.assets?.filter { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.ATTACHMENT }?.map { it.name }?.toSet(),
+                    displayFileNames = embeddedAccess?.snapshot?.assets?.associate { it.name to it.displayName }.orEmpty(),
+                    bitwardenContext = embeddedAccess?.bitwardenContext ?: attachmentBitwardenContext,
+                    keepassContext = embeddedAccess?.keepassContext ?: attachmentKeePassContext,
                     hideManagedCardFaces = true,
                     excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.BANK_CARD) +
                         listOfNotNull(cardData?.cardFace?.imageAttachmentName)

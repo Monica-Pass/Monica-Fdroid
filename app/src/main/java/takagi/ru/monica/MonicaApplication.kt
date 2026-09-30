@@ -76,6 +76,7 @@ class MonicaApplication : Application() {
         startupScope.launch {
             delay(POST_LAUNCH_DELAY_MS)
             MainThreadStallMonitor.start()
+            takagi.ru.monica.security.SecureStorageStartup.awaitReadyForMaintenance(this@MonicaApplication)
             scheduleKeePassRemoteUploadRecovery()
             syncLauncherEntryPointsWithSettings()
             startChangeTriggeredBackupObserver()
@@ -83,6 +84,7 @@ class MonicaApplication : Application() {
 
         startupScope.launch(Dispatchers.IO) {
             delay(HOUSEKEEPING_DELAY_MS)
+            takagi.ru.monica.security.SecureStorageStartup.awaitReadyForMaintenance(this@MonicaApplication)
             runAttachmentHousekeeping()
         }
     }
@@ -94,6 +96,7 @@ class MonicaApplication : Application() {
      * 观察者常驻，开关状态在回调里读取，用户改设置后无需重启。
      */
     private fun startChangeTriggeredBackupObserver() {
+        if (!takagi.ru.monica.security.SecureStorageStartup.readyForMaintenance) return
         runCatching {
             ChangeTriggeredBackupScheduler(this).start()
         }.onFailure { error ->
@@ -102,6 +105,7 @@ class MonicaApplication : Application() {
     }
 
     private fun scheduleKeePassRemoteUploadRecovery() {
+        if (!takagi.ru.monica.security.SecureStorageStartup.readyForMaintenance) return
         runCatching {
             KeePassRemoteUploadWorker.enqueueIfPending(this)
         }.onFailure { error ->
@@ -113,6 +117,7 @@ class MonicaApplication : Application() {
      * 附件子系统维护：扫描并删除 Room 已不再引用的密文孤儿文件。
      */
     private suspend fun runAttachmentHousekeeping() = withContext(Dispatchers.IO) {
+        if (!takagi.ru.monica.security.SecureStorageStartup.readyForMaintenance) return@withContext
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (powerManager.isPowerSaveMode) {
             Log.d(TAG, "Attachment housekeeping deferred while battery saver is active")

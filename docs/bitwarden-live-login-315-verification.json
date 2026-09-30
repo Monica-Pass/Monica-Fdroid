@@ -1,0 +1,52 @@
+{
+  "server": "Vaultwarden 1.37.3",
+  "advertisedCompatibilityVersion": "2026.6.0",
+  "imageDigest": "sha256:1587c45feaa479f1f5e8af3b00eded36bff77bcf1880cf8dbf0541706dd470e0",
+  "transport": "loopback HTTP via adb reverse, disposable test data only",
+  "runs": [
+    {
+      "startedAt": "2026-09-29T15:48:58.8152864+08:00",
+      "packageId": "takagi.ru.monica",
+      "testPackageId": "takagi.ru.monica.test",
+      "testSha256": "36CC69AA8593F9AE8710C3E00DE55D1CAAEEC60620DD0CDFB72F067117F998E6",
+      "classes": [
+        "takagi.ru.monica.bitwarden.ui.BitwardenLiveLoginTest"
+      ],
+      "appSha256": "37B01D8FB4EF30B211246604C48F2AAE7AA12F03D4B868D3D047DD5CA3930EBC",
+      "finishedAt": "2026-09-29T15:49:38.1069476+08:00",
+      "edition": "Main",
+      "suite": "LiveMfa",
+      "completed": true
+    },
+    {
+      "appSha256": "5F9013C1C2B03BF87C3A5004851CD15D75DA7BCCAE984B77A171223AC5114590",
+      "finishedAt": "2026-09-29T15:48:38.8456720+08:00",
+      "suite": "LiveMfa",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "packageId": "takagi.ru.monica.fdroid",
+      "completed": true,
+      "testSha256": "0DA5E5BF07C9D7233EF22395DAFA44A5FD9EFC3FF605688412A7087C9165D267",
+      "startedAt": "2026-09-29T15:47:55.8155715+08:00",
+      "classes": [
+        "takagi.ru.monica.bitwarden.ui.BitwardenLiveLoginTest"
+      ],
+      "edition": "Fdroid"
+    }
+  ],
+  "coverage": [
+    "random disposable account registration",
+    "reject wrong master password",
+    "master-password login and exact vault-key decryption",
+    "email-only challenge",
+    "real SMTP delivery into local Mailpit",
+    "reject wrong email code then retry successfully",
+    "combined email and TOTP challenge",
+    "reject wrong TOTP then retry with current code",
+    "exact vault-key decryption after both MFA methods"
+  ],
+  "limitations": [
+    "Authentication service integration on Android; live UI was not driven end-to-end. Separate UI instrumentation covers the picker and method dialog.",
+    "No real external SMTP, HTTPS/proxy configuration, enterprise SSO, Duo, hardware security key or passwordless Passkey flow was tested.",
+    "Original Docker containers/images/volumes were already absent when recovery was checked. No original service data was recovered."
+  ]
+}

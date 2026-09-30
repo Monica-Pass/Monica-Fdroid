@@ -214,6 +214,9 @@ class MdbxViewModel(
     suspend fun readNativeApiToken(databaseId: Long, entryId: String) =
         mdbx2Repository.readNativeApiToken(databaseId, entryId)
 
+    suspend fun readNativeApiTokenAttachment(token: NativeApiToken, attachmentId: String) =
+        mdbx2Repository.readNativeApiTokenAttachment(token, attachmentId)
+
     suspend fun deleteNativeApiToken(original: NativeApiToken) {
         mdbx2Repository.deleteNativeApiToken(original)
         nativeApiTokenList.invalidate(original.summary.databaseId)
@@ -242,8 +245,11 @@ class MdbxViewModel(
     suspend fun saveNativeApiToken(
         databaseId: Long, original: NativeApiToken?, title: String, payload: String, collectionId: String?,
         isFavorite: Boolean = original?.summary?.isFavorite ?: false,
-        metadata: String = original?.extras?.payload ?: takagi.ru.monica.data.ApiTokenMetadata.empty()
-    ): NativeApiTokenSummary = mdbx2Repository.saveNativeApiToken(databaseId, original, title, payload, collectionId, isFavorite, metadata)
+        metadata: String = original?.extras?.payload ?: takagi.ru.monica.data.ApiTokenMetadata.empty(),
+        uploads: List<takagi.ru.monica.data.NativeApiTokenUpload> = emptyList(),
+        removedAttachmentIds: Set<String> = emptySet(),
+    ): NativeApiTokenSummary = mdbx2Repository.saveNativeApiToken(databaseId, original, title, payload, collectionId, isFavorite, metadata,
+        uploads = uploads, removedAttachmentIds = removedAttachmentIds)
         .also { nativeApiTokenList.invalidate(databaseId) }
 
     private val vaultStore: MdbxRepository = MdbxRepositoryRouter(
@@ -3287,6 +3293,10 @@ class MdbxViewModel(
             ?: throw IllegalStateException("Vault not found")
         var entries: List<MdbxStoredVaultEntry> = emptyList()
         val readMs = measureTimeMillis {
+            if (database.engineTypeEnum == MdbxEngineType.RUST_MDBX2 &&
+                database.sourceTypeEnum == MdbxSourceType.LOCAL_INTERNAL) {
+                mdbx2Repository.repairReadablePasswordCiphertexts(databaseId)
+            }
             entries = vaultStore.readStoredEntries(databaseId)
         }
         val payloadByEntryId = mutableMapOf<String, JSONObject>()
@@ -4468,6 +4478,7 @@ class MdbxViewModel(
         require(state.vaultId != null && state.bootstrapCheckpoint != null) {
             "MDBX2 remote sync is not initialized; reconnect the vault to register its bootstrap"
         }
+        mdbx2Repository.repairReadablePasswordCiphertexts(database.id)
         val report = mdbx2RemoteSyncCoordinator.synchronize(
             databaseId = database.id,
             remoteVaultPath = remotePath,

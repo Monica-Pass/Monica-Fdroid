@@ -50,11 +50,12 @@ internal fun WalletStackCard(
     entry: WalletStackListEntry.Stack,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onManage: () -> Unit,
+    onManage: (() -> Unit)?,
     onCoverBounds: (Rect) -> Unit,
     coverVisible: Boolean = true,
     controlsVisible: Boolean = coverVisible,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cardFace: @Composable (WalletListItem, Modifier) -> Unit = { card, faceModifier -> WalletStackFace(card, faceModifier) },
 ) {
     val navigation = LocalAnimatedVisibilityScope.current?.transition
     // Keep controls at their list size; reveal them after the moving card has returned.
@@ -88,7 +89,7 @@ internal fun WalletStackCard(
                     .graphicsLayer { alpha = if (coverVisible) 1f else 0f }
             ) {
                 WalletStackBackplates((entry.cards.size - 1).coerceAtMost(3), Modifier.fillMaxSize())
-                WalletStackFace(entry.cover, Modifier.fillMaxSize())
+                cardFace(entry.cover, Modifier.fillMaxSize())
                 WalletStackControls(entry.cards.size, onManage,
                     enabled = controlsVisible,
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
@@ -101,7 +102,7 @@ internal fun WalletStackCard(
 @Composable
 internal fun WalletStackControls(
     cardCount: Int,
-    onManage: () -> Unit,
+    onManage: (() -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
@@ -112,13 +113,13 @@ internal fun WalletStackControls(
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Row(
-            modifier = Modifier.padding(start = 12.dp),
+            modifier = Modifier.padding(start = 12.dp, end = if (onManage == null) 12.dp else 0.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.Layers, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
             Text(stringResource(R.string.wallet_stack_count, cardCount), style = MaterialTheme.typography.labelMedium)
-            IconButton(onClick = onManage, enabled = enabled, modifier = Modifier.testTag("wallet_stack_manage")) {
+            if (onManage != null) IconButton(onClick = onManage, enabled = enabled, modifier = Modifier.testTag("wallet_stack_manage")) {
                 Icon(Icons.Default.MoreVert, stringResource(R.string.wallet_stack_manage))
             }
         }

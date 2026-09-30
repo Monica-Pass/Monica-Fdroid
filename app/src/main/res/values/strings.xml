@@ -3386,7 +3386,6 @@
     <string name="nationality_example">e.g. China</string>
     <string name="qr_camera_permission_title">Camera permission required</string>
     <string name="qr_not_found">No QR code found</string>
-    <string name="qr_image_read_failed">Could not read the image, please try another one</string>
     <string name="qr_align_hint">Align the QR code with the scanning frame</string>
     <string name="qr_pick_from_gallery">Pick from gallery</string>
     <string name="qr_invalid_authenticator">Invalid QR code. Please scan a valid authenticator QR code.</string>
@@ -4693,4 +4692,5 @@
     <string name="field_barcode_linear_too_wide">This barcode needs more screen width. Rotate your device or use a QR code.</string>
     <string name="language_snow_leopard" translatable="false">芝士雪豹语</string>
     <string name="qs_lang_snow_leopard" translatable="false">芝士雪豹语</string>
+    <string name="cg_vault_frequent">Frequently used in vault</string>
 </resources>

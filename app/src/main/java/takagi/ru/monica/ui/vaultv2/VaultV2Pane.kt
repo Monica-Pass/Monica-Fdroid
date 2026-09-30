@@ -2035,6 +2035,7 @@ fun VaultV2Pane(
             database.supports(MdbxCapability.REMOTE_SYNC)
         ) {
 			MdbxPathSyncState(
+                lastSyncStatus = database.lastSyncStatus,
 				pendingCount = database.mdbxPathPendingSyncCount(mdbxPendingSyncCounts[database.id]),
 				isSyncing = mdbxOperationState is MdbxViewModel.OperationState.Loading,
 				onSync = {
@@ -5512,40 +5513,4 @@ private fun vaultV2LazyIndexForItemIndex(
 	return sectionLayouts.lastOrNull()?.let { lastSection ->
 		lastSection.firstItemLazyIndex + lastSection.items.lastIndex.coerceAtLeast(0)
 	} ?: 0
-}
-
-private fun vaultV2ItemIndexForLazyIndex(
-	sectionLayouts: List<VaultV2SectionLayout>,
-	lazyIndex: Int,
-): Int {
-	for (section in sectionLayouts) {
-		val headerIndex = section.firstItemLazyIndex - 1
-		val lastItemLazyIndex = section.firstItemLazyIndex + section.items.lastIndex.coerceAtLeast(0)
-		if (lazyIndex <= headerIndex) {
-			return section.itemStartIndex
-		}
-		if (lazyIndex in section.firstItemLazyIndex..lastItemLazyIndex) {
-			return section.itemStartIndex + (lazyIndex - section.firstItemLazyIndex)
-		}
-	}
-	return sectionLayouts.lastOrNull()?.let { lastSection ->
-		lastSection.itemStartIndex + lastSection.items.lastIndex.coerceAtLeast(0)
-	} ?: 0
-}
-
-private fun vaultV2SectionTitleForLazyIndex(
-	sectionLayouts: List<VaultV2SectionLayout>,
-	lazyIndex: Int,
-): String? {
-	for (section in sectionLayouts) {
-		val headerIndex = section.firstItemLazyIndex - 1
-		val lastItemLazyIndex = section.firstItemLazyIndex + section.items.lastIndex.coerceAtLeast(0)
-		if (lazyIndex <= headerIndex) {
-			return section.title
-		}
-		if (lazyIndex in section.firstItemLazyIndex..lastItemLazyIndex) {
-			return section.title
-		}
-	}
-	return sectionLayouts.lastOrNull()?.title
 }

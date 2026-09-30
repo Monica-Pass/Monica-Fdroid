@@ -264,13 +264,7 @@ fun MdbxWebDavCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    MdbxEngineTypeSection(
-                        selectedEngine = selectedEngine,
-                        onEngineChange = { selectedEngine = it },
-                        remote = true,
-                        selectedTigaMode = selectedTigaMode,
-                        onTigaModeChange = { selectedTigaMode = it }
-                    )
+                    MdbxTigaModeSelector(selectedTigaMode, { selectedTigaMode = it })
 
                     MdbxCard(
                         modifier = Modifier.fillMaxWidth(),

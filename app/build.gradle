@@ -15,7 +15,7 @@ android {
     // namespace 与主仓保持一致，仅 applicationId 区分 F-Droid 身份，
     // 避免 R/BuildConfig 包名漂移导致全量源码改动。
     namespace 'takagi.ru.monica'
-    compileSdk 35
+    compileSdk 36
 
     def sanitizeTag = { raw, fallback ->
         def value = raw?.toString()?.trim()

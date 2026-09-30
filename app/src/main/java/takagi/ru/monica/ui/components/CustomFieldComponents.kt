@@ -619,6 +619,7 @@ fun CustomFieldEditorSection(
     onExpandedChange: (Boolean) -> Unit = {},
     saveTextState: Boolean = true,
     contentStyle: Boolean = rememberEntryContentStyle(),
+    showAddButton: Boolean = true,
 ) {
     Column(modifier = modifier) {
         fields.forEachIndexed { index, field ->
@@ -642,9 +643,9 @@ fun CustomFieldEditorSection(
             }
         }
         
-        if (contentStyle) {
+        if (showAddButton && contentStyle) {
             EntryContentFieldButton(fields, onFieldsChange)
-        } else {
+        } else if (showAddButton) {
         AddCustomFieldButton(
             onClick = {
                 val newList = fields.toMutableList()
@@ -670,14 +671,13 @@ fun CustomFieldDisplayCard(
     onCreateSend: ((title: String, text: String) -> Unit)? = null,
 ) {
     if (fields.isEmpty()) return
-    DetailCardSurface(modifier) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.EditNote, null, tint = MaterialTheme.colorScheme.primary)
-                Text(stringResource(R.string.custom_field_title), style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+    DetailSectionLayout(stringResource(R.string.custom_field_title), modifier) {
+        fields.forEachIndexed { index, field ->
+            androidx.compose.runtime.key(field.entryId, field.id, index) {
+                DetailGroupItem(index, fields.size) {
+                    CustomFieldDetailRow(field, { label -> onCopyField(label, field.value) }, onCreateSend)
+                }
             }
-            CustomFieldDetailRows(fields, onCopyField, onCreateSend)
         }
     }
 }

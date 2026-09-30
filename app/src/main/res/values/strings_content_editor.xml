@@ -1,0 +1,5 @@
+<resources>
+    <string name="entry_content_remove_title">Delete %1$s?</string>
+    <string name="entry_content_remove_message">This removes the content from this draft. Changes take effect when you save.</string>
+    <string name="entry_content_drag">Hold and drag to reorder</string>
+</resources>

@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">Ключ API</string>
+    <string name="content_block_api_token">Токен API</string>
+    <string name="content_block_ssh">Ключ SSH</string>
+    <string name="content_block_gpg">Ключ GPG</string>
+    <string name="content_block_qr">QR-код</string>
+    <string name="content_block_key">Ключ</string>
+    <string name="content_block_token">Токен</string>
+    <string name="content_block_provider">Провайдер</string>
+    <string name="content_block_url">Адрес API</string>
+    <string name="content_block_algorithm">Алгоритм</string>
+    <string name="content_block_public">Открытый ключ</string>
+    <string name="content_block_private">Закрытый ключ</string>
+    <string name="content_block_fingerprint">Отпечаток</string>
+    <string name="content_block_identity">Идентификатор / комментарий</string>
+    <string name="content_block_content">Текст или ссылка</string>
+    <string name="content_block_import">Импорт из файла</string>
+    <string name="content_block_export">Экспорт в файл</string>
+    <string name="content_block_unavailable">Неподдерживаемое содержимое</string>
+    <string name="content_block_preserved">Исходное содержимое сохранено. Для редактирования используйте совместимую версию.</string>
+    <string name="content_block_save_error">Не удалось сохранить или прочитать содержимое. Проверьте файл и его размер (не более 256 KiB).</string>
+    <string name="content_block_more">Другое содержимое</string>
+    <string name="content_block_key_size">Длина ключа</string>
+    <string name="content_block_format">Формат</string>
+    <string name="content_block_qr_error">Содержимое слишком длинное для QR-кода. Его можно просмотреть или скопировать целиком.</string>
+</resources>

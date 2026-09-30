@@ -71,7 +71,7 @@ class VaultOverviewPickerScreenTest {
     @Test fun bankBrandAndTailDistinguishCardsAndSelectionsSurviveDatabaseFilters() {
         showPicker(wallet = true, dark = true)
         val first = compose.onNodeWithTag("overview_pin_row_bank_card:1")
-        first.assertIsOn().assertTextContains("Test bank 1").assertTextContains("•••• 0001")
+        first.assertIsOn().assertTextContains("Test bank 1 · Demo").assertTextContains("•••• 0001")
         compose.onNodeWithTag("overview_pin_brand_bank_card:1", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("overview_pin_row_password:10").assertDoesNotExist()
         val position = first.fetchSemanticsNode().boundsInRoot
@@ -80,7 +80,7 @@ class VaultOverviewPickerScreenTest {
         first.performClick().assertIsOn()
         chooseDatabase("work@example.test")
         first.assertDoesNotExist()
-        compose.onNodeWithTag("overview_pin_row_bank_card:3").assertIsOff().assertTextContains("Work Bank").performClick().assertIsOn()
+        compose.onNodeWithTag("overview_pin_row_bank_card:3").assertIsOff().assertTextContains("Work Bank · Demo").performClick().assertIsOn()
         chooseDatabase(context.getString(R.string.category_selection_menu_local_database))
         first.assertIsOn()
         compose.onNodeWithTag("overview_pin_row_bank_card:3").assertDoesNotExist()
@@ -89,6 +89,7 @@ class VaultOverviewPickerScreenTest {
         compose.onNodeWithTag("overview_pin_done").performClick()
         compose.onNodeWithTag("overview_pin_sheet").assertDoesNotExist()
         compose.onNodeWithText("Open picker").performClick()
+        waitForPicker()
         compose.onNodeWithTag("overview_pin_row_bank_card:3").assertIsOn()
         compose.runOnIdle { assertEquals("local", config.scope); assertEquals(3, config.pinnedCards.size) }
     }

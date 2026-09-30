@@ -4,6 +4,8 @@ import androidx.compose.ui.res.stringResource
 import takagi.ru.monica.R
 import androidx.annotation.StringRes
 import androidx.compose.ui.platform.LocalContext
+import takagi.ru.monica.bitwarden.service.BitwardenTwoFactorPolicy
+import androidx.compose.ui.platform.testTag
 import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -66,6 +68,7 @@ fun BitwardenLoginScreen(
     totpSuggestions: List<ParsedTotpItem> = emptyList()
 ) {
     val loginState by viewModel.loginState.collectAsState()
+    val sendingEmail by viewModel.sendingTwoFactorEmail.collectAsState()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     
@@ -94,7 +97,6 @@ fun BitwardenLoginScreen(
     var selectedTwoFactorMethod by remember { mutableStateOf(0) }
     var availableTwoFactorMethods by remember { mutableStateOf<List<Int>>(emptyList()) }
     var twoFactorStatusMessage by remember { mutableStateOf<String?>(null) }
-    var hasAutoRequestedEmailTwoFactor by remember { mutableStateOf(false) }
     var showCaptchaDialog by remember { mutableStateOf(false) }
     var captchaResponse by remember { mutableStateOf("") }
     var captchaMessage by remember { mutableStateOf(context.getString(R.string.legacy_ui_captcha_needed)) }
@@ -140,6 +142,7 @@ fun BitwardenLoginScreen(
 
     fun submitTwoFactorLogin(captcha: String? = null) {
         if (twoFactorCode.isBlank()) return
+        showTwoFactorDialog = true
         viewModel.loginWithTwoFactor(
             twoFactorCode = twoFactorCode,
             twoFactorMethod = selectedTwoFactorMethod,
@@ -153,16 +156,18 @@ fun BitwardenLoginScreen(
             when (event) {
                 is BitwardenViewModel.BitwardenEvent.ShowTwoFactorDialog -> {
                     availableTwoFactorMethods = event.methods
-                    selectedTwoFactorMethod = choosePreferredTwoFactorMethod(event.methods)
+                    selectedTwoFactorMethod = event.methods.singleOrNull() ?: -1
                     twoFactorStatusMessage = null
-                    hasAutoRequestedEmailTwoFactor = false
                     showTwoFactorDialog = true
                 }
                 is BitwardenViewModel.BitwardenEvent.NavigateToVault -> {
+                    showTwoFactorDialog = false
+                    twoFactorCode = ""
                     onLoginSuccess()
                 }
                 is BitwardenViewModel.BitwardenEvent.ShowCaptchaDialog -> {
                     captchaForTwoFactor = event.forTwoFactor
+                    if (event.forTwoFactor) showTwoFactorDialog = false
                     captchaMessage = event.message
                     captchaSiteKey = event.siteKey
                     showCaptchaDialog = true
@@ -178,18 +183,6 @@ fun BitwardenLoginScreen(
         }
     }
 
-    LaunchedEffect(showTwoFactorDialog, selectedTwoFactorMethod) {
-        if (
-            showTwoFactorDialog &&
-            selectedTwoFactorMethod == BitwardenAuthService.TWO_FACTOR_EMAIL &&
-            !hasAutoRequestedEmailTwoFactor
-        ) {
-            hasAutoRequestedEmailTwoFactor = true
-            twoFactorStatusMessage = context.getString(R.string.legacy_ui_email_code_requesting)
-            viewModel.sendTwoFactorEmailLogin()
-        }
-    }
-    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -574,12 +567,13 @@ fun BitwardenLoginScreen(
     }
     
     // 两步验证对话框
-    if (showTwoFactorDialog) {
+    if (showTwoFactorDialog && !showTotpPicker) {
         TwoFactorDialog(
             availableMethods = availableTwoFactorMethods,
             selectedMethod = selectedTwoFactorMethod,
             onMethodSelected = {
                 selectedTwoFactorMethod = it
+                twoFactorCode = ""
                 twoFactorStatusMessage = null
             },
             code = twoFactorCode,
@@ -592,8 +586,9 @@ fun BitwardenLoginScreen(
                 twoFactorStatusMessage = context.getString(R.string.legacy_ui_email_code_requesting)
                 viewModel.sendTwoFactorEmailLogin()
             },
+            busy = loginState is BitwardenViewModel.LoginState.Loading,
+            sendingEmail = sendingEmail,
             onConfirm = {
-                showTwoFactorDialog = false
                 submitTwoFactorLogin()
             },
             onDismiss = {
@@ -713,45 +708,13 @@ fun BitwardenLoginScreen(
     }
 
     if (showTotpPicker) {
-        AlertDialog(
-            onDismissRequest = { showTotpPicker = false },
-            title = { Text(stringResource(R.string.legacy_ui_totp_from_monica)) },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    if (totpSuggestions.isEmpty()) {
-                        Text(stringResource(R.string.legacy_ui_totp_from_monica_empty))
-                    } else {
-                        totpSuggestions.forEach { parsed ->
-                            val code = remember(parsed.item.id) {
-                                runCatching { TotpGenerator.generateOtp(parsed.totpData) }.getOrNull()
-                            }
-                            if (!code.isNullOrBlank()) {
-                                TextButton(
-                                    onClick = {
-                                        twoFactorCode = code
-                                        showTotpPicker = false
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Text(parsed.item.title, maxLines = 1)
-                                        Text(
-                                            code,
-                                            style = MaterialTheme.typography.titleLarge,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showTotpPicker = false }) { Text(stringResource(R.string.cancel)) }
-            }
+        BitwardenTotpPickerDialog(
+            suggestions = totpSuggestions,
+            onCodeSelected = { twoFactorCode = it; showTotpPicker = false },
+            onDismiss = { showTotpPicker = false },
         )
     }
+
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -858,130 +821,94 @@ fun TwoFactorDialog(
     statusMessage: String?,
     onSendEmailCode: () -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    busy: Boolean = false,
+    sendingEmail: Boolean = false,
 ) {
+    val choosing = selectedMethod !in availableMethods
+    val supported = !choosing && BitwardenTwoFactorPolicy.supportsCode(selectedMethod)
+    val working = busy || sendingEmail
     AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                Icons.Outlined.VerifiedUser,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(stringResource(R.string.legacy_ui_two_factor))
-        },
+        onDismissRequest = { if (!working) onDismiss() },
+        modifier = Modifier.heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * .85f).dp)
+            .testTag("bitwarden_two_factor_dialog"),
+        title = { Text(if (choosing) stringResource(R.string.bitwarden_choose_method) else getTwoFactorMethodName(selectedMethod)) },
         text = {
-            Column {
-                Text(
-                    text = getTwoFactorInputGuide(selectedMethod),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                if (selectedMethod == BitwardenAuthService.TWO_FACTOR_EMAIL) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
-                        onClick = onSendEmailCode,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Outlined.Email, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.legacy_ui_email_code_send))
-                    }
-                }
-
-                if (!statusMessage.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = statusMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // 验证方式选择（如果有多种）
-                if (availableMethods.size > 1) {
-                    Text(
-                        text = stringResource(R.string.legacy_ui_verification_method),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    availableMethods.forEach { method ->
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            RadioButton(
-                                selected = selectedMethod == method,
-                                onClick = { onMethodSelected(method) }
-                            )
-                            Column(modifier = Modifier.padding(start = 8.dp, top = 10.dp)) {
-                                Text(text = getTwoFactorMethodName(method))
-                                val hint = getTwoFactorMethodHint(method)
-                                if (hint.isNotBlank()) {
-                                    Text(
-                                        text = hint,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (choosing) {
+                    val methods = availableMethods.filter { BitwardenTwoFactorPolicy.supportsCode(it) }
+                    if (methods.isEmpty()) Text(stringResource(R.string.bitwarden_two_factor_unsupported),
+                        style = MaterialTheme.typography.bodyMedium)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        methods.forEachIndexed { index, method ->
+                            val enabled = BitwardenTwoFactorPolicy.supportsCode(method)
+                            Surface(onClick = { onMethodSelected(method) }, enabled = enabled && !working,
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                    topStart = if (index == 0) 20.dp else 4.dp, topEnd = if (index == 0) 20.dp else 4.dp,
+                                    bottomStart = if (index == methods.lastIndex) 20.dp else 4.dp,
+                                    bottomEnd = if (index == methods.lastIndex) 20.dp else 4.dp),
+                                modifier = Modifier.fillMaxWidth().testTag("bitwarden_two_factor_method_$method")) {
+                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(getTwoFactorMethodName(method), style = MaterialTheme.typography.titleSmall)
+                                        if (!enabled) Text(stringResource(R.string.bitwarden_two_factor_unsupported_short),
+                                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    if (enabled) Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
                                 }
                             }
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                
-                OutlinedTextField(
-                    value = code,
-                    onValueChange = onCodeChange,
-                    label = { Text(getTwoFactorFieldLabel(selectedMethod)) },
-                    placeholder = { Text(getTwoFactorFieldPlaceholder(selectedMethod)) },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = if (isNumericTwoFactorCode(selectedMethod)) KeyboardType.Number else KeyboardType.Text,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { if (code.isNotBlank()) onConfirm() }
-                    ),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (onPickFromMonica != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = onPickFromMonica,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(rememberBringIntoViewOnFocusModifier())
-                    ) {
-                        Icon(Icons.Outlined.Key, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.legacy_ui_totp_from_monica))
+                } else {
+                    if (availableMethods.count { BitwardenTwoFactorPolicy.supportsCode(it) } > 1) TextButton(onClick = { onMethodSelected(-1) }, enabled = !working,
+                        modifier = Modifier.testTag("bitwarden_two_factor_change")) {
+                        Text(stringResource(R.string.bitwarden_change_method))
                     }
+                    Text(when {
+                        !supported -> stringResource(R.string.bitwarden_two_factor_unsupported)
+                        selectedMethod == BitwardenAuthService.TWO_FACTOR_EMAIL -> stringResource(R.string.bitwarden_email_action_hint)
+                        selectedMethod == BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR -> stringResource(R.string.bitwarden_totp_action_hint)
+                        else -> getTwoFactorInputGuide(selectedMethod)
+                    }, style = MaterialTheme.typography.bodyMedium)
+                    if (selectedMethod == BitwardenAuthService.TWO_FACTOR_EMAIL) {
+                        FilledTonalButton(onClick = onSendEmailCode, enabled = !working,
+                            modifier = Modifier.fillMaxWidth().testTag("bitwarden_two_factor_send_email")) {
+                            if (sendingEmail) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Outlined.Email, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(if (sendingEmail) R.string.legacy_ui_email_code_requesting else R.string.legacy_ui_email_code_send))
+                        }
+                    }
+                    if (selectedMethod == BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR && onPickFromMonica != null) {
+                        FilledTonalButton(onClick = onPickFromMonica, enabled = !working,
+                            modifier = Modifier.fillMaxWidth().testTag("bitwarden_two_factor_pick_totp")) {
+                            Icon(Icons.Outlined.Key, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.legacy_ui_totp_from_monica))
+                        }
+                    }
+                    if (!statusMessage.isNullOrBlank()) Text(statusMessage, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (supported) OutlinedTextField(
+                        value = code, onValueChange = onCodeChange, enabled = !working,
+                        label = { Text(getTwoFactorFieldLabel(selectedMethod)) },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = if (isNumericTwoFactorCode(selectedMethod)) KeyboardType.Number else KeyboardType.Text,
+                            imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { if (!working && code.isNotBlank()) onConfirm() }),
+                        singleLine = true, modifier = Modifier.fillMaxWidth().testTag("bitwarden_two_factor_code"))
                 }
             }
         },
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                enabled = code.isNotBlank()
-            ) {
-                Text(stringResource(R.string.legacy_ui_verify))
-            }
+            if (!choosing && supported) Button(onClick = onConfirm, enabled = !working && code.isNotBlank(),
+                modifier = Modifier.testTag("bitwarden_two_factor_submit")) { Text(stringResource(R.string.legacy_ui_verify)) }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !working) { Text(stringResource(R.string.cancel)) } },
     )
 }
+
 
 /**
  * 获取两步验证方式名称
@@ -1056,17 +983,4 @@ private fun isNumericTwoFactorCode(method: Int): Boolean {
     return method == BitwardenAuthService.TWO_FACTOR_EMAIL ||
         method == BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR ||
         method == BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE
-}
-
-private fun choosePreferredTwoFactorMethod(methods: List<Int>): Int {
-    if (methods.isEmpty()) return BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR
-    return when {
-        methods.contains(BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE) ->
-            BitwardenAuthService.TWO_FACTOR_EMAIL_NEW_DEVICE
-        methods.contains(BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR) ->
-            BitwardenAuthService.TWO_FACTOR_AUTHENTICATOR
-        methods.contains(BitwardenAuthService.TWO_FACTOR_EMAIL) ->
-            BitwardenAuthService.TWO_FACTOR_EMAIL
-        else -> methods.first()
-    }
 }

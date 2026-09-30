@@ -1,0 +1,101 @@
+{
+  "status": "complete",
+  "version": "1.0.315",
+  "scope": "vault scrollbar rendering and date-section lookup; no storage format changes",
+  "source_copies_identical": true,
+  "files": [
+    "app/src/main/java/takagi/ru/monica/ui/components/ExpressiveLazyListScrollbar.kt",
+    "app/src/main/java/takagi/ru/monica/ui/MainScreenFab.kt",
+    "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt",
+    "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt",
+    "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2ScrollLookup.kt",
+    "app/src/androidTest/java/takagi/ru/monica/ui/vaultv2/VaultScrollbarPerformanceTest.kt",
+    "app/src/androidTest/java/takagi/ru/monica/ui/components/ExpressiveScrollbarInteractionTest.kt",
+    "app/src/test/java/takagi/ru/monica/ui/components/ExpressiveLazyListScrollbarTest.kt",
+    "app/src/test/java/takagi/ru/monica/ui/vaultv2/VaultV2ScrollLookupTest.kt"
+  ],
+  "same_row_drag": {
+    "pointer_moves": 20,
+    "before_recompositions": 20,
+    "ordinary_after": {
+      "pointerMoves": 20,
+      "recompositions": 0
+    },
+    "fdroid_after": {
+      "pointerMoves": 20,
+      "recompositions": 0
+    }
+  },
+  "section_lookup": {
+    "sections": 4096,
+    "old_reads_for_section_1025": 1025,
+    "new_max_reads": 13
+  },
+  "tests": {
+    "ordinary": {
+      "unit": [
+        {
+          "name": "components.ExpressiveLazyListScrollbarTest",
+          "passed": 11
+        },
+        {
+          "name": "vaultv2.VaultV2ScrollLookupTest",
+          "passed": 2
+        },
+        {
+          "name": "MainScreenFabFastScrollVisibilityTest",
+          "passed": 2
+        },
+        {
+          "name": "PasswordListScrollPerformanceGuardTest",
+          "passed": 1
+        }
+      ],
+      "unit_total": 16,
+      "device_interaction_passed": 5,
+      "real_card_performance_fixture_passed": true,
+      "debug_and_android_test_assemble": "passed"
+    },
+    "fdroid": {
+      "unit": [
+        {
+          "name": "components.ExpressiveLazyListScrollbarTest",
+          "passed": 11
+        },
+        {
+          "name": "vaultv2.VaultV2ScrollLookupTest",
+          "passed": 2
+        },
+        {
+          "name": "MainScreenFabFastScrollVisibilityTest",
+          "passed": 2
+        },
+        {
+          "name": "PasswordListScrollPerformanceGuardTest",
+          "passed": 1
+        }
+      ],
+      "unit_total": 16,
+      "device_interaction_passed": 5,
+      "real_card_performance_fixture_passed": true,
+      "debug_and_android_test_assemble": "passed"
+    }
+  },
+  "data": {
+    "takagi.ru.monica": {
+      "tables": 28,
+      "integrity": "ok",
+      "differences": {}
+    },
+    "takagi.ru.monica.fdroid": {
+      "tables": 28,
+      "integrity": "ok",
+      "differences": {}
+    }
+  },
+  "frame_measurement": {
+    "entries": 3000,
+    "note": "Real vault cards with mixed heights, warm-up and three round trips, debug API32 emulator. Before/after frame timing ranges overlap; no fixed FPS improvement claimed."
+  },
+  "git": "No commit, push, tag or release performed."
+}

@@ -128,6 +128,34 @@ class VaultOverviewPaneTest {
         compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
     }
 
+    @Test fun editedLocalEntryRefreshesRecentInOpenAndReturnedOverview() {
+        val oldTime = System.currentTimeMillis() - 30 * 86_400_000L
+        runBlocking {
+            (1L..24L).forEach { id ->
+                val entry = requireNotNull(database.passwordEntryDao().getPasswordEntryById(id))
+                database.passwordEntryDao().updatePasswordEntry(entry.copy(
+                    createdAt = java.util.Date(oldTime + id * 1000),
+                    updatedAt = java.util.Date(oldTime + id * 1000)))
+            }
+        }
+        showPane()
+        compose.runOnIdle { assertEquals(24L, state.overviewSnapshot?.recentItems?.first()?.passwordEntry?.id) }
+        fun edit(id: Long) {
+            runBlocking {
+                val entry = requireNotNull(database.passwordEntryDao().getPasswordEntryById(id))
+                database.passwordEntryDao().updatePasswordEntry(entry.copy(updatedAt = java.util.Date()))
+            }
+        }
+        edit(1L)
+        compose.waitUntil(15_000) { state.overviewSnapshot?.recentItems?.firstOrNull()?.passwordEntry?.id == 1L }
+        openOverviewNode("overview_type_PASSWORD")
+        edit(2L)
+        Espresso.pressBack()
+        compose.waitUntil(15_000) { state.overviewSnapshot?.recentItems?.firstOrNull()?.passwordEntry?.id == 2L }
+        compose.onNodeWithTag("overview_modules").performScrollToNode(hasTestTag("overview_recent_password:2"))
+        compose.onNodeWithTag("overview_recent_password:2").assertIsDisplayed()
+    }
+
     @Test fun typeNavigationUsesTheRealListAndBackRestoresTheOverview() {
         showPane()
         compose.onNodeWithTag("overview_modules").performScrollToNode(hasTestTag("overview_type_PASSWORD"))

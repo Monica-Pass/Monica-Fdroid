@@ -316,18 +316,19 @@ class BitwardenAuthService(
                 )
                 
                 // 检查是否需要两步验证
-                if (body.twoFactorProviders != null && body.twoFactorProviders.isNotEmpty()) {
+                val challengeProviders = BitwardenTwoFactorPolicy.providers(body)
+                if (challengeProviders.isNotEmpty()) {
                     logDiag(
                         flow = "primary",
                         attemptId = attemptId,
                         stage = "result_two_factor",
                         message =
-                            "code=${response.code()}, providers=${body.twoFactorProviders.joinToString(",")}, " +
+                            "code=${response.code()}, providers=${challengeProviders.joinToString(",")}, " +
                                 "latencyMs=${System.currentTimeMillis() - startMs}"
                     )
                     return@withContext Result.success(
                         LoginResult.TwoFactorRequired(
-                            providers = body.twoFactorProviders.mapNotNull { it.toIntOrNull() },
+                            providers = challengeProviders,
                             providersData = body.twoFactorProviders2,
                             // 保存中间状态用于后续两步验证
                             tempMasterKey = masterKey,
@@ -379,7 +380,7 @@ class BitwardenAuthService(
                 val errorResponse = parseTokenError(errorBody)
 
                 // 两步验证 (标准 2FA)
-                val providers = errorResponse?.twoFactorProviders?.mapNotNull { it.toIntOrNull() }
+                val providers = errorResponse?.let(BitwardenTwoFactorPolicy::providers)
                 if (!providers.isNullOrEmpty()) {
                     val tokenError = errorResponse
                     logDiag(
@@ -497,18 +498,19 @@ class BitwardenAuthService(
                             val retryBody = retryResponse.body() ?: return@withContext Result.failure(
                                 Exception("Empty login response on retry")
                             )
-                            if (retryBody.twoFactorProviders != null && retryBody.twoFactorProviders.isNotEmpty()) {
+                            val retryChallengeProviders = BitwardenTwoFactorPolicy.providers(retryBody)
+                            if (retryChallengeProviders.isNotEmpty()) {
                                 logDiag(
                                     flow = "primary",
                                     attemptId = attemptId,
                                     stage = "retry_keyguard_two_factor",
                                     message =
-                                        "code=${retryResponse.code()}, providers=${retryBody.twoFactorProviders.joinToString(",")}, " +
+                                        "code=${retryResponse.code()}, providers=${retryChallengeProviders.joinToString(",")}, " +
                                             "latencyMs=${System.currentTimeMillis() - startMs}"
                                 )
                                 return@withContext Result.success(
                                     LoginResult.TwoFactorRequired(
-                                        providers = retryBody.twoFactorProviders.mapNotNull { it.toIntOrNull() },
+                                        providers = retryChallengeProviders,
                                         providersData = retryBody.twoFactorProviders2,
                                         tempMasterKey = masterKey,
                                         tempStretchedKey = stretchedKey,
@@ -560,7 +562,7 @@ class BitwardenAuthService(
                             retrySummary =
                                 "code=${retryResponse.code()},error=${retryErrorResponse?.error},desc=${retryErrorResponse?.errorDescription}"
 
-                            val retryProviders = retryErrorResponse?.twoFactorProviders?.mapNotNull { it.toIntOrNull() }
+                            val retryProviders = retryErrorResponse?.let(BitwardenTwoFactorPolicy::providers)
                             if (!retryProviders.isNullOrEmpty()) {
                                 logDiag(
                                     flow = "primary",
@@ -706,6 +708,11 @@ class BitwardenAuthService(
         val attemptId = twoFactorState.diagnosticAttemptId ?: newAttemptId()
         val startMs = System.currentTimeMillis()
         try {
+            require(twoFactorProvider in twoFactorState.providers && BitwardenTwoFactorPolicy.supportsCode(twoFactorProvider)) {
+                strings.get(R.string.bitwarden_two_factor_unsupported)
+            }
+            val normalizedCode = BitwardenTwoFactorPolicy.normalizeCode(twoFactorProvider, twoFactorCode)
+            require(normalizedCode.isNotBlank()) { strings.get(R.string.legacy_ui_verification_code) }
             val urls = BitwardenApiFactory.inferServerUrls(serverUrl)
             val normalizedCaptcha = captchaResponse?.trim()?.takeIf { it.isNotBlank() }
             val headerProfile = twoFactorState.authHeaderProfile
@@ -738,7 +745,7 @@ class BitwardenAuthService(
                 captchaResponse = normalizedCaptcha,
                 deviceIdentifier = getDeviceId(),
                 // deviceName 使用默认值 "linux"
-                twoFactorToken = twoFactorCode.trim(),  // keyguard 也会 trim
+                twoFactorToken = normalizedCode,
                 twoFactorProvider = twoFactorProvider,
                 twoFactorRemember = if (remember) 1 else 0
             )

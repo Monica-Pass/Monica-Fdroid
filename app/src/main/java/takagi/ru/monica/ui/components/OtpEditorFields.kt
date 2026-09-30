@@ -71,13 +71,15 @@ fun OtpTypeSelector(type: OtpType, onChange: (OtpType) -> Unit, modifier: Modifi
 fun OtpParameterFields(
     type: OtpType, draft: OtpParametersDraft, onChange: (OtpParametersDraft) -> Unit,
     includeRequired: Boolean = true, includeAdvanced: Boolean = true,
+    compact: Boolean = false,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 12.dp)) {
         if (includeRequired && type == OtpType.HOTP) {
             OutlinedTextField(
                 value = draft.counter, onValueChange = { onChange(draft.copy(counter = it.filter { c -> c in '0'..'9' })) },
                 label = { Text(stringResource(R.string.initial_counter)) },
-                supportingText = { Text(stringResource(R.string.hotp_counter_hint)) },
+                supportingText = if (!compact || draft.counter.toLongOrNull()?.let { it >= 0 } != true)
+                    ({ Text(stringResource(R.string.hotp_counter_hint)) }) else null,
                 isError = draft.counter.toLongOrNull()?.let { it >= 0 } != true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("otp_counter"),
@@ -92,7 +94,8 @@ fun OtpParameterFields(
                     }
                 },
                 label = { Text(stringResource(R.string.pin_code)) },
-                supportingText = { if (type == OtpType.MOTP) Text(stringResource(R.string.motp_pin_hint)) },
+                supportingText = if (type == OtpType.MOTP && (!compact || draft.pin.length != 4 || draft.pin.any { it !in '0'..'9' }))
+                    ({ Text(stringResource(R.string.motp_pin_hint)) }) else null,
                 isError = type == OtpType.MOTP && (draft.pin.length != 4 || draft.pin.any { it !in '0'..'9' }),
                 visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = { IconButton(onClick = { visible = !visible }) {
@@ -118,7 +121,8 @@ fun OtpParameterFields(
                 value = draft.digits, onValueChange = { onChange(draft.copy(digits = it.filter { c -> c in '0'..'9' })) },
                 label = { Text(stringResource(R.string.code_digits)) }, enabled = !fixed,
                 isError = !fixed && draft.digits.toIntOrNull() !in 4..10,
-                supportingText = { Text(stringResource(if (type == OtpType.STEAM) R.string.steam_uses_5_chars else R.string.usually_6_digits)) },
+                supportingText = if (!compact || (!fixed && draft.digits.toIntOrNull() !in 4..10))
+                    ({ Text(stringResource(if (type == OtpType.STEAM) R.string.steam_uses_5_chars else R.string.usually_6_digits)) }) else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("otp_digits"),
             )

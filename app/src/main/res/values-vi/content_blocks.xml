@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">Khóa API</string>
+    <string name="content_block_api_token">Token API</string>
+    <string name="content_block_ssh">Khóa SSH</string>
+    <string name="content_block_gpg">Khóa GPG</string>
+    <string name="content_block_qr">Mã QR</string>
+    <string name="content_block_key">Khóa</string>
+    <string name="content_block_token">Token</string>
+    <string name="content_block_provider">Nhà cung cấp</string>
+    <string name="content_block_url">Điểm cuối API</string>
+    <string name="content_block_algorithm">Thuật toán</string>
+    <string name="content_block_public">Khóa công khai</string>
+    <string name="content_block_private">Khóa riêng tư</string>
+    <string name="content_block_fingerprint">Dấu vân tay</string>
+    <string name="content_block_identity">Danh tính / chú thích</string>
+    <string name="content_block_content">Văn bản hoặc liên kết</string>
+    <string name="content_block_import">Nhập từ tệp</string>
+    <string name="content_block_export">Xuất ra tệp</string>
+    <string name="content_block_unavailable">Nội dung chưa được hỗ trợ</string>
+    <string name="content_block_preserved">Nội dung gốc được giữ nguyên. Hãy dùng phiên bản tương thích để chỉnh sửa.</string>
+    <string name="content_block_save_error">Không thể lưu hoặc đọc nội dung. Kiểm tra tệp và kích thước (tối đa 256 KiB).</string>
+    <string name="content_block_more">Nội dung khác</string>
+    <string name="content_block_key_size">Độ dài khóa</string>
+    <string name="content_block_format">Định dạng</string>
+    <string name="content_block_qr_error">Nội dung quá dài để tạo mã QR. Bạn vẫn có thể xem hoặc sao chép toàn bộ nội dung.</string>
+</resources>

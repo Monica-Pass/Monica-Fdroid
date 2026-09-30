@@ -1,0 +1,11 @@
+<resources>
+    <string name="qr_template_custom">Custom QR template</string>
+    <string name="qr_template_literal">Plain text</string>
+    <string name="qr_template_mode">Field template</string>
+    <string name="qr_template_insert">Insert field</string>
+    <string name="qr_template_wifi">Wi-Fi preset</string>
+    <string name="qr_template_generate">Generate QR code</string>
+    <string name="qr_template_hint">Reads current fields when generated. Saves the template, not a resolved password copy. Wi-Fi templates escape inserted values automatically.</string>
+    <string name="qr_template_error">Unable to read the entry, save the template or generate the code. Check that the database is unlocked and the content is within limits, then retry.</string>
+    <string name="qr_template_field_error">Field “%1$s” is missing, unreadable or ambiguous. Select an available field before generating.</string>
+</resources>

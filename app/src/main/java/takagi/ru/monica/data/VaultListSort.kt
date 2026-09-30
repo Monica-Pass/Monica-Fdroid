@@ -2,6 +2,7 @@ package takagi.ru.monica.data
 
 /** Stable preference names; never persist enum ordinals. */
 enum class VaultListSort {
+    RECENT_DESC,
     TITLE_ASC,
     TITLE_DESC,
     CREATED_DESC,
@@ -10,7 +11,7 @@ enum class VaultListSort {
     UPDATED_ASC;
 
     val isAlphabetical: Boolean get() = this == TITLE_ASC || this == TITLE_DESC
-    val descending: Boolean get() = this == TITLE_DESC || this == CREATED_DESC || this == UPDATED_DESC
+    val descending: Boolean get() = this == RECENT_DESC || this == TITLE_DESC || this == CREATED_DESC || this == UPDATED_DESC
 
     companion object {
         fun fromStoredValue(value: String?): VaultListSort =

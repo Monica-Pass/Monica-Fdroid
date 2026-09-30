@@ -1,0 +1,92 @@
+{
+  "date": "2026-09-30",
+  "version": "1.0.315",
+  "status": "passed",
+  "emulator": "Monica_Issue136_API_32 / API 32 / x86_64",
+  "device_tests": {
+    "ordinary": 6,
+    "ordinary_final_bank_recheck": 2,
+    "fdroid": 6
+  },
+  "cold_start": {
+    "ordinary": "passed",
+    "fdroid": "passed"
+  },
+  "scope": "UI and existing-field save compatibility; no storage schema changes",
+  "source_files": [
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt",
+      "sha256": "5f4927cf1b970b2be422b0721af0b35685e73d22c46386f1648ca1b6a1e1a1cf"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt",
+      "sha256": "25154f29b700f7664145357b445b0f23f36219c0c15cdc9c9669b4ac9c4d138c"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt",
+      "sha256": "6acbd7df7ce317622985056dbca04971dfb0cb254d5120438e516ce5b4376abd"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBillingAddressScreen.kt",
+      "sha256": "1e0817f403b63f208740882fb79753c91262abd2f1d22fd131985112d7699ff9"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/components/ItemEditorComponents.kt",
+      "sha256": "de9193cbcb317af08ca5c75da3797096477fae4aa60a10f5153780fda1b2dc14"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/components/CustomFieldComponents.kt",
+      "sha256": "3a5b3044c3f474cf06e2db7a0bf33ba07de57315510865ca97a601b770666782"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/components/EntryPaymentFields.kt",
+      "sha256": "9c76ff0ce606b4d82ebf89a4bc360f941d14b68cb54e8ffa93c86123c3cb6b89"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/components/EntryAddressFields.kt",
+      "sha256": "7580973bed862e3259c0d18830140defb373562c9565ec913fffd2e22ed351e7"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/components/EntryContactFields.kt",
+      "sha256": "d040c246b65da73eec9d46eea08b0509192f482194ae6d5ec036e49259d98096"
+    },
+    {
+      "path": "app/src/androidTest/java/takagi/ru/monica/credentialexchange/UnifiedWalletEditorsDeviceTest.kt",
+      "sha256": "60890887209536d94518b3844a6c55197380b84c3300d60a107671a4e5abb930"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/cardwallet/CardFaceEditorState.kt",
+      "sha256": "b48075e18cb01bb7ad9b737caf47a6e8b6e967083f18a07064ddc47d70fb4277"
+    }
+  ],
+  "logs": [
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\main-verified-build.log",
+      "sha256": "34b2aa7bea37f1e75a9052df5e4b3b80443b8950325f6511615146f48cf85549"
+    },
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\fdroid-verified-build.log",
+      "sha256": "c2f20c6a56fd6ee6e12c2c6a8e1e6843665e13e0d83f852dd8a9237a580e93e5"
+    },
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\main-device-final.log",
+      "sha256": "1b8678408dc58454ae9836c1fa10c34962232542db8c7bfce7fd49d1089a986d"
+    },
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\main-bank-final.log",
+      "sha256": "b5f5b8518a4b72ac8ff1840a55ac889813c6bd0db154f7530bf702713fb8949a"
+    },
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\fdroid-device-final.log",
+      "sha256": "69eb8939c3315883141c8a8f440baf4cb31ca55f80e63b6837aa8a70c1690eb9"
+    },
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\main-startup.log",
+      "sha256": "ceddbcf8dbcfd6a304315265e7434fb2d2401b1391f35c401dbeb91fcbb7c0dc"
+    },
+    {
+      "path": ".codex-tasks\\unified-wallet-editors-315\\fdroid-startup.log",
+      "sha256": "cf9d0e3c101b6a70154dfbde933884eaaf4f65a8cf361b15fe64b5a404f09f6e"
+    }
+  ]
+}

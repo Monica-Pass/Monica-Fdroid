@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cg_symbols">随机符号</string>
+    <string name="cg_random_username">随机用户名</string>
+    <string name="cg_email_alias">邮箱加号别名</string>
+    <string name="cg_username_title">用户名生成器</string>
+    <string name="cg_valid_email">请输入有效的邮箱地址</string>
+    <string name="cg_invalid_options">请选择可用字符，并确保最少字符数之和不超过长度。</string>
+    <string name="cg_use">使用</string>
+    <string name="cg_saved_suggestions">常用建议</string>
+    <string name="cg_length">长度</string>
+    <string name="cg_words">单词数</string>
+    <string name="cg_minimum">最少数量</string>
+    <string name="cg_decrease">减少</string>
+    <string name="cg_increase">增加</string>
+    <string name="cg_vault_frequent">密码库常用</string>
+</resources>

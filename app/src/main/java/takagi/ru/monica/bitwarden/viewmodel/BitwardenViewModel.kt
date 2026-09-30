@@ -92,6 +92,8 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
     
     // 两步验证临时状态
     private var twoFactorState: LoginResult.TwoFactorRequired? = null
+    private val _sendingTwoFactorEmail = MutableStateFlow(false)
+    val sendingTwoFactorEmail = _sendingTwoFactorEmail.asStateFlow()
     private var pendingServerUrl: String? = null
     private var pendingTlsConfig: BitwardenTlsConfig? = null
     private val processStartMs = System.currentTimeMillis()
@@ -446,7 +448,10 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
+        if (_sendingTwoFactorEmail.value) return
+        _sendingTwoFactorEmail.value = true
         viewModelScope.launch {
+            try {
             val result = repository.sendTwoFactorEmailLogin(
                 twoFactorState = state,
                 serverUrl = pendingServerUrl,
@@ -460,6 +465,7 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
                     _events.emit(BitwardenEvent.ShowError(strings.get(R.string.legacy_ui_email_code_send_failed, repository.describeLoginError(error))))
                 }
             )
+            } finally { _sendingTwoFactorEmail.value = false }
         }
     }
     
@@ -1109,6 +1115,11 @@ class BitwardenViewModel(application: Application) : AndroidViewModel(applicatio
      * 重置登录状态
      */
     fun resetLoginState() {
+        if (_loginState.value is LoginState.Loading) return
+        twoFactorState?.clear()
+        twoFactorState = null
+        pendingServerUrl = null
+        pendingTlsConfig = null
         _loginState.value = LoginState.Idle
     }
     

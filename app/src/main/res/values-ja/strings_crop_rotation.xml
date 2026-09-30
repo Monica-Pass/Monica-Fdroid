@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">左に90°回転</string>
+    <string name="card_face_rotate_right">右に90°回転</string>
+    <string name="card_face_crop_rotation_hint">ドラッグで位置調整、ピンチで拡大・縮小、ボタンで回転や反転ができます。</string>
+    <string name="card_face_flip_horizontal">左右反転</string>
+    <string name="card_face_flip_vertical">上下反転</string>
+</resources>

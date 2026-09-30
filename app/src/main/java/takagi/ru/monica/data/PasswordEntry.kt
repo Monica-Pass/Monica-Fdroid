@@ -127,6 +127,10 @@ data class PasswordEntry(
 
     @ColumnInfo(name = "replica_group_id", defaultValue = "NULL")
     val replicaGroupId: String? = null,
+
+    // Explicit membership created by the multi-password editor, independent of storage object IDs.
+    @ColumnInfo(name = "password_group_id", defaultValue = "NULL")
+    val passwordGroupId: String? = null,
     
     // === Bitwarden 集成字段 ===
     // 当此条目来自 Bitwarden 时，以下字段有值

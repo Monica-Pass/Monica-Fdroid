@@ -18,7 +18,7 @@ fun EntryAddressFields(
     onPostalCode: (String) -> Unit, onCountry: (String) -> Unit,
     additionalStreet: (@Composable () -> Unit)? = null,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (LocalTemplateFieldShape.current) 2.dp else 12.dp)) {
         EntryAddressField(street, onStreet, R.string.street_address, "street")
         additionalStreet?.invoke()
         EntryAddressField(city, onCity, R.string.city, "city")

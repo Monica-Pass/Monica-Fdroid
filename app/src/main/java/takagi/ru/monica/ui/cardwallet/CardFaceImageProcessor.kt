@@ -92,12 +92,8 @@ object CardFaceImageProcessor {
             try {
                 Canvas(output).apply {
                     drawColor(Color.WHITE)
-                    val scale = width / region.width
-                    save()
-                    scale(scale, scale)
-                    translate(-region.left, -region.top)
-                    drawBitmap(source, 0f, 0f, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
-                    restore()
+                    drawCropSource(this, source, region, 0f, 0f, width.toFloat(),
+                        android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
                 }
                 val bytes = ByteArrayOutputStream().use { buffer ->
                     if (!output.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, buffer)) {
@@ -110,6 +106,32 @@ object CardFaceImageProcessor {
         } catch (error: CancellationException) { throw error }
         catch (_: OutOfMemoryError) { Result.failure(ImportException(Failure.DECODE_FAILED)) }
         catch (_: Exception) { Result.failure(ImportException(Failure.DECODE_FAILED)) }
+    }
+
+    /** Draw the original bitmap through one transform; rotating never reallocates or recompresses it. */
+    internal fun drawCropSource(canvas: Canvas, source: Bitmap, region: CardCropGeometry,
+        left: Float, top: Float, frameWidth: Float, paint: android.graphics.Paint) {
+        val checkpoint = canvas.save()
+        try {
+            val (width, height) = region.sourceSize(source.width, source.height)
+            canvas.translate(left, top)
+            val scale = frameWidth / region.width
+            canvas.scale(scale, scale)
+            canvas.translate(-region.left, -region.top)
+            // Transparent PNG/WebP pixels have the same white backing in preview and export.
+            val color = paint.color
+            paint.color = Color.WHITE
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            paint.color = color
+            if (region.flipHorizontal) { canvas.translate(width.toFloat(), 0f); canvas.scale(-1f, 1f) }
+            if (region.flipVertical) { canvas.translate(0f, height.toFloat()); canvas.scale(1f, -1f) }
+            when (region.quarterTurns.mod(4)) {
+                1 -> { canvas.translate(source.height.toFloat(), 0f); canvas.rotate(90f) }
+                2 -> { canvas.translate(source.width.toFloat(), source.height.toFloat()); canvas.rotate(180f) }
+                3 -> { canvas.translate(0f, source.width.toFloat()); canvas.rotate(270f) }
+            }
+            canvas.drawBitmap(source, 0f, 0f, paint)
+        } finally { canvas.restoreToCount(checkpoint) }
     }
 
     private fun decodeLegacy(sourceBytes: ByteArray, bounds: BitmapFactory.Options): Bitmap {

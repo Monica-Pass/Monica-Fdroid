@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_passkey_unavailable">The private key is missing or unreadable. Re-import a backup containing the private key, or check the original device. Other data and the remote backup were kept.</string>
+    <string name="backup_passkey_device_bound">This passkey uses a device-bound Android Keystore key that cannot be exported. It can still work on the original device, but cannot be included in a portable backup.</string>
+    <string name="backup_passkey_unreadable">The protected private key could not be read. Unlock Monica and retry; if this continues, check the original device or a backup containing the private key.</string>
+</resources>

@@ -50,6 +50,16 @@ class ApiKeyEntryFieldsTest {
         assertFalse(draft.toString().contains(draft.notes))
     }
 
+    @Test fun recordedAddressesDoNotPreventSavingOrBecomeExecutableLinks() {
+        listOf("hdhxnd", "api.example.org/v1", "localhost:11434", "javascript:alert(1)").forEach { address ->
+            val recorded = draft.copy(website = address, apiUrl = address)
+            assertTrue(recorded.isValid)
+            val recovered = ApiKeyDraft.from(recorded.toEntry(), recorded.customFields(emptyList()).associate { it.title to it.value })
+            assertEquals(recorded, recovered)
+            assertFalse(ApiKeyEntryFields.isValidOptionalUrl(address))
+        }
+    }
+
     @Test fun apiKeysNeverMatchLoginAutofillEvenWithExactAppAndDomain() {
         val login = PasswordEntry(id = 1, title = "AI", website = draft.website, username = "alice",
             password = "login-password", appPackageName = "com.example.ai")
@@ -66,6 +76,7 @@ class ApiKeyEntryFieldsTest {
     @Test fun providerKeysKeepIndependentDetailLinksAndDoNotMergeIntoPasswords() {
         val api = draft.toEntry().copy(id = 1)
         assertNotEquals(getPasswordInfoKey(api), getPasswordInfoKey(api.copy(id = 2)))
-        assertNotEquals(getPasswordInfoKey(api), getPasswordInfoKey(api.copy(loginType = "PASSWORD")))
+        // Distinct records have distinct identities; a type change on the same id is not another record.
+        assertNotEquals(getPasswordInfoKey(api), getPasswordInfoKey(api.copy(id = 3, loginType = "PASSWORD")))
     }
 }

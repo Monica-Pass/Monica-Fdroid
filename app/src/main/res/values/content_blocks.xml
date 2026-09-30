@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">API Key</string>
+    <string name="content_block_api_token">API token</string>
+    <string name="content_block_ssh">SSH key</string>
+    <string name="content_block_gpg">GPG key</string>
+    <string name="content_block_qr">QR code</string>
+    <string name="content_block_key">Key</string>
+    <string name="content_block_token">Token</string>
+    <string name="content_block_provider">Provider</string>
+    <string name="content_block_url">API endpoint</string>
+    <string name="content_block_algorithm">Algorithm</string>
+    <string name="content_block_public">Public key</string>
+    <string name="content_block_private">Private key</string>
+    <string name="content_block_fingerprint">Fingerprint</string>
+    <string name="content_block_identity">Identity / comment</string>
+    <string name="content_block_content">Text or link</string>
+    <string name="content_block_import">Import from file</string>
+    <string name="content_block_export">Export to file</string>
+    <string name="content_block_unavailable">Unsupported content</string>
+    <string name="content_block_preserved">Original content preserved. Open with a compatible version to edit.</string>
+    <string name="content_block_save_error">Could not save or read this content. Check the file and size (maximum 256 KiB).</string>
+    <string name="content_block_more">More content</string>
+    <string name="content_block_key_size">Key size</string>
+    <string name="content_block_format">Format</string>
+    <string name="content_block_qr_error">This content is too long for a QR code. You can still view or copy the full value.</string>
+</resources>

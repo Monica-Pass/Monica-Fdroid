@@ -283,7 +283,13 @@ internal fun PasswordDetailPaneContent(
         PasswordDetailContent.Add,
         is PasswordDetailContent.Edit -> {
             val editorId = (content as? PasswordDetailContent.Edit)?.passwordId
+            val templateNavigation = takagi.ru.monica.ui.components.LocalTemplateNavigation.current
             key(content) {
+                CompositionLocalProvider(takagi.ru.monica.ui.components.LocalTemplateNavigation provides
+                    templateNavigation?.let { navigate -> { type, targets ->
+                        onInlinePasswordEditorBack()
+                        navigate(type, targets)
+                    } }) {
                 AddEditPasswordScreen(
                     onSwitchToApiToken = { target -> onInlinePasswordEditorBack(); onCreateApiToken(target) },
                     viewModel = passwordViewModel,
@@ -314,6 +320,7 @@ internal fun PasswordDetailPaneContent(
                     },
                     onNavigateBack = onInlinePasswordEditorBack
                 )
+                }
             }
         }
         is PasswordDetailContent.Detail -> {

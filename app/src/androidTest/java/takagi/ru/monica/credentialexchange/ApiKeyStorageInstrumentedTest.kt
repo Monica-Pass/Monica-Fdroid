@@ -46,6 +46,7 @@ class ApiKeyStorageInstrumentedTest {
         viewModel: PasswordViewModel, draft: ApiKeyDraft, target: StorageTarget,
         original: PasswordEntry? = null, extra: List<CustomFieldDraft> = emptyList(),
     ): Long {
+        check(draft.isValid)
         val done = CompletableDeferred<Long?>()
         viewModel.savePasswordsAcrossTargets(listOfNotNull(original?.id), draft.toEntry(original),
             listOf(draft.key), listOf(target), draft.customFields(extra), onComplete = { done.complete(it) })
@@ -87,9 +88,12 @@ class ApiKeyStorageInstrumentedTest {
         scenario { viewModel ->
             val target = mdbx()
             val storage = StorageTarget.Mdbx(target.databaseId, null)
-            val draft = ApiKeyDraft("$prefix-API", "https://console.example.org", key,
-                "http://192.168.1.2:11434/v1", "local model")
-            val entryId = save(viewModel, draft, storage)
+            val draft = ApiKeyDraft("$prefix-API", "hxhxjdjff", key,
+                "hdhxnd", "local model")
+            val embedded = PasswordContentBlocks.create(PasswordContentBlocks.Kind.API_KEY)
+                .edited("Embedded fixture", mapOf("key" to "合成密钥", "url" to "localhost:11434/v1", "notes" to "保留备注"))
+            val extra = PasswordContentBlocks.put(listOf(CustomFieldDraft(title = "Future field", value = "preserve", isProtected = true)), embedded)
+            val entryId = save(viewModel, draft, storage, extra = extra)
             fun fields(payload: JSONObject): Map<String, String> {
                 val values = payload.getJSONArray("custom_fields")
                 return (0 until values.length()).associate {
@@ -107,13 +111,17 @@ class ApiKeyStorageInstrumentedTest {
             assertEquals(key, first.getString("password_plain"))
             assertEquals(draft.apiUrl, fields(first)[ApiKeyEntryFields.API_URL])
             assertTrue(ApiKeyEntryFields.isApiKey(fields(first)))
+            val recovered = PasswordContentBlocks.read(fields(first).map { (title, value) -> CustomFieldDraft(title = title, value = value) }).single().block!!
+            assertEquals(embedded.raw, recovered.raw)
             val original = requireNotNull(viewModel.getPasswordEntryById(entryId))
-            save(viewModel, draft.copy(apiUrl = "", notes = "edited"), storage, original)
+            save(viewModel, draft.copy(apiUrl = "", notes = "edited"), storage, original, extra)
             val changed = reopen()
             assertTrue(ApiKeyEntryFields.isApiKey(fields(changed)))
             assertFalse(fields(changed).containsKey(ApiKeyEntryFields.API_URL))
             assertEquals(key, changed.getString("password_plain"))
             assertEquals("edited", changed.getString("notes"))
+            assertEquals("preserve", fields(changed)["Future field"])
+            assertEquals(embedded.raw, PasswordContentBlocks.read(fields(changed).map { (title, value) -> CustomFieldDraft(title = title, value = value) }).single().block!!.raw)
         }
     }
 

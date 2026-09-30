@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bitwarden_two_factor_unsupported_short">Not supported in this client</string>
+    <string name="bitwarden_two_factor_unsupported">This method requires an interactive sign-in flow and cannot be completed with a code here. Choose an available authenticator, email or YubiKey OTP method. If your organization requires SSO or a security key only, use a client that supports that flow.</string>
+    <string name="bitwarden_choose_method">Choose verification method</string>
+    <string name="bitwarden_change_method">Change method</string>
+    <string name="bitwarden_email_action_hint">Send a code, then enter the code received by email.</string>
+    <string name="bitwarden_totp_action_hint">Choose an existing authenticator in Monica, or enter its current code.</string>
+    <string name="bitwarden_authenticator_search">Search name or account</string>
+    <string name="bitwarden_totp_picker_hint">Selecting an item fills its current code without submitting.</string>
+    <string name="bitwarden_totp_generation_failed">Could not generate a code. Check this authenticator or choose another item.</string>
+</resources>

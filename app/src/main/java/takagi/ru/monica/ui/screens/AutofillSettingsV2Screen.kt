@@ -55,7 +55,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -387,7 +386,6 @@ fun AutofillSettingsV2Screen(
                 }
 
                 if (defaultSourceFilter == AutofillPreferences.AutofillDefaultSourceFilter.KEEPASS) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
                     Text(
                         text = stringResource(R.string.autofill_v2_default_keepass_title),
                         style = MaterialTheme.typography.bodyMedium,
@@ -446,7 +444,6 @@ fun AutofillSettingsV2Screen(
                 }
 
                 if (defaultSourceFilter == AutofillPreferences.AutofillDefaultSourceFilter.BITWARDEN) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
                     Text(
                         text = stringResource(R.string.autofill_v2_default_bitwarden_title),
                         style = MaterialTheme.typography.bodyMedium,
@@ -518,7 +515,6 @@ fun AutofillSettingsV2Screen(
                     subtitle = stringResource(R.string.autofill_v2_set_system_service_desc),
                     onClick = ::openSystemAutofillSettings,
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 AutofillSettingItem(
                     icon = Icons.Outlined.Key,
                     title = stringResource(R.string.autofill_system_passkey_settings),
@@ -538,7 +534,6 @@ fun AutofillSettingsV2Screen(
                     subtitle = stringResource(R.string.ime_manage_input_methods_desc),
                     onClick = ::openSystemKeyboardSettings,
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 androidx.compose.foundation.layout.Box(Modifier.testTag("ime_scramble_pin_setting")) { SwitchSettingItem(
                     icon = Icons.Outlined.Keyboard,
                     title = stringResource(R.string.ime_scramble_pin_title),
@@ -546,7 +541,6 @@ fun AutofillSettingsV2Screen(
                     checked = imeKeyboardOptions.scramblePin,
                     onCheckedChange = { scope.launch { preferences.setImeScramblePin(it) } },
                 ) }
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 androidx.compose.foundation.layout.Box(Modifier.testTag("ime_hide_pin_preview_setting")) { SwitchSettingItem(
                     icon = Icons.Outlined.VisibilityOff,
                     title = stringResource(R.string.ime_hide_pin_preview_title),
@@ -570,7 +564,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setAutofillEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Notifications,
                     title = stringResource(R.string.autofill_active_fill_notification_title),
@@ -580,7 +573,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setActiveFillNotificationEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Lock,
                     title = stringResource(R.string.autofill_auth_required),
@@ -590,7 +582,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { settingsManager.updateAutofillAuthRequired(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Link,
                     title = stringResource(R.string.autofill_v2_strict_match),
@@ -600,7 +591,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setBitwardenStrictModeEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.AccountTree,
                     title = stringResource(R.string.autofill_v2_subdomain_match),
@@ -610,14 +600,12 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setBitwardenSubdomainMatchEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 AutofillSettingItem(
                     icon = Icons.Outlined.Language,
                     title = stringResource(R.string.autofill_domain_strategy_title),
                     subtitle = DomainMatchStrategy.getDisplayName(context, domainMatchStrategy),
                     onClick = { showDomainStrategyDialog = true },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.DoNotDisturb,
                     title = stringResource(R.string.autofill_v2_respect_off),
@@ -627,7 +615,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setV2RespectAutofillOffEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Input,
                     title = stringResource(R.string.autofill_inline_suggestions),
@@ -637,7 +624,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setInlineSuggestionsEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.AutoAwesome,
                     title = stringResource(R.string.password_suggestion_title),
@@ -647,7 +633,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setPasswordSuggestionEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.AddCircleOutline,
                     title = stringResource(R.string.autofill_save_enable),
@@ -657,7 +642,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setRequestSaveDataEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Refresh,
                     title = stringResource(R.string.autofill_save_update_duplicate),
@@ -667,7 +651,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setAutoUpdateDuplicatePasswordsEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Settings,
                     title = stringResource(R.string.autofill_save_show_notification),
@@ -677,7 +660,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setShowSaveNotificationEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Link,
                     title = stringResource(R.string.autofill_save_smart_title),
@@ -687,7 +669,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setSmartTitleGenerationEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Apps,
                     title = stringResource(R.string.autofill_save_app_info),
@@ -697,7 +678,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setAutoSaveAppInfoEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.Language,
                     title = stringResource(R.string.autofill_save_website_info),
@@ -737,7 +717,6 @@ fun AutofillSettingsV2Screen(
                         }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 AutofillSettingItem(
                     icon = Icons.Outlined.Settings,
                     title = stringResource(R.string.autofill_otp_notification_duration),
@@ -746,7 +725,6 @@ fun AutofillSettingsV2Screen(
                         showOtpDurationDialog = true
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 SwitchSettingItem(
                     icon = Icons.Outlined.ContentCopy,
                     title = stringResource(R.string.autofill_auto_copy_otp),
@@ -788,7 +766,6 @@ fun AutofillSettingsV2Screen(
                         scope.launch { preferences.setBlacklistEnabled(enabled) }
                     },
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 AutofillSettingItem(
                     icon = Icons.Outlined.Apps,
                     title = stringResource(R.string.autofill_blacklist_manage),

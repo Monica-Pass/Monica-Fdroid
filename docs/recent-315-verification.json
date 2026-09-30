@@ -1,0 +1,51 @@
+{
+  "version": "1.0.315",
+  "issue": "https://github.com/Monica-Pass/Monica/issues/144#issuecomment-5885678597",
+  "runs": [
+    {
+      "finishedAt": "2026-09-29T16:20:41.5727048+08:00",
+      "classes": [
+        "takagi.ru.monica.ui.vaultv2.VaultOverviewScreenTest#recentModuleOpensEntryAndCanCollapseAndHide,takagi.ru.monica.ui.vaultv2.VaultV2SortSheetTest,takagi.ru.monica.keepass.KeePassNativeCompatibilityInstrumentedTest#passwordCreationAndModificationDatesSurviveKdbx3And4Projection"
+      ],
+      "edition": "Main",
+      "testPackageId": "takagi.ru.monica.test",
+      "packageId": "takagi.ru.monica",
+      "appSha256": "B69D0A93DF36E238772EC35947B7086C1A800355174E23B1714A6D5BC47504AA",
+      "completed": true,
+      "testSha256": "36A91723D0878947FC12AD22DB6651E18AA97EAC96264FDE582AEFAEC06E6CA9",
+      "startedAt": "2026-09-29T16:19:30.4744118+08:00",
+      "suite": "Recent315",
+      "unitTests": 22,
+      "deviceTests": 4
+    },
+    {
+      "suite": "Recent315",
+      "finishedAt": "2026-09-29T16:22:37.8248170+08:00",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "packageId": "takagi.ru.monica.fdroid",
+      "startedAt": "2026-09-29T16:21:43.0665485+08:00",
+      "appSha256": "8E3777C48B79F48C54AEE7C525BEEA27CBA4F71AA410936B1DB302E7281FFBD7",
+      "edition": "Fdroid",
+      "testSha256": "BE8D5828EE45B021E21D95E3209D8DD717F9338C689667B53EC486DB5D3F1500",
+      "classes": [
+        "takagi.ru.monica.ui.vaultv2.VaultOverviewScreenTest#recentModuleOpensEntryAndCanCollapseAndHide,takagi.ru.monica.ui.vaultv2.VaultV2SortSheetTest,takagi.ru.monica.keepass.KeePassNativeCompatibilityInstrumentedTest#passwordCreationAndModificationDatesSurviveKdbx3And4Projection"
+      ],
+      "completed": true,
+      "unitTests": 22,
+      "deviceTests": 4
+    }
+  ],
+  "coverage": [
+    "seven list modes across local, MDBX, KeePass and Bitwarden folders/search",
+    "newly created and edited records share recent order, unknown times excluded from overview",
+    "overview source scope and locked-source exclusion",
+    "recent entry navigation callback, collapse and hide",
+    "sort settings recreation and export/restore",
+    "real encrypted KDBX3 and KDBX4 password/TOTP timestamps survive repeated reads"
+  ],
+  "limitations": [
+    "No reporter database was available.",
+    "Existing KeePass mirror dates are corrected when the unlocked database is next projected; source timestamps must exist.",
+    "Date sorting cannot reconstruct timestamps missing from source data."
+  ]
+}

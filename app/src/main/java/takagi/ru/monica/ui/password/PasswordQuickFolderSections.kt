@@ -79,6 +79,7 @@ internal fun LocalMdbxDatabase.mdbxPathShouldFlushPendingUpload(): Boolean =
 internal data class MdbxPathSyncState(
     val pendingCount: Int,
     val isSyncing: Boolean,
+    val lastSyncStatus: String? = null,
     val onSync: () -> Unit
 )
 
@@ -117,9 +118,10 @@ internal fun LocalMdbxDatabase.mdbxPathPendingSyncCount(cachedCount: Int? = null
         MdbxSyncStatus.LOCAL_ONLY,
         MdbxSyncStatus.IN_SYNC -> 0
         MdbxSyncStatus.PENDING_UPLOAD,
+        MdbxSyncStatus.CONFLICT -> (cachedCount ?: 1).coerceAtLeast(1)
+        // A failed check or a changed remote is not evidence of a local edit.
         MdbxSyncStatus.REMOTE_CHANGED,
-        MdbxSyncStatus.CONFLICT,
-        MdbxSyncStatus.FAILED -> (cachedCount ?: 1).coerceAtLeast(1)
+        MdbxSyncStatus.FAILED -> (cachedCount ?: 0).coerceAtLeast(0)
         MdbxSyncStatus.SYNCING -> (cachedCount ?: 0).coerceAtLeast(0)
         null -> 0
     }
@@ -528,6 +530,12 @@ internal fun PasswordQuickFolderBreadcrumbPath(
 
 @Composable
 internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
+    val statusLabel = when (state.lastSyncStatus) {
+        MdbxSyncStatus.FAILED.name -> R.string.keepass_remote_sync_status_failed
+        MdbxSyncStatus.CONFLICT.name -> R.string.keepass_remote_sync_status_conflict
+        MdbxSyncStatus.REMOTE_CHANGED.name -> R.string.keepass_remote_sync_status_remote_changed
+        else -> null
+    }
     Row(
         modifier = Modifier
             .height(36.dp)
@@ -536,7 +544,7 @@ internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         AnimatedVisibility(
-            visible = state.pendingCount > 0,
+            visible = state.pendingCount > 0 || statusLabel != null,
             enter = expandHorizontally(
                 expandFrom = Alignment.End,
                 animationSpec = tween(durationMillis = 220)
@@ -557,7 +565,8 @@ internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = stringResource(R.string.legacy_ui_unsynced_count, state.pendingCount),
+                        text = if (statusLabel != null) stringResource(statusLabel)
+                            else stringResource(R.string.legacy_ui_unsynced_count, state.pendingCount),
                         style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

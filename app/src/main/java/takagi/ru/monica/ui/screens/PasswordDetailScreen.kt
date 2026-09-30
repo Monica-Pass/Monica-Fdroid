@@ -1,5 +1,15 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.ui.components.DetailSectionLayout
+import takagi.ru.monica.ui.components.DetailGroupItem
+import takagi.ru.monica.ui.components.entryGroupShape
+
+import takagi.ru.monica.data.passwordProjectKey
+import takagi.ru.monica.data.model.PasswordContentBlocks
+import takagi.ru.monica.ui.components.PasswordContentBlockCard
+import takagi.ru.monica.ui.components.PasswordContentBlockDetail
+import takagi.ru.monica.data.model.EmbeddedWalletContent
+
 import takagi.ru.monica.ui.components.localizedName
 
 import android.content.Context
@@ -122,12 +132,11 @@ private data class PasswordStorageInfo(
     val folderPath: String
 )
 
-private fun resolvePasswordDetailGroupPasswords(
+internal fun resolvePasswordDetailGroupPasswords(
     entry: PasswordEntry,
     allPasswords: List<PasswordEntry>
 ): List<PasswordEntry> {
-    val replicaGroupId = entry.replicaGroupId?.takeIf { it.isNotBlank() }
-    val key = getPasswordInfoKey(entry)
+    val key = entry.passwordProjectKey()
     val currentAll = if (allPasswords.isEmpty()) {
         listOf(entry)
     } else {
@@ -136,11 +145,7 @@ private fun resolvePasswordDetailGroupPasswords(
         }
     }
     return currentAll.filter {
-        if (replicaGroupId != null) {
-            it.replicaGroupId == replicaGroupId
-        } else {
-            getPasswordInfoKey(it) == key
-        }
+        it.passwordProjectKey() == key
     }.sortedWith(
         compareBy<PasswordEntry> {
             when {
@@ -268,7 +273,7 @@ fun PasswordDetailScreen(
                 it.title == MONICA_MANUAL_STACK_GROUP_FIELD_TITLE ||
                     it.title == MONICA_NO_STACK_FIELD_TITLE
             }
-            .filterNot { it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE }
+            .filterNot { it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) }
             .filterNot {
                 settings.separateUsernameAccountEnabled &&
                     (it.title == MONICA_USERNAME_ALIAS_FIELD_TITLE ||
@@ -560,6 +565,13 @@ fun PasswordDetailScreen(
         return
     }
 
+    fun qrActions(id: Long): takagi.ru.monica.ui.components.QrTemplateActions = takagi.ru.monica.ui.components.QrTemplateActions(
+        read = { viewModel.readQrTemplateValues(id) },
+        save = { block ->
+            viewModel.appendPasswordQrTemplate(id, block)
+            if (id == passwordId) customFields = viewModel.getCustomFieldsByEntryIdSync(id)
+        }, forEntry = ::qrActions)
+    CompositionLocalProvider(takagi.ru.monica.ui.components.LocalQrTemplateActions provides qrActions(passwordId)) {
     Scaffold(
         modifier = Modifier,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -631,17 +643,8 @@ fun PasswordDetailScreen(
         }
     ) { paddingValues ->
         passwordEntry?.let { entry ->
-            if (entry.isGpgKeyEntry() || customFields.any {
-                    it.title == takagi.ru.monica.data.model.GpgEntryFields.MARKER && it.value == "GPG_KEY"
-                }) {
-                GpgDetailContent(customFields, displayPasswords[entry.id].orEmpty(), Modifier.padding(paddingValues))
-                return@let
-            }
-            if (entry.isApiKeyEntry() || takagi.ru.monica.data.model.ApiKeyEntryFields.isApiKey(
-                    customFields.associate { it.title to it.value })) {
-                ApiKeyDetailContent(entry, displayPasswords[entry.id], customFields, Modifier.padding(paddingValues))
-                return@let
-            }
+            val isGpgTemplate = entry.isGpgKeyEntry() || customFields.any { it.title == takagi.ru.monica.data.model.GpgEntryFields.MARKER && it.value == "GPG_KEY" }
+            val isApiTemplate = entry.isApiKeyEntry() || takagi.ru.monica.data.model.ApiKeyEntryFields.isApiKey(customFields.associate { it.title to it.value })
             val storageInfoEntries = remember(
                 groupPasswords,
                 entry,
@@ -762,7 +765,22 @@ fun PasswordDetailScreen(
                 contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item("header") {
+                if (isGpgTemplate) item("gpg_core") { GpgDetailContent(customFields, displayPasswords[entry.id].orEmpty(), embedded = true) }
+                if (isApiTemplate) item("api_core") { ApiKeyDetailContent(entry, displayPasswords[entry.id], customFields, embedded = true) }
+                if (entry.loginType == "SSH_KEY") item("ssh_core") {
+                    val data = takagi.ru.monica.data.model.SshKeyDataCodec.decode(entry.sshKeyData)
+                    var revealed by remember { mutableStateOf(false) }
+                    if (data != null) SshKeyDetailBody(PaddingValues(), data, revealed, { revealed = !revealed },
+                        { label, value -> ClipboardUtils.copyToClipboard(context, value, label, sensitive = true) }, emptyList(), onCreateSend, embedded = true)
+                }
+                if (entry.loginType == "WIFI") item("wifi_core") {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        HeaderSection(entry = entry, iconCardsEnabled = iconCardsEnabled,
+                            unmatchedIconHandlingStrategy = unmatchedIconHandlingStrategy)
+                        takagi.ru.monica.ui.components.WifiDetailContent(entry, displayPasswords[entry.id])
+                    }
+                }
+                if (entry.loginType != "WIFI") item("header") {
                     HeaderSection(
                         entry = entry,
                         iconCardsEnabled = iconCardsEnabled,
@@ -792,7 +810,7 @@ fun PasswordDetailScreen(
                     }
                 }
 
-                if (shouldShowPasswordCard) {
+                if (shouldShowPasswordCard && !isGpgTemplate && !isApiTemplate) {
                     item("passwords") {
                         PasswordListCard(
                             passwords = detailPasswords,
@@ -850,27 +868,77 @@ fun PasswordDetailScreen(
                     }
                 }
 
+                val savedContentOrder = displayCustomFields.firstOrNull {
+                    it.title == takagi.ru.monica.data.model.EntryContentFields.ORDER
+                }?.value?.split(',').orEmpty()
+                val detailBlocks = PasswordContentBlocks.read(customFields.map { takagi.ru.monica.data.CustomFieldDraft(id = it.id, title = it.title, value = it.value, isProtected = it.isProtected) })
+                val orderedContent = takagi.ru.monica.data.model.PasswordWalletProjection.walletOrder(savedContentOrder + detailBlocks.map { it.token } + listOf("AUTHENTICATOR", "PAYMENT", "DOCUMENT", "CUSTOM_FIELDS", "ATTACHMENTS", "NOTES", "CONTACT", "ADDRESS"))
+                val walletSections = orderedContent.filter { section ->
+                    val supplemental = displayCustomFields.any { field ->
+                        takagi.ru.monica.ui.components.EntrySupplementalSpecs.forSection(section).any {
+                            takagi.ru.monica.data.model.EntryContentFields.key(section, it.key) == field.title
+                        }
+                    }
+                    when (section) {
+                        "DOCUMENT" -> customFields.any { it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.DOCUMENT) &&
+                            EmbeddedWalletContent.read(it.value) is EmbeddedWalletContent.ReadResult.Available }
+                        "PAYMENT" -> hasPaymentInfo(entry) || supplemental || customFields.any {
+                            it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.BANK_CARD) &&
+                                EmbeddedWalletContent.read(it.value) is EmbeddedWalletContent.ReadResult.Available
+                        }
+                        "CONTACT" -> hasPersonalInfo(entry) || supplemental
+                        "ADDRESS" -> hasAddressInfo(entry) || hasPersonalInfo(entry) || supplemental || customFields.any {
+                            it.title.startsWith("monica.content.contact.") || it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.ADDRESS)
+                        }
+                        else -> false
+                    }
+                }
+                orderedContent.forEach { section ->
+                    detailBlocks.firstOrNull { it.token == section }?.let { stored ->
+                        item(key = section) {
+                            var open by remember(entry.id, stored) { mutableStateOf(false) }
+                            PasswordContentBlockCard(stored, onClick = { open = true })
+                            if (open) PasswordContentBlockDetail(stored, onDismiss = { open = false })
+                        }
+                    }
+                    when (section) {
+                        "AUTHENTICATOR" -> {
                 detailTotp?.let { data ->
                     item("totp") {
                         takagi.ru.monica.ui.components.PasswordAuthenticatorCard(
                             entry, data, settings, onEdit = { onEditPassword(entry.id) })
                     }
                 }
-                if (hasPaymentInfo(entry)) {
-                    item("payment_info") {
-                        takagi.ru.monica.ui.components.PasswordPaymentCard(entry, onCreateSend)
-                    }
-                }
-
-                if (displayCustomFields.isNotEmpty()) {
+                        }
+                        "PAYMENT", "CONTACT", "ADDRESS", "DOCUMENT" -> {
+                            if (section == walletSections.firstOrNull()) item("wallet_content") {
+                                val paymentTitle = stringResource(R.string.payment_info)
+                                val addressTitle = stringResource(R.string.billing_address)
+                                val snapshots = remember(entry, customFields, walletSections, paymentTitle, addressTitle) {
+                                    walletSections.mapNotNull { walletSection -> passwordWalletSnapshot(
+                                        walletSection, entry, customFields, paymentTitle, addressTitle) }
+                                }
+                                takagi.ru.monica.ui.components.DetailWalletStack(
+                                    snapshots = snapshots, entry = entry,
+                                    title = stringResource(R.string.password_detail_wallet_information))
+                                if (snapshots.size < walletSections.size) Text(stringResource(R.string.content_block_preserved))
+                            }
+                        }
+                        "CUSTOM_FIELDS" -> {
+                if (displayCustomFields.any { it.title != takagi.ru.monica.data.model.EntryContentFields.ORDER && takagi.ru.monica.ui.components.EntrySupplementalSpecs.spec(it.title) == null }) {
                     item("custom_fields") {
                         takagi.ru.monica.ui.components.CustomFieldDisplayCard(
-                            fields = displayCustomFields,
+                            fields = displayCustomFields.filterNot { it.title == takagi.ru.monica.data.model.EntryContentFields.ORDER || takagi.ru.monica.ui.components.EntrySupplementalSpecs.spec(it.title) != null }.map { field ->
+                                val spec = takagi.ru.monica.ui.components.EntrySupplementalSpecs.spec(field.title)
+                                if (spec == null) field else field.copy(title = if (spec.label != 0) stringResource(spec.label) else spec.literal)
+                            },
                             onCreateSend = onCreateSend,
                         )
                     }
                 }
 
+                        }
+                        "ATTACHMENTS" -> {
                 item("attachments") {
                     // 构造附件下载/预览所需上下文
                     val bwVault = entry.bitwardenVaultId?.let { vaultId ->
@@ -890,10 +958,22 @@ fun PasswordDetailScreen(
                         }
                     } else null
                     takagi.ru.monica.attachments.ui.AttachmentsDetailSection(
-                        passwordId = entry.id,
+                        owner = takagi.ru.monica.attachments.model.AttachmentOwner.password(entry.id),
+                        excludedFileNames = customFields.filter { EmbeddedWalletContent.isMetadata(it.title) }.flatMap {
+                            (EmbeddedWalletContent.read(it.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot?.assets.orEmpty()
+                        }.map { it.name }.toSet(),
                         bitwardenContext = bwContext,
                         keepassContext = kpContext
                     )
+                }
+
+                        }
+                        "NOTES" -> {
+                val embeddedNote = (EmbeddedWalletContent.read(customFields.firstOrNull {
+                    it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.NOTE)
+                }?.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+                if (embeddedNote != null) item("embedded_note") {
+                    takagi.ru.monica.ui.components.EmbeddedWalletSavedContent(embeddedNote, entry)
                 }
 
                 if (noteViewModel != null) {
@@ -910,6 +990,17 @@ fun PasswordDetailScreen(
                                 passwordEntry = entry.copy(boundNoteId = null)
                             }
                         )
+                    }
+                }
+
+                if (entry.notes.isNotEmpty()) {
+                    item("notes") {
+                        NotesCard(notes = entry.notes)
+                    }
+                }
+
+                        }
+
                     }
                 }
 
@@ -950,38 +1041,6 @@ fun PasswordDetailScreen(
                     }
                 }
 
-                if (hasPersonalInfo(entry)) {
-                    item("personal_info") {
-                        CollapsibleSection(
-                            title = stringResource(R.string.personal_info),
-                            icon = MonicaIcons.General.person,
-                            expanded = personalInfoExpanded,
-                            onToggle = { personalInfoExpanded = !personalInfoExpanded }
-                        ) {
-                            PersonalInfoContent(entry = entry, context = context, onCreateSend = onCreateSend)
-                        }
-                    }
-                }
-
-                if (hasAddressInfo(entry)) {
-                    item("address_info") {
-                        CollapsibleSection(
-                            title = stringResource(R.string.address_info),
-                            icon = Icons.Default.Home,
-                            expanded = addressInfoExpanded,
-                            onToggle = { addressInfoExpanded = !addressInfoExpanded }
-                        ) {
-                            AddressInfoContent(entry = entry)
-                        }
-                    }
-                }
-
-                if (entry.notes.isNotEmpty()) {
-                    item("notes") {
-                        NotesCard(notes = entry.notes)
-                    }
-                }
-
                 item("password_history") {
                     MonicaExpandableContent(expanded = passwordHistory.isNotEmpty()) {
                         PasswordHistorySection(
@@ -1015,6 +1074,7 @@ fun PasswordDetailScreen(
         }
     }
     
+    }
     // 删除确认对话框
     if (showArchiveDialog) {
         AlertDialog(
@@ -1199,14 +1259,8 @@ private fun PasswordHistorySection(
     val dateFormatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     var sectionMenuExpanded by remember { mutableStateOf(false) }
 
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp, 28.dp, 20.dp, 20.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
+    takagi.ru.monica.ui.components.DetailCardSurface {
+
         Column(
             modifier = Modifier
                 .animateMonicaContentSize()
@@ -1224,8 +1278,8 @@ private fun PasswordHistorySection(
                 ) {
                     Text(
                         text = stringResource(R.string.password_history_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
@@ -1268,11 +1322,7 @@ private fun PasswordHistorySection(
             history.forEachIndexed { index, item ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = if (index == 0) {
-                        RoundedCornerShape(24.dp, 18.dp, 24.dp, 18.dp)
-                    } else {
-                        RoundedCornerShape(18.dp)
-                    },
+                    shape = entryGroupShape(index, history.size),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     tonalElevation = if (index == 0) 2.dp else 1.dp
                 ) {
@@ -1520,7 +1570,7 @@ private fun HistoryPasswordConfirmDialog(
         confirmButton = {
             FilledTonalButton(
                 onClick = onConfirm,
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
@@ -1532,7 +1582,7 @@ private fun HistoryPasswordConfirmDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onDismiss,
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Text(stringResource(R.string.cancel))
             }
@@ -1573,10 +1623,11 @@ private fun HeaderSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            PasswordDetailIcon(
-                entry = entry,
-                unmatchedIconHandlingStrategy = unmatchedIconHandlingStrategy
-            )
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                Box(Modifier.padding(8.dp)) {
+                    PasswordDetailIcon(entry, unmatchedIconHandlingStrategy)
+                }
+            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1696,62 +1747,20 @@ private fun PasswordDetailIcon(
 }
 
 @Composable
-private fun WebsiteCard(
+internal fun WebsiteCard(
     websites: List<String>,
     context: Context
 ) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+    DetailSectionLayout(stringResource(R.string.website_url)) {
+        websites.forEachIndexed { index, website ->
+            Surface(onClick = { openWebsiteInBrowser(context, website) }, modifier = Modifier.fillMaxWidth(),
+                shape = entryGroupShape(index, websites.size), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                ListItem(
+                    headlineContent = { Text(website, style = MaterialTheme.typography.bodyLarge) },
+                    leadingContent = { Icon(Icons.Default.Language, null, tint = MaterialTheme.colorScheme.primary) },
+                    trailingContent = { Icon(Icons.Default.OpenInNew, null, Modifier.size(20.dp)) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
-                Text(
-                    text = stringResource(R.string.website_url),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            websites.forEach { website ->
-                Surface(
-                    onClick = { openWebsiteInBrowser(context, website) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainer
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = website,
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Icon(
-                            imageVector = Icons.Default.OpenInNew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
         }
     }
@@ -1765,33 +1774,8 @@ private fun PasswordDetailSecurityAnalysisCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Security,
-                    contentDescription = null,
-                    tint = colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.security_analysis),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
+    DetailSectionLayout(stringResource(R.string.security_analysis)) {
+        DetailGroupItem(0, 2) {
             SecurityStatusChip(
                 icon = Icons.Default.Key,
                 label = stringResource(R.string.inactive_passkeys_short),
@@ -1808,6 +1792,8 @@ private fun PasswordDetailSecurityAnalysisCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
+        }
+        DetailGroupItem(1, 2) {
             SecurityStatusChip(
                 icon = Icons.Default.Lock,
                 label = "2FA",
@@ -1816,7 +1802,7 @@ private fun PasswordDetailSecurityAnalysisCard(
                 } else {
                     stringResource(R.string.no_twofa)
                 },
-                color = if (hasTwoFactor) Color(0xFF22C55E) else colorScheme.error,
+                color = if (hasTwoFactor) colorScheme.primary else colorScheme.error,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -1833,9 +1819,7 @@ private fun SecurityStatusChip(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = 0.13f))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1850,16 +1834,14 @@ private fun SecurityStatusChip(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.labelLarge,
                 color = color,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+
             )
         }
     }
@@ -1886,79 +1868,23 @@ private fun StorageInfoCard(
     onOpenPassword: (Long) -> Unit,
     onEditPassword: (Long) -> Unit
 ) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Folder,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.password_detail_storage_info),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+    DetailSectionLayout(stringResource(R.string.password_detail_storage_info)) {
+        Surface(onClick = { onEditPassword(currentInfo.entryId) }, shape = entryGroupShape(0, 1 + otherInfos.size),
+            color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DetailInfoRow(stringResource(R.string.database_source_label), currentInfo.source)
+                DetailInfoRow(stringResource(R.string.password_picker_filter_database), currentInfo.database)
+                DetailInfoRow(stringResource(R.string.password_picker_filter_folder), currentInfo.folderPath)
+                Text(stringResource(R.string.edit), Modifier.align(Alignment.End), style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary)
             }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onEditPassword(currentInfo.entryId) },
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.password_detail_current_location),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-                DetailInfoRow(
-                    label = stringResource(R.string.database_source_label),
-                    value = currentInfo.source
-                )
-                DetailInfoRow(
-                    label = stringResource(R.string.password_picker_filter_database),
-                    value = currentInfo.database
-                )
-                DetailInfoRow(
-                    label = stringResource(R.string.password_picker_filter_folder),
-                    value = currentInfo.folderPath
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = stringResource(R.string.edit),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            if (otherInfos.isNotEmpty()) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text(
-                    text = stringResource(R.string.password_detail_other_locations),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.SemiBold
-                )
-                otherInfos.forEach { info ->
-                    OtherStorageLocationRow(
-                        info = info,
-                        onClick = { onOpenPassword(info.entryId) }
-                    )
-                }
+        }
+        otherInfos.forEachIndexed { index, info ->
+            Surface(onClick = { onOpenPassword(info.entryId) }, shape = entryGroupShape(index + 1, 1 + otherInfos.size),
+                color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+                ListItem(headlineContent = { Text(info.database) }, supportingContent = { Text(info.folderPath) },
+                    leadingContent = { Icon(Icons.Default.Folder, null) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent))
             }
         }
     }
@@ -2017,40 +1943,13 @@ private fun OtherStorageLocationRow(
 }
 
 @Composable
-private fun TimeInfoCard(
+internal fun TimeInfoCard(
     createdAt: String,
     updatedAt: String
 ) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.password_detail_time_info),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            DetailInfoRow(
-                label = stringResource(R.string.created_at),
-                value = createdAt
-            )
-            DetailInfoRow(
-                label = stringResource(R.string.password_detail_last_modified),
-                value = updatedAt
-            )
-        }
+    DetailSectionLayout(stringResource(R.string.password_detail_time_info)) {
+        DetailGroupItem(0, 2) { DetailInfoRow(stringResource(R.string.created_at), createdAt) }
+        DetailGroupItem(1, 2) { DetailInfoRow(stringResource(R.string.password_detail_last_modified), updatedAt) }
     }
 }
 
@@ -2059,25 +1958,9 @@ private fun DetailInfoRow(
     label: String,
     value: String
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f)
-        )
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -2085,44 +1968,22 @@ private fun DetailInfoRow(
 // 🔐 基本信息卡片
 // ============================================
 @Composable
-private fun BasicInfoCard(
+internal fun BasicInfoCard(
     entry: PasswordEntry,
     context: Context,
     separateUsernameAccountEnabled: Boolean,
     separatedUsername: String,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            if (separateUsernameAccountEnabled) {
-                if (entry.username.isNotEmpty()) {
-                    InfoFieldWithCopy(
-                        label = stringResource(R.string.field_account),
-                        value = entry.username,
-                        context = context,
-                        onCreateSend = onCreateSend
-                    )
-                }
-                if (separatedUsername.isNotEmpty()) {
-                    InfoFieldWithCopy(
-                        label = stringResource(R.string.autofill_username),
-                        value = separatedUsername,
-                        context = context,
-                        onCreateSend = onCreateSend
-                    )
-                }
-            } else {
-                if (entry.username.isNotEmpty()) {
-                    InfoFieldWithCopy(
-                        label = stringResource(R.string.field_account),
-                        value = entry.username,
-                        context = context,
-                        onCreateSend = onCreateSend
-                    )
-                }
+    val fields = buildList {
+        if (entry.username.isNotEmpty()) add(stringResource(R.string.field_account) to entry.username)
+        if (separateUsernameAccountEnabled && separatedUsername.isNotEmpty())
+            add(stringResource(R.string.autofill_username) to separatedUsername)
+    }
+    DetailSectionLayout {
+        fields.forEachIndexed { index, (label, value) ->
+            DetailGroupItem(index, fields.size) {
+                InfoFieldWithCopy(label = label, value = value, context = context, onCreateSend = onCreateSend)
             }
         }
     }
@@ -2137,145 +1998,17 @@ private fun SsoLoginCard(
     refEntry: PasswordEntry?,
     context: Context
 ) {
-    val ssoProvider = entry.getSsoProviderEnum() ?: SsoProvider.OTHER
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 标题行
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = getSsoProviderIcon(ssoProvider),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    text = stringResource(R.string.sso_login_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+    val provider = entry.getSsoProviderEnum() ?: SsoProvider.OTHER
+    DetailSectionLayout(stringResource(R.string.sso_login_btn)) {
+        DetailGroupItem(0, if (refEntry == null) 1 else 2) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(getSsoProviderIcon(provider), null, tint = MaterialTheme.colorScheme.primary)
+                Text(provider.localizedName(), style = MaterialTheme.typography.bodyLarge)
             }
-            
-            // SSO 提供商
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.use_sso),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                
-                // Provider chip
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = getSsoProviderIcon(ssoProvider),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = ssoProvider.localizedName(),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                
-                Text(
-                    text = stringResource(R.string.sso_login_btn),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-            
-            // 关联账号信息
-            if (refEntry != null) {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.2f),
-                    thickness = 1.dp
-                )
-                
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.sso_ref_account),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                    )
-                    
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 1.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // 图标
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = getSsoProviderIcon(ssoProvider),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-                            
-                            // 账号信息
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = refEntry.title,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                if (refEntry.username.isNotEmpty()) {
-                                    Text(
-                                        text = refEntry.username,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        }
+        if (refEntry != null) DetailGroupItem(1, 2) {
+            Text(refEntry.title, style = MaterialTheme.typography.titleSmall)
+            if (refEntry.username.isNotEmpty()) InfoFieldWithCopy(stringResource(R.string.sso_ref_account), refEntry.username, context = context)
         }
     }
 }
@@ -2309,13 +2042,9 @@ private fun getSsoProviderIcon(provider: SsoProvider): androidx.compose.ui.graph
 private fun LinkedAppsCard(entry: PasswordEntry) {
     val apps = entry.linkedAppBindings()
     if (apps.isEmpty()) return
-    takagi.ru.monica.ui.components.DetailCardSurface {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.linked_app), style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold)
-            apps.forEach { app ->
-                InfoField(app.appName.ifBlank { app.packageName }, app.packageName)
-            }
+    DetailSectionLayout(stringResource(R.string.linked_app)) {
+        apps.forEachIndexed { index, app ->
+            DetailGroupItem(index, apps.size) { InfoField(app.appName.ifBlank { app.packageName }, app.packageName) }
         }
     }
 }
@@ -2325,64 +2054,21 @@ private fun PasskeyBoundCard(
     passkeys: List<takagi.ru.monica.data.PasskeyEntry>,
     bindingSummaries: List<String> = emptyList()
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Key,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.passkey_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            if (passkeys.isNotEmpty()) {
-                passkeys.forEach { passkey ->
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = listOf(
-                                passkey.rpName,
-                                passkey.userDisplayName.ifBlank { passkey.userName },
-                                passkey.rpId
-                            ).filter { it.isNotBlank() }.joinToString(" · "),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (passkey.isKeePassCompatible()) {
-                            PasskeyFormatBadge(text = stringResource(R.string.passkey_format_keepass))
-                            Text(
-                                text = stringResource(R.string.passkey_format_keepass_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+    DetailSectionLayout {
+        if (passkeys.isNotEmpty()) {
+            passkeys.forEachIndexed { index, passkey ->
+                DetailGroupItem(index, passkeys.size) {
+                    Text(listOf(passkey.rpName, passkey.userDisplayName.ifBlank { passkey.userName }, passkey.rpId)
+                        .filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodyLarge)
+                    if (passkey.isKeePassCompatible()) {
+                        PasskeyFormatBadge(stringResource(R.string.passkey_format_keepass))
+                        Text(stringResource(R.string.passkey_format_keepass_hint), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            } else {
-                bindingSummaries.forEach { summary ->
-                    Text(
-                        text = summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
             }
+        } else bindingSummaries.forEachIndexed { index, summary ->
+            DetailGroupItem(index, bindingSummaries.size) { Text(summary, style = MaterialTheme.typography.bodyLarge) }
         }
     }
 }
@@ -2415,50 +2101,15 @@ private fun PersonalInfoContent(
     context: Context,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
-    if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
-        takagi.ru.monica.ui.components.EntryContactDetails(entry.email.split("|"), entry.phone.split("|"), onCreateSend = onCreateSend)
-        return
-    }
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        val emails = entry.email.split("|").filter { it.isNotBlank() }
-        if (emails.size > 1) {
-            emails.forEachIndexed { index, email ->
-                InfoFieldWithCopy(
-                    label = "${stringResource(R.string.email)}${index + 1}",
-                    value = email,
-                    context = context,
-                    onCreateSend = onCreateSend
-                )
+    val emailLabel = stringResource(R.string.email)
+    val phoneLabel = stringResource(R.string.phone)
+    val fields = entry.email.split("|").filter { it.isNotBlank() }.map { emailLabel to it } +
+        entry.phone.split("|").filter { it.isNotBlank() }.map { phoneLabel to FieldValidation.formatPhone(it) }
+    DetailSectionLayout {
+        fields.forEachIndexed { index, (label, value) ->
+            DetailGroupItem(index, fields.size) {
+                InfoFieldWithCopy(label, value, context = context, onCreateSend = onCreateSend)
             }
-        } else if (emails.isNotEmpty()) {
-            InfoFieldWithCopy(
-                label = stringResource(R.string.email),
-                value = emails[0],
-                context = context,
-                onCreateSend = onCreateSend
-            )
-        }
-        
-        val phones = entry.phone.split("|").filter { it.isNotBlank() }
-        if (phones.size > 1) {
-            phones.forEachIndexed { index, phone ->
-                InfoFieldWithCopy(
-                    label = "${stringResource(R.string.phone)}${index + 1}",
-                    value = FieldValidation.formatPhone(phone),
-                    context = context,
-                    onCreateSend = onCreateSend
-                )
-            }
-        } else if (phones.isNotEmpty()) {
-            InfoFieldWithCopy(
-                label = stringResource(R.string.phone),
-                value = FieldValidation.formatPhone(phones[0]),
-                context = context,
-                onCreateSend = onCreateSend
-            )
         }
     }
 }
@@ -2468,70 +2119,15 @@ private fun PersonalInfoContent(
 // ============================================
 @Composable
 private fun AddressInfoContent(entry: PasswordEntry) {
-    if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
-        takagi.ru.monica.ui.components.EntryAddressDetails(entry.addressLine, entry.city, entry.state, entry.zipCode, entry.country)
-        return
-    }
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (entry.addressLine.isNotEmpty()) {
-            InfoField(
-                label = stringResource(R.string.address_line),
-                value = entry.addressLine
-            )
-        }
-        
-        // 城市和省份
-        if (entry.city.isNotEmpty() || entry.state.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (entry.city.isNotEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        InfoField(
-                            label = stringResource(R.string.city),
-                            value = entry.city
-                        )
-                    }
-                }
-                if (entry.state.isNotEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        InfoField(
-                            label = stringResource(R.string.state),
-                            value = entry.state
-                        )
-                    }
-                }
-            }
-        }
-        
-        // 邮编和国家
-        if (entry.zipCode.isNotEmpty() || entry.country.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (entry.zipCode.isNotEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        InfoField(
-                            label = stringResource(R.string.zip_code),
-                            value = entry.zipCode
-                        )
-                    }
-                }
-                if (entry.country.isNotEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        InfoField(
-                            label = stringResource(R.string.country),
-                            value = entry.country
-                        )
-                    }
-                }
-            }
-        }
+    val fields = listOf(
+        stringResource(R.string.address_line) to entry.addressLine,
+        stringResource(R.string.city) to entry.city,
+        stringResource(R.string.state) to entry.state,
+        stringResource(R.string.zip_code) to entry.zipCode,
+        stringResource(R.string.country) to entry.country,
+    ).filter { it.second.isNotEmpty() }
+    DetailSectionLayout {
+        fields.forEachIndexed { index, (label, value) -> DetailGroupItem(index, fields.size) { InfoField(label, value) } }
     }
 }
 
@@ -2544,29 +2140,17 @@ private fun AddressInfoContent(entry: PasswordEntry) {
 // 📝 备注卡片
 // ============================================
 @Composable
-private fun NotesCard(notes: String) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.notes),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
+internal fun NotesCard(notes: String) {
+    DetailSectionLayout(stringResource(R.string.notes)) {
+        DetailGroupItem(0, 1) {
             SelectionContainer {
-                Text(
-                    text = notes,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Text(notes, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BoundNoteCard(
     boundNote: takagi.ru.monica.data.SecureItem?,
@@ -2637,7 +2221,7 @@ private fun BoundNoteCard(
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilledTonalButton(onClick = onOpenBoundNote) {
                         Text(stringResource(R.string.open_bound_note))
                     }
@@ -2654,7 +2238,7 @@ private fun BoundNoteCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilledTonalButton(onClick = onChangeBoundNote) {
                         Text(stringResource(R.string.change_bound_note))
                     }
@@ -2687,54 +2271,17 @@ private fun CollapsibleSection(
     onToggle: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 标题栏
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggle)
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                MonicaExpansionChevron(
-                    expanded = expanded,
-                    contentDescription = if (expanded) 
-                        stringResource(R.string.collapse) 
-                    else 
-                        stringResource(R.string.expand),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            // 内容区域 (带动画)
-            MonicaExpandableContent(expanded = expanded) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                ) {
-                    content()
-                }
-            }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(onClick = onToggle, shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+            ListItem(
+                headlineContent = { Text(title, style = MaterialTheme.typography.titleSmall) },
+                leadingContent = { Icon(icon, null, tint = MaterialTheme.colorScheme.primary) },
+                trailingContent = { MonicaExpansionChevron(expanded = expanded,
+                    contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand)) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent))
         }
+        MonicaExpandableContent(expanded = expanded) { content() }
     }
 }
 
@@ -2885,19 +2432,9 @@ private fun PasswordListCard(
     context: Context,
     onCreateSend: ((title: String, text: String) -> Unit)?
 ) {
-    takagi.ru.monica.ui.components.DetailCardSurface() {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.password),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-
+    DetailSectionLayout(stringResource(R.string.password)) {
             passwords.forEachIndexed { index, entry ->
+                DetailGroupItem(index, passwords.size) {
                 PasswordItemRow(
                     entry = entry,
                     displayPassword = displayPasswords[entry.id].orEmpty(),
@@ -2912,11 +2449,8 @@ private fun PasswordListCard(
                     canDelete = passwords.size > 1,
                     onCreateSend = onCreateSend
                 )
-                if (index < passwords.size - 1) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
-        }
     }
 }
 
@@ -2971,11 +2505,14 @@ internal fun PasswordItemRow(
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (hasPasswordValue && !isUnavailable) {
+            val qrActions = takagi.ru.monica.ui.components.LocalQrTemplateActions.current
+            CompositionLocalProvider(takagi.ru.monica.ui.components.LocalQrTemplateActions provides qrActions?.forEntry?.invoke(entry.id)) {
             PasswordField(
                 label = if (showIndex) stringResource(R.string.password) + " $index" else stringResource(R.string.password),
                 value = displayPassword, visible = visible, onToggleVisibility = { visible = !visible },
                 context = context, onCreateSend = onCreateSend,
             )
+            }
             if (canDelete) {
                 TextButton(onClick = onDelete, modifier = Modifier.align(Alignment.End)) {
                     Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
@@ -3223,3 +2760,25 @@ private fun MultiDeleteConfirmDialog(
 
 
 
+
+/** Projects the existing fields only. No wallet item, binding, or database record is created. */
+private fun passwordWalletSnapshot(
+    section: String, entry: PasswordEntry,
+    customFields: List<takagi.ru.monica.data.CustomField>, paymentTitle: String, addressTitle: String,
+): EmbeddedWalletContent.Snapshot? = runCatching {
+    val fields = customFields.map { takagi.ru.monica.data.CustomFieldDraft.fromCustomField(it) }
+    when (section) {
+        "DOCUMENT" -> (EmbeddedWalletContent.read(fields.firstOrNull {
+            it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.DOCUMENT)
+        }?.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+        "PAYMENT" -> when (val saved = EmbeddedWalletContent.read(fields.firstOrNull {
+            it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.BANK_CARD)
+        }?.value)) {
+            is EmbeddedWalletContent.ReadResult.Available -> saved.snapshot
+            is EmbeddedWalletContent.ReadResult.Unavailable -> null
+            else -> takagi.ru.monica.data.model.PasswordWalletProjection.payment(entry, fields, paymentTitle)
+        }
+        "CONTACT", "ADDRESS" -> takagi.ru.monica.data.model.PasswordWalletProjection.address(entry, fields, addressTitle)
+        else -> null
+    }
+}.getOrNull()

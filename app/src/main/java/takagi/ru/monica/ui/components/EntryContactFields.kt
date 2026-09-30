@@ -19,7 +19,7 @@ import takagi.ru.monica.R
 fun EntryContactFields(emails: List<String>, phones: List<String>,
     onEmails: (List<String>) -> Unit, onPhones: (List<String>) -> Unit,
     allowMultiple: Boolean = true) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (LocalTemplateFieldShape.current) 2.dp else 12.dp)) {
         ContactFields(emails, onEmails, R.string.email, R.string.add_email, KeyboardType.Email, "email", allowMultiple)
         ContactFields(phones, onPhones, R.string.phone, R.string.add_phone, KeyboardType.Phone, "phone", allowMultiple)
     }

@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-29",
+  "version": "1.0.315",
+  "status": "implemented and verified locally; unpublished",
+  "builds": {
+    "main": "passed",
+    "fdroid": "passed"
+  },
+  "runs": [
+    {
+      "testPackageId": "takagi.ru.monica.test",
+      "completed": true,
+      "appSha256": "5AA44A2C53266E45E371208800259AC33A27CF11035971290A714B59F7D79F43",
+      "edition": "Main",
+      "finishedAt": "2026-09-29T22:13:10.7363964+08:00",
+      "classes": [
+        "takagi.ru.monica.ui.PasswordOtpEditorTest#defaultInlineAuthenticatorPreviewsSavesReopensAndClears,takagi.ru.monica.ui.PasswordOtpEditorTest#invalidInlineOtpParametersReopenSettingsBeforeSaving,takagi.ru.monica.ui.PasswordOtpEditorTest#addContentMenuDoesNotOfferDefaultAuthenticator,takagi.ru.monica.ui.PasswordOtpEditorTest#totpCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#hotpCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#steamCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#yandexCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#motpCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#hotpQrRestoresCounterAndAlgorithmBeforeChangingSecret,takagi.ru.monica.ui.PasswordOtpEditorTest#switchingAndRemovingCredentialsKeepsOtpDraftsSeparate"
+      ],
+      "packageId": "takagi.ru.monica",
+      "startedAt": "2026-09-29T22:06:57.2664157+08:00",
+      "suite": "InlineOtpFinal",
+      "testSha256": "075B4D364C2CB12F4FD1D3AD530AF64AE62EE1E2215B0F60AB0DEABCFF1E3ABC"
+    },
+    {
+      "suite": "InlineOtpFinal",
+      "completed": true,
+      "classes": [
+        "takagi.ru.monica.ui.PasswordOtpEditorTest#defaultInlineAuthenticatorPreviewsSavesReopensAndClears,takagi.ru.monica.ui.PasswordOtpEditorTest#invalidInlineOtpParametersReopenSettingsBeforeSaving,takagi.ru.monica.ui.PasswordOtpEditorTest#addContentMenuDoesNotOfferDefaultAuthenticator,takagi.ru.monica.ui.PasswordOtpEditorTest#totpCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#hotpCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#steamCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#yandexCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#motpCreateAndReedit,takagi.ru.monica.ui.PasswordOtpEditorTest#hotpQrRestoresCounterAndAlgorithmBeforeChangingSecret,takagi.ru.monica.ui.PasswordOtpEditorTest#switchingAndRemovingCredentialsKeepsOtpDraftsSeparate"
+      ],
+      "startedAt": "2026-09-29T22:13:39.9899407+08:00",
+      "packageId": "takagi.ru.monica.fdroid",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "appSha256": "8787C941E22631FB9FB83EA2190BD76FB93CDBF1C32A888A2491B66B0F7C67FA",
+      "finishedAt": "2026-09-29T22:17:04.1204255+08:00",
+      "testSha256": "BB12B151937CD2F279766170B7EF86F8E7DA56E598EAC90B6B2E834D67929462",
+      "edition": "Fdroid"
+    }
+  ],
+  "syncedSourceSha256": {
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "3b88cf33500313ab368acbecdd4e97606747e32e874acc1405fc9c081b404e3b",
+    "app/src/androidTest/java/takagi/ru/monica/ui/PasswordOtpEditorTest.kt": "2e67008cdc5a176469841aa3fb631056e027ad5a8692013a67da48dc05e17726"
+  },
+  "device": "existing Monica_Issue136_API_32 / emulator-5554; font scale 1.5 preserved",
+  "initialRun": "7/9; corrected test scrolling and modal keyboard-focus handling; final rerun 10/10",
+  "canvas": "Editable local JSON/share URL saved; online rendering blocked by saved user browser permission",
+  "limits": [
+    "No new OTP types or database schema changes",
+    "No full backup/sync matrix rerun; existing OTP serialization retained",
+    "No commit, push, tag or release"
+  ]
+}

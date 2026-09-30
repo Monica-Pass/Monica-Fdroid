@@ -1,0 +1,192 @@
+{
+  "feature": "QR field templates",
+  "version": "1.0.315-unreleased",
+  "recordedAt": "2026-09-30T19:28:38.203569+08:00",
+  "status": "passed",
+  "fullDeviceAcceptancePassed": true,
+  "device": "Monica_Issue136_API_32 / emulator-5554 / API32 x86_64",
+  "editions": {
+    "main": {
+      "debugAppAndTestBuildPassed": true,
+      "buildLogSha256": "3f80e76b3cb4fc0fa2f38cbe6bef5c6f424bc0eafdb4fc25bf168ef2166ca034",
+      "unit": [
+        {
+          "class": "PasswordQrTemplateTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "resultSha256": "699cd9adde08e0e3a15579c917dad65b5cb400d8263b21dc2bdb9ab78a00e629"
+        },
+        {
+          "class": "PasswordContentBlocksTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "resultSha256": "0fe8ecbe1705100bf713d3c17c7c85ba44ec9219f0e9c728065ccde9488518d5"
+        }
+      ],
+      "finalAcceptance": {
+        "passed": 25,
+        "receipt": {
+          "startedAt": "2026-09-30T19:16:44.4330127+08:00",
+          "classes": [
+            "takagi.ru.monica.credentialexchange.EmbeddedDocumentAssetsInstrumentedTest,takagi.ru.monica.credentialexchange.EmbeddedDocumentUiTest,takagi.ru.monica.repository.NativeApiTokenAssetsInstrumentedTest,takagi.ru.monica.ui.screens.NativeApiTokenAssetsUiTest,takagi.ru.monica.credentialexchange.NativeTokenArchiveManifestInstrumentedTest,takagi.ru.monica.ui.PasswordQrTemplateUiTest,takagi.ru.monica.ui.PasswordContentBlocksUiTest,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest,takagi.ru.monica.ui.PasswordOtpEditorTest#defaultInlineAuthenticatorPreviewsSavesReopensAndClears"
+          ],
+          "finishedAt": "2026-09-30T19:20:07.1322601+08:00",
+          "edition": "Main",
+          "appSha256": "2CB3F7BADDBF0F7ACB7BDCFA2DFB0FFE063978AF4AD3A4B5F90877A14356154F",
+          "testSha256": "3286E505C6B56090EACCD194DCB3AE9A41C042953CF943776375A4A0552876F4",
+          "packageId": "takagi.ru.monica",
+          "completed": true,
+          "suite": "Acceptance",
+          "testPackageId": "takagi.ru.monica.test"
+        },
+        "logSha256": "438bbd914131b55e1d7571cf11ba6e46e30e26f03fd0514c7681b11b2e031ca3"
+      }
+    },
+    "fdroid": {
+      "debugAppAndTestBuildPassed": true,
+      "buildLogSha256": "a0f2fa2cc44d86cf3bcf3447c0e37e852758971d57e76b82926aee54fd7557c5",
+      "unit": [
+        {
+          "class": "PasswordQrTemplateTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "resultSha256": "ca3642b6a403f24f7dd3811146a31ba10e83f9dd051d4ceee0d0512cc36c7f2d"
+        },
+        {
+          "class": "PasswordContentBlocksTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "resultSha256": "0d3161923cdf9178efebc775a81153cb3c0afbc6f15a0119dcd5126c89cf4570"
+        }
+      ],
+      "currentNativeTemplateTest": {
+        "passed": true,
+        "tests": 1,
+        "run": {
+          "testPackageId": "takagi.ru.monica.fdroid.test",
+          "finishedAt": "2026-09-30T08:25:45.1418752+08:00",
+          "suite": "QrNative",
+          "classes": [
+            "takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest#templateSavedFromDetailsReachesNativeVaultAndUsesUpdatedFields"
+          ],
+          "completed": true,
+          "appSha256": "56813E05D8D4EFBFEB9727CA10837301A26A56BF08FBAE42C70F8C02496A2B34",
+          "startedAt": "2026-09-30T08:20:08.8136653+08:00",
+          "testSha256": "FC9D8E87D6AAA8E493573E0108C4B3387DDDEF9A0AC750DB779DA2BB52FED158",
+          "packageId": "takagi.ru.monica.fdroid",
+          "edition": "Fdroid"
+        },
+        "logSha256": "1a7378345be8be635ccd9dd9376aff4f5ccee4a353d243b4190eed337b5f017d",
+        "coverage": [
+          "MDBX and KeePass save/reopen",
+          "Retain owning database despite other list filters",
+          "Idempotent retry, content order and no duplicate blocks",
+          "Updated password used at rendering",
+          "Native storage contains placeholders rather than the resolved password"
+        ]
+      },
+      "finalAcceptance": {
+        "passed": 25,
+        "receipt": {
+          "classes": [
+            "takagi.ru.monica.credentialexchange.EmbeddedDocumentAssetsInstrumentedTest,takagi.ru.monica.credentialexchange.EmbeddedDocumentUiTest,takagi.ru.monica.repository.NativeApiTokenAssetsInstrumentedTest,takagi.ru.monica.ui.screens.NativeApiTokenAssetsUiTest,takagi.ru.monica.credentialexchange.NativeTokenArchiveManifestInstrumentedTest,takagi.ru.monica.ui.PasswordQrTemplateUiTest,takagi.ru.monica.ui.PasswordContentBlocksUiTest,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest,takagi.ru.monica.ui.PasswordOtpEditorTest#defaultInlineAuthenticatorPreviewsSavesReopensAndClears"
+          ],
+          "suite": "Acceptance",
+          "testSha256": "955ACB82E49EC575B4A543DF58EA5B0362106247A199A7B06E6E7FC9A00EDC9E",
+          "completed": true,
+          "startedAt": "2026-09-30T19:23:25.7386365+08:00",
+          "appSha256": "DAB0B652F4D7B9EF6FE695DF81BC2FE59A8FF365803FA129A9AF487746B50D2D",
+          "testPackageId": "takagi.ru.monica.fdroid.test",
+          "packageId": "takagi.ru.monica.fdroid",
+          "edition": "Fdroid",
+          "finishedAt": "2026-09-30T19:26:46.2611293+08:00"
+        },
+        "logSha256": "7a9e56e549a74e745f6d103fbac37496080f9ff3c199659f37059886829eaf20"
+      }
+    }
+  },
+  "sourceSha256": {
+    "app/src/main/java/takagi/ru/monica/data/model/PasswordQrTemplate.kt": "e9c3141433b469deb7f053fe99358ce89ebcc0f58eaa2370986dda6685baa50b",
+    "app/src/main/java/takagi/ru/monica/data/model/PasswordContentBlocks.kt": "ba0e662f809f576700ff75078a8c97290bfa6b76bc2fbc81ad117989f8ce5d68",
+    "app/src/main/java/takagi/ru/monica/ui/components/PasswordQrTemplateUi.kt": "d26b496a55134016d0c8e968f9c6fe193752a6d6f5eecd6699f9f1ec140e4d95",
+    "app/src/main/java/takagi/ru/monica/ui/components/PasswordContentBlockUi.kt": "84dcaf13c1ef7689df649fa8ab38fe0ef91921b7cd8d7107b9af5b64e83fb444",
+    "app/src/main/java/takagi/ru/monica/ui/components/PasswordFieldActionMenu.kt": "aae5e33042f43f1e53ad888bc8ac581d17e5016289951a03d7b44c791c21e502",
+    "app/src/main/java/takagi/ru/monica/ui/components/QrCodeDialog.kt": "0ac45a44aebd3f545ab04de8e339e5831d70e6638f60feb04a73342f5f9b8a14",
+    "app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt": "d63212f9d93e244b1ad9c6cbc39bac308e85f7ae30283db625de92fa37bcd163",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "1b7cd8ca2240f35774d66ac6551bb8ccefd880f07ebd1f5e8de37741c7555a91",
+    "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "4f626bfe6f8a719f05e60d46174ce69416565df924f42363fc8ab9b87fc449ff",
+    "app/src/test/java/takagi/ru/monica/data/model/PasswordQrTemplateTest.kt": "47e21aa26dcf4766278a0c6da4793a126078324d9343d4e5a875485181cb6197",
+    "app/src/androidTest/java/takagi/ru/monica/ui/PasswordQrTemplateUiTest.kt": "6241b067aadc29d3790fb8102074e6ebc8ab07af5527a0213f7e2da2b94954bd",
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/NativePasswordContentStorageInstrumentedTest.kt": "99fb2785d8ecf449e0b98d572d2e20c9f7ec9d45f067bec0eebd6af8cd1de8ed",
+    "app/src/main/res/values/qr_template.xml": "73b9691af4fe603da39cf9e580b82a1ba168c5053352f2402aee59b5be1101b7",
+    "app/src/main/res/values-zh/qr_template.xml": "978b4b6e250509b1d412059e92d544465ed553da96d47e93bfd694da4c33d1f2",
+    "app/src/main/res/values-zh-rCN/qr_template.xml": "978b4b6e250509b1d412059e92d544465ed553da96d47e93bfd694da4c33d1f2",
+    "app/src/androidTest/java/takagi/ru/monica/ui/PasswordContentBlocksUiTest.kt": "71d9a640b6f38b82e9033d26f3746bc9f267dcbff5ac56fbcf9db55b6f62db56",
+    "app/src/androidTest/java/takagi/ru/monica/ui/FocusedKeyboard.kt": "bed09182a4c3ec3a0a140a2d7fbf2606bf71ec9c5060a8805650dcfdbc386b71"
+  },
+  "pending": [],
+  "limits": [
+    "Only Android32 x86_64 executed; ARM64/ARM32 build/export checks are not device tests",
+    "WebDAV used a real isolated local WsgiDAV server and synthetic data, not a customer provider",
+    "No live authenticated OneDrive transfer in this task",
+    "Database ZIP export is distinct from whole-app backup; old clients may ignore new attachments",
+    "Authenticator arbitrary custom fields cancelled; Bitwarden SSO/Passkey account login excluded"
+  ],
+  "environment": {
+    "preservation": "Previously authorized shared-AVD disk expansion completed; same AVD and app data retained. No new AVD or wipe."
+  },
+  "historicalRuns": [
+    {
+      "log": "main-device-before-fixes.log",
+      "passed": 11,
+      "failed": 2,
+      "finalAcceptanceEvidence": false,
+      "note": "Before selector and template-owner fixes"
+    },
+    {
+      "log": "fdroid-device-before-focus-fix.log",
+      "passed": 9,
+      "failed": 4,
+      "finalAcceptanceEvidence": false,
+      "note": "Before focused-window keyboard helper and order assertion fixes; six other native regressions passed"
+    },
+    {
+      "log": "fdroid-qrtemplate-device.log",
+      "finalAcceptanceEvidence": false,
+      "note": "Interrupted after System UI ANR; process terminated by the test operator"
+    },
+    {
+      "log": "fdroid-qrui-device.log",
+      "finalAcceptanceEvidence": false,
+      "note": "Latest UI-only rerun stalled at test 1 in the overloaded shared AVD; explicitly stopped, not a passing run"
+    }
+  ],
+  "sourceMirrorCheck": "All task source/resource/test files identical across four copies",
+  "followupPreviousStatus": {
+    "status": "implemented-device-acceptance-incomplete",
+    "pending": [
+      "Final six UI tests on both editions",
+      "Final complete native regression run on both editions",
+      "Install and test the latest main APK; insufficient space on the shared AVD"
+    ],
+    "limits": [
+      "No live WebDAV or OneDrive service transfer test in this task",
+      "Online M3E Canvas blocked by saved browser permission; local component draft retained",
+      "No acceptance claim for older clients or other Android API levels"
+    ],
+    "environment": {
+      "freeDataMiB": 334,
+      "symptoms": [
+        "System UI ANR in previous attempt",
+        "UI rerun stalled at the first test; Android calendar and Monica Room service timeouts also observed"
+      ],
+      "preservation": "Public AVD, all users, app data, databases and attachments preserved. No new AVD created.",
+      "temporaryAvd": "Exception to root AGENTS.md requested; no approval received"
+    }
+  },
+  "followupEvidence": "pending-content-315-verification.json"
+}

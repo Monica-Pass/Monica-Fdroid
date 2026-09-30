@@ -1,6 +1,9 @@
 package takagi.ru.monica.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.ContactMail
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -48,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -74,6 +78,7 @@ import takagi.ru.monica.data.model.toStorageTarget
 import takagi.ru.monica.ui.components.CustomFieldEditorSection
 import takagi.ru.monica.ui.components.MultiStorageTargetPickerBottomSheet
 import takagi.ru.monica.ui.components.MultiStorageTargetSelectorCard
+import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.ui.components.OutlinedTextField
 import takagi.ru.monica.viewmodel.BillingAddressViewModel
 
@@ -92,7 +97,11 @@ fun AddEditBillingAddressScreen(
     onCanSaveChanged: ((Boolean) -> Unit)? = null,
     onSaveActionChanged: (((() -> Unit)) -> Unit)? = null,
     onToggleFavoriteActionChanged: (((() -> Unit)) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    embeddedDraft: takagi.ru.monica.data.model.EmbeddedWalletContent.Snapshot? = null,
+    embeddedBitmap: android.graphics.Bitmap? = null,
+    embeddedAttachmentsContent: (@Composable () -> Unit)? = null,
+    onEmbeddedSave: (suspend (takagi.ru.monica.attachments.EmbeddedWalletEditorResult) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -112,6 +121,7 @@ fun AddEditBillingAddressScreen(
     var phone by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
+    val editorSections = rememberItemEditorSections()
     var isFavorite by rememberSaveable { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     var workingAddressId by remember(addressId) { mutableStateOf(addressId) }
@@ -167,10 +177,10 @@ fun AddEditBillingAddressScreen(
         hasAppliedInitialStorage = true
     }
 
-    LaunchedEffect(addressId) {
-        if (addressId != null) {
+    LaunchedEffect(addressId, embeddedDraft?.id) {
+        if (addressId != null || embeddedDraft != null) {
             if (hasLoadedExistingFields) return@LaunchedEffect
-            withContext(Dispatchers.IO) { viewModel.getAddressById(addressId) }?.let { item ->
+            (embeddedDraft?.displayItem() ?: withContext(Dispatchers.IO) { viewModel.getAddressById(requireNotNull(addressId)) })?.let { item ->
                 val parsedData = withContext(Dispatchers.Default) {
                     viewModel.parseAddressData(item.itemData)
                 } ?: BillingAddressData()
@@ -246,6 +256,14 @@ fun AddEditBillingAddressScreen(
             val target = selectedStorageTargets.firstOrNull() ?: StorageTarget.MonicaLocal(null)
             scope.launch {
                 try {
+                    if (embeddedDraft != null && onEmbeddedSave != null) {
+                        val data = kotlinx.serialization.json.Json.parseToJsonElement(CardWalletDataCodec.encodeBillingAddressData(addressData)) as kotlinx.serialization.json.JsonObject
+                        onEmbeddedSave(takagi.ru.monica.attachments.EmbeddedWalletEditorResult(
+                            embeddedDraft.edited(effectiveTitle, notes, data).withFavorite(isFavorite),
+                            emptyList(), emptyList(), cardFaceEditor.imageBytes))
+                        cardFaceEditor.clearPendingBytes()
+                        return@launch
+                    }
                     val localCategory = (target as? StorageTarget.MonicaLocal)?.categoryId
                     val mdbxTarget = target as? StorageTarget.Mdbx
                     val currentId = workingAddressId
@@ -296,13 +314,13 @@ fun AddEditBillingAddressScreen(
     val screenContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         Column(
             modifier = modifier
-                .fillMaxSize()
+                .fillMaxSize().testTag("billing_item_editor").imePadding()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MultiStorageTargetSelectorCard(
+            if (embeddedDraft == null) MultiStorageTargetSelectorCard(
                 selectedTargets = selectedStorageTargets.toList(),
                 existingTargetKeys = emptySet(),
                 categories = categories,
@@ -314,22 +332,18 @@ fun AddEditBillingAddressScreen(
                 onAddTargetClick = { showStorageTargetSheet = true },
                 onRemoveTarget = {}
             )
+            ItemEditorIdentity(title, { title = it }, stringResource(R.string.title), Icons.Default.Home)
+
             CardFaceEditSection(
+                    compact = true,
                 state = cardFaceEditor,
                 previewData = billingAddressCardFacePreviewData(effectiveTitle, addressData),
-                enabled = !isSaving
+                enabled = !isSaving,
+                overrideBitmap = embeddedBitmap
             )
 
             InfoCard(title = stringResource(R.string.billing_address)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.title)) },
-                    leadingIcon = { Icon(Icons.Default.Home, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
+
                 OutlinedTextField(
                     value = fullName,
                     onValueChange = { fullName = it },
@@ -428,7 +442,8 @@ fun AddEditBillingAddressScreen(
                 }
 }
 
-            InfoCard(title = stringResource(R.string.billing_address_contact_title)) {
+            ItemEditorOptionalSection(editorSections, "contact", email.isNotBlank() || phone.isNotBlank()) {
+InfoCard(title = stringResource(R.string.billing_address_contact_title)) {
                 if (takagi.ru.monica.ui.components.rememberEntryContentStyle()) {
                     takagi.ru.monica.ui.components.EntryContactFields(listOf(email), listOf(phone),
                         onEmails = { email = it.firstOrNull().orEmpty() },
@@ -457,16 +472,15 @@ fun AddEditBillingAddressScreen(
                     }
 
             }
-
-            InfoCard(title = stringResource(R.string.custom_field_title)) {
-                CustomFieldEditorSection(
-                    fields = customFields,
-                    onFieldsChange = { customFields = it },
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
-            InfoCard(title = stringResource(R.string.notes)) {
+            ItemEditorOptionalSection(editorSections, "custom", customFields.isNotEmpty()) {
+                CustomFieldEditorSection(fields = customFields, onFieldsChange = { customFields = it },
+                    modifier = Modifier.fillMaxWidth(), contentStyle = true, showAddButton = false)
+            }
+
+            ItemEditorOptionalSection(editorSections, "notes", notes.isNotBlank()) {
+InfoCard(title = stringResource(R.string.notes)) {
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -480,7 +494,16 @@ fun AddEditBillingAddressScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(80.dp))
+            }
+            embeddedAttachmentsContent?.invoke()
+
+            ItemEditorAddContent(editorSections, options = listOf(
+                    ItemEditorContentOption("contact", R.string.billing_address_contact_title, Icons.Default.ContactMail, editorSections.visible("contact", email.isNotBlank() || phone.isNotBlank())),
+                    ItemEditorContentOption("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank()))
+                ), fields = customFields, onFieldsChange = { customFields = it },
+                enabled = !isSaving)
+            Spacer(Modifier.height(96.dp))
+
         }
     }
 
@@ -570,25 +593,7 @@ private fun InfoCard(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            content()
-        }
+    CompositionLocalProvider(LocalEntryContentStyle provides true) {
+        TemplateFormSection(title) { content() }
     }
 }

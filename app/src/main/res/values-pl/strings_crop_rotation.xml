@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Obróć o 90° w lewo</string>
+    <string name="card_face_rotate_right">Obróć o 90° w prawo</string>
+    <string name="card_face_crop_rotation_hint">Przeciągnij, aby ustawić obraz, użyj dwóch palców do powiększania lub przycisków do obracania i odbijania.</string>
+    <string name="card_face_flip_horizontal">Odbij poziomo</string>
+    <string name="card_face_flip_vertical">Odbij pionowo</string>
+</resources>

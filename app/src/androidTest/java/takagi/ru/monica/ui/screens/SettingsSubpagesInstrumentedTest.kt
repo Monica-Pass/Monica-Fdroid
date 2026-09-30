@@ -183,7 +183,7 @@ class SettingsSubpagesInstrumentedTest {
         compose.onNodeWithContentDescription(localized.getString(R.string.back)).performClick()
         assertEquals(listOf(1,1,1), listOf(refresh,help,back))
         for (id in listOf("BIOMETRIC", "INTERNET", "NETWORK_STATE", "VIBRATE")) {
-            compose.onNodeWithTag("permission_action_$id").assertDoesNotExist()
+            compose.onNodeWithTag("permission_row_$id").assertHasNoClickAction()
         }
         val actionableIds = mutableListOf("AUTOFILL", "ACCESSIBILITY", "CAMERA", "STORAGE", "NOTIFICATION")
         if (context.packageName.endsWith(".fdroid")) {
@@ -192,11 +192,26 @@ class SettingsSubpagesInstrumentedTest {
             actionableIds += "PHONE_STATE"
         }
         for (id in actionableIds) {
-            val button = compose.onNodeWithTag("permission_action_$id").performScrollTo().assertIsDisplayed()
+            val button = compose.onNodeWithTag("permission_row_$id").performScrollTo().assertIsDisplayed()
             button.assertHeightIsAtLeast(48.dp).performClick()
         }
         assertEquals(actionableIds, clicked)
-        compose.onNodeWithTag("permission_action_CAMERA").performScrollTo()
+        compose.onAllNodesWithText(localized.getString(R.string.permission_status_granted)).assertCountEquals(0)
+        compose.onAllNodesWithText(localized.getString(R.string.permission_open_system_settings)).assertCountEquals(0)
+        compose.onAllNodesWithText(localized.getString(R.string.permission_action_none)).assertCountEquals(0)
+        compose.onNodeWithTag("permission_row_CAMERA").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, localized.getString(R.string.permission_status_denied)))
+
+        val cameraBounds = compose.onNodeWithTag("permission_row_CAMERA").performScrollTo().getUnclippedBoundsInRoot()
+        assertTrue(cameraBounds.bottom - cameraBounds.top <= 120.dp)
+        val statusRightEdges = listOf("CAMERA", "VIBRATE", "NOTIFICATION").map { id ->
+            compose.onNodeWithTag("permission_row_$id").performScrollTo()
+            compose.onNodeWithTag("permission_status_$id", useUnmergedTree = true)
+                .fetchSemanticsNode().boundsInRoot.right
+        }
+        assertTrue("Permission statuses must align regardless of clickability",
+            statusRightEdges.max() - statusRightEdges.min() <= 1f)
+        compose.onNodeWithTag("permission_row_CAMERA").performScrollTo()
         capture("permissions-light-camera")
         assertNoTextOverflow()
     }
@@ -209,9 +224,9 @@ class SettingsSubpagesInstrumentedTest {
                 false, {}, {}, {}, {})
         }
         capture("permissions-dark-large-top")
-        compose.onNodeWithTag("permission_action_AUTOFILL").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("permission_row_AUTOFILL").performScrollTo().assertIsDisplayed()
         capture("permissions-dark-large-autofill")
-        compose.onNodeWithTag("permission_action_CAMERA").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("permission_row_CAMERA").performScrollTo().assertIsDisplayed()
         capture("permissions-dark-large-camera")
         assertNoTextOverflow()
     }
@@ -227,7 +242,7 @@ class SettingsSubpagesInstrumentedTest {
         val model = PermissionViewModel(context.applicationContext as Application)
         store.put("permissions", model)
         show { PermissionManagementScreen({ navigation += "back" }, model) }
-        compose.onNodeWithTag("permission_action_ACCESSIBILITY").performScrollTo().performClick()
+        compose.onNodeWithTag("permission_row_ACCESSIBILITY").performScrollTo().performClick()
         val automation = instrumentation.uiAutomation
         compose.waitUntil(10_000) { automation.rootInActiveWindow?.packageName?.toString() == "com.android.settings" }
         android.os.ParcelFileDescriptor.AutoCloseInputStream(

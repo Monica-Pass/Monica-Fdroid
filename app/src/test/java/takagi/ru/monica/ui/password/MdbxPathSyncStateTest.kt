@@ -17,14 +17,22 @@ class MdbxPathSyncStateTest {
     }
 
     @Test
-    fun newChangesAndFailuresCannotBeHiddenByAnOlderZeroCount() {
-        for (status in listOf(MdbxSyncStatus.PENDING_UPLOAD, MdbxSyncStatus.FAILED,
-            MdbxSyncStatus.REMOTE_CHANGED, MdbxSyncStatus.CONFLICT)) {
+    fun newChangesAndConflictsCannotBeHiddenByAnOlderZeroCount() {
+        for (status in listOf(MdbxSyncStatus.PENDING_UPLOAD, MdbxSyncStatus.CONFLICT)) {
             assertEquals(1, database(status).mdbxPathPendingSyncCount(0))
             assertEquals(1, database(status).mdbxPathPendingSyncCount())
             assertEquals(4, database(status).mdbxPathPendingSyncCount(4))
         }
         assertEquals(2, database(MdbxSyncStatus.SYNCING).mdbxPathPendingSyncCount(2))
+    }
+
+    @Test
+    fun connectionFailureAndRemoteChangesDoNotInventLocalEdits() {
+        for (status in listOf(MdbxSyncStatus.FAILED, MdbxSyncStatus.REMOTE_CHANGED)) {
+            assertEquals(0, database(status).mdbxPathPendingSyncCount())
+            assertEquals(0, database(status).mdbxPathPendingSyncCount(0))
+            assertEquals(4, database(status).mdbxPathPendingSyncCount(4))
+        }
     }
 
     private fun database(status: MdbxSyncStatus) = LocalMdbxDatabase(

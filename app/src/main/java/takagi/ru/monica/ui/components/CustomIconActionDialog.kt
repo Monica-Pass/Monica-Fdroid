@@ -69,9 +69,23 @@ fun CustomIconActionDialog(
     onUploadImage: () -> Unit,
     onPickEmoji: () -> Unit = {},
     onPickInstalledIcon: (() -> Unit)? = null,
+    onSubscribedIconSelected: ((String) -> Unit)? = null,
     onClearIcon: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
+    var showSubscriptions by rememberSaveable { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    if (showSubscriptions && onSubscribedIconSelected != null) {
+        takagi.ru.monica.ui.images.ImageSubscriptionBrowser(onDismiss = { showSubscriptions = false }, onSelect = { bitmap ->
+            try {
+                val file = takagi.ru.monica.ui.icons.PasswordCustomIconStore.importBitmap(context, bitmap).getOrThrow()
+                onSubscribedIconSelected(file)
+                showSubscriptions = false
+                onDismissRequest()
+            } finally { bitmap.recycle() }
+        })
+        return
+    }
     MonicaModalBottomSheet(
         onDismissRequest = onDismissRequest,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -97,6 +111,10 @@ fun CustomIconActionDialog(
                 label = stringResource(R.string.custom_icon_upload_image),
                 onClick = onUploadImage
             )
+            if (onSubscribedIconSelected != null) {
+                IconActionItem(icon = Icons.Default.Palette, label = stringResource(R.string.image_sources_choose),
+                    onClick = { showSubscriptions = true })
+            }
             if (onPickInstalledIcon != null) {
                 IconActionItem(
                     icon = Icons.Default.Palette,

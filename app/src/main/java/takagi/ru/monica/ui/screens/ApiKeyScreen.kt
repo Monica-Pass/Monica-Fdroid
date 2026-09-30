@@ -63,136 +63,14 @@ fun ApiKeyScreen(
     getKeePassGroups: (Long) -> Flow<List<KeePassGroupInfo>> = { flowOf(emptyList()) },
     editor: ApiKeyEditorViewModel = viewModel(key = "api-key:${passwordId ?: "new"}"),
 ) {
-    val context = LocalContext.current
-    val database = remember(context) { PasswordDatabase.getDatabase(context) }
-    val categories by passwords.categories.collectAsState(initial = emptyList())
-    val keepass by database.localKeePassDatabaseDao().getAllDatabases().collectAsState(initial = emptyList())
-    val mdbx by database.localMdbxDatabaseDao().getAvailableDatabases().collectAsState(initial = emptyList())
-    val bitwarden by database.bitwardenVaultDao().getAllVaultsFlow().collectAsState(initial = emptyList())
-    var pickingTarget by remember { mutableStateOf(false) }
-    var keyVisible by remember { mutableStateOf(false) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) keyVisible = false
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    androidx.compose.runtime.CompositionLocalProvider(takagi.ru.monica.ui.components.LocalTemplateTargets provides
+        (takagi.ru.monica.ui.components.LocalTemplateTargets.current ?: listOf(initialTarget))) {
+        AddEditPasswordScreen(viewModel = passwords, passwordId = passwordId, initialLoginType = "API_KEY",
+            onNavigateBack = onBack, onSaveCompleted = onSaved,
+            onSwitchToWifi = { onSelectType?.invoke(EntryTypeChipOption.WIFI) },
+            onSwitchToSshKey = { onSelectType?.invoke(EntryTypeChipOption.SSH_KEY) },
+            onSwitchToApiToken = { onSelectType?.invoke(EntryTypeChipOption.API_TOKEN) })
     }
-    val enabled = editor.loaded && !editor.saving
-    val draft = editor.draft
-    val lockedTargets = editor.original?.let { setOf(it.toStorageTarget().stableKey) }.orEmpty()
-    LaunchedEffect(editor, passwordId) { editor.initialize(passwords, passwordId, initialTarget) }
-    LaunchedEffect(editor.loaded) { keyVisible = false }
-    BackHandler(enabled = editor.saving) { }
-
-    Scaffold(
-        modifier = Modifier.imePadding(),
-        topBar = {
-            Column {
-                TopAppBar(title = {}, navigationIcon = {
-                    IconButton(onClick = onBack, enabled = !editor.saving) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
-                }, actions = {
-                    EntryTypeChip(current = EntryTypeChipOption.API_KEY, showApiKey = true, showGpg = true,
-                        enabled = passwordId == null && enabled && onSelectType != null,
-                        onSelect = { onSelectType?.invoke(it) })
-                    IconButton(onClick = { editor.favorite = !editor.favorite }, enabled = enabled,
-                        modifier = Modifier.testTag("api_key_favorite").semantics { selected = editor.favorite }) {
-                        Icon(if (editor.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            stringResource(R.string.favorite),
-                            tint = if (editor.favorite) MaterialTheme.colorScheme.primary else LocalContentColor.current)
-                    }
-                })
-                Text(stringResource(if (passwordId == null) R.string.api_key_add else R.string.api_key_edit),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 12.dp)
-                        .testTag("api_key_heading"))
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                editor.save(passwords) { onSaved?.invoke(it); onBack() }
-            }, modifier = Modifier.testTag("api_key_save"),
-                containerColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant) {
-                if (editor.saving) CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                else Icon(Icons.Default.Check, stringResource(R.string.save))
-            }
-        },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            editor.failure?.let { failure ->
-                Text(stringResource(when (failure) {
-                    ApiKeyEditorViewModel.Failure.LOAD -> R.string.api_key_load_error
-                    ApiKeyEditorViewModel.Failure.SAVE -> R.string.api_key_save_error
-                    ApiKeyEditorViewModel.Failure.LOCKED -> R.string.api_key_locked
-                }), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("api_key_error"))
-            }
-            if (!editor.loaded && editor.failure == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-            MultiStorageTargetSelectorCard(selectedTargets = editor.targets, existingTargetKeys = lockedTargets,
-                categories = categories, keepassDatabases = keepass, mdbxDatabases = mdbx, bitwardenVaults = bitwarden,
-                bitwardenFolderDao = database.bitwardenFolderDao(), getMdbxFolders = passwords::getMdbxFolders,
-                isEditing = passwordId != null, onAddTargetClick = { if (enabled) pickingTarget = true },
-                onRemoveTarget = { if (enabled && it.stableKey !in lockedTargets) editor.targets = editor.targets - it })
-            ApiKeyTextField(draft.provider, { editor.draft = draft.copy(provider = it) },
-                R.string.api_key_provider, "api_key_provider", Icons.Default.Business, enabled,
-                error = editor.validationAttempted && draft.provider.isBlank(),
-                placeholder = stringResource(R.string.api_key_provider_hint))
-            ApiKeyTextField(draft.website, { editor.draft = draft.copy(website = it) },
-                R.string.api_key_website, "api_key_website", Icons.Default.Language, enabled,
-                error = editor.validationAttempted && !ApiKeyEntryFields.isValidOptionalUrl(draft.website),
-                url = true, placeholder = "https://example.com")
-            OutlinedTextField(value = draft.key, onValueChange = { editor.draft = draft.copy(key = it) },
-                saveTextState = false, label = { Text(stringResource(R.string.api_key_secret_required)) },
-                leadingIcon = { Icon(Icons.Default.VpnKey, null) }, enabled = enabled, singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("api_key_secret"), shape = RoundedCornerShape(12.dp),
-                isError = editor.validationAttempted && draft.key.isBlank(),
-                supportingText = if (editor.validationAttempted && draft.key.isBlank()) {
-                    { Text(stringResource(R.string.api_key_required)) }
-                } else null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
-                visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = { IconButton(onClick = { keyVisible = !keyVisible }, enabled = enabled,
-                    modifier = Modifier.testTag("api_key_reveal")) {
-                    Icon(if (keyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        stringResource(if (keyVisible) R.string.api_key_hide else R.string.api_key_show))
-                } })
-            ApiKeyTextField(draft.apiUrl, { editor.draft = draft.copy(apiUrl = it) },
-                R.string.api_key_url, "api_key_url", Icons.Default.Link, enabled,
-                error = editor.validationAttempted && !ApiKeyEntryFields.isValidOptionalUrl(draft.apiUrl),
-                url = true, placeholder = "https://api.example.com/v1")
-            OutlinedTextField(value = draft.notes, onValueChange = { editor.draft = draft.copy(notes = it) },
-                saveTextState = false, label = { Text(stringResource(R.string.notes)) },
-                leadingIcon = { Icon(Icons.Default.Notes, null) }, enabled = enabled,
-                modifier = Modifier.fillMaxWidth().testTag("api_key_notes"), shape = RoundedCornerShape(12.dp),
-                minLines = 2)
-        }
-    }
-    MultiStorageTargetPickerBottomSheet(visible = pickingTarget, selectedTargets = editor.targets,
-        lockedTargetKeys = lockedTargets, categories = categories, keepassDatabases = keepass,
-        mdbxDatabases = mdbx, bitwardenVaults = bitwarden,
-        getBitwardenFolders = { database.bitwardenFolderDao().getFoldersByVaultFlow(it) },
-        getKeePassGroups = getKeePassGroups, getMdbxFolders = passwords::getMdbxFolders,
-        onDismiss = { pickingTarget = false }, onSelectedTargetsChange = { if (enabled) editor.targets = it })
-}
-
-@Composable
-private fun ApiKeyTextField(
-    value: String, onChange: (String) -> Unit, label: Int, tag: String, icon: ImageVector,
-    enabled: Boolean, error: Boolean, placeholder: String, url: Boolean = false,
-) {
-    OutlinedTextField(value = value, onValueChange = onChange, saveTextState = false,
-        label = { Text(stringResource(label)) }, placeholder = { Text(placeholder) },
-        leadingIcon = { Icon(icon, null) }, enabled = enabled, singleLine = true,
-        shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().testTag(tag),
-        isError = error, supportingText = if (error) {
-            { Text(stringResource(if (url) R.string.api_key_invalid_url else R.string.api_key_required)) }
-        } else null,
-        keyboardOptions = KeyboardOptions(keyboardType = if (url) KeyboardType.Uri else KeyboardType.Text,
-            autoCorrectEnabled = !url))
 }
 
 @Composable
@@ -201,10 +79,10 @@ internal fun ApiKeyDetailContent(
     secret: String?,
     fields: List<CustomField>,
     modifier: Modifier = Modifier,
+    embedded: Boolean = false,
 ) {
     val apiUrl = fields.firstOrNull { it.title == ApiKeyEntryFields.API_URL }?.value.orEmpty()
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())
-        .padding(16.dp).padding(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier.then(if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp).padding(bottom = 96.dp)), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(entry.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("api_key_detail_title"))
         Text(stringResource(R.string.api_key_title), style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary)
@@ -215,9 +93,9 @@ internal fun ApiKeyDetailContent(
             "api_key_detail_secret", sensitive = true)
         if (apiUrl.isNotBlank()) ApiKeyDetailField(stringResource(R.string.api_key_url_label),
             apiUrl, Icons.Default.Link, "api_key_detail_url")
-        if (entry.notes.isNotBlank()) ApiKeyDetailField(stringResource(R.string.notes), entry.notes,
+        if (!embedded && entry.notes.isNotBlank()) ApiKeyDetailField(stringResource(R.string.notes), entry.notes,
             Icons.Default.Notes, "api_key_detail_notes")
-        fields.filterNot { ApiKeyEntryFields.owns(it.title) }.forEach { field ->
+        fields.filterNot { embedded || ApiKeyEntryFields.owns(it.title) }.forEach { field ->
             ApiKeyDetailField(field.title, field.value, Icons.Default.TextFields, "api_key_extra_${field.id}",
                 sensitive = field.isProtected)
         }

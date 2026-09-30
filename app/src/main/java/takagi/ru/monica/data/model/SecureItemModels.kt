@@ -120,7 +120,7 @@ object CardFaceAttachment {
 }
 
 fun CardFaceConfig.validatedOrNull(): CardFaceConfig? =
-    takeIf { CardFaceAttachment.isManagedFileName(imageAttachmentName) }
+    takeIf { CardFaceAttachment.isManagedFileName(imageAttachmentName) || imageAttachmentName.matches(Regex("wallet-[a-zA-Z0-9-]+")) }
 
 /**
  * 账单地址详细信息

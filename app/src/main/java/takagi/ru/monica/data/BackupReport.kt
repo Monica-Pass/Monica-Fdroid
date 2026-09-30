@@ -12,12 +12,13 @@ data class BackupReport(
     val failedItems: List<FailedItem>,
     val warnings: List<String>,
     /** Records the warning independently of the language used while exporting. */
-    val connectionCredentialsSkipped: Boolean = false
+    val connectionCredentialsSkipped: Boolean = false,
+    val skippedItems: List<FailedItem> = emptyList()
 ) {
     /**
      * 是否有警告或失败
      */
-    fun hasIssues(): Boolean = failedItems.isNotEmpty() || warnings.isNotEmpty()
+    fun hasIssues(): Boolean = failedItems.isNotEmpty() || warnings.isNotEmpty() || skippedItems.isNotEmpty()
     
     /**
      * 获取可读的报告摘要

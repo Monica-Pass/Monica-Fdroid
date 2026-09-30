@@ -33,6 +33,7 @@ class AutofillProcessorNg(
         preferDirectAutoFill: Boolean = false,
         passwordSuggestionEnabled: Boolean = true,
         requireAuthentication: Boolean = true,
+        postFillOtpPasswordIds: Set<Long> = emptySet(),
     ): FillResponse? {
         val request = parser.parse(
             packageName = packageName,
@@ -57,6 +58,7 @@ class AutofillProcessorNg(
             passwordSuggestionEnabled = passwordSuggestionEnabled,
             requireAuthentication = requireAuthentication,
             matchedPasswords = passwords,
+            postFillOtpPasswordIds = postFillOtpPasswordIds,
         )
     }
 }

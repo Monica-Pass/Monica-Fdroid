@@ -1,5 +1,6 @@
 package takagi.ru.monica.utils
 
+import takagi.ru.monica.data.explicitPasswordGroupId
 import android.content.Context
 import android.net.Uri
 import android.net.ConnectivityManager
@@ -117,6 +118,7 @@ private data class PasswordBackupEntry(
     val authenticatorKey: String = "",  // 
     val passkeyBindings: String = "",   // 
     val sshKeyData: String = "",
+    val passwordGroupId: String? = null,
     // 
     val loginType: String = "PASSWORD",  // : PASSWORD 
     val ssoProvider: String = "",        // SSO: GOOGLE, APPLE, FACEBOOK 
@@ -275,6 +277,7 @@ private data class TrashPasswordBackupEntry(
     val authenticatorKey: String = "",
     val passkeyBindings: String = "",
     val sshKeyData: String = "",
+    val passwordGroupId: String? = null,
     val deletedAt: Long? = null,
     // 
     val loginType: String = "PASSWORD",
@@ -1125,6 +1128,7 @@ class WebDavHelper(
             authenticatorKey = backup.authenticatorKey,
             passkeyBindings = backup.passkeyBindings,
             sshKeyData = backup.sshKeyData,
+            passwordGroupId = backup.passwordGroupId,
             loginType = backup.loginType,
             ssoProvider = backup.ssoProvider,
             ssoRefEntryId = backup.ssoRefEntryId,
@@ -1750,6 +1754,7 @@ class WebDavHelper(
         contentScope: BackupContentScope = BackupContentScope.MONICA_LOCAL_ONLY,
         allowBackupEncryption: Boolean = true,
         backupEncryptionPassword: String? = null,
+        skippedPasskeys: List<FailedItem> = emptyList(),
     ): Result<Pair<File, BackupReport>> = withContext(Dispatchers.IO) {
         try {
             // 验证：检查是否至少启用了一种内容类型
@@ -1805,6 +1810,7 @@ class WebDavHelper(
                 configuredEncryptionPassword = encryptionPassword,
             )
             val shouldEncryptBackup = backupEncryptPassword != null
+            require(skippedPasskeys.isEmpty() || shouldEncryptBackup) { context.getString(R.string.passkey_partial_requires_encryption) }
             val finalFile = if (shouldEncryptBackup) {
                 File(context.cacheDir, "monica_backup_$timestamp.enc.zip")
             } else {
@@ -1895,11 +1901,12 @@ class WebDavHelper(
                 } else {
                     emptyList()
                 }
-                val passkeysForBackup = passkeyCandidates
-                    .filter { BackupContentPolicy.shouldIncludePasskey(it, contentScope) }
+                val scopedPasskeys = passkeyCandidates.filter { BackupContentPolicy.shouldIncludePasskey(it, contentScope) }
+                val skippedIds = skippedPasskeys.map { it.id }.toSet()
+                val passkeysForBackup = scopedPasskeys.filterNot { it.id in skippedIds }
                 totalPasskeyCount = passkeysForBackup.size
                 mdbxFallbackItemCount += passkeysForBackup.count { it.isMdbxOwned() }
-                val skippedExternalPasskeyCount = passkeyCandidates.size - passkeysForBackup.size
+                val skippedExternalPasskeyCount = passkeyCandidates.size - scopedPasskeys.size
                 if (skippedExternalPasskeyCount > 0) {
                     warnings.add(strings.get(R.string.backup_external_passkeys_skipped, skippedExternalPasskeyCount))
                 }
@@ -1984,6 +1991,7 @@ class WebDavHelper(
                                 authenticatorKey = password.authenticatorKey,  // ✅ 直接备份验证器密钥
                                 passkeyBindings = password.passkeyBindings,
                                 sshKeyData = password.sshKeyData,
+                                passwordGroupId = password.explicitPasswordGroupId(),
                                 // ✅ 第三方登录(SSO)字段
                                 loginType = password.loginType,
                                 ssoProvider = password.ssoProvider,
@@ -2227,14 +2235,22 @@ class WebDavHelper(
                     try {
                         val json = Json { prettyPrint = false }
                         passkeysForBackup.forEach { passkey ->
-                                val keyDecision = PasskeyBackupPortabilityPolicy.prepareExport(
+                                val keyAttempt = runCatching { PasskeyBackupPortabilityPolicy.prepareExport(
                                     encryptedBackup = shouldEncryptBackup,
                                     storedPrivateKey = passkey.privateKeyAlias,
                                     resolvePrivateKey = { stored ->
                                         PasskeyPrivateKeyStore.resolve(securityManager, stored)
                                     },
                                     normalizePrivateKey = PasskeyPrivateKeySupport::exportPkcs8Base64,
-                                )
+                                    exportLegacyAlias = PasskeyPrivateKeySupport::normalizeForBitwardenUpload,
+                                ) }
+                                keyAttempt.exceptionOrNull()?.let { if (it is kotlinx.coroutines.CancellationException) throw it }
+                                if (keyAttempt.isFailure) {
+                                    failedItems.add(FailedItem(passkey.id, context.getString(R.string.backup_content_passkeys),
+                                        passkey.displayTitle(), context.getString(R.string.backup_passkey_unreadable)))
+                                    return@forEach
+                                }
+                                val keyDecision = keyAttempt.getOrThrow()
                                 val portablePrivateKey = when (keyDecision) {
                                     is PasskeyBackupPortabilityPolicy.ExportDecision.Ready -> {
                                         keyDecision.privateKeyMaterial
@@ -2254,7 +2270,9 @@ class WebDavHelper(
                                                 type = context.getString(R.string.backup_content_passkeys),
                                                 title = passkey.displayTitle(),
                                                 reason = context.getString(
-                                                    R.string.passkey_backup_private_key_missing
+                                                    if (PasskeyPrivateKeyStore.hasUsablePrivateKey(securityManager, passkey.privateKeyAlias))
+                                                        R.string.backup_passkey_device_bound
+                                                    else R.string.backup_passkey_unavailable
                                                 ),
                                             )
                                         )
@@ -2334,6 +2352,13 @@ class WebDavHelper(
                 }
 
                 ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
+                    if (skippedPasskeys.isNotEmpty()) {
+                        val omitted = org.json.JSONArray()
+                        skippedPasskeys.forEach { item -> omitted.put(org.json.JSONObject()
+                            .put("id", item.id).put("type", "passkey").put("title", item.title).put("reason", item.reason)) }
+                        val manifest = org.json.JSONObject().put("schemaVersion", 1).put("complete", false).put("skippedItems", omitted)
+                        addBytesToZip(zipOut, manifest.toString().toByteArray(Charsets.UTF_8), "monica_partial_backup.json")
+                    }
                     if (foldersRootDir.exists()) {
                         addDirectoryToZip(zipOut, foldersRootDir, "folders")
                     }
@@ -2494,6 +2519,7 @@ class WebDavHelper(
                                         authenticatorKey = password.authenticatorKey,
                                         passkeyBindings = password.passkeyBindings,
                                         sshKeyData = password.sshKeyData,
+                                        passwordGroupId = password.explicitPasswordGroupId(),
                                         deletedAt = password.deletedAt?.time,
                                         // ✅ 第三方登录(SSO)字段
                                         loginType = password.loginType,
@@ -2859,7 +2885,8 @@ class WebDavHelper(
                     successItems = successCounts,
                     failedItems = failedItems,
                     warnings = warnings,
-                    connectionCredentialsSkipped = connectionCredentialsSkipped
+                    connectionCredentialsSkipped = connectionCredentialsSkipped,
+                    skippedItems = skippedPasskeys
                 )
                 android.util.Log.d(
                     "WebDavHelper",
@@ -2894,7 +2921,8 @@ class WebDavHelper(
         preferences: BackupPreferences = getBackupPreferences(),
         isPermanent: Boolean = false,
         isManualTrigger: Boolean = true,  // 默认为手动触发
-        contentScope: BackupContentScope = BackupContentScope.MONICA_LOCAL_ONLY
+        contentScope: BackupContentScope = BackupContentScope.MONICA_LOCAL_ONLY,
+        skippedPasskeys: List<FailedItem> = emptyList(),
     ): Result<BackupReport> = withContext(Dispatchers.IO) {
         // 检查是否已有备份正在进行
         if (!backupLock.compareAndSet(false, true)) {
@@ -2913,7 +2941,8 @@ class WebDavHelper(
                 passwords = passwords,
                 secureItems = secureItems,
                 preferences = preferences,
-                contentScope = contentScope
+                contentScope = contentScope,
+                skippedPasskeys = skippedPasskeys
             )
             
             if (createResult.isFailure) {
@@ -2932,21 +2961,22 @@ class WebDavHelper(
                             "failures=${report.failedItems.size}, " +
                             "passwords=${report.successItems.passwords}/${report.totalItems.passwords}, " +
                             "totp=${report.successItems.totp}/${report.totalItems.totp}, " +
-                            "notes=${report.successItems.notes}/${report.totalItems.notes}"
+                            "notes=${report.successItems.notes}/${report.totalItems.notes}, " +
+                            "passkeys=${report.successItems.passkeys}/${report.totalItems.passkeys}"
                     )
-                    return@withContext Result.failure(
-                        Exception(strings.get(R.string.backup_incomplete_upload_blocked))
-                    )
+                    requireCompleteBackup(report, strings.get(R.string.backup_incomplete_upload_blocked))
                 }
 
                 // 上传
-                val uploadResult = uploadBackup(backupFile, isPermanent)
+                val partial = skippedPasskeys.isNotEmpty()
+                val uploadResult = uploadBackup(backupFile, isPermanent || partial, isPartial = partial)
                 
                 if (uploadResult.isSuccess) {
-                    updateLastBackupTime()
+                    if (!partial) updateLastBackupTime()
 
                     // Cleanup must not run until a complete replacement has been uploaded.
-                    val cleanupResult = cleanupBackups(protectedBackupName = uploadResult.getOrThrow())
+                    val cleanupResult = if (partial) Result.success(Unit)
+                    else cleanupBackups(protectedBackupName = uploadResult.getOrThrow()).map { Unit }
                     cleanupResult.onFailure { error ->
                         android.util.Log.w("WebDavHelper", "Backup uploaded, but retention cleanup failed", error)
                     }
@@ -3003,7 +3033,10 @@ class WebDavHelper(
             Result.failure(Exception(strings.get(R.string.backup_memory_insufficient)))
         } catch (e: Exception) {
             android.util.Log.e("WebDavHelper", "Backup failed", e)
-            Result.failure(Exception(strings.get(R.string.webdav_backup_failed, e.message ?: strings.get(R.string.import_data_unknown_error))))
+            Result.failure(
+                if (e is IncompleteBackupException) e
+                else Exception(strings.get(R.string.webdav_backup_failed, e.message ?: strings.get(R.string.import_data_unknown_error)))
+            )
         } finally {
             // 释放备份锁
             backupLock.set(false)
@@ -3259,8 +3292,17 @@ class WebDavHelper(
                 backupFile
             }
 
-            val isDatabaseExport = java.util.zip.ZipFile(zipFile).use { archive ->
-                archive.getEntry("database_export.json") != null
+            val databaseExportManifest = java.util.zip.ZipFile(zipFile).use { archive ->
+                archive.getEntry("database_export.json")?.let { manifest ->
+                    val bytes = archive.getInputStream(manifest).use {
+                        takagi.ru.monica.data.NativeApiTokenAssets.readBounded(it, 64L * 1024)
+                    }
+                    try { bytes.toString(Charsets.UTF_8) } finally { bytes.fill(0) }
+                }
+            }
+            val isDatabaseExport = databaseExportManifest != null
+            val expectedNativeTokenCount = databaseExportManifest?.let {
+                takagi.ru.monica.transfer.NativeTokenBackupAssets.expectedTokenCount(it)
             }
             detectedMonicaConfigEntries = runCatching {
                 detectMonicaConfigEntries(zipFile)
@@ -3301,6 +3343,7 @@ class WebDavHelper(
                 val steamMaFiles = mutableListOf<SteamMaFilePayload>()
                 val passwordHistory = mutableListOf<PasswordHistoryBackupEntry>()
                 val nativeTokens = mutableListOf<takagi.ru.monica.transfer.NativeTokenBackup>()
+                var nativeTokenFileCount = 0
                 val pendingKeePassMetadata = mutableMapOf<Long, KeePassDatabaseBackupEntry>()
                 val pendingKeePassKeyFiles = mutableMapOf<Long, ByteArray>()
                 val pendingKeePassDatabases = mutableMapOf<Long, File>()
@@ -3316,7 +3359,13 @@ class WebDavHelper(
                 
                 // 3. 解压ZIP文件并读取JSON/CSV、密码历史和图片
                 progress.report(TransferProgress(TransferPhase.READING))
-                val zipEntryCount = java.util.zip.ZipFile(zipFile).use { it.size().toLong() }
+                val zipEntryCount = java.util.zip.ZipFile(zipFile).use { archive ->
+                    if (archive.getEntry("monica_partial_backup.json") != null) {
+                        if (overwrite) return@withContext Result.failure(IllegalArgumentException(strings.get(R.string.passkey_partial_replace_blocked)))
+                        warnings.add(strings.get(R.string.passkey_partial_restore_warning))
+                    }
+                    archive.size().toLong()
+                }
                 var readEntries = 0L
                 ZipInputStream(FileInputStream(zipFile).buffered()).use { zipIn ->
                     var entry = zipIn.nextEntry
@@ -3344,8 +3393,15 @@ class WebDavHelper(
                             
                             when {
                                 isDatabaseExport && entryName == "native_api_tokens.json" -> {
-                                    nativeTokens += Json { ignoreUnknownKeys = true }.decodeFromString<
-                                        List<takagi.ru.monica.transfer.NativeTokenBackup>>(tempFile.readText(Charsets.UTF_8))
+                                    nativeTokenFileCount++
+                                    if (expectedNativeTokenCount != null) require(normalizedEntryName == "native_api_tokens.json") {
+                                        "Native backup token file must be at the archive root"
+                                    }
+                                    require(tempFile.length() <= takagi.ru.monica.transfer.NativeTokenBackupAssets.MAX_JSON_BYTES) {
+                                        "Native token backup exceeds the supported size"
+                                    }
+                                    nativeTokens += takagi.ru.monica.transfer.NativeTokenBackupAssets.decode(tempFile.readText(Charsets.UTF_8))
+                                    takagi.ru.monica.transfer.NativeTokenBackupAssets.validate(nativeTokens)
                                 }
                                 isDatabaseExport && normalizedEntryName == "trash/trash_passwords.json" -> {
                                     val rows = org.json.JSONArray(tempFile.readText(Charsets.UTF_8))
@@ -3701,6 +3757,7 @@ class WebDavHelper(
                                                             authenticatorKey = backup.authenticatorKey,
                                                             passkeyBindings = backup.passkeyBindings,
                                                             sshKeyData = backup.sshKeyData,
+                                                            passwordGroupId = backup.passwordGroupId,
                                                             isDeleted = true,
                                                             deletedAt = backup.deletedAt?.let { java.util.Date(it) },
                                                             // ✅ 第三方登录(SSO)字段
@@ -4452,6 +4509,9 @@ class WebDavHelper(
                         entry = zipIn.nextEntry
                     }
                 }
+
+                takagi.ru.monica.transfer.NativeTokenBackupAssets.validateArchive(
+                    expectedNativeTokenCount, nativeTokenFileCount, nativeTokens)
 
                 restoreStagedKeePassDatabases(
                     metadataById = pendingKeePassMetadata,
@@ -5772,7 +5832,7 @@ class WebDavHelper(
      * 上传备份文件
      * 使用流式上传避免内存溢出
      */
-    suspend fun uploadBackup(file: File, isPermanent: Boolean = false): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun uploadBackup(file: File, isPermanent: Boolean = false, isPartial: Boolean = false): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (sardine == null) {
                 return@withContext Result.failure(Exception("WebDAV not configured"))
@@ -5792,7 +5852,8 @@ class WebDavHelper(
             
             // 生成带时间戳的文件名，保留加密标识
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val suffix = if (isPermanent) PERMANENT_SUFFIX else ""
+            val suffix = (if (isPartial) "_partial_${java.util.UUID.randomUUID()}" else "") +
+                (if (isPermanent || isPartial) PERMANENT_SUFFIX else "")
             // 根据源文件名判断是否加密，保留 .enc.zip 后缀
             val isEncrypted = file.name.endsWith(".enc.zip")
             val fileName = if (isEncrypted) {
@@ -5889,7 +5950,7 @@ class WebDavHelper(
             
             // 下载文件
             sardine!!.get(remotePath).use { inputStream ->
-                destFile.outputStream().use { outputStream ->
+                writeBackupAtomically(destFile) { outputStream ->
                     inputStream.copyTo(outputStream)
                 }
             }
@@ -5919,7 +5980,7 @@ class WebDavHelper(
             var deletedCount = 0
 
             val expiredBackups = BackupRetentionPolicy.backupsToDelete(
-                backups = backups,
+                backups = backups.filter { BackupRetentionPolicy.isManagedTemporaryBackup(it.name) },
                 config = getBackupRetentionConfig(),
                 protectedBackupName = protectedBackupName
             )

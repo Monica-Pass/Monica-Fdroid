@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import takagi.ru.monica.ui.components.SettingsPanelGroup
+import takagi.ru.monica.ui.components.SettingsPanelRow
 import takagi.ru.monica.R
 
 /**
@@ -75,128 +77,29 @@ fun SyncBackupScreen(
                 .padding(padding)
                 .verticalScroll(scrollState)
         ) {
-            // 顶部说明卡片
-            ElevatedCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Column {
-                        Text(
-                            stringResource(R.string.sync_backup_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            stringResource(R.string.sync_backup_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
-                }
-            }
-            
-            // 常用同步区块（高频）
-            SyncBackupSection(title = stringResource(R.string.sync_backup_common_sync)) {
-                SyncBackupItem(
-                    icon = Icons.Default.Cloud,
-                    title = stringResource(R.string.webdav_backup),
-                    description = stringResource(R.string.webdav_backup_description),
-                    onClick = onNavigateToWebDav,
-                    enabled = true,
-                    badge = null
-                )
-
-                // F-Droid build: OneDrive backup entry removed (MSAL stripped).
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 72.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                SyncBackupItem(
-                    icon = Icons.Default.CloudSync,
-                    title = stringResource(R.string.sync_backup_bitwarden_sync_title),
-                    description = stringResource(R.string.sync_backup_bitwarden_sync_desc),
-                    onClick = onNavigateToBitwarden,
-                    enabled = isPlusActivated,
-                    badge = if (!isPlusActivated) "Plus" else null
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             SyncBackupSection(title = stringResource(R.string.sync_backup_database_tools)) {
-                SyncBackupItem(
-                    icon = Icons.Default.Storage,
-                    title = stringResource(R.string.dedup_engine_title),
-                    description = stringResource(R.string.dedup_engine_entry_desc),
-                    onClick = onNavigateToDedupEngine
-                )
+                SyncBackupItem(Icons.Default.Storage, stringResource(R.string.mdbx_ui_manager_entry_title),
+                    stringResource(R.string.mdbx_ui_manager_entry_description), onNavigateToMdbx)
+                SyncBackupItem(Icons.Default.Key, stringResource(R.string.local_keepass_database),
+                    stringResource(R.string.local_keepass_database_description), onNavigateToLocalKeePass)
+                SyncBackupItem(Icons.Default.FilterList, stringResource(R.string.dedup_engine_title),
+                    stringResource(R.string.dedup_engine_entry_desc), onNavigateToDedupEngine)
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // KeePass 相关区块（中低频）
-            SyncBackupSection(title = stringResource(R.string.sync_backup_keepass_tools)) {
-                SyncBackupItem(
-                    icon = Icons.Default.Key,
-                    title = stringResource(R.string.local_keepass_database),
-                    description = stringResource(R.string.local_keepass_database_description),
-                    onClick = onNavigateToLocalKeePass
-                )
+            SyncBackupSection(title = stringResource(R.string.sync_backup_common_sync)) {
+                SyncBackupItem(Icons.Default.Cloud, stringResource(R.string.webdav_backup),
+                    stringResource(R.string.webdav_backup_description), onNavigateToWebDav)
+                SyncBackupItem(Icons.Default.CloudSync, stringResource(R.string.onedrive_backup_title),
+                    stringResource(R.string.onedrive_backup_description), onNavigateToOneDrive)
+                SyncBackupItem(Icons.Default.CloudSync, stringResource(R.string.sync_backup_bitwarden_sync_title),
+                    stringResource(R.string.sync_backup_bitwarden_sync_desc), onNavigateToBitwarden,
+                    enabled = isPlusActivated, badge = if (isPlusActivated) null else "Plus")
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SyncBackupSection(title = "MDBX") {
-                SyncBackupItem(
-                    icon = Icons.Default.Storage,
-                    title = stringResource(R.string.mdbx_ui_manager_entry_title),
-                    description = stringResource(R.string.mdbx_ui_manager_entry_description),
-                    onClick = onNavigateToMdbx
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 导入导出区块（低频）
             SyncBackupSection(title = stringResource(R.string.sync_backup_import_export_low_freq)) {
-                SyncBackupItem(
-                    icon = Icons.Default.Download,
-                    title = stringResource(R.string.export_data),
-                    description = stringResource(R.string.export_data_description),
-                    onClick = onNavigateToExportData
-                )
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 72.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-
-                SyncBackupItem(
-                    icon = Icons.Default.Upload,
-                    title = stringResource(R.string.import_data),
-                    description = stringResource(R.string.import_data_description),
-                    onClick = onNavigateToImportData
-                )
+                SyncBackupItem(Icons.Default.Download, stringResource(R.string.export_data),
+                    stringResource(R.string.export_data_description), onNavigateToExportData)
+                SyncBackupItem(Icons.Default.Upload, stringResource(R.string.import_data),
+                    stringResource(R.string.import_data_description), onNavigateToImportData)
             }
-            
             // 提示卡片
             if (!isPlusActivated) {
                 Card(
@@ -242,30 +145,7 @@ private fun SyncBackupSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(vertical = 12.dp)
-        )
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
-        ) {
-            Column {
-                content()
-            }
-        }
-    }
+    SettingsPanelGroup(title, Modifier.padding(horizontal = 12.dp, vertical = 4.dp), content)
 }
 
 /**
@@ -280,90 +160,9 @@ private fun SyncBackupItem(
     enabled: Boolean = true,
     badge: String? = null
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 图标
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = if (enabled) 
-                MaterialTheme.colorScheme.primaryContainer
-            else 
-                MaterialTheme.colorScheme.surfaceContainerHighest,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = if (enabled)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        // 文字内容
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = if (enabled)
-                        MaterialTheme.colorScheme.onSurface
-                    else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-                
-                // Plus 徽章
-                if (badge != null) {
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.tertiaryContainer
-                    ) {
-                        Text(
-                            badge,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    }
-                }
-            }
-            
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (enabled)
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
-        }
-        
-        // 箭头
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = if (enabled)
-                MaterialTheme.colorScheme.onSurfaceVariant
-            else
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-        )
-    }
+    SettingsPanelRow(icon, title, description, onClick, enabled,
+        trailing = if (badge != null) {{ Text(badge, style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant) }} else null)
 }
 
 

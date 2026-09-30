@@ -1553,237 +1553,30 @@ fun SettingsScreen(
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 24.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Header Icon
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteForever,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Title
-                Text(
-                    text = context.getString(R.string.clear_all_data),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Warning Text
-                Text(
-                    text = context.getString(R.string.clear_all_data_warning),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Options Group
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    ),
-                    shape = MaterialTheme.shapes.large
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = context.getString(R.string.select_data_types_to_clear),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        
-                        // Passwords
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { clearPasswords = !clearPasswords }
-                        ) {
-                            Checkbox(checked = clearPasswords, onCheckedChange = { clearPasswords = it })
-                            Text(
-                                text = context.getString(R.string.data_type_passwords),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                        
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        
-                        // TOTP
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { clearTotp = !clearTotp }
-                        ) {
-                            Checkbox(checked = clearTotp, onCheckedChange = { clearTotp = it })
-                            Text(
-                                text = context.getString(R.string.data_type_totp),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        
-                        // Notes (NEW)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { clearNotes = !clearNotes }
-                        ) {
-                            Checkbox(checked = clearNotes, onCheckedChange = { clearNotes = it })
-                            Text(
-                                text = context.getString(R.string.data_type_notes),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                        
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        
-                        // Documents
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { clearDocuments = !clearDocuments }
-                        ) {
-                            Checkbox(checked = clearDocuments, onCheckedChange = { clearDocuments = it })
-                            Text(
-                                text = context.getString(R.string.data_type_documents),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                        
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        
-                        // Bank Cards
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { clearBankCards = !clearBankCards }
-                        ) {
-                            Checkbox(checked = clearBankCards, onCheckedChange = { clearBankCards = it })
-                            Text(
-                                text = context.getString(R.string.data_type_bank_cards),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                        
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        
-                        // History
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { clearGeneratorHistory = !clearGeneratorHistory }
-                        ) {
-                            Checkbox(checked = clearGeneratorHistory, onCheckedChange = { clearGeneratorHistory = it })
-                            Text(
-                                text = context.getString(R.string.data_type_generator_history),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                if (!settings.disablePasswordVerification) {
-                    OutlinedTextField(
-                        value = clearDataPasswordInput,
-                        onValueChange = { clearDataPasswordInput = it },
-                        label = { Text(context.getString(R.string.enter_master_password_to_confirm)) },
-                        singleLine = true,
-                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-                
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Cancel
-                    OutlinedButton(
-                        onClick = { dismissClearDataSheet() },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = CircleShape
-                    ) {
-                        Text(context.getString(R.string.cancel))
-                    }
-                    
-                    // Confirm Delete
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                val securityManager = takagi.ru.monica.security.SecurityManager(context)
-                                if (settings.disablePasswordVerification ||
-                                    securityManager.verifyMasterPassword(clearDataPasswordInput)
-                                ) {
-                                    dismissClearDataSheet {
-                                        onClearAllData(
-                                            clearPasswords,
-                                            clearTotp,
-                                            clearNotes,
-                                            clearDocuments,
-                                            clearBankCards,
-                                            clearGeneratorHistory
-                                        )
-                                        Toast.makeText(context, context.getString(R.string.clearing_data), Toast.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    Toast.makeText(context, context.getString(R.string.password_incorrect), Toast.LENGTH_SHORT).show()
-                                }
+            takagi.ru.monica.ui.components.ClearDataSheetContent(
+                selected = listOf(clearPasswords, clearTotp, clearNotes, clearDocuments, clearBankCards, clearGeneratorHistory),
+                onSelection = { index, value -> when (index) {
+                    0 -> clearPasswords = value
+                    1 -> clearTotp = value
+                    2 -> clearNotes = value
+                    3 -> clearDocuments = value
+                    4 -> clearBankCards = value
+                    5 -> clearGeneratorHistory = value
+                } },
+                password = clearDataPasswordInput, onPassword = { clearDataPasswordInput = it },
+                verificationRequired = !settings.disablePasswordVerification,
+                onCancel = { dismissClearDataSheet() },
+                onConfirm = {
+                    coroutineScope.launch {
+                        val securityManager = takagi.ru.monica.security.SecurityManager(context)
+                        if (settings.disablePasswordVerification || securityManager.verifyMasterPassword(clearDataPasswordInput)) {
+                            dismissClearDataSheet {
+                                onClearAllData(clearPasswords, clearTotp, clearNotes, clearDocuments, clearBankCards, clearGeneratorHistory)
+                                Toast.makeText(context, context.getString(R.string.clearing_data), Toast.LENGTH_SHORT).show()
                             }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        enabled = settings.disablePasswordVerification || clearDataPasswordInput.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        ),
-                        shape = CircleShape
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(context.getString(R.string.confirm))
+                        } else Toast.makeText(context, context.getString(R.string.password_incorrect), Toast.LENGTH_SHORT).show()
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                })
         }
     }
 }

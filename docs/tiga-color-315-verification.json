@@ -1,0 +1,40 @@
+{
+  "scope": "TiGA presentation correction only; enum/storage/KDF unchanged",
+  "version": "1.0.315",
+  "testsPerEdition": 8,
+  "runs": [
+    {
+      "startedAt": "2026-09-30T00:52:01.4419085+08:00",
+      "testSha256": "2863DF00A1EF573E26003D22446D92080AA7FD2A8BAA26A3D962E07FFC70D1D9",
+      "classes": [
+        "takagi.ru.monica.ui.screens.MdbxTigaSliderTest,takagi.ru.monica.ui.screens.MdbxLayoutReachabilityTest#allSixProductionFormsKeepSubmissionVisibleWithLargeText"
+      ],
+      "finishedAt": "2026-09-30T00:53:34.2670687+08:00",
+      "completed": true,
+      "appSha256": "D97FBDCD68DAC03928FC0ECE101228404F930CE3D7D5AD20905B2601B47162B0",
+      "suite": "TigaColor315",
+      "packageId": "takagi.ru.monica",
+      "testPackageId": "takagi.ru.monica.test",
+      "edition": "Main"
+    },
+    {
+      "classes": [
+        "takagi.ru.monica.ui.screens.MdbxTigaSliderTest,takagi.ru.monica.ui.screens.MdbxLayoutReachabilityTest#allSixProductionFormsKeepSubmissionVisibleWithLargeText"
+      ],
+      "packageId": "takagi.ru.monica.fdroid",
+      "testSha256": "0A62C1852E7E5E5C8069E27F58DDC2A856DB87C85FECEFF9F1224AB4A658733E",
+      "completed": true,
+      "appSha256": "2268DBDCFDA0F0F6B1DD0DDC10F89913B6CAA5F2DABBF326B19AE0137F8E823E",
+      "finishedAt": "2026-09-30T00:56:44.5499598+08:00",
+      "suite": "TigaColor315",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "edition": "Fdroid",
+      "startedAt": "2026-09-30T00:55:12.3768899+08:00"
+    }
+  ],
+  "sourceHashes": {
+    "app/src/main/java/takagi/ru/monica/ui/screens/MdbxTigaModeSelector.kt": "07052706069d5d624650bbff5fad92ca9a89604ed58ef2794de9b8e870f36e56",
+    "app/src/androidTest/java/takagi/ru/monica/ui/screens/MdbxTigaSliderTest.kt": "1f1b55ec965d7cb19aa61e69aa29f8470d3ebf4a07c3e4d499a2ed91d4831bb6"
+  },
+  "canvasOnlineRenderingVerified": false
+}

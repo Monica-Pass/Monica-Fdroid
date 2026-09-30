@@ -1,22 +1,34 @@
 package takagi.ru.monica.autofill_ng
 
 import android.app.UiAutomation
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Build
 import android.os.SystemClock
 import android.os.ParcelFileDescriptor
 import android.provider.Settings
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import androidx.room.withTransaction
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
@@ -29,6 +41,11 @@ import takagi.ru.monica.autofill_ng.fixture.AutofillFormFixtureActivity
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.data.ItemType
+import takagi.ru.monica.data.SecureItem
+import takagi.ru.monica.data.model.TotpData
+import takagi.ru.monica.autofill_ng.service.AutofillOtpNotificationService
+import takagi.ru.monica.util.TotpGenerator
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.security.SessionManager
 import takagi.ru.monica.service.MonicaAccessibilityService
@@ -52,7 +69,12 @@ class AutofillFlowInstrumentedTest {
     private var oldIme: String? = null
     private var accessibilityEnabledByTest = false
     private val insertedIds = mutableListOf<Long>()
+    private val insertedValidatorIds = mutableListOf<Long>()
     private var oldPreferences: List<Boolean>? = null
+    private var oldOtpPreferences: Triple<Boolean, Boolean, Int>? = null
+    private var notificationTestStarted = false
+    private var notificationChannelExisted = false
+    private val notifications by lazy { context.getSystemService(NotificationManager::class.java) }
 
     @Before fun setUp() = runBlocking {
         assumeTrue("Use a dedicated Android test user and opt in explicitly",
@@ -67,6 +89,8 @@ class AutofillFlowInstrumentedTest {
         oldSettings = settings.settingsFlow.first()
         oldPreferences = listOf(preferences.isAutofillEnabled.first(),
             preferences.isPasswordSuggestionEnabled.first(), preferences.isV2RespectAutofillOffEnabled.first())
+        oldOtpPreferences = Triple(preferences.isOtpNotificationEnabled.first(), preferences.isAutoCopyOtpEnabled.first(),
+            preferences.otpNotificationDuration.first())
         security = SecurityManager(context)
         if (!security.isMasterPasswordSet()) security.setMasterPassword(MASTER_PASSWORD)
         check(security.unlockVaultWithPassword(MASTER_PASSWORD)) {
@@ -78,6 +102,8 @@ class AutofillFlowInstrumentedTest {
         preferences.setAutofillEnabled(true)
         preferences.setPasswordSuggestionEnabled(false)
         preferences.setV2RespectAutofillOffEnabled(true)
+        preferences.setOtpNotificationEnabled(false)
+        preferences.setAutoCopyOtpEnabled(false)
         SessionManager.attachAppContext(context)
         SessionManager.markUnlocked()
         insertedIds += dao.insertPasswordEntry(PasswordEntry(
@@ -93,6 +119,16 @@ class AutofillFlowInstrumentedTest {
     }
 
     @After fun tearDown(): Unit = runBlocking {
+        val notificationCleanupFailure = runCatching { if (notificationTestStarted) {
+            context.stopService(Intent(context, AutofillOtpNotificationService::class.java))
+            notifications.cancel(OTP_NOTIFICATION_ID)
+            val deadline = SystemClock.elapsedRealtime() + 2000
+            while (notifications.activeNotifications.any { it.id == OTP_NOTIFICATION_ID } && SystemClock.elapsedRealtime() < deadline) {
+                Thread.sleep(25)
+            }
+            if (!notificationChannelExisted) notifications.deleteNotificationChannel(OTP_CHANNEL_ID)
+        } }.exceptionOrNull()
+        insertedValidatorIds.chunked(500).forEach { PasswordDatabase.getDatabase(context).secureItemDao().deleteItemsByIds(it) }
         insertedIds.forEach { dao.deletePasswordEntryById(it) }
         oldSettings?.let {
             settings.updateAutofillAuthRequired(it.autofillAuthRequired)
@@ -106,6 +142,11 @@ class AutofillFlowInstrumentedTest {
             preferences.setPasswordSuggestionEnabled(it[1])
             preferences.setV2RespectAutofillOffEnabled(it[2])
         }
+        oldOtpPreferences?.let {
+            preferences.setOtpNotificationEnabled(it.first)
+            preferences.setAutoCopyOtpEnabled(it.second)
+            preferences.setOtpNotificationDuration(it.third)
+        }
         if (accessibilityEnabledByTest) {
             val user = android.os.Process.myUid() / 100000
             val component = ComponentName(context, MonicaAccessibilityService::class.java)
@@ -116,6 +157,7 @@ class AutofillFlowInstrumentedTest {
             val end = SystemClock.elapsedRealtime() + 2000
             while (MonicaAccessibilityService.isCredentialFillAvailable(context) && SystemClock.elapsedRealtime() < end) Thread.sleep(25)
         }
+        notificationCleanupFailure?.let { throw it }
     }
 
     @Test fun systemAutofillFillsStandardNativeLoginWithoutVerification() {
@@ -237,6 +279,137 @@ class AutofillFlowInstrumentedTest {
         expectStatus("user=OK password=OK")
     }
 
+    @Test fun systemDropdownPublishesOtpOnlyAfterSelectingTheCredential() = runBlocking {
+        prepareOtpNotificationTest()
+        attachInlineOtp()
+        open("standard")
+        focusFirstField()
+        val suggestion = waitNode { it.text?.toString() == NATIVE_TITLE }
+        assertNoOtpNotificationFor(1000)
+        tap(suggestion)
+        expectStatus("user=OK password=OK")
+        expectOtpNotification()
+    }
+
+    @Test fun systemInlineSelectionPublishesBoundValidatorOtpAfterFillingOriginalFields() = runBlocking {
+        assumeTrue("Inline suggestions require Android 11 or later", Build.VERSION.SDK_INT >= 30)
+        prepareOtpNotificationTest()
+        attachBoundOtp()
+        open("inline")
+        focusFirstField()
+        val suggestion = waitNode {
+            (it.text?.toString() == NATIVE_TITLE || it.contentDescription?.contains(NATIVE_TITLE) == true) &&
+                it.window?.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD
+        }
+        assertNoOtpNotificationFor(1000)
+        tap(suggestion)
+        expectStatus("user=OK password=OK")
+        expectOtpNotification()
+    }
+
+    @Test fun disabledOtpNotificationKeepsSystemDropdownFillWithoutNotification() = runBlocking {
+        prepareOtpNotificationTest(enabled = false)
+        attachInlineOtp()
+        open("standard")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=OK password=OK")
+        assertNoOtpNotificationFor(2000)
+    }
+
+    @Test fun enabledOtpNotificationDoesNothingForCredentialWithoutOtp() = runBlocking {
+        prepareOtpNotificationTest()
+        open("standard")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=OK password=OK")
+        assertNoOtpNotificationFor(2000)
+    }
+
+    @Test fun usernameOnlyStepDoesNotNotifyUntilPasswordStepIsFilled() = runBlocking {
+        prepareOtpNotificationTest()
+        attachInlineOtp()
+        open("step")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=OK password=ABSENT")
+        assertNoOtpNotificationFor(2000)
+        tap(waitNode { it.text?.toString()?.equals("Next step", ignoreCase = true) == true })
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=ABSENT password=OK")
+        expectOtpNotification()
+    }
+
+    @Test fun cancellingLockedOtpCredentialDoesNotPublishNotification() = runBlocking {
+        prepareOtpNotificationTest()
+        attachInlineOtp()
+        settings.updateAutofillAuthRequired(true)
+        SessionManager.markLocked()
+        AutofillSessionGrants.clear()
+        open("standard")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        assertNoOtpNotificationFor(750)
+        tap(waitNode { it.text?.toString() == context.getString(R.string.cancel) })
+        expectStatus("user=EMPTY password=EMPTY")
+        assertNoOtpNotificationFor(1500)
+    }
+
+    @Test fun lockedOtpCredentialNotifiesOnlyAfterVerificationAndSelection() = runBlocking {
+        prepareOtpNotificationTest()
+        attachInlineOtp()
+        settings.updateAutofillAuthRequired(true)
+        SessionManager.markLocked()
+        AutofillSessionGrants.clear()
+        open("standard")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        assertNoOtpNotificationFor(750)
+        verifyAndSelectCredential()
+        expectStatus("user=OK password=OK")
+        expectOtpNotification()
+    }
+
+    @Test fun invalidOtpNeverPreventsSelectedSystemCredentialFromFilling() = runBlocking {
+        prepareOtpNotificationTest()
+        attachInlineOtp("otpauth://totp/AutofillFixture?secret=!!!")
+        open("standard")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=OK password=OK")
+        assertNoOtpNotificationFor(2000)
+    }
+
+    @Test fun otpEligibilityKeepsLargeVaultLookupOffTheRepeatedSuggestionPath() = runBlocking {
+        val database = PasswordDatabase.getDatabase(context)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            val password = requireNotNull(dao.getPasswordEntryById(insertedIds.first()))
+            val payload = security.encryptData(Json.encodeToString(TotpData(secret = OTP_SECRET, boundPasswordId = password.id)))
+            database.withTransaction {
+                repeat(1000) {
+                    insertedValidatorIds += database.secureItemDao().insertItem(SecureItem(
+                        itemType = ItemType.TOTP, title = "Synthetic OTP performance fixture", itemData = payload))
+                }
+            }
+            val cache = AutofillOtpBindingCache(scope)
+            val actions = AutofillOtpActions(context, cache)
+            val candidates = listOf(password)
+            preferences.setOtpNotificationEnabled(false)
+            preferences.setAutoCopyOtpEnabled(false)
+            suspend fun measure(): Long {
+                val start = SystemClock.elapsedRealtimeNanos()
+                actions.eligiblePasswordIds(candidates)
+                return (SystemClock.elapsedRealtimeNanos() - start) / 1_000_000
+            }
+            val disabled = List(25) { measure() }.sorted()[23]
+            preferences.setOtpNotificationEnabled(true)
+            val cold = measure()
+            val deadline = SystemClock.elapsedRealtime() + 10000
+            while (password.id !in actions.eligiblePasswordIds(candidates) && SystemClock.elapsedRealtime() < deadline) delay(25)
+            assertTrue("Background index must eventually include the selected binding", password.id in actions.eligiblePasswordIds(candidates))
+            val warm = List(50) { measure() }.sorted()[47]
+            android.util.Log.i("AutofillOtpPerf", "validators=1000 disabledP95Ms=$disabled coldMs=$cold cachedP95Ms=$warm")
+            assertTrue("Cached optional lookup must stay below the 100 ms cold-query budget", warm < 100)
+        } finally { scope.cancel() }
+    }
+
     @Test fun manualSystemRequestSupportsAnUnlabelledField() {
         open("unlabelled")
         tap(waitNode { it.text?.toString()?.equals("Request autofill", ignoreCase = true) == true })
@@ -335,6 +508,7 @@ class AutofillFlowInstrumentedTest {
     }
 
     private fun open(scenario: String, accessibilityOnly: Boolean = false) {
+        val instance = java.util.UUID.randomUUID().toString()
         selectIme(if (scenario == "inline") {
             requireNotNull(oldIme) { "Install an inline-capable keyboard for the inline test" }
         } else {
@@ -345,7 +519,11 @@ class AutofillFlowInstrumentedTest {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             putExtra("scenario",scenario)
             putExtra("accessibilityOnly",accessibilityOnly)
+            putExtra("fixtureInstance", instance)
         })
+        // The previous activity can still expose its status/dropdown while CLEAR_TASK is
+        // being processed. Never accidentally click the previous test's suggestion.
+        waitNode { it.contentDescription?.toString() == "fixture-instance-$instance" }
         waitNode { it.contentDescription?.toString() == "fixture-status" }
     }
 
@@ -426,6 +604,60 @@ class AutofillFlowInstrumentedTest {
         waitNode { it.contentDescription?.toString() == "fixture-status" && it.text?.contains(expected) == true }
     }
 
+    private suspend fun prepareOtpNotificationTest(enabled: Boolean = true) {
+        assumeTrue("Do not replace an existing OTP notification in the test user",
+            notifications.activeNotifications.none { it.id == OTP_NOTIFICATION_ID })
+        notificationChannelExisted = notifications.getNotificationChannel(OTP_CHANNEL_ID) != null
+        notificationTestStarted = true
+        // Revoking this permission after a test kills the instrumentation target.
+        // Prepare it in the isolated user before running, and preserve it here.
+        assumeTrue("Grant notification permission in the isolated test user before running OTP tests",
+            Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+        assumeTrue("Preserve the user's blocked app/channel notification settings",
+            notifications.areNotificationsEnabled() &&
+                notifications.getNotificationChannel(OTP_CHANNEL_ID)?.importance != NotificationManager.IMPORTANCE_NONE)
+        preferences.setOtpNotificationEnabled(enabled)
+        preferences.setAutoCopyOtpEnabled(false)
+        preferences.setOtpNotificationDuration(30)
+    }
+
+    private suspend fun attachInlineOtp(secret: String = OTP_SECRET) {
+        val entry = requireNotNull(dao.getPasswordEntryById(insertedIds.first()))
+        dao.updatePasswordEntry(entry.copy(authenticatorKey = security.encryptData(secret)))
+    }
+
+    private suspend fun attachBoundOtp() {
+        val data = TotpData(secret = OTP_SECRET, issuer = "Autofill fixture", accountName = "Synthetic account",
+            boundPasswordId = insertedIds.first())
+        insertedValidatorIds += PasswordDatabase.getDatabase(context).secureItemDao().insertItem(SecureItem(
+            itemType = ItemType.TOTP, title = "Autofill fixture bound validator", itemData = security.encryptData(Json.encodeToString(data))))
+    }
+
+    private fun assertNoOtpNotificationFor(durationMs: Long) {
+        val deadline = SystemClock.elapsedRealtime() + durationMs
+        do {
+            assertTrue("No OTP notification is allowed before eligible password selection",
+                notifications.activeNotifications.none { it.id == OTP_NOTIFICATION_ID })
+            Thread.sleep(50)
+        } while (SystemClock.elapsedRealtime() < deadline)
+    }
+
+    private fun expectOtpNotification() {
+        val deadline = SystemClock.elapsedRealtime() + 10000
+        var notification: Notification? = null
+        while (notification == null && SystemClock.elapsedRealtime() < deadline) {
+            notification = notifications.activeNotifications.firstOrNull { it.id == OTP_NOTIFICATION_ID }?.notification
+            if (notification == null) Thread.sleep(50)
+        }
+        val actual = requireNotNull(notification) { "Selected OTP credential did not publish its notification" }
+        assertEquals(OTP_CHANNEL_ID, actual.channelId)
+        assertTrue(actual.extras.getCharSequence(Notification.EXTRA_TITLE).toString().contains(NATIVE_TITLE))
+        val code = actual.extras.getCharSequence(Notification.EXTRA_TEXT).toString().filter(Char::isDigit)
+        val now = System.currentTimeMillis() / 1000
+        val expected = listOf(now - 30, now, now + 30).map { TotpGenerator.generateOtp(TotpData(secret = OTP_SECRET), currentSeconds = it) }
+        assertTrue("Notification must contain the selected fixture's current OTP", code in expected)
+    }
+
     private fun waitNode(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
         val end = SystemClock.elapsedRealtime() + 10000
         var fixtureStatus: String? = null
@@ -483,5 +715,8 @@ class AutofillFlowInstrumentedTest {
         private const val MASTER_PASSWORD = "Monica-Autofill-Test-2026!"
         private const val NATIVE_TITLE = "Autofill native test credential"
         private const val WEB_TITLE = "Autofill web test credential"
+        private const val OTP_SECRET = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+        private const val OTP_CHANNEL_ID = "autofill_otp"
+        private const val OTP_NOTIFICATION_ID = 12001
     }
 }

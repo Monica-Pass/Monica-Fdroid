@@ -106,7 +106,8 @@ internal fun prepareOverviewPicker(
             } else null
             val password = item.passwordEntry
             val detail = when (item.type) {
-                VaultV2ItemType.BANK_CARD -> bank?.bankName.orEmpty()
+                VaultV2ItemType.BANK_CARD -> listOf(bank?.bankName.orEmpty(), bank?.cardholderName.orEmpty())
+                    .filter(String::isNotBlank).distinct().joinToString(" · ")
                 VaultV2ItemType.PASSWORD -> password?.username.orEmpty().ifBlank { password?.website.orEmpty() }
                 VaultV2ItemType.NOTE -> ""
                 else -> item.subtitle.takeUnless { it == "-" }.orEmpty()

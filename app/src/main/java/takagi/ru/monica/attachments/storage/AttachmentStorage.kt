@@ -56,6 +56,9 @@ class AttachmentStorage(private val context: Context) {
     suspend fun writeEncrypted(source: InputStream): EncryptedBlobResult = withContext(Dispatchers.IO) {
         val uuid = UUID.randomUUID().toString()
         val relative = "$uuid.enc"
+        // Room registration happens after encryption. A concurrent housekeeping pass must
+        // never interpret a newly written, not-yet-registered blob as an orphan.
+        writtenThisProcess.add(relative)
         val target = File(storageDir, relative)
         val cek = AttachmentCryptoStreams.newCek()
         val digest = MessageDigest.getInstance("SHA-256")
@@ -137,10 +140,17 @@ class AttachmentStorage(private val context: Context) {
             ?: emptyList()
     }
 
+    /** Only collect leftovers from previous processes; active writers are never GC candidates. */
+    fun listOrphanCleanupCandidates(): List<String> = listAllBlobs().filter { name ->
+        name !in writtenThisProcess && File(storageDir, name).lastModified() < processStartedAt
+    }
+
     /** 仅供调试/诊断，不应该对外暴露绝对路径给用户代码。 */
     internal fun absolutePathOf(relativePath: String): File = File(storageDir, relativePath)
 
     companion object {
+        private val processStartedAt = System.currentTimeMillis()
+        private val writtenThisProcess = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
         private const val TAG = "AttachmentStorage"
         private const val DIR_NAME = "secure_attachments"
     }

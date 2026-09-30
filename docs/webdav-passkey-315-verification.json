@@ -1,0 +1,46 @@
+{
+  "version": "1.0.315",
+  "status": "verified-local-unreleased",
+  "device": "Monica_Issue136_API_32 / Android 32 / emulator-5554",
+  "runs": [
+    {
+      "completed": true,
+      "packageId": "takagi.ru.monica",
+      "classes": [
+        "takagi.ru.monica.utils.PasskeyBackupFailureInstrumentedTest,takagi.ru.monica.ui.screens.BackupProblemDialogTest"
+      ],
+      "testSha256": "DD0A7647B07F886173FAE0E0FA0B0606DF7EEB21C1EDCDBF1A583AF508B24C5B",
+      "finishedAt": "2026-09-29T14:15:28.2531008+08:00",
+      "startedAt": "2026-09-29T14:14:01.5324098+08:00",
+      "edition": "Main",
+      "appSha256": "3B65AC01DE31EEF04B4503C6FA1AC23358DE1C0D4054A6999144168BEB0E6EA4",
+      "testPackageId": "takagi.ru.monica.test",
+      "suite": "PasskeyDialog315",
+      "tests": 6,
+      "log": ".codex-tasks\\experimental-final-315\\main-passkeydialog315-device.log",
+      "buildLog": ".codex-tasks\\passkey-backup-315\\main-build.log"
+    },
+    {
+      "classes": [
+        "takagi.ru.monica.utils.PasskeyBackupFailureInstrumentedTest,takagi.ru.monica.ui.screens.BackupProblemDialogTest"
+      ],
+      "packageId": "takagi.ru.monica.fdroid",
+      "testSha256": "1DC7B5DC1D66186FDA1C9288CF3D35420E5E3FAF2CED708339EF42615D8BB76A",
+      "finishedAt": "2026-09-29T14:13:12.1284791+08:00",
+      "edition": "Fdroid",
+      "completed": true,
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "startedAt": "2026-09-29T14:12:05.0246293+08:00",
+      "appSha256": "19AF5AB83BF58942CCC15813796267F30726DD8262331A4D1FFBBDFF9D920E6A",
+      "suite": "PasskeyDialog315",
+      "tests": 6,
+      "log": ".codex-tasks\\experimental-final-315\\fdroid-passkeydialog315-device.log",
+      "buildLog": ".codex-tasks\\passkey-backup-315\\fdroid-build.log"
+    }
+  ],
+  "limits": [
+    "No real user database or live WebDAV service was used.",
+    "Remote calls were captured using a fake Sardine client; encrypted upload output was checked by restore.",
+    "Old AndroidKeyStore device-bound keys cannot be made exportable by this change."
+  ]
+}

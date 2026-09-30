@@ -181,13 +181,7 @@ fun MdbxLocalCreateScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MdbxEngineTypeSection(
-                selectedEngine = selectedEngine,
-                onEngineChange = { selectedEngine = it },
-                remote = false,
-                selectedTigaMode = selectedTigaMode,
-                onTigaModeChange = { selectedTigaMode = it }
-            )
+            MdbxTigaModeSelector(selectedTigaMode, { selectedTigaMode = it })
 
             // === Card: Storage Location ===
             AnimatedVisibility(

@@ -40,11 +40,7 @@ internal fun AppLauncherIconSettings(
     val context = LocalContext.current
     val previewSizePx = with(LocalDensity.current) { 56.dp.roundToPx() }
     Column(modifier = Modifier.settingsSearchAnchor(stringResource(R.string.icon_settings_app_icon_title)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.icon_settings_app_icon_title),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 12.dp),
-        )
+        takagi.ru.monica.ui.components.SettingsSubpageHeading(stringResource(R.string.icon_settings_app_icon_title))
         Text(
             text = stringResource(R.string.launcher_icon_selection_description),
             style = MaterialTheme.typography.bodySmall,
@@ -53,7 +49,7 @@ internal fun AppLauncherIconSettings(
         )
         Column(
             modifier = Modifier.selectableGroup(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             AppLauncherIcon.entries.forEachIndexed { index, option ->
                 val selected = option == selectedIcon
@@ -73,12 +69,12 @@ internal fun AppLauncherIconSettings(
                     requireNotNull(ContextCompat.getDrawable(context, iconRes))
                         .toBitmap(previewSizePx, previewSizePx).asImageBitmap()
                 }
-                val topRadius = if (index == 0) 28.dp else 4.dp
-                val bottomRadius = if (index == AppLauncherIcon.entries.lastIndex) 28.dp else 4.dp
+                val topRadius = if (index == 0) 24.dp else 4.dp
+                val bottomRadius = if (index == AppLauncherIcon.entries.lastIndex) 24.dp else 4.dp
                 Surface(
                     shape = RoundedCornerShape(topRadius, topRadius, bottomRadius, bottomRadius),
                     color = if (selected) MaterialTheme.colorScheme.secondaryContainer
-                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        else MaterialTheme.colorScheme.surfaceContainer,
                     contentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
                         else MaterialTheme.colorScheme.onSurface,
                 ) {
@@ -94,7 +90,7 @@ internal fun AppLauncherIconSettings(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Image(bitmap, contentDescription = null, modifier = Modifier.size(56.dp))
-                        Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                         RadioButton(selected = selected, onClick = null)
                     }
                 }

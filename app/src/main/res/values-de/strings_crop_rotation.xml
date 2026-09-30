@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Um 90° nach links drehen</string>
+    <string name="card_face_rotate_right">Um 90° nach rechts drehen</string>
+    <string name="card_face_crop_rotation_hint">Zum Positionieren ziehen, mit zwei Fingern zoomen oder mit den Schaltflächen drehen und spiegeln.</string>
+    <string name="card_face_flip_horizontal">Horizontal spiegeln</string>
+    <string name="card_face_flip_vertical">Vertikal spiegeln</string>
+</resources>

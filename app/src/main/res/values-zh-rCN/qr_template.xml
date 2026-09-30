@@ -1,0 +1,11 @@
+<resources>
+    <string name="qr_template_custom">自定义二维码模板</string>
+    <string name="qr_template_literal">普通文本</string>
+    <string name="qr_template_mode">字段模板</string>
+    <string name="qr_template_insert">插入字段</string>
+    <string name="qr_template_wifi">Wi-Fi 预设</string>
+    <string name="qr_template_generate">生成二维码</string>
+    <string name="qr_template_hint">生成时读取最新字段，仅保存模板，不额外保存展开后的密码。Wi-Fi 模板会自动转义插入值。</string>
+    <string name="qr_template_error">无法读取项目、保存模板或生成二维码。请确认数据库已解锁、内容未超限后重试。</string>
+    <string name="qr_template_field_error">字段“%1$s”缺失、不可读取或名称重复，请选择可用字段后生成。</string>
+</resources>

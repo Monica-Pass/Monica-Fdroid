@@ -1,5 +1,17 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.data.passwordProjectKey
+import kotlinx.serialization.json.jsonObject
+import takagi.ru.monica.data.model.PasswordContentBlocks
+import takagi.ru.monica.ui.components.PasswordContentBlockCard
+import takagi.ru.monica.ui.components.PasswordContentBlockEditor
+import takagi.ru.monica.ui.components.PasswordContentBlockDetail
+import takagi.ru.monica.data.model.EmbeddedWalletContent
+import takagi.ru.monica.attachments.EmbeddedWalletCopyService
+import takagi.ru.monica.attachments.EmbeddedWalletDraftStore
+
+import androidx.compose.foundation.background
+
 import takagi.ru.monica.ui.components.MonicaExpandableCard
 import takagi.ru.monica.ui.components.MonicaExpandableContent
 import takagi.ru.monica.ui.components.localizedName
@@ -14,6 +26,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
+import sh.calvin.reorderable.rememberReorderableLazyListState
+import takagi.ru.monica.ui.components.entryContentItemKey
+import takagi.ru.monica.ui.components.reorderableContentItem
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
@@ -32,6 +49,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import takagi.ru.monica.data.model.EntryContentFields
+import takagi.ru.monica.ui.components.EntrySupplementalSpecs
+import takagi.ru.monica.ui.components.EntrySupplementalFields
 import takagi.ru.monica.ui.components.PasswordContentAddButton
 import takagi.ru.monica.ui.components.PasswordContentMenu
 import takagi.ru.monica.ui.components.PasswordContentSection
@@ -243,6 +265,7 @@ data class AddEditPasswordInitialDraft(
     val password: String = "",
     val appPackageName: String = "",
     val appName: String = "",
+    val template: takagi.ru.monica.data.model.TemplateCredentialDraft? = null,
 )
 
 private data class KeePassOperationBlockUiState(
@@ -281,71 +304,34 @@ fun AddEditPasswordScreen(
     onSwitchToSshKey: ((Long?) -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
-    var returnLoginType by remember(passwordId) { mutableStateOf(initialLoginType) }
-    var gpgMode by remember(passwordId) { mutableStateOf(initialLoginType == "GPG_KEY") }
-    var apiKeyMode by remember(passwordId) { mutableStateOf(initialLoginType == takagi.ru.monica.data.model.ApiKeyEntryFields.TYPE) }
-    var keyTarget by remember(passwordId) {
-        mutableStateOf(takagi.ru.monica.ui.components.buildMultiStorageTarget(initialCategoryId,
-            initialKeePassDatabaseId, initialKeePassGroupPath, initialMdbxDatabaseId,
-            initialBitwardenVaultId, initialBitwardenFolderId, initialMdbxFolderId))
+    val context = LocalContext.current
+    val database = remember(context) { PasswordDatabase.getDatabase(context) }
+    val security = takagi.ru.monica.ui.rememberUiSecurityManager()
+    val repository = remember(database, security) { takagi.ru.monica.repository.SecureItemRepository(database.secureItemDao(), decryptSensitiveValue = security::decryptDataIfMonicaCiphertext) }
+    val banks = bankCardViewModel ?: androidx.lifecycle.viewmodel.compose.viewModel(key = "shared-template-banks") {
+        BankCardViewModel(repository, context, database.localKeePassDatabaseDao(), security, strings = takagi.ru.monica.utils.AppLocaleStringResolver(context))
     }
-    var entryTypeLoaded by remember(passwordId) { mutableStateOf(passwordId == null || passwordId <= 0) }
-    LaunchedEffect(passwordId) {
-        if (passwordId != null && passwordId > 0) {
-            val fields = viewModel.getCustomFieldsByEntryIdSync(passwordId)
-            gpgMode = fields.any { it.title == takagi.ru.monica.data.model.GpgEntryFields.MARKER && it.value == "GPG_KEY" }
-            apiKeyMode = takagi.ru.monica.data.model.ApiKeyEntryFields.isApiKey(fields.associate { it.title to it.value }) ||
-                viewModel.getPasswordEntryById(passwordId)?.isApiKeyEntry() == true
+    val notesModel = noteViewModel ?: androidx.lifecycle.viewmodel.compose.viewModel(key = "shared-template-notes") {
+        NoteViewModel(repository, context = context, localKeePassDatabaseDao = database.localKeePassDatabaseDao(), securityManager = security, strings = takagi.ru.monica.utils.AppLocaleStringResolver(context))
+    }
+    var selectedTemplate by remember(passwordId, initialLoginType) { mutableStateOf(initialLoginType) }
+    // Once the app locks, dispose the editor and its memory-only secrets. Unlocking
+    // must open a fresh screen rather than revive a stale sensitive draft.
+    var sessionRevoked by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        var wasUnlocked = takagi.ru.monica.security.SessionManager.isUnlocked.value
+        takagi.ru.monica.security.SessionManager.isUnlocked.collect { unlocked ->
+            if (wasUnlocked && !unlocked) sessionRevoked = true
+            wasUnlocked = unlocked
         }
-        entryTypeLoaded = true
     }
-    if (!entryTypeLoaded) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        return
-    }
-    if (apiKeyMode) {
-        ApiKeyScreen(passwords = viewModel, passwordId = passwordId?.takeIf { it > 0 },
-            initialTarget = keyTarget, onBack = onNavigateBack, onSaved = onSaveCompleted,
-            onSelectType = { option ->
-                when (option) {
-                    EntryTypeChipOption.API_KEY -> Unit
-                    EntryTypeChipOption.GPG_KEY -> { apiKeyMode = false; gpgMode = true }
-                    EntryTypeChipOption.PASSWORD -> { returnLoginType = "PASSWORD"; apiKeyMode = false }
-                    EntryTypeChipOption.BARCODE -> { returnLoginType = LOGIN_TYPE_BARCODE; apiKeyMode = false }
-                    EntryTypeChipOption.WIFI -> onSwitchToWifi?.invoke((keyTarget as? StorageTarget.MonicaLocal)?.categoryId)
-                    EntryTypeChipOption.SSH_KEY -> onSwitchToSshKey?.invoke((keyTarget as? StorageTarget.MonicaLocal)?.categoryId)
-                    EntryTypeChipOption.API_TOKEN -> onSwitchToApiToken?.invoke(keyTarget as? StorageTarget.Mdbx)
-                }
-            },
-            getKeePassGroups = localKeePassViewModel?.let { vm -> vm::getGroups } ?: { flowOf(emptyList()) })
-        return
-    }
-    if (gpgMode) {
-        GpgKeyScreen(passwords = viewModel, passwordId = passwordId?.takeIf { it > 0 },
-            initialTarget = takagi.ru.monica.ui.components.buildMultiStorageTarget(initialCategoryId,
-                initialKeePassDatabaseId, initialKeePassGroupPath, initialMdbxDatabaseId,
-                initialBitwardenVaultId, initialBitwardenFolderId, initialMdbxFolderId),
-            onBack = onNavigateBack, onSaved = onSaveCompleted,
-            onSelectType = { option ->
-                when (option) {
-                    EntryTypeChipOption.API_KEY -> { gpgMode = false; apiKeyMode = true }
-                    EntryTypeChipOption.GPG_KEY -> Unit
-                    EntryTypeChipOption.PASSWORD -> { returnLoginType = "PASSWORD"; gpgMode = false }
-                    EntryTypeChipOption.WIFI -> onSwitchToWifi?.invoke(null)
-                    EntryTypeChipOption.SSH_KEY -> onSwitchToSshKey?.invoke(null)
-                    EntryTypeChipOption.API_TOKEN -> onSwitchToApiToken?.invoke(null)
-                    EntryTypeChipOption.BARCODE -> { returnLoginType = LOGIN_TYPE_BARCODE; gpgMode = false }
-                }
-            },
-            getKeePassGroups = localKeePassViewModel?.let { vm -> vm::getGroups }
-                ?: { flowOf(emptyList()) })
-        return
-    }
+    if (sessionRevoked) return
+    key(passwordId, selectedTemplate) {
     PasswordEntryEditor(
         viewModel = viewModel,
         totpViewModel = totpViewModel,
-        bankCardViewModel = bankCardViewModel,
-        noteViewModel = noteViewModel,
+        bankCardViewModel = banks,
+        noteViewModel = notesModel,
         localKeePassViewModel = localKeePassViewModel,
         localMdbxViewModel = localMdbxViewModel,
         mdbxDatabasesFallback = mdbxDatabasesFallback,
@@ -361,7 +347,7 @@ fun AddEditPasswordScreen(
         initialBitwardenVaultId = initialBitwardenVaultId,
         initialBitwardenFolderId = initialBitwardenFolderId,
         pendingQrResult = pendingQrResult,
-        initialLoginType = returnLoginType,
+        initialLoginType = selectedTemplate,
         onConsumePendingQrResult = onConsumePendingQrResult,
         onScanAuthenticatorQrCode = onScanAuthenticatorQrCode,
         onSaveCompleted = onSaveCompleted,
@@ -369,9 +355,10 @@ fun AddEditPasswordScreen(
         onSwitchToWifi = onSwitchToWifi,
         onSwitchToSshKey = onSwitchToSshKey,
         onNavigateBack = onNavigateBack,
-        onSwitchToGpg = { gpgMode = true },
-        onSwitchToApiKey = { target -> keyTarget = target; apiKeyMode = true }
+        onSwitchToGpg = { selectedTemplate = "GPG_KEY" },
+        onSwitchToApiKey = { selectedTemplate = "API_KEY" }
     )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -422,11 +409,11 @@ private fun PasswordEntryEditor(
         return
     }
     // Snapshot the presentation preference for this edit session, including configuration changes.
-    val contentEditorPreference = rememberSaveable(passwordId) { settings.passwordContentEditorEnabled }
     val requestedContentSections = rememberSaveable(passwordId, saver = takagi.ru.monica.utils.StringListSaver) {
         mutableStateListOf<String>()
     }
     var showContentMenu by remember { mutableStateOf(false) }
+    var editingContentSection by rememberSaveable { mutableStateOf<String?>(null) }
     val editorListState = rememberLazyListState()
     val generatorPreferencesManager = remember {
         GeneratorPreferencesManager(context.applicationContext)
@@ -492,6 +479,7 @@ private fun PasswordEntryEditor(
     
     var authenticatorParametersJson by rememberSaveable { mutableStateOf(OtpParametersDraft().encode()) }
     val authenticatorParameters = remember(authenticatorParametersJson) { OtpParametersDraft.decode(authenticatorParametersJson) }
+    var showInlineOtpSettings by rememberSaveable { mutableStateOf(false) }
     var showAuthenticatorParameters by rememberSaveable { mutableStateOf(false) }
     var authenticatorSecret by rememberSaveable { mutableStateOf("") }
     var selectedAuthenticatorOtpTypeName by rememberSaveable { mutableStateOf(OtpType.TOTP.name) }
@@ -632,15 +620,12 @@ private fun PasswordEntryEditor(
     var showStorageTargetSheet by remember { mutableStateOf(false) }
     
     // SSO 登录方式字段
-    val defaultLoginType = if (
-        passwordId == null &&
-        initialLoginType.equals(LOGIN_TYPE_BARCODE, ignoreCase = true)
-    ) {
-        LOGIN_TYPE_BARCODE
-    } else {
-        "PASSWORD"
-    }
+    val defaultLoginType = initialLoginType?.uppercase(Locale.ROOT)?.takeIf { it == LOGIN_TYPE_BARCODE || it in takagi.ru.monica.data.model.TemplateCredentialDraft.types } ?: "PASSWORD"
     var loginType by rememberSaveable { mutableStateOf(defaultLoginType) }
+    var templateDraft by remember { mutableStateOf(takagi.ru.monica.data.model.TemplateCredentialDraft.load(
+        PasswordEntry(title = "", website = "", username = "", password = "", loginType = defaultLoginType), emptyList())) }
+    var templateLoadFailed by remember { mutableStateOf(false) }
+    var preservedWifiMetadata by remember { mutableStateOf("") }
     var ssoProvider by rememberSaveable { mutableStateOf("") }
     var ssoRefEntryId by rememberSaveable { mutableStateOf<Long?>(null) }
     var barcodePayload by rememberSaveable { mutableStateOf("") }
@@ -847,7 +832,7 @@ private fun PasswordEntryEditor(
     val fieldEmailLabel = stringResource(R.string.field_email)
     val fieldPhoneLabel = stringResource(R.string.field_phone)
     val isBarcodeMode = loginType.equals(LOGIN_TYPE_BARCODE, ignoreCase = true)
-    val contentMode = contentEditorPreference && !isBarcodeMode
+    val contentMode = !isBarcodeMode
     fun contentSectionEnabled(section: PasswordContentSection, classicVisible: Boolean) =
         if (contentMode) section.name in requestedContentSections else classicVisible
 
@@ -1003,7 +988,14 @@ private fun PasswordEntryEditor(
 
     LaunchedEffect(pendingQrResult) {
         pendingQrResult?.let { qrValue ->
-            if (isBarcodeMode) {
+            if (templateDraft?.type == "WIFI") {
+                takagi.ru.monica.utils.WifiQrParser.parse(qrValue)?.let { parsed ->
+                    val draft = requireNotNull(templateDraft)
+                    if (title.isBlank() || title == draft.value("ssid")) title = parsed.ssid
+                    templateDraft = draft.copy(values = draft.values + mapOf("ssid" to parsed.ssid,
+                        "password" to parsed.password, "security" to parsed.security.name, "hiddenNetwork" to parsed.hidden.toString()))
+                }
+            } else if (isBarcodeMode) {
                 barcodePayload = qrValue
                 if (title.isBlank()) {
                     title = context.getString(R.string.entry_type_barcode)
@@ -1142,12 +1134,35 @@ private fun PasswordEntryEditor(
             .distinctBy { it.content.trim().lowercase(Locale.ROOT) }
     }
 
-    val canSelectUsernameTemplate = !isEditing && !commonAccountInfo.autoFillEnabled &&
-        (accountTemplates.isNotEmpty() || emailTemplates.isNotEmpty() || phoneTemplates.isNotEmpty())
     val canSelectEmailTemplate = !isEditing && !commonAccountInfo.autoFillEnabled &&
         emailTemplates.isNotEmpty()
     val canSelectPhoneTemplate = !isEditing && !commonAccountInfo.autoFillEnabled &&
         phoneTemplates.isNotEmpty()
+    val generatorSessionUnlocked by takagi.ru.monica.security.SessionManager.isUnlocked.collectAsState()
+    val generatorVerification by (localKeePassViewModel?.verificationStates
+        ?: kotlinx.coroutines.flow.flowOf(emptyMap<Long, LocalKeePassViewModel.VerificationState>())).collectAsState(initial = emptyMap())
+    val generatorOpen = showPasswordGenerator || (showCommonAccountSelector && commonAccountSelectorField == "username")
+    val generatorField = if (showPasswordGenerator) "password" else "username"
+    val generatorSources = buildSet {
+        add("local")
+        keepassDatabases.filter {
+            generatorVerification[it.id] !is LocalKeePassViewModel.VerificationState.Failed &&
+                (!it.encryptedPassword.isNullOrBlank() || !it.keyFileUri.isNullOrBlank() ||
+                    !it.keyFileInternalPath.isNullOrBlank() || generatorVerification[it.id] is LocalKeePassViewModel.VerificationState.Verified)
+        }.forEach { add("keepass:${it.id}") }
+        bitwardenVaults.filterNot { it.isLocked }.forEach { add("bitwarden:${it.id}") }
+        mdbxDatabases.forEach { add("mdbx:${it.id}") }
+    }
+    // Keyed state prevents stale suggestions remaining visible after locking a source or closing the sheet.
+    var generatorValues by remember(generatorOpen, generatorField, generatorSessionUnlocked, generatorSources) {
+        mutableStateOf<List<String>>(emptyList())
+    }
+    LaunchedEffect(generatorOpen, generatorField, generatorSessionUnlocked, generatorSources, allPasswordsForRef) {
+        if (!generatorOpen || !generatorSessionUnlocked) return@LaunchedEffect
+        generatorValues = viewModel.getGeneratorSuggestionValues(generatorField == "username") { entry ->
+            takagi.ru.monica.ui.password.generatorEntryAccessible(entry, generatorSources)
+        }
+    }
     fun buildCommonAccountOptions(field: String): List<CommonAccountFillOption> {
         val options = buildList {
             when (field) {
@@ -1216,9 +1231,15 @@ private fun PasswordEntryEditor(
             }
         }
 
-        return options
-            .filter { it.content.isNotBlank() }
-            .distinctBy { "${it.type.trim().lowercase(Locale.ROOT)}|${it.content.trim().lowercase(Locale.ROOT)}" }
+        val presets = options.filter { it.content.isNotBlank() }.distinctBy { it.content }
+        if (field != "username" && field != "password") return presets
+        val frequent = takagi.ru.monica.ui.password.generatorFrequentValues(
+            if (generatorOpen && generatorSessionUnlocked && field == generatorField) generatorValues else emptyList(),
+            presets.mapTo(hashSetOf()) { it.content }
+        )
+        return presets + frequent.mapIndexed { index, value ->
+            CommonAccountFillOption("frequent_${field}_$index", context.getString(R.string.cg_vault_frequent), value)
+        }
     }
 
     val currentEntryIdForUsernameSuggestion = remember(passwordId) {
@@ -1681,33 +1702,330 @@ private fun PasswordEntryEditor(
             current == original
     }
     
+    val contentAttachmentFacade = remember(context) { takagi.ru.monica.attachments.AttachmentContainer.facade(context) }
+    val existingContentAttachments by remember(passwordId, contentAttachmentFacade) {
+        passwordId?.takeIf { it > 0 }?.let(contentAttachmentFacade::observeByPassword)
+            ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
+    val walletDrafts = remember { EmbeddedWalletDraftStore(context) }
+    DisposableEffect(walletDrafts) { onDispose { walletDrafts.close() } }
+    var editingWallet by remember { mutableStateOf<EmbeddedWalletContent.Snapshot?>(null) }
+    var showEmbeddedCardPicker by remember { mutableStateOf(false) }
+    var showEmbeddedDocumentPicker by remember { mutableStateOf(false) }
+    var copyingWallet by remember { mutableStateOf(false) }
+    var walletCopyError by remember { mutableStateOf<String?>(null) }
+    var retryWalletCopy by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var retryWalletSave by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val contentExtraFields = if (isMultiCredentialMode) activeCredentialMetadata.credentialCustomFields else customFields
+    var editingBlock by remember(passwordId, selectedCredentialEditorIndex) { mutableStateOf<PasswordContentBlocks.Block?>(null) }
+    var viewingBlock by remember(passwordId, selectedCredentialEditorIndex) { mutableStateOf<PasswordContentBlocks.Stored?>(null) }
+    val blockFields = if (isMultiCredentialMode && showCommonEditorContent) emptyList() else contentExtraFields.toList()
+    val storedBlocks = remember(blockFields) { PasswordContentBlocks.read(blockFields) }
+    fun replaceBlockFields(updated: List<CustomFieldDraft>) { contentExtraFields.clear(); contentExtraFields.addAll(updated) }
+
+    fun copiedContent(kind: EmbeddedWalletContent.Kind) =
+        (EmbeddedWalletContent.read(contentExtraFields.firstOrNull { it.title == EmbeddedWalletContent.fieldName(kind) }?.value)
+            as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+    fun copyWalletItem(item: takagi.ru.monica.data.SecureItem) {
+        if (copyingWallet) return
+        val targetFields = contentExtraFields
+        val targetCredential = if (isMultiCredentialMode) activeCredentialMetadata else null
+        copyingWallet = true
+        coroutineScope.launch {
+            var prepared: EmbeddedWalletCopyService.Prepared? = null
+            try {
+                val decoded = withContext(Dispatchers.IO) { item.copy(
+                    itemData = securityManager.decryptDataIfMonicaCiphertext(item.itemData),
+                    notes = securityManager.decryptDataIfMonicaCiphertext(item.notes)) }
+                prepared = EmbeddedWalletCopyService(context).prepare(decoded)
+                val updated = EmbeddedWalletContent.put(targetFields.toList(), prepared.snapshot)
+                walletDrafts.add(prepared)
+                targetFields.clear(); targetFields.addAll(updated)
+                if (item.itemType == takagi.ru.monica.data.ItemType.BANK_CARD) {
+                    val card = requireNotNull(takagi.ru.monica.data.model.CardWalletDataCodec.parseBankCardData(prepared.snapshot.itemData.toString()))
+                    val expiry = takagi.ru.monica.ui.components.EntryPaymentFormat.joinExpiry(card.expiryMonth, card.expiryYear)
+                    if (targetCredential != null) {
+                        targetCredential.creditCardNumber = card.cardNumber; targetCredential.creditCardHolder = card.cardholderName
+                        targetCredential.creditCardExpiry = expiry; targetCredential.creditCardCVV = card.cvv
+                    } else {
+                        creditCardNumber = card.cardNumber; creditCardHolder = card.cardholderName
+                        creditCardExpiry = expiry; creditCardCVV = card.cvv
+                    }
+                }
+                if (item.itemType == takagi.ru.monica.data.ItemType.NOTE) {
+                    if (targetCredential != null) targetCredential.boundNoteId = null else boundNoteId = null
+                }
+                if (editingWallet != null) editingWallet = prepared.snapshot
+                retryWalletCopy = null
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                prepared?.close(); throw cancelled
+            } catch (_: Exception) {
+                prepared?.close()
+                walletCopyError = item.title
+                retryWalletCopy = { copyWalletItem(item) }
+            } finally { copyingWallet = false }
+        }
+    }
+    if (copyingWallet) AlertDialog(onDismissRequest = {},
+        title = { Text(stringResource(R.string.embedded_copy_working)) },
+        text = { LinearProgressIndicator(Modifier.fillMaxWidth()) }, confirmButton = {})
+    walletCopyError?.let { failedTitle -> AlertDialog(onDismissRequest = { walletCopyError = null },
+        title = { Text(stringResource(R.string.embedded_copy_failed)) },
+        text = { Text(stringResource(R.string.embedded_copy_failed_message, failedTitle)) },
+        confirmButton = { TextButton(onClick = { walletCopyError = null; (retryWalletSave ?: retryWalletCopy)?.invoke() }) { Text(stringResource(R.string.retry)) } },
+        dismissButton = { TextButton(onClick = { walletCopyError = null }) { Text(stringResource(R.string.cancel)) } }) }
+
+    var walletParent by remember(passwordId) { mutableStateOf<takagi.ru.monica.data.PasswordEntry?>(null) }
+    LaunchedEffect(passwordId) { walletParent = passwordId?.let { viewModel.getPasswordEntryById(it) } }
+    editingWallet?.let { snapshot ->
+        val destination = contentExtraFields
+        takagi.ru.monica.ui.components.EmbeddedWalletEditorDialog(snapshot, walletDrafts.draft(snapshot.id), walletParent,
+            bankCardViewModel, noteViewModel, onCopyDocument = { showEmbeddedDocumentPicker = true }, onCopyCard = if (bankCardViewModel != null) ({ showEmbeddedCardPicker = true }) else null, onDismiss = { editingWallet = null }, onSaved = { prepared ->
+                val updated = EmbeddedWalletContent.put(destination.toList(), prepared.snapshot)
+                walletDrafts.add(prepared)
+                destination.clear(); destination.addAll(updated)
+                if (prepared.snapshot.kind == EmbeddedWalletContent.Kind.BANK_CARD) {
+                    val card = requireNotNull(takagi.ru.monica.data.model.CardWalletDataCodec.parseBankCardData(prepared.snapshot.itemData.toString()))
+                    val expiry = takagi.ru.monica.ui.components.EntryPaymentFormat.joinExpiry(card.expiryMonth, card.expiryYear)
+                    if (isMultiCredentialMode) {
+                        activeCredentialMetadata.creditCardNumber = card.cardNumber; activeCredentialMetadata.creditCardHolder = card.cardholderName
+                        activeCredentialMetadata.creditCardExpiry = expiry; activeCredentialMetadata.creditCardCVV = card.cvv
+                    } else {
+                        creditCardNumber = card.cardNumber; creditCardHolder = card.cardholderName
+                        creditCardExpiry = expiry; creditCardCVV = card.cvv
+                    }
+                }
+                if (prepared.snapshot.kind == EmbeddedWalletContent.Kind.ADDRESS) {
+                    val address = requireNotNull(takagi.ru.monica.data.model.CardWalletDataCodec.parseBillingAddressData(prepared.snapshot.itemData.toString()))
+                    credentialScopedEmails.clear(); credentialScopedEmails.addAll(address.email.split('|'))
+                    credentialScopedPhones.clear(); credentialScopedPhones.addAll(address.phone.split('|'))
+                    if (isMultiCredentialMode) {
+                        activeCredentialMetadata.addressLine = address.streetAddress; activeCredentialMetadata.city = address.city
+                        activeCredentialMetadata.state = address.stateProvince; activeCredentialMetadata.zipCode = address.postalCode; activeCredentialMetadata.country = address.country
+                    } else {
+                        addressLine = address.streetAddress; city = address.city; state = address.stateProvince
+                        zipCode = address.postalCode; country = address.country
+                    }
+                }
+                if (prepared.snapshot.kind == EmbeddedWalletContent.Kind.NOTE) {
+                    if (isMultiCredentialMode) activeCredentialMetadata.boundNoteId = null else boundNoteId = null
+                }
+                editingWallet = null
+            })
+    }
+    fun addressProjection() = takagi.ru.monica.data.model.PasswordWalletProjection.address(
+        PasswordEntry(title = title, username = username, password = "", website = "",
+            email = credentialScopedEmails.joinToString("|"), phone = credentialScopedPhones.joinToString("|"),
+            addressLine = credentialScopedAddressLine, city = credentialScopedCity, state = credentialScopedState,
+            zipCode = credentialScopedZipCode, country = credentialScopedCountry), contentExtraFields.toList(), context.getString(R.string.billing_address))
+    fun openAddressEditor() {
+        try { editingWallet = addressProjection() }
+        catch (_: Exception) { walletCopyError = context.getString(R.string.billing_address) }
+    }
+    fun openPaymentEditor() {
+        editingWallet = copiedContent(EmbeddedWalletContent.Kind.BANK_CARD) ?: run {
+            val (month, year) = takagi.ru.monica.ui.components.EntryPaymentFormat.splitExpiry(credentialScopedCreditCardExpiry)
+            val card = takagi.ru.monica.data.model.BankCardData(cardNumber = credentialScopedCreditCardNumber,
+                cardholderName = credentialScopedCreditCardHolder, expiryMonth = month, expiryYear = year, cvv = credentialScopedCreditCardCVV)
+            EmbeddedWalletContent.create(takagi.ru.monica.data.SecureItem(itemType = takagi.ru.monica.data.ItemType.BANK_CARD,
+                title = context.getString(R.string.payment_info), itemData = kotlinx.serialization.json.JsonObject(
+                    kotlinx.serialization.json.Json.parseToJsonElement(takagi.ru.monica.data.model.CardWalletDataCodec.encodeBankCardData(card)).jsonObject +
+                    EntrySupplementalSpecs.forSection("PAYMENT").mapNotNull { spec ->
+                        EntryContentFields.value(contentExtraFields, "PAYMENT", spec.key).takeIf { it.isNotBlank() }
+                            ?.let { spec.key to kotlinx.serialization.json.JsonPrimitive(it) }
+                    }.toMap()).toString()))
+        }
+    }
+    fun openDocumentEditor() {
+        val stored = EmbeddedWalletContent.read(contentExtraFields.firstOrNull {
+            it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.DOCUMENT)
+        }?.value)
+        when (stored) {
+            is EmbeddedWalletContent.ReadResult.Available -> editingWallet = stored.snapshot
+            is EmbeddedWalletContent.ReadResult.Unavailable -> walletCopyError = context.getString(R.string.password_content_document)
+            EmbeddedWalletContent.ReadResult.Missing -> editingWallet = EmbeddedWalletContent.create(
+                takagi.ru.monica.data.SecureItem(itemType = takagi.ru.monica.data.ItemType.DOCUMENT,
+                    title = context.getString(R.string.password_content_document),
+                    itemData = takagi.ru.monica.data.model.CardWalletDataCodec.encodeDocumentData(
+                        takagi.ru.monica.data.model.DocumentData(takagi.ru.monica.data.model.DocumentType.ID_CARD, "", ""))))
+        }
+    }
+    if (showEmbeddedDocumentPicker) {
+        val documentRepository = remember(database, securityManager) {
+            takagi.ru.monica.repository.SecureItemRepository(database.secureItemDao(), decryptSensitiveValue = securityManager::decryptDataIfMonicaCiphertext)
+        }
+        val documentsModel: takagi.ru.monica.viewmodel.DocumentViewModel = androidx.lifecycle.viewmodel.compose.viewModel {
+            takagi.ru.monica.viewmodel.DocumentViewModel(documentRepository, context, database.localKeePassDatabaseDao(), securityManager,
+                strings = takagi.ru.monica.utils.AppLocaleStringResolver(context))
+        }
+        val documents by documentsModel.allDocuments.collectAsState(initial = emptyList())
+        takagi.ru.monica.ui.components.EmbeddedWalletPicker(documents, stringResource(R.string.embedded_copy_document),
+            onSelect = { copyWalletItem(it); showEmbeddedDocumentPicker = false },
+            onDismiss = { showEmbeddedDocumentPicker = false },
+            keepassDatabases = keepassDatabases, mdbxDatabases = mdbxDatabases, bitwardenVaults = bitwardenVaults)
+    }
+    if (showEmbeddedCardPicker && bankCardViewModel != null) {
+        val cards by bankCardViewModel.parsedCards.collectAsState(initial = emptyList())
+        takagi.ru.monica.ui.components.EmbeddedWalletPicker(cards.map { it.item }, stringResource(R.string.embedded_copy_card),
+            onSelect = { copyWalletItem(it); showEmbeddedCardPicker = false },
+            onDismiss = { showEmbeddedCardPicker = false },
+            keepassDatabases = keepassDatabases, mdbxDatabases = mdbxDatabases, bitwardenVaults = bitwardenVaults)
+    }
+    fun hasExtraSection(section: String) = contentExtraFields.any { field ->
+        EntrySupplementalSpecs.forSection(section).any { EntryContentFields.key(section, it.key) == field.title }
+    }
+
     // 判断字段是否应该显示：设置开启 或 条目已有该字段数据
     fun shouldShowSecurityVerification() =
-        !isBarcodeMode && (contentSectionEnabled(PasswordContentSection.AUTHENTICATOR, fieldVisibility.securityVerification) || authenticatorSecret.isNotEmpty())
+        !isBarcodeMode && (contentMode || contentSectionEnabled(PasswordContentSection.AUTHENTICATOR, fieldVisibility.securityVerification) || authenticatorSecret.isNotEmpty())
     fun shouldShowCategoryAndNotes() =
         contentSectionEnabled(PasswordContentSection.NOTES, fieldVisibility.categoryAndNotes || noteViewModel != null) ||
-            credentialScopedNotes.isNotEmpty() || credentialScopedBoundNoteId != null
+            credentialScopedNotes.isNotEmpty() || credentialScopedBoundNoteId != null || copiedContent(EmbeddedWalletContent.Kind.NOTE) != null
     fun shouldShowPersonalInfo() =
         !isBarcodeMode && (contentSectionEnabled(PasswordContentSection.CONTACT, fieldVisibility.personalInfo) ||
             credentialScopedEmails.any { it.isNotEmpty() } ||
-            credentialScopedPhones.any { it.isNotEmpty() })
+            credentialScopedPhones.any { it.isNotEmpty() } || hasExtraSection("CONTACT"))
     // 地址信息仅看开关 + 当前条目已有数据；
     // 不再因为「常用账号」里存过账单地址而强制展示，否则用户关了开关仍会看到面板。
     fun shouldShowAddressInfo() =
         !isBarcodeMode && (contentSectionEnabled(PasswordContentSection.ADDRESS, fieldVisibility.addressInfo) ||
             credentialScopedAddressLine.isNotEmpty() || credentialScopedCity.isNotEmpty() ||
             credentialScopedState.isNotEmpty() || credentialScopedZipCode.isNotEmpty() ||
-            credentialScopedCountry.isNotEmpty())
+            credentialScopedCountry.isNotEmpty() || hasExtraSection("ADDRESS"))
     fun shouldShowPaymentInfo() =
-        !isBarcodeMode && (contentSectionEnabled(PasswordContentSection.PAYMENT, fieldVisibility.paymentInfo) ||
+        !isBarcodeMode && (copiedContent(EmbeddedWalletContent.Kind.BANK_CARD) != null || contentSectionEnabled(PasswordContentSection.PAYMENT, fieldVisibility.paymentInfo) ||
             credentialScopedCreditCardNumber.isNotEmpty() ||
             credentialScopedCreditCardHolder.isNotEmpty() ||
             credentialScopedCreditCardExpiry.isNotEmpty() ||
-            credentialScopedCreditCardCVV.isNotEmpty())
+            credentialScopedCreditCardCVV.isNotEmpty() || hasExtraSection("PAYMENT"))
     
+    fun visibleContentSections(): List<PasswordContentSection> {
+        val ordered = (takagi.ru.monica.data.model.PasswordWalletProjection.walletOrder(requestedContentSections).mapNotNull { name -> PasswordContentSection.entries.firstOrNull { it.name == name } } + PasswordContentSection.entries).distinct()
+        return ordered.filter { section -> when (section) {
+            PasswordContentSection.DOCUMENT -> !isBarcodeMode && (section.name in requestedContentSections || contentExtraFields.any {
+                it.title == EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.DOCUMENT) })
+            PasswordContentSection.NOTES -> shouldShowCategoryAndNotes()
+            PasswordContentSection.AUTHENTICATOR -> shouldShowSecurityVerification()
+            PasswordContentSection.PAYMENT -> shouldShowPaymentInfo()
+            PasswordContentSection.CONTACT -> false
+            PasswordContentSection.ADDRESS -> shouldShowAddressInfo() || shouldShowPersonalInfo() || copiedContent(EmbeddedWalletContent.Kind.ADDRESS) != null
+            PasswordContentSection.CUSTOM_FIELDS -> section.name in requestedContentSections || contentExtraFields.any { it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
+            PasswordContentSection.ATTACHMENTS -> section.name in requestedContentSections || existingContentAttachments.isNotEmpty() || credentialAttachmentDrafts.any { it.isNotEmpty() }
+        } }
+    }
+    fun visibleContentTokens(): List<String> = takagi.ru.monica.data.model.PasswordWalletProjection.walletOrder(listOf("AUTHENTICATOR") + requestedContentSections +
+        EntryContentFields.order(contentExtraFields) + visibleContentSections().map { it.name } + storedBlocks.map { it.token })
+        .filter { key -> key in visibleContentSections().map { it.name } || storedBlocks.any { it.token == key } }
+    fun moveContentToken(token: String, offset: Int) {
+        val ordered = visibleContentTokens().toMutableList()
+        val index = ordered.indexOf(token)
+        val destination = index + offset
+        // The default inline authenticator stays beside credentials; all optional content can interleave.
+        if (token == "AUTHENTICATOR" || index < 0 || destination !in ordered.indices || ordered[destination] == "AUTHENTICATOR") return
+        ordered.removeAt(index); ordered.add(destination, token)
+        requestedContentSections.clear(); requestedContentSections.addAll(ordered)
+    }
+    fun moveContent(section: PasswordContentSection, offset: Int) = moveContentToken(section.name, offset)
+    fun removeContent(section: PasswordContentSection) {
+        when (section) {
+            PasswordContentSection.DOCUMENT -> Unit
+            PasswordContentSection.NOTES -> if (isMultiCredentialMode) { activeCredentialMetadata.notes = ""; activeCredentialMetadata.boundNoteId = null }
+                else { notes = ""; boundNoteId = null }
+            PasswordContentSection.AUTHENTICATOR -> { authenticatorSecret = ""; authenticatorEditedByUser = true }
+            PasswordContentSection.CONTACT -> { credentialScopedEmails.clear(); credentialScopedEmails.add(""); credentialScopedPhones.clear(); credentialScopedPhones.add("") }
+            PasswordContentSection.ADDRESS -> if (isMultiCredentialMode) {
+                activeCredentialMetadata.addressLine = ""; activeCredentialMetadata.city = ""; activeCredentialMetadata.state = ""; activeCredentialMetadata.zipCode = ""; activeCredentialMetadata.country = ""
+            } else { addressLine = ""; city = ""; state = ""; zipCode = ""; country = "" }
+            PasswordContentSection.PAYMENT -> if (isMultiCredentialMode) {
+                activeCredentialMetadata.creditCardNumber = ""; activeCredentialMetadata.creditCardHolder = ""; activeCredentialMetadata.creditCardExpiry = ""; activeCredentialMetadata.creditCardCVV = ""
+            } else { creditCardNumber = ""; creditCardHolder = ""; creditCardExpiry = ""; creditCardCVV = "" }
+            PasswordContentSection.CUSTOM_FIELDS -> contentExtraFields.removeAll { it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
+            PasswordContentSection.ATTACHMENTS -> credentialAttachmentDrafts.getOrNull(if (isMultiCredentialMode) selectedCredentialEditorIndex else 0)?.clear()
+        }
+        contentExtraFields.removeAll { field -> EntrySupplementalSpecs.forSection(section.name).any { EntryContentFields.key(section.name, it.key) == field.title } }
+        val copiedKind = when (section) {
+            PasswordContentSection.DOCUMENT -> EmbeddedWalletContent.Kind.DOCUMENT
+            PasswordContentSection.PAYMENT -> EmbeddedWalletContent.Kind.BANK_CARD
+            PasswordContentSection.NOTES -> EmbeddedWalletContent.Kind.NOTE
+            PasswordContentSection.ADDRESS -> EmbeddedWalletContent.Kind.ADDRESS
+            else -> null
+        }
+        copiedKind?.let { kind -> contentExtraFields.removeAll { it.title == EmbeddedWalletContent.fieldName(kind) } }
+        if (section == PasswordContentSection.ADDRESS) {
+            credentialScopedEmails.clear(); credentialScopedEmails.add("")
+            credentialScopedPhones.clear(); credentialScopedPhones.add("")
+            contentExtraFields.removeAll { it.title.startsWith("monica.content.contact.") || it.title.startsWith("monica.content.address.") }
+            requestedContentSections.remove("CONTACT")
+        }
+        requestedContentSections.remove(section.name)
+        val orderIndex = customFields.indexOfFirst { it.title == EntryContentFields.ORDER }
+        if (orderIndex >= 0) customFields[orderIndex] = customFields[orderIndex].copy(value = EntryContentFields.order(customFields).filterNot { it == section.name }.joinToString(","))
+        editingContentSection = null
+    }
+    LaunchedEffect(editingContentSection, contentMode, requestedContentSections.toList()) {
+        val selected = editingContentSection ?: return@LaunchedEffect
+        if (!contentMode) return@LaunchedEffect
+        // The editor dialog belongs to its lazy item: compose the selected card before opening it.
+        androidx.compose.runtime.withFrameNanos { }
+        val visible = visibleContentTokens().filter { showCredentialEditorContent || it == PasswordContentSection.CUSTOM_FIELDS.name }
+        val position = visible.indexOf(selected)
+        if (position >= 0) {
+            val count = editorListState.layoutInfo.totalItemsCount
+            val index = count - 1 - visible.size + position
+            if (index in 0 until count) editorListState.scrollToItem(index)
+        }
+    }
+
+    val contentDragState = remember { takagi.ru.monica.ui.components.DirectDragState() }
+    val reorderHaptics = takagi.ru.monica.ui.haptic.rememberHapticFeedback()
+    val contentReorderState = rememberReorderableLazyListState(editorListState,
+        scroller = takagi.ru.monica.ui.components.rememberDirectReorderScroller(editorListState)) { from, to ->
+        val tokens = visibleContentTokens()
+        val fromIndex = tokens.indexOfFirst { entryContentItemKey(it) == from.key }
+        val toIndex = tokens.indexOfFirst { entryContentItemKey(it) == to.key }
+        if (fromIndex >= 0 && toIndex >= 0 && fromIndex != toIndex && tokens[toIndex] != "AUTHENTICATOR") {
+            moveContentToken(tokens[fromIndex], toIndex - fromIndex)
+            reorderHaptics.performLightClick()
+        }
+    }
+    fun LazyListScope.contentItem(key: String, content: @Composable LazyItemScope.() -> Unit) {
+        reorderableContentItem(key, contentReorderState, enabled = contentMode, dragState = contentDragState,
+            groupKeys = visibleContentTokens().filterNot { it == "AUTHENTICATOR" }.map(::entryContentItemKey), content = content)
+    }
+
+    val contentActions: (PasswordContentSection) -> takagi.ru.monica.ui.components.EntryContentActions = { section ->
+        val visible = visibleContentTokens().filterNot { it == "AUTHENTICATOR" }
+        val index = visible.indexOf(section.name)
+        takagi.ru.monica.ui.components.EntryContentActions(
+            moveUp = if (index > 0) ({ moveContent(section, -1) }) else null,
+            moveDown = if (index >= 0 && index < visible.lastIndex) ({ moveContent(section, 1) }) else null,
+            // Existing attachments retain their individual storage-aware delete controls.
+            remove = if (section == PasswordContentSection.ATTACHMENTS && existingContentAttachments.isNotEmpty()) null else ({ removeContent(section) }),
+            groupIndex = index.coerceAtLeast(0), groupCount = visible.size.coerceAtLeast(1))
+    }
+
+    editingBlock?.let { block -> PasswordContentBlockEditor(block,
+        onSave = { saved ->
+            val currentOrder = visibleContentTokens()
+            val updated = PasswordContentBlocks.put(contentExtraFields.toList(), saved)
+            replaceBlockFields(updated)
+            val token = PasswordContentBlocks.token(saved.id)
+            requestedContentSections.clear(); requestedContentSections.addAll((currentOrder + token).distinct())
+            editingBlock = null
+        }, onDismiss = { editingBlock = null }, qrValues = {
+            takagi.ru.monica.data.model.PasswordQrTemplate.Values(mapOf(
+                "ACCOUNT" to authenticatorAccountName,
+                "PASSWORD" to passwords.getOrNull(if (isMultiCredentialMode) selectedCredentialEditorIndex else 0).orEmpty(),
+                "TITLE" to title, "URL" to website,
+                "EMAIL" to credentialScopedEmails.firstOrNull().orEmpty(), "PHONE" to credentialScopedPhones.firstOrNull().orEmpty(),
+                "NOTES" to credentialScopedNotes),
+                contentExtraFields.filterNot { it.title.startsWith("monica.") }.map { it.title to it.value })
+        }) }
+    viewingBlock?.let { PasswordContentBlockDetail(it, onDismiss = { viewingBlock = null }) }
+
     // 新建条目时的自动填充标记（只执行一次）
     var hasAutoFilled by rememberSaveable { mutableStateOf(false) }
-    var initialDraftApplied by rememberSaveable(passwordId) { mutableStateOf(false) }
+    var initialDraftApplied by remember(passwordId) { mutableStateOf(false) }
 
     fun applyUploadedIcon(fileName: String) {
         customIconEditedByUser = true
@@ -1851,16 +2169,6 @@ private fun PasswordEntryEditor(
                 withContext(Dispatchers.IO) {
                     viewModel.getRawPasswordEntryById(actualId)
                 }?.let { rawEntry ->
-                    // WIFI 条目走独立编辑页；这里立即重定向，不继续解包普通密码 UI 状态。
-                    if (rawEntry.isWifiEntry() && onSwitchToWifi != null) {
-                        onSwitchToWifi(actualId)
-                        return@launch
-                    }
-                    // SSH 密钥条目走独立编辑页
-                    if (rawEntry.isSshKeyEntry() && onSwitchToSshKey != null) {
-                        onSwitchToSshKey(actualId)
-                        return@launch
-                    }
                     hasOwnershipConflict = viewModel.hasOwnershipConflict(rawEntry)
                     val secretState = withContext(Dispatchers.Default) {
                         viewModel.inspectSecretState(rawEntry)
@@ -1933,9 +2241,17 @@ private fun PasswordEntryEditor(
                     }
                     passkeyBindings = entry.passkeyBindings
                     existingSshKeyData = entry.sshKeyData
+                    preservedWifiMetadata = entry.wifiMetadata
+                    if (secretState is SecretValueState.Unreadable || secretState is SecretValueState.Hidden) templateLoadFailed = true
+                    try {
+                        templateDraft = takagi.ru.monica.data.model.TemplateCredentialDraft.load(entry,
+                            viewModel.getCustomFieldsByEntryIdSync(actualId).map(CustomFieldDraft::fromCustomField))
+                    } catch (cancelled: CancellationException) { throw cancelled
+                    } catch (_: Exception) { templateLoadFailed = true }
                     
                     // 加载SSO登录方式字段
                     loginType = when {
+                        templateDraft != null -> templateDraft!!.type
                         entry.isBarcodeEntry() -> LOGIN_TYPE_BARCODE
                         entry.loginType.equals("SSO", ignoreCase = true) -> "SSO"
                         else -> "PASSWORD"
@@ -2090,6 +2406,7 @@ private fun PasswordEntryEditor(
                         }
                         
                         customFields.addAll(existingDrafts)
+                        if (requestedContentSections.isEmpty()) requestedContentSections.addAll(EntryContentFields.order(existingDrafts))
                         if (existingDrafts.isNotEmpty()) {
                             customFieldsExpanded = true
                         }
@@ -2130,13 +2447,14 @@ private fun PasswordEntryEditor(
                      passwords.clear()
                      passwords.add(initialDraft.password)
                  }
+                 initialDraft.template?.takeIf { it.type == defaultLoginType }?.let { templateDraft = it }
                  initialDraftApplied = true
              }
              username = credentialUsernames.firstOrNull().orEmpty()
         }
     }
 
-    val canSave = title.isNotEmpty() &&
+    val canSave = !templateLoadFailed && (templateDraft?.valid() != false) && title.isNotEmpty() &&
         (!isBarcodeMode || barcodePayload.isNotBlank()) &&
         !isSaving &&
         !hasOwnershipConflict
@@ -2162,7 +2480,9 @@ private fun PasswordEntryEditor(
     }
 
     val handleSave: () -> Unit = handleSave@{
-        if (title.isNotEmpty() && !isSaving) {
+        if (canSave && !isSaving) {
+            try { templateDraft?.validateKeyMaterial() }
+            catch (_: Exception) { Toast.makeText(context, R.string.content_block_save_error, Toast.LENGTH_LONG).show(); return@handleSave }
             if (hasOwnershipConflict) {
                 Toast.makeText(
                     context,
@@ -2197,11 +2517,17 @@ private fun PasswordEntryEditor(
                     if (isMultiCredentialMode) multiCredentialEditorSectionName = MultiCredentialEditorSection.CREDENTIAL.name
                 }
                 showAuthenticatorParameters = true
+                showInlineOtpSettings = true
                 Toast.makeText(context, R.string.otp_parameters_invalid, Toast.LENGTH_SHORT).show()
                 return@handleSave
             }
+            if (copyingWallet) return@handleSave
+            retryWalletSave?.let { it(); return@handleSave }
+            val deferredEmbeddedSave = takagi.ru.monica.data.model.DeferredEmbeddedContentSave(walletDrafts.pendingIds())
             isSaving = true // 防止重复点击
-            val normalizedPasswords = if (isBarcodeMode) {
+            val normalizedPasswords = if (templateDraft != null) {
+                listOf(templateDraft!!.secret(passwords.firstOrNull().orEmpty()))
+            } else if (isBarcodeMode) {
                 listOf(barcodePayload)
             } else {
                 passwords.map { it.trim() }
@@ -2249,7 +2575,8 @@ private fun PasswordEntryEditor(
                 bitwardenFolderId = bitwardenFolderId,
                 authenticatorKey = if (isBarcodeMode) "" else currentAuthKey,  // ✅ 保存验证器密钥
                 passkeyBindings = if (isBarcodeMode) "" else passkeyBindings,
-                sshKeyData = existingSshKeyData,
+                sshKeyData = templateDraft?.ssh() ?: existingSshKeyData,
+                wifiMetadata = templateDraft?.wifi() ?: preservedWifiMetadata,
                 loginType = if (isBarcodeMode) LOGIN_TYPE_BARCODE else loginType,
                 ssoProvider = if (isBarcodeMode) "" else ssoProvider,
                 ssoRefEntryId = if (isBarcodeMode) null else ssoRefEntryId,
@@ -2259,7 +2586,8 @@ private fun PasswordEntryEditor(
             )
 
             // 快照自定义字段，并追加“用户名分离”内部转换字段（带标记）
-            val currentCustomFields = customFields.toMutableList().apply {
+            val templateFields = templateDraft?.fields(customFields.toList()) ?: customFields.toList()
+            val currentCustomFields = (if (contentMode) EntryContentFields.withOrder(templateFields, requestedContentSections.toList()) else templateFields).toMutableList().apply {
                 removeAll {
                     it.title == MONICA_USERNAME_ALIAS_FIELD_TITLE ||
                         it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE
@@ -2349,11 +2677,21 @@ private fun PasswordEntryEditor(
                 if (!originalUploaded.isNullOrBlank() && originalUploaded != currentUploaded) {
                     PasswordCustomIconStore.deleteIconFile(context, originalUploaded)
                 }
-                hasSavedSuccessfully = true
-
                 val pendingAttachmentOwners = attachmentDraftOwners.filter { (_, drafts) -> drafts.isNotEmpty() }
-                if (pendingAttachmentOwners.isNotEmpty()) {
+                val persistContent: () -> Unit = {
+                    isSaving = true
                     coroutineScope.launch {
+                        try {
+                            for (targetId in savedPasswordIds.ifEmpty { listOf(primaryPasswordId) }) {
+                                val target = requireNotNull(viewModel.getPasswordEntryById(targetId))
+                                val commit = deferredEmbeddedSave.commit(targetId)
+                                val snapshots = commit?.fields.orEmpty().mapNotNull { field ->
+                                    if (!EmbeddedWalletContent.isMetadata(field.title)) null else
+                                        (EmbeddedWalletContent.read(field.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+                                }
+                                walletDrafts.persist(target, snapshots, settings.isPlusActivated)
+                                if (commit != null) viewModel.publishEmbeddedContent(targetId, commit)
+                            }
                         pendingAttachmentOwners.forEach { (attachmentOwnerId, pendingDrafts) ->
                             val savedEntry = viewModel.getPasswordEntryById(attachmentOwnerId)
                             val draftKeePassContext = savedEntry?.let { entry ->
@@ -2376,13 +2714,21 @@ private fun PasswordEntryEditor(
                                 keepassContext = draftKeePassContext
                             )
                         }
-                        onSaveCompleted?.invoke(primaryPasswordId)
-                        onNavigateBack()
+                            check(pendingAttachmentOwners.all { it.second.isEmpty() })
+                            hasSavedSuccessfully = true
+                            retryWalletSave = null
+                            onSaveCompleted?.invoke(primaryPasswordId)
+                            onNavigateBack()
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+                        } catch (_: Exception) {
+                            walletCopyError = currentTitle
+                        } finally { isSaving = false }
                     }
-                    return@finishSave
                 }
-                onSaveCompleted?.invoke(primaryPasswordId)
-                onNavigateBack()
+                retryWalletSave = persistContent
+                persistContent()
+                return@finishSave
+
             }
 
             fun saveCredentialAuthenticator(
@@ -2428,7 +2774,9 @@ private fun PasswordEntryEditor(
                 }
             }
 
-            val usesIndependentCredentialSave = usesCredentialCards
+            // A single account may still contain several legacy password rows.
+            // Preserve all of them through the grouped save path.
+            val usesIndependentCredentialSave = usesCredentialCards && (isMultiCredentialMode || passwords.size <= 1)
             if (usesIndependentCredentialSave) {
                 coroutineScope.launch {
                     val copiedIconFiles = mutableListOf<String>()
@@ -2494,7 +2842,7 @@ private fun PasswordEntryEditor(
                             passkeyBindings = if (!isMultiCredentialMode || index == 0) passkeyBindings else "",
                             sshKeyData = if (!isMultiCredentialMode || index == 0) existingSshKeyData else "",
                             customFields = if (isMultiCredentialMode) {
-                                metadata.credentialCustomFields.toList()
+                                EntryContentFields.withOrder(metadata.credentialCustomFields.toList(), requestedContentSections.toList())
                             } else {
                                 emptyList()
                             }
@@ -2526,6 +2874,7 @@ private fun PasswordEntryEditor(
                             credentialFields = existingCredential.customFields
                         )
                         viewModel.savePasswordsAcrossTargets(
+                            embeddedContentSave = deferredEmbeddedSave,
                             originalIds = originalIds,
                             commonEntry = commonEntry.copy(
                                 username = existingCredential.username,
@@ -2577,6 +2926,7 @@ private fun PasswordEntryEditor(
                                 )
 
                                 viewModel.saveCredentialsAcrossTargets(
+                            embeddedContentSave = deferredEmbeddedSave,
                                     commonEntry = commonEntry.copy(
                                         username = "",
                                         password = "",
@@ -2622,7 +2972,7 @@ private fun PasswordEntryEditor(
                                         finishSave(
                                             firstPasswordId,
                                             firstPasswordId,
-                                            savedPasswordIds,
+                                            (savedPasswordIds + savedCredentials.flatMap { it.savedPasswordIds }).distinct(),
                                             existingCredential.username,
                                             attachmentOwners,
                                             copiedIconFiles,
@@ -2635,6 +2985,7 @@ private fun PasswordEntryEditor(
                         return@launch
                     }
                     viewModel.saveCredentialsAcrossTargets(
+                            embeddedContentSave = deferredEmbeddedSave,
                         commonEntry = commonEntry.copy(
                             username = "",
                             password = "",
@@ -2686,7 +3037,7 @@ private fun PasswordEntryEditor(
                             finishSave(
                                 firstCredential?.firstPasswordId,
                                 firstCredential?.firstPasswordId,
-                                firstCredential?.savedPasswordIds.orEmpty(),
+                                savedCredentials.flatMap { it.savedPasswordIds }.distinct(),
                                 credentialUsernames.firstOrNull().orEmpty(),
                                 attachmentOwners,
                                 copiedIconFiles,
@@ -2697,6 +3048,7 @@ private fun PasswordEntryEditor(
                 }
             } else {
                 viewModel.savePasswordsAcrossTargets(
+                            embeddedContentSave = deferredEmbeddedSave,
                     originalIds = originalIds.takeIf { isEditing }.orEmpty(),
                     commonEntry = commonEntry.copy(
                         replicaGroupId = currentReplicaGroupId.takeIf { isEditing }
@@ -2750,6 +3102,8 @@ private fun PasswordEntryEditor(
         )
     }
 
+    val inheritedTemplateTargets = takagi.ru.monica.ui.components.LocalTemplateTargets.current
+    var templateTargetsInitialized by remember { mutableStateOf(false) }
     LaunchedEffect(
         isEditing,
         currentFilter,
@@ -2764,6 +3118,12 @@ private fun PasswordEntryEditor(
         initialBitwardenFolderId
     ) {
         if (isEditing) return@LaunchedEffect
+        if (templateTargetsInitialized) return@LaunchedEffect
+        templateTargetsInitialized = true
+        if (!inheritedTemplateTargets.isNullOrEmpty()) {
+            setSelectedStorageTargets(inheritedTemplateTargets)
+            return@LaunchedEffect
+        }
         existingReplicaTargetKeys = emptySet()
         currentReplicaGroupId = null
         if (hasExplicitInitialStorage) {
@@ -2801,6 +3161,8 @@ private fun PasswordEntryEditor(
 
     val topBarTitle = stringResource(
         when {
+            templateDraft != null && isEditing -> R.string.edit
+            templateDraft != null -> R.string.add
             isBarcodeMode && isEditing -> R.string.edit_barcode_title
             isBarcodeMode -> R.string.add_barcode_title
             isEditing -> R.string.edit_password_title
@@ -2828,19 +3190,28 @@ private fun PasswordEntryEditor(
         )
     }
 
+    val templateNavigation = takagi.ru.monica.ui.components.LocalTemplateNavigation.current
+    val toolbarDensity = androidx.compose.ui.platform.LocalDensity.current
+    val minimumTitleWidth = androidx.compose.ui.text.rememberTextMeasurer().measure(
+        topBarTitle, style = MaterialTheme.typography.titleLarge.copy(fontSize = 18.sp), maxLines = 1).size.width
+    val typeControlMaxWidth = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp -
+        120.dp - with(toolbarDensity) { minimumTitleWidth.toDp() }).coerceIn(64.dp, 220.dp)
     val entryTypeControl: @Composable () -> Unit = {
                         if (onSwitchToWifi != null) {
                             EntryTypeChip(
+                                modifier = Modifier.widthIn(max = typeControlMaxWidth),
                                 showApiToken = !isEditing && onSwitchToApiToken != null,
                                 showGpg = !isEditing,
                                 showApiKey = !isEditing,
-                                current = if (isBarcodeMode) {
+                                current = if (templateDraft != null) EntryTypeChipOption.valueOf(templateDraft!!.type) else if (isBarcodeMode) {
                                     EntryTypeChipOption.BARCODE
                                 } else {
                                     EntryTypeChipOption.PASSWORD
                                 },
                                 onSelect = { option ->
-                                    when (option) {
+                                    if (option == (templateDraft?.let { EntryTypeChipOption.valueOf(it.type) } ?: if (isBarcodeMode) EntryTypeChipOption.BARCODE else EntryTypeChipOption.PASSWORD)) Unit
+                                    else if (templateNavigation != null && option != EntryTypeChipOption.PASSWORD && option != EntryTypeChipOption.BARCODE) templateNavigation(option, selectedStorageTargets.toList())
+                                    else when (option) {
                                         EntryTypeChipOption.API_KEY -> onSwitchToApiKey(
                                             selectedStorageTargets.firstOrNull() ?: StorageTarget.MonicaLocal(null))
                                         EntryTypeChipOption.GPG_KEY -> onSwitchToGpg()
@@ -2851,10 +3222,10 @@ private fun PasswordEntryEditor(
                                         EntryTypeChipOption.SSH_KEY ->
                                             onSwitchToSshKey?.invoke(if (isEditing) passwordId else null)
                                         EntryTypeChipOption.BARCODE -> {
-                                            loginType = LOGIN_TYPE_BARCODE
+                                            loginType = LOGIN_TYPE_BARCODE; templateDraft = null
                                         }
                                         EntryTypeChipOption.PASSWORD -> {
-                                            loginType = "PASSWORD"
+                                            loginType = "PASSWORD"; templateDraft = null
                                         }
                                     }
                                 },
@@ -2864,8 +3235,8 @@ private fun PasswordEntryEditor(
                         }
     }
     val editorActions: @Composable RowScope.() -> Unit = {
-        if (!contentMode) entryTypeControl()
-                        IconButton(onClick = { isFavorite = !isFavorite }) {
+        entryTypeControl()
+                        IconButton(onClick = { isFavorite = !isFavorite }, modifier = Modifier.testTag("password_editor_favorite").semantics { selected = isFavorite }) {
                             Icon(
                                 if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = stringResource(R.string.favorite),
@@ -2878,24 +3249,23 @@ private fun PasswordEntryEditor(
             Icon(MonicaIcons.Navigation.back, contentDescription = stringResource(R.string.back))
         }
     }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        modifier = if (contentMode) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier,
         topBar = {
-            if (contentMode) {
-                LargeTopAppBar(
-                    title = { Text(if (isEditing) topBarTitle else stringResource(R.string.password_content_new_title),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    navigationIcon = editorNavigation, actions = editorActions, scrollBehavior = scrollBehavior,
-                )
-            } else {
-                TopAppBar(
-                    title = { Text(topBarTitle, style = MaterialTheme.typography.titleLarge, maxLines = 1) },
-                    navigationIcon = editorNavigation, actions = editorActions,
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent, titleContentColor = MaterialTheme.colorScheme.onSurface),
-                )
-            }
+            TopAppBar(
+                title = {
+                    androidx.compose.foundation.text.BasicText(
+                        topBarTitle,
+                        style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                        maxLines = 1,
+                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                            minFontSize = 16.sp, maxFontSize = MaterialTheme.typography.titleLarge.fontSize),
+                        modifier = Modifier.testTag("password_editor_heading"),
+                    )
+                },
+                navigationIcon = editorNavigation, actions = editorActions,
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent, titleContentColor = MaterialTheme.colorScheme.onSurface),
+            )
         },
         floatingActionButton = {
             if (isMultiCredentialMode) {
@@ -2978,24 +3348,16 @@ private fun PasswordEntryEditor(
                 .padding(paddingValues)
                 .imePadding()
         ) {
+            CompositionLocalProvider(takagi.ru.monica.ui.components.LocalEntryContentActions provides contentActions) {
             LazyColumn(
                 state = editorListState,
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag(if (contentMode) "password_content_editor" else "password_classic_editor")
                     .padding(horizontal = if (contentMode) 12.dp else 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (contentMode) 2.dp else 16.dp),
             contentPadding = listContentPadding
         ) {
-            if (contentMode && showCommonEditorContent) {
-                item("content_editor_intro") {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        entryTypeControl()
-                        Text(stringResource(R.string.password_content_optional_login),
-                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
             // Vault/Storage Selector - 保管库选择器（类似Bitwarden）
             if (showCommonEditorContent) {
                 item {
@@ -3010,7 +3372,8 @@ private fun PasswordEntryEditor(
                         getMdbxFolders = viewModel::getMdbxFolders,
                         isEditing = isEditing,
                         onAddTargetClick = { showStorageTargetSheet = true },
-                        onRemoveTarget = ::removeSelectedStorageTarget
+                        onRemoveTarget = ::removeSelectedStorageTarget,
+                        compact = false
                     )
                 }
             }
@@ -3048,22 +3411,22 @@ private fun PasswordEntryEditor(
             // Credentials Card
             item {
                 InfoCard(
+                    flat = contentMode,
+                    template = isBarcodeMode,
                     title = stringResource(
                         if (isBarcodeMode) R.string.entry_type_barcode else R.string.section_credentials
                     )
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(if (contentMode) 2.dp else 12.dp)) {
                         if (showCommonEditorContent) {
                         // Title
                         if (settings.iconCardsEnabled) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
+                            Row(Modifier.fillMaxWidth().padding(bottom = if (contentMode) 8.dp else 0.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilledTonalIconButton(
                                     onClick = { showCustomIconDialog = true },
-                                    modifier = Modifier.size(48.dp)
+                                    modifier = Modifier.size(56.dp).testTag("entry_icon_picker")
                                 ) {
                                     when {
                                         selectedEmojiIcon != null -> {
@@ -3116,29 +3479,57 @@ private fun PasswordEntryEditor(
                                     }
                                 }
                                 OutlinedTextField(
-                                    value = title,
-                                    onValueChange = { title = it },
-                                    label = { Text(stringResource(R.string.title_required)) },
-                                    leadingIcon = { Icon(Icons.Default.Label, null) },
-                                    modifier = Modifier.weight(1f),
+                                    value = templateDraft?.takeIf { it.type == "WIFI" }?.value("ssid") ?: title,
+                                    onValueChange = { value ->
+                                        val wifi = templateDraft?.takeIf { it.type == "WIFI" }
+                                        if (wifi == null) title = value else {
+                                            if (title.isBlank() || title == wifi.value("ssid")) title = value
+                                            templateDraft = wifi.change("ssid", value)
+                                        }
+                                    },
+                                    label = { Text(stringResource(if (templateDraft?.type == "WIFI") R.string.wifi_ssid_required else R.string.title_required)) },
+                                    modifier = Modifier.weight(1f).testTag("password_editor_title"),
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(if (contentMode) 24.dp else 12.dp)
                                 )
                             }
                         } else {
                             OutlinedTextField(
-                                value = title,
-                                onValueChange = { title = it },
-                                label = { Text(stringResource(R.string.title_required)) },
+                                value = templateDraft?.takeIf { it.type == "WIFI" }?.value("ssid") ?: title,
+                                onValueChange = { value ->
+                                        val wifi = templateDraft?.takeIf { it.type == "WIFI" }
+                                        if (wifi == null) title = value else {
+                                            if (title.isBlank() || title == wifi.value("ssid")) title = value
+                                            templateDraft = wifi.change("ssid", value)
+                                        }
+                                    },
+                                label = { Text(stringResource(if (templateDraft?.type == "WIFI") R.string.wifi_ssid_required else R.string.title_required)) },
                                 leadingIcon = { Icon(Icons.Default.Label, null) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = if (contentMode) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp) else RoundedCornerShape(12.dp)
                             )
                         }
 
+                        templateDraft?.let { draft ->
+                            if (draft.type == "API_KEY" || draft.type == "GPG_KEY") {
+                                OutlinedTextField(website,
+                                    { replaceWebsiteUrlsFromRaw(it) }, saveTextState = false,
+                                    label = { Text(stringResource(R.string.website_url)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                                    shape = RoundedCornerShape(if (contentMode) 24.dp else 12.dp),
+                                    modifier = Modifier.fillMaxWidth().testTag("template_website"))
+                                Spacer(Modifier.height(10.dp))
+                            }
+                            takagi.ru.monica.ui.components.TemplateCredentialFields(draft,
+                                onChange = { updated ->
+                                    if (draft.type == "WIFI" && (title.isBlank() || title == draft.value("ssid"))) title = updated.value("ssid")
+                                    templateDraft = updated
+                                }, onScanWifi = onScanAuthenticatorQrCode, enabled = !isSaving, ssidInIdentity = true)
+                        }
+                        if (templateLoadFailed) Text(stringResource(R.string.content_block_preserved), color = MaterialTheme.colorScheme.error)
                         if (isBarcodeMode) {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 FilledTonalButton(
@@ -3221,9 +3612,9 @@ private fun PasswordEntryEditor(
                                     }
                                 )
                             }
-                        } else {
+                        } else if (templateDraft == null) {
                             // Website URLs + App Binding (inline)
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(if (contentMode) 2.dp else 10.dp)) {
                             websiteUrls.forEachIndexed { index, url ->
                                 key("website_url_$index") {
                                     var urlMenuExpanded by remember { mutableStateOf(false) }
@@ -3303,7 +3694,12 @@ private fun PasswordEntryEditor(
                                             keyboardType = KeyboardType.Uri,
                                             imeAction = ImeAction.Next
                                         ),
-                                        shape = RoundedCornerShape(12.dp)
+                                        shape = if (contentMode) RoundedCornerShape(
+                                            topStart = if (settings.iconCardsEnabled && index == 0) 24.dp else 4.dp,
+                                            topEnd = if (settings.iconCardsEnabled && index == 0) 24.dp else 4.dp,
+                                            bottomStart = if (index == websiteUrls.lastIndex) 24.dp else 4.dp,
+                                            bottomEnd = if (index == websiteUrls.lastIndex) 24.dp else 4.dp
+                                        ) else RoundedCornerShape(12.dp)
                                     )
                                 }
                             }
@@ -3312,7 +3708,7 @@ private fun PasswordEntryEditor(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                OutlinedButton(
+                                TextButton(
                                     onClick = {
                                         websiteUrls.add("")
                                         syncWebsiteFromUrlRows()
@@ -3357,7 +3753,7 @@ private fun PasswordEntryEditor(
                         }
                         }
                         // 单凭据继续使用原页面；批量模式只显示当前菜单选中的账号。
-                        if (showCredentialEditorContent && !isBarcodeMode) {
+                        if (showCredentialEditorContent && !isBarcodeMode && templateDraft == null) {
                             val activeCredentialIndex = if (isMultiCredentialMode) {
                                 selectedCredentialEditorIndex.coerceIn(0, credentialUsernames.lastIndex)
                             } else {
@@ -3402,7 +3798,7 @@ private fun PasswordEntryEditor(
                                     leadingIcon = { Icon(Icons.Default.Person, null) },
                                     trailingIcon = {
                                         Row {
-                                            if (canSelectUsernameTemplate) {
+
                                                 IconButton(
                                                     onClick = {
                                                         commonAccountSelectorField = "username"
@@ -3415,13 +3811,13 @@ private fun PasswordEntryEditor(
                                                     }
                                                 ) {
                                                     Icon(
-                                                        Icons.Default.PersonAdd,
-                                                        contentDescription = stringResource(R.string.fill_common_account),
+                                                        Icons.Default.AutoAwesome,
+                                                        contentDescription = stringResource(R.string.cg_username_title),
                                                         modifier = Modifier.size(20.dp),
                                                         tint = MaterialTheme.colorScheme.primary
                                                     )
                                                 }
-                                            }
+
                                             if (activeUsername.isNotEmpty()) {
                                                 IconButton(onClick = {
                                                     ClipboardUtils.copyToClipboard(
@@ -3464,7 +3860,7 @@ private fun PasswordEntryEditor(
                                         },
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = if (contentMode) if (loginType.equals("SSO", ignoreCase = true) || activeUsernameSuggestionVisible) RoundedCornerShape(24.dp) else RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp) else RoundedCornerShape(12.dp)
                                 )
                             }
 
@@ -3518,7 +3914,7 @@ private fun PasswordEntryEditor(
                                             },
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                        shape = RoundedCornerShape(12.dp)
+                                        shape = if (contentMode) RoundedCornerShape(4.dp) else RoundedCornerShape(12.dp)
                                     )
 
                                     MonicaExpandableContent(
@@ -3537,14 +3933,13 @@ private fun PasswordEntryEditor(
                         }
 
                         // 登录方式只用于密码条目；二维码和批量凭据保留各自的条目类型。
-                        if (showCommonEditorContent && !isMultiCredentialMode && !isBarcodeMode) {
+                        if (showCommonEditorContent && !isMultiCredentialMode && !isBarcodeMode && loginType.equals("SSO", ignoreCase = true)) {
                             LoginTypeSelector(
                                 loginType = loginType,
                                 ssoProvider = ssoProvider,
                                 ssoRefEntryId = ssoRefEntryId,
                                 allPasswords = allPasswordsForRef,
-                                onLoginTypeChange = { loginType = it },
-                                onSsoProviderChange = { ssoProvider = it },
+                                                                onSsoProviderChange = { ssoProvider = it },
                                 onSsoRefEntryIdChange = { ssoRefEntryId = it }
                             )
                         }
@@ -3555,18 +3950,37 @@ private fun PasswordEntryEditor(
                                 loginType.equals("PASSWORD", ignoreCase = true) &&
                                 !isBarcodeMode
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                val visiblePasswordIndices = if (isMultiCredentialMode) {
+                            Column(verticalArrangement = Arrangement.spacedBy(if (contentMode) 2.dp else 12.dp)) {
+                                val visiblePasswordIndices = if (passwords.isEmpty()) emptyList() else if (isMultiCredentialMode) {
                                     listOf(selectedCredentialEditorIndex.coerceIn(0, passwords.lastIndex))
                                 } else {
                                     passwords.indices.toList()
                                 }
                                 visiblePasswordIndices.forEach { index ->
                                     val pwd = passwords[index]
+                                    val previousIndex = visiblePasswordIndices.getOrNull(visiblePasswordIndices.indexOf(index) - 1)
+                                    val startsPasswordGroup = if (previousIndex == null) {
+                                        if (settings.separateUsernameAccountEnabled && !isMultiCredentialMode) separatedUsernameSuggestionVisible
+                                        else if (isMultiCredentialMode) credentialUsernameSuggestionVisible else usernameSuggestionVisible
+                                    } else focusedPasswordFieldIndex == previousIndex && passwords[previousIndex].isBlank() && !inlineGeneratedPasswords[previousIndex].isNullOrBlank()
+                                    val endsPasswordGroup = index == visiblePasswordIndices.last() ||
+                                        (focusedPasswordFieldIndex == index && pwd.isBlank() && !inlineGeneratedPasswords[index].isNullOrBlank()) ||
+                                        (isEditing && originalIds.getOrNull(index) in unreadablePasswordIds) || hasOwnershipConflict
                                     val isPasswordVisible = isPasswordFieldVisible(index)
                                     val isUnreadablePassword =
                                         isEditing && originalIds.getOrNull(index) in unreadablePasswordIds
+                                    val passwordShape = if (contentMode) RoundedCornerShape(
+                                                    topStart = if (startsPasswordGroup) 24.dp else 4.dp,
+                                                    topEnd = if (startsPasswordGroup) 24.dp else 4.dp,
+                                                    bottomStart = if (endsPasswordGroup) 24.dp else 4.dp,
+                                                    bottomEnd = if (endsPasswordGroup) 24.dp else 4.dp
+                                                ) else RoundedCornerShape(12.dp)
                                     Column {
+                                      Column(modifier = if (contentMode) Modifier.fillMaxWidth()
+                                          .testTag("password_editor_card_$index")
+                                          .clip(passwordShape)
+                                          .background(if (focusedPasswordFieldIndex == index) MaterialTheme.colorScheme.surfaceContainerHigh
+                                              else MaterialTheme.colorScheme.surfaceContainer) else Modifier) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             verticalAlignment = Alignment.CenterVertically,
@@ -3605,7 +4019,7 @@ private fun PasswordEntryEditor(
                                                         }
                                                         // Allow removing only if more than 1
                                                         if (!isMultiCredentialMode && passwords.size > 1) {
-                                                            IconButton(onClick = { removePasswordFieldAt(index) }) {
+                                                            IconButton(onClick = { removePasswordFieldAt(index) }, modifier = Modifier.testTag("password_editor_remove_$index")) {
                                                                 Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                                             }
                                                         }
@@ -3613,6 +4027,7 @@ private fun PasswordEntryEditor(
                                                 },
                                                 modifier = Modifier
                                                     .weight(1f)
+                                                    .testTag("password_editor_value_$index")
                                                     .onFocusChanged { focusState ->
                                                         if (focusState.isFocused) {
                                                             focusedPasswordFieldIndex = index
@@ -3625,7 +4040,7 @@ private fun PasswordEntryEditor(
                                                     },
                                                 singleLine = true,
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = passwordShape,
                                                 supportingText = if (isUnreadablePassword) {
                                                     {
                                                         Text(stringResource(R.string.bitwarden_password_unreadable_inline))
@@ -3639,6 +4054,21 @@ private fun PasswordEntryEditor(
                                                 }
                                             )
                                         }
+
+                                        if (contentMode) {
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = pwd.isNotEmpty() && !isUnreadablePassword,
+                                                enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                                                exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+                                            ) {
+                                                Box(Modifier.fillMaxWidth().padding(start = 56.dp, end = 16.dp, bottom = 12.dp)) {
+                                                    takagi.ru.monica.ui.components.PasswordStrengthBadge(
+                                                        strength = PasswordStrengthAnalyzer.calculateStrength(pwd),
+                                                        modifier = Modifier.testTag("password_strength_badge_$index"))
+                                                }
+                                            }
+                                        }
+                                      }
 
                                         val inlinePasswordSuggestion = inlineGeneratedPasswords[index]
                                         val passwordSuggestionVisible = focusedPasswordFieldIndex == index &&
@@ -3663,7 +4093,7 @@ private fun PasswordEntryEditor(
                                         
                                         // Strength Indicator for EACH password or just hide it to avoid clutter?
                                         // User didn't specify. But showing it is good.
-                                        if (pwd.isNotEmpty()) {
+                                        if (!contentMode && pwd.isNotEmpty()) {
                                             val strength = PasswordStrengthAnalyzer.calculateStrength(pwd)
                                             PasswordStrengthIndicator(
                                                 strength = strength,
@@ -3675,7 +4105,7 @@ private fun PasswordEntryEditor(
 
                                 // 旧的“一个条目多个密码”编辑能力继续保留；批量凭据每页固定一个密码。
                                 if (!isMultiCredentialMode) {
-                                    OutlinedButton(
+                                    TextButton(
                                         onClick = { passwords.add("") },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp)
@@ -3691,44 +4121,72 @@ private fun PasswordEntryEditor(
                 }
             }
 
-            if (contentMode) {
-                item("content_editor_add") {
-                    Row { PasswordContentAddButton(onClick = { showContentMenu = true }, enabled = !isSaving) }
-                }
-            }
-
+            if (contentMode) item("content_group_spacing") { Spacer(Modifier.height(12.dp)) }
+            val sectionOrder = if (contentMode) visibleContentTokens() else PasswordContentSection.entries.map { it.name }
+            sectionOrder.forEach { token ->
+                val storedBlock = storedBlocks.firstOrNull { it.token == token }
+                if (storedBlock != null) {
+                    contentItem(key = token) {
+                        val order = visibleContentTokens().filterNot { it == "AUTHENTICATOR" }
+                        val position = order.indexOf(token)
+                        PasswordContentBlockCard(storedBlock, takagi.ru.monica.ui.components.EntryContentActions(
+                            moveUp = if (position > 0) ({ moveContentToken(token, -1) }) else null,
+                            moveDown = if (position < order.lastIndex) ({ moveContentToken(token, 1) }) else null,
+                            remove = storedBlock.block?.let { { replaceBlockFields(PasswordContentBlocks.remove(contentExtraFields.toList(), token)); requestedContentSections.remove(token) } },
+                            groupIndex = position.coerceAtLeast(0), groupCount = order.size.coerceAtLeast(1)),
+                            onClick = { if (storedBlock.block != null) editingBlock = storedBlock.block else viewingBlock = storedBlock })
+                    }
+                } else {
+                val section = PasswordContentSection.entries.firstOrNull { it.name == token } ?: return@forEach
+                when (section) {
+                    PasswordContentSection.AUTHENTICATOR -> {
             // Security Card (TOTP) - 根据设置和数据决定是否显示
             if (showCredentialEditorContent && shouldShowSecurityVerification()) {
-                item {
-                    InfoCard(title = stringResource(R.string.section_security_verification)) {
+                item(key = "content_authenticator") {
+                    Column {
                         Column {
-                            OutlinedTextField(
-                                value = authenticatorSecret,
-                                onValueChange = ::applyAuthenticatorInput,
-                                label = { Text(stringResource(R.string.authenticator_key_optional)) },
-                                placeholder = { Text(stringResource(R.string.authenticator_key_hint)) },
-                                leadingIcon = { Icon(Icons.Default.VpnKey, null) },
-                                trailingIcon = {
-                                    if (onScanAuthenticatorQrCode != null) {
-                                        IconButton(onClick = onScanAuthenticatorQrCode) {
-                                            Icon(
-                                                imageVector = Icons.Default.QrCodeScanner,
-                                                contentDescription = stringResource(R.string.scan_qr_code)
-                                            )
+                            CompositionLocalProvider(takagi.ru.monica.ui.components.LocalFilledEntryForm provides contentMode) {
+                                OutlinedTextField(
+                                    value = authenticatorSecret,
+                                    onValueChange = ::applyAuthenticatorInput,
+                                    label = { Text(stringResource(R.string.authenticator_key_optional)) },
+                                    placeholder = { Text(stringResource(R.string.authenticator_key_hint)) },
+                                    leadingIcon = { Icon(Icons.Default.VpnKey, null) },
+                                    trailingIcon = {
+                                        Row {
+                                            if (onScanAuthenticatorQrCode != null) IconButton(onClick = onScanAuthenticatorQrCode) {
+                                                Icon(Icons.Default.QrCodeScanner, stringResource(R.string.scan_qr_code))
+                                            }
+                                            IconButton(onClick = { showInlineOtpSettings = true }, modifier = Modifier.testTag("password_otp_settings")) {
+                                                Icon(Icons.Default.MoreVert, stringResource(R.string.advanced_options))
+                                            }
                                         }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().testTag("password_otp_secret"),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                supportingText = {
-                                    if (selectedAuthenticatorOtpType == OtpType.STEAM) {
-                                        Text(stringResource(R.string.steam_uses_5_chars))
-                                    }
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            )
+                                    },
+                                    modifier = Modifier.fillMaxWidth().testTag("password_otp_secret"),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                                    supportingText = if (selectedAuthenticatorOtpType == OtpType.STEAM) {
+                                        { Text(stringResource(R.string.steam_uses_5_chars)) }
+                                    } else null,
+                                    shape = RoundedCornerShape(if (contentMode) 24.dp else 12.dp)
+                                )
+                            }
 
+                            if (showInlineOtpSettings) MonicaModalBottomSheet(
+                                onDismissRequest = { showInlineOtpSettings = false },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            ) {
+                                LazyColumn(Modifier.fillMaxWidth().testTag("content_detail_scroll").imePadding(),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) {
+                                    item {
+                                        Column {
+                                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                                Text(stringResource(R.string.authenticator_key_optional), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                                IconButton(onClick = { showInlineOtpSettings = false }, modifier = Modifier.testTag("content_detail_back")) {
+                                                    Icon(Icons.Default.Check, stringResource(R.string.save))
+                                                }
+                                            }
                             OtpTypeSelector(
                                 type = selectedAuthenticatorOtpType,
                                 onChange = { type ->
@@ -3786,6 +4244,11 @@ private fun PasswordEntryEditor(
                                 }
                             }
 
+                                        }
+                                    }
+                                }
+                            }
+
                             MonicaExpandableContent(
                                 expanded = authenticatorPreviewVisible
                             ) {
@@ -3796,9 +4259,9 @@ private fun PasswordEntryEditor(
                                         progressTimeMillis = authenticatorPreviewProgressTimeMillis,
                                         timeOffset = settings.totpTimeOffset,
                                         smoothProgress = settings.validatorSmoothProgress,
-                                        modifier = Modifier.padding(top = 10.dp),
+                                        modifier = Modifier.padding(top = 10.dp).testTag("password_otp_inline_preview"),
                                         showHeader = false,
-                                        showProgress = false
+                                        showProgress = true
                                     )
                                 }
                             }
@@ -3807,10 +4270,19 @@ private fun PasswordEntryEditor(
                 }
             }
 
+
+                    }
+                    PasswordContentSection.NOTES -> {
             // Organization Card - 根据设置和数据决定是否显示
             if (showCredentialEditorContent && shouldShowCategoryAndNotes()) {
-                item {
-                    InfoCard(title = stringResource(if (contentMode) R.string.password_content_notes else R.string.notes)) {
+                contentItem(key = "content_notes") {
+                    takagi.ru.monica.ui.components.EntryEditorSection(
+                        templateMode = isBarcodeMode,
+                        contentMode = contentMode, section = PasswordContentSection.NOTES,
+                        summary = credentialScopedNotes.take(100),
+                        open = editingContentSection == "NOTES",
+                        onOpenChange = { editingContentSection = if (it) "NOTES" else null },
+                    ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             val selectedNotePreview = remember(selectedBoundNote) {
                                 selectedBoundNote?.let { note ->
@@ -3843,12 +4315,21 @@ private fun PasswordEntryEditor(
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
                             Text(
-                                text = stringResource(R.string.password_bound_note_title),
+                                text = stringResource(R.string.embedded_copy_note),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            if (selectedBoundNote != null) {
+                            FilledTonalButton(onClick = {
+                                editingWallet = EmbeddedWalletContent.create(takagi.ru.monica.data.SecureItem(
+                                    itemType = takagi.ru.monica.data.ItemType.NOTE, title = "",
+                                    itemData = takagi.ru.monica.notes.domain.NoteContentCodec.encode("", isMarkdown = true).first))
+                            }) { Text(stringResource(R.string.add)) }
+                            val embeddedNote = copiedContent(EmbeddedWalletContent.Kind.NOTE)
+                            if (embeddedNote != null) {
+                                takagi.ru.monica.ui.components.EmbeddedWalletPreview(embeddedNote) { editingWallet = embeddedNote }
+                                OutlinedButton(onClick = { showBoundNotePicker = true }) { Text(stringResource(R.string.embedded_copy_note)) }
+                            } else if (selectedBoundNote != null) {
                                 ElevatedCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.elevatedCardColors(
@@ -3916,7 +4397,7 @@ private fun PasswordEntryEditor(
                                 ) {
                                     Icon(Icons.Default.Link, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.bind_note))
+                                    Text(stringResource(R.string.embedded_copy_note))
                                 }
                             }
                         }
@@ -3924,6 +4405,30 @@ private fun PasswordEntryEditor(
                 }
             }  // 分类与备注 if 结束
             
+
+                    }
+                    PasswordContentSection.CUSTOM_FIELDS -> {
+            if (contentMode) {
+                val fields = if (isMultiCredentialMode && showCredentialEditorContent) activeCredentialMetadata.credentialCustomFields else customFields
+                val visibleFields = fields.filterNot { it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
+                if (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || visibleFields.isNotEmpty()) contentItem("content_custom_fields") {
+                    takagi.ru.monica.ui.components.EntryContentPanel(PasswordContentSection.CUSTOM_FIELDS,
+                        visibleFields.joinToString(" · ") { it.title }, editingContentSection == "CUSTOM_FIELDS",
+                        { editingContentSection = if (it) "CUSTOM_FIELDS" else null }) {
+                        visibleFields.forEachIndexed { index, field ->
+                            androidx.compose.runtime.key(field.id) {
+                                CustomFieldEditCard(index = index, field = field,
+                                    onFieldChange = { updated -> val i = fields.indexOfFirst { it.id == field.id }; if (i >= 0) fields[i] = updated },
+                                    onDelete = { fields.remove(field) })
+                            }
+                        }
+                        takagi.ru.monica.ui.components.EntryContentFieldButton(visibleFields) { updated ->
+                            val managed = fields.filter { it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
+                            fields.clear(); fields.addAll(managed + updated)
+                        }
+                    }
+                }
+            } else {
             if (!isBarcodeMode && showCommonEditorContent &&
                 (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || customFields.isNotEmpty())) {
                 // 自定义字段区域标题 (带添加按钮)
@@ -3951,7 +4456,7 @@ private fun PasswordEntryEditor(
                 // 自定义字段编辑卡片 (独立卡片样式)
                 items(customFields.size, key = { "custom_field_${customFields[it].id}" }) { index ->
                     val field = customFields[index]
-                    CustomFieldEditCard(
+                    if (field.title != EntryContentFields.ORDER && EntrySupplementalSpecs.spec(field.title) == null) CustomFieldEditCard(
                         groupShape = if (contentMode) takagi.ru.monica.ui.components.entryGroupShape(index, customFields.size) else null,
                         index = index,
                         field = field,
@@ -3993,7 +4498,7 @@ private fun PasswordEntryEditor(
 
                 items(activeCredentialMetadata.credentialCustomFields.size) { index ->
                     val field = activeCredentialMetadata.credentialCustomFields[index]
-                    CustomFieldEditCard(
+                    if (field.title != EntryContentFields.ORDER && EntrySupplementalSpecs.spec(field.title) == null) CustomFieldEditCard(
                         groupShape = if (contentMode) takagi.ru.monica.ui.components.entryGroupShape(index, activeCredentialMetadata.credentialCustomFields.size) else null,
                         index = index,
                         field = field,
@@ -4007,11 +4512,16 @@ private fun PasswordEntryEditor(
                 }
             }
 
+
+            }
+
+                    }
+                    PasswordContentSection.ATTACHMENTS -> {
             if (!isBarcodeMode && showCredentialEditorContent &&
-                (contentSectionEnabled(PasswordContentSection.ATTACHMENTS, true) || isEditing ||
+                (contentSectionEnabled(PasswordContentSection.ATTACHMENTS, true) || existingContentAttachments.isNotEmpty() ||
                     credentialAttachmentDrafts.any { it.isNotEmpty() })) {
                 // 附件区块：批量模式下每个凭据页维护自己的附件草稿。
-                item {
+                contentItem(key = "content_attachments") {
                     val activeCredentialIndex = if (isMultiCredentialMode) {
                         selectedCredentialEditorIndex.coerceIn(
                             0,
@@ -4034,6 +4544,11 @@ private fun PasswordEntryEditor(
                     } else {
                         null
                     }
+                    takagi.ru.monica.ui.components.EntryEditorSection(
+                        templateMode = isBarcodeMode,
+                        contentMode = contentMode, section = PasswordContentSection.ATTACHMENTS, summary = "",
+                        open = editingContentSection == "ATTACHMENTS",
+                        onOpenChange = { editingContentSection = if (it) "ATTACHMENTS" else null }) {
                     takagi.ru.monica.attachments.ui.AttachmentsEditSection(
                         passwordId = if (editsExistingCredential) passwordId ?: -1L else -1L,
                         isPlusActivated = settings.isPlusActivated,
@@ -4049,22 +4564,37 @@ private fun PasswordEntryEditor(
                             credentialAttachmentDrafts[activeCredentialIndex]
                         }
                     )
+                    }
                 }
             }
 
+
+                    }
+                    PasswordContentSection.CONTACT -> {
             // Collapsible: Personal Info - 根据设置和数据决定是否显示
             if (showCredentialEditorContent && shouldShowPersonalInfo()) {
-                item {
-                    MonicaExpandableCard(
-                        title = stringResource(R.string.personal_info),
-                        icon = Icons.Default.Person,
-                        expanded = personalInfoExpanded,
-                        onExpandedChange = { personalInfoExpanded = it }
+                contentItem(key = "content_contact") {
+                    takagi.ru.monica.ui.components.EntryEditorSection(
+                        templateMode = isBarcodeMode,
+                        contentMode = contentMode, section = PasswordContentSection.CONTACT,
+                        summary = (credentialScopedEmails + credentialScopedPhones).filter { it.isNotBlank() }.joinToString(" · "),
+                        open = editingContentSection == "CONTACT",
+                        onOpenChange = { editingContentSection = if (it) "CONTACT" else null },
+                        collapsible = true, expanded = personalInfoExpanded, onExpandedChange = { personalInfoExpanded = it },
                     ) {
+                        if (!contentMode && hasExtraSection("CONTACT")) {
+                            EntrySupplementalFields("CONTACT", contentExtraFields.toList()) { updated ->
+                                contentExtraFields.clear(); contentExtraFields.addAll(updated)
+                            }
+                        }
                         if (contentMode) {
                             takagi.ru.monica.ui.components.EntryContactFields(credentialScopedEmails.toList(), credentialScopedPhones.toList(),
                                 onEmails = { credentialScopedEmails.clear(); credentialScopedEmails.addAll(it) },
                                 onPhones = { credentialScopedPhones.clear(); credentialScopedPhones.addAll(it) })
+                            EntrySupplementalFields("CONTACT", contentExtraFields.toList()) { updated ->
+                                contentExtraFields.clear(); contentExtraFields.addAll(updated)
+                            }
+
                         } else {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Multiple Email Fields
@@ -4212,131 +4742,38 @@ private fun PasswordEntryEditor(
             }
             }  // Personal Info if 结束
 
-            // Collapsible: Address Info - 根据设置和数据决定是否显示
-            if (showCredentialEditorContent && shouldShowAddressInfo()) {
-                item {
-                    MonicaExpandableCard(
-                        title = stringResource(R.string.address_info),
-                        icon = Icons.Default.Home,
-                        expanded = addressInfoExpanded,
-                        onExpandedChange = { addressInfoExpanded = it }
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            if (!commonAccountInfo.billingAddress.isEmpty()) {
-                                OutlinedButton(
-                                    onClick = {
-                                        applyCommonBillingAddress(
-                                            commonAccountInfo.billingAddress,
-                                            target = activeCredentialMetadata.takeIf { isMultiCredentialMode }
-                                        )
-                                        addressInfoExpanded = true
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.common_account_billing_filled),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.AccountCircle, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.common_account_billing_use_saved))
-                                }
-                            }
-if (contentMode) {
-takagi.ru.monica.ui.components.EntryAddressFields(
-    street = credentialScopedAddressLine, city = credentialScopedCity,
-    region = credentialScopedState, postalCode = credentialScopedZipCode, country = credentialScopedCountry,
-    onStreet = { if (isMultiCredentialMode) activeCredentialMetadata.addressLine = it else addressLine = it },
-    onCity = { if (isMultiCredentialMode) activeCredentialMetadata.city = it else city = it },
-    onRegion = { if (isMultiCredentialMode) activeCredentialMetadata.state = it else state = it },
-    onPostalCode = { if (isMultiCredentialMode) activeCredentialMetadata.zipCode = it else zipCode = it },
-    onCountry = { if (isMultiCredentialMode) activeCredentialMetadata.country = it else country = it },
-)
-} else {
-                            OutlinedTextField(
-                                value = credentialScopedAddressLine,
-                                onValueChange = { value ->
-                                    if (isMultiCredentialMode) {
-                                        activeCredentialMetadata.addressLine = value
-                                    } else {
-                                        addressLine = value
-                                    }
-                                },
-                                label = { Text(stringResource(R.string.field_address)) },
-                                leadingIcon = { Icon(Icons.Default.Home, null) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = credentialScopedCity,
-                                onValueChange = { value ->
-                                    if (isMultiCredentialMode) activeCredentialMetadata.city = value else city = value
-                                },
-                                label = { Text(stringResource(R.string.field_city)) },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            OutlinedTextField(
-                                value = credentialScopedState,
-                                onValueChange = { value ->
-                                    if (isMultiCredentialMode) activeCredentialMetadata.state = value else state = value
-                                },
-                                label = { Text(stringResource(R.string.field_state)) },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = credentialScopedZipCode,
-                                onValueChange = { value ->
-                                    if (value.all { char -> char.isDigit() } && value.length <= 6) {
-                                        if (isMultiCredentialMode) {
-                                            activeCredentialMetadata.zipCode = value
-                                        } else {
-                                            zipCode = value
-                                        }
-                                    }
-                                },
-                                label = { Text(stringResource(R.string.field_postal_code)) },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            OutlinedTextField(
-                                value = credentialScopedCountry,
-                                onValueChange = { value ->
-                                    if (isMultiCredentialMode) activeCredentialMetadata.country = value else country = value
-                                },
-                                label = { Text(stringResource(R.string.field_country)) },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
-}
 
                     }
-                }
-            }
-            }  // Address Info if 结束
-
+                    PasswordContentSection.DOCUMENT -> {
+                        if (showCredentialEditorContent) contentItem(key = "content_document") {
+                            val snapshot = copiedContent(EmbeddedWalletContent.Kind.DOCUMENT)
+                            if (snapshot != null) takagi.ru.monica.ui.components.EmbeddedWalletPreview(snapshot) { openDocumentEditor() }
+                            else takagi.ru.monica.ui.components.EntryContentPanel(
+                                PasswordContentSection.DOCUMENT, "", open = false,
+                                onOpenChange = { if (it) openDocumentEditor() }) { }
+                        }
+                    }
+                    PasswordContentSection.ADDRESS -> {
+                        if (showCredentialEditorContent) contentItem(key = "content_address") {
+                            val snapshot = runCatching { addressProjection() }.getOrNull()
+                            if (snapshot != null) takagi.ru.monica.ui.components.EntryContentPanel(
+                                PasswordContentSection.ADDRESS, listOf(credentialScopedCity, credentialScopedCountry).filter { it.isNotBlank() }.joinToString(" · "),
+                                open = false, onOpenChange = { if (it) openAddressEditor() }) { }
+                            else Text(stringResource(R.string.content_block_preserved))
+                        }
+                    }
+                    PasswordContentSection.PAYMENT -> {
             // Collapsible: Payment Info
             if (showCredentialEditorContent && shouldShowPaymentInfo()) {
-            item {
-                MonicaExpandableCard(
-                    title = stringResource(R.string.payment_info),
-                    icon = Icons.Default.CreditCard,
-                    expanded = paymentInfoExpanded,
-                    onExpandedChange = { paymentInfoExpanded = it }
-                ) {
+            contentItem(key = "content_payment") {
+                takagi.ru.monica.ui.components.EntryEditorSection(
+                        templateMode = isBarcodeMode,
+                        contentMode = contentMode, section = PasswordContentSection.PAYMENT,
+                        summary = credentialScopedCreditCardNumber.takeLast(4).let { if (it.isBlank()) "" else "•••• $it" },
+                        open = editingContentSection == "PAYMENT",
+                        onOpenChange = { if (it && contentMode) openPaymentEditor() else editingContentSection = if (it) "PAYMENT" else null },
+                        collapsible = true, expanded = paymentInfoExpanded, onExpandedChange = { paymentInfoExpanded = it },
+                    ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // Import Button
                         if (bankCardViewModel != null) {
@@ -4354,54 +4791,38 @@ takagi.ru.monica.ui.components.EntryAddressFields(
                             // Bank Card Selection Logic (retained)
                             if (showBankCardDialog) {
                                 val bankCards by bankCardViewModel.parsedCards.collectAsState(initial = emptyList())
-                                AlertDialog(
-                                    onDismissRequest = { showBankCardDialog = false },
-                                    title = { Text(stringResource(R.string.select_bank_card)) },
-                                    text = {
-                                        if (bankCards.isEmpty()) Text(stringResource(R.string.no_bank_card_data))
-                                        else LazyColumn {
-                                            items(bankCards) { parsedCard ->
-                                                val item = parsedCard.item
-                                                val cardData = parsedCard.cardData
-                                                ListItem(
-                                                    headlineContent = { Text(item.title) },
-                                                    supportingContent = { Text(stringResource(R.string.tail_number_last4, cardData.cardNumber.takeLast(4))) },
-                                                    leadingContent = { Icon(Icons.Default.CreditCard, null) },
-                                                    modifier = Modifier.clickable {
-                                                        val month = cardData.expiryMonth.padStart(2, '0')
-                                                        val year = if (cardData.expiryYear.length == 4) cardData.expiryYear.takeLast(2) else cardData.expiryYear
-                                                        if (isMultiCredentialMode) {
-                                                            activeCredentialMetadata.creditCardNumber = cardData.cardNumber
-                                                            activeCredentialMetadata.creditCardHolder = cardData.cardholderName
-                                                            activeCredentialMetadata.creditCardCVV = cardData.cvv
-                                                            activeCredentialMetadata.creditCardExpiry = "$month/$year"
-                                                        } else {
-                                                            creditCardNumber = cardData.cardNumber
-                                                            creditCardHolder = cardData.cardholderName
-                                                            creditCardCVV = cardData.cvv
-                                                            creditCardExpiry = "$month/$year"
-                                                        }
-                                                        showBankCardDialog = false
-                                                        Toast.makeText(context, context.getString(R.string.imported), Toast.LENGTH_SHORT).show()
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    },
-                                    confirmButton = { TextButton(onClick = { showBankCardDialog = false }) { Text(stringResource(R.string.cancel)) } }
-                                )
+                                takagi.ru.monica.ui.components.EmbeddedWalletPicker(
+                                    bankCards.map { it.item }, stringResource(R.string.embedded_copy_card),
+                                    onSelect = { item -> copyWalletItem(item); showBankCardDialog = false },
+                                    onDismiss = { showBankCardDialog = false },
+            keepassDatabases = keepassDatabases, mdbxDatabases = mdbxDatabases, bitwardenVaults = bitwardenVaults)
+
                             }
                         }
 
-if (contentMode) {
-    takagi.ru.monica.ui.components.EntryPaymentFields(
-        credentialScopedCreditCardNumber, credentialScopedCreditCardHolder,
-        credentialScopedCreditCardExpiry, credentialScopedCreditCardCVV,
-        onNumber = { if (isMultiCredentialMode) activeCredentialMetadata.creditCardNumber = it else creditCardNumber = it },
-        onHolder = { if (isMultiCredentialMode) activeCredentialMetadata.creditCardHolder = it else creditCardHolder = it },
-        onExpiry = { if (isMultiCredentialMode) activeCredentialMetadata.creditCardExpiry = it else creditCardExpiry = it },
-        onCvv = { if (isMultiCredentialMode) activeCredentialMetadata.creditCardCVV = it else creditCardCVV = it },
-    )
+copiedContent(EmbeddedWalletContent.Kind.BANK_CARD)?.let { copied ->
+    takagi.ru.monica.ui.components.EmbeddedWalletPreview(copied) { editingWallet = copied }
+}
+if (!contentMode && hasExtraSection("PAYMENT")) {
+                            EntrySupplementalFields("PAYMENT", contentExtraFields.toList()) { updated ->
+                                contentExtraFields.clear(); contentExtraFields.addAll(updated)
+                            }
+                        }
+                        if (copiedContent(EmbeddedWalletContent.Kind.BANK_CARD) == null) {
+                        if (contentMode) {
+    FilledTonalButton(onClick = {
+        val (month, year) = takagi.ru.monica.ui.components.EntryPaymentFormat.splitExpiry(credentialScopedCreditCardExpiry)
+        val card = takagi.ru.monica.data.model.BankCardData(cardNumber = credentialScopedCreditCardNumber,
+            cardholderName = credentialScopedCreditCardHolder, expiryMonth = month, expiryYear = year, cvv = credentialScopedCreditCardCVV)
+        editingWallet = EmbeddedWalletContent.create(takagi.ru.monica.data.SecureItem(itemType = takagi.ru.monica.data.ItemType.BANK_CARD,
+            title = context.getString(R.string.payment_info), itemData = kotlinx.serialization.json.JsonObject(
+                kotlinx.serialization.json.Json.parseToJsonElement(takagi.ru.monica.data.model.CardWalletDataCodec.encodeBankCardData(card)).jsonObject +
+                    EntrySupplementalSpecs.forSection("PAYMENT").mapNotNull { spec ->
+                        EntryContentFields.value(contentExtraFields, "PAYMENT", spec.key).takeIf { it.isNotBlank() }
+                            ?.let { spec.key to kotlinx.serialization.json.JsonPrimitive(it) }
+                    }.toMap()).toString()))
+    }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.edit)) }
+
 } else {
                         OutlinedTextField(
                             value = credentialScopedCreditCardNumber,
@@ -4489,19 +4910,32 @@ if (contentMode) {
                             )
                         }
 }
+                        }
 
                     }
                 }
             }
             }  // Payment Info if 结束
+                    }
+                }
+            }
+            } // End mixed built-in/block content sequence.
+            if (contentMode) item("content_editor_add") {
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.End) {
+                    PasswordContentAddButton(onClick = { showContentMenu = true }, enabled = !isSaving)
+                }
+            }
+
         }
         }
+    }
+
     }
 
     if (contentMode && showContentMenu) {
         PasswordContentMenu(
             sections = if (isMultiCredentialMode && showCommonEditorContent) listOf(PasswordContentSection.CUSTOM_FIELDS)
-                else PasswordContentSection.entries,
+                else PasswordContentSection.entries.filterNot { it == PasswordContentSection.AUTHENTICATOR || it == PasswordContentSection.CONTACT },
             onAdd = { section ->
                 if (section.name !in requestedContentSections) requestedContentSections.add(section.name)
                 when (section) {
@@ -4511,8 +4945,12 @@ if (contentMode) {
                     else -> Unit
                 }
                 showContentMenu = false
+                if (section == PasswordContentSection.PAYMENT) openPaymentEditor() else if (section == PasswordContentSection.ADDRESS) openAddressEditor() else if (section == PasswordContentSection.DOCUMENT) openDocumentEditor() else editingContentSection = section.name
             },
             onDismiss = { showContentMenu = false },
+            onAddBlock = if (isMultiCredentialMode && showCommonEditorContent) null else ({ kind ->
+                showContentMenu = false; editingBlock = PasswordContentBlocks.create(kind)
+            }),
         )
     }
 
@@ -4560,6 +4998,7 @@ if (contentMode) {
         onSimpleIconPickerChange = { showSimpleIconPicker = it },
         onCustomIconSearchQueryChange = { customIconSearchQuery = it },
         onUploadImage = { imagePickerLauncher.launch("image/*") },
+        onSubscribedIconSelected = ::applyUploadedIcon,
         onPickInstalledIcon = {
             showCustomIconDialog = false
             showInstalledIconPicker = true
@@ -4640,21 +5079,11 @@ if (contentMode) {
         onSelectedTargetsChange = ::setSelectedStorageTargets
     )
 
-    NotePickerBottomSheet(
-        visible = showBoundNotePicker,
-        title = stringResource(R.string.note_picker_title),
-        notes = selectableNotes,
-        selectedNoteId = credentialScopedBoundNoteId,
-        onSelect = { note ->
-            if (isMultiCredentialMode) {
-                activeCredentialMetadata.boundNoteId = note.id
-            } else {
-                boundNoteId = note.id
-            }
-            showBoundNotePicker = false
-        },
-        onDismiss = { showBoundNotePicker = false }
-    )
+    if (showBoundNotePicker) takagi.ru.monica.ui.components.EmbeddedWalletPicker(
+        selectableNotes, stringResource(R.string.embedded_copy_note),
+        onSelect = { note -> copyWalletItem(note); showBoundNotePicker = false },
+        onDismiss = { showBoundNotePicker = false },
+            keepassDatabases = keepassDatabases, mdbxDatabases = mdbxDatabases, bitwardenVaults = bitwardenVaults)
 
 }
 
@@ -5194,6 +5623,7 @@ private fun PasswordCustomIconPickers(
     onEmojiSelected: (String) -> Unit,
     onCustomIconSearchQueryChange: (String) -> Unit,
     onUploadImage: () -> Unit,
+    onSubscribedIconSelected: (String) -> Unit,
     onPickInstalledIcon: () -> Unit,
     onIconCleared: () -> Unit,
     onSimpleIconSelected: (SimpleIconOption) -> Unit
@@ -5216,6 +5646,7 @@ private fun PasswordCustomIconPickers(
                 onEmojiDialogChange(true)
             },
             onPickInstalledIcon = onPickInstalledIcon,
+            onSubscribedIconSelected = onSubscribedIconSelected,
             onClearIcon = {
                 val currentUploaded = if (customIconType == PASSWORD_ICON_TYPE_UPLOADED) {
                     normalizedIconFileName(customIconValue)
@@ -5308,6 +5739,15 @@ private fun CommonAccountSelectorSheet(
     onDismiss: () -> Unit,
     onApply: (String) -> Unit
 ) {
+    if (selectorField == "username") {
+        takagi.ru.monica.ui.components.CredentialGeneratorSheet(
+            username = true,
+            suggestions = selectorOptions.map { takagi.ru.monica.ui.components.GeneratorSuggestion(it.type, it.content) },
+            onDismiss = onDismiss,
+            onApply = { value -> onApply(value); onDismiss() },
+        )
+        return
+    }
     val coroutineScope = rememberCoroutineScope()
     val allFilterLabel = stringResource(R.string.filter_all)
     val selectorFieldLabel = when (selectorField) {
@@ -5568,9 +6008,23 @@ private tailrec fun Context.findPasswordEditorActivity(): Activity? = when (this
 @Composable
 private fun InfoCard(
     title: String,
+    template: Boolean = false,
+    flat: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    takagi.ru.monica.ui.components.PasswordEditorSection(title, content)
+    if (template) Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        CompositionLocalProvider(takagi.ru.monica.ui.components.LocalFilledEntryForm provides true,
+            takagi.ru.monica.ui.components.LocalStandaloneTemplateFields provides true) { content() }
+    }
+    else if (flat) Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(title, Modifier.padding(start = 12.dp), style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary)
+        CompositionLocalProvider(takagi.ru.monica.ui.components.LocalFilledEntryForm provides true) {
+            content()
+        }
+    } else takagi.ru.monica.ui.components.PasswordEditorSection(title, content)
 }
 
 @Composable
@@ -5580,322 +6034,13 @@ private fun PasswordGeneratorDialog(
     onDismiss: () -> Unit,
     onPasswordGenerated: (String) -> Unit
 ) {
-    val defaultOptions = remember(generatorPreferences) {
-        generatorPreferences.toSymbolPasswordGeneratorOptions()
-    }
-    val configuration = LocalConfiguration.current
-    val contentViewportHeight = remember(configuration.screenHeightDp) {
-        (configuration.screenHeightDp.dp * 0.46f).coerceIn(280.dp, 420.dp)
-    }
-    val generatorScrollState = rememberScrollState()
-    var length by remember(defaultOptions) { mutableIntStateOf(defaultOptions.length) }
-    var includeUppercase by remember(defaultOptions) { mutableStateOf(defaultOptions.includeUppercase) }
-    var includeLowercase by remember(defaultOptions) { mutableStateOf(defaultOptions.includeLowercase) }
-    var includeNumbers by remember(defaultOptions) { mutableStateOf(defaultOptions.includeNumbers) }
-    var includeSymbols by remember(defaultOptions) { mutableStateOf(defaultOptions.includeSymbols) }
-    var excludeSimilar by remember(defaultOptions) { mutableStateOf(defaultOptions.excludeSimilar) }
-    var generatedPassword by remember { mutableStateOf("") }
-    var fillMode by remember { mutableStateOf(PasswordFillMode.GENERATOR) }
-    
-    // Helper to generate
-    fun generate() {
-        try {
-            generatedPassword = AdvancedPasswordGenerator.generatePassword(
-                length = length,
-                includeUppercase = includeUppercase,
-                includeLowercase = includeLowercase,
-                includeNumbers = includeNumbers,
-                includeSymbols = includeSymbols,
-                allowedSymbols = defaultOptions.allowedSymbols,
-                excludeSimilar = excludeSimilar,
-                excludeAmbiguous = defaultOptions.excludeAmbiguous,
-                uppercaseMin = defaultOptions.uppercaseMin,
-                lowercaseMin = defaultOptions.lowercaseMin,
-                numbersMin = defaultOptions.numbersMin,
-                symbolsMin = defaultOptions.symbolsMin
-            )
-        } catch (e: Exception) {}
-    }
-
-    LaunchedEffect(defaultOptions) { generate() }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.96f)
-                .navigationBarsPadding()
-                .imePadding(),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Key,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(8.dp).size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                            Text(
-                                text = stringResource(R.string.password_fill_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Text(
-                            text = stringResource(R.string.password_fill_subtitle),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close)
-                        )
-                    }
-                }
-
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    SegmentedButton(
-                        selected = fillMode == PasswordFillMode.GENERATOR,
-                        onClick = { fillMode = PasswordFillMode.GENERATOR },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                    ) {
-                        Text(stringResource(R.string.password_fill_mode_generator))
-                    }
-                    SegmentedButton(
-                        selected = fillMode == PasswordFillMode.COMMON_ACCOUNT,
-                        onClick = { fillMode = PasswordFillMode.COMMON_ACCOUNT },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                    ) {
-                        Text(stringResource(R.string.password_fill_mode_common))
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(contentViewportHeight),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Transparent
-                ) {
-                    when (fillMode) {
-                        PasswordFillMode.GENERATOR -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(generatorScrollState),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = generatedPassword,
-                                    onValueChange = { },
-                                    readOnly = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textStyle = MaterialTheme.typography.titleMedium.copy(
-                                        letterSpacing = 0.2.sp
-                                    ),
-                                    trailingIcon = {
-                                        FilledTonalIconButton(onClick = { generate() }) {
-                                            Icon(
-                                                Icons.Default.Refresh,
-                                                contentDescription = stringResource(R.string.generate_password)
-                                            )
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(14.dp)
-                                )
-
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.length_value, length),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Slider(
-                                            value = length.toFloat(),
-                                            onValueChange = { length = it.toInt(); generate() },
-                                            valueRange = 8f..32f,
-                                            steps = 24
-                                        )
-                                    }
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainer
-                                ) {
-                                    Column {
-                                        PasswordFillOptionRow(
-                                            title = stringResource(R.string.uppercase_az),
-                                            checked = includeUppercase,
-                                            onChange = { includeUppercase = it; generate() },
-                                            showDivider = true
-                                        )
-                                        PasswordFillOptionRow(
-                                            title = stringResource(R.string.lowercase_az),
-                                            checked = includeLowercase,
-                                            onChange = { includeLowercase = it; generate() },
-                                            showDivider = true
-                                        )
-                                        PasswordFillOptionRow(
-                                            title = stringResource(R.string.numbers_09),
-                                            checked = includeNumbers,
-                                            onChange = { includeNumbers = it; generate() },
-                                            showDivider = true
-                                        )
-                                        PasswordFillOptionRow(
-                                            title = stringResource(R.string.symbols),
-                                            checked = includeSymbols,
-                                            onChange = { includeSymbols = it; generate() },
-                                            showDivider = true
-                                        )
-                                        PasswordFillOptionRow(
-                                            title = stringResource(R.string.exclude_similar),
-                                            checked = excludeSimilar,
-                                            onChange = { excludeSimilar = it; generate() },
-                                            showDivider = false
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        PasswordFillMode.COMMON_ACCOUNT -> {
-                            if (commonPasswordOptions.isEmpty()) {
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(14.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.password_fill_no_templates),
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.password_fill_no_templates_hint),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(commonPasswordOptions, key = { it.id }) { option ->
-                                        OutlinedCard(
-                                            onClick = { onPasswordGenerated(option.content) },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(14.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(10.dp),
-                                                    color = MaterialTheme.colorScheme.secondaryContainer
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Lock,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.padding(6.dp).size(16.dp),
-                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                                    )
-                                                }
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = option.type,
-                                                        style = MaterialTheme.typography.titleSmall,
-                                                        fontWeight = FontWeight.Medium
-                                                    )
-                                                    Text(
-                                                        text = maskSensitiveContent(option.content),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                                Text(
-                                                    text = stringResource(R.string.use_password),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    if (fillMode == PasswordFillMode.GENERATOR) {
-                        FilledTonalButton(onClick = { onPasswordGenerated(generatedPassword) }) {
-                            Text(stringResource(R.string.use_password))
-                        }
-                    }
-                }
-            }
-        }
-    }
+    takagi.ru.monica.ui.components.CredentialGeneratorSheet(
+        username = false,
+        suggestions = commonPasswordOptions.map { takagi.ru.monica.ui.components.GeneratorSuggestion(it.type, it.content) },
+        preferences = generatorPreferences,
+        onDismiss = onDismiss,
+        onApply = onPasswordGenerated,
+    )
 }
 
 @Composable
@@ -5945,7 +6090,7 @@ private fun PasswordAppBindingButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    OutlinedButton(
+    TextButton(
         onClick = onClick,
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
@@ -6024,7 +6169,6 @@ private fun LoginTypeSelector(
     ssoProvider: String,
     ssoRefEntryId: Long?,
     allPasswords: List<PasswordEntry>,
-    onLoginTypeChange: (String) -> Unit,
     onSsoProviderChange: (String) -> Unit,
     onSsoRefEntryIdChange: (Long?) -> Unit
 ) {
@@ -6044,36 +6188,6 @@ private fun LoginTypeSelector(
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
-        // 登录方式切换
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            SegmentedButton(
-                selected = loginType.equals("PASSWORD", ignoreCase = true),
-                onClick = { onLoginTypeChange("PASSWORD") },
-                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                icon = { 
-                    if (loginType.equals("PASSWORD", ignoreCase = true)) {
-                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                    }
-                }
-            ) {
-                Text(context.getString(R.string.login_type_password))
-            }
-            SegmentedButton(
-                selected = loginType.equals("SSO", ignoreCase = true),
-                onClick = { onLoginTypeChange("SSO") },
-                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                icon = { 
-                    if (loginType.equals("SSO", ignoreCase = true)) {
-                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                    }
-                }
-            ) {
-                Text(context.getString(R.string.login_type_sso))
-            }
-        }
         
         // SSO 详细设置
         MonicaExpandableContent(
@@ -6226,29 +6340,7 @@ private fun getSsoProviderIcon(providerName: String): ImageVector {
     }
 }
 
-private fun buildPasswordSiblingGroupKey(entry: PasswordEntry): String {
-    entry.replicaGroupId
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-        ?.let { replicaGroupId ->
-            return "replica:$replicaGroupId|target:${entry.toStorageTarget().stableKey}"
-        }
-    val sourceKey = when {
-        !entry.bitwardenCipherId.isNullOrBlank() ->
-            "bw:${entry.bitwardenVaultId}:${entry.bitwardenCipherId}"
-        entry.bitwardenVaultId != null ->
-            "bw-local:${entry.bitwardenVaultId}:${entry.bitwardenFolderId.orEmpty()}"
-        entry.keepassDatabaseId != null ->
-            "kp:${entry.keepassDatabaseId}:${entry.keepassGroupPath.orEmpty()}"
-        else -> "local:${entry.categoryId ?: "root"}"
-    }
-
-    val title = entry.title.trim().lowercase(Locale.ROOT)
-    val username = entry.username.trim().lowercase(Locale.ROOT)
-    val website = normalizeWebsiteForSiblingGroupKey(entry.website)
-
-    return "$sourceKey|$title|$website|$username"
-}
+private fun buildPasswordSiblingGroupKey(entry: PasswordEntry): String = entry.passwordProjectKey()
 
 private fun parsePasswordWebsiteUrls(rawValue: String): List<String> {
     return PasswordWebsiteCodec.parse(rawValue)

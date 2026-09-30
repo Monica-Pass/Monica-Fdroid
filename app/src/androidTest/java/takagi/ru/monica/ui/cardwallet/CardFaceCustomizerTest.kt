@@ -11,6 +11,7 @@ import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
@@ -56,6 +57,7 @@ class CardFaceCustomizerTest {
             val pickerOwner = checkNotNull(LocalActivityResultRegistryOwner.current)
             CompositionLocalProvider(
                 LocalContext provides localized,
+                LocalResources provides localized.resources,
                 LocalConfiguration provides configuration,
                 LocalActivityResultRegistryOwner provides pickerOwner
             ) {

@@ -1,0 +1,225 @@
+{
+  "feature": "Direct autofill OTP notification/copy, 1.0.315 unreleased",
+  "verifiedAt": "2026-09-30T20:39:28.5931931+08:00",
+  "productionChangedAfterBuild": false,
+  "builds": [
+    {
+      "edition": "main",
+      "build": "passed",
+      "autofillUnitTests": 152,
+      "failures": 0,
+      "skipped": 0,
+      "robolectricApis": [
+        29,
+        34
+      ]
+    },
+    {
+      "edition": "fdroid",
+      "build": "passed",
+      "autofillUnitTests": 152,
+      "failures": 0,
+      "skipped": 0,
+      "robolectricApis": [
+        29,
+        34
+      ]
+    }
+  ],
+  "device": {
+    "avd": "Monica_Issue136_API_32",
+    "api": 32,
+    "abi": "x86_64",
+    "isolatedUser": 10,
+    "syntheticDataOnly": true
+  },
+  "latestBuildRuns": [
+    {
+      "log": ".codex-tasks/autofill-direct-otp-315/Main-emulator-5554-async.log",
+      "startedAt": "2026-09-30T20:23:49.1970643+08:00",
+      "finishedAt": "2026-09-30T20:26:34.7893971+08:00",
+      "wholeRunPassed": false,
+      "apkSha256": [
+        {
+          "package": "takagi.ru.monica",
+          "sha256": "5B41561949663258CD57EE57C695D3D48CC2F9F6DBA98962339BF8F815BC46F1"
+        },
+        {
+          "package": "takagi.ru.monica.test",
+          "sha256": "580D6A6113E7AC1CD9811640CCDE01C4C2A432F09CBDDF8B02A5E2A82908EB3C"
+        }
+      ],
+      "outcomes": {
+        "systemAutofillFillsWebViewAndDispatchesInputEvents": "failed",
+        "cancellingVerificationLeavesTheFormEmptyAndAllowsRetry": "failed",
+        "enabledOtpNotificationDoesNothingForCredentialWithoutOtp": "failed",
+        "verifiedFillReturnsToTheOriginalForm": "failed",
+        "usernameOnlyStepDoesNotNotifyUntilPasswordStepIsFilled": "failed",
+        "disabledOtpNotificationKeepsSystemDropdownFillWithoutNotification": "failed",
+        "systemAutofillFillsStandardNativeLoginWithoutVerification": "failed",
+        "otpEligibilityKeepsLargeVaultLookupOffTheRepeatedSuggestionPath": "passed",
+        "systemDropdownPublishesOtpOnlyAfterSelectingTheCredential": "passed",
+        "invalidOtpNeverPreventsSelectedSystemCredentialFromFilling": "passed",
+        "lockedOtpCredentialNotifiesOnlyAfterVerificationAndSelection": "passed",
+        "cancellingLockedOtpCredentialDoesNotPublishNotification": "passed",
+        "systemInlineSelectionPublishesBoundValidatorOtpAfterFillingOriginalFields": "passed"
+      }
+    },
+    {
+      "log": ".codex-tasks/autofill-direct-otp-315/Main-emulator-5554-async-retry.log",
+      "startedAt": "2026-09-30T20:28:28.094264+08:00",
+      "finishedAt": "2026-09-30T20:30:11.6411133+08:00",
+      "wholeRunPassed": true,
+      "apkSha256": [
+        {
+          "package": "takagi.ru.monica",
+          "sha256": "5B41561949663258CD57EE57C695D3D48CC2F9F6DBA98962339BF8F815BC46F1"
+        },
+        {
+          "package": "takagi.ru.monica.test",
+          "sha256": "580D6A6113E7AC1CD9811640CCDE01C4C2A432F09CBDDF8B02A5E2A82908EB3C"
+        }
+      ],
+      "outcomes": {
+        "systemAutofillFillsWebViewAndDispatchesInputEvents": "passed",
+        "cancellingVerificationLeavesTheFormEmptyAndAllowsRetry": "passed",
+        "enabledOtpNotificationDoesNothingForCredentialWithoutOtp": "passed",
+        "verifiedFillReturnsToTheOriginalForm": "passed",
+        "usernameOnlyStepDoesNotNotifyUntilPasswordStepIsFilled": "passed",
+        "disabledOtpNotificationKeepsSystemDropdownFillWithoutNotification": "passed",
+        "systemAutofillFillsStandardNativeLoginWithoutVerification": "passed"
+      }
+    },
+    {
+      "log": ".codex-tasks/autofill-direct-otp-315/Fdroid-emulator-5554-async-final.log",
+      "startedAt": "2026-09-30T20:30:28.3599975+08:00",
+      "finishedAt": "2026-09-30T20:38:57.95707+08:00",
+      "wholeRunPassed": true,
+      "apkSha256": [
+        {
+          "package": "takagi.ru.monica.fdroid",
+          "sha256": "06C9BCFE6C792B99211C9EE08E63C33D6F658AF937E6CD665E05FB3EA251303C"
+        },
+        {
+          "package": "takagi.ru.monica.fdroid.test",
+          "sha256": "AD8589950F53112625D838460A3399908441DE90CC01D777C5CA09E46E0C806C"
+        }
+      ],
+      "outcomes": {
+        "systemAutofillInlineSelectionReturnsTheChosenCredential": "passed",
+        "systemAutofillRecognizesChineseEnterpriseFields": "passed",
+        "systemAutofillFillsWebViewAndDispatchesInputEvents": "passed",
+        "accessibilityFillsChineseFieldsWithNonstandardInputTypes": "passed",
+        "cancellingVerificationLeavesTheFormEmptyAndAllowsRetry": "passed",
+        "manualSystemRequestSupportsAnUnlabelledField": "passed",
+        "dropdownAllowsComposingAndTypingWithoutRefocusing": "passed",
+        "enabledOtpNotificationDoesNothingForCredentialWithoutOtp": "passed",
+        "verifiedFillReturnsToTheOriginalForm": "passed",
+        "accessibilityPickerReturnsToTheAppAndFillsBothFields": "passed",
+        "usernameOnlyStepDoesNotNotifyUntilPasswordStepIsFilled": "passed",
+        "cancellingVerificationAllowsTypingAfterOneFieldTap": "passed",
+        "disabledOtpNotificationKeepsSystemDropdownFillWithoutNotification": "passed",
+        "systemAutofillKeepsNativeLoginBesideHelpWebView": "passed",
+        "systemAutofillWithoutVerificationStillWorksAfterSessionLock": "passed",
+        "accessibilityFillsWebViewAndDispatchesInputEvents": "passed",
+        "accessibilityLeavesOtpAndSearchUntouched": "passed",
+        "accessibilityWillNotFillAnotherActiveApp": "passed",
+        "systemAutofillFillsStandardNativeLoginWithoutVerification": "passed",
+        "otpEligibilityKeepsLargeVaultLookupOffTheRepeatedSuggestionPath": "passed",
+        "systemAutofillSupportsUsernameThenPasswordInOneActivity": "passed",
+        "systemDropdownPublishesOtpOnlyAfterSelectingTheCredential": "passed",
+        "invalidOtpNeverPreventsSelectedSystemCredentialFromFilling": "passed",
+        "lockedDropdownAllowsTypingWithoutOpeningVerification": "passed",
+        "passwordDropdownAllowsTypingWithoutRefocusing": "passed",
+        "lockedOtpCredentialNotifiesOnlyAfterVerificationAndSelection": "passed",
+        "webDropdownAllowsComposingAndTypingWithoutRefocusing": "passed",
+        "cancellingLockedOtpCredentialDoesNotPublishNotification": "passed",
+        "accessibilityPickerHandlesAWebViewThatReplacesThePasswordField": "passed",
+        "systemInlineSelectionPublishesBoundValidatorOtpAfterFillingOriginalFields": "passed",
+        "accessibilityHandlesBothStepsAndReportsSuccess": "passed"
+      }
+    }
+  ],
+  "mainLatestBuildResolved": {
+    "systemAutofillFillsWebViewAndDispatchesInputEvents": "passed",
+    "cancellingVerificationLeavesTheFormEmptyAndAllowsRetry": "passed",
+    "enabledOtpNotificationDoesNothingForCredentialWithoutOtp": "passed",
+    "verifiedFillReturnsToTheOriginalForm": "passed",
+    "usernameOnlyStepDoesNotNotifyUntilPasswordStepIsFilled": "passed",
+    "disabledOtpNotificationKeepsSystemDropdownFillWithoutNotification": "passed",
+    "systemAutofillFillsStandardNativeLoginWithoutVerification": "passed",
+    "otpEligibilityKeepsLargeVaultLookupOffTheRepeatedSuggestionPath": "passed",
+    "systemDropdownPublishesOtpOnlyAfterSelectingTheCredential": "passed",
+    "invalidOtpNeverPreventsSelectedSystemCredentialFromFilling": "passed",
+    "lockedOtpCredentialNotifiesOnlyAfterVerificationAndSelection": "passed",
+    "cancellingLockedOtpCredentialDoesNotPublishNotification": "passed",
+    "systemInlineSelectionPublishesBoundValidatorOtpAfterFillingOriginalFields": "passed"
+  },
+  "mainEarlierFullSuite": {
+    "passed": 31,
+    "note": "Pre-async callback APK, not claimed as full31 on latest APK",
+    "log": ".codex-tasks/autofill-direct-otp-315/Main-emulator-5554-verified.log"
+  },
+  "resolvedFailures": [
+    "Initial Android12 selection callbacks lost custom Parcelable extras in system process. Issuance now uses framework-only Bundle; actual dropdown/inline and restricted-classloader tests pass.",
+    "F-Droid pre-async split-form filled password but optional OTP exceeded foreground wait. Result now returns immediately; post-fill OTP has separate asynchronous budget.",
+    "Latest main sweep had seven pre-fixture failures behind delayed user-switch keyguard. Foreground user/keyguard preflight now requires4s stability; all seven pass on the identical APK. Original failed log retained."
+  ],
+  "performanceLog": ".codex-tasks/autofill-direct-otp-315/otp-performance.log",
+  "performance": [
+    {
+      "edition": "main",
+      "validators": 1000,
+      "disabledP95Ms": 3,
+      "coldMs": 102,
+      "cachedP95Ms": 1,
+      "scope": "Additional OTP eligibility work only; not complete system suggestion latency"
+    },
+    {
+      "edition": "fdroid",
+      "validators": 1000,
+      "disabledP95Ms": 3,
+      "coldMs": 102,
+      "cachedP95Ms": 1,
+      "scope": "Additional OTP eligibility work only; not complete system suggestion latency"
+    }
+  ],
+  "compatibilityLimits": [
+    "Actual device coverage is API32; API29/34 behavior uses Robolectric, not all OEM devices.",
+    "Android26-30 can cache the unwrapped Dataset; repeat selection within the same session may not repeat the OTP action. New sessions work normally.",
+    "Cold binding-only lookup timeout preserves plain password fill for that request; later requests use the ready index.",
+    "Post-fill OTP is best effort: notification permission/channel/background restrictions, invalid data or process death cannot revoke the returned password Dataset.",
+    "No database schema, password data, backup format or HOTP counter writes."
+  ],
+  "synchronizedRoots": [
+    "Monica-main/Monica for Android",
+    "Monica-main/fdroid",
+    "experiments/content-main-integration/Monica for Android",
+    "experiments/content-main-integration-fdroid"
+  ],
+  "ownedSourceSha256": {
+    "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillOtpActions.kt": "FD37DF8C725C3555639C86C36CA9E376C147845D634C52C8318C24C3D7DD079F",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillCipherCallbackActivity.kt": "4DB8CF1150EA853272A3D0EEF9987E9B2A7C5C1394822275F839AB4CAB28F925",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillPickerActivityV2.kt": "AC8EE9DB5B18BDDFBCCBDED641EED3F90438410378CC2019202F85E84A30CEBD",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillUnlockActivity.kt": "607BE09C05BB3BC9898C17787EF1C0A4694229E63B6EF505C127BA67FF67F905",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/MonicaAutofillServiceNg.kt": "6214067E47CA3B700A2E3AF89E983DA2584FD970855ACFD12390541C36A6924F",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/builder/FillResponseBuilderNg.kt": "8D4B88FCBE6E62BFDB9A466F77DDDD422D3353505BB7E31AE9E4718D4D3EE0C8",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/processor/AutofillProcessorNg.kt": "B3C499AC17E3A7946DA49F5F7D3D01BFEB36E56590153B9EE255488CA4C98477",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/service/AutofillOtpNotificationService.kt": "D9067087321BA7F7B09CE5C51F2906D77EE76516E3F557930C07E4485951BA17",
+    "app/src/test/java/takagi/ru/monica/autofill_ng/AutofillDirectOtpResponseTest.kt": "297B070CFD7E5EF2E9500A1FCCC0BE868ED006E595DFB3B073906E95C13B32A4",
+    "app/src/test/java/takagi/ru/monica/autofill_ng/AutofillOtpActionSafetyTest.kt": "03775AE35B7AA1D45FD4650B520C3AC74EB4C79AFF8524E2F76D5065B3F823C0",
+    "app/src/test/java/takagi/ru/monica/autofill_ng/AutofillDropdownClickRegressionGuardTest.kt": "DE750E75FB2D5F20FCC9151B71BF2248E15395E319401F1B0B4EC64557D3AAC6",
+    "app/src/test/java/takagi/ru/monica/autofill_ng/AutofillInlineClickRegressionGuardTest.kt": "2006A71131B359DEA5C7DE5887C8CC431FF1149EB345D5E7161A850383D94096",
+    "app/src/androidTest/java/takagi/ru/monica/autofill_ng/AutofillFlowInstrumentedTest.kt": "2112499BF2193B10BB6C5D678EAC6A5DD6384314F47C7C4E0CE8ADF953AD3FE9",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/AutofillOtpBindingCache.kt": "D3E5C30676487F7C5E1BB293B2E1749B562402129EC4AE246126EF7DFFF334FC",
+    "app/src/test/java/takagi/ru/monica/autofill_ng/AutofillOtpBindingCacheTest.kt": "70493FDAC1189800CBC557FF2D9CFE16BACC1E66994259BD96EB1AA9AC20FB87",
+    "app/src/androidTest/java/takagi/ru/monica/autofill_ng/fixture/AutofillFormFixtureActivity.java": "93FCCCE3B8744B2DECF222E21F1A7C23AD6B799966349EC7360E143D7510A0E1"
+  },
+  "runtimeCleanup": {
+    "completedAt": "2026-09-30T20:39:52.5045939+08:00",
+    "testUser10SecureSettingsVerifiedRestored": true,
+    "avdDataPreserved": true,
+    "taskStartedEmulatorStopped": true,
+    "originalForegroundUserRestored": 0
+  }
+}

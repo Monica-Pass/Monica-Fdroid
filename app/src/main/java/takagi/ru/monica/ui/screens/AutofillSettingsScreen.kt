@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -38,6 +39,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.runtime.LaunchedEffect
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import kotlinx.coroutines.launch
+import takagi.ru.monica.ui.components.SettingsPanelGroup
+import takagi.ru.monica.ui.components.SettingsPanelRow
 import takagi.ru.monica.R
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -191,13 +194,13 @@ fun AutofillSettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // 顶部状态卡片 - 使用新的 AutofillStatusCard 组件
             serviceStatus?.let { status ->
                 AutofillStatusCard(
-                    status = status,
+                    status = status, compact = true,
                     onEnableClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE)
@@ -228,7 +231,7 @@ fun AutofillSettingsScreen(
                 )
                 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                     AutofillSettingItem(
                         icon = Icons.Outlined.Key,
                         title = stringResource(R.string.autofill_system_passkey_settings),
@@ -240,7 +243,7 @@ fun AutofillSettingsScreen(
                     )
                 }
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 AutofillSettingItem(
                     icon = Icons.Outlined.Language,
                     title = stringResource(R.string.autofill_system_chrome_settings),
@@ -293,7 +296,7 @@ fun AutofillSettingsScreen(
                     }
                 )
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.TouchApp,
                     title = stringResource(R.string.autofill_fill_manual_selection),
@@ -306,7 +309,7 @@ fun AutofillSettingsScreen(
                     }
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 val respectAutofillDisabled by autofillPreferences.isRespectAutofillDisabledEnabled.collectAsState(initial = false)
                 SwitchSettingItem(
                     icon = Icons.Outlined.DoNotDisturb,
@@ -350,7 +353,7 @@ fun AutofillSettingsScreen(
                     }
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.ContentCopy,
                     title = stringResource(R.string.autofill_auto_copy_otp),
@@ -368,7 +371,7 @@ fun AutofillSettingsScreen(
                 // Let's use a dialog selection or just a simple cycle for now.
                 // Or simply repurpose AutofillSettingItem to click and pick.
                 // Let's add a "Duration: Xs" item.
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                  AutofillSettingItem(
                     icon = Icons.Outlined.Timer,
                     title = stringResource(R.string.autofill_otp_notification_duration),
@@ -406,7 +409,7 @@ fun AutofillSettingsScreen(
                     }
                 )
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.Sync,
                     title = stringResource(R.string.autofill_save_update_duplicate),
@@ -419,7 +422,7 @@ fun AutofillSettingsScreen(
                     }
                 )
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.Notifications,
                     title = stringResource(R.string.autofill_save_show_notification),
@@ -432,7 +435,7 @@ fun AutofillSettingsScreen(
                     }
                 )
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.AutoAwesome,
                     title = stringResource(R.string.autofill_save_smart_title),
@@ -445,7 +448,7 @@ fun AutofillSettingsScreen(
                     }
                 )
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.PhoneAndroid,
                     title = stringResource(R.string.autofill_save_app_info),
@@ -458,7 +461,7 @@ fun AutofillSettingsScreen(
                     }
                 )
                 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 SwitchSettingItem(
                     icon = Icons.Outlined.Public,
                     title = stringResource(R.string.autofill_save_website_info),
@@ -491,7 +494,7 @@ fun AutofillSettingsScreen(
                 )
                 
                 if (blacklistEnabled) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                     AutofillSettingItem(
                         icon = Icons.Outlined.Apps,
                         title = stringResource(R.string.autofill_blacklist_manage),
@@ -629,50 +632,7 @@ fun SectionCard(
     iconTint: Color,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().settingsSearchAnchor(title),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 卡片标题
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(iconTint.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = iconTint
-                    )
-                }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            
-            // 内容
-            Column(content = content)
-            
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-    }
+    SettingsPanelGroup(title, Modifier.settingsSearchAnchor(title), content)
 }
 
 // 设置项组件
@@ -684,42 +644,7 @@ fun AutofillSettingItem(
     trailingIcon: ImageVector = Icons.Outlined.OpenInNew,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Icon(
-            imageVector = trailingIcon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        )
-    }
+    SettingsPanelRow(icon, title, subtitle, onClick = onClick)
 }
 
 // 开关设置项组件
@@ -731,43 +656,7 @@ fun SwitchSettingItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = if (checked) 
-                MaterialTheme.colorScheme.primary 
-            else 
-                MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-    }
+    SettingsPanelRow(icon, title, subtitle, checked = checked, onCheckedChange = onCheckedChange)
 }
 
 // 普通设置项组件
@@ -778,35 +667,7 @@ fun AutofillSettingItem(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth().settingsSearchAnchor(title)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    SettingsPanelRow(icon, title, subtitle, onClick = onClick)
 }
 
 // 策略选择对话框
@@ -819,6 +680,7 @@ fun StrategySelectionDialog(
     val context = LocalContext.current
     
     AlertDialog(
+        modifier = Modifier.testTag("autofill_strategy_dialog"),
         onDismissRequest = onDismiss,
         icon = {
             Icon(
@@ -835,6 +697,7 @@ fun StrategySelectionDialog(
         },
         text = {
             Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 DomainMatchStrategy.values().forEach { strategy ->
@@ -881,7 +744,7 @@ fun StrategySelectionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("autofill_strategy_close")) {
                 Text(stringResource(R.string.autofill_domain_strategy_dialog_close))
             }
         },
@@ -1077,9 +940,9 @@ fun BlacklistManagementDialog(
 fun InfoCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Row(
@@ -1092,12 +955,12 @@ fun InfoCard() {
                 imageVector = Icons.Outlined.Info,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = stringResource(R.string.autofill_info_card_text),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

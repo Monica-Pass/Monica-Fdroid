@@ -8,7 +8,7 @@ internal const val VAULT_OVERVIEW_MAX_CARD_PINS = 200
 internal const val VAULT_OVERVIEW_MAX_ITEM_PINS = 8
 
 enum class VaultOverviewModule {
-    CARDS, ITEMS, FAVORITES, TYPES, FOLDERS, DATABASES, ARCHIVE, TRASH;
+    CARDS, RECENT, ITEMS, FAVORITES, TYPES, FOLDERS, DATABASES, ARCHIVE, TRASH;
 
     companion object {
         val defaultOrder: List<String> = entries.map { it.name }
@@ -31,8 +31,12 @@ data class VaultOverviewConfig(
     fun normalized(): VaultOverviewConfig {
         val itemPins = pinnedItems.filter(String::isNotBlank).distinct().take(VAULT_OVERVIEW_MAX_ITEM_PINS)
         return copy(
-            order = (order + VaultOverviewModule.defaultOrder).distinct()
-                .filter { it in VaultOverviewModule.defaultOrder },
+            order = (order + VaultOverviewModule.defaultOrder.filterNot { it == VaultOverviewModule.RECENT.name })
+                .distinct().filter { it in VaultOverviewModule.defaultOrder }.toMutableList().apply {
+                    if (VaultOverviewModule.RECENT.name !in this) {
+                        add(indexOf(VaultOverviewModule.CARDS.name) + 1, VaultOverviewModule.RECENT.name)
+                    }
+                },
             hidden = hidden.intersect(VaultOverviewModule.defaultOrder.toSet()),
             collapsed = collapsed.intersect(VaultOverviewModule.defaultOrder.toSet()),
             pinnedCards = pinnedCards.filter(String::isNotBlank).distinct().take(VAULT_OVERVIEW_MAX_CARD_PINS),

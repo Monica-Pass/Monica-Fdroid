@@ -242,6 +242,7 @@ fun TextQrCodeDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var qrBitmap by remember(content) { mutableStateOf<Bitmap?>(null) }
+    var qrFailed by remember(content) { mutableStateOf(false) }
 
     LaunchedEffect(content) {
         withContext(Dispatchers.IO) {
@@ -254,7 +255,7 @@ fun TextQrCodeDialog(
                 )
                 val encoder = BarcodeEncoder()
                 encoder.encodeBitmap(content, BarcodeFormat.QR_CODE, 800, 800, hints)
-            }.onSuccess { qrBitmap = it }
+            }.onSuccess { qrBitmap = it }.onFailure { qrFailed = true }
         }
     }
 
@@ -296,7 +297,9 @@ fun TextQrCodeDialog(
                             .background(Color.LightGray),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        if (qrFailed) Text(stringResource(R.string.content_block_qr_error),
+                            color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                        else CircularProgressIndicator()
                     }
                 }
 
@@ -313,6 +316,7 @@ fun TextQrCodeDialog(
                     }
 
                     Button(
+                        enabled = qrBitmap != null,
                         onClick = {
                             qrBitmap?.let { bitmap ->
                                 scope.launch {

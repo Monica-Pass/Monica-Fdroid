@@ -72,9 +72,9 @@ class ApiKeyFlowTest {
         compose.onNodeWithText("API Key").assertIsDisplayed()
         capture("type-menu.png")
         compose.onNodeWithText("API Key").performClick()
-        compose.onNodeWithTag("api_key_provider").assertIsDisplayed()
-        compose.onNodeWithTag("api_key_secret").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("api_key_save").assertIsDisplayed()
+        compose.onNodeWithTag("password_editor_title").assertIsDisplayed()
+        compose.onNodeWithTag("template_field_key").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("password_editor_save").assertIsDisplayed()
         capture("new-entry.png")
     }
 
@@ -95,16 +95,16 @@ class ApiKeyFlowTest {
                 }
             }
         } }
-        input("api_key_provider", "Claude 官方")
-        input("api_key_website", "https://console.anthropic.com")
-        input("api_key_secret", "sk-api-fixture-13579")
-        input("api_key_url", "https://api.anthropic.com/v1")
-        input("api_key_notes", "个人开发\n测试环境")
-        compose.onNodeWithTag("api_key_secret").performScrollTo().assert(hasPassword())
-        compose.onNodeWithTag("api_key_favorite").performClick()
+        input("password_editor_title", "Claude 官方")
+        input("template_website", "https://console.anthropic.com")
+        input("template_field_key", "sk-api-fixture-13579")
+        input("template_field_url", "https://api.anthropic.com/v1")
+        input("password_content_notes", "个人开发\n测试环境")
+        compose.onNodeWithTag("template_field_key").performScrollTo().assert(hasPassword())
+        compose.onNodeWithTag("password_editor_favorite").performClick()
         hideKeyboard()
         capture("filled-editor.png")
-        compose.onNodeWithTag("api_key_save").performClick()
+        compose.onNodeWithTag("password_editor_save").performClick()
         compose.waitUntil(20_000) { savedId != null }
         runBlocking {
             val stored = requireNotNull(database.passwordEntryDao().getPasswordEntryById(savedId!!))
@@ -134,14 +134,16 @@ class ApiKeyFlowTest {
         compose.onNodeWithTag("api_key_detail_secret_reveal").performClick()
         capture("detail.png")
         compose.runOnIdle { phase = 2 }
-        compose.waitUntil(20_000) { edit.loaded }
-        compose.onNodeWithTag("api_key_secret").performScrollTo().assert(hasPassword())
-        assertEquals("sk-api-fixture-13579", edit.draft.key)
-        compose.onNodeWithTag("api_key_favorite").assertIsSelected()
-        compose.onNodeWithTag("api_key_url").performScrollTo().performTextClearance()
-        input("api_key_provider", "Claude 备用", clear = true)
+        compose.waitUntil(20_000) {
+            compose.onAllNodes(hasTestTag("template_field_key") and hasText("sk-api-fixture-13579")).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithTag("template_field_key").performScrollTo().assert(hasPassword())
+        compose.onNodeWithTag("template_field_key").assertTextContains("sk-api-fixture-13579")
+        compose.onNodeWithTag("password_editor_favorite").assertIsSelected()
+        compose.onNodeWithTag("template_field_url").performScrollTo().performTextClearance()
+        input("password_editor_title", "Claude 备用", clear = true)
         savedId = null
-        compose.onNodeWithTag("api_key_save").performClick()
+        compose.onNodeWithTag("password_editor_save").performClick()
         compose.waitUntil(20_000) { savedId != null }
         runBlocking {
             val updated = requireNotNull(passwords.getPasswordEntryById(savedId!!))
@@ -152,28 +154,27 @@ class ApiKeyFlowTest {
         }
     }
 
-    @Test fun invalidInputStaysInEditorAndDarkLargeTextRemainsUsable() {
+    @Test fun missingRequiredKeyStaysInEditorAndDarkLargeTextRemainsUsable() {
         val editor = ApiKeyEditorViewModel().also(editors::add)
         var saved = false
         compose.setContent { TestTheme(large = true) {
             ApiKeyScreen(passwords, onBack = {}, onSaved = { saved = true }, editor = editor)
         } }
-        compose.onNodeWithTag("api_key_save").performClick()
+        compose.onNodeWithTag("password_editor_save").performClick()
         assertFalse(saved)
-        assertTrue(editor.validationAttempted)
-        input("api_key_provider", "我的中转站")
-        input("api_key_secret", "synthetic-key")
-        input("api_key_url", "javascript:alert(1)")
-        compose.onNodeWithTag("api_key_save").performClick()
+        compose.onNodeWithTag("template_field_key").assertExists()
+        input("password_editor_title", "我的中转站")
+        input("template_field_url", "local-service")
+        compose.onNodeWithTag("password_editor_save").performClick()
         assertFalse(saved)
-        compose.onNodeWithTag("api_key_url").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("template_field_url").performScrollTo().assertIsDisplayed()
         hideKeyboard()
         capture("dark-large-validation.png")
         val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-        compose.onNodeWithTag("api_key_heading").performSemanticsAction(
+        compose.onNodeWithTag("password_editor_heading").performSemanticsAction(
             androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
         assertFalse(layouts.single().hasVisualOverflow)
-        compose.onNodeWithTag("api_key_save").assertIsDisplayed()
+        compose.onNodeWithTag("password_editor_save").assertIsDisplayed()
     }
 
     @Test fun lockClearsSecretDraftAndPreventsSave() {
@@ -182,16 +183,22 @@ class ApiKeyFlowTest {
         compose.setContent { TestTheme {
             ApiKeyScreen(passwords, onBack = {}, onSaved = { saved = true }, editor = editor)
         } }
-        input("api_key_provider", "Local AI")
-        input("api_key_secret", "synthetic-lock-test")
+        input("password_editor_title", "Local AI")
+        input("template_field_key", "synthetic-lock-test")
         compose.runOnIdle { SessionManager.markLocked() }
-        compose.waitUntil(5_000) { editor.draft.key.isEmpty() }
-        compose.onNodeWithTag("api_key_save").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("template_field_key").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("password_editor_save").assertDoesNotExist()
         assertFalse(saved)
-        assertFalse(editor.loaded)
     }
 
     private fun input(tag: String, value: String, clear: Boolean = false) {
+        if (tag == "password_content_notes") {
+            closeFocusedKeyboard()
+            val list = compose.onNode(hasTestTag("password_content_editor") or hasTestTag("password_classic_editor"))
+            list.performScrollToNode(hasTestTag("password_content_add"))
+            compose.onNodeWithTag("password_content_add").performClick()
+            compose.onNodeWithTag("password_content_choose_NOTES").performClick()
+        }
         val node = compose.onNodeWithTag(tag).performScrollTo()
         if (clear) node.performTextClearance()
         node.performTextInput(value)

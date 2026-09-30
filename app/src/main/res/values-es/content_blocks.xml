@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">Clave API</string>
+    <string name="content_block_api_token">Token de API</string>
+    <string name="content_block_ssh">Clave SSH</string>
+    <string name="content_block_gpg">Clave GPG</string>
+    <string name="content_block_qr">Código QR</string>
+    <string name="content_block_key">Clave</string>
+    <string name="content_block_token">Token</string>
+    <string name="content_block_provider">Proveedor</string>
+    <string name="content_block_url">Punto de acceso API</string>
+    <string name="content_block_algorithm">Algoritmo</string>
+    <string name="content_block_public">Clave pública</string>
+    <string name="content_block_private">Clave privada</string>
+    <string name="content_block_fingerprint">Huella digital</string>
+    <string name="content_block_identity">Identidad / comentario</string>
+    <string name="content_block_content">Texto o enlace</string>
+    <string name="content_block_import">Importar desde archivo</string>
+    <string name="content_block_export">Exportar a archivo</string>
+    <string name="content_block_unavailable">Contenido no compatible</string>
+    <string name="content_block_preserved">Se conserva el contenido original. Utiliza una versión compatible para editarlo.</string>
+    <string name="content_block_save_error">No se pudo guardar o leer el contenido. Comprueba el archivo y su tamaño (máximo 256 KiB).</string>
+    <string name="content_block_more">Más contenido</string>
+    <string name="content_block_key_size">Tamaño de clave</string>
+    <string name="content_block_format">Formato</string>
+    <string name="content_block_qr_error">El contenido es demasiado largo para un código QR. Puedes verlo o copiarlo completo.</string>
+</resources>

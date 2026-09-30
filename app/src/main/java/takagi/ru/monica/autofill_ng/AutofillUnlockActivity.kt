@@ -159,6 +159,7 @@ class AutofillUnlockActivity : AppCompatActivity() {
                 val byId = passwordRepository.getAllPasswordEntries().first().filterNot { it.isKeyCredential() }.associateBy { it.id }
                 passwordIdsInOrder.mapNotNull(byId::get)
             }
+            val postFillOtpPasswordIds = AutofillOtpActions(applicationContext).eligiblePasswordIds(passwords)
             val filledData = FilledDataBuilderNg(
                 context = applicationContext,
                 securityManager = securityManager,
@@ -173,6 +174,7 @@ class AutofillUnlockActivity : AppCompatActivity() {
                 passwordSuggestionEnabled = pendingRequest.passwordSuggestionEnabled,
                 requireAuthentication = false,
                 matchedPasswords = passwords,
+                postFillOtpPasswordIds = postFillOtpPasswordIds,
             )
                 ?.let { response -> response to passwords.size }
         }.onFailure { error ->

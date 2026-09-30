@@ -1,0 +1,102 @@
+{
+  "version": "1.0.315",
+  "status": "verified-unreleased",
+  "date": "2026-09-30",
+  "unit_tests": {
+    "main": {
+      "data.MdbxSyncStateTest": 2,
+      "repository.Mdbx2RemoteSyncCoordinatorTest": 18,
+      "ui.password.MdbxPathSyncStateTest": 3
+    },
+    "fdroid": {
+      "data.MdbxSyncStateTest": 2,
+      "repository.Mdbx2RemoteSyncCoordinatorTest": 18,
+      "ui.password.MdbxPathSyncStateTest": 3
+    }
+  },
+  "device_tests": {
+    "main": {
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#noOpMaintenanceAndRepeatedReadsDoNotMarkTheVaultDirty": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#activatingVaultAndOpeningDetailsRepeatedlyKeepsSyncedDataClean": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#snapshotsAndTagChangesRemainPendingUntilSynced": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#oldCursorsRemainReadableAndWrongVaultCursorsCannotHideEdits": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#connectionFailureWithoutEditsDoesNotInventAnUnsyncedItem": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#aRealEditRemainsPendingThroughFailureAndClearsOnlyAfterPublication": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#detailsAndRepositoryRestartDoNotBecomeEditsInAnyTigaMode": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#readingTokenAfterPublicationDoesNotBecomeAnUnsyncedEdit": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#nativeTokenSurvivesFailedUploadRetryAndDownloadWithoutRemainingPending": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#tokenBodyRemainsReadableWhileRemoteSyncWaitsForNetwork": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#editsDuringRemoteWaitAndBeforeCompletionStillReachTheOtherReplica": "passed",
+      "takagi.ru.monica.repository.Mdbx2RemoteStatusInstrumentedTest#remoteRustMutationBecomesPendingUpload": "passed",
+      "takagi.ru.monica.repository.Mdbx2RealWebDavInstrumentedTest#realWebDavBootstrapSyncAttachmentConflictAndReopen": "passed",
+      "takagi.ru.monica.ui.MdbxSyncIndicatorTest#failedChecksStayVisibleWithoutClaimingUnsyncedItemsAndRetryStillWorks": "passed"
+    },
+    "fdroid": {
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#noOpMaintenanceAndRepeatedReadsDoNotMarkTheVaultDirty": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#activatingVaultAndOpeningDetailsRepeatedlyKeepsSyncedDataClean": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#snapshotsAndTagChangesRemainPendingUntilSynced": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#oldCursorsRemainReadableAndWrongVaultCursorsCannotHideEdits": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#connectionFailureWithoutEditsDoesNotInventAnUnsyncedItem": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#aRealEditRemainsPendingThroughFailureAndClearsOnlyAfterPublication": "passed",
+      "takagi.ru.monica.repository.Mdbx2IdleSyncStatusInstrumentedTest#detailsAndRepositoryRestartDoNotBecomeEditsInAnyTigaMode": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#readingTokenAfterPublicationDoesNotBecomeAnUnsyncedEdit": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#nativeTokenSurvivesFailedUploadRetryAndDownloadWithoutRemainingPending": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#tokenBodyRemainsReadableWhileRemoteSyncWaitsForNetwork": "passed",
+      "takagi.ru.monica.repository.NativeApiTokenSyncInstrumentedTest#editsDuringRemoteWaitAndBeforeCompletionStillReachTheOtherReplica": "passed",
+      "takagi.ru.monica.repository.Mdbx2RemoteStatusInstrumentedTest#remoteRustMutationBecomesPendingUpload": "passed",
+      "takagi.ru.monica.repository.Mdbx2RealWebDavInstrumentedTest#realWebDavBootstrapSyncAttachmentConflictAndReopen": "passed",
+      "takagi.ru.monica.ui.MdbxSyncIndicatorTest#failedChecksStayVisibleWithoutClaimingUnsyncedItemsAndRetryStillWorks": "passed"
+    }
+  },
+  "environment": "Shared Monica_Issue136_API_32, x86_64; real native Rust MDBX; isolated HTTP WebDAV on loopback",
+  "test_fixture_corrections": [
+    "Native prune limit 10000",
+    "POWER denial retained for standard device",
+    "Network gate moved from obsolete stat call to actual list request",
+    "F-Droid loopback HTTP uses temporary isolated preferences; production HTTP default and user setting unchanged"
+  ],
+  "limits": [
+    "User provider/network not reproduced directly",
+    "Enhanced-device POWER secret disclosure not covered"
+  ],
+  "data_preservation": {
+    "takagi.ru.monica": {
+      "integrity": "ok",
+      "original_rows_unchanged": true,
+      "password_rows": 3216,
+      "tables_checked": 27
+    },
+    "takagi.ru.monica.fdroid": {
+      "integrity": "ok",
+      "original_rows_unchanged": true,
+      "password_rows": 11,
+      "tables_checked": 27
+    }
+  },
+  "data_export": "D:\\AndroidSDK\\codex-avd-backups\\issue136-before-expand-20260930\\after-idle-sync-tests-20260930-132133",
+  "sha256": {
+    "app/src/main/java/takagi/ru/monica/data/MdbxSyncState.kt": "966b36b6cc2a525d893945337a0f2ad6b56823e44b31b7dd032ea289cf33973e",
+    "app/src/main/java/takagi/ru/monica/repository/Mdbx2RemoteSyncCoordinator.kt": "e7abec7753cc511e3225717a8006b69c42a182c0ff82cf4f8ab7b4e762c88f75",
+    "app/src/main/java/takagi/ru/monica/repository/Mdbx2Repository.kt": "81d30a8501b0c186523c8a57f57f31adacc10c981da4db0bc14f3d4d21a956b5",
+    "app/src/main/java/takagi/ru/monica/repository/Mdbx2VaultSessionExecutor.kt": "d93cc9239c5b3cdee06f56c14d4b0091809a63041f03301064b6a7deb5ce8f6a",
+    "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFolderSections.kt": "0cada5b2f702dda1dc161166113c3b4664c1aa3bdb3d0e56c427af16e91dd693",
+    "app/src/main/java/takagi/ru/monica/ui/password/PasswordListContent.kt": "18a02b04729e7b1a7e810a06ab726ed38887d8558f72cf953369893304c24b6b",
+    "app/src/main/java/takagi/ru/monica/ui/vaultv2/VaultV2Pane.kt": "5a8943adbbb43530ccccd6ceb711ed0cdf669f3e8cf48a2f7f79211d175aad9c",
+    "app/src/test/java/takagi/ru/monica/data/MdbxSyncStateTest.kt": "ec656cfdc9544055ddee88794ca5df3a8e538f38779294ceb530e0e31ec86f5a",
+    "app/src/test/java/takagi/ru/monica/repository/Mdbx2RemoteSyncCoordinatorTest.kt": "d96075994bf32cf053f1942c7332635c1420bb9719fbafe5cd6469817f08ed3c",
+    "app/src/test/java/takagi/ru/monica/ui/password/MdbxPathSyncStateTest.kt": "7e694e7288c9b7546117cdf2af637c8c0f83c58e8856b6b871a3ffb77c82f064",
+    "app/src/androidTest/java/takagi/ru/monica/repository/Mdbx2IdleSyncStatusInstrumentedTest.kt": "2e9eef97f93c866373250297b6e8a320ad2b640e54ce54e8864da238465f1354",
+    "app/src/androidTest/java/takagi/ru/monica/repository/NativeApiTokenSyncInstrumentedTest.kt": "833936ac5976eddc24b2e297e8ecadc7e45887aca292ce74a4f5e51e18e99d8f",
+    "app/src/androidTest/java/takagi/ru/monica/ui/MdbxSyncIndicatorTest.kt": "c4375fae79fe4b542e03e26d955555cdfd3eb179abab1c2be592b32b8f9b1186",
+    "app/src/androidTest/java/takagi/ru/monica/repository/Mdbx2RealWebDavInstrumentedTest.kt": "75ad50a06f6e7ff9574297d67075c743549fd9560c6b21d18cda76a4cc4f314a"
+  },
+  "mirrored_to_three_counterparts": true,
+  "git_commit_or_push": false,
+  "cleanup": {
+    "task_started_emulator_stopped": true,
+    "public_avd_preserved": true,
+    "isolated_webdav_stopped": true,
+    "adb_reverse_removed": true
+  },
+  "scoped_diff_check": "passed"
+}

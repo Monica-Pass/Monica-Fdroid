@@ -1,5 +1,6 @@
 package takagi.ru.monica.ui.password
 
+import takagi.ru.monica.data.passwordProjectKey
 import java.net.URI
 import java.util.Locale
 import takagi.ru.monica.data.PasswordEntry
@@ -28,18 +29,7 @@ private fun parseWebsiteStackMatchMode(mode: String): WebsiteStackMatchMode {
     }
 }
 
-fun getPasswordInfoKey(entry: PasswordEntry): String {
-    val sourceKey = buildPasswordSourceKey(entry)
-    // Native objects have no credential in the list model: matching titles do not
-    // establish identical passwords and must never merge them into one detail link.
-    if (entry.loginType == "API_TOKEN") return "$sourceKey|api-token:${entry.id}"
-    // Keys from one provider can have different endpoints or notes; each keeps its own detail/editor.
-    if (entry.isApiKeyEntry()) return "$sourceKey|api-key:${entry.id}"
-    val title = entry.title.trim().lowercase(Locale.ROOT)
-    val username = entry.username.trim().lowercase(Locale.ROOT)
-    val website = normalizeWebsiteForInfoKey(entry.website)
-    return "$sourceKey|$title|$website|$username"
-}
+fun getPasswordInfoKey(entry: PasswordEntry): String = entry.passwordProjectKey()
 
 fun buildPasswordSourceKey(entry: PasswordEntry): String {
     return when {

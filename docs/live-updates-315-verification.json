@@ -1,0 +1,154 @@
+{
+  "scope": [
+    "autofill OTP live notification",
+    "tile sequential credential copy",
+    "Permission Management entry"
+  ],
+  "excluded": [
+    "background sync",
+    "database/backup format changes",
+    "commit/push/release"
+  ],
+  "verifiedAt": "2026-09-30T22:42:23.571617+08:00",
+  "design": "http://127.0.0.1:5186/live-updates-315.html",
+  "platforms": {
+    "legacyDevice": 32,
+    "promotedDevice": "36.1 (SDK_INT=36)",
+    "unitFallbackSDKs": [
+      29,
+      32,
+      34
+    ]
+  },
+  "editions": {
+    "Main": {
+      "unitTests": {
+        "tests": 173,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "devices": [
+        {
+          "log": "Main-emulator-5558-promoted-final.log",
+          "tests": 4,
+          "apkSHA256": {
+            "takagi.ru.monica": "3EA8E58AC3C01919830F7DB6B91962466250018C98BB6AC38FAC5DA7ACBC3A4D",
+            "takagi.ru.monica.test": "FDE150B9EDE54C00DAE89D24881EFF4ABB0F4BAD9F162DCB4500278CB2629266"
+          },
+          "restored": true
+        },
+        {
+          "log": "Main-emulator-5554-final-regression.log",
+          "tests": 7,
+          "apkSHA256": {
+            "takagi.ru.monica.test": "FDE150B9EDE54C00DAE89D24881EFF4ABB0F4BAD9F162DCB4500278CB2629266",
+            "takagi.ru.monica": "3EA8E58AC3C01919830F7DB6B91962466250018C98BB6AC38FAC5DA7ACBC3A4D"
+          },
+          "restored": true
+        }
+      ],
+      "promotionFlags": {
+        "autofill_otp": {
+          "sdk": 36,
+          "requested": true,
+          "eligible": true,
+          "promoted": true,
+          "shortCriticalText": "15s"
+        },
+        "smart_copy_channel": {
+          "sdk": 36,
+          "requested": true,
+          "eligible": true,
+          "promoted": true,
+          "shortCriticalText": "Copy"
+        }
+      },
+      "buildConfig": {
+        "compileSdk": "36",
+        "minSdk": "26",
+        "targetSdk": "34",
+        "versionCode": "12",
+        "versionName": "1.0.315",
+        "apkVersionName": "1.0.315-26093012-75"
+      }
+    },
+    "Fdroid": {
+      "unitTests": {
+        "tests": 173,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "devices": [
+        {
+          "log": "Fdroid-emulator-5558-promoted-final.log",
+          "tests": 4,
+          "apkSHA256": {
+            "takagi.ru.monica.fdroid.test": "14B93112B2C05A852368BC3D3A1373F38F8DAE7A03093817D852E2C26D8A7B99",
+            "takagi.ru.monica.fdroid": "66806718D3606B20785F02AF45962ECAD9A561D72D87BFE8B3F3025DE1CF343B"
+          },
+          "restored": true
+        },
+        {
+          "log": "Fdroid-emulator-5554-final-regression.log",
+          "tests": 7,
+          "apkSHA256": {
+            "takagi.ru.monica.fdroid.test": "14B93112B2C05A852368BC3D3A1373F38F8DAE7A03093817D852E2C26D8A7B99",
+            "takagi.ru.monica.fdroid": "66806718D3606B20785F02AF45962ECAD9A561D72D87BFE8B3F3025DE1CF343B"
+          },
+          "restored": true
+        }
+      ],
+      "promotionFlags": {
+        "autofill_otp": {
+          "sdk": 36,
+          "requested": true,
+          "eligible": true,
+          "promoted": true,
+          "shortCriticalText": "28s"
+        },
+        "smart_copy_channel": {
+          "sdk": 36,
+          "requested": true,
+          "eligible": true,
+          "promoted": true,
+          "shortCriticalText": "Copy"
+        }
+      },
+      "buildConfig": {
+        "compileSdk": "36",
+        "minSdk": "26",
+        "targetSdk": "34",
+        "versionCode": "22",
+        "versionName": "1.0.315",
+        "apkVersionName": "1.0.315"
+      }
+    }
+  },
+  "resolvedTestEnvironmentIssues": [
+    "API36.1 SurfaceFlinger mapper.ranchu crashed before app launch; Minigbm,Vulkan + swiftshader fixed the existing AVD without data reset.",
+    "Espresso3.6.1 reflected removed InputManager.getInstance; test-only Espresso3.7.0/ext-junit1.3.0 fixed API36.1 instrumentation.",
+    "First API32 SmartCopy clipboard read failed after screenshot focus loss; focused retry passed. Final suite explicitly restores window focus.",
+    "Initial API36.1 notification screenshots were taken before shade expansion; final suite waits for the notification title and asserts actual promotion.",
+    "One later API36.1 instrumentation launch hit BIND APPLICATION ANR during test class loading before any test began. Kept exit-info/logcat and failure log; normal app launch and the unchanged APK rerun passed."
+  ],
+  "limitations": [
+    "OEM/system policy controls chip appearance. Initial API36 image did not support the current promotion mechanism and correctly used ordinary notifications.",
+    "No claim of coverage for every OEM or Android release; minSdk26 and targetSdk34 are unchanged."
+  ],
+  "sourceSHA256": {
+    "app/src/main/java/takagi/ru/monica/notifications/LiveUpdateNotifications.kt": "d095cb03bfef7f19798d0fdf52442ae27c477cb6900c724d3250ee4e9b3718ee",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/service/AutofillOtpNotificationService.kt": "ff915b7972c3a85d1d46993876991ae0981ebbb5bbfca051df217bef62bb56e7",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/utils/SmartCopyNotificationHelper.kt": "ff9815f5e52508bc12bd81a61c11ad291c294b4d51fcfe0736a62af3fe2bed55",
+    "app/src/main/java/takagi/ru/monica/autofill_ng/utils/SmartCopyReceiver.kt": "2b9078b157f92aac79ab9aaba843c0c7e330ae31223c576d58c26a4f7c378cdd",
+    "app/src/main/java/takagi/ru/monica/repository/PermissionRepository.kt": "5baa32a05bb062175753469a320df056a6b05870d695097ea4f0d962f8ddcc62",
+    "app/src/main/java/takagi/ru/monica/ui/screens/PermissionManagementScreen.kt": "d63302d3209f40bc88dba2f0002be51a52357a6c1d46e70d9247c6764a3d069c",
+    "app/src/test/java/takagi/ru/monica/notifications/LiveUpdateNotificationsTest.kt": "c5957602e95248a2cc3a3f703b15e4882966d8592667e6b36ac838f8952c2ffb",
+    "app/src/test/java/takagi/ru/monica/autofill_ng/SmartCopyNotificationTest.kt": "87531a783e2ace6b9197597e19d0605459c304e59b254caf42cc55702be2e359",
+    "app/src/androidTest/java/takagi/ru/monica/notifications/LiveUpdateNotificationsInstrumentedTest.kt": "8deabca21896488402be4fcacb4667edcdc5a41d9bd854371de2bdbd0d39ca4a",
+    "app/src/main/res/values/strings_live_updates.xml": "b4cdf99153af10cba45c038b1f5169c4d68c9bcbbb53932cfe4f999a987e0b0e",
+    "app/src/main/res/values-zh/strings_live_updates.xml": "9d1544c547bb5809518a76cebf9a238bec0875e1d984cc4ab79a9511acdb6e2f",
+    "app/src/main/res/values-b+zh+Hant/strings_live_updates.xml": "e71ff633c99dbc352efbd2940964fbadc7eae3f1de1a3f2ed4a56ef96e7a8178"
+  }
+}

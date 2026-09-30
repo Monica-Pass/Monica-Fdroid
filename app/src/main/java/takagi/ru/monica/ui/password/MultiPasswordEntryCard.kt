@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,8 +77,9 @@ fun MultiPasswordEntryCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
+                .testTag("password_project_card")
                 .combinedClickable(
-                    onClick = { onCardClick?.invoke() },
+                    onClick = { if (isSelectionMode) onClick(firstEntry) else onCardClick?.invoke() },
                     onLongClick = onLongClick
                 )
                 .padding(if (isInExpandedGroup) 12.dp else 14.dp),
@@ -197,6 +199,9 @@ fun MultiPasswordEntryCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (isSelectionMode) {
+                        Checkbox(checked = passwords.all { it.id in selectedPasswords }, onCheckedChange = null)
+                    }
                     if (firstEntry.isBitwardenEntry()) {
                         Icon(
                             Icons.Default.CloudSync,
@@ -331,78 +336,67 @@ fun MultiPasswordEntryCard(
                 }
             }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 4.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${stringResource(R.string.password)}:",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            if (!isSelectionMode) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
-                FlowRow(
-                    modifier = Modifier.weight(1f),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    passwords.forEachIndexed { index, password ->
-                        val isSelected = selectedPasswords.contains(password.id)
+                    Text(
+                        text = "${stringResource(R.string.password)}:",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            },
-                            onClick = { onClick(password) },
-                            modifier = Modifier.heightIn(min = 32.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    FlowRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        passwords.forEachIndexed { index, password ->
+                            val isSelected = selectedPasswords.contains(password.id)
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                },
+                                onClick = { onClick(password) },
+                                modifier = Modifier.heightIn(min = 32.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier.size(16.dp),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if (isSelectionMode) {
-                                        Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
+                                    Icon(
+                                        Icons.Default.Key,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (isSelected) {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        }
+                                    )
+
+                                    Text(
+                                        text = stringResource(R.string.password_item_title, index + 1),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = if (isSelected) {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        }
+                                    )
                                 }
-
-                                Icon(
-                                    Icons.Default.Key,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    }
-                                )
-
-                                Text(
-                                    text = stringResource(R.string.password_item_title, index + 1),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = if (isSelected) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    }
-                                )
                             }
                         }
                     }

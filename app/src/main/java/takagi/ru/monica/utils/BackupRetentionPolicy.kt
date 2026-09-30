@@ -14,6 +14,12 @@ data class BackupRetentionConfig(
 }
 
 object BackupRetentionPolicy {
+    // A shared/root directory can contain unrelated ZIPs. Unknown or renamed
+    // files remain downloadable but must never enter automatic deletion.
+    private val managedTemporaryName = Regex("^monica_backup_[0-9]{8}_[0-9]{6}(?:\\.enc)?\\.zip$")
+
+    fun isManagedTemporaryBackup(name: String): Boolean = managedTemporaryName.matches(name)
+
     const val DEFAULT_RETENTION_DAYS: Long = 60L
     const val DEFAULT_MIN_TEMPORARY_BACKUPS_TO_KEEP: Int = 10
 

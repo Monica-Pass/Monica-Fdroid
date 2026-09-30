@@ -1,0 +1,42 @@
+{
+  "version": "1.0.315",
+  "scope": "Customization drag corners and compact preset editor",
+  "testsPerEdition": 4,
+  "runs": [
+    {
+      "testPackageId": "takagi.ru.monica.test",
+      "edition": "Main",
+      "completed": true,
+      "appSha256": "DBA7178B6C1679375E392DEFB5D2B0E4CDDF22B872B8ECEA08AED2B866370AFB",
+      "classes": [
+        "takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#dragHandleReordersNaturalHeightRows,takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#presetCanBeCreatedEditedAndDeletedWithoutExposingSensitiveDefault,takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#presetSheetEditsAllPropertiesWithoutLosingIdentity,takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#presetSheetLargeTextKeepsSaveReachableAndRejectsBlankName"
+      ],
+      "packageId": "takagi.ru.monica",
+      "finishedAt": "2026-09-30T01:12:16.3764427+08:00",
+      "testSha256": "C6A50D2EC2DE96F36B18DAF45DFD348CC3B0053D41129DFE74A3C9038B09143D",
+      "startedAt": "2026-09-30T01:08:58.2341453+08:00",
+      "suite": "CustomizationPolish315"
+    },
+    {
+      "edition": "Fdroid",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "classes": [
+        "takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#dragHandleReordersNaturalHeightRows,takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#presetCanBeCreatedEditedAndDeletedWithoutExposingSensitiveDefault,takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#presetSheetEditsAllPropertiesWithoutLosingIdentity,takagi.ru.monica.ui.screens.CustomizationChildrenInstrumentedTest#presetSheetLargeTextKeepsSaveReachableAndRejectsBlankName"
+      ],
+      "startedAt": "2026-09-30T01:19:43.0923570+08:00",
+      "completed": true,
+      "packageId": "takagi.ru.monica.fdroid",
+      "appSha256": "8F63A9FE776747DE310E98824E1CD826DCAAFA1DE4BB404FC256CA089C809AED",
+      "testSha256": "4D7E6A5A96E25FAE4BEFA9207EFEFF6E4C3954E254B222FFBFB68C7D18B7A870",
+      "finishedAt": "2026-09-30T01:21:18.9590041+08:00",
+      "suite": "CustomizationPolish315"
+    }
+  ],
+  "sourceHashes": {
+    "app/src/main/java/takagi/ru/monica/ui/components/CustomizationComponents.kt": "3b76d7f4eff45aba7d16935265baf87d3d03f1b2182de5be29e7cc2e0a72763c",
+    "app/src/main/java/takagi/ru/monica/ui/screens/PasswordFieldCustomizationScreen.kt": "0af8aa22626b22b0248037cfebacbf8923cc629d0184672a9669e3d2ce47b740",
+    "app/src/androidTest/java/takagi/ru/monica/ui/screens/CustomizationChildrenInstrumentedTest.kt": "3b68ea6228bce873724a64f502f567c39cdfc4e63f2e546b39b692d8ac51f45b"
+  },
+  "canvasOnlineRenderingVerified": false,
+  "retryNote": "F-Droid first run timed out waiting for newly saved preset; frame/input-method delays logged. Same APK full rerun passed 4 tests in 62.468s."
+}

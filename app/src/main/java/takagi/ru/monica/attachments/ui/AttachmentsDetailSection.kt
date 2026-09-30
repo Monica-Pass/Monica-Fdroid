@@ -5,25 +5,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,11 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -79,6 +57,8 @@ fun AttachmentsDetailSection(
     bitwardenContext: AttachmentFacade.BitwardenContext? = null,
     keepassContext: AttachmentFacade.KeePassContext? = null,
     excludedFileNames: Set<String> = emptySet(),
+    includedFileNames: Set<String>? = null,
+    displayFileNames: Map<String, String> = emptyMap(),
     hideManagedCardFaces: Boolean = false
 ) {
     val context = LocalContext.current
@@ -86,7 +66,7 @@ fun AttachmentsDetailSection(
     val facade = remember(context) { AttachmentContainer.facade(context) }
     val allAttachments by facade.observe(owner).collectAsState(initial = emptyList())
     val attachments = allAttachments.filterNot {
-        it.fileName in excludedFileNames ||
+        (includedFileNames != null && it.fileName !in includedFileNames) || it.fileName in excludedFileNames ||
             (hideManagedCardFaces && CardFaceAttachment.isManagedFileName(it.fileName))
     }
 
@@ -104,8 +84,8 @@ fun AttachmentsDetailSection(
         scope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(sourceUri)?.use { input ->
-                        context.contentResolver.openOutputStream(targetUri)?.use { output ->
+                    (context.contentResolver.openInputStream(sourceUri) ?: throw AttachmentError.IoError).use { input ->
+                        (context.contentResolver.openOutputStream(targetUri) ?: throw AttachmentError.IoError).use { output ->
                             input.copyTo(output)
                         }
                     }
@@ -148,81 +128,39 @@ fun AttachmentsDetailSection(
         )
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.AttachFile, contentDescription = null)
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(
-                    text = stringResource(R.string.attachments_section_title, attachments.size),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            attachments.forEach { attachment ->
-                val isDownloading = attachment.downloadStateEnum == AttachmentDownloadState.DOWNLOADING
-                AttachmentRow(
-                    attachment = attachment,
-                    enabled = !isDownloading,
-                    onClick = {
-                        scope.launch {
-                            handleAttachmentClick(
-                                facade = facade,
-                                attachment = attachment,
-                                bitwardenContext = bitwardenContext,
-                                keepassContext = keepassContext,
-                                onPreviewReady = { uri, mimeType, fileName ->
-                                    if (isPreviewable(mimeType)) {
-                                        previewState = PreviewState(uri, mimeType, fileName)
-                                    } else {
-                                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                                            setDataAndType(uri, mimeType)
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        context.startActivity(intent)
-                                    }
-                                },
-                                onError = { e ->
-                                    Toast.makeText(
-                                        context,
-                                        resolveErrorMessage(context, e),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            )
+    AttachmentCarousel(
+        attachments = attachments,
+        displayNames = displayFileNames,
+        modifier = modifier,
+        readThumbnail = { attachment -> facade.readCachedImageBytes(attachment.id) },
+        onOpen = { attachment ->
+            scope.launch {
+                if (attachment.downloadStateEnum == AttachmentDownloadState.FAILED) {
+                    try {
+                        facade.retryFailed(attachment.id, bitwardenContext, keepassContext)
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                    catch (e: Exception) {
+                        Toast.makeText(context, resolveErrorMessage(context, e), Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                }
+                handleAttachmentClick(
+                    facade, attachment, bitwardenContext, keepassContext,
+                    onPreviewReady = { uri, mimeType, fileName ->
+                        if (isPreviewable(mimeType)) {
+                            previewState = PreviewState(uri, mimeType, displayFileNames[fileName] ?: fileName)
+                        } else {
+                            context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri, mimeType)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                            })
                         }
                     },
-                    onRetry = {
-                        scope.launch {
-                            runCatching {
-                                facade.retryFailed(
-                                    attachment.id,
-                                    bitwardenContext = bitwardenContext,
-                                    keepassContext = keepassContext
-                                )
-                            }.onFailure { e ->
-                                Toast.makeText(
-                                    context,
-                                    resolveErrorMessage(context, e),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
+                    onError = { e -> Toast.makeText(context, resolveErrorMessage(context, e), Toast.LENGTH_SHORT).show() }
                 )
             }
         }
-    }
+    )
 }
 
 private data class PreviewState(
@@ -262,75 +200,7 @@ private fun isPreviewable(mimeType: String): Boolean {
         mimeType.startsWith("text/")
 }
 
-@Composable
-private fun AttachmentRow(
-    attachment: Attachment,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    onRetry: () -> Unit
-) {
-    val isPending = attachment.downloadStateEnum == AttachmentDownloadState.PENDING
-    val isDownloaded = attachment.downloadStateEnum == AttachmentDownloadState.DOWNLOADED
-    val isDownloading = attachment.downloadStateEnum == AttachmentDownloadState.DOWNLOADING
-    val isFailed = attachment.downloadStateEnum == AttachmentDownloadState.FAILED
-
-    val clickable = (isPending || isDownloaded) && enabled
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = clickable) {
-                onClick()
-            }
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(24.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = attachment.fileName,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = formatSecondary(attachment),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (isPending) {
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text(
-                        text = "· ${stringResource(R.string.attachment_download)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-        when {
-            isDownloading ->
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            isPending ->
-                Icon(
-                    Icons.Default.CloudDownload,
-                    contentDescription = stringResource(R.string.attachment_download),
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            isFailed ->
-                IconButton(onClick = onRetry) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.attachment_retry)
-                    )
-                }
-            isDownloaded -> Unit
-        }
-    }
-}
-
-private fun formatSecondary(attachment: Attachment): String {
+internal fun formatSecondary(attachment: Attachment): String {
     val sizeKb = (attachment.sizeBytes + 1023) / 1024
     val sizeText = when {
         attachment.sizeBytes <= 0 -> ""

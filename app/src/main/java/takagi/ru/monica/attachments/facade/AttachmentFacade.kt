@@ -107,6 +107,20 @@ class AttachmentFacade(
         val keepassContext: KeePassContext? = null
     )
 
+    data class StreamUploadRequest(
+        val owner: AttachmentOwner,
+        val source: AttachmentSource,
+        val fileName: String,
+        val mimeType: String,
+        val sizeBytes: Long,
+        val openStream: () -> java.io.InputStream,
+        val isPlusActivated: Boolean,
+        val bitwardenPremium: Boolean = true,
+        val kdbxSoftLimitAccepted: Boolean = false,
+        val bitwardenContext: BitwardenContext? = null,
+        val keepassContext: KeePassContext? = null
+    )
+
     data class BitwardenContext(
         val vaultApi: BitwardenVaultApi,
         val httpClient: OkHttpClient,
@@ -296,13 +310,19 @@ class AttachmentFacade(
     }
 
     /** Adds a small in-memory payload without materializing plaintext in a temporary file. */
-    suspend fun addInlineAttachment(request: InlineUploadRequest): Attachment =
+    suspend fun addInlineAttachment(request: InlineUploadRequest): Attachment = addStreamAttachment(
+        StreamUploadRequest(request.owner, request.source, request.fileName, request.mimeType,
+            request.bytes.size.toLong(), { request.bytes.inputStream() }, request.isPlusActivated,
+            request.bitwardenPremium, request.kdbxSoftLimitAccepted, request.bitwardenContext, request.keepassContext)
+    )
+
+    suspend fun addStreamAttachment(request: StreamUploadRequest): Attachment =
         withContext(Dispatchers.IO) {
             val existingCount = repository.countActive(request.owner)
             AttachmentQuotaPolicy.check(existingCount, request.isPlusActivated)?.let { throw it }
             when (
                 val validation = AttachmentSizeValidator.validate(
-                    sizeBytes = request.bytes.size.toLong(),
+                    sizeBytes = request.sizeBytes,
                     source = request.source,
                     userAcceptedSoftLimit = request.kdbxSoftLimitAccepted
                 )
@@ -315,23 +335,20 @@ class AttachmentFacade(
             }
 
             val attachment = when (request.source) {
-                AttachmentSource.LOCAL -> localExecutor.writeFromBytes(
-                    owner = request.owner,
-                    fileName = request.fileName,
-                    mimeType = request.mimeType,
-                    bytes = request.bytes
-                )
+                AttachmentSource.LOCAL -> request.openStream().use { stream ->
+                    localExecutor.writeFromStream(request.owner, request.fileName, request.mimeType, stream)
+                }
                 AttachmentSource.BITWARDEN -> {
                     if (!request.bitwardenPremium) throw AttachmentError.PremiumRequired
                     val bw = request.bitwardenContext ?: throw AttachmentError.IoError
                     if (!bw.isOnline) throw AttachmentError.Offline
-                    request.bytes.inputStream().use { stream ->
+                    request.openStream().use { stream ->
                         bitwardenExecutor.upload(
                             owner = request.owner,
                             fileName = request.fileName,
                             mimeType = request.mimeType,
                             source = stream,
-                            sizeBytes = request.bytes.size.toLong(),
+                            sizeBytes = request.sizeBytes,
                             ctx = BitwardenAttachmentExecutor.UploadContext(
                                 vaultApi = bw.vaultApi,
                                 httpClient = bw.httpClient,
@@ -345,14 +362,16 @@ class AttachmentFacade(
                 }
                 AttachmentSource.KEEPASS -> {
                     val kp = request.keepassContext ?: throw AttachmentError.IoError
-                    keepassExecutor.upload(
+                    require(request.sizeBytes in 0..Int.MAX_VALUE.toLong())
+                    val bytes = request.openStream().use { it.readBytes() }
+                    try { keepassExecutor.upload(
                         owner = request.owner,
                         databaseId = kp.databaseId,
                         entryUuid = kp.entryUuid,
                         fileName = request.fileName,
                         mimeType = request.mimeType,
-                        sourceBytes = request.bytes
-                    )
+                        sourceBytes = bytes
+                    ) } finally { bytes.fill(0) }
                 }
             }
 
@@ -569,6 +588,30 @@ class AttachmentFacade(
         val ready = ensureDownloaded(attachmentId, bitwardenContext, keepassContext)
         localExecutor.openDecrypted(ready).use { input ->
             takagi.ru.monica.attachments.backup.copyAttachmentPayload(input, output)
+        }
+    }
+
+    /** Thumbnail input comes only from existing encrypted local bytes; never initiates a download. */
+    suspend fun readCachedImageBytes(attachmentId: Long): ByteArray? = withContext(Dispatchers.IO) {
+        val attachment = repository.getById(attachmentId) ?: return@withContext null
+        val limit = 8 * 1024 * 1024
+        if (attachment.isDeleted || attachment.downloadStateEnum != AttachmentDownloadState.DOWNLOADED ||
+            attachment.localPath.isNullOrBlank() || !attachment.mimeType.startsWith("image/") ||
+            attachment.sizeBytes > limit) return@withContext null
+        localExecutor.openDecrypted(attachment).use { input ->
+            val output = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var total = 0
+            try {
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    if (total > limit) return@withContext null
+                    output.write(buffer, 0, count)
+                }
+                output.toByteArray()
+            } finally { buffer.fill(0) }
         }
     }
 
@@ -1244,7 +1287,7 @@ class AttachmentFacade(
      */
     suspend fun purgeOrphanedLocalBlobs(): Int = withContext(Dispatchers.IO) {
         val referenced = repository.allReferencedLocalPaths()
-        val onDisk = storage.listAllBlobs()
+        val onDisk = storage.listOrphanCleanupCandidates()
         var removed = 0
         for (name in onDisk) {
             if (name !in referenced) {

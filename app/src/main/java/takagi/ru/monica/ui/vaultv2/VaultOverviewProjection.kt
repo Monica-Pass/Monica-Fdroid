@@ -34,6 +34,7 @@ internal data class VaultOverviewSnapshot(
     val items: List<VaultV2Item> = emptyList(),
     val cards: List<VaultV2Item> = emptyList(),
     val frequentItems: List<VaultV2Item> = emptyList(),
+    val recentItems: List<VaultV2Item> = emptyList(),
     val favorites: List<VaultV2Item> = emptyList(),
     val typeCounts: Map<VaultV2ItemType, Int> = emptyMap(),
     val sourceCounts: Map<String, Int> = emptyMap(),
@@ -237,6 +238,7 @@ internal fun projectVaultOverview(
     fun IntArray.rows(): List<VaultV2Item> = map(prepared.items::get)
     return VaultOverviewSnapshot(
         scope = scope, accessibleSources = prepared.accessibleSources, items = result.visible.rows(),
+        recentItems = recentVaultOverviewItems(result.visible.rows()),
         cards = result.cards.rows(), frequentItems = result.items.rows(), favorites = result.favorites.rows(),
         typeCounts = VaultV2ItemType.entries.associateWith { result.typeCounts[it.ordinal] },
         sourceCounts = prepared.sources.mapIndexed { index, source -> source.key to result.sourceCounts[index] }.toMap(),
@@ -246,3 +248,8 @@ internal fun projectVaultOverview(
         archiveCount = if (selected == -1) prepared.archiveCounts.sum() else prepared.archiveCounts[selected],
     )
 }
+
+/** Uses only already scoped, unlocked and non-archived rows. Does not mutate entry dates. */
+internal fun recentVaultOverviewItems(items: List<VaultV2Item>): List<VaultV2Item> =
+    sortVaultV2Items(items.filter { it.sortTimestamp(takagi.ru.monica.data.VaultListSort.RECENT_DESC) != null },
+        takagi.ru.monica.data.VaultListSort.RECENT_DESC).take(OVERVIEW_PREVIEW_LIMIT)

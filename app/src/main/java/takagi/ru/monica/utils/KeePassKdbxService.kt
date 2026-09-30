@@ -225,7 +225,9 @@ data class KeePassEntryData(
     val customFields: List<KeePassCustomFieldData> = emptyList(),
     val hasPasskeyFields: Boolean = false,
     /** Complete OTP payload read from the native entry, before local encryption. */
-    val authenticatorKey: String = ""
+    val authenticatorKey: String = "",
+    val createdAtMillis: Long? = null,
+    val updatedAtMillis: Long? = null
 )
 
 data class KeePassCustomFieldData(
@@ -6014,6 +6016,8 @@ class KeePassKdbxService(
             creditCardExpiry = creditCardExpiry,
             creditCardCVV = creditCardCVV,
             sshKeyData = sshKeyData,
+            createdAtMillis = entry.times?.creationTime?.toEpochMilli(),
+            updatedAtMillis = entry.times?.lastModificationTime?.toEpochMilli(),
             monicaLocalId = monicaId,
             entryUuid = entry.uuid.toString(),
             groupPath = groupPath,
@@ -6135,6 +6139,7 @@ class KeePassKdbxService(
             val isFavorite = getFieldValue(entry, FIELD_MONICA_IS_FAVORITE, resolutionContext).toBoolean()
             val sourceMonicaId = getFieldValue(entry, FIELD_MONICA_ITEM_ID, resolutionContext).toLongOrNull()
             val now = Date()
+        val sourceDates = takagi.ru.monica.keepass.resolveKeePassEntryDates(entry.times?.creationTime?.toEpochMilli(), entry.times?.lastModificationTime?.toEpochMilli())
             val inRecycleBin = resolveRecycleBinFlag(
                 groupPath = groupPath,
                 isInRecycleBinByMeta = isInRecycleBinByMeta,
@@ -6148,8 +6153,8 @@ class KeePassKdbxService(
                     title = title.ifBlank { "Untitled" },
                     notes = notes,
                     isFavorite = isFavorite,
-                    createdAt = now,
-                    updatedAt = now,
+                    createdAt = sourceDates.first,
+                    updatedAt = sourceDates.second,
                     itemData = itemData,
                     imagePaths = imagePaths,
                     keepassDatabaseId = databaseId,
@@ -6171,6 +6176,7 @@ class KeePassKdbxService(
         val title = getStandardTitle(entry, resolutionContext)
         val notes = getStandardNotes(entry, resolutionContext)
         val now = Date()
+        val sourceDates = takagi.ru.monica.keepass.resolveKeePassEntryDates(entry.times?.creationTime?.toEpochMilli(), entry.times?.lastModificationTime?.toEpochMilli())
         val inRecycleBin = resolveRecycleBinFlag(
             groupPath = groupPath,
             isInRecycleBinByMeta = isInRecycleBinByMeta,
@@ -6185,8 +6191,8 @@ class KeePassKdbxService(
                 title = title.ifBlank { fallbackTitle },
                 notes = notes,
                 isFavorite = false,
-                createdAt = now,
-                updatedAt = now,
+                createdAt = sourceDates.first,
+                updatedAt = sourceDates.second,
                 itemData = Json.encodeToString(TotpData.serializer(), parsedTotp),
                 imagePaths = "",
                 keepassDatabaseId = databaseId,

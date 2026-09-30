@@ -1,0 +1,55 @@
+{
+  "version": "1.0.315",
+  "date": "2026-09-30",
+  "status": "passed",
+  "testsPerEdition": 11,
+  "device": "Monica_Issue136_API_32 / emulator-5554",
+  "runs": [
+    {
+      "testSha256": "72024217E4E4B299019CD67787467EC8B4FB91BF4AE984230280CB951521F43D",
+      "packageId": "takagi.ru.monica",
+      "appSha256": "27723B69551C9E4F30A503C54E7E59FB0E50328363C9D0D96A7AD7397B30D04D",
+      "startedAt": "2026-09-30T01:45:18.9002854+08:00",
+      "classes": [
+        "takagi.ru.monica.security.SecureStartupInstrumentedTest,takagi.ru.monica.security.SecureStorageRecoveryUiTest"
+      ],
+      "edition": "Main",
+      "suite": "SecureStartupFinal315",
+      "testPackageId": "takagi.ru.monica.test",
+      "completed": true,
+      "finishedAt": "2026-09-30T01:46:28.0527346+08:00"
+    },
+    {
+      "finishedAt": "2026-09-30T01:57:48.9251285+08:00",
+      "startedAt": "2026-09-30T01:56:19.0992096+08:00",
+      "appSha256": "078E43B1C6A7BDB1C18A59992EDB5E7037A7B068C1FD0009C7EE33553FF8CBB4",
+      "edition": "Fdroid",
+      "classes": [
+        "takagi.ru.monica.security.SecureStartupInstrumentedTest,takagi.ru.monica.security.SecureStorageRecoveryUiTest"
+      ],
+      "suite": "SecureStartupFinal315",
+      "testSha256": "D5D7411C5428514A6CC0385507361647B8A9D003A733D7F1464FFE087ECB6C4B",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "packageId": "takagi.ru.monica.fdroid",
+      "completed": true
+    }
+  ],
+  "commonSourceSha256": {
+    "app/src/main/java/takagi/ru/monica/security/SecurePreferencesStore.kt": "413b034bc939e7da8525b808cbfce35591e62fc46c50a2c42225f966ec802820",
+    "app/src/main/java/takagi/ru/monica/security/SecurityManager.kt": "aa50b7916375ace3e4d736fb14e4b4795cb70ca46e7f0138a328834f48b9fd09",
+    "app/src/main/java/takagi/ru/monica/bitwarden/repository/BitwardenRepository.kt": "a96f9684beb49df5c4e8b202457bf8622c1e9caddcd3ff2afd51e04a6372a070",
+    "app/src/main/java/takagi/ru/monica/ui/screens/SecureStorageRecoveryScreen.kt": "0d926ec27a716250c290f863d1dc46ab0b781b855c5e9d8ab93e9228f60fc171",
+    "app/src/main/res/values/secure_startup.xml": "3cab7d6ad8bc43a2b55bb2c076e2739534b1dbeb9c3a749c7ac1c7c0c928beb1",
+    "app/src/main/res/values-zh/secure_startup.xml": "5c1007cad139e5d0d90cffe8f065c64697984c831764103b27c3c6b0ba562159",
+    "app/src/androidTest/java/takagi/ru/monica/security/SecureStartupInstrumentedTest.kt": "992b496bda2253b80bcffe7adf597ed794c74f9b52fa8a19d0e600cd8a34da7b",
+    "app/src/androidTest/java/takagi/ru/monica/security/SecureStorageRecoveryUiTest.kt": "d3aed6825b721e8d4bf2a177210f866828e875e96b80a581f2c84e2bbbe45a53"
+  },
+  "nativeUi": "Light/dark, fontScale 1.5; screenshots visually checked",
+  "limitations": [
+    "Actual user root/keybox environment unavailable; cause unconfirmed",
+    "Permanent system-key loss is not repaired",
+    "Online Canvas rendering unverified",
+    "Fault injection uses isolated preferences and test-owned key aliases; not the user vault"
+  ],
+  "dataSafety": "No automatic reset, clear, replacement of missing existing keys/keysets, or plaintext fallback"
+}

@@ -105,7 +105,8 @@ internal class Mdbx2RemoteSyncCoordinator(
                     MdbxSyncStateSnapshot(
                         vaultId = engine.vaultId,
                         bootstrapCheckpoint = bootstrap.checkpoint,
-                        exportCheckpoint = bootstrap.checkpoint
+                        exportCheckpoint = bootstrap.checkpoint,
+                        syncedCommitInventory = bootstrap.checkpoint.commitInventory
                     )
                 )
                 initializeSidecar(databaseId, engine, remoteVaultPath)
@@ -130,7 +131,8 @@ internal class Mdbx2RemoteSyncCoordinator(
                 MdbxSyncStateSnapshot(
                     vaultId = engine.vaultId,
                     bootstrapCheckpoint = checkpoint,
-                    exportCheckpoint = checkpoint
+                    exportCheckpoint = checkpoint,
+                    syncedCommitInventory = checkpoint.commitInventory
                 ).also {
                     stateStore.write(databaseId, it)
                     initializeSidecar(databaseId, engine, remoteVaultPath)
@@ -195,7 +197,8 @@ internal class Mdbx2RemoteSyncCoordinator(
             )
             // Network waits allow local reads/edits to append new commits. Only the
             // published segments and safe remote applies may advance this cursor.
-            state = receive.state
+            state = receive.state.copy(syncedCommitInventory = receive.syncedCommitInventory)
+            stateStore.write(databaseId, state)
             report.copy(
                 vaultId = engine.vaultId,
                 publishedCheckpoint = state.exportCheckpoint,
@@ -267,6 +270,7 @@ internal class Mdbx2RemoteSyncCoordinator(
             state = state.copy(
                 generationId = info.transferId,
                 exportCheckpoint = info.result,
+                syncedCommitInventory = info.result.commitInventory,
                 exportResume = info.nextResume,
                 pendingSegment = null
             )
@@ -451,7 +455,8 @@ internal class Mdbx2RemoteSyncCoordinator(
             .groupBy { it.streamKey }.toSortedMap()
             .mapValues { (_, files) -> files.sortedBy(RemoteSegmentDescriptor::sequence) }
         var state = initialState
-        var syncedCommitInventory = requireNotNull(initialState.exportCheckpoint).commitInventory
+        var syncedCommitInventory = initialState.syncedCommitInventory
+            ?: requireNotNull(initialState.exportCheckpoint).commitInventory
         var downloadedSegments = 0
         var downloadedBlobs = 0
         var appliedCommits = 0

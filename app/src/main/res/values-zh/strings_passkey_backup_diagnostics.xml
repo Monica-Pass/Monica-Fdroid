@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_passkey_unavailable">私钥缺失或格式无法识别。请从包含私钥的备份重新导入，或检查原设备；本地数据和远端备份均未删除。</string>
+    <string name="backup_passkey_device_bound">此通行密钥使用不可导出的 Android Keystore 设备密钥，可继续在原设备使用，但无法包含在可迁移备份中。</string>
+    <string name="backup_passkey_unreadable">无法读取受保护的私钥。请解锁 Monica 后重试；若仍失败，请检查原设备或包含私钥的备份。</string>
+</resources>

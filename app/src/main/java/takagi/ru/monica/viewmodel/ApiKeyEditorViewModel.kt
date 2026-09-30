@@ -46,12 +46,12 @@ class ApiKeyEditorViewModel : ViewModel() {
         }
     }
 
-    fun initialize(passwords: PasswordViewModel, id: Long?, initialTarget: StorageTarget) {
+    fun initialize(passwords: PasswordViewModel, id: Long?, initialTarget: StorageTarget, initialTargets: List<StorageTarget>? = null) {
         if (initialized) return
         initialized = true
         failure = null
         validationAttempted = false
-        targets = listOf(initialTarget)
+        targets = initialTargets?.takeIf { it.isNotEmpty() } ?: listOf(initialTarget)
         if (id == null) { loaded = true; return }
         loadJob = viewModelScope.launch {
             try {

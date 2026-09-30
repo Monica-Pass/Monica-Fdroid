@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Xoay trái 90°</string>
+    <string name="card_face_rotate_right">Xoay phải 90°</string>
+    <string name="card_face_crop_rotation_hint">Kéo để chỉnh vị trí, chụm hai ngón để thu phóng hoặc dùng các nút để xoay và lật ảnh.</string>
+    <string name="card_face_flip_horizontal">Lật ngang</string>
+    <string name="card_face_flip_vertical">Lật dọc</string>
+</resources>

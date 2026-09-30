@@ -1,6 +1,10 @@
 package takagi.ru.monica.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -10,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import takagi.ru.monica.R
@@ -49,47 +52,24 @@ fun PermissionCard(
         PermissionClickAction.REQUEST_RUNTIME_PERMISSION -> stringResource(R.string.permission_action_request)
         else -> stringResource(R.string.permission_open_system_settings)
     }
-    Surface(modifier.fillMaxWidth().testTag("permission_row_${permission.id}"),
+    val interaction = if (actionLabel != null) Modifier
+        .clickable(role = Role.Button, onClickLabel = actionLabel, onClick = onClick)
+    else Modifier
+    Surface(modifier.fillMaxWidth().testTag("permission_row_${permission.id}")
+        .clip(shape).then(interaction).semantics(mergeDescendants = true) { stateDescription = statusText },
         shape = shape, color = MaterialTheme.colorScheme.surfaceContainer) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
-                Icon(permission.icon, null, Modifier.padding(top = 2.dp).size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(permissionName, style = MaterialTheme.typography.bodyLarge)
-                    Spacer(Modifier.height(4.dp))
-                    Text(stringResource(permission.descriptionResId),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(statusIcon, null, Modifier.size(16.dp), tint = statusColor)
-                        Text(statusText, style = MaterialTheme.typography.labelLarge, color = statusColor)
-                    }
-                    if (action == PermissionClickAction.SHOW_GRANTED) {
-                        Text(stringResource(R.string.permission_action_none),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp))
-                    }
-                }
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp).heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(permission.icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+            Column(Modifier.weight(1f)) {
+                Text(permissionName, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(permission.descriptionResId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp))
             }
-            if (actionLabel != null) {
-                val accessibleAction = stringResource(R.string.permission_action_for, actionLabel, permissionName)
-                TextButton(
-                    onClick = onClick,
-                    modifier = Modifier.align(Alignment.End).padding(top = 4.dp).heightIn(min = 48.dp)
-                        .testTag("permission_action_${permission.id}")
-                        .semantics { contentDescription = accessibleAction },
-                ) {
-                    Icon(if (action == PermissionClickAction.REQUEST_RUNTIME_PERMISSION) Icons.Default.Add
-                        else Icons.Default.OpenInNew, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(actionLabel, modifier = Modifier.weight(1f, fill = false))
-                }
-            }
+            Icon(statusIcon, null, Modifier.size(18.dp).testTag("permission_status_${permission.id}"), tint = statusColor)
         }
     }
 }

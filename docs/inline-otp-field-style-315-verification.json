@@ -1,0 +1,34 @@
+{
+  "recordedAt": "2026-09-30T19:28:38.203569+08:00",
+  "version": "1.0.315-unreleased",
+  "change": "Inline OTP secret inherits the same filled input style as credentials; 24dp standalone corners; no empty supporting-text slot",
+  "source": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt",
+  "sourceSha256": "1b7cd8ca2240f35774d66ac6551bb8ccefd880f07ebd1f5e8de37741c7555a91",
+  "copiesMatch": 4,
+  "builds": {
+    "main": {
+      "assembleDebug": "passed",
+      "logSha256": "96cac91a24e5bdb96ee958e8609c170852eb34d617710ff3c4b157466f24f1d3"
+    },
+    "fdroid": {
+      "assembleDebug": "passed",
+      "logSha256": "95b5288a65d647cebb9459f3cc7dcb923080da71e1b410dd84b8dc12b12e8949"
+    }
+  },
+  "deviceVerification": "Passed on both editions: default inline preview/save/reopen/clear; rendered screenshot reviewed",
+  "limits": [
+    "Only Android32 x86_64 executed; ARM64/ARM32 build/export checks are not device tests",
+    "WebDAV used a real isolated local WsgiDAV server and synthetic data, not a customer provider",
+    "No live authenticated OneDrive transfer in this task",
+    "Database ZIP export is distinct from whole-app backup; old clients may ignore new attachments",
+    "Authenticator arbitrary custom fields cancelled; Bitwarden SSO/Passkey account login excluded"
+  ],
+  "behavior": "OTP parsing, parameter editing, scan/more callbacks, preview and storage unchanged",
+  "previousLimits": [
+    "Shared API32 AVD is low on storage; another ExtensionAndroid315UiTest instrumentation was active during this task, so installed packages were not replaced",
+    "No new-device authorization assumed; no device or app data cleared",
+    "Existing main-final.png and fdroid-final.png are historical, not screenshots of this follow-up",
+    "Online Canvas remains blocked by saved browser permission; existing component draft and share link updated locally"
+  ],
+  "followupEvidence": "pending-content-315-verification.json"
+}

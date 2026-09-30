@@ -7,6 +7,16 @@ import org.junit.Test
 import java.util.Date
 
 class BackupRetentionPolicyTest {
+    @Test fun automaticCleanupOnlyOwnsStandardTemporaryArchiveNames() {
+        assertTrue(BackupRetentionPolicy.isManagedTemporaryBackup("monica_backup_20260930_120000.zip"))
+        assertTrue(BackupRetentionPolicy.isManagedTemporaryBackup("monica_backup_20260930_120000.enc.zip"))
+        listOf("family.zip", "monica_backup_custom.zip", "monica_backup_20260930_120000_permanent.zip",
+            "monica_backup_20260930_120000.enc_permanent.zip", "../monica_backup_20260930_120000.zip",
+            "monica_backup_20260930_120000_partial_fixture_permanent.enc.zip").forEach {
+            assertFalse(it, BackupRetentionPolicy.isManagedTemporaryBackup(it))
+        }
+    }
+
     @Test
     fun cleanupKeepsNewestTemporaryBackupsEvenWhenAllAreOlderThanRetentionWindow() {
         val now = 1_800_000_000_000L

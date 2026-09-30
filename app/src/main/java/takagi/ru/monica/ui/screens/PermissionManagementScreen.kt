@@ -1,6 +1,5 @@
 package takagi.ru.monica.ui.screens
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -31,6 +30,7 @@ import takagi.ru.monica.R
 import takagi.ru.monica.data.model.PermissionInfo
 import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.viewmodel.PermissionViewModel
+import takagi.ru.monica.notifications.LiveUpdateNotifications
 
 /**
  * 权限管理主界面
@@ -80,7 +80,13 @@ fun PermissionManagementScreen(
     fun launchPermissionSettings(permission: PermissionInfo) {
         try {
             settingsLauncher.launch(createPermissionSettingsIntent(context, permission.id))
-        } catch (_: ActivityNotFoundException) {
+        } catch (_: RuntimeException) {
+            if (permission.id == "LIVE_UPDATES") {
+                try {
+                    settingsLauncher.launch(LiveUpdateNotifications.appSettingsIntent(context))
+                    return
+                } catch (_: RuntimeException) { /* Report below. */ }
+            }
             Toast.makeText(
                 context,
                 context.getString(R.string.cannot_open_settings),
@@ -202,6 +208,7 @@ internal fun PermissionManagementContent(
 
 private fun createPermissionSettingsIntent(context: Context, permissionId: String): Intent {
     return when (permissionId) {
+        "LIVE_UPDATES" -> LiveUpdateNotifications.settingsIntent(context)
         "AUTOFILL" -> Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
             data = Uri.parse("package:${context.packageName}")
         }

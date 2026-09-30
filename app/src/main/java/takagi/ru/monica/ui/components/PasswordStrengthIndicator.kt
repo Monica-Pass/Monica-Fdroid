@@ -1,6 +1,7 @@
 package takagi.ru.monica.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -328,6 +329,23 @@ fun PasswordStrengthCard(
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
                 PasswordSuggestionsList(suggestions = suggestions)
             }
+        }
+    }
+}
+
+/** Compact field-local status; the strength algorithm remains unchanged. */
+@Composable
+fun PasswordStrengthBadge(strength: Int, modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val level = PasswordStrengthAnalyzer.getStrengthLevel(strength)
+    val text = PasswordStrengthAnalyzer.getStrengthLevelText(level, context)
+    val color by androidx.compose.animation.animateColorAsState(
+        getStrengthColor(level, MaterialTheme.colorScheme), tween(220), label = "strengthBadgeColor")
+    Surface(modifier = modifier.animateContentSize(), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        color = color.copy(alpha = 0.14f), contentColor = color) {
+        androidx.compose.animation.Crossfade(targetState = text, animationSpec = tween(180), label = "strengthBadgeText") { label ->
+            Text(label, Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
         }
     }
 }

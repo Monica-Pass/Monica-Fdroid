@@ -65,7 +65,8 @@ fun DualPhotoPicker(
     onBackImageRemoved: () -> Unit,
     modifier: Modifier = Modifier,
     frontLabel: String? = null,
-    backLabel: String? = null
+    backLabel: String? = null,
+    imageLoader: (suspend (String) -> Bitmap?)? = null
 ) {
     val context = LocalContext.current
     val imageManager = remember { ImageManager(context) }
@@ -304,7 +305,7 @@ fun DualPhotoPicker(
     // 加载正面图片
     LaunchedEffect(frontImageFileName) {
         frontBitmap = if (!frontImageFileName.isNullOrEmpty()) {
-            imageManager.loadImage(frontImageFileName)
+            if (imageLoader != null) imageLoader(frontImageFileName) else imageManager.loadImage(frontImageFileName)
         } else {
             null
         }
@@ -313,7 +314,7 @@ fun DualPhotoPicker(
     // 加载背面图片
     LaunchedEffect(backImageFileName) {
         backBitmap = if (!backImageFileName.isNullOrEmpty()) {
-            imageManager.loadImage(backImageFileName)
+            if (imageLoader != null) imageLoader(backImageFileName) else imageManager.loadImage(backImageFileName)
         } else {
             null
         }

@@ -62,7 +62,8 @@ fun DocumentDetailScreen(
     documentId: Long,
     onNavigateBack: () -> Unit,
     onEditDocument: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    embeddedAccess: takagi.ru.monica.attachments.EmbeddedWalletAccess? = null
 ) {
     val context = LocalContext.current
     val database = remember { PasswordDatabase.getDatabase(context) }
@@ -82,11 +83,12 @@ fun DocumentDetailScreen(
     var isSavingCardFace by remember { mutableStateOf(false) }
     
     // Load document details
-    LaunchedEffect(documentId) {
-        viewModel.getDocumentById(documentId)?.let { item ->
+    LaunchedEffect(documentId, embeddedAccess) {
+        (embeddedAccess?.snapshot?.displayItem() ?: viewModel.getDocumentById(documentId))?.let { item ->
             documentItem = item
             
-            documentData = viewModel.parseDocumentData(item.itemData)
+            documentData = embeddedAccess?.snapshot?.let { takagi.ru.monica.data.model.EmbeddedDocumentEditorData(it).data }
+                ?: viewModel.parseDocumentData(item.itemData)
 
             if (item.keepassDatabaseId != null && !item.keepassEntryUuid.isNullOrBlank()) {
                 launch(Dispatchers.IO) {
@@ -156,16 +158,41 @@ fun DocumentDetailScreen(
             null
         }
     }
-    val cardFaceBitmap = rememberCardFaceBitmap(
+    val standaloneCardFaceBitmap = rememberCardFaceBitmap(
         documentItem, documentData?.cardFace?.imageAttachmentName, maxDimension = 1200
     )
+    var embeddedFace by remember(embeddedAccess) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(embeddedAccess) {
+        val access = embeddedAccess ?: return@LaunchedEffect
+        for (asset in access.snapshot.assets) {
+            when (asset.role) {
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.CARD_FACE -> embeddedFace = access.image(asset.name)
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.FRONT -> frontBitmap = access.image(asset.name)
+                takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.BACK -> backBitmap = access.image(asset.name)
+                else -> Unit
+            }
+        }
+    }
+    val cardFaceBitmap = if (embeddedAccess != null) embeddedFace else standaloneCardFaceBitmap
+    var exportPhoto by remember { mutableStateOf<String?>(null) }
+    val exportEmbeddedPhoto = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val name = exportPhoto
+        if (uri != null && name != null && embeddedAccess != null) scope.launch {
+            try { kotlinx.coroutines.withContext(Dispatchers.IO) {
+                requireNotNull(context.contentResolver.openOutputStream(uri)).use { embeddedAccess.copyTo(name, it) }
+            } } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+            } catch (_: Exception) { Toast.makeText(context, R.string.photo_save_failed, Toast.LENGTH_LONG).show() }
+        }
+    }
     val cardFaceImageAllowed = attachmentBitwardenVault?.let {
         BitwardenVaultPremiumStore.isPremium(context, it.id)
     } ?: true
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(documentItem?.title ?: stringResource(R.string.document_details)) },
+                title = { Text(documentItem?.title ?: stringResource(R.string.document_details), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -174,7 +201,7 @@ fun DocumentDetailScreen(
             )
         },
         floatingActionButton = {
-            ActionStrip(
+            if (embeddedAccess == null) ActionStrip(
                 actions = listOf(
                     ActionStripItem(
                         icon = if (documentItem?.isFavorite == true) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -218,7 +245,8 @@ fun DocumentDetailScreen(
                     previewData = documentCardFacePreviewData(documentItem?.title.orEmpty(), data),
                     config = data.cardFace,
                     bitmap = cardFaceBitmap,
-                    enabled = !isSavingCardFace,
+                    enabled = embeddedAccess == null && !isSavingCardFace,
+                    showHint = embeddedAccess == null,
                     onClick = { showCardFaceCustomizer = true }
                 )
                 Card(
@@ -453,10 +481,13 @@ fun DocumentDetailScreen(
                 }
 
                 documentItem?.let { item ->
-                    AttachmentsDetailSection(
-                        owner = AttachmentOwner.secureItem(item.id),
-                        bitwardenContext = attachmentBitwardenContext,
-                        keepassContext = attachmentKeePassContext,
+                    if (embeddedAccess?.isNative == true) takagi.ru.monica.attachments.ui.NativeEmbeddedWalletAttachments(embeddedAccess)
+                    else AttachmentsDetailSection(
+                        owner = embeddedAccess?.owner ?: AttachmentOwner.secureItem(item.id),
+                        includedFileNames = embeddedAccess?.snapshot?.assets?.filter { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.ATTACHMENT }?.map { it.name }?.toSet(),
+                        displayFileNames = embeddedAccess?.snapshot?.assets?.associate { it.name to it.displayName }.orEmpty(),
+                        bitwardenContext = embeddedAccess?.bitwardenContext ?: attachmentBitwardenContext,
+                        keepassContext = embeddedAccess?.keepassContext ?: attachmentKeePassContext,
                         hideManagedCardFaces = true,
                         excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.DOCUMENT) +
                             listOfNotNull(data.cardFace?.imageAttachmentName)
@@ -524,6 +555,12 @@ fun DocumentDetailScreen(
                 bitmap = bmp, 
                 onDismiss = { showFrontImageDialog = false },
                 onDownload = {
+                    if (embeddedAccess != null) {
+                        embeddedAccess.snapshot.assets.firstOrNull { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.FRONT }?.let { asset ->
+                            exportPhoto = asset.name
+                            exportEmbeddedPhoto.launch(takagi.ru.monica.data.NativeApiTokenAssets.exportName(asset.displayName))
+                        }
+                    } else
                     scope.launch {
                         val item = documentItem ?: return@launch
                         try {
@@ -551,6 +588,12 @@ fun DocumentDetailScreen(
                 bitmap = bmp, 
                 onDismiss = { showBackImageDialog = false },
                  onDownload = {
+                    if (embeddedAccess != null) {
+                        embeddedAccess.snapshot.assets.firstOrNull { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.BACK }?.let { asset ->
+                            exportPhoto = asset.name
+                            exportEmbeddedPhoto.launch(takagi.ru.monica.data.NativeApiTokenAssets.exportName(asset.displayName))
+                        }
+                    } else
                     scope.launch {
                         val item = documentItem ?: return@launch
                         try {

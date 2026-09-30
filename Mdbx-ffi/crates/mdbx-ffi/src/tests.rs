@@ -4006,6 +4006,99 @@ fn generic_metadata_write_operation_rolls_back_and_enforces_bounds() {
 }
 
 #[test]
+fn native_composite_move_keeps_identity_permissions_and_assets_in_one_commit() {
+    let vault = ffi_test_vault();
+    let source = Uuid::new_v4().to_string();
+    let target = Uuid::new_v4().to_string();
+    let entry_id = Uuid::new_v4().to_string();
+    let old_attachment = Uuid::new_v4().to_string();
+    let new_attachment = Uuid::new_v4().to_string();
+    let payload = r#"{"schema":"monica.gateway.credential.v1","provider":"gitlab","token":"synthetic-token","future":{"keep":true}}"#;
+    let content = b"independent native attachment bytes".to_vec();
+    vault.execute_composite_write_operation(
+        Uuid::new_v4().to_string(), "seed-native-token".to_string(),
+        vec![
+            MdbxWriteCommand::CreateProject { project_id: source.clone(), title: "Source".to_string() },
+            MdbxWriteCommand::CreateProject { project_id: target.clone(), title: "Target".to_string() },
+            MdbxWriteCommand::CreateEntry { entry_id: entry_id.clone(), project_id: source.clone(),
+                entry_type: "api-token".to_string(), title: "Token".to_string(), payload_json: payload.to_string() },
+        ],
+        vec![MdbxAttachmentBatchCommand::Create { attachment_id: old_attachment.clone(), project_id: source.clone(),
+            entry_id: Some(entry_id.clone()), file_name: "wallet-file".to_string(), media_type: Some("application/octet-stream".to_string()),
+            content: content.clone() }],
+    ).unwrap();
+    let before_entry = {
+        let conn = vault.conn.lock().unwrap();
+        let mut entry = EntryRepo::get_by_id(&conn, &entry_id).unwrap().unwrap();
+        entry.tiga_mode_override = Some(TigaMode::Multi);
+        EntryRepo::update(&conn, &CommitContext::new(vault.device_id.clone()), &entry).unwrap()
+    };
+    let generic = vec![
+        MdbxWriteCommand::MoveEntry { entry_id: entry_id.clone(), project_id: source.clone(), target_project_id: target.clone() },
+        MdbxWriteCommand::UpdateEntry { entry_id: entry_id.clone(), project_id: target.clone(),
+            entry_type: "api-token".to_string(), title: "Token".to_string(), payload_json: payload.to_string() },
+    ];
+    let attachments = vec![
+        MdbxAttachmentBatchCommand::Create { attachment_id: new_attachment.clone(), project_id: target.clone(),
+            entry_id: Some(entry_id.clone()), file_name: "wallet-file".to_string(), media_type: Some("application/octet-stream".to_string()), content: content.clone() },
+        MdbxAttachmentBatchCommand::Delete { attachment_id: old_attachment.clone() },
+    ];
+    let before = ffi_test_count(&vault, "commits");
+    let operation_id = Uuid::new_v4().to_string();
+    let result = vault.execute_composite_write_operation(operation_id.clone(), "move-token-assets".to_string(),
+        generic.clone(), attachments.clone()).unwrap();
+    assert_eq!(ffi_test_count(&vault, "commits"), before + 1);
+    {
+        let conn = vault.conn.lock().unwrap();
+        let entry = EntryRepo::get_by_id(&conn, &entry_id).unwrap().unwrap();
+        assert_eq!(entry.entry_id, before_entry.entry_id);
+        assert_eq!(entry.project_id, target);
+        assert_eq!(entry.entry_type, before_entry.entry_type);
+        assert_eq!(entry.payload_ct, before_entry.payload_ct);
+        assert_eq!(entry.tiga_mode_override, before_entry.tiga_mode_override);
+        let added = AttachmentRepo::get_by_id(&conn, &new_attachment).unwrap().unwrap();
+        let removed = AttachmentRepo::get_by_id(&conn, &old_attachment).unwrap().unwrap();
+        assert_eq!(entry.head_commit_id, result.operation.commit_id);
+        assert_eq!(added.head_commit_id, result.operation.commit_id);
+        assert_eq!(removed.head_commit_id, result.operation.commit_id);
+        assert!(removed.deleted);
+        let kind: String = conn.inner().query_row("SELECT commit_kind FROM commits WHERE commit_id = ?1",
+            [&result.operation.commit_id], |row| row.get(0)).unwrap();
+        assert_eq!(kind, "multi");
+    }
+    assert_eq!(vault.read_attachment_content(new_attachment.clone(), 4096).unwrap(), content);
+    let retry = vault.execute_composite_write_operation(operation_id, "move-token-assets".to_string(), generic, attachments).unwrap();
+    assert!(retry.operation.already_committed);
+    assert_eq!(ffi_test_count(&vault, "commits"), before + 1);
+
+    // Trigger a real attachment failure after both generic commands and earlier
+    // attachment writes ran. Their enclosing transaction must roll everything back.
+    let failed_attachment = Uuid::new_v4().to_string();
+    let failed = vault.execute_composite_write_operation(Uuid::new_v4().to_string(), "failing-return-move".to_string(),
+        vec![MdbxWriteCommand::MoveEntry { entry_id: entry_id.clone(), project_id: target.clone(), target_project_id: source.clone() }],
+        vec![
+            MdbxAttachmentBatchCommand::Create { attachment_id: failed_attachment.clone(), project_id: source.clone(),
+                entry_id: Some(entry_id.clone()), file_name: "replacement".to_string(), media_type: None, content: b"new bytes".to_vec() },
+            MdbxAttachmentBatchCommand::Delete { attachment_id: new_attachment.clone() },
+            MdbxAttachmentBatchCommand::Create { attachment_id: Uuid::new_v4().to_string(), project_id: source.clone(),
+                entry_id: Some("missing-parent".to_string()), file_name: "failure".to_string(), media_type: None, content: vec![1] },
+        ]);
+    assert!(failed.unwrap_err().to_string().contains("missing-parent"));
+    assert_eq!(ffi_test_count(&vault, "commits"), before + 1);
+    {
+        let conn = vault.conn.lock().unwrap();
+        let entry = EntryRepo::get_by_id(&conn, &entry_id).unwrap().unwrap();
+        assert_eq!(entry.project_id, target);
+        assert_eq!(entry.payload_ct, before_entry.payload_ct);
+        assert_eq!(entry.tiga_mode_override, before_entry.tiga_mode_override);
+        assert_eq!(entry.head_commit_id, result.operation.commit_id);
+        assert!(AttachmentRepo::get_by_id(&conn, &failed_attachment).unwrap().is_none());
+        assert!(!AttachmentRepo::get_by_id(&conn, &new_attachment).unwrap().unwrap().deleted);
+    }
+    assert_eq!(vault.read_attachment_content(new_attachment, 4096).unwrap(), content);
+}
+
+#[test]
 fn composite_write_operation_creates_parent_and_attachment_in_one_commit() {
     let vault = ffi_test_vault();
     let project_id = Uuid::new_v4().to_string();

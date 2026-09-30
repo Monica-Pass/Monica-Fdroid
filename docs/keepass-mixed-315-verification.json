@@ -1,0 +1,31 @@
+{
+  "main": {
+    "classes": [
+      "takagi.ru.monica.keepass.KeePassNativeCompatibilityInstrumentedTest#mixedOtpPasskeysAndRecoveryNotesRemainVisibleAfterReopeningKdbx3And4,takagi.ru.monica.keepass.KeePassNativeCompatibilityInstrumentedTest#editingAndAddingOtpPreservesPasskeyAndRecoveryNotes"
+    ],
+    "suite": "KeePassMixed",
+    "testPackageId": "takagi.ru.monica.test",
+    "completed": true,
+    "edition": "Main",
+    "finishedAt": "2026-09-29T07:36:48.4453705+08:00",
+    "packageId": "takagi.ru.monica",
+    "testSha256": "55AC77A467A7D722EC61362210670D821F676643FF8BF0C4A69A64C354D9D31D",
+    "startedAt": "2026-09-29T07:36:02.7324203+08:00",
+    "appSha256": "D051BFFD8B9814E43763D7A0B4D8B49B258A0C6D3AF6755416F5AE05CED6D42F"
+  },
+  "fdroid": {
+    "testSha256": "85833F5A2C76E0C4351AE1D1A32866CE21D482321B47FB56A8E1CDDAA3EF7D0E",
+    "completed": true,
+    "startedAt": "2026-09-29T07:38:13.3494815+08:00",
+    "appSha256": "499E77F7AF9DCBAEA5274B3E3348607EBA84F8DFD949AFD3CB85323679959A40",
+    "testPackageId": "takagi.ru.monica.fdroid.test",
+    "packageId": "takagi.ru.monica.fdroid",
+    "classes": [
+      "takagi.ru.monica.keepass.KeePassNativeCompatibilityInstrumentedTest#mixedOtpPasskeysAndRecoveryNotesRemainVisibleAfterReopeningKdbx3And4,takagi.ru.monica.keepass.KeePassNativeCompatibilityInstrumentedTest#editingAndAddingOtpPreservesPasskeyAndRecoveryNotes"
+    ],
+    "finishedAt": "2026-09-29T07:38:50.4326085+08:00",
+    "edition": "Fdroid",
+    "suite": "KeePassMixed"
+  },
+  "testSourceSha256": "6d52e9347ac098104370014da22e0094574edc1bb75fdb9b6db60a302cd357b1"
+}

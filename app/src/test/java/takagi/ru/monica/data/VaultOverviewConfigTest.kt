@@ -11,7 +11,10 @@ class VaultOverviewConfigTest {
         val settings = AppSettings()
         assertTrue(settings.vaultOverviewEnabled)
         assertEquals("local", settings.vaultOverviewConfig.scope)
-        assertEquals(8, settings.vaultOverviewConfig.order.size)
+        assertEquals(9, settings.vaultOverviewConfig.order.size)
+        assertEquals(listOf("CARDS", "RECENT", "ITEMS"), settings.vaultOverviewConfig.order.take(3))
+        val oldOrder = VaultOverviewModule.defaultOrder.filterNot { it == "RECENT" }
+        assertEquals(listOf("CARDS", "RECENT", "ITEMS"), VaultOverviewConfig(order = oldOrder).normalized().order.take(3))
         assertEquals(settings.vaultV2LayoutMode, settings.copy(vaultOverviewEnabled = false).vaultV2LayoutMode)
     }
 

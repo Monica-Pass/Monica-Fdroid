@@ -1,0 +1,30 @@
+{
+  "version": "1.0.315",
+  "device": "Monica_Issue136_API_32 / emulator-5554 / API 32",
+  "changes": [
+    "Fixed 96dp result viewport; pre-measured font reduction to minimum 12sp; scroll only below readable minimum",
+    "Preserve result during drag; disable stale apply; regenerate on release",
+    "Plaintext presets followed by at most five distinct vault values ranked by occurrence count",
+    "Read-only on-demand access; exclude unavailable sources, trash, archive, conflicting ownership and unreadable secrets"
+  ],
+  "editions": {
+    "main": {
+      "deviceTests": 8,
+      "unitTests": 4,
+      "apkSha256": "944A7F07AACF5B62C7FFF7B3A0BABF4A48567CA777B44BE689E0769C3E7250C5",
+      "testApkSha256": "8EF2B87A26376F9B741580A5BDFA0D387F02AA01D0FA0BEAC25E9EEE7605D93A"
+    },
+    "fdroid": {
+      "deviceTests": 8,
+      "unitTests": 4,
+      "apkSha256": "54A37E5736E651415007DFD6A71EA03670D1072A5190D35C847400158B5F6F30",
+      "testApkSha256": "8603A3A18BB4C2C04721F7C85257C6DC8B48CCE169C1A3D613739DD854FB5BC1"
+    }
+  },
+  "sourceSha256": {
+    "app/src/main/java/takagi/ru/monica/ui/components/CredentialGeneratorSheet.kt": "1efe6e627dd54785585548b522be9579bb85bb3f49674223b9e3712800c7faab",
+    "app/src/main/java/takagi/ru/monica/ui/password/GeneratorFrequentValues.kt": "9e461cb6bf2bc18333197f336771da93cd375000e21cf9cba5a4c99ff3f15764",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "e2ec137360ef82934553802aedaccf768a1be68e67dff1a2d13f71198541c263",
+    "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt": "7428693bf29f70efdd096a8cfeac695705c66e766746355a0e7320ea1e190d63"
+  }
+}

@@ -34,6 +34,8 @@ data class NativeTokenBackup(
     val payload: String,
     val metadata: String,
     val favorite: Boolean = false,
+    val attachments: List<NativeTokenBackupAttachment> = emptyList(),
+    val attachmentCount: Int = 0,
 )
 
 internal data class ExportAttachment(
@@ -210,13 +212,22 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                 }
                 if (record.engineTypeEnum == MdbxEngineType.RUST_MDBX2 && preferences.includePasswords) {
                     val rust = Mdbx2Repository(context, db.localMdbxDatabaseDao(), security)
-                    val native = rust.listNativeApiTokens(source.databaseId)
-                    rust.withReadVaultForSync(source.databaseId) { _, vault ->
-                        for (entry in stored.filter { it.entryType == ApiTokenPayload.NATIVE_TYPE && !it.deleted }) {
-                            tokens += NativeTokenBackup(entry.title, entry.payloadJson,
-                                NativeApiTokenExtrasStore.read(vault, entry.entryId)?.payload ?: ApiTokenMetadata.empty(),
-                                native.firstOrNull { it.entryId == entry.entryId }?.isFavorite == true)
+                    var totalNativeBytes = 0L
+                    for (summary in rust.listNativeApiTokens(source.databaseId)) {
+                        val token = rust.readNativeApiToken(summary)
+                        check(token.attachments.isEmpty() || preferences.includeImages) { strings.get(R.string.native_token_backup_needs_files) }
+                        val assets = token.attachments.map { attachment ->
+                            require(attachment.size >= 0 && attachment.size <= NativeApiTokenAssets.MAX_BYTES - totalNativeBytes) {
+                                strings.get(R.string.native_token_backup_limit)
+                            }
+                            totalNativeBytes += attachment.size
+                            val bytes = rust.readNativeApiTokenAttachment(token, attachment.id)
+                            try { NativeTokenBackupAttachment(attachment.fileName, attachment.mimeType, attachment.size,
+                                attachment.sha256, java.util.Base64.getEncoder().encodeToString(bytes)) }
+                            finally { bytes.fill(0) }
                         }
+                        tokens += NativeTokenBackup(summary.title, token.payload,
+                            token.extras?.payload ?: ApiTokenMetadata.empty(), token.summary.isFavorite, assets, assets.size)
                     }
                 }
                 if (preferences.includeImages) {
@@ -224,7 +235,8 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                         items.associate { it.replicaGroupId to AttachmentOwner.secureItem(it.id) }
                     // Native attachment reads are performed only for this source database.
                     for (attachment in mdbx.readStoredAttachments(source.databaseId).filterNot { it.deleted }) {
-                        val owner = ownerById[attachment.entryId] ?: continue
+                        val owner = ownerById[attachment.entryId]
+                        if (owner == null) { attachment.blob.fill(0); continue }
                         attachments += ExportAttachment(owner, attachment.fileName, attachment.mimeType,
                             attachment.originalSize, attachment.createdAtMillis) { output ->
                             val storage = takagi.ru.monica.attachments.storage.AttachmentStorage(context)

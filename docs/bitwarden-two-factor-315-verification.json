@@ -1,0 +1,46 @@
+{
+  "issue": "https://github.com/Monica-Pass/Monica-Fdroid/issues/4",
+  "version": "1.0.315",
+  "status": "verified-local-unreleased",
+  "runs": [
+    {
+      "edition": "Main",
+      "classes": [
+        "takagi.ru.monica.bitwarden.ui.BitwardenTwoFactorCompatibilityTest,takagi.ru.monica.bitwarden.ui.BitwardenTwoFactorDialogTest,takagi.ru.monica.bitwarden.ui.BitwardenAuthenticatorSourceTest"
+      ],
+      "appSha256": "2C4C41774EA1C4F9F414614AA440E845C4E13C9FD775DC43D6A7A15A121BACC0",
+      "completed": true,
+      "testPackageId": "takagi.ru.monica.test",
+      "startedAt": "2026-09-29T15:17:57.6705706+08:00",
+      "suite": "BitwardenMfa315",
+      "testSha256": "2044831E1F4ACD1CF3BAB7D8F57B7AA1D097DD6A61B25C8559C6407D7DB529DA",
+      "finishedAt": "2026-09-29T15:19:17.5064804+08:00",
+      "packageId": "takagi.ru.monica",
+      "tests": 9,
+      "log": ".codex-tasks\\experimental-final-315\\main-bitwardenmfa315-device.log",
+      "buildLog": ".codex-tasks\\issue4-315\\main-build.log"
+    },
+    {
+      "testSha256": "98EFBC192CF982C504437ECE07741B04820BB5F02C9835BB4A085F6C7E21DE24",
+      "classes": [
+        "takagi.ru.monica.bitwarden.ui.BitwardenTwoFactorCompatibilityTest,takagi.ru.monica.bitwarden.ui.BitwardenTwoFactorDialogTest,takagi.ru.monica.bitwarden.ui.BitwardenAuthenticatorSourceTest"
+      ],
+      "startedAt": "2026-09-29T15:20:31.2147092+08:00",
+      "completed": true,
+      "appSha256": "5F9013C1C2B03BF87C3A5004851CD15D75DA7BCCAE984B77A171223AC5114590",
+      "finishedAt": "2026-09-29T15:21:25.1668908+08:00",
+      "packageId": "takagi.ru.monica.fdroid",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "suite": "BitwardenMfa315",
+      "edition": "Fdroid",
+      "tests": 9,
+      "log": ".codex-tasks\\experimental-final-315\\fdroid-bitwardenmfa315-device.log",
+      "buildLog": ".codex-tasks\\issue4-315\\fdroid-build.log"
+    }
+  ],
+  "limitations": [
+    "No real user account or live Vaultwarden service was used; the real authentication service called in-process test APIs.",
+    "SSO, passwordless Passkey login, WebAuthn/U2F and Duo interactive MFA remain unsupported.",
+    "The reported account has no confirmed application/server version or authentication policy."
+  ]
+}

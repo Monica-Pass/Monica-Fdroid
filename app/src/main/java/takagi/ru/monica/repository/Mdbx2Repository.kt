@@ -1,9 +1,15 @@
 package takagi.ru.monica.repository
+import kotlinx.serialization.json.*
 
+import takagi.ru.monica.data.explicitPasswordGroupId
 import takagi.ru.monica.data.ApiTokenPayload
 import takagi.ru.monica.data.ApiTokenMetadata
 import takagi.ru.monica.data.NativeApiToken
 import takagi.ru.monica.data.NativeApiTokenSummary
+import takagi.ru.monica.data.NativeApiTokenAttachment
+import takagi.ru.monica.data.NativeApiTokenUpload
+import takagi.ru.monica.data.NativeApiTokenAssets
+import takagi.ru.monica.data.model.EmbeddedWalletContent
 import android.content.Context
 import takagi.ru.monica.R
 import takagi.ru.monica.utils.AppLocaleStringResolver
@@ -27,6 +33,9 @@ import takagi.ru.monica.data.LocalMdbxDatabase
 import takagi.ru.monica.data.LocalMdbxDatabaseDao
 import takagi.ru.monica.data.MdbxTigaMode
 import takagi.ru.monica.data.MdbxSyncStatus
+import takagi.ru.monica.data.MdbxSyncStateSnapshot
+import takagi.ru.monica.data.MdbxSyncStateStore
+import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.capabilities
 import takagi.ru.monica.data.isRemoteSource
 import takagi.ru.monica.data.PasskeyEntry
@@ -67,6 +76,9 @@ class Mdbx2Repository(
     private val customFieldDao: CustomFieldDao? = null
 ) : MdbxRepository {
     private val appContext = context.applicationContext
+    private val syncStateStore by lazy {
+        MdbxSyncStateStore(PasswordDatabase.getDatabase(appContext).mdbxSyncStateDao())
+    }
     private val strings = AppLocaleStringResolver(appContext)
     private val externalStorage = Mdbx2ExternalStorage(appContext)
     private val sessions = Mdbx2VaultSessionExecutor(
@@ -173,7 +185,8 @@ class Mdbx2Repository(
             check(!entry.deleted && entry.objectTypeId == ApiTokenPayload.NATIVE_TYPE && entry.collectionId == summary.collectionId)
             NativeApiToken(summary.copy(title = entry.title,
                 isFavorite = NativeApiTokenFavorites.assignments(vault, entry.objectId, entry.collectionId).isNotEmpty()),
-                entry.payloadJson, NativeApiTokenExtrasStore.read(vault, entry.objectId))
+                entry.payloadJson, NativeApiTokenExtrasStore.read(vault, entry.objectId),
+                nativeTokenAttachments(vault, entry.collectionId, entry.objectId))
         }
 
     /** Detail/editor navigation reads one object, not every token in the database. */
@@ -194,7 +207,8 @@ class Mdbx2Repository(
             NativeApiToken(NativeApiTokenSummary(databaseId, entry.objectId, entry.collectionId,
                 path, entry.title, ancestors.toList(),
                 isFavorite = NativeApiTokenFavorites.assignments(vault, entry.objectId, entry.collectionId).isNotEmpty()),
-                entry.payloadJson, NativeApiTokenExtrasStore.read(vault, entry.objectId))
+                entry.payloadJson, NativeApiTokenExtrasStore.read(vault, entry.objectId),
+                nativeTokenAttachments(vault, entry.collectionId, entry.objectId))
         }
 
     suspend fun saveNativeApiToken(
@@ -206,6 +220,8 @@ class Mdbx2Repository(
         isFavorite: Boolean = original?.summary?.isFavorite ?: false,
         metadata: String = original?.extras?.payload ?: ApiTokenMetadata.empty(),
         createdEntryId: String? = null,
+        uploads: List<NativeApiTokenUpload> = emptyList(),
+        removedAttachmentIds: Set<String> = emptySet(),
     ): NativeApiTokenSummary {
         require(ApiTokenPayload.isValidStorageName(title))
         require(ApiTokenPayload.isValidForStorage(payload)) { "Invalid native token payload" }
@@ -249,10 +265,17 @@ class Mdbx2Repository(
                 }
                 MdbxWriteCommand.UpdateEntry(entryId, targetId, ApiTokenPayload.NATIVE_TYPE, title, storedPayload)
             }
+            val previousAttachments = original?.attachments.orEmpty()
+            if (original != null) check(nativeTokenAttachments(vault, original.summary.collectionId, entryId) == previousAttachments) {
+                "Native attachments changed; reload before saving"
+            }
+            require(removedAttachmentIds.all { id -> previousAttachments.any { it.id == id } })
+            val moving = original != null && original.summary.collectionId != targetId
+            val retainedAttachments = previousAttachments.filterNot { it.id in removedAttachmentIds }
+            require(retainedAttachments.size + uploads.size <= NativeApiTokenAssets.MAX_COUNT)
             val commands = buildList {
                 // CLI-created vaults need not contain Android's conventional root collection.
                 if (collection == null) add(MdbxWriteCommand.CreateProject(rootId, Mdbx2VaultSessionExecutor.ROOT_PROJECT_TITLE))
-                val moving = original != null && original.summary.collectionId != targetId
                 // Labels belong to one collection; remove old assignments before moving.
                 if (!isFavorite || moving) favoriteAssignments.forEach {
                     add(MdbxWriteCommand.RemoveObjectLabelAssignment(it.assignmentId))
@@ -267,10 +290,58 @@ class Mdbx2Repository(
                 }
                 addAll(NativeApiTokenExtrasStore.writeCommands(entryId, targetId, original?.extras, metadata, moving))
             }
-            vault.executeWriteOperation(UUID.randomUUID().toString(), "monica-save-api-token", commands)
+            val content = mutableListOf<ByteArray>()
+            try {
+                val attachmentCommands = mutableListOf<uniffi.mdbx_ffi.MdbxAttachmentBatchCommand>()
+                val expected = retainedAttachments.toMutableList()
+                var total = 0L
+                // Move attachment ownership with the entry in the same commit. Never rewrite the
+                // original bytes in place: snapshots and a failed operation retain their originals.
+                if (moving) retainedAttachments.forEach { attachment ->
+                    val bytes = vault.readAttachmentContent(attachment.id, NativeApiTokenAssets.MAX_BYTES.toULong())
+                    content += bytes
+                    NativeApiTokenAssets.validate(bytes, attachment.size, attachment.sha256)
+                    total += bytes.size
+                    require(total <= NativeApiTokenAssets.MAX_BYTES)
+                    attachmentCommands += uniffi.mdbx_ffi.MdbxAttachmentBatchCommand.Create(
+                        UUID.randomUUID().toString(), targetId, entryId, attachment.fileName, attachment.mimeType, bytes)
+                }
+                uploads.forEach { upload ->
+                    require(upload.fileName.isNotBlank() && upload.fileName.length <= 512)
+                    val bytes = upload.open().use { NativeApiTokenAssets.readBounded(it, NativeApiTokenAssets.MAX_BYTES - total) }
+                    content += bytes
+                    NativeApiTokenAssets.validate(bytes, upload.expectedSize, upload.expectedSha256)
+                    total += bytes.size
+                    val id = UUID.randomUUID().toString()
+                    expected += NativeApiTokenAttachment(id, upload.fileName, upload.mimeType, bytes.size.toLong(), NativeApiTokenAssets.digest(bytes))
+                    attachmentCommands += uniffi.mdbx_ffi.MdbxAttachmentBatchCommand.Create(
+                        id, targetId, entryId, upload.fileName, upload.mimeType, bytes)
+                }
+                // A snapshot is published only when every referenced immutable asset exists.
+                ApiTokenMetadata.customFields(metadata).filter { EmbeddedWalletContent.isMetadata(it.title) }.forEach { field ->
+                    val snapshot = (EmbeddedWalletContent.read(field.value) as? EmbeddedWalletContent.ReadResult.Available)?.snapshot
+                        ?: return@forEach // Preserve unsupported future metadata verbatim.
+                    snapshot.assets.forEach { asset ->
+                        val match = expected.singleOrNull { it.fileName == asset.name }
+                            ?: error("Copied wallet attachment is missing or ambiguous")
+                        require(match.size == asset.size && match.sha256 == asset.sha256)
+                        if (!moving && match in retainedAttachments) {
+                            val bytes = vault.readAttachmentContent(match.id, NativeApiTokenAssets.MAX_BYTES.toULong())
+                            try { NativeApiTokenAssets.validate(bytes, asset.size, asset.sha256) } finally { bytes.fill(0) }
+                        }
+                    }
+                }
+                previousAttachments.filter { moving || it.id in removedAttachmentIds }.forEach {
+                    attachmentCommands += uniffi.mdbx_ffi.MdbxAttachmentBatchCommand.Delete(it.id)
+                }
+                if (attachmentCommands.isEmpty()) vault.executeWriteOperation(UUID.randomUUID().toString(), "monica-save-api-token", commands)
+                else vault.executeCompositeWriteOperationWithLimits(UUID.randomUUID().toString(), "monica-save-api-token-assets", commands,
+                    attachmentCommands, uniffi.mdbx_ffi.MdbxCompositeWriteOperationLimits(defaultWriteOperationLimits(),
+                        uniffi.mdbx_ffi.MdbxAttachmentBatchLimits(256uL, NativeApiTokenAssets.MAX_BYTES.toULong(),
+                            NativeApiTokenAssets.MAX_BYTES.toULong(), ATTACHMENT_CHUNK_BYTES.toULong())))
+            } finally { content.forEach { it.fill(0) } }
             NativeApiTokenSummary(databaseId, entryId, targetId, collection?.title ?: "Monica", title, isFavorite = isFavorite)
         }
-        markPendingUpload(databaseId)
         return saved
     }
 
@@ -284,10 +355,14 @@ class Mdbx2Repository(
                 current.collectionId == summary.collectionId && current.payloadJson == original.payload &&
                 current.title == summary.title && NativeApiTokenExtrasStore.read(vault, summary.entryId)?.payload == original.extras?.payload &&
                 NativeApiTokenFavorites.assignments(vault, summary.entryId, summary.collectionId).isNotEmpty() == summary.isFavorite)
-            vault.executeWriteOperation(UUID.randomUUID().toString(), "monica-delete-api-token",
-                listOf(MdbxWriteCommand.DeleteEntry(summary.entryId, summary.collectionId)))
+            check(nativeTokenAttachments(vault, summary.collectionId, summary.entryId) == original.attachments) {
+                "Native attachments changed; reload before deleting"
+            }
+            val commands = listOf(MdbxWriteCommand.DeleteEntry(summary.entryId, summary.collectionId))
+            if (original.attachments.isEmpty()) vault.executeWriteOperation(UUID.randomUUID().toString(), "monica-delete-api-token", commands)
+            else vault.executeCompositeWriteOperation(UUID.randomUUID().toString(), "monica-delete-api-token-assets", commands,
+                original.attachments.map { uniffi.mdbx_ffi.MdbxAttachmentBatchCommand.Delete(it.id) })
         }
-        markPendingUpload(summary.databaseId)
     }
 
     /** Copy commits first. A concurrent source edit prevents deletion rather than losing the newer data. */
@@ -299,12 +374,42 @@ class Mdbx2Repository(
             return saveNativeApiToken(targetDatabaseId, original, original.summary.title, original.payload,
                 targetFolderId.orEmpty())
         }
-        val saved = saveNativeApiToken(targetDatabaseId, null, original.summary.title, original.payload,
-            targetFolderId, original.summary.isFavorite, original.extras?.payload ?: ApiTokenMetadata.empty(),
-            createdEntryId = if (copy) null else original.summary.entryId)
+        // Read under the source's entry disclosure scope before opening the destination lock.
+        val bytes = mutableListOf<ByteArray>()
+        val saved = try {
+            var total = 0L
+            val uploads = original.attachments.map { attachment ->
+                require(total + attachment.size <= NativeApiTokenAssets.MAX_BYTES)
+                val content = readNativeApiTokenAttachment(original, attachment.id).also { bytes += it; total += it.size }
+                NativeApiTokenUpload(attachment.fileName, attachment.mimeType, attachment.size, attachment.sha256) { content.inputStream() }
+            }
+            saveNativeApiToken(targetDatabaseId, null, original.summary.title, original.payload,
+                targetFolderId, original.summary.isFavorite, original.extras?.payload ?: ApiTokenMetadata.empty(),
+                createdEntryId = if (copy) null else original.summary.entryId, uploads = uploads)
+        } finally { bytes.forEach { it.fill(0) } }
         if (!copy) deleteNativeApiToken(original)
         return saved
     }
+
+    private fun nativeTokenAttachments(vault: MdbxVault, collectionId: String, entryId: String): List<NativeApiTokenAttachment> =
+        vault.listAttachments(collectionId, entryId).filter { !it.deleted && it.entryId == entryId }.map {
+            NativeApiTokenAttachment(it.attachmentId, it.fileName, it.mediaType ?: DEFAULT_MIME_TYPE,
+                it.originalSize.toLong(), it.contentHash)
+        }.sortedBy { it.id }
+
+    suspend fun readNativeApiTokenAttachment(token: NativeApiToken, attachmentId: String): ByteArray =
+        sessions.withNativeReadVault(token.summary.databaseId,
+            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, token.summary.entryId)) { _, vault ->
+            val entry = vault.revealObjectWithLimits(token.summary.entryId,
+                uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(ApiTokenPayload.MAX_BYTES.toULong())).`object`
+                ?: error("Native token disclosure was not authorized")
+            check(!entry.deleted && entry.objectTypeId == ApiTokenPayload.NATIVE_TYPE && entry.collectionId == token.summary.collectionId)
+            val expected = token.attachments.single { it.id == attachmentId }
+            check(nativeTokenAttachments(vault, entry.collectionId, entry.objectId).any { it == expected })
+            val bytes = vault.readAttachmentContent(attachmentId, NativeApiTokenAssets.MAX_BYTES.toULong())
+            try { NativeApiTokenAssets.validate(bytes, expected.size, expected.sha256); bytes }
+            catch (error: Throwable) { bytes.fill(0); throw error }
+        }
 
     internal suspend fun readUnknownEntry(databaseId: Long, entryId: String): MdbxStoredVaultEntry =
         sessions.withNativeReadVault(databaseId,
@@ -689,6 +794,33 @@ class Mdbx2Repository(
         upsertMutations(entries.mapNotNull { passwordMutation(it) })
     }
 
+    /** Repair only values this installation can authenticate, preserving the complete native payload. */
+    internal suspend fun repairReadablePasswordCiphertexts(databaseId: Long): Int {
+        val candidates = readStoredEntries(databaseId).filter { !it.deleted && it.entryType == "login" }
+        var repaired = 0
+        for (stored in candidates) {
+            val payload = runCatching { Json.parseToJsonElement(stored.payloadJson).jsonObject }.getOrNull() ?: continue
+            val original = (payload["password_plain"] as? JsonPrimitive)?.contentOrNull ?: continue
+            if (!securityManager.looksLikeMonicaCiphertext(original)) continue
+            val plain = runCatching { decryptSensitiveValue(original, "password", 0) }.getOrNull() ?: continue
+            if (plain == original) continue
+            sessions.withMutatingVault(databaseId) { _, vault ->
+                val physicalId = mdbx2PhysicalEntryId(vault.info().vaultId, stored.entryId)
+                val current = vault.revealObjectWithLimits(physicalId,
+                    uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(4uL * 1024uL * 1024uL)).`object`
+                    ?: return@withMutatingVault
+                // Do not overwrite edits made after the read, or change fields owned by another client.
+                if (current.deleted || current.payloadJson != stored.payloadJson) return@withMutatingVault
+                val repairedPayload = JsonObject(payload + ("password_plain" to JsonPrimitive(plain)))
+                executeEntryCommandGroups(databaseId, vault, "monica-repair-portable-password",
+                    listOf(listOf(MdbxWriteCommand.UpdateEntry(physicalId, current.collectionId,
+                        current.objectTypeId, current.title, repairedPayload.toString()))))
+                repaired++
+            }
+        }
+        return repaired
+    }
+
     override suspend fun upsertImportBatch(
         databaseId: Long,
         passwords: List<PasswordEntry>,
@@ -818,8 +950,9 @@ class Mdbx2Repository(
         if (entryId.isNotBlank()) deleteEntries(databaseId, listOf(entryId))
     }
 
-    override suspend fun getVaultDiagnostics(databaseId: Long): MdbxVaultDiagnostics =
-        sessions.withNativeReadVault(databaseId) { database, vault ->
+    override suspend fun getVaultDiagnostics(databaseId: Long): MdbxVaultDiagnostics {
+        val syncState = syncStateStore.read(databaseId)
+        return sessions.withNativeReadVault(databaseId) { database, vault ->
             val file = File(database.resolvedActiveFilePath())
             val native = vault.diagnosticsSummary()
             val health = vault.healthCheck()
@@ -851,7 +984,7 @@ class Mdbx2Repository(
                 integrityMessage = issueSummary,
                 healthIssues = healthIssues,
                 unresolvedConflictCount = native.unresolvedConflictCount.toDiagnosticInt(),
-                pendingSyncCount = pendingSyncCount(database, status, vault),
+                pendingSyncCount = pendingSyncCount(database, status, vault, syncState),
                 commitCount = native.commitCount.toDiagnosticInt(),
                 tombstoneCount = native.tombstoneCount.toDiagnosticInt(),
                 branchCount = native.branchCount.toDiagnosticInt(),
@@ -881,6 +1014,7 @@ class Mdbx2Repository(
                 lastSyncError = database.lastSyncError
             )
         }
+    }
 
     override suspend fun planHealthRepair(databaseId: Long): MdbxHealthRepairPlan =
         sessions.withVault(databaseId) { _, vault ->
@@ -918,9 +1052,10 @@ class Mdbx2Repository(
             return 0
         }
 
+        val syncState = syncStateStore.read(databaseId)
         return sessions.withNativeReadVault(databaseId) { current, vault ->
             val currentStatus = runCatching { MdbxSyncStatus.valueOf(current.lastSyncStatus) }.getOrNull()
-            pendingSyncCount(current, currentStatus, vault)
+            pendingSyncCount(current, currentStatus, vault, syncState)
         }
     }
 
@@ -1128,8 +1263,6 @@ class Mdbx2Repository(
                 operationId = UUID.randomUUID().toString(),
                 device = snapshotDeviceContext()
             ).revertedObjectCount.toInt()
-        }.also {
-            markPendingUpload(databaseId)
         }
 
     override suspend fun listSnapshots(databaseId: Long): List<MdbxSnapshotSummary> =
@@ -1156,8 +1289,6 @@ class Mdbx2Repository(
         return sessions.withMutatingVault(databaseId) { _, vault ->
             // MDBX2 snapshots always capture the complete authenticated vault state.
             vault.createManualSnapshot(name, snapshotDeviceContext()).toRepositorySummary()
-        }.also {
-            markPendingUpload(databaseId)
         }
     }
 
@@ -1165,14 +1296,11 @@ class Mdbx2Repository(
         sessions.withMutatingVault(databaseId) { _, vault ->
             vault.deleteSnapshot(snapshotId, snapshotDeviceContext())
         }
-        markPendingUpload(databaseId)
     }
 
     override suspend fun revertToSnapshot(databaseId: Long, snapshotId: String): Int =
         sessions.withMutatingVault(databaseId) { _, vault ->
             vault.restoreSnapshot(snapshotId, snapshotDeviceContext()).affectedObjectCount.toInt()
-        }.also {
-            markPendingUpload(databaseId)
         }
 
     override suspend fun pruneAutomaticSnapshots(
@@ -1191,8 +1319,6 @@ class Mdbx2Repository(
                 device = snapshotDeviceContext()
             ).deletedSnapshotIds.size
         }
-    }.also { deletedCount ->
-        if (deletedCount > 0) markPendingUpload(databaseId)
     }
 
     override suspend fun getSnapshotStructurePreview(
@@ -1386,7 +1512,6 @@ class Mdbx2Repository(
         sessions.withMutatingVault(databaseId) { _, vault ->
             vault.resolveConflict(conflictId, choice)
         }
-        markPendingUpload(databaseId)
     }
 
     override suspend fun upsertAttachment(
@@ -1446,7 +1571,6 @@ class Mdbx2Repository(
                 )
             }
         }
-        markPendingUpload(databaseId)
         Unit
     }
 
@@ -1471,7 +1595,6 @@ class Mdbx2Repository(
                 vault.deleteAttachment(attachmentId)
             }
         }
-        markPendingUpload(databaseId)
     }
 
     private suspend fun upsertMutations(mutations: List<EntryMutation>, onCommitted: ((Set<String>) -> Unit)? = null) {
@@ -1650,13 +1773,22 @@ class Mdbx2Repository(
     private fun pendingSyncCount(
         database: LocalMdbxDatabase,
         status: MdbxSyncStatus?,
-        vault: MdbxVault
+        vault: MdbxVault,
+        syncState: MdbxSyncStateSnapshot
     ): Int {
         if (status == MdbxSyncStatus.LOCAL_ONLY || status == MdbxSyncStatus.IN_SYNC) return 0
         if (status == MdbxSyncStatus.CONFLICT) {
             return vault.diagnosticsSummary().unresolvedConflictCount
                 .toDiagnosticInt()
                 .coerceAtLeast(1)
+        }
+
+        // Status describes the last attempt, not the presence of local edits.
+        // Compare opaque Rust inventories before estimating a count from dates:
+        // clock skew, imported history and failed connections cannot invent edits.
+        if (database.isRemoteSource() && syncState.vaultId == vault.info().vaultId) {
+            val synced = syncState.syncedCommitInventory ?: syncState.exportCheckpoint?.commitInventory
+            if (synced != null && synced == vault.incrementalSyncCheckpoint().commitInventory) return 0
         }
 
         val currentDeviceId = vault.info().deviceId
@@ -1702,6 +1834,7 @@ class Mdbx2Repository(
             .put("kind", "password")
             .put("monica_entry_id", entryId)
             .put("room_id", entry.id)
+            .put("password_group_id", entry.explicitPasswordGroupId())
             .put("website", entry.website)
             .put("username", entry.username)
             .put("app_package_name", entry.appPackageName)
@@ -1814,8 +1947,22 @@ class Mdbx2Repository(
         }
 
     private fun decryptSensitiveValue(value: String, fieldName: String, roomId: Long): String {
-        if (value.isBlank() || !securityManager.looksLikeMonicaCiphertext(value)) return value
-        return runCatching { securityManager.decryptData(value) }.getOrElse { error ->
+        if (value.isBlank()) return value
+        return runCatching {
+            var current = value
+            repeat(8) {
+                val decoded = securityManager.decryptData(current)
+                if (decoded == current) {
+                    check(!securityManager.looksLikeMonicaCiphertext(current)) { "Unresolved local ciphertext" }
+                    return current
+                }
+                current = decoded
+            }
+            check(!securityManager.looksLikeMonicaCiphertext(current) && securityManager.decryptData(current) == current) {
+                "Local ciphertext nesting exceeds portable export limit"
+            }
+            current
+        }.getOrElse { error ->
             throw IllegalStateException(
                 "Cannot write encrypted $fieldName for Room item $roomId into MDBX2",
                 error

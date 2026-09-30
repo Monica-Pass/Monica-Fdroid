@@ -3,6 +3,8 @@ package takagi.ru.monica.repository
 import takagi.ru.monica.utils.AppLocaleStringResolver
 
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
@@ -35,6 +37,7 @@ import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.utils.WebDavMdbxRemoteTransport
+import takagi.ru.monica.webdav.WebDavGateway
 
 @RunWith(AndroidJUnit4::class)
 class Mdbx2RealWebDavInstrumentedTest {
@@ -48,7 +51,8 @@ class Mdbx2RealWebDavInstrumentedTest {
         val password = arguments.getString(ARG_PASSWORD).orEmpty()
         val runId = UUID.randomUUID().toString()
 
-        withTimeout(REAL_PROVIDER_TIMEOUT_MS) {
+        val restoreHttpFixture = configureLoopbackHttpFixture(instrumentation.targetContext, serverUrl, runId)
+        try { withTimeout(REAL_PROVIDER_TIMEOUT_MS) {
             exerciseRealProvider(
                 context = instrumentation.targetContext,
                 providerName = "WebDAV",
@@ -68,6 +72,33 @@ class Mdbx2RealWebDavInstrumentedTest {
                     )
                 }
             )
+        } } finally { restoreHttpFixture() }
+    }
+
+    /** F-Droid's HTTP opt-in uses isolated test preferences, never the user's setting. */
+    private fun configureLoopbackHttpFixture(context: Context, url: String, runId: String): () -> Unit {
+        val uri = java.net.URI(url)
+        if (uri.scheme != "http" || uri.host != "127.0.0.1") return {}
+        // The ordinary edition has no context-backed HTTP gate. Keep this test
+        // source shared without adding a production bypass to either edition.
+        val attach = WebDavGateway::class.java.methods.firstOrNull {
+            it.name == "attach" && it.parameterTypes.contentEquals(arrayOf(Context::class.java))
+        } ?: return {}
+        val preferenceNames = mutableSetOf<String>()
+        val isolated = object : ContextWrapper(context) {
+            override fun getApplicationContext(): Context = this
+            override fun getSharedPreferences(name: String, mode: Int): SharedPreferences {
+                val testName = "$name-mdbx-loopback-$runId"
+                preferenceNames += testName
+                return super.getSharedPreferences(testName, mode).also {
+                    it.edit().putBoolean("allow_insecure_http", true).commit()
+                }
+            }
+        }
+        attach.invoke(WebDavGateway, isolated)
+        return {
+            attach.invoke(WebDavGateway, context)
+            preferenceNames.forEach(context::deleteSharedPreferences)
         }
     }
 
@@ -278,6 +309,25 @@ class Mdbx2RealWebDavInstrumentedTest {
                     ).decodeToString()
                 }
             )
+
+            // Native tokens use real entry-owned assets, independently of Room password attachments.
+            val tokenBytes = "synthetic native $providerName file".toByteArray()
+            val nativeToken = repositoryA.saveNativeApiToken(databaseA, null, "Native remote token",
+                """{"schema":"monica.gateway.credential.v1","provider":"gitlab","api_base":"https://example.test/api/v4/","token":"synthetic-remote-native-token"}""",
+                uploads = listOf(takagi.ru.monica.data.NativeApiTokenUpload("native-file.txt", "text/plain",
+                    tokenBytes.size.toLong()) { tokenBytes.inputStream() }))
+            coordinatorA.synchronize(databaseA, remotePath, transport)
+            coordinatorB.synchronize(databaseB, remotePath, transport)
+            val receivedToken = repositoryB.readNativeApiToken(databaseB, nativeToken.entryId)
+            org.junit.Assert.assertArrayEquals(tokenBytes, repositoryB.readNativeApiTokenAttachment(
+                receivedToken, receivedToken.attachments.single().id))
+            repositoryA.transferNativeApiToken(nativeToken, databaseA, sharedFolder.folderId, false)
+            coordinatorA.synchronize(databaseA, remotePath, transport)
+            coordinatorB.synchronize(databaseB, remotePath, transport)
+            val movedToken = repositoryB.readNativeApiToken(databaseB, nativeToken.entryId)
+            assertEquals(sharedFolder.folderId, movedToken.summary.collectionId)
+            org.junit.Assert.assertArrayEquals(tokenBytes, repositoryB.readNativeApiTokenAttachment(
+                movedToken, movedToken.attachments.single().id))
 
             repositoryA.renameFolder(databaseA, sharedFolder.folderId, "Client A name")
             repositoryB.renameFolder(databaseB, sharedFolder.folderId, "Client B name")

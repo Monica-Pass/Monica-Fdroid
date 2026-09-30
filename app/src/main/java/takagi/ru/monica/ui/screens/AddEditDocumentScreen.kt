@@ -3,6 +3,7 @@ package takagi.ru.monica.ui.screens
 import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.ui.components.MonicaExpandableContent
 import android.widget.Toast
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +55,9 @@ import takagi.ru.monica.data.CustomFieldDraft
 import takagi.ru.monica.data.model.CardWalletDataCodec
 import takagi.ru.monica.data.model.DocumentData
 import takagi.ru.monica.data.model.DocumentType
+import takagi.ru.monica.data.model.EmbeddedDocumentEditorData
+import takagi.ru.monica.data.model.EmbeddedWalletContent
+import takagi.ru.monica.attachments.EmbeddedWalletEditorResult
 import takagi.ru.monica.data.model.StorageTarget
 import takagi.ru.monica.data.model.normalizedStorageTargets
 import takagi.ru.monica.data.model.displayFullName
@@ -76,6 +81,7 @@ import takagi.ru.monica.viewmodel.LocalKeePassViewModel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.ui.components.OutlinedTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,7 +106,13 @@ fun AddEditDocumentScreen(
     onCanSaveChanged: ((Boolean) -> Unit)? = null,
     onSaveActionChanged: (((() -> Unit)) -> Unit)? = null,
     onToggleFavoriteActionChanged: (((() -> Unit)) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    embeddedDraft: EmbeddedWalletContent.Snapshot? = null,
+    embeddedBitmap: Bitmap? = null,
+    embeddedImageLoader: (suspend (String) -> Bitmap?)? = null,
+    embeddedAttachmentsContent: (@Composable () -> Unit)? = null,
+    onEmbeddedCopy: (() -> Unit)? = null,
+    onEmbeddedSave: (suspend (EmbeddedWalletEditorResult) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -117,7 +129,8 @@ fun AddEditDocumentScreen(
     val settingsManager = remember { SettingsManager(context) }
     val appSettings by settingsManager.settingsFlow.collectAsState(initial = AppSettings())
     val commonAccountPreferences = remember(context, securityManager) { CommonAccountPreferences(context, securityManager) }
-    
+    val embeddedEditor = remember(embeddedDraft?.id) { embeddedDraft?.let(::EmbeddedDocumentEditorData) }
+
     var title by rememberSaveable { mutableStateOf("") }
     var documentNumber by rememberSaveable { mutableStateOf("") }
     var fullName by rememberSaveable { mutableStateOf("") }
@@ -146,22 +159,21 @@ fun AddEditDocumentScreen(
     var additionalInfo by rememberSaveable { mutableStateOf("") }
     var documentType by rememberSaveable { mutableStateOf(DocumentType.ID_CARD) }
     var notes by rememberSaveable { mutableStateOf("") }
+    val editorSections = rememberItemEditorSections()
     var isFavorite by rememberSaveable { mutableStateOf(false) }
     var showDocumentTypeMenu by remember { mutableStateOf(false) }
     var customFields by rememberSaveable(stateSaver = takagi.ru.monica.ui.components.EntryFieldDraftSaver) { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
     val pendingAttachmentDrafts = remember { mutableStateListOf<AttachmentPendingDraft>() }
     var existingDocumentItem by remember(documentId) { mutableStateOf<SecureItem?>(null) }
-    var identityDetailsExpanded by rememberSaveable { mutableStateOf(false) }
-    var addressDetailsExpanded by rememberSaveable { mutableStateOf(false) }
     var showCommonNamePicker by rememberSaveable { mutableStateOf(false) }
     var shouldLoadCommonNameAnalysis by rememberSaveable { mutableStateOf(false) }
-    
+
     // 防止重复点击保存按钮
     var isSaving by remember { mutableStateOf(false) }
     var workingDocumentId by remember(documentId) { mutableStateOf(documentId) }
     val cardFaceEditor = rememberCardFaceEditorState(documentId)
     var showDocumentNumber by remember { mutableStateOf(false) }
-    
+
     // 图片路径管理
     var frontImageFileName by rememberSaveable { mutableStateOf<String?>(null) }
     var backImageFileName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -177,7 +189,7 @@ fun AddEditDocumentScreen(
     var existingReplicaTargetKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
     var currentReplicaGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     var showStorageTargetSheet by remember { mutableStateOf(false) }
-    var hasLoadedExistingDocumentFields by rememberSaveable(documentId) { mutableStateOf(false) }
+    var hasLoadedExistingDocumentFields by rememberSaveable(documentId, embeddedDraft?.id) { mutableStateOf(false) }
     val commonNameSuggestions = rememberCommonNameSuggestionState(
         database = database,
         includeAnalyzedItems = shouldLoadCommonNameAnalysis || showCommonNamePicker
@@ -297,7 +309,7 @@ fun AddEditDocumentScreen(
         initialBitwardenVaultId,
         initialBitwardenFolderId
     ) {
-        if (documentId != null || hasAppliedInitialStorage) return@LaunchedEffect
+        if (embeddedDraft != null || documentId != null || hasAppliedInitialStorage) return@LaunchedEffect
         val explicitGroupPath = initialKeePassGroupPath?.takeIf { it.isNotBlank() }
         val explicitMdbxFolderId = initialMdbxFolderId?.takeIf { it.isNotBlank() }
         val explicitFolderId = initialBitwardenFolderId?.takeIf { it.isNotBlank() }
@@ -338,21 +350,24 @@ fun AddEditDocumentScreen(
         )
         hasAppliedInitialStorage = true
     }
-    
+
     // 如果是编辑模式，加载现有数据
     // 如果是添加模式，重置表单字段（防止保留上次添加的数据）
-    LaunchedEffect(documentId) {
-        if (documentId != null) {
+    LaunchedEffect(documentId, embeddedDraft?.id) {
+        if (documentId != null || embeddedDraft != null) {
             if (hasLoadedExistingDocumentFields) return@LaunchedEffect
             withContext(Dispatchers.IO) {
-                viewModel.getDocumentById(documentId)
+                embeddedDraft?.displayItem()?.copy(imagePaths = Json.encodeToString(listOf(
+                    embeddedDraft.assets.firstOrNull { it.role == EmbeddedWalletContent.AssetRole.FRONT }?.name.orEmpty(),
+                    embeddedDraft.assets.firstOrNull { it.role == EmbeddedWalletContent.AssetRole.BACK }?.name.orEmpty())))
+                    ?: documentId?.let { viewModel.getDocumentById(it) }
             }?.let { item ->
-                existingDocumentItem = item
+                existingDocumentItem = if (embeddedDraft == null) item else null
                 val parsedImagePaths = withContext(Dispatchers.Default) {
                     parseSecureItemImagePaths(item.imagePaths)
                 }
                 val parsedDocumentData = withContext(Dispatchers.Default) {
-                    viewModel.parseDocumentData(item.itemData)
+                    embeddedEditor?.data ?: viewModel.parseDocumentData(item.itemData)
                 }
                 cardFaceEditor.load(item, parsedDocumentData?.cardFace)
                 title = item.title
@@ -369,7 +384,7 @@ fun AddEditDocumentScreen(
 
                 parsedDocumentData?.let { data ->
                     documentNumber = data.documentNumber
-                    fullName = data.displayFullName()
+                    fullName = data.fullName
                     issuedDate = data.issuedDate
                     expiryDate = data.expiryDate
                     issuedBy = data.issuedBy
@@ -393,11 +408,11 @@ fun AddEditDocumentScreen(
                     passportNumber = data.passportNumber
                     licenseNumber = data.licenseNumber
                     additionalInfo = data.additionalInfo
-                    customFields = CardWalletDataCodec.customFieldsToDrafts(data.customFields)
+                    customFields = embeddedEditor?.customFields ?: CardWalletDataCodec.customFieldsToDrafts(data.customFields)
                     documentType = data.documentType
                 }
 
-                setSelectedStorageTargets(listOf(item.toStorageTarget()))
+                if (embeddedDraft == null) setSelectedStorageTargets(listOf(item.toStorageTarget()))
                 hasLoadedExistingDocumentFields = true
             }
         } else {
@@ -488,10 +503,63 @@ fun AddEditDocumentScreen(
     val unsupportedCardFaceTarget = selectedStorageTargets
         .filterIsInstance<StorageTarget.Bitwarden>()
         .firstOrNull { !BitwardenVaultPremiumStore.isPremium(context, it.vaultId) }
-    val isExistingDocumentReady = documentId == null || hasLoadedExistingDocumentFields
-    val canSave = isExistingDocumentReady && documentNumber.isNotBlank() && !isSaving
+    val isExistingDocumentReady = (documentId == null && embeddedDraft == null) || hasLoadedExistingDocumentFields
+    fun currentDocumentData(): DocumentData {
+        // Full name and structured name parts may intentionally differ (for example,
+        // a local-script legal name and a transliteration). Editing notes must keep both.
+        val resolvedFullName = if (embeddedEditor != null) fullName else fullName.ifBlank {
+            listOf(firstName, middleName, lastName).filter { it.isNotBlank() }.joinToString(" ")
+        }
+        return DocumentData(
+            documentNumber = documentNumber,
+            fullName = resolvedFullName,
+            issuedDate = issuedDate,
+            expiryDate = expiryDate,
+            issuedBy = issuedBy,
+            nationality = nationality, // 保存国籍信息
+            documentType = documentType,
+            additionalInfo = additionalInfo,
+            title = titlePrefix,
+            firstName = firstName,
+            middleName = middleName,
+            lastName = lastName,
+            address1 = address1,
+            address2 = address2,
+            address3 = address3,
+            city = city,
+            stateProvince = stateProvince,
+            postalCode = postalCode,
+            country = country,
+            company = company,
+            email = email,
+            phone = phone,
+            ssn = ssn,
+            username = username,
+            passportNumber = passportNumber,
+            licenseNumber = licenseNumber,
+            customFields = CardWalletDataCodec.draftsToCustomFields(customFields),
+            cardFace = cardFaceEditor.config
+        )
+
+    }
+    val canSave = isExistingDocumentReady && (documentNumber.isNotBlank() || embeddedDraft != null) && !isSaving
     val save: () -> Unit = saveAction@{
-        if (!isExistingDocumentReady || isSaving || documentNumber.isBlank()) return@saveAction
+        if (!isExistingDocumentReady || isSaving || (documentNumber.isBlank() && embeddedDraft == null)) return@saveAction
+        if (embeddedEditor != null) {
+            val publish = onEmbeddedSave ?: return@saveAction
+            isSaving = true
+            coroutineScope.launch {
+                try {
+                    publish(EmbeddedWalletEditorResult(
+                        snapshot = embeddedEditor.edited(title, notes, isFavorite, currentDocumentData(), customFields),
+                        imagePaths = listOf(frontImageFileName.orEmpty(), backImageFileName.orEmpty()),
+                        attachments = pendingAttachmentDrafts.toList(), cardFaceBytes = cardFaceEditor.imageBytes))
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+                } catch (_: Exception) { Toast.makeText(context, R.string.embedded_copy_failed, Toast.LENGTH_LONG).show()
+                } finally { isSaving = false }
+            }
+            return@saveAction
+        }
         if (cardFaceEditor.imageBytes != null && unsupportedCardFaceTarget != null) {
             Toast.makeText(context, R.string.card_face_bitwarden_premium_required, Toast.LENGTH_LONG).show()
             return@saveAction
@@ -526,40 +594,7 @@ fun AddEditDocumentScreen(
             .map { it.vaultId }
             .distinct()
 
-        val resolvedFullName = listOf(firstName, middleName, lastName)
-            .filter { it.isNotBlank() }
-            .joinToString(" ")
-            .ifBlank { fullName }
-        val documentData = DocumentData(
-            documentNumber = documentNumber,
-            fullName = resolvedFullName,
-            issuedDate = issuedDate,
-            expiryDate = expiryDate,
-            issuedBy = issuedBy,
-            nationality = nationality, // 保存国籍信息
-            documentType = documentType,
-            additionalInfo = additionalInfo,
-            title = titlePrefix,
-            firstName = firstName,
-            middleName = middleName,
-            lastName = lastName,
-            address1 = address1,
-            address2 = address2,
-            address3 = address3,
-            city = city,
-            stateProvince = stateProvince,
-            postalCode = postalCode,
-            country = country,
-            company = company,
-            email = email,
-            phone = phone,
-            ssn = ssn,
-            username = username,
-            passportNumber = passportNumber,
-            licenseNumber = licenseNumber,
-            customFields = CardWalletDataCodec.draftsToCustomFields(customFields),
-            cardFace = cardFaceEditor.config
-        )
+        val documentData = currentDocumentData()
 
         val imagePathsList = listOf(
             frontImageFileName ?: "",
@@ -673,14 +708,14 @@ fun AddEditDocumentScreen(
         } else {
             Column(
                 modifier = modifier
-                    .fillMaxSize()
+                    .fillMaxSize().testTag(if (embeddedDraft == null) "document_item_editor" else "embedded_document_editor")
                     .padding(paddingValues)
                     .imePadding()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(horizontal = 12.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                MultiStorageTargetSelectorCard(
+                if (embeddedDraft == null) MultiStorageTargetSelectorCard(
                     selectedTargets = selectedStorageTargets,
                     existingTargetKeys = existingReplicaTargetKeys,
                     categories = categories,
@@ -692,15 +727,27 @@ fun AddEditDocumentScreen(
                     onAddTargetClick = { showStorageTargetSheet = true },
                     onRemoveTarget = ::removeSelectedStorageTarget
                 )
-                CardFaceEditSection(
+                onEmbeddedCopy?.let { copy ->
+                    FilledTonalButton(onClick = copy, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Badge, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.embedded_copy_document))
+                    }
+                }
+                ItemEditorIdentity(title, { title = it }, stringResource(R.string.document_name), Icons.Default.Badge)
+
+            CardFaceEditSection(
+                    compact = true,
                     state = cardFaceEditor,
+                    overrideBitmap = embeddedBitmap,
                     previewData = documentCardFacePreviewData(
                         title,
                         DocumentData(
                             documentType = documentType,
                             documentNumber = documentNumber,
-                            fullName = listOf(firstName, middleName, lastName).filter(String::isNotBlank)
-                                .joinToString(" ").ifBlank { fullName },
+                            fullName = fullName.ifBlank {
+                                listOf(firstName, middleName, lastName).filter(String::isNotBlank).joinToString(" ")
+                            },
                             issuedBy = issuedBy,
                             expiryDate = expiryDate
                         )
@@ -713,19 +760,9 @@ fun AddEditDocumentScreen(
 
                 // Basic Info
                 InfoCard(title = stringResource(R.string.section_basic_info)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Title
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text(stringResource(R.string.document_name)) },
-                        placeholder = { Text(stringResource(R.string.document_name_example)) },
-                        leadingIcon = { Icon(Icons.Default.Label, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+
+
                     // Document Type
                     ExposedDropdownMenuBox(
                         expanded = showDocumentTypeMenu,
@@ -748,7 +785,7 @@ fun AddEditDocumentScreen(
                             shape = RoundedCornerShape(12.dp),
                             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                         )
-                        
+
                         ExposedDropdownMenu(
                             expanded = showDocumentTypeMenu,
                             onDismissRequest = { showDocumentTypeMenu = false }
@@ -795,7 +832,7 @@ fun AddEditDocumentScreen(
                             )
                         }
                     }
-                    
+
                     // Document Number
                     OutlinedTextField(
                         value = documentNumber,
@@ -852,35 +889,32 @@ fun AddEditDocumentScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
-                    
+
                     // Dates
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         OutlinedTextField(
                             value = issuedDate,
                             onValueChange = { issuedDate = it },
                             label = { Text(stringResource(R.string.issue_date)) },
                             placeholder = { Text("2020/01/01") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
                             shape = RoundedCornerShape(12.dp)
                         )
-                        
+
                         OutlinedTextField(
                             value = expiryDate,
                             onValueChange = { expiryDate = it },
                             label = { Text(stringResource(R.string.expiry_date_label)) },
                             placeholder = { Text("2030/01/01") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             leadingIcon = { Icon(Icons.Default.Event, contentDescription = null) },
                             shape = RoundedCornerShape(12.dp)
                         )
                     }
-                    
+
                     // Issuing Authority
                     OutlinedTextField(
                         value = issuedBy,
@@ -892,7 +926,7 @@ fun AddEditDocumentScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
-                    
+
                     // Nationality (Passport only)
                     if (documentType == DocumentType.PASSPORT) {
                         OutlinedTextField(
@@ -909,65 +943,53 @@ fun AddEditDocumentScreen(
                 }
             }
 
-            ExpandableSectionCard(
-                title = stringResource(R.string.document_identity_extended_title),
-                icon = Icons.Default.Badge,
-                expanded = identityDetailsExpanded,
-                onExpandedChange = { identityDetailsExpanded = it }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(value = titlePrefix, onValueChange = { titlePrefix = it }, label = { Text(stringResource(R.string.document_title_prefix_label)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text(stringResource(R.string.document_first_name_label)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
+            ItemEditorOptionalSection(editorSections, "identity", listOf(titlePrefix, firstName, middleName, lastName, company, username, email, phone).any { it.isNotBlank() }) {
+                InfoCard(title = stringResource(R.string.document_identity_extended_title)) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    OutlinedTextField(value = titlePrefix, onValueChange = { titlePrefix = it }, label = { Text(stringResource(R.string.document_title_prefix_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text(stringResource(R.string.document_first_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(value = middleName, onValueChange = { middleName = it }, label = { Text(stringResource(R.string.document_middle_name_label)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text(stringResource(R.string.document_last_name_label)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    OutlinedTextField(value = middleName, onValueChange = { middleName = it }, label = { Text(stringResource(R.string.document_middle_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text(stringResource(R.string.document_last_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 }
                 OutlinedTextField(value = company, onValueChange = { company = it }, label = { Text(stringResource(R.string.document_company_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text(stringResource(R.string.username)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(stringResource(R.string.document_phone_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), shape = RoundedCornerShape(12.dp))
+
+                }
             }
 
-            ExpandableSectionCard(
-                title = stringResource(R.string.document_address_extra_title),
-                icon = Icons.Default.Home,
-                expanded = addressDetailsExpanded,
-                onExpandedChange = { addressDetailsExpanded = it }
-            ) {
+            ItemEditorOptionalSection(editorSections, "address", listOf(address1, address2, address3, city, stateProvince, postalCode, country, passportNumber, licenseNumber, ssn, additionalInfo).any { it.isNotBlank() }) {
+                InfoCard(title = stringResource(R.string.document_address_extra_title)) {
                 OutlinedTextField(value = address1, onValueChange = { address1 = it }, label = { Text(stringResource(R.string.document_address_line_1)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = address2, onValueChange = { address2 = it }, label = { Text(stringResource(R.string.document_address_line_2)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = address3, onValueChange = { address3 = it }, label = { Text(stringResource(R.string.document_address_line_3)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = city, onValueChange = { city = it }, label = { Text(stringResource(R.string.city)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = stateProvince, onValueChange = { stateProvince = it }, label = { Text(stringResource(R.string.state)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    OutlinedTextField(value = city, onValueChange = { city = it }, label = { Text(stringResource(R.string.city)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = stateProvince, onValueChange = { stateProvince = it }, label = { Text(stringResource(R.string.state)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = postalCode, onValueChange = { postalCode = it }, label = { Text(stringResource(R.string.postal_code)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text(stringResource(R.string.country)) }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp))
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    OutlinedTextField(value = postalCode, onValueChange = { postalCode = it }, label = { Text(stringResource(R.string.postal_code)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text(stringResource(R.string.country)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 }
                 OutlinedTextField(value = passportNumber, onValueChange = { passportNumber = it }, label = { Text(stringResource(R.string.document_passport_number_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = licenseNumber, onValueChange = { licenseNumber = it }, label = { Text(stringResource(R.string.document_license_number_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = ssn, onValueChange = { ssn = it }, label = { Text(stringResource(R.string.document_ssn_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
                 OutlinedTextField(value = additionalInfo, onValueChange = { additionalInfo = it }, label = { Text(stringResource(R.string.document_additional_info_label)) }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4, shape = RoundedCornerShape(12.dp))
+
+                }
             }
 
-            InfoCard(title = stringResource(R.string.custom_field_title)) {
-                CustomFieldEditorSection(
-                    fields = customFields,
-                    onFieldsChange = { customFields = it },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            ItemEditorOptionalSection(editorSections, "custom", customFields.isNotEmpty()) {
+                CustomFieldEditorSection(fields = customFields, onFieldsChange = { customFields = it },
+                    modifier = Modifier.fillMaxWidth(), contentStyle = true, showAddButton = false)
             }
-            
+
             // Photos InfoCard
-            InfoCard(title = stringResource(R.string.section_photos)) {
+            ItemEditorOptionalSection(editorSections, "photos", frontImageFileName != null || backImageFileName != null) {
+InfoCard(title = stringResource(R.string.section_photos)) {
                 DualPhotoPicker(
                     frontImageFileName = frontImageFileName,
                     backImageFileName = backImageFileName,
@@ -989,11 +1011,15 @@ fun AddEditDocumentScreen(
                         DocumentType.SOCIAL_SECURITY -> stringResource(R.string.social_security_card)
                         DocumentType.OTHER -> stringResource(R.string.other_document)
                     }),
+                    imageLoader = embeddedImageLoader,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            }
 
+            ItemEditorOptionalSection(editorSections, "attachments", existingDocumentItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null) {
             val draftAttachmentTarget = selectedStorageTargets.firstOrNull()
+            embeddedAttachmentsContent?.invoke()
             AttachmentsEditSection(
                 owner = existingDocumentItem?.let { AttachmentOwner.secureItem(it.id) },
                 isPlusActivated = appSettings.isPlusActivated,
@@ -1013,9 +1039,11 @@ fun AddEditDocumentScreen(
                 excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.DOCUMENT) +
                     listOfNotNull(cardFaceEditor.config?.imageAttachmentName, cardFaceEditor.originalConfig?.imageAttachmentName)
             )
+            }
 
             // Notes InfoCard
-            InfoCard(title = stringResource(R.string.section_notes)) {
+            ItemEditorOptionalSection(editorSections, "notes", notes.isNotBlank()) {
+InfoCard(title = stringResource(R.string.section_notes)) {
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -1030,6 +1058,17 @@ fun AddEditDocumentScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
             }
+            }
+            ItemEditorAddContent(editorSections, options = listOf(
+                    ItemEditorContentOption("identity", R.string.document_identity_extended_title, Icons.Default.Badge, editorSections.visible("identity", listOf(titlePrefix, firstName, middleName, lastName, company, username, email, phone).any { it.isNotBlank() })),
+                    ItemEditorContentOption("address", R.string.document_address_extra_title, Icons.Default.Home, editorSections.visible("address", listOf(address1, address2, address3, city, stateProvince, postalCode, country, passportNumber, licenseNumber, ssn, additionalInfo).any { it.isNotBlank() })),
+                    ItemEditorContentOption("photos", R.string.section_photos, Icons.Default.PhotoCamera, editorSections.visible("photos", frontImageFileName != null || backImageFileName != null)),
+                    ItemEditorContentOption("attachments", R.string.attachments, Icons.Default.AttachFile, editorSections.visible("attachments", existingDocumentItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null)),
+                    ItemEditorContentOption("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank()))
+                ), fields = customFields, onFieldsChange = { customFields = it },
+                enabled = !isSaving)
+            Spacer(Modifier.height(96.dp))
+
         }
     }
     }
@@ -1040,7 +1079,7 @@ fun AddEditDocumentScreen(
                 if (showTopBar) {
                     Column {
                         TopAppBar(
-                            title = { Text(stringResource(if (documentId == null) R.string.add_document_title else R.string.edit_document_title)) },
+                            title = { Text(stringResource(if (documentId == null && embeddedDraft == null) R.string.add_document_title else R.string.edit_document_title)) },
                             navigationIcon = {
                                 IconButton(onClick = onNavigateBack) {
                                     Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -1061,7 +1100,7 @@ fun AddEditDocumentScreen(
                                 titleContentColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
-                        if (showTypeSwitcher && documentId == null) {
+                        if (showTypeSwitcher && documentId == null && embeddedDraft == null) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1101,6 +1140,7 @@ fun AddEditDocumentScreen(
                 if (showFab) {
                     FloatingActionButton(
                         onClick = save,
+                        modifier = Modifier.testTag("document_editor_save"),
                         containerColor = if (canSave) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
@@ -1155,7 +1195,7 @@ fun AddEditDocumentScreen(
     }
 
     MultiStorageTargetPickerBottomSheet(
-        visible = showStorageTargetSheet,
+        visible = embeddedDraft == null && showStorageTargetSheet,
         selectedTargets = selectedStorageTargets.toList(),
         lockedTargetKeys = existingReplicaTargetKeys,
         categories = categories,
@@ -1275,94 +1315,7 @@ private fun InfoCard(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-private fun ExpandableSectionCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (expanded) 2.dp else 0.dp)
-    ) {
-        ListItem(
-            headlineContent = {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            },
-            leadingContent = {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp),
-                        contentAlignment = androidx.compose.ui.Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-            },
-            trailingContent = {
-                MonicaExpansionChevron(expanded, contentDescription = null)
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent
-            ),
-            modifier = Modifier.clickable { onExpandedChange(!expanded) }
-        )
-
-        MonicaExpandableContent(
-            expanded = expanded
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-                )
-                content()
-            }
-        }
+    CompositionLocalProvider(LocalEntryContentStyle provides true) {
+        TemplateFormSection(title) { content() }
     }
 }

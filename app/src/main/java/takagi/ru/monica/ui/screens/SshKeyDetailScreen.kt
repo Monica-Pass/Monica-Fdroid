@@ -84,102 +84,25 @@ fun SshKeyDetailScreen(
     onEdit: (Long) -> Unit,
     onCreateSend: ((title: String, text: String) -> Unit)? = null
 ) {
-    val context = LocalContext.current
-    var entry by remember { mutableStateOf<PasswordEntry?>(null) }
-    var customFields by remember { mutableStateOf<List<CustomField>>(emptyList()) }
-    var privateKeyRevealed by remember { mutableStateOf(false) }
 
-    LaunchedEffect(passwordId) {
-        entry = viewModel.getPasswordEntryById(passwordId)
-        customFields = viewModel.getCustomFieldsByEntryIdSync(passwordId)
-    }
-
-    val sshData = remember(entry?.sshKeyData) {
-        entry?.sshKeyData?.let(SshKeyDataCodec::decode)
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = entry?.title?.takeIf { it.isNotBlank() }
-                            ?: stringResource(R.string.edit_ssh_key_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            MonicaIcons.Navigation.back,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { onEdit(passwordId) },
-                icon = {
-                    Icon(Icons.Default.Edit, contentDescription = null)
-                },
-                text = {
-                    Text(stringResource(R.string.edit_ssh_key_title))
-                }
-            )
-        }
-    ) { innerPadding ->
-        if (sshData == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    stringResource(R.string.ssh_key_empty_placeholder),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            return@Scaffold
-        }
-
-        SshKeyDetailBody(
-            innerPadding = innerPadding,
-            data = sshData,
-            privateKeyRevealed = privateKeyRevealed,
-            onTogglePrivateKeyVisibility = { privateKeyRevealed = !privateKeyRevealed },
-            onCopy = { label, text -> copyTextToClipboardLocal(context, label, text) },
-            customFields = customFields,
-            onCreateSend = onCreateSend
-        )
-    }
+    PasswordDetailScreen(viewModel = viewModel, passwordId = passwordId, biometricEnabled = false,
+        onNavigateBack = onNavigateBack, onEditPassword = onEdit, onCreateSend = onCreateSend)
 }
 
 @Composable
-private fun SshKeyDetailBody(
+internal fun SshKeyDetailBody(
     innerPadding: androidx.compose.foundation.layout.PaddingValues,
     data: SshKeyData,
     privateKeyRevealed: Boolean,
     onTogglePrivateKeyVisibility: () -> Unit,
     onCopy: (label: String, text: String) -> Unit,
     customFields: List<CustomField>,
-    onCreateSend: ((title: String, text: String) -> Unit)?
+    onCreateSend: ((title: String, text: String) -> Unit)?,
+    embedded: Boolean = false,
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .then(if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxSize().padding(innerPadding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         HeaderCard(data = data)
@@ -231,7 +154,7 @@ private fun SshKeyDetailBody(
             }
         }
 
-        Spacer(Modifier.height(80.dp))
+        if (!embedded) Spacer(Modifier.height(80.dp))
     }
 }
 

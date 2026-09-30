@@ -1,0 +1,7 @@
+<resources>
+    <string name="native_token_assets_limit">Up to 64 MiB of new or moved files per save, and 128 attachments per token.</string>
+    <string name="native_token_assets_error">Could not read or save every file. Your original content has been kept. Check file access and size, then retry.</string>
+    <string name="native_token_backup_needs_files">This database contains API tokens with files. Include images and attachments to export a complete backup.</string>
+    <string name="native_token_backup_limit">Native API token files in one ZIP backup must total 64 MiB or less. Use the native database backup for larger vaults.</string>
+    <string name="native_token_kdbx_files_unsupported">API tokens with files require an encrypted Monica ZIP or native database backup. KDBX export supports API tokens without files.</string>
+</resources>

@@ -1,0 +1,54 @@
+{
+  "scope": "Attachment editor M3E redesign, 1.0.315 unreleased",
+  "testCounts": {
+    "Main": 4,
+    "Fdroid": 4
+  },
+  "runs": [
+    {
+      "testPackageId": "takagi.ru.monica.test",
+      "completed": true,
+      "testSha256": "1C0BC825E3536837C51D3F65DBBBECA9D9186BF728914F21B32657ED230B8CE2",
+      "startedAt": "2026-09-29T23:51:13.7596660+08:00",
+      "finishedAt": "2026-09-29T23:53:43.1425172+08:00",
+      "appSha256": "36B8BFE10F61862543B52DD86B296A305957D88919ECD6A043A255FC9D2BC2C5",
+      "edition": "Main",
+      "classes": [
+        "takagi.ru.monica.attachments.AttachmentEditorDesignTest"
+      ],
+      "suite": "AttachmentEditorFinal",
+      "packageId": "takagi.ru.monica"
+    },
+    {
+      "completed": true,
+      "appSha256": "A0A44312A0395540605A47A8E6F281FB3AD5E52DA6E1D95E270970C6E6D1AB2D",
+      "suite": "AttachmentEditorFinal",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "finishedAt": "2026-09-29T23:58:00.3416488+08:00",
+      "edition": "Fdroid",
+      "classes": [
+        "takagi.ru.monica.attachments.AttachmentEditorDesignTest"
+      ],
+      "testSha256": "0615FC0D4055BDB5091CA30C1663FBA1FB3063205A8AB1FA035DF232FD145067",
+      "packageId": "takagi.ru.monica.fdroid",
+      "startedAt": "2026-09-29T23:56:50.7848997+08:00"
+    }
+  ],
+  "sourceSha256": {
+    "app/src/main/java/takagi/ru/monica/attachments/ui/AttachmentsEditSection.kt": "e1aa4c78f57167611dcd043db7304237baf35c89f74b2101200f5087d922b0b0",
+    "app/src/main/java/takagi/ru/monica/attachments/ui/AttachmentEditorContent.kt": "6a86f49a6bb8fde5f572b50839703eb15bf482a17aabec999a2e16271a1ddb32",
+    "app/src/main/res/values/attachment_editor.xml": "b4b06f0c41595830e4e7e6d279bb8199ef625eb578d20455150697fa3a1f415e",
+    "app/src/main/res/values-zh/attachment_editor.xml": "21e0f38f02b1a64a1e9fb0c7d2c93eec629fe7c1712978d8b0a8dc5ec11da013",
+    "app/src/androidTest/java/takagi/ru/monica/attachments/AttachmentEditorDesignTest.kt": "a71422d0b455d5e4ad7f4ecdd24e8b0bb037ddc15d7c424e1bd30b708e3feed9",
+    "app/src/main/java/takagi/ru/monica/ui/components/EntryContentPanel.kt": "b5482472d4b1cebffc2b3ae88240e96cf971443d9f292fe159310e9abfbc0c57"
+  },
+  "checks": [
+    "Production attachment subpage screenshots at font scale1.5",
+    "Grouped rows and persistent error UI",
+    "Busy state prevents repeated actions",
+    "Draft removal and real system picker cancellation preserve remaining files",
+    "Synthetic selected file encrypted/uploaded and deleted via UI"
+  ],
+  "canvasLimitation": "Online access blocked by saved user browser permission; editable JSON/share link retained, native render checked",
+  "externalUploadLimitation": "Actual upload test uses local encrypted attachment storage; no live remote server upload test in this UI-only change"
+}

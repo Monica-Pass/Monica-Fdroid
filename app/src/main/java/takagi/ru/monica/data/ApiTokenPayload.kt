@@ -117,4 +117,5 @@ data class NativeApiTokenSummary(
 }
 
 // Deliberately no generated toString(): payloads must never appear in diagnostic output.
-class NativeApiToken(val summary: NativeApiTokenSummary, val payload: String, val extras: NativeApiTokenExtras? = null)
+class NativeApiToken(val summary: NativeApiTokenSummary, val payload: String, val extras: NativeApiTokenExtras? = null,
+    val attachments: List<NativeApiTokenAttachment> = emptyList())

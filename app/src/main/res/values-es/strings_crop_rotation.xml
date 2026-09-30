@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Girar 90° a la izquierda</string>
+    <string name="card_face_rotate_right">Girar 90° a la derecha</string>
+    <string name="card_face_crop_rotation_hint">Arrastra para colocar la imagen, pellizca para ajustar el zoom o usa los controles para girarla y voltearla.</string>
+    <string name="card_face_flip_horizontal">Voltear horizontalmente</string>
+    <string name="card_face_flip_vertical">Voltear verticalmente</string>
+</resources>

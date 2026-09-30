@@ -569,6 +569,9 @@ class KeePassKdbxViewModel {
                             resolutionContext = resolutionContext
                         )
 
+                        val sourceDates = takagi.ru.monica.keepass.resolveKeePassEntryDates(
+                            entry.times?.creationTime?.toEpochMilli(), entry.times?.lastModificationTime?.toEpochMilli(),
+                            existingEntry?.createdAt, existingEntry?.updatedAt)
                         val isNewPasswordEntry = existingEntry == null
                         val insertedPasswordId = if (existingEntry != null) {
                             val updated = existingEntry.copy(
@@ -584,7 +587,8 @@ class KeePassKdbxViewModel {
                                 wifiMetadata = wifiMetadataJson,
                                 isDeleted = false,
                                 deletedAt = null,
-                                updatedAt = Date()
+                                createdAt = sourceDates.first,
+                                updatedAt = sourceDates.second
                             )
                             passwordDao.update(updated)
                             Log.d(TAG, "Updated existing password during KDBX import")
@@ -596,8 +600,8 @@ class KeePassKdbxViewModel {
                                 password = encryptedPassword,
                                 website = url,
                                 notes = notes,
-                                createdAt = Date(),
-                                updatedAt = Date(),
+                                createdAt = sourceDates.first,
+                                updatedAt = sourceDates.second,
                                 keepassDatabaseId = keepassDatabaseId,
                                 keepassGroupPath = groupPath,
                                 sshKeyData = sshKeyData,

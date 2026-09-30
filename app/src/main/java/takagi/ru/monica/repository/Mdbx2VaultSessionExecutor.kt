@@ -333,12 +333,19 @@ internal class Mdbx2VaultSessionExecutor(
             val file = resolveLocalFile(database)
             if (!file.isFile) throw Mdbx2ErrorMapper.fileMissing()
             val vault = openVaultForRead(database, file)
+            // A mutation block may find nothing to change (identical tags, an
+            // empty prune plan, already-deleted entries). Rust commits identify
+            // actual writes; disclosure audit deltas alone are not user edits.
+            var changed = false
             val result = try {
-                block(database, vault)
+                val before = if (mutating) vault.incrementalSyncCheckpoint().commitInventory else null
+                block(database, vault).also {
+                    changed = mutating && before != vault.incrementalSyncCheckpoint().commitInventory
+                }
             } finally {
                 vault.close()
             }
-            if (mutating) finalizeMutation(database, file)
+            if (changed) finalizeMutation(database, file)
             result
         }
     }

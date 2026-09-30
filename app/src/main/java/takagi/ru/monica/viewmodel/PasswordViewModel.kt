@@ -1,5 +1,6 @@
 package takagi.ru.monica.viewmodel
 
+import takagi.ru.monica.data.explicitPasswordGroupId
 import takagi.ru.monica.utils.StringResolver
 
 import takagi.ru.monica.R
@@ -1280,6 +1281,21 @@ class PasswordViewModel internal constructor(
         return normalizeLegacyOwnershipMetadata(entry)
     }
 
+    /** Read-only suggestion snapshot: never normalize ownership or expose encrypted values to UI. */
+    suspend fun getGeneratorSuggestionValues(
+        username: Boolean,
+        isAccessible: (PasswordEntry) -> Boolean,
+    ): List<String> = withContext(Dispatchers.IO) {
+        if (!SessionManager.isUnlocked.value) return@withContext emptyList()
+        val values = repository.getAllPasswordEntries().first()
+            .filter { !it.isDeleted && !it.isArchived && !it.hasOwnershipConflict() && isAccessible(it) }
+            .mapNotNull { entry ->
+                if (username) entry.username
+                else (inspectSecretState(entry) as? SecretValueState.Available)?.value
+            }
+        if (SessionManager.isUnlocked.value) values else emptyList()
+    }
+
     suspend fun getRawActivePasswordEntries(): List<PasswordEntry> {
         val entries = repository.getAllPasswordEntries().first()
         val normalizedEntries = ArrayList<PasswordEntry>(entries.size)
@@ -1704,6 +1720,7 @@ class PasswordViewModel internal constructor(
                     groupPath = item.groupPath
                 )
             }
+            val sourceDates = takagi.ru.monica.keepass.resolveKeePassEntryDates(item.createdAtMillis, item.updatedAtMillis, existing?.createdAt, existing?.updatedAt)
             val normalizedPassword = normalizeIncomingKeePassPassword(item.password)
             val existingPlainPassword = existing?.let { decryptForDisplay(it.password) }.orEmpty()
             val encryptedPassword = if (existing != null && normalizedPassword.isBlank()) {
@@ -1757,7 +1774,8 @@ class PasswordViewModel internal constructor(
                     wifiMetadata = item.wifiMetadata,
                     isDeleted = isInRecycleBin,
                     deletedAt = if (isInRecycleBin) (existing.deletedAt ?: Date()) else null,
-                    updatedAt = Date()
+                    createdAt = sourceDates.first,
+                    updatedAt = sourceDates.second
                 )
                 if (!existing.matchesKeePassImport(updated, importedPlainPassword)) {
                     repository.updatePasswordEntry(updated)
@@ -1784,8 +1802,8 @@ class PasswordViewModel internal constructor(
                     creditCardHolder = item.creditCardHolder,
                     creditCardExpiry = item.creditCardExpiry,
                     creditCardCVV = item.creditCardCVV,
-                    createdAt = Date(),
-                    updatedAt = Date(),
+                    createdAt = sourceDates.first,
+                    updatedAt = sourceDates.second,
                     keepassDatabaseId = databaseId,
                     keepassGroupPath = item.groupPath,
                     keepassEntryUuid = item.entryUuid,
@@ -1819,7 +1837,7 @@ class PasswordViewModel internal constructor(
         imported: PasswordEntry,
         importedPlainPassword: String
     ): Boolean {
-        return copy(password = "", authenticatorKey = "", updatedAt = imported.updatedAt) ==
+        return copy(password = "", authenticatorKey = "") ==
             imported.copy(password = "", authenticatorKey = "") &&
             decryptForDisplay(password) == importedPlainPassword &&
             decryptStoredSensitiveValue(authenticatorKey) == decryptStoredSensitiveValue(imported.authenticatorKey)
@@ -1941,7 +1959,8 @@ class PasswordViewModel internal constructor(
                         keepassGroupUuid = incoming.keepassGroupUuid,
                         isDeleted = isInRecycleBin,
                         deletedAt = if (isInRecycleBin) (existing.deletedAt ?: Date()) else null,
-                        updatedAt = Date()
+                        createdAt = incoming.createdAt.takeIf { it.time > 0 } ?: existing.createdAt,
+                        updatedAt = incoming.updatedAt.takeIf { it.time > 0 } ?: existing.updatedAt
                     )
                     if (!existing.matchesKeePassSecureItemImport(updated)) {
                         secureRepo.updateItem(updated)
@@ -1951,7 +1970,7 @@ class PasswordViewModel internal constructor(
     }
 
     private fun SecureItem.matchesKeePassSecureItemImport(imported: SecureItem): Boolean {
-        return copy(itemData = "", updatedAt = imported.updatedAt) == imported.copy(itemData = "") &&
+        return copy(itemData = "") == imported.copy(itemData = "") &&
             decryptStoredSensitiveValue(itemData) == decryptStoredSensitiveValue(imported.itemData)
     }
 
@@ -3294,13 +3313,14 @@ class PasswordViewModel internal constructor(
 
     private suspend fun updatePasswordEntryInternal(
         entry: PasswordEntry,
-        customFieldsOverride: List<CustomFieldDraft>? = null
+        customFieldsOverride: List<CustomFieldDraft>? = null,
+        skipCategoryBinding: Boolean = false
     ): Boolean {
         // 获取旧数据用于对比
         val oldEntry = repository.getPasswordEntryById(entry.id)
         
         // 应用分类绑定
-        val boundEntry = applyCategoryBinding(entry)
+        val boundEntry = if (skipCategoryBinding) entry else applyCategoryBinding(entry)
         if (boundEntry.hasOwnershipConflict()) {
             Log.w(
                 "PasswordViewModel",
@@ -4785,9 +4805,9 @@ class PasswordViewModel internal constructor(
             val firstPasswordId = withContext(Dispatchers.IO) {
                 saveGroupedPasswordsInternal(
                     originalIds = originalIds,
-                    commonEntry = commonEntry,
+                    requestedEntry = commonEntry,
                     passwords = passwords,
-                    customFields = customFields,
+                    requestedCustomFields = customFields,
                     skipCategoryBinding = false
                 )
             }
@@ -4802,6 +4822,7 @@ class PasswordViewModel internal constructor(
         targets: List<StorageTarget>,
         customFields: List<CustomFieldDraft> = emptyList(),
         onCompleteWithIds: (firstPasswordId: Long?, savedPasswordIds: List<Long>) -> Unit = { _, _ -> },
+        embeddedContentSave: takagi.ru.monica.data.model.DeferredEmbeddedContentSave? = null,
         onComplete: (firstPasswordId: Long?) -> Unit = {}
     ) {
         viewModelScope.launch {
@@ -4870,10 +4891,11 @@ class PasswordViewModel internal constructor(
                 )
                 val initialId = saveGroupedPasswordsInternal(
                     originalIds = currentTargetOriginalIds.ifEmpty { originalIds },
-                    commonEntry = updatedCurrentEntry,
+                    requestedEntry = updatedCurrentEntry,
                     passwords = passwords,
-                    customFields = customFields,
-                    skipCategoryBinding = true
+                    requestedCustomFields = customFields,
+                    skipCategoryBinding = true,
+                    embeddedContentSave = embeddedContentSave
                 )
 
                     if (initialId == null) {
@@ -4901,10 +4923,11 @@ class PasswordViewModel internal constructor(
                         )
                         val createdId = saveGroupedPasswordsInternal(
                             originalIds = existingTargetIds,
-                            commonEntry = replicaEntry,
+                            requestedEntry = replicaEntry,
                             passwords = passwords,
-                            customFields = customFields,
-                            skipCategoryBinding = true
+                            requestedCustomFields = customFields,
+                            skipCategoryBinding = true,
+                    embeddedContentSave = embeddedContentSave
                         )
                         if (createdId == null) {
                             Log.e(
@@ -4965,6 +4988,7 @@ class PasswordViewModel internal constructor(
         credentials: List<PasswordCredentialDraft>,
         targets: List<StorageTarget>,
         customFields: List<CustomFieldDraft> = emptyList(),
+        embeddedContentSave: takagi.ru.monica.data.model.DeferredEmbeddedContentSave? = null,
         onComplete: (List<SavedPasswordCredential>) -> Unit = {}
     ) {
         viewModelScope.launch {
@@ -4990,7 +5014,8 @@ class PasswordViewModel internal constructor(
                             commonEntry = commonEntry,
                             credentials = normalizedCredentials,
                             targets = distinctTargets,
-                            customFields = customFields
+                            customFields = customFields,
+                            embeddedContentSave = embeddedContentSave
                         )
                     }
                 }
@@ -5012,7 +5037,8 @@ class PasswordViewModel internal constructor(
         commonEntry: PasswordEntry,
         credentials: List<PasswordCredentialDraft>,
         targets: List<StorageTarget>,
-        customFields: List<CustomFieldDraft>
+        customFields: List<CustomFieldDraft>,
+        embeddedContentSave: takagi.ru.monica.data.model.DeferredEmbeddedContentSave? = null
     ): List<SavedPasswordCredential> {
         val templates = buildIndependentPasswordCredentialTemplates(commonEntry, credentials)
         val savedCredentials = mutableListOf<SavedPasswordCredential>()
@@ -5033,10 +5059,11 @@ class PasswordViewModel internal constructor(
                 )
                 val savedId = saveGroupedPasswordsInternal(
                     originalIds = emptyList(),
-                    commonEntry = targetEntry,
+                    requestedEntry = targetEntry,
                     passwords = listOf(credentialTemplate.password),
-                    customFields = credentialCustomFields,
-                    skipCategoryBinding = true
+                    requestedCustomFields = credentialCustomFields,
+                    skipCategoryBinding = true,
+                    embeddedContentSave = embeddedContentSave
                 )
                 if (savedId == null) {
                     Log.e(
@@ -5107,13 +5134,22 @@ class PasswordViewModel internal constructor(
 
     private suspend fun saveGroupedPasswordsInternal(
         originalIds: List<Long>,
-        commonEntry: PasswordEntry,
+        requestedEntry: PasswordEntry,
         passwords: List<String>,
-        customFields: List<CustomFieldDraft> = emptyList(),
-        skipCategoryBinding: Boolean
+        requestedCustomFields: List<CustomFieldDraft> = emptyList(),
+        skipCategoryBinding: Boolean,
+        embeddedContentSave: takagi.ru.monica.data.model.DeferredEmbeddedContentSave? = null
     ): Long? {
+        val previousId = originalIds.firstOrNull()
+        val previousFields = if (embeddedContentSave?.hasPending(requestedCustomFields) == true && previousId != null)
+            getCustomFieldsByEntryIdSync(previousId).map { CustomFieldDraft(id = it.id, title = it.title, value = it.value, isProtected = it.isProtected) }
+            else emptyList()
+        val customFields = embeddedContentSave?.initialFields(requestedCustomFields, previousFields) ?: requestedCustomFields
+        val commonEntry = if (embeddedContentSave?.replacesNote(requestedCustomFields) == true)
+            requestedEntry.copy(boundNoteId = previousId?.let { repository.getPasswordEntryById(it)?.boundNoteId }) else requestedEntry
         var firstId: Long? = null
-        val normalizedPasswords = passwords.map { it.trim() }
+        val normalizedPasswords = if (commonEntry.loginType.uppercase(java.util.Locale.ROOT) in
+            takagi.ru.monica.data.model.TemplateCredentialDraft.types) passwords else passwords.map { it.trim() }
         val normalizedInput = normalizedPasswords.filter { it.isNotEmpty() }
         val preservedUnreadablePasswords = if (normalizedInput.isEmpty() && originalIds.isNotEmpty()) {
             originalIds.mapNotNull { id ->
@@ -5138,12 +5174,16 @@ class PasswordViewModel internal constructor(
             applyCategoryBinding(commonEntry)
         }
 
+        val explicitGroupId = boundCommonEntry.explicitPasswordGroupId()
+            ?: originalIds.firstOrNull()?.let { repository.getPasswordEntryById(it)?.explicitPasswordGroupId() }
+            ?: UUID.randomUUID().toString()
+        val groupedCommonEntry = boundCommonEntry.copy(passwordGroupId = explicitGroupId)
         val pendingMdbxCreates = mutableListOf<Pair<Int, PasswordEntry>>()
         effectivePasswords.forEachIndexed { index, password ->
             if (index < originalIds.size) {
                 val id = originalIds[index]
                 if (index == 0) firstId = id
-                val draftEntry = boundCommonEntry.copy(
+                val draftEntry = groupedCommonEntry.copy(
                     id = id,
                     password = password
                 )
@@ -5179,7 +5219,11 @@ class PasswordViewModel internal constructor(
                     loginType = draftEntry.loginType,
                     ssoProvider = draftEntry.ssoProvider,
                     ssoRefEntryId = draftEntry.ssoRefEntryId,
-                    replicaGroupId = draftEntry.replicaGroupId,
+                    // MDBX membership is separate from each password's native object identity.
+                    replicaGroupId = if (draftEntry.mdbxDatabaseId != null) {
+                        existingEntry.replicaGroupId.takeIf { existingEntry.mdbxDatabaseId == draftEntry.mdbxDatabaseId }
+                    } else draftEntry.replicaGroupId,
+                    passwordGroupId = draftEntry.passwordGroupId,
                     bitwardenVaultId = draftEntry.bitwardenVaultId,
                     bitwardenFolderId = draftEntry.bitwardenFolderId,
                     customIconType = draftEntry.customIconType,
@@ -5189,7 +5233,8 @@ class PasswordViewModel internal constructor(
                 val entryCustomFields = if (index == 0) customFields else emptyList()
                 val updated = updatePasswordEntryInternal(
                     entry = updatedEntry,
-                    customFieldsOverride = entryCustomFields
+                    customFieldsOverride = entryCustomFields,
+                    skipCategoryBinding = skipCategoryBinding
                 )
                 if (!updated) {
                     Log.e(
@@ -5199,8 +5244,9 @@ class PasswordViewModel internal constructor(
                     return null
                 }
             } else {
-                val newEntry = boundCommonEntry.copy(
+                val newEntry = groupedCommonEntry.copy(
                     id = 0,
+                    replicaGroupId = groupedCommonEntry.replicaGroupId.takeIf { groupedCommonEntry.mdbxDatabaseId == null },
                     password = password
                 )
                 if (newEntry.isPureMdbxCreateTarget()) {
@@ -5243,6 +5289,7 @@ class PasswordViewModel internal constructor(
 
         firstId?.let { entryId ->
             saveCustomFieldsForEntry(entryId, customFields)
+            embeddedContentSave?.record(entryId, requestedCustomFields, requestedEntry.boundNoteId)
         }
 
         return firstId
@@ -5304,11 +5351,69 @@ class PasswordViewModel internal constructor(
     suspend fun getCustomFieldsByEntryIdSync(entryId: Long): List<CustomField> {
         return customFieldRepository?.getFieldsByEntryIdSync(entryId) ?: emptyList()
     }
+
+    /** Resolve only at generation time. Missing secrets stay unavailable, never become empty passwords. */
+    suspend fun readQrTemplateValues(entryId: Long): takagi.ru.monica.data.model.PasswordQrTemplate.Values {
+        val entry = requireNotNull(getRawPasswordEntryById(entryId))
+        check(!entry.isDeleted && !entry.hasOwnershipConflict())
+        val password = when (val secret = inspectSecretState(entry)) {
+            is SecretValueState.Available -> secret.value
+            SecretValueState.Empty -> ""
+            else -> null
+        }
+        val fields = getCustomFieldsByEntryIdSync(entryId).filterNot { it.title.startsWith("monica.") }.map { field ->
+            field.title to runCatching { securityManager.decryptDataIfMonicaCiphertext(field.value) }.getOrNull()
+        }
+        return takagi.ru.monica.data.model.PasswordQrTemplate.values(entry, password, fields)
+    }
+
+    private val qrTemplateSaveMutex = kotlinx.coroutines.sync.Mutex()
+
+    /** Append to the latest field set through the ordinary native-write path. Never save rendered text. */
+    suspend fun appendPasswordQrTemplate(entryId: Long, block: takagi.ru.monica.data.model.PasswordContentBlocks.Block) {
+        require(block.kind == takagi.ru.monica.data.model.PasswordContentBlocks.Kind.QR_CODE)
+        qrTemplateSaveMutex.lock()
+        try {
+            check(customFieldRepository != null)
+            val entry = requireNotNull(getRawPasswordEntryById(entryId))
+            check(!entry.isDeleted && !entry.hasOwnershipConflict())
+            val secret = inspectSecretState(entry)
+            check(secret is SecretValueState.Available || secret == SecretValueState.Empty)
+            val existing = getCustomFieldsByEntryIdSync(entryId).map { field ->
+                CustomFieldDraft(id = field.id, title = field.title,
+                    value = securityManager.decryptDataIfMonicaCiphertext(field.value), isProtected = field.isProtected)
+            }
+            val previous = takagi.ru.monica.data.model.PasswordContentBlocks.read(existing).firstOrNull {
+                it.token == takagi.ru.monica.data.model.PasswordContentBlocks.token(block.id)
+            }
+            check(previous == null || previous.block?.raw == block.raw) { "Template changed; reopen before saving" }
+            val fields = takagi.ru.monica.data.model.EntryContentFields.withOrder(
+                takagi.ru.monica.data.model.PasswordContentBlocks.put(existing, block),
+                (takagi.ru.monica.data.model.EntryContentFields.order(existing) +
+                    takagi.ru.monica.data.model.PasswordContentBlocks.read(existing).map { it.token } +
+                    listOf("AUTHENTICATOR", "PAYMENT", "CUSTOM_FIELDS", "ATTACHMENTS", "NOTES", "CONTACT", "ADDRESS") +
+                    takagi.ru.monica.data.model.PasswordContentBlocks.token(block.id)).distinct())
+            // Editing a detail item must retain its owner even if the list has another database filter.
+            check(updatePasswordEntryInternal(entry.copy(password = secret.plainValueOrEmpty()),
+                customFieldsOverride = fields, skipCategoryBinding = true))
+            saveCustomFieldsForEntry(entryId, fields)
+        } finally { qrTemplateSaveMutex.unlock() }
+    }
     
     /**
      * 保存密码条目的自定义字段
      * 同时更新密码条目的 updatedAt 以触发同步
      */
+    /** Called only after every attachment referenced by the final metadata was uploaded. */
+    suspend fun publishEmbeddedContent(entryId: Long, commit: takagi.ru.monica.data.model.DeferredEmbeddedContentSave.Commit) {
+        val entry = requireNotNull(getPasswordEntryById(entryId)).copy(boundNoteId = commit.boundNoteId)
+        // Assets already belong to this saved destination. A changed list filter must not move it.
+        check(updatePasswordEntryInternal(entry, customFieldsOverride = commit.fields, skipCategoryBinding = true)) {
+            "Unable to publish complete copied content"
+        }
+        saveCustomFieldsForEntry(entryId, commit.fields)
+    }
+
     suspend fun saveCustomFieldsForEntry(entryId: Long, fields: List<CustomFieldDraft>) {
         customFieldRepository?.saveFieldsForEntry(entryId, fields)
 

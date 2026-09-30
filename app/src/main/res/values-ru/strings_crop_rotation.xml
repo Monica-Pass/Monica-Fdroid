@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="card_face_rotate_left">Повернуть влево на 90°</string>
+    <string name="card_face_rotate_right">Повернуть вправо на 90°</string>
+    <string name="card_face_crop_rotation_hint">Перетаскивайте изображение, меняйте масштаб двумя пальцами или используйте кнопки поворота и отражения.</string>
+    <string name="card_face_flip_horizontal">Отразить по горизонтали</string>
+    <string name="card_face_flip_vertical">Отразить по вертикали</string>
+</resources>

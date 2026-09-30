@@ -51,6 +51,7 @@ public class AutofillFormFixtureActivity extends Activity {
         status = new TextView(this);
         status.setContentDescription("fixture-status");
         TextView title = new TextView(this);
+        title.setContentDescription("fixture-instance-" + getIntent().getStringExtra("fixtureInstance"));
         title.setText("Autofill fixture: " + scenario);
         title.setTextSize(20);
         layout.addView(title);

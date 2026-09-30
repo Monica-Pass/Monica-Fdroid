@@ -38,22 +38,23 @@ object WifiConnectLauncher {
     fun launch(context: Context, wifi: WifiData, password: String): Result {
         // 开放网络无需密码，也不用走剪贴板；有密码条目就一律尝试复制。
         val shouldCopy = wifi.security != WifiSecurity.NONE && password.isNotBlank()
-        val copied = if (shouldCopy) copyPassword(context, password) else false
+        val copied = if (shouldCopy) runCatching { copyPassword(context, password) }.getOrDefault(false) else false
 
         val intent = Intent(Settings.ACTION_WIFI_SETTINGS).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        return if (intent.resolveActivity(context.packageManager) != null) {
-            runCatching { context.startActivity(intent) }
-                .onFailure { Log.w(TAG, "ACTION_WIFI_SETTINGS dispatch failed", it) }
+        // Dispatch directly: package-visibility filtering may hide a working system handler.
+        return try {
+            context.startActivity(intent)
             val msg = when {
                 copied -> context.getString(R.string.wifi_connect_fallback_copied)
                 else -> context.getString(R.string.wifi_connect_fallback_no_copy)
             }
             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
             Result.OpenedSettings(passwordCopied = copied)
-        } else {
+        } catch (failure: Exception) {
+            Log.w(TAG, "ACTION_WIFI_SETTINGS dispatch failed", failure)
             Result.Failed
         }
     }

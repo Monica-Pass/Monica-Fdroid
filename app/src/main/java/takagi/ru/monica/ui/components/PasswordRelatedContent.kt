@@ -32,6 +32,7 @@ import takagi.ru.monica.utils.ClipboardUtils
 fun PasswordPaymentCard(
     entry: PasswordEntry,
     onCreateSend: ((String, String) -> Unit)? = null,
+    previewOnly: Boolean = false,
 ) {
     var expanded by remember(entry.id) { mutableStateOf(false) }
     val (month, year) = EntryPaymentFormat.splitExpiry(entry.creditCardExpiry)
@@ -50,7 +51,7 @@ fun PasswordPaymentCard(
             modifier = Modifier.fillMaxWidth().aspectRatio(CardFaceImageProcessor.CARD_ASPECT_RATIO)
                 .testTag("password_payment_face"),
         )
-        DetailCardSurface {
+        if (!previewOnly) DetailCardSurface {
             Row(
                 Modifier.fillMaxWidth().testTag("password_payment_expand")
                     .clickable(role = Role.Button) { expanded = !expanded }.padding(16.dp),
@@ -85,15 +86,65 @@ fun PasswordAuthenticatorCard(
         SecureItem(id = entry.id, itemType = ItemType.TOTP,
             title = data.issuer.ifBlank { entry.title }, itemData = "")
     }
-    TotpCodeCard(
-        item = displayItem, parsedTotpData = data, appSettings = settings,
-        modifier = Modifier.fillMaxWidth().testTag("password_authenticator_card"),
-        cardVerticalPadding = 16.dp, showContentDetails = true, onEdit = onEdit,
-        cardShape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-        onCopyCode = { code ->
-            ClipboardUtils.copyToClipboard(context, code, context.getString(R.string.verification_code), sensitive = true)
-            Toast.makeText(context, context.getString(R.string.copied,
-                context.getString(R.string.verification_code)), Toast.LENGTH_SHORT).show()
-        },
-    )
+    var menuOpen by remember(entry.id, data) { mutableStateOf(false) }
+    var qrContent by remember(entry.id, data) { mutableStateOf<Pair<String, String>?>(null) }
+    fun copyCode(next: Boolean) {
+        val code = passwordAuthenticatorActionCode(data, settings.totpTimeOffset, next)
+        ClipboardUtils.copyToClipboard(context, code, context.getString(R.string.verification_code), sensitive = true)
+        Toast.makeText(context, context.getString(R.string.copied,
+            context.getString(R.string.verification_code)), Toast.LENGTH_SHORT).show()
+        menuOpen = false
+    }
+    Box {
+        TotpCodeCard(
+            item = displayItem, parsedTotpData = data,
+            appSettings = settings.copy(validatorUnifiedProgressBar = takagi.ru.monica.data.UnifiedProgressBarMode.DISABLED),
+            modifier = Modifier.fillMaxWidth().testTag("password_authenticator_card"),
+            cardVerticalPadding = 16.dp, showContentDetails = true, onEdit = onEdit,
+            cardShape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            onCardClick = { menuOpen = true }, onLongClick = { menuOpen = true },
+            onActionMenu = { menuOpen = true }, onCopyCode = { menuOpen = true },
+        )
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false },
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)) {
+            DropdownMenuItem(text = { Text(stringResource(R.string.auth_detail_copy_current)) },
+                modifier = Modifier.testTag("auth_copy_current"), onClick = { copyCode(false) })
+            if (data.otpType != takagi.ru.monica.data.model.OtpType.HOTP) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.auth_detail_copy_next)) },
+                    modifier = Modifier.testTag("auth_copy_next"), onClick = { copyCode(true) })
+            }
+            DropdownMenuItem(text = { Text(stringResource(R.string.auth_detail_qr_migrate)) },
+                modifier = Modifier.testTag("auth_qr_migrate"), onClick = {
+                    menuOpen = false
+                    qrContent = context.getString(R.string.auth_detail_qr_migrate) to
+                        takagi.ru.monica.util.TotpUriParser.generateUri(
+                            listOf(data.issuer.ifBlank { entry.title }, data.accountName)
+                                .filter { it.isNotBlank() }.joinToString(":"), data, includePin = true)
+                })
+            DropdownMenuItem(text = { Text(stringResource(R.string.auth_detail_qr_current)) },
+                modifier = Modifier.testTag("auth_qr_current"), onClick = {
+                    menuOpen = false
+                    qrContent = context.getString(R.string.auth_detail_qr_current) to
+                        passwordAuthenticatorActionCode(data, settings.totpTimeOffset, false)
+                })
+            DropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, onClick = {
+                menuOpen = false
+                onEdit()
+            })
+        }
+    }
+    qrContent?.let { (title, content) ->
+        TextQrCodeDialog(title = title, content = content, onDismiss = { qrContent = null })
+    }
 }
+
+/** Generate at action time, even when a menu has remained open across a period boundary. */
+internal fun passwordAuthenticatorActionCode(
+    data: TotpData,
+    offset: Int,
+    next: Boolean,
+    seconds: Long = System.currentTimeMillis() / 1000L,
+): String = takagi.ru.monica.util.TotpGenerator.generateOtp(
+    totpData = data, timeOffset = offset,
+    currentSeconds = seconds + if (next && data.otpType != takagi.ru.monica.data.model.OtpType.HOTP) data.period else 0,
+)

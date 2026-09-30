@@ -248,7 +248,8 @@ class NoteViewModel internal constructor(
                         keepassGroupUuid = incoming.keepassGroupUuid,
                         isDeleted = isInRecycleBin,
                         deletedAt = if (isInRecycleBin) (existing.deletedAt ?: Date()) else null,
-                        updatedAt = Date()
+                        createdAt = incoming.createdAt.takeIf { it.time > 0 } ?: existing.createdAt,
+                        updatedAt = incoming.updatedAt.takeIf { it.time > 0 } ?: existing.updatedAt
                     )
                     if (!existing.matchesKeePassSecureItemImport(updated)) {
                         repository.updateItem(updated)
@@ -274,7 +275,7 @@ class NoteViewModel internal constructor(
     }
 
     private fun SecureItem.matchesKeePassSecureItemImport(imported: SecureItem): Boolean {
-        return copy(itemData = "", updatedAt = imported.updatedAt) == imported.copy(itemData = "") &&
+        return copy(itemData = "") == imported.copy(itemData = "") &&
             decryptStoredSensitiveValue(itemData) == decryptStoredSensitiveValue(imported.itemData)
     }
     

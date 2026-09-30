@@ -28,10 +28,13 @@ internal object PasskeyBackupPortabilityPolicy {
         storedPrivateKey: String?,
         resolvePrivateKey: (String?) -> String?,
         normalizePrivateKey: (String?) -> String?,
+        exportLegacyAlias: (String?) -> String? = { null },
     ): ExportDecision {
         if (!encryptedBackup) return ExportDecision.EncryptionRequired
 
-        val normalized = normalizePrivateKey(resolvePrivateKey(storedPrivateKey))
+        val resolved = resolvePrivateKey(storedPrivateKey)
+        val normalized = (normalizePrivateKey(resolved)
+            ?: normalizePrivateKey(exportLegacyAlias(resolved)))
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
             ?: return ExportDecision.PrivateKeyMissing

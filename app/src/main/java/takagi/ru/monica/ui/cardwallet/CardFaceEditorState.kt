@@ -80,7 +80,8 @@ fun CardFaceDetailHeader(
     bitmap: Bitmap?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    showHint: Boolean = true
 ) {
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
@@ -97,7 +98,7 @@ fun CardFaceDetailHeader(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        Text(
+        if (showHint) Text(
             stringResource(R.string.card_face_preview_hint),
             modifier = Modifier.padding(top = 8.dp),
             style = MaterialTheme.typography.bodySmall,
@@ -120,14 +121,16 @@ fun CardFaceEditSection(
     previewData: CardFacePreviewData,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    overrideBitmap: Bitmap? = null,
     imageSelectionAllowed: Boolean = true,
-    imageSelectionWarning: String? = null
+    imageSelectionWarning: String? = null,
+    compact: Boolean = false,
 ) {
     var showCustomizer by remember { mutableStateOf(false) }
     val bitmap = rememberCardFaceBitmap(
         item = state.item,
         imageAttachmentName = state.config?.imageAttachmentName,
-        overrideBitmap = state.preview,
+        overrideBitmap = state.preview ?: overrideBitmap,
         maxDimension = 1000
     )
     CardFaceEditorEntry(
@@ -136,7 +139,8 @@ fun CardFaceEditSection(
         previewData = previewData,
         enabled = enabled,
         onClick = { showCustomizer = true },
-        modifier = modifier
+        modifier = modifier,
+        compact = compact,
     )
     if (showCustomizer) {
         CardFaceCustomizer(
@@ -160,7 +164,8 @@ fun CardFaceEditorEntry(
     previewData: CardFacePreviewData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    compact: Boolean = false,
 ) {
     Surface(
         onClick = onClick,
@@ -188,7 +193,7 @@ fun CardFaceEditorEntry(
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(stringResource(R.string.card_face_customize), style = MaterialTheme.typography.titleSmall)
-                Text(
+                if (!compact) Text(
                     stringResource(if (config == null) R.string.card_face_customize_description else R.string.card_face_edit_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

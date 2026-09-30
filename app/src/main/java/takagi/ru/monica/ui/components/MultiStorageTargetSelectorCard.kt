@@ -57,7 +57,8 @@ fun MultiStorageTargetSelectorCard(
     getMdbxFolders: (Long) -> Flow<List<MdbxStoredFolderEntry>> = { flowOf(emptyList()) },
     isEditing: Boolean,
     onAddTargetClick: () -> Unit,
-    onRemoveTarget: (StorageTarget) -> Unit
+    onRemoveTarget: (StorageTarget) -> Unit,
+    compact: Boolean = false
 ) {
     val primaryTarget = selectedTargets.firstOrNull() ?: StorageTarget.MonicaLocal(null)
     val folderNameFlow = remember(primaryTarget, bitwardenFolderDao, getMdbxFolders) {
@@ -156,9 +157,9 @@ fun MultiStorageTargetSelectorCard(
     Surface(
         onClick = onAddTargetClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = visuals.containerColor,
-        tonalElevation = 2.dp
+        shape = RoundedCornerShape(if (compact) 4.dp else 20.dp),
+        color = if (compact) Color.Transparent else visuals.containerColor,
+        tonalElevation = if (compact) 0.dp else 2.dp
     ) {
         Row(
             modifier = Modifier
@@ -168,14 +169,14 @@ fun MultiStorageTargetSelectorCard(
         ) {
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = visuals.iconContainerColor,
-                modifier = Modifier.size(40.dp)
+                color = if (compact) Color.Transparent else visuals.iconContainerColor,
+                modifier = Modifier.size(if (compact) 24.dp else 40.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = visuals.icon,
                         contentDescription = null,
-                        tint = visuals.iconTint,
+                        tint = if (compact) MaterialTheme.colorScheme.primary else visuals.iconTint,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -190,7 +191,7 @@ fun MultiStorageTargetSelectorCard(
                     text = stringResource(R.string.multi_storage_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = visuals.contentColor
+                    color = if (compact) MaterialTheme.colorScheme.onSurface else visuals.contentColor
                 )
                 Text(
                     text = if (isEditing && existingTargetKeys.isNotEmpty() && selectedTargets.size > existingTargetKeys.size) {
@@ -199,7 +200,7 @@ fun MultiStorageTargetSelectorCard(
                         subtitle
                     },
                     style = MaterialTheme.typography.labelMedium,
-                    color = visuals.contentColor.copy(alpha = 0.78f),
+                    color = if (compact) MaterialTheme.colorScheme.onSurfaceVariant else visuals.contentColor.copy(alpha = 0.78f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -208,7 +209,7 @@ fun MultiStorageTargetSelectorCard(
             Icon(
                 imageVector = Icons.Default.UnfoldMore,
                 contentDescription = null,
-                tint = visuals.contentColor
+                tint = if (compact) MaterialTheme.colorScheme.onSurfaceVariant else visuals.contentColor
             )
         }
     }

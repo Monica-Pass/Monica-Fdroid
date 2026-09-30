@@ -58,7 +58,7 @@ class ImeKeyboardSettingsInstrumentedTest {
             assertEquals(ImeKeyboardOptions(true, true), withTimeout(5000) {
                 preferences.imeKeyboardOptions.first { it.scramblePin && it.hidePinPreview }
             })
-            File(context.getExternalFilesDir("ime-improvements"), "settings.png").outputStream().use {
+            File(context.filesDir, "autofill-no-dividers.png").outputStream().use {
                 compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
             }
             toggle("ime_scramble_pin_setting", false)

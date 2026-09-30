@@ -1,0 +1,96 @@
+{
+  "version": "1.0.315",
+  "status": "passed",
+  "testRuns": [
+    {
+      "classes": [
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest,takagi.ru.monica.ui.ApiKeyFlowTest,takagi.ru.monica.ui.GpgKeyFlowTest#generateSaveReloadAndPreserveEncryptedPrivateKey,takagi.ru.monica.ui.GpgKeyFlowTest#newEntryAndGenerationSheetRemainUsableInDarkLargeText,takagi.ru.monica.ui.screens.NativeApiTokenUiTest#createChoosesTheDatabaseAndCategoryWithoutSavingSecretDrafts,takagi.ru.monica.ui.screens.NativeApiTokenUiTest#editAndReturnKeepNativeIdentityExtensionsAndTheVisibleList"
+      ],
+      "testSha256": "CEFB0E5B6737D5B758A1D42B603C5C31AFA349CBE6E9DFD18A64B5BD4E325031",
+      "edition": "Main",
+      "testPackageId": "takagi.ru.monica.test",
+      "appSha256": "1E88B124498DC290794D76BF156A244141F82995F460046DA507D0329AFE61C3",
+      "suite": "TemplateEditorsFinal315",
+      "finishedAt": "2026-09-30T02:59:28.2206944+08:00",
+      "completed": true,
+      "startedAt": "2026-09-30T02:54:58.3005666+08:00",
+      "packageId": "takagi.ru.monica",
+      "count": 13
+    },
+    {
+      "classes": [
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#barcodeCreationRendersGroupedFieldsAndKeepsSaveReachable,takagi.ru.monica.ui.ApiKeyFlowTest#invalidInputStaysInEditorAndDarkLargeTextRemainsUsable,takagi.ru.monica.ui.GpgKeyFlowTest#newEntryAndGenerationSheetRemainUsableInDarkLargeText"
+      ],
+      "appSha256": "1EF7D327327C819567F660F4AF23BAF3B215BDEB339AEDA18C703AA75F95910D",
+      "testSha256": "5BBD46758FEB55332FFEDD7E9BC52EF895FD16A9074D28947C5BD28E6E52CBF0",
+      "finishedAt": "2026-09-30T03:03:06.1968940+08:00",
+      "suite": "TemplateEditorsPolish315",
+      "packageId": "takagi.ru.monica",
+      "completed": true,
+      "testPackageId": "takagi.ru.monica.test",
+      "edition": "Main",
+      "startedAt": "2026-09-30T03:01:42.8926165+08:00",
+      "count": 3
+    },
+    {
+      "startedAt": "2026-09-30T03:14:01.8470961+08:00",
+      "suite": "TemplateEditorsBarcode315",
+      "appSha256": "A2C22BCF4565ACCB9C8C418C151BDE3A9776BCBBCF40CCD46D3D0DA1D8534398",
+      "testSha256": "CACE24E980A485FE8248BF96C562A9D25515C52CB2DFC89A307B5D1F0B13EC2D",
+      "completed": true,
+      "finishedAt": "2026-09-30T03:15:01.4875620+08:00",
+      "packageId": "takagi.ru.monica",
+      "testPackageId": "takagi.ru.monica.test",
+      "classes": [
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#barcodeCreationRendersGroupedFieldsAndKeepsSaveReachable"
+      ],
+      "edition": "Main",
+      "count": 1
+    },
+    {
+      "classes": [
+        "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest,takagi.ru.monica.ui.ApiKeyFlowTest,takagi.ru.monica.ui.GpgKeyFlowTest#generateSaveReloadAndPreserveEncryptedPrivateKey,takagi.ru.monica.ui.GpgKeyFlowTest#newEntryAndGenerationSheetRemainUsableInDarkLargeText,takagi.ru.monica.ui.screens.NativeApiTokenUiTest#createChoosesTheDatabaseAndCategoryWithoutSavingSecretDrafts,takagi.ru.monica.ui.screens.NativeApiTokenUiTest#editAndReturnKeepNativeIdentityExtensionsAndTheVisibleList"
+      ],
+      "suite": "TemplateEditorsFinal315",
+      "testSha256": "6315155C05CBD397FBA3E38020E931F3558ED8564FE8E0A2073584397CFE9303",
+      "finishedAt": "2026-09-30T03:21:07.0578727+08:00",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "completed": true,
+      "appSha256": "DB69E321A6C1243DB80F6EC4168B20343F281CDCC41979ADB0560584259ECB33",
+      "startedAt": "2026-09-30T03:17:22.5248588+08:00",
+      "packageId": "takagi.ru.monica.fdroid",
+      "edition": "Fdroid",
+      "count": 14
+    }
+  ],
+  "testExecutions": 31,
+  "commonSourceSha256": {
+    "app/src/main/java/takagi/ru/monica/ui/components/EntryContentPanel.kt": "44c9eb4e7c2dd58ae3087b4b524cc40284f3fb115078977d489ff105ea2ae58e",
+    "app/src/main/java/takagi/ru/monica/ui/components/TemplateEditorNavigation.kt": "2aa68c4ead2fc751cf81be0a81762b98f5123d570483a3f83d23764e1b914973",
+    "app/src/main/java/takagi/ru/monica/ui/components/TemplateFormSection.kt": "4dc57fdce828c0b9b49445c60dc254fe135fe6d095c8e2c92666f794d8267a23",
+    "app/src/main/java/takagi/ru/monica/ui/components/OutlinedTextField.kt": "bd9f12084ff2174577ca4cd38edcd638175dfee3b0132323d915b07c2e3e4cf4",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditWifiScreen.kt": "ab0f1629a3e05fa727f111ec0d3fb4deea25024e7ca5598165ab71e63d2695d9",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditSshKeyScreen.kt": "89230ef2b3d15064d5bca474bfbfab78cba463d04f2f6d261cacf2287f2d9256",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "9abf1222a0e3e844fce56cbe1ab1089fd1c0182bba9858bdf4c99d68e4ab50c9",
+    "app/src/main/java/takagi/ru/monica/ui/screens/ApiKeyScreen.kt": "80baae772a860c49a2e7b0a1cc088d79d500c0b1df28902e04c33756927d5226",
+    "app/src/main/java/takagi/ru/monica/ui/screens/GpgKeyScreen.kt": "fe7f8473943dbcedc9dae0ff2ef50d2ad7442bca881fe16b288b5561651d23c6",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditApiTokenScreen.kt": "a27271c277a3a2e4627bd069fe8922571eb1f09070e9c8f5921ea4d294912477",
+    "app/src/main/java/takagi/ru/monica/ui/PasswordTabPane.kt": "d433cfb290b5545c36f6360c2464bb4afa49211ddec89d5baf3702129c5bbfce",
+    "app/src/main/java/takagi/ru/monica/viewmodel/ApiKeyEditorViewModel.kt": "80a7f1205825bb44dc041d823862a1ff7f77a8987585486ab45340bef36c3692",
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/TemplateEditorsDeviceTest.kt": "108ff15e85d389a55757cb713e683e4e90ff4ecbf718a1ba93b1617862bb21ae"
+  },
+  "scope": [
+    "Wi-Fi and SSH inherit MDBX / folders and populate MDBX selectors",
+    "Template navigation carries the selected target list",
+    "Seven menu entries; native token retains MDBX-only semantics",
+    "Wi-Fi native save / reopen and existing hidden fields / advanced configuration",
+    "API Key and GPG create / edit / secret handling; native token identity and extensions",
+    "M3E specialized editor groups; compact headers; barcode standalone field corners and supporting sections"
+  ],
+  "limitations": [
+    "Canvas online rendering unavailable due tool authentication; editable schema document retained",
+    "Main uses incremental validation: initial 13, header polish 3, final QR polish 1; final F-Droid APK runs all 14",
+    "Template switching carries storage choices, not automatic conversion of incompatible unsaved field values",
+    "No database schema change or migration"
+  ]
+}

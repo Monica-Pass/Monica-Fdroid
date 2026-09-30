@@ -23,6 +23,7 @@ import android.view.autofill.AutofillId
 import android.text.InputType
 import android.view.inputmethod.InlineSuggestionsRequest
 import androidx.core.content.ContextCompat
+import androidx.room.InvalidationTracker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -102,6 +103,11 @@ class MonicaAutofillServiceNg : AutofillService() {
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val otpBindingCache = AutofillOtpBindingCache(scope)
+    private val otpActions by lazy { AutofillOtpActions(applicationContext, otpBindingCache) }
+    private val otpBindingObserver = object : InvalidationTracker.Observer("secure_items", "local_mdbx_databases") {
+        override fun onInvalidated(tables: Set<String>) { otpBindingCache.invalidate() }
+    }
 
     private lateinit var passwordRepository: PasswordRepository
     private lateinit var autofillPreferences: AutofillPreferences
@@ -136,6 +142,7 @@ class MonicaAutofillServiceNg : AutofillService() {
         AutofillLogger.initialize(applicationContext)
 
         val database = PasswordDatabase.getDatabase(applicationContext)
+        database.invalidationTracker.addObserver(otpBindingObserver)
         passwordRepository = PasswordRepository(database.passwordEntryDao())
         autofillPreferences = AutofillPreferences(applicationContext)
         settingsManager = SettingsManager(applicationContext)
@@ -153,6 +160,7 @@ class MonicaAutofillServiceNg : AutofillService() {
         }
         scope.launch(Dispatchers.Default) {
             takagi.ru.monica.security.SessionManager.isUnlocked.collect { unlocked ->
+                otpBindingCache.invalidate()
                 if (!unlocked) {
                     matcher.clear()
                     recentFillSuggestions = null
@@ -164,6 +172,8 @@ class MonicaAutofillServiceNg : AutofillService() {
     }
 
     override fun onDestroy() {
+        PasswordDatabase.getDatabase(applicationContext).invalidationTracker.removeObserver(otpBindingObserver)
+        otpBindingCache.invalidate()
         matcher.clear()
         AutofillSessionGrants.clear()
         if (screenOffReceiverRegistered) {
@@ -698,6 +708,9 @@ class MonicaAutofillServiceNg : AutofillService() {
                 "webDomain" to (webDomain ?: "none"),
             )
         )
+        val postFillOtpPasswordIds = if (fillableTargets.any { it.hint == FieldHint.PASSWORD } &&
+            fillableTargets.none { it.hint == FieldHint.OTP_CODE }
+        ) otpActions.eligiblePasswordIds(passwordsForResponse) else emptySet()
         // Keep API 30 objects out of coroutine spill slots. Even a null inline
         // request is cast back to InlineSuggestionsRequest on resume, which
         // throws NoClassDefFoundError on Android 10. All suspending reads must
@@ -714,6 +727,7 @@ class MonicaAutofillServiceNg : AutofillService() {
             preferDirectAutoFill = isPasswordOnlyLogin && passwordsForResponse.size == 1,
             passwordSuggestionEnabled = passwordSuggestionEnabled,
             requireAuthentication = effectiveAuthenticationRequired,
+            postFillOtpPasswordIds = postFillOtpPasswordIds,
         )
 
         if (response == null) {

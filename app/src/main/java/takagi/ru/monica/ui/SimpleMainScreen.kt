@@ -3271,10 +3271,8 @@ fun SimpleMainScreen(
         } else {
             passwordViewModel::requestFastScroll
         },
-        fastScrollIndicatorLabel = if (currentTab == BottomNavItem.VaultV2) {
-            vaultV2PaneState.fastScrollIndicatorLabel
-        } else {
-            null
+        fastScrollIndicatorLabel = {
+            if (currentTab == BottomNavItem.VaultV2) vaultV2PaneState.fastScrollIndicatorLabel else null
         },
         vaultV2FastScrollbarInteracting =
             currentTab == BottomNavItem.VaultV2 && vaultV2PaneState.isFastScrollbarInteracting,

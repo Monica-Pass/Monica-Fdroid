@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">API-Schlüssel</string>
+    <string name="content_block_api_token">API-Token</string>
+    <string name="content_block_ssh">SSH-Schlüssel</string>
+    <string name="content_block_gpg">GPG-Schlüssel</string>
+    <string name="content_block_qr">QR-Code</string>
+    <string name="content_block_key">Schlüssel</string>
+    <string name="content_block_token">Token</string>
+    <string name="content_block_provider">Anbieter</string>
+    <string name="content_block_url">API-Endpunkt</string>
+    <string name="content_block_algorithm">Algorithmus</string>
+    <string name="content_block_public">Öffentlicher Schlüssel</string>
+    <string name="content_block_private">Privater Schlüssel</string>
+    <string name="content_block_fingerprint">Fingerabdruck</string>
+    <string name="content_block_identity">Identität / Kommentar</string>
+    <string name="content_block_content">Text oder Link</string>
+    <string name="content_block_import">Aus Datei importieren</string>
+    <string name="content_block_export">In Datei exportieren</string>
+    <string name="content_block_unavailable">Nicht unterstützter Inhalt</string>
+    <string name="content_block_preserved">Der ursprüngliche Inhalt bleibt erhalten. Zum Bearbeiten eine kompatible Version verwenden.</string>
+    <string name="content_block_save_error">Inhalt konnte nicht gespeichert oder gelesen werden. Datei und Größe prüfen (maximal 256 KiB).</string>
+    <string name="content_block_more">Weitere Inhalte</string>
+    <string name="content_block_key_size">Schlüssellänge</string>
+    <string name="content_block_format">Format</string>
+    <string name="content_block_qr_error">Der Inhalt ist zu lang für einen QR-Code. Er kann weiterhin vollständig angezeigt oder kopiert werden.</string>
+</resources>

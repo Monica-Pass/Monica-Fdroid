@@ -1,0 +1,73 @@
+{
+  "version": "1.0.315",
+  "status": "passed",
+  "testsPerEdition": 15,
+  "runs": [
+    {
+      "suite": "ImageSubscriptionsFinal315",
+      "testPackageId": "takagi.ru.monica.test",
+      "completed": true,
+      "startedAt": "2026-09-30T02:21:47.5750192+08:00",
+      "testSha256": "71C46725F3572FA66109CA1F450A54398E87E6EC534DD88D89EC33FAFA3C88DF",
+      "packageId": "takagi.ru.monica",
+      "classes": [
+        "takagi.ru.monica.ui.images.ImageSubscriptionsInstrumentedTest,takagi.ru.monica.ui.images.ImageSubscriptionUiTest,takagi.ru.monica.ui.cardwallet.CardFaceCustomizerTest,takagi.ru.monica.ui.cardwallet.CardFaceCropperTest"
+      ],
+      "appSha256": "85608A8398878DA70EB19E51C884BCEA3FCF44E9FAA3CEE061D77C896FBC1CE4",
+      "finishedAt": "2026-09-30T02:23:27.0557143+08:00",
+      "edition": "Main"
+    },
+    {
+      "edition": "Fdroid",
+      "testSha256": "5C9D7CE97CDEFA3749F58ABD80A3B525DD75F18B5101C7C8E1D8A521EA45ED62",
+      "packageId": "takagi.ru.monica.fdroid",
+      "classes": [
+        "takagi.ru.monica.ui.images.ImageSubscriptionsInstrumentedTest,takagi.ru.monica.ui.images.ImageSubscriptionUiTest,takagi.ru.monica.ui.cardwallet.CardFaceCustomizerTest,takagi.ru.monica.ui.cardwallet.CardFaceCropperTest"
+      ],
+      "startedAt": "2026-09-30T02:30:56.5487628+08:00",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "finishedAt": "2026-09-30T02:32:57.2232003+08:00",
+      "completed": true,
+      "suite": "ImageSubscriptionsFinal315",
+      "appSha256": "858076B39BE7E5EB096BDC26E668EA4257EE53E23E667ED76905C5D845D504C1"
+    }
+  ],
+  "sourceSha256": {
+    "app/src/main/java/takagi/ru/monica/ui/screens/PageAdjustmentCustomizationScreen.kt": "4f6d01ca2422fe108304b2f9b576597941382828fa23062fea014a6510e08ea0",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "fe593a1aa85390eead338f8f186306a101e79ecff9123220ba7c5331952965ad",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditTotpScreen.kt": "f5f4670a7e68403c4391e340a13d384a235a2989a12ad1f6e555f535ca55352b",
+    "app/src/main/java/takagi/ru/monica/ui/components/CustomIconActionDialog.kt": "f038c5e32367cf8d3a2c184ab96819524cbdbbec39eababb0095529998efacf5",
+    "app/src/main/java/takagi/ru/monica/ui/cardwallet/CardFaceCustomizer.kt": "bdddd2fce230a9d3eda6a4c645bd78d452f487e4deb82cb92e96fd66268ae751",
+    "app/src/main/java/takagi/ru/monica/ui/images/ImageSubscriptions.kt": "3db5c811b772edef3d2a8bba9f72da0ac37a8cc0dc7af23af4255586819bd917",
+    "app/src/main/java/takagi/ru/monica/ui/images/ImageSubscriptionBrowser.kt": "ac0be28b78631a949834ead8dd9adcea8b890e3fb189fab1482257dc23a660ba",
+    "app/src/main/res/values/image_subscriptions.xml": "9048cc5591899cfc2650cf5f6ba82e9b7e9148eb1f48daf2e3e754476d27a637",
+    "app/src/main/res/values-zh/image_subscriptions.xml": "574980f87a84e435ab212537e012ebd07506c9c2b1d1ef410fd57602b2381b57",
+    "app/src/androidTest/java/takagi/ru/monica/ui/images/ImageSubscriptionsInstrumentedTest.kt": "acd737a29dc5bc10ca123501592c3fb26500dd2b942b73554fa6c682983d91de",
+    "app/src/androidTest/java/takagi/ru/monica/ui/images/ImageSubscriptionUiTest.kt": "24759ba26c4f616f3f2614b352eb82413a12c8e846b679db6c7181c4eb77e703",
+    "app/src/androidTest/java/takagi/ru/monica/ui/cardwallet/CardFaceCustomizerTest.kt": "e4f51938adcdc58442e17e8decfad14fcbb3d358d4ecc1513e4c07cc498212be"
+  },
+  "coverage": [
+    "Feed parsing and invalid URL rejection",
+    "Failed refresh and corrupt local catalog preservation",
+    "Unsubscribe keeps imported icon and cropped artwork",
+    "Offline image cache",
+    "HTTPS downgrade rejection",
+    "Category-specific deduplication",
+    "Invalid image rejection",
+    "UI add/search/select/light/dark",
+    "Existing card editor and cropper pan/zoom/cancel/confirm"
+  ],
+  "publicExample": {
+    "source": "https://raw.githubusercontent.com/baiitang/Sakura/main/Fileball/Yuan/tubiao.json",
+    "items": 602,
+    "httpsOnly": true,
+    "desktopHeadChecks": "Feed and first image HTTP 200; device tests use deterministic synthetic responses"
+  },
+  "limitations": [
+    "HTTPS public JSON and PNG/JPEG/WebP links only",
+    "Subscription settings stay on this device",
+    "Online Canvas rendering unavailable due browser authentication",
+    "Not a universal web-page scraper"
+  ],
+  "ui": "Native Main/F-Droid screenshots inspected; preview images in test screenshots are synthetic"
+}

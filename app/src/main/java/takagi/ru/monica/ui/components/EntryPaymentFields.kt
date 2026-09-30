@@ -22,10 +22,11 @@ fun EntryPaymentFields(
     number: String, holder: String, expiry: String, cvv: String,
     onNumber: (String) -> Unit, onHolder: (String) -> Unit,
     onExpiry: (String) -> Unit, onCvv: (String) -> Unit,
+    onPickHolder: (() -> Unit)? = null,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (LocalTemplateFieldShape.current) 2.dp else 12.dp)) {
         PaymentField(number, { onNumber(EntryPaymentFormat.cardNumber(it)) }, R.string.field_card_number, "number", true, true)
-        PaymentField(holder, onHolder, R.string.cardholder_name, "holder", false, false)
+        PaymentField(holder, onHolder, R.string.cardholder_name, "holder", false, false, onPickHolder)
         PaymentField(expiry, { onExpiry(EntryPaymentFormat.expiry(it)) }, R.string.field_expiry, "expiry", false, false)
         PaymentField(cvv, { onCvv(EntryPaymentFormat.cvv(it)) }, R.string.cvv, "cvv", true, true)
     }
@@ -33,7 +34,7 @@ fun EntryPaymentFields(
 
 @Composable
 private fun PaymentField(value: String, onChange: (String) -> Unit, label: Int, tag: String,
-    secret: Boolean, numeric: Boolean) {
+    secret: Boolean, numeric: Boolean, onPick: (() -> Unit)? = null) {
     var visible by remember { mutableStateOf(false) }
     OutlinedTextField(value = value, onValueChange = onChange,
         label = { Text(stringResource(label)) }, singleLine = true, entryContentStyle = true,
@@ -43,6 +44,10 @@ private fun PaymentField(value: String, onChange: (String) -> Unit, label: Int, 
             IconButton(onClick = { visible = !visible }) {
                 Icon(if (visible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     stringResource(if (visible) R.string.hide_password else R.string.show_password))
+            }
+        }} else if (onPick != null) {{
+            IconButton(onClick = onPick) {
+                Icon(Icons.Default.PersonAdd, stringResource(R.string.common_name_fill_title))
             }
         }} else null,
         shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().testTag("entry_payment_$tag"))

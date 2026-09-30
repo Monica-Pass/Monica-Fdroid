@@ -289,6 +289,11 @@ impl PreparedWriteOperation {
         &self.operation_kind
     }
 
+    /// Semantic repository kind, also used when composing attachment writes.
+    pub fn commit_kind(&self) -> String {
+        write_operation_commit_kind(&self.commands)
+    }
+
     pub fn branch_id(&self) -> Option<&str> {
         self.branch_id.as_deref()
     }
@@ -317,7 +322,7 @@ impl PreparedWriteOperation {
             self.operation_id.clone(),
             self.operation_kind.clone(),
             if self.branch_id.is_some() { "" } else { "main" },
-            write_operation_commit_kind(&self.commands),
+            self.commit_kind(),
             self.change_scope.clone(),
             self.changed_objects.clone(),
         )

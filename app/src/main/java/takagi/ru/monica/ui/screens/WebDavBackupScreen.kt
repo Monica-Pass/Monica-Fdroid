@@ -122,6 +122,8 @@ private class WebDavBackupScreenState(
     var restoreBackup by mutableStateOf<BackupFile?>(null)
     var deleteBackup by mutableStateOf<BackupFile?>(null)
     var restoreBusy by mutableStateOf(false)
+    var backupProblem by mutableStateOf<takagi.ru.monica.data.BackupReport?>(null)
+    var partialBackupSaved by mutableStateOf(false)
 
     fun connectWebDav() {
         if (serverUrl.isBlank()) {
@@ -181,7 +183,7 @@ private class WebDavBackupScreenState(
         }
     }
 
-    fun createBackup() {
+    fun createBackup(skippedPasskeys: List<takagi.ru.monica.data.FailedItem> = emptyList()) {
         // 防止重复点击
         if (isBackupInProgress) {
             Toast.makeText(
@@ -202,6 +204,8 @@ private class WebDavBackupScreenState(
             return
         }
 
+        backupProblem = null
+        partialBackupSaved = false
         isBackupInProgress = true
         isLoading = true
         errorMessage = ""
@@ -256,7 +260,8 @@ private class WebDavBackupScreenState(
                             preferences = backupPreferences,
                             isPermanent = true, // Manual backups are permanent
                             isManualTrigger = true,
-                            contentScope = BackupContentScope.MONICA_LOCAL_ONLY
+                            contentScope = BackupContentScope.MONICA_LOCAL_ONLY,
+                            skippedPasskeys = skippedPasskeys
                         ).getOrThrow()
 
                         SyncDiagnostics.success(
@@ -278,7 +283,13 @@ private class WebDavBackupScreenState(
                         lastBackupTime = webDavHelper.getLastBackupTime()
 
                         val report = syncResult.value
-                        val message = if (report.hasIssues()) {
+                        if (report.skippedItems.isNotEmpty()) {
+                            backupProblem = report
+                            partialBackupSaved = true
+                        }
+                        val message = if (report.skippedItems.isNotEmpty()) {
+                            context.getString(R.string.passkey_partial_saved)
+                        } else if (report.hasIssues()) {
                             report.getSummary(context)
                         } else {
                             context.getString(R.string.webdav_backup_success)
@@ -340,7 +351,10 @@ private class WebDavBackupScreenState(
                     is SyncTaskAwaitResult.Failed -> {
                         val error = syncResult.error.message
                             ?: context.getString(R.string.webdav_create_backup_failed)
-                        errorMessage = error
+                        val incomplete = syncResult.error as? takagi.ru.monica.utils.IncompleteBackupException
+                        backupProblem = incomplete?.report
+                        partialBackupSaved = false
+                        errorMessage = if (incomplete == null) error else ""
                         Toast.makeText(
                             context,
                             context.getString(R.string.webdav_backup_failed, error),
@@ -544,7 +558,7 @@ fun WebDavBackupScreen(
                 if (isConfigured) {
                     CloudBackupPrimaryButton(
                         label = stringResource(if (isBackupInProgress) R.string.webdav_backup_in_progress else R.string.webdav_create_new_backup),
-                        onClick = ::createBackup,
+                        onClick = { createBackup() },
                         enabled = !isLoading && !restoreBusy,
                         busy = isBackupInProgress,
                     )
@@ -812,6 +826,15 @@ fun WebDavBackupScreen(
             )
         }
 
+        backupProblem?.let { report ->
+            takagi.ru.monica.ui.components.BackupProblemDialog(
+                report = report,
+                partialSaved = partialBackupSaved,
+                onDismiss = { backupProblem = null },
+                onRetry = { createBackup() },
+                onSkipPasskeys = { createBackup(it) },
+            )
+        }
         pendingUntrustedCertificate?.let { certificate ->
             WebDavCertificateDialog(
                 certificate = certificate,

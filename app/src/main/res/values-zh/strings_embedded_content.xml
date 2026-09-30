@@ -1,0 +1,11 @@
+<resources>
+    <string name="embedded_copy_working">正在复制完整内容…</string>
+    <string name="embedded_copy_failed">内容尚未完整复制</string>
+    <string name="embedded_copy_failed_message">未能完整复制“%1$s”。原项目和草稿已保留，请确认来源数据库已解锁、附件可读取，然后重试。</string>
+    <string name="embedded_copy_note">复制笔记</string>
+    <string name="embedded_copy_card">复制卡片</string>
+    <string name="embedded_copy_independent">独立副本 · %1$d 个附件</string>
+    <string name="embedded_copy_document">复制证件</string>
+    <string name="password_content_document">证件</string>
+    <string name="password_content_document_description">身份字段、卡面、正反面照片和附件</string>
+</resources>

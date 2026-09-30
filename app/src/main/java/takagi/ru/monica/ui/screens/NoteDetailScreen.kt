@@ -73,7 +73,8 @@ fun NoteDetailScreen(
     onNavigateBack: () -> Unit,
     onEditNote: (Long) -> Unit,
     onCreateSend: (title: String, text: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    embeddedAccess: takagi.ru.monica.attachments.EmbeddedWalletAccess? = null
 ) {
     val detailImageMaxDimension = 1440
     val context = LocalContext.current
@@ -81,7 +82,8 @@ fun NoteDetailScreen(
     val database = remember { PasswordDatabase.getDatabase(context) }
     val untitledLabel = stringResource(R.string.untitled)
     val imageManager = remember { ImageManager(context) }
-    val noteItem by viewModel.observeNoteById(noteId).collectAsState(initial = null)
+    val standaloneNote by viewModel.observeNoteById(noteId).collectAsState(initial = null)
+    val noteItem = embeddedAccess?.snapshot?.displayItem() ?: standaloneNote
     val bitwardenVaults by database.bitwardenVaultDao().getAllVaultsFlow().collectAsState(initial = emptyList())
     var showNoteImageDialog by remember { mutableStateOf<String?>(null) }
     val highlightQuery = initialHighlightQuery?.trim().orEmpty()
@@ -162,7 +164,7 @@ fun NoteDetailScreen(
         imageIds.forEach { imageId ->
             if (!imageBitmaps.containsKey(imageId)) {
                 val bitmap = withContext(Dispatchers.IO) {
-                    imageManager.loadImage(
+                    if (embeddedAccess != null) embeddedAccess.image(imageId) else imageManager.loadImage(
                         fileName = imageId,
                         maxDimension = detailImageMaxDimension
                     )
@@ -217,7 +219,7 @@ fun NoteDetailScreen(
             )
         },
         floatingActionButton = {
-            noteItem?.let {
+            if (embeddedAccess == null) noteItem?.let {
                 ActionStrip(
                     actions = listOf(
                         ActionStripItem(
@@ -354,10 +356,13 @@ fun NoteDetailScreen(
                 )
             }
 
-            AttachmentsDetailSection(
-                owner = AttachmentOwner.secureItem(currentNote.id),
-                bitwardenContext = attachmentBitwardenContext,
-                keepassContext = attachmentKeePassContext
+            if (embeddedAccess?.isNative == true) takagi.ru.monica.attachments.ui.NativeEmbeddedWalletAttachments(embeddedAccess)
+            else AttachmentsDetailSection(
+                owner = embeddedAccess?.owner ?: AttachmentOwner.secureItem(currentNote.id),
+                includedFileNames = embeddedAccess?.snapshot?.assets?.filter { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.ATTACHMENT }?.map { it.name }?.toSet(),
+                displayFileNames = embeddedAccess?.snapshot?.assets?.associate { it.name to it.displayName }.orEmpty(),
+                bitwardenContext = embeddedAccess?.bitwardenContext ?: attachmentBitwardenContext,
+                keepassContext = embeddedAccess?.keepassContext ?: attachmentKeePassContext
             )
 
             Text(

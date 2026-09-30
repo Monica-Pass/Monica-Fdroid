@@ -1,0 +1,57 @@
+{
+  "status": "IN_PROGRESS_NOT_INTEGRATED",
+  "main_unit_tests": [
+    {
+      "suite": "takagi.ru.monica.attachments.EmbeddedWalletAssetDraftTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "suite": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  ],
+  "fdroid_unit_tests": [
+    {
+      "suite": "takagi.ru.monica.attachments.EmbeddedWalletAssetDraftTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "suite": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  ],
+  "native_ui_tests": "not run: feature not connected",
+  "source_files": [
+    "app/src/main/java/takagi/ru/monica/data/model/EmbeddedWalletContent.kt",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletAssetDraft.kt",
+    "app/src/test/java/takagi/ru/monica/data/model/EmbeddedWalletContentTest.kt",
+    "app/src/test/java/takagi/ru/monica/attachments/EmbeddedWalletAssetDraftTest.kt"
+  ],
+  "remaining": [
+    "Reuse complete bank/document/address editors in draft mode; hide database selection",
+    "Reuse frequent-card sheet; full independent asset copy before replacing draft",
+    "Connect parent save with explicit attachment failures and retry",
+    "Open full embedded details from card face; remove duplicate payment section",
+    "Verify Local/MDBX/KeePass/Bitwarden persistence and backup restoration",
+    "Notes: copy complete body/Markdown/tags/custom fields/images/attachments; preserve old links until full copy succeeds; source changes/deletion must not affect copy"
+  ],
+  "draft_service": ".codex-tasks/embedded-wallet-315/EmbeddedWalletCopyService.kt (uncompiled draft; not integrated)",
+  "native_storage_validation": "Not performed. F-Droid JVM test excludes unrelated Rust rebuild tasks; this is not APK/device/backup verification.",
+  "source_sha256": {
+    "app/src/main/java/takagi/ru/monica/data/model/EmbeddedWalletContent.kt": "e6e5c91473d0e86ca74c3327344179abdb7c18098222b569157b216bcfc6b6f2",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletAssetDraft.kt": "28ea6e50ab68585b718b2b92ffe8e51bdccc1b6fc6dd25a3dc3720f336cd7b54",
+    "app/src/test/java/takagi/ru/monica/data/model/EmbeddedWalletContentTest.kt": "0a025f72b9844777f2df4dee6232942902329cd04c9f93367d72542f7a7ac9d6",
+    "app/src/test/java/takagi/ru/monica/attachments/EmbeddedWalletAssetDraftTest.kt": "eb1c36a7d58b0278fd16520d20142f7e2a786e1a4abfe6452e14d6ee405ce3ae"
+  },
+  "notes_design": "note-picker/note-editor/note-detail rendered in light and dark; implementation NOT connected",
+  "superseded_by": "embedded-wallet-315-integration-verification.json",
+  "historical_record_only": true
+}

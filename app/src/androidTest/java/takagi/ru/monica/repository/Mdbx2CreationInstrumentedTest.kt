@@ -30,6 +30,7 @@ import takagi.ru.monica.viewmodel.MdbxViewModel
 class Mdbx2CreationInstrumentedTest {
     @Test
     fun defaultEngineCreatesRoutedMdbx2Vault() = runBlocking {
+        for (mode in MdbxTigaMode.entries) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val application = context.applicationContext as Application
         val room = PasswordDatabase.getDatabase(context)
@@ -57,7 +58,7 @@ class Mdbx2CreationInstrumentedTest {
                 masterPassword = password,
                 unlockMethod = MdbxUnlockMethod.MASTER_PASSWORD,
                 keyFile = null,
-                tigaMode = MdbxTigaMode.SKY,
+                tigaMode = mode,
                 description = "default creation test"
             )
             val operation = withTimeout(20_000) {
@@ -76,6 +77,7 @@ class Mdbx2CreationInstrumentedTest {
             assertEquals(MdbxSourceType.LOCAL_INTERNAL, database.sourceTypeEnum)
             assertEquals(MdbxSyncStatus.LOCAL_ONLY.name, database.lastSyncStatus)
             assertEquals("argon2id-mdbx2", database.kdfProfile)
+            assertEquals(mode.name, database.tigaMode)
             assertTrue(vaultFile.isFile)
 
             val passwordRepository = PasswordRepository(
@@ -139,6 +141,7 @@ class Mdbx2CreationInstrumentedTest {
             if (passwordEntryId > 0L) room.passwordEntryDao().deletePasswordEntryById(passwordEntryId)
             if (databaseId > 0L) databaseDao.deleteDatabaseById(databaseId)
             vaultFile?.delete()
+        }
         }
     }
 

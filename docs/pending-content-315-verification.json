@@ -1,0 +1,390 @@
+{
+  "version": "1.0.315-unreleased",
+  "recordedAt": "2026-09-30T19:28:38.203569+08:00",
+  "status": "passed",
+  "device": "Monica_Issue136_API_32 / emulator-5554 / Android32 / x86_64",
+  "editions": {
+    "main": {
+      "buildLogSha256": "9ac1a98f602b75e0c27a5d1375047fd4cc3b6be419441bcc6d549b9d5ff5d2b4",
+      "unitTests": 55,
+      "unitResults": [
+        {
+          "name": "takagi.ru.monica.attachments.EmbeddedWalletAssetDraftTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.autofill_ng.AutofillCancellationTest",
+          "tests": "0",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.ApiTokenMetadataTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.ApiTokenPayloadTest",
+          "tests": "9",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.EmbeddedDocumentEditorDataTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordContentBlocksTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordQrTemplateTest",
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.NativeApiTokenAssetsTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.transfer.NativeTokenBackupAssetsTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.utils.PortableTotpBackupCodecTest",
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        }
+      ],
+      "device": {
+        "acceptance": {
+          "passed": 25,
+          "receipt": {
+            "startedAt": "2026-09-30T19:16:44.4330127+08:00",
+            "classes": [
+              "takagi.ru.monica.credentialexchange.EmbeddedDocumentAssetsInstrumentedTest,takagi.ru.monica.credentialexchange.EmbeddedDocumentUiTest,takagi.ru.monica.repository.NativeApiTokenAssetsInstrumentedTest,takagi.ru.monica.ui.screens.NativeApiTokenAssetsUiTest,takagi.ru.monica.credentialexchange.NativeTokenArchiveManifestInstrumentedTest,takagi.ru.monica.ui.PasswordQrTemplateUiTest,takagi.ru.monica.ui.PasswordContentBlocksUiTest,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest,takagi.ru.monica.ui.PasswordOtpEditorTest#defaultInlineAuthenticatorPreviewsSavesReopensAndClears"
+            ],
+            "finishedAt": "2026-09-30T19:20:07.1322601+08:00",
+            "edition": "Main",
+            "appSha256": "2CB3F7BADDBF0F7ACB7BDCFA2DFB0FFE063978AF4AD3A4B5F90877A14356154F",
+            "testSha256": "3286E505C6B56090EACCD194DCB3AE9A41C042953CF943776375A4A0552876F4",
+            "packageId": "takagi.ru.monica",
+            "completed": true,
+            "suite": "Acceptance",
+            "testPackageId": "takagi.ru.monica.test"
+          },
+          "logSha256": "438bbd914131b55e1d7571cf11ba6e46e30e26f03fd0514c7681b11b2e031ca3"
+        },
+        "realwebdav": {
+          "passed": 1,
+          "receipt": {
+            "startedAt": "2026-09-30T19:20:08.3158711+08:00",
+            "classes": [
+              "takagi.ru.monica.repository.Mdbx2RealWebDavInstrumentedTest"
+            ],
+            "finishedAt": "2026-09-30T19:20:29.0390282+08:00",
+            "edition": "Main",
+            "appSha256": "2CB3F7BADDBF0F7ACB7BDCFA2DFB0FFE063978AF4AD3A4B5F90877A14356154F",
+            "testSha256": "3286E505C6B56090EACCD194DCB3AE9A41C042953CF943776375A4A0552876F4",
+            "packageId": "takagi.ru.monica",
+            "completed": true,
+            "suite": "RealWebDav",
+            "testPackageId": "takagi.ru.monica.test"
+          },
+          "logSha256": "2325d22418b28bde0b7261bee2157f873b683f4571d5fe6ee832d3fc493b8db4"
+        }
+      }
+    },
+    "fdroid": {
+      "buildLogSha256": "2d3961fe2bc742fb0115897931c266efb6fcb7fa328f7d1767fb26f193a4b345",
+      "unitTests": 55,
+      "unitResults": [
+        {
+          "name": "takagi.ru.monica.attachments.EmbeddedWalletAssetDraftTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.autofill_ng.AutofillCancellationTest",
+          "tests": "0",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.ApiTokenMetadataTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.ApiTokenPayloadTest",
+          "tests": "9",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.EmbeddedDocumentEditorDataTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.EmbeddedWalletContentTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordContentBlocksTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.PasswordQrTemplateTest",
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.NativeApiTokenAssetsTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.transfer.NativeTokenBackupAssetsTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        },
+        {
+          "name": "takagi.ru.monica.utils.PortableTotpBackupCodecTest",
+          "tests": "4",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0"
+        }
+      ],
+      "device": {
+        "acceptance": {
+          "passed": 25,
+          "receipt": {
+            "classes": [
+              "takagi.ru.monica.credentialexchange.EmbeddedDocumentAssetsInstrumentedTest,takagi.ru.monica.credentialexchange.EmbeddedDocumentUiTest,takagi.ru.monica.repository.NativeApiTokenAssetsInstrumentedTest,takagi.ru.monica.ui.screens.NativeApiTokenAssetsUiTest,takagi.ru.monica.credentialexchange.NativeTokenArchiveManifestInstrumentedTest,takagi.ru.monica.ui.PasswordQrTemplateUiTest,takagi.ru.monica.ui.PasswordContentBlocksUiTest,takagi.ru.monica.credentialexchange.NativePasswordContentStorageInstrumentedTest,takagi.ru.monica.ui.PasswordOtpEditorTest#defaultInlineAuthenticatorPreviewsSavesReopensAndClears"
+            ],
+            "suite": "Acceptance",
+            "testSha256": "955ACB82E49EC575B4A543DF58EA5B0362106247A199A7B06E6E7FC9A00EDC9E",
+            "completed": true,
+            "startedAt": "2026-09-30T19:23:25.7386365+08:00",
+            "appSha256": "DAB0B652F4D7B9EF6FE695DF81BC2FE59A8FF365803FA129A9AF487746B50D2D",
+            "testPackageId": "takagi.ru.monica.fdroid.test",
+            "packageId": "takagi.ru.monica.fdroid",
+            "edition": "Fdroid",
+            "finishedAt": "2026-09-30T19:26:46.2611293+08:00"
+          },
+          "logSha256": "7a9e56e549a74e745f6d103fbac37496080f9ff3c199659f37059886829eaf20"
+        },
+        "realwebdav": {
+          "passed": 1,
+          "receipt": {
+            "classes": [
+              "takagi.ru.monica.repository.Mdbx2RealWebDavInstrumentedTest"
+            ],
+            "suite": "RealWebDav",
+            "testSha256": "955ACB82E49EC575B4A543DF58EA5B0362106247A199A7B06E6E7FC9A00EDC9E",
+            "completed": true,
+            "startedAt": "2026-09-30T19:26:47.5335635+08:00",
+            "appSha256": "DAB0B652F4D7B9EF6FE695DF81BC2FE59A8FF365803FA129A9AF487746B50D2D",
+            "testPackageId": "takagi.ru.monica.fdroid.test",
+            "packageId": "takagi.ru.monica.fdroid",
+            "edition": "Fdroid",
+            "finishedAt": "2026-09-30T19:27:07.8180700+08:00"
+          },
+          "logSha256": "3fbe09ad220a31acf2a356e9a90ed32071a9075598d2255ef06cf916c7b0c8df"
+        }
+      }
+    }
+  },
+  "scope": [
+    "complete embedded document copies",
+    "native API-token attachments and wallet/note assets",
+    "atomic move and rollback",
+    "database ZIP manifest/file validation",
+    "native snapshots and real loopback WebDAV sync",
+    "QR templates and default inline OTP regression"
+  ],
+  "limits": [
+    "Only Android32 x86_64 executed; ARM64/ARM32 build/export checks are not device tests",
+    "WebDAV used a real isolated local WsgiDAV server and synthetic data, not a customer provider",
+    "No live authenticated OneDrive transfer in this task",
+    "Database ZIP export is distinct from whole-app backup; old clients may ignore new attachments",
+    "Authenticator arbitrary custom fields cancelled; Bitwarden SSO/Passkey account login excluded"
+  ],
+  "nativeRegression": {
+    "hostTests": 59,
+    "lateFailureRerun": 1,
+    "checksums": {
+      "library": "C:\\Users\\joyins\\Desktop\\Monica-all\\.codex-tasks\\pending-content-315\\native-composite-move\\source\\target\\debug\\deps\\mdbx_ffi.dll",
+      "profile": "mdbx2-uniffi-bindings-v1",
+      "status": "compatible",
+      "uniffi_contract_version": 30,
+      "verified_checksums": 239,
+      "verified_symbols": 539
+    },
+    "ordinaryArtifacts": {
+      "x86_64": {
+        "bytes": 8989232,
+        "sha256": "604c99e0b09467da09a9282b7b3a049b2a0eac7aeeb6b49cbc681d2791e6ab0c",
+        "build_id": "5781807ed31cde91aea1578f80e477f7b27df232"
+      },
+      "arm64-v8a": {
+        "bytes": 7550440,
+        "sha256": "e99dedd860fe10b2c49bd328645b42ed1d2f706d407aec7088296c7aaf2d5f4f",
+        "build_id": "c8254959e04e79d8c71a9d25754ddcc955c92820"
+      },
+      "armeabi-v7a": {
+        "bytes": 5808936,
+        "sha256": "1e80db6a7b7e67502e4a63bd1996fb182297c0cb9db19fac4c6b33ee7836db08",
+        "build_id": "fa59790d2602232b2b0a38ba3b2e1eecc29e4d3e"
+      }
+    },
+    "fdroidArtifacts": {
+      "x86_64": {
+        "sourceBuildSha256": "d09f827afbd8b20f7e5ca0d7a105750563ce40dc4a45ef1e88940b6896f62ac9",
+        "normalizedSha256": "d0aa9cdf1ec9227840cc86fdbada0a19df59c046bae88d38152e4bad4a91ae15",
+        "ordinarySha256": "604c99e0b09467da09a9282b7b3a049b2a0eac7aeeb6b49cbc681d2791e6ab0c",
+        "matchesOrdinaryAfterSameStrip": false
+      },
+      "arm64-v8a": {
+        "sourceBuildSha256": "1b6d33d7654ca71f96c81050431d16fcfd45e40666f1d9bc248e370b6caf31bf",
+        "normalizedSha256": "c79faa66a97c0b95cb7a2b28c49f5745bd7498b8916de7809af8b1a40dd9d6ee",
+        "ordinarySha256": "e99dedd860fe10b2c49bd328645b42ed1d2f706d407aec7088296c7aaf2d5f4f",
+        "matchesOrdinaryAfterSameStrip": false
+      },
+      "armeabi-v7a": {
+        "sourceBuildSha256": "5e80955e520991659dc152c92be94a715f1764cdf5ccff1b67d649d6b62594e0",
+        "normalizedSha256": "c61d3255fa65e67354a6065bfd002125a252a1d11bb800005ad7f8a3c2f4eef8",
+        "ordinarySha256": "1e80db6a7b7e67502e4a63bd1996fb182297c0cb9db19fac4c6b33ee7836db08",
+        "matchesOrdinaryAfterSameStrip": false
+      }
+    },
+    "evidenceSha256": {
+      "host-green.log": "a1b2b1a355e655266eb154f040989cf34f149fdd3eea5db6232962af88694c02",
+      "host-final-regression.log": "7ad759014395b483af340fd3cdfa26c9b477bed46f9c7c333bc6336da085126f",
+      "host-current-abi-checksums.json": "e2aebb4514e03d50cc2a8391c565957282f72e6059b3a97cc30e2ffdc119ef03",
+      "native-current-abi-exports.json": "718cafe79b4307f2b8362290a2dcb76d144d5bab376bf7fcc7d2dafaec4770ac",
+      "integration-manifest.json": "687aa1b96e544de140fcd15f63ecd051b52a4e85f261230257f443138e43aa4f"
+    }
+  },
+  "coldStartup": [
+    {
+      "package": "takagi.ru.monica",
+      "aliveAfterSeconds": 10,
+      "pid": "7983",
+      "launch": "Starting: Intent { cmp=takagi.ru.monica/.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: takagi.ru.monica/.MainActivity\nTotalTime: 7561\nWaitTime: 7647\nComplete",
+      "startedAt": "2026-09-30T19:27:44.4103239+08:00"
+    },
+    {
+      "package": "takagi.ru.monica.fdroid",
+      "aliveAfterSeconds": 10,
+      "pid": "8070",
+      "launch": "Starting: Intent { cmp=takagi.ru.monica.fdroid/takagi.ru.monica.MainActivity }\nStatus: ok\nLaunchState: COLD\nActivity: takagi.ru.monica.fdroid/takagi.ru.monica.MainActivity\nTotalTime: 6986\nWaitTime: 6992\nComplete",
+      "startedAt": "2026-09-30T19:28:02.8635989+08:00"
+    }
+  ],
+  "historicalInterruptedRun": {
+    "log": "main-acceptance-before-art-device.log",
+    "logSha256": "da656635808a978413c309cf4a2b1bdd90255c497f5a30b2849da3a98fd757a4",
+    "passedBeforeInterruption": 9,
+    "acceptedAsComplete": false,
+    "failure": "ART ClassLinker::DoResolveType SIGSEGV while starting manifest test; retained crash log",
+    "crashLogSha256": "3b8ad01a22a1cd3c0e3be7938ce3cb462531a28c24ce60e9bc8676e8d624aaab",
+    "isolatedSameApkManifestRetry": "2/2 passed without changing app/source/cache; subsequent full runs required separately"
+  },
+  "sourceSha256": {
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/EmbeddedDocumentAssetsInstrumentedTest.kt": "4e6d6f98a9a6762fd4949a87187d28494b47ea92d37f0c545af347c79335d45c",
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/EmbeddedDocumentUiTest.kt": "6e1e45aec27eaebea173a0179f7d409c01f8874345c61d56665b447a9839c9a4",
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/NativeTokenArchiveManifestInstrumentedTest.kt": "53369d6fcc70c238a0a87022f0c19e0ccd665cabca559c08295ddcb3f4b36fa6",
+    "app/src/androidTest/java/takagi/ru/monica/repository/Mdbx2RealWebDavInstrumentedTest.kt": "e497386cef69eadb6b5924eae04daffb816b12cee4e3c76cb688c6c0cb6307fb",
+    "app/src/androidTest/java/takagi/ru/monica/repository/NativeApiTokenAssetsInstrumentedTest.kt": "7fb2ec54aaee1d30773da2e3dfebb5a2c3afee93b0b3b0757552863eca73892f",
+    "app/src/androidTest/java/takagi/ru/monica/ui/PasswordContentBlocksUiTest.kt": "71d9a640b6f38b82e9033d26f3746bc9f267dcbff5ac56fbcf9db55b6f62db56",
+    "app/src/androidTest/java/takagi/ru/monica/ui/screens/NativeApiTokenAssetsUiTest.kt": "8bda85a4ee62a6e0d26569ab62f8baa2788c4afabfe46eb3f5b9f0b0fd408107",
+    "app/src/main/java/takagi/ru/monica/attachments/EmbeddedWalletAccess.kt": "1f62aaba48c64f0ef6b8e24a6f604715459c90ff14f061b8e92eb1227bebce09",
+    "app/src/main/java/takagi/ru/monica/attachments/ui/NativeApiTokenAttachmentViews.kt": "e84612f975f9eb1ce07c4a591c3b9bc1f9354d3698ee23c0975f24a190b8da20",
+    "app/src/main/java/takagi/ru/monica/credentialexchange/ImportDestinationWriter.kt": "3aa5b9a0f6c4615dea8c6f8aefe313036c156d8b04c802c55b7fdb2575b279cf",
+    "app/src/main/java/takagi/ru/monica/data/ApiTokenPayload.kt": "58a5cb1bf4bf6556c1fef4d18c8aa9cec8051c3313169bf80d364dacaae6ee77",
+    "app/src/main/java/takagi/ru/monica/data/NativeApiTokenAssets.kt": "ed07c2574cc31e49fb852144b6f9f224cf7548c7848c18681dcc252a8100921a",
+    "app/src/main/java/takagi/ru/monica/data/model/EmbeddedDocumentEditorData.kt": "9b8a1f24a07ea915c7b93367e90f69e9008201f4472dd00eb902ffd86f676a97",
+    "app/src/main/java/takagi/ru/monica/repository/Mdbx2Repository.kt": "ee0a76416298dec6bca7b798f7e95620c445780a1d236436a3e6f84a08757d13",
+    "app/src/main/java/takagi/ru/monica/transfer/DatabaseArchiveExporter.kt": "d5316e28dc5e84d371e75764c53f0c2fa46bda4ebe08933549d9c631699dd987",
+    "app/src/main/java/takagi/ru/monica/transfer/DatabaseExportSnapshot.kt": "4e5cee50a31ed726d0c7a49084935bceaa53af74a1c6e9ed9440e8ebe84ac9f7",
+    "app/src/main/java/takagi/ru/monica/transfer/DatabaseKdbxExporter.kt": "6220c0d7f7c050e943c22710e906ee09f16d5be3ba5bc204f6e889aea84cf868",
+    "app/src/main/java/takagi/ru/monica/transfer/NativeTokenBackupAssets.kt": "2361dca86ddaa7410a8c5f6a27ae4708646d8ec5dda390e304ba8e30813aafa2",
+    "app/src/main/java/takagi/ru/monica/ui/components/DetailWalletStack.kt": "c3f20c5e322a59a63464479590e084dd5f1a198ae15c1aa7df1bf620386f838a",
+    "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletEditorDialog.kt": "9a8d5da480383bd221185d4ab16984ae89abd0509ffbe737d2f5514a89e22b47",
+    "app/src/main/java/takagi/ru/monica/ui/components/EmbeddedWalletViews.kt": "3956435b615def6ef794fc04e16d21a453737bd2e941cd48c69bfbfbddb5be2f",
+    "app/src/main/java/takagi/ru/monica/ui/components/PasswordContentMenu.kt": "b0f67fe560c2a7bd2e9c880a2d5971a0ec04928e21bf31b4059b433d66ad121c",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditApiTokenScreen.kt": "fc95811a93ff6bc0ea834d8a8cd68ee64a0690e00680a02de28070c534b21e6b",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt": "98bfddb29bc104d7fdc6eaefb5f4e476205d9f2fbdc0c4b21c3c050df1fb3b04",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt": "1b7cd8ca2240f35774d66ac6551bb8ccefd880f07ebd1f5e8de37741c7555a91",
+    "app/src/main/java/takagi/ru/monica/ui/screens/ApiTokenDetailScreen.kt": "bc92fcc78c31e093d32e2272f9d8fdc9b16ad46a2d07c823c506091823be188a",
+    "app/src/main/java/takagi/ru/monica/ui/screens/BankCardDetailScreen.kt": "6db4ad0de48b936869e6f26f11af2c1dadb80ba76e78c452da9cad9dca8b3bf9",
+    "app/src/main/java/takagi/ru/monica/ui/screens/BillingAddressDetailScreen.kt": "bc8e58315f1e64ba449b56d035fa5419ab2e3880560e139c27bcf03e8b9722a7",
+    "app/src/main/java/takagi/ru/monica/ui/screens/DocumentDetailScreen.kt": "f73bddf77daa64dbdf5a66742362a54a7247927f8dfdbb6813a6b298c1bafffa",
+    "app/src/main/java/takagi/ru/monica/ui/screens/NoteDetailScreen.kt": "a901a953f2c7ec0a952bcd8342b4b350a2c32825855931b22f61d0c8b7d51af7",
+    "app/src/main/java/takagi/ru/monica/ui/screens/PasswordDetailScreen.kt": "d63212f9d93e244b1ad9c6cbc39bac308e85f7ae30283db625de92fa37bcd163",
+    "app/src/main/java/takagi/ru/monica/utils/WebDavHelper.kt": "a8bfea653bcac7593f3665874a13ea93b1f898096c91a63c7d21b4c8aa904f38",
+    "app/src/main/java/takagi/ru/monica/viewmodel/MdbxViewModel.kt": "1419927c1901f2a9c7fca4bfd6bae5020db6595436ca0caafe71a1f679b8b2cc",
+    "app/src/main/java/takagi/ru/monica/viewmodel/NativeApiTokenEditorViewModel.kt": "1f5250e500f337911e9e965d11d7a13a86e6c172f3392d5a8adaa06a2f2e9131",
+    "app/src/main/res/values-zh/strings_embedded_content.xml": "1959faf287492bc8175d5eec7e0bcdc346d0846137ad0ee2080d55f61d4231e5",
+    "app/src/main/res/values-zh/strings_native_token_assets.xml": "6a86f7fd89de477135fa793ef72a4e29e9e2cf2a9f5289d3b1fe311c6a3c80b9",
+    "app/src/main/res/values/strings_embedded_content.xml": "ea6ab6eb726a88e254170c71caeea1e10229e9ff7888d82a966dcee8b1d0d56e",
+    "app/src/main/res/values/strings_native_token_assets.xml": "a7fe89a453b3ba9357cc4f6a5de6b352558d61ec6ccc283a0fd8572053fe826b",
+    "app/src/test/java/takagi/ru/monica/data/NativeApiTokenAssetsTest.kt": "74378001059975867f7e00804d3cafc2c25fa5ad47ea9d9ed8be0a1822bf1bf0",
+    "app/src/test/java/takagi/ru/monica/data/model/EmbeddedDocumentEditorDataTest.kt": "ec95a03dddf1bdcce840c7ca2674a617025fca9c89570ac480495cfa3419773c",
+    "app/src/test/java/takagi/ru/monica/transfer/NativeTokenBackupAssetsTest.kt": "6aeadf3e021666c699e313a16de81ae87e77c8297783ee89019e3a2db07f5369"
+  },
+  "sourceMirrorCheck": "41 task sources match across four copies, preserving the F-Droid HTTP preference gate"
+}

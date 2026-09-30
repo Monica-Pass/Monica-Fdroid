@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">Klucz API</string>
+    <string name="content_block_api_token">Token API</string>
+    <string name="content_block_ssh">Klucz SSH</string>
+    <string name="content_block_gpg">Klucz GPG</string>
+    <string name="content_block_qr">Kod QR</string>
+    <string name="content_block_key">Klucz</string>
+    <string name="content_block_token">Token</string>
+    <string name="content_block_provider">Dostawca</string>
+    <string name="content_block_url">Punkt końcowy API</string>
+    <string name="content_block_algorithm">Algorytm</string>
+    <string name="content_block_public">Klucz publiczny</string>
+    <string name="content_block_private">Klucz prywatny</string>
+    <string name="content_block_fingerprint">Odcisk palca</string>
+    <string name="content_block_identity">Tożsamość / komentarz</string>
+    <string name="content_block_content">Tekst lub link</string>
+    <string name="content_block_import">Importuj z pliku</string>
+    <string name="content_block_export">Eksportuj do pliku</string>
+    <string name="content_block_unavailable">Nieobsługiwana zawartość</string>
+    <string name="content_block_preserved">Oryginalna zawartość została zachowana. Do edycji użyj zgodnej wersji.</string>
+    <string name="content_block_save_error">Nie można zapisać lub odczytać zawartości. Sprawdź plik i jego rozmiar (maksymalnie 256 KiB).</string>
+    <string name="content_block_more">Więcej zawartości</string>
+    <string name="content_block_key_size">Długość klucza</string>
+    <string name="content_block_format">Format</string>
+    <string name="content_block_qr_error">Zawartość jest zbyt długa dla kodu QR. Nadal możesz wyświetlić lub skopiować całość.</string>
+</resources>

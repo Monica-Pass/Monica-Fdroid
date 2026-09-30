@@ -1,0 +1,26 @@
+<resources>
+    <string name="content_block_api_key">API 키</string>
+    <string name="content_block_api_token">API 토큰</string>
+    <string name="content_block_ssh">SSH 키</string>
+    <string name="content_block_gpg">GPG 키</string>
+    <string name="content_block_qr">QR 코드</string>
+    <string name="content_block_key">키</string>
+    <string name="content_block_token">토큰</string>
+    <string name="content_block_provider">제공업체</string>
+    <string name="content_block_url">API 엔드포인트</string>
+    <string name="content_block_algorithm">알고리즘</string>
+    <string name="content_block_public">공개 키</string>
+    <string name="content_block_private">비공개 키</string>
+    <string name="content_block_fingerprint">지문</string>
+    <string name="content_block_identity">사용자 ID / 설명</string>
+    <string name="content_block_content">텍스트 또는 링크</string>
+    <string name="content_block_import">파일에서 가져오기</string>
+    <string name="content_block_export">파일로 내보내기</string>
+    <string name="content_block_unavailable">지원되지 않는 콘텐츠</string>
+    <string name="content_block_preserved">원본 콘텐츠가 보존되었습니다. 호환되는 버전에서 편집하세요.</string>
+    <string name="content_block_save_error">콘텐츠를 저장하거나 읽을 수 없습니다. 파일과 크기를 확인하세요(최대 256 KiB).</string>
+    <string name="content_block_more">추가 콘텐츠</string>
+    <string name="content_block_key_size">키 길이</string>
+    <string name="content_block_format">형식</string>
+    <string name="content_block_qr_error">내용이 너무 길어 QR 코드를 생성할 수 없습니다. 전체 내용을 보거나 복사할 수 있습니다.</string>
+</resources>

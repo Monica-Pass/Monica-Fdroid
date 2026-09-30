@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -47,6 +48,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -119,6 +122,7 @@ fun ExpressiveLazyListScrollbar(
     val displayedProgress = remember(listState) { Animatable(0f) }
     var hasSyncedDisplayedProgress by remember(listState) { mutableStateOf(false) }
     val interactionCallback by rememberUpdatedState(onInteractionChange)
+    val currentLabelForIndex by rememberUpdatedState(labelForIndex)
 
     LaunchedEffect(isPressed, isDragging) {
         interactionCallback(isPressed || isDragging)
@@ -138,10 +142,10 @@ fun ExpressiveLazyListScrollbar(
         animationSpec = tween(durationMillis = 160),
         label = "vaultScrollbarIcon",
     )
-    val activeLabel = if (isDragging && dragTargetIndex >= 0) {
-        labelForIndex(dragTargetIndex)
-    } else {
-        null
+    val activeLabel by remember {
+        derivedStateOf {
+            if (isDragging && dragTargetIndex >= 0) currentLabelForIndex(dragTargetIndex) else null
+        }
     }
     LaunchedEffect(activeLabel) {
         if (!activeLabel.isNullOrBlank()) retainedLabel = activeLabel
@@ -199,10 +203,14 @@ fun ExpressiveLazyListScrollbar(
                 }
         }
 
-        LaunchedEffect(isDragging, dragProgress) {
+        LaunchedEffect(isDragging) {
             if (isDragging) {
-                displayedProgress.snapTo(dragProgress)
                 hasSyncedDisplayedProgress = true
+                // Pointer position is consumed by layout/draw. Observing it here avoids
+                // recomposing the scrollbar and restarting an effect for every move.
+                snapshotFlow { dragProgress }.collect { progress ->
+                    displayedProgress.snapTo(progress)
+                }
             }
         }
 
@@ -342,6 +350,13 @@ fun ExpressiveLazyListScrollbar(
 
             val label = activeLabel ?: retainedLabel
             if (labelAlpha > 0f && !label.isNullOrBlank()) {
+                val labelStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                val textMeasurer = rememberTextMeasurer()
+                val textSize = remember(label, labelStyle, textMeasurer) {
+                    textMeasurer.measure(label, labelStyle, maxLines = 1).size
+                }
+                val labelWidth = with(density) { textSize.width.toDp() + 24.dp }.coerceAtLeast(44.dp)
+                val labelHeight = with(density) { textSize.height.toDp() + 12.dp }.coerceAtLeast(44.dp)
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -349,10 +364,14 @@ fun ExpressiveLazyListScrollbar(
                             IntOffset(
                                 x = -with(density) { (interactionWidth + 10.dp).toPx() }.roundToInt(),
                                 y = ((if (isDragging) dragProgress else displayedProgress.value) * travelPx +
-                                    (handleHeightPx - with(density) { 44.dp.toPx() }) / 2f).roundToInt(),
+                                    (handleHeightPx - with(density) { labelHeight.toPx() }) / 2f)
+                                    .coerceIn(0f, (heightPx - with(density) { labelHeight.toPx() }).coerceAtLeast(0f)).roundToInt(),
                             )
                         }
-                        .size(44.dp)
+                        // The scrollbar's 32dp hit area must not constrain the floating label.
+                        .wrapContentSize(Alignment.TopEnd, unbounded = true)
+                        .size(labelWidth, labelHeight)
+                        .testTag("vault_scrollbar_label")
                         .graphicsLayer {
                             alpha = labelAlpha
                             scaleX = labelScale
@@ -367,8 +386,9 @@ fun ExpressiveLazyListScrollbar(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = labelStyle,
+                            maxLines = 1,
+                            softWrap = false,
                         )
                     }
                 }

@@ -56,22 +56,25 @@ fun AppSelectorField(
     selectedPackageName: String,
     selectedAppName: String,
     onAppSelected: (packageName: String, appName: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    grouped: Boolean = false,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     
     // 显示选择器按钮
-    OutlinedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { showDialog = true },
-        shape = RoundedCornerShape(12.dp)
+    Card(
+        onClick = { showDialog = true },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(if (grouped) 4.dp else 12.dp),
+        colors = if (grouped) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+            else CardDefaults.outlinedCardColors(),
+        border = if (grouped) null else CardDefaults.outlinedCardBorder()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = if (grouped) 12.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

@@ -72,7 +72,8 @@ fun BillingAddressDetailScreen(
     addressId: Long,
     onNavigateBack: () -> Unit,
     onEditAddress: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    embeddedAccess: takagi.ru.monica.attachments.EmbeddedWalletAccess? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -82,12 +83,15 @@ fun BillingAddressDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showCardFaceCustomizer by remember { mutableStateOf(false) }
     var isSavingCardFace by remember { mutableStateOf(false) }
-    val cardFaceBitmap = rememberCardFaceBitmap(addressItem, addressData?.cardFace?.imageAttachmentName, maxDimension = 1200)
+    var embeddedBitmap by remember(embeddedAccess) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val cardFaceBitmap = rememberCardFaceBitmap(addressItem, addressData?.cardFace?.imageAttachmentName, maxDimension = 1200, overrideBitmap = embeddedBitmap)
 
-    LaunchedEffect(addressId) {
-        viewModel.getAddressById(addressId)?.let { item ->
+    LaunchedEffect(addressId, embeddedAccess) {
+        (embeddedAccess?.snapshot?.displayItem() ?: viewModel.getAddressById(addressId))?.let { item ->
             addressItem = item
             addressData = viewModel.parseAddressData(item.itemData)
+            embeddedAccess?.snapshot?.assets?.firstOrNull { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.CARD_FACE }
+                ?.let { embeddedBitmap = embeddedAccess?.image(it.name) }
         }
     }
 
@@ -118,7 +122,7 @@ fun BillingAddressDetailScreen(
             )
         },
         floatingActionButton = {
-            ActionStrip(
+            if (embeddedAccess == null) ActionStrip(
                 actions = listOf(
                     ActionStripItem(
                         icon = if (addressItem?.isFavorite == true) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -161,7 +165,8 @@ fun BillingAddressDetailScreen(
                     previewData = billingAddressCardFacePreviewData(addressItem?.title.orEmpty(), data),
                     config = data.cardFace,
                     bitmap = cardFaceBitmap,
-                    enabled = !isSavingCardFace,
+                    enabled = embeddedAccess == null && !isSavingCardFace,
+                    showHint = embeddedAccess == null,
                     onClick = { showCardFaceCustomizer = true }
                 )
 
@@ -229,6 +234,13 @@ fun BillingAddressDetailScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                }
+                embeddedAccess?.let { access ->
+                    if (access.isNative) takagi.ru.monica.attachments.ui.NativeEmbeddedWalletAttachments(access)
+                    else takagi.ru.monica.attachments.ui.AttachmentsDetailSection(
+                        owner = requireNotNull(access.owner), includedFileNames = access.snapshot.assets.filter { it.role == takagi.ru.monica.data.model.EmbeddedWalletContent.AssetRole.ATTACHMENT }.map { it.name }.toSet(),
+                        displayFileNames = access.snapshot.assets.associate { it.name to it.displayName },
+                        bitwardenContext = access.bitwardenContext, keepassContext = access.keepassContext)
                 }
                 Spacer(modifier = Modifier.height(80.dp))
             }

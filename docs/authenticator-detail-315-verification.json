@@ -1,0 +1,44 @@
+{
+  "version": "1.0.315",
+  "date": "2026-09-29",
+  "testsPerEdition": 3,
+  "fontScale": 1.5,
+  "runs": {
+    "main": {
+      "classes": [
+        "takagi.ru.monica.ui.PasswordAuthenticatorActionsTest"
+      ],
+      "testSha256": "99DA45235914B7891BDF1D09DE98A2CDDEA52E146C6BB2508E0FFD56B52A997D",
+      "packageId": "takagi.ru.monica",
+      "testPackageId": "takagi.ru.monica.test",
+      "finishedAt": "2026-09-29T18:49:57.7412390+08:00",
+      "startedAt": "2026-09-29T18:48:32.8144366+08:00",
+      "appSha256": "4F20DC00AC1E2C2BA025C74715AB97502AB0642ED7CEDD35CBAB3BE2CAF52599",
+      "completed": true,
+      "edition": "Main",
+      "suite": "AuthenticatorDetail315Final"
+    },
+    "fdroid": {
+      "completed": true,
+      "classes": [
+        "takagi.ru.monica.ui.PasswordAuthenticatorActionsTest"
+      ],
+      "startedAt": "2026-09-29T18:50:27.9993719+08:00",
+      "edition": "Fdroid",
+      "testPackageId": "takagi.ru.monica.fdroid.test",
+      "testSha256": "A84FDD5455A300DCF2B98A478553EA4193512AAF692D8D0A420DDCDAF5C0777B",
+      "appSha256": "D00352A184399A581287743F6C4565651F825E4AE3F9084B387A72400C253A51",
+      "packageId": "takagi.ru.monica.fdroid",
+      "suite": "AuthenticatorDetail315Final",
+      "finishedAt": "2026-09-29T18:51:35.0860167+08:00"
+    }
+  },
+  "checks": [
+    "Explicit current and next copy use correct code at action time",
+    "Migration QR decodes with account, algorithm, digits and period intact",
+    "Current QR decodes to the verification code only",
+    "HOTP has neither time progress nor next copy",
+    "Independent time progress visible with unified list progress enabled",
+    "Pressed card rendering inspected; rounded corners contain feedback"
+  ]
+}

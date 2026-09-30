@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="passkey_backup_problem_title">Backup needs attention</string>
+    <string name="passkey_backup_problem_detail">These items could not be backed up. Local data and existing remote backups are unchanged.</string>
+    <string name="passkey_device_bound_solution">Register a new, exportable passkey on the service and verify it works before retiring the old key. You can also skip this item for now.</string>
+    <string name="passkey_skip_explanation">Skipping affects this backup only and does not delete local items. A separate partial backup will be saved; existing remote backups are retained. It does not replace a full backup.</string>
+    <string name="passkey_skip_and_backup">Skip %1$d and back up</string>
+    <string name="passkey_retry_full_backup">Retry full backup</string>
+    <string name="passkey_problem_close">Close</string>
+    <string name="passkey_partial_saved">Partial backup saved</string>
+    <string name="passkey_partial_saved_detail">The Passkeys below are not included. Their local records and existing remote backups are retained. The last full-backup time is unchanged.</string>
+    <string name="passkey_partial_requires_encryption">Partial backups that skip Passkeys must still be encrypted.</string>
+    <string name="passkey_partial_replace_blocked">This backup omits some Passkeys. Use merge restore; replacing local data is blocked.</string>
+    <string name="passkey_partial_restore_warning">This partial backup omits skipped Passkeys. Restore merges with existing local records.</string>
+</resources>
