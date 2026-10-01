@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Đang tải lên"</string>
+    <string name="transfer_downloading">"Đang tải xuống"</string>
+    <string name="transfer_task_busy">"Một tác vụ dữ liệu khác đang chạy. Vui lòng đợi hoàn tất."</string>
+    <string name="transfer_task_done">"Tác vụ dữ liệu hoàn tất"</string>
+    <string name="transfer_task_failed">"Tác vụ đã dừng hoặc cần xử lý"</string>
+    <string name="transfer_interrupted_check_result">"Hệ thống đã gián đoạn tác vụ trước. Kiểm tra dữ liệu đã nhập hoặc bản sao lưu trước khi thử lại. Tác vụ chưa tự động chạy lại."</string>
+</resources>

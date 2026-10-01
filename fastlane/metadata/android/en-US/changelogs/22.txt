@@ -1,2 +1,2 @@
-1.0.315 (unreleased)
-M3E editors, details, QR/barcode sheets and sorting; improve OTP, generators, recents and settings. Copy cards/notes with files. Token files: atomic saves, MDBX sync, encrypted ZIP restore; preserve originals on failure. Rotate/flip artwork; improve multiple passwords, 2-step login, WebDAV backoff, backups and safe startup. Direct autofill OTP; OTP/sequential-copy Android 16 live updates. API Keys accept plain endpoints; fix Wi-Fi metadata, rounding/detail actions.
+1.0.315
+M3E editors, details, QR/barcode sheets and sorting; OTP, generators, recents and settings. Copy cards/notes with files. Token files: atomic saves, MDBX sync, encrypted ZIP restore. Improve multi-password entries, 2-step login and safe startup. Direct autofill OTP; Android 16 OTP/sequential-copy live updates. Fix API Key saving and Wi-Fi details. Background import/export and WebDAV progress; streamed uploads, fewer directory requests, correct timeouts and shared backoff.

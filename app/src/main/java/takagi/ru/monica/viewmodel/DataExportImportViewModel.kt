@@ -88,7 +88,7 @@ class DataExportImportViewModel(
     private val securityManager by lazy { SecurityManager(context) }
     private val _importProgress = MutableStateFlow<TransferProgress?>(null)
     val importProgress = _importProgress.asStateFlow()
-    private val importProgressReporter = TransferProgressReporter { _importProgress.value = it }
+    private val importProgressReporter = TransferProgressReporter { _importProgress.value = it; DatabaseExportJobs.reportImportProgress(it) }
     private val targetedImporter by lazy {
         TargetedImportCoordinator(this.context, passwordRepository, secureItemRepository, importProgressReporter)
     }
@@ -102,6 +102,7 @@ class DataExportImportViewModel(
         try {
             val summary = block()
             _lastImportSummary.value = summary
+            DatabaseExportJobs.reportImportSummary(summary)
             logImportSummary("TARGETED_IMPORT", summary.imported, summary.skipped, summary.failed)
             Result.success(summary.imported)
         } catch (cancelled: CancellationException) {

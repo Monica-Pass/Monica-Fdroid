@@ -13,10 +13,13 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.sample
 import takagi.ru.monica.MainActivity
 import takagi.ru.monica.R
 import takagi.ru.monica.utils.AppLocaleStringResolver
 import java.util.UUID
+
+enum class DataTaskKind { EXPORT, IMPORT, WEBDAV_BACKUP }
 
 enum class ExportJobStatus { RUNNING, SUCCEEDED, FAILED, CANCELLED }
 
@@ -27,38 +30,104 @@ data class ExportJobState(
     val progress: TransferProgress = TransferProgress(),
     val status: ExportJobStatus = ExportJobStatus.RUNNING,
     val message: String? = null,
+    val kind: DataTaskKind = DataTaskKind.EXPORT,
+    val importSummary: takagi.ru.monica.credentialexchange.ImportResultSummary? = null,
+    val backupReport: takagi.ru.monica.data.BackupReport? = null,
 )
 
 /** Only this process owns the request. Passwords are never put in an Intent or a WorkManager database. */
 object DatabaseExportJobs {
-    internal class Request(val id: String, val uri: Uri,
+    internal class Request(val id: String, val uri: Uri?,
+        val context: Context,
+        val onFinished: (Throwable?) -> Unit,
         val run: suspend (TransferProgressReporter) -> Result<String>)
     private val mutableState = MutableStateFlow<ExportJobState?>(null)
     val state = mutableState.asStateFlow()
     private var pending: Request? = null
+    private var lastProgressUpdate = 0L
+
+    fun start(context: Context, sourceKey: String, uri: Uri, formatKey: String = "ZIP_BACKUP",
+        run: suspend (TransferProgressReporter) -> Result<String>): Boolean =
+        startTask(context, sourceKey, DataTaskKind.EXPORT, uri, formatKey, run = run)
 
     @Synchronized
-    fun start(context: Context, sourceKey: String, uri: Uri, formatKey: String = "ZIP_BACKUP",
+    fun startTask(context: Context, sourceKey: String, kind: DataTaskKind,
+        uri: Uri? = null, formatKey: String = "ZIP_BACKUP",
+        onFinished: (Throwable?) -> Unit = {},
         run: suspend (TransferProgressReporter) -> Result<String>): Boolean {
         if (mutableState.value?.status == ExportJobStatus.RUNNING) return false
+        val app = context.applicationContext
         val id = UUID.randomUUID().toString()
-        pending = Request(id, uri, run)
-        mutableState.value = ExportJobState(id, sourceKey, formatKey)
+        pending = Request(id, uri, app, onFinished, run)
+        mutableState.value = ExportJobState(id, sourceKey, formatKey, kind = kind)
         try {
-            ContextCompat.startForegroundService(context.applicationContext,
-                Intent(context.applicationContext, DatabaseExportService::class.java).putExtra("operation", id))
+            // Only an operation marker is persisted; never a URI, credential, or replayable request.
+            app.getSharedPreferences("data_task_marker", Context.MODE_PRIVATE).edit()
+                .putString("id", id).putString("kind", kind.name)
+                .putString("source", sourceKey).putString("format", formatKey).apply()
+            ContextCompat.startForegroundService(app,
+                Intent(app, DatabaseExportService::class.java).putExtra("operation", id))
         } catch (error: Exception) {
             pending = null
+            app.getSharedPreferences("data_task_marker", Context.MODE_PRIVATE).edit().clear().apply()
             mutableState.value = mutableState.value?.copy(status = ExportJobStatus.FAILED,
-                message = AppLocaleStringResolver(context).get(R.string.transfer_background_start_failed))
+                message = AppLocaleStringResolver(app).get(R.string.transfer_background_start_failed))
             return false
         }
         return true
     }
 
+    /** Cancelling the observing page never cancels the service-owned work. */
+    suspend fun <T> await(context: Context, sourceKey: String, kind: DataTaskKind,
+        describe: (T) -> String,
+        run: suspend (TransferProgressReporter) -> Result<T>): Result<T> {
+        val completion = CompletableDeferred<Result<T>>()
+        var result: Result<T>? = null
+        val started = startTask(context, sourceKey, kind, onFinished = { error ->
+            completion.complete(if (error != null) Result.failure(error)
+                else result ?: Result.failure(IllegalStateException("Missing task result")))
+        }) { reporter ->
+            val value = run(reporter)
+            result = value
+            value.map(describe)
+        }
+        if (!started) return Result.failure(IllegalStateException(AppLocaleStringResolver(context)
+            .get(if (state.value?.status == ExportJobStatus.RUNNING) R.string.transfer_task_busy
+                else R.string.transfer_background_start_failed)))
+        return completion.await()
+    }
+
+    @Synchronized fun recoverInterrupted(context: Context) {
+        if (mutableState.value != null) return
+        val prefs = context.getSharedPreferences("data_task_marker", Context.MODE_PRIVATE)
+        val id = prefs.getString("id", null) ?: return
+        val kind = runCatching { DataTaskKind.valueOf(prefs.getString("kind", "EXPORT")!!) }
+            .getOrDefault(DataTaskKind.EXPORT)
+        mutableState.value = ExportJobState(id, prefs.getString("source", "LOCAL:0")!!,
+            formatKey = prefs.getString("format", "ZIP_BACKUP")!!, kind = kind, status = ExportJobStatus.FAILED,
+            message = AppLocaleStringResolver(context).get(R.string.transfer_interrupted_check_result))
+        prefs.edit().clear().apply()
+    }
+
+    @Synchronized fun reportImportProgress(progress: TransferProgress) {
+        mutableState.value?.takeIf { it.kind == DataTaskKind.IMPORT }?.let { update(it.id, progress) }
+    }
+    @Synchronized fun reportImportSummary(summary: takagi.ru.monica.credentialexchange.ImportResultSummary) {
+        mutableState.value?.takeIf { it.kind == DataTaskKind.IMPORT && it.status == ExportJobStatus.RUNNING }
+            ?.let { mutableState.value = it.copy(importSummary = summary) }
+    }
+    @Synchronized fun reportBackup(report: takagi.ru.monica.data.BackupReport) {
+        mutableState.value?.takeIf { it.kind == DataTaskKind.WEBDAV_BACKUP && it.status == ExportJobStatus.RUNNING }
+            ?.let { mutableState.value = it.copy(backupReport = report) }
+    }
+
     @Synchronized internal fun take(id: String?): Request? = pending?.takeIf { it.id == id }?.also { pending = null }
     @Synchronized internal fun update(id: String, progress: TransferProgress) {
         mutableState.value?.takeIf { it.id == id && it.status == ExportJobStatus.RUNNING }?.let {
+            val now = System.nanoTime()
+            if (it.progress.phase == progress.phase && progress.completed != progress.total &&
+                now - lastProgressUpdate < 100_000_000L) return
+            lastProgressUpdate = now
             mutableState.value = it.copy(progress = progress)
         }
     }
@@ -70,10 +139,10 @@ object DatabaseExportJobs {
     }
 }
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class DatabaseExportService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var work: Job? = null
-    private var lastNotification = 0L
     private val notifications get() = getSystemService(NotificationManager::class.java)
     private val strings by lazy { AppLocaleStringResolver(this) }
 
@@ -93,6 +162,14 @@ class DatabaseExportService : Service() {
         work = scope.launch {
             var status = ExportJobStatus.FAILED
             var message: String? = null
+            var failure: Throwable? = null
+            val progressObserver = launch {
+                DatabaseExportJobs.state.sample(500L).collect { state ->
+                    if (state?.id == request.id && state.status == ExportJobStatus.RUNNING) {
+                        runCatching { notifications.notify(NOTIFICATION_ID, notification(state.progress, running = true)) }
+                    }
+                }
+            }
             try {
                 if (startupError != null) {
                     throw IllegalStateException(strings.get(R.string.transfer_background_start_failed), startupError)
@@ -100,24 +177,23 @@ class DatabaseExportService : Service() {
                 val result = request.run(TransferProgressReporter { progress ->
                     ensureActive()
                     DatabaseExportJobs.update(request.id, progress)
-                    val now = System.nanoTime()
-                    if (now - lastNotification >= 500_000_000L) {
-                        lastNotification = now
-                        // Notification permission/settings must not invalidate a completed archive.
-                        runCatching { notifications.notify(NOTIFICATION_ID, notification(progress, running = true)) }
-                    }
                 })
                 message = result.getOrThrow()
                 ensureActive()
                 status = ExportJobStatus.SUCCEEDED
             } catch (cancelled: CancellationException) {
+                failure = cancelled
                 status = ExportJobStatus.CANCELLED
                 message = strings.get(R.string.transfer_cancelled)
                 throw cancelled
             } catch (error: Exception) {
-                message = databaseExportErrorMessage(this@DatabaseExportService, error)
+                failure = error
+                message = if (DatabaseExportJobs.state.value?.kind == DataTaskKind.EXPORT)
+                    databaseExportErrorMessage(this@DatabaseExportService, error)
+                else error.message ?: strings.get(R.string.import_data_unknown_error)
             } finally {
-                if (status != ExportJobStatus.SUCCEEDED && !removeIncompleteDocument(request.uri)) {
+                progressObserver.cancel()
+                if (status != ExportJobStatus.SUCCEEDED && request.uri != null && !removeIncompleteDocument(request.uri)) {
                     message = listOfNotNull(message, strings.get(R.string.transfer_incomplete_export_file))
                         .joinToString("\n\n")
                 }
@@ -130,7 +206,9 @@ class DatabaseExportService : Service() {
                     // Publish completion only after cleaning up the old foreground notification.
                     // A newly started export can then safely reuse the same service/notification.
                     work = null
+                    request.context.getSharedPreferences("data_task_marker", Context.MODE_PRIVATE).edit().clear().apply()
                     DatabaseExportJobs.finish(request.id, status, message)
+                    request.onFinished(failure)
                     stopSelf(startId)
                 }
             }
@@ -151,14 +229,20 @@ class DatabaseExportService : Service() {
 
     private fun notification(progress: TransferProgress, running: Boolean, succeeded: Boolean = false): android.app.Notification {
         val intent = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            .putExtra(DataTaskNavigation.EXTRA, true).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val kind = DatabaseExportJobs.state.value?.kind ?: DataTaskKind.EXPORT
+        val title = if (running) when (kind) {
+            DataTaskKind.EXPORT -> R.string.exporting
+            DataTaskKind.IMPORT -> R.string.importing
+            DataTaskKind.WEBDAV_BACKUP -> R.string.webdav_backup_in_progress
+        } else if (succeeded) R.string.transfer_task_done else R.string.transfer_task_failed
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_key)
-            .setContentTitle(strings.get(if (running) R.string.exporting else if (succeeded)
-                R.string.transfer_export_done else R.string.export_data_error))
-            .setContentText(if (running) strings.get(progress.phase.labelRes()) else strings.get(R.string.transfer_open_result))
+            .setContentTitle(strings.get(title))
+            .setContentText(if (running) strings.get(progress.phase.labelRes()) + (progress.fraction?.let { " · ${(it * 100).toInt()}%" } ?: "") else strings.get(R.string.transfer_open_result))
             .setContentIntent(intent).setOnlyAlertOnce(true).setOngoing(running).setAutoCancel(!running)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setSilent(true)
             .apply { if (running) setProgress(100, ((progress.fraction ?: 0f) * 100).toInt(), progress.fraction == null) }
             .build()
     }

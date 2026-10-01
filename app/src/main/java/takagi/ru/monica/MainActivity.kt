@@ -401,6 +401,7 @@ class MainActivity : BaseMonicaActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState) // BaseMonicaActivity 已调用 enableEdgeToEdge()
         handleExternalTotpIntent(intent)
+        takagi.ru.monica.transfer.DataTaskNavigation.receive(this, intent)
 
         // 注意：enableEdgeToEdge() 已在基类调用，这里不再重复
 
@@ -481,6 +482,7 @@ class MainActivity : BaseMonicaActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleExternalTotpIntent(intent)
+        takagi.ru.monica.transfer.DataTaskNavigation.receive(this, intent)
     }
 
     private fun handleExternalTotpIntent(incomingIntent: Intent?) {
@@ -1058,6 +1060,19 @@ fun MonicaContent(
                 }
             }
         }
+    }
+
+    val pendingDataTask by takagi.ru.monica.transfer.DataTaskNavigation.pending.collectAsState()
+    LaunchedEffect(pendingDataTask, isAuthenticated, shouldRequireAuthentication, currentRoute) {
+        val kind = pendingDataTask ?: return@LaunchedEffect
+        if (!isAuthenticated || shouldRequireAuthentication || isOnAuthRoute) return@LaunchedEffect
+        val route = when (kind) {
+            takagi.ru.monica.transfer.DataTaskKind.IMPORT -> Screen.ImportData.route
+            takagi.ru.monica.transfer.DataTaskKind.EXPORT -> Screen.ExportData.route
+            takagi.ru.monica.transfer.DataTaskKind.WEBDAV_BACKUP -> Screen.WebDavBackup.route
+        }
+        takagi.ru.monica.transfer.DataTaskNavigation.consumed()
+        navController.navigate(route) { launchSingleTop = true }
     }
 
     var lastExternalTotpNavigationId by remember { mutableStateOf<Long?>(null) }
@@ -2842,7 +2857,7 @@ fun MonicaContent(
                     dataExportImportViewModel.importStratum(uri, password, destination = importDestination)
                 },
                 onImportKdbx = { uri, password, keyFileUri ->
-                    val ctx = navController.context
+                    val ctx = navController.context.applicationContext
                     val result = keePassViewModel.importFromLocalKdbx(
                         context = ctx,
                         sourceUri = uri,

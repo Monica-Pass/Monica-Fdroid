@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Subiendo"</string>
+    <string name="transfer_downloading">"Descargando"</string>
+    <string name="transfer_task_busy">"Ya hay una tarea de datos en curso. Espera a que termine."</string>
+    <string name="transfer_task_done">"Tarea de datos completada"</string>
+    <string name="transfer_task_failed">"Tarea detenida o requiere atención"</string>
+    <string name="transfer_interrupted_check_result">"El sistema interrumpió la última tarea. Revisa los datos importados o la copia antes de reintentar. No se ha reiniciado automáticamente."</string>
+</resources>

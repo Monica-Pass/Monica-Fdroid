@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"正上传"</string>
+    <string name="transfer_downloading">"正下载"</string>
+    <string name="transfer_task_busy">"另有数据之事未竟，请俟之。"</string>
+    <string name="transfer_task_done">"数据之事已竟"</string>
+    <string name="transfer_task_failed">"数据之事已止，或待处置"</string>
+    <string name="transfer_interrupted_check_result">"前事为系统所断。再试前请核所纳数据或备份，未自动重行。"</string>
+</resources>

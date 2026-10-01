@@ -6,6 +6,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +25,8 @@ internal fun TransferPhase.labelRes(): Int = when (this) {
     TransferPhase.ATTACHMENTS -> R.string.transfer_attachments
     TransferPhase.PACKING -> R.string.transfer_packing
     TransferPhase.ENCRYPTING -> R.string.transfer_encrypting
+    TransferPhase.UPLOADING -> R.string.transfer_uploading
+    TransferPhase.DOWNLOADING -> R.string.transfer_downloading
     TransferPhase.SAVING -> R.string.transfer_saving
 }
 
@@ -42,7 +48,27 @@ fun TransferProgressCard(progress: TransferProgress, background: Boolean = false
                 } else stringResource(R.string.transfer_items_progress, progress.completed, total)
                 Text(detail, style = MaterialTheme.typography.labelLarge)
             }
-            if (background) Text(stringResource(R.string.transfer_background_hint), style = MaterialTheme.typography.bodyMedium)
+            if (background) {
+                Text(stringResource(R.string.transfer_background_hint), style = MaterialTheme.typography.bodyMedium)
+                val context = LocalContext.current
+                val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                var notificationsEnabled by remember { mutableStateOf(
+                    androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+                DisposableEffect(owner) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) notificationsEnabled =
+                            androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                    }
+                    owner.lifecycle.addObserver(observer)
+                    onDispose { owner.lifecycle.removeObserver(observer) }
+                }
+                if (!notificationsEnabled) {
+                    TextButton(onClick = {
+                        runCatching { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)) }
+                    }) { Text(stringResource(R.string.permission_notification_name)) }
+                }
+            }
         }
     }
 }

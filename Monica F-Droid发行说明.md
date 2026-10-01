@@ -1,7 +1,5 @@
 # Monica for Android (F-Droid) 1.0.315
 
-> 未发布 / Unreleased
-
 ## 中文
 
 ### 简要
@@ -15,6 +13,8 @@
 - 加强启动保护、备份下载和恢复回滚，提供问题通行密钥处理；修复旧版 Android 自动填充及法语时间线崩溃。
 
 ### 详细
+
+- **后台数据任务：** 导入、导出和手动 WebDAV 全量备份可在离开页面后继续，静默通知显示当前阶段和实际进度；点击通知经正常解锁后返回对应页面，再次进入可查看结果，阻止重复提交。系统中断后提示核对数据，不自动重放导入；保留现有写入保护和失败清理边界，不删除导入源文件。WebDAV 备份改为文件流上传，避免整包读入内存；大文件采用独立传输超时，目录查询仍保持短超时，修复超时误显示为 Canceled，继续遵守服务器限流等待。
 
 - **按需新建与编辑：** 采用紧凑顶栏和 M3E 连续分组，账号、多密码、网址等字段统一圆角；数据库与项目图标独立展示。内容按添加顺序排列，长按整卡跟手拖动，邻项平滑让位，仅被拖卡片和邻卡相向边变圆、落位后恢复分组，菜单确认删除，“添加内容”始终位于列表底部，详情沿用相同排序。移除经典编辑入口和失效开关；新建不再提供第三方登录，旧记录的提供商和关联账号仍可查看、编辑。
 
@@ -48,7 +48,7 @@
 
 - **通行密钥备份处理：** WebDAV 备份失败时列出具体通行密钥、原因和处理建议，可重试或明确跳过。跳过后生成带遗漏清单的加密部分备份，保留旧备份且不更新完整备份时间；部分备份仅支持合并恢复，不能覆盖本地数据。兼容可导出的旧私钥格式，未明确跳过的失败仍阻止上传。
 
-- **云端备份安全：** WebDAV 并行请求成功不再提前解除其他请求触发的限流等待，保留服务器 Retry-After 和主机退避。下载完整写入后才替换本地文件，网络或写入失败保留原文件。自动清理仅处理 Monica 标准命名的临时备份，保留其他 ZIP、未知文件名及部分备份。
+- **云端备份安全：** WebDAV 备份列表每次只查询一次目录，合并页面进入与备份完成的重复刷新；刷新失败保留已显示列表。WebDAV 并行请求成功不再提前解除其他请求触发的限流等待，保留服务器 Retry-After 和主机退避。下载完整写入后才替换本地文件，网络或写入失败保留原文件。自动清理仅处理 Monica 标准命名的临时备份，保留其他 ZIP、未知文件名及部分备份。
 
 - **恢复与数据保留：** 覆盖恢复先解析再事务写入，写入失败或取消时回滚条目及关联字段。不同密钥、参数或恢复资料的验证器不再因账号相同而遗漏，重建密码关联时保留未知字段。单条损坏记录不再中断验证器列表，不将无法解密的密文视为普通密钥，解锁后重新解析；后台加密迁移避免覆盖并发编辑。修复附件启动清理可能误删新文件的问题。
 
@@ -73,6 +73,8 @@
 - Safer startup, backup downloads and restore rollback, actionable passkey-backup errors, and fixes for older-Android autofill and French timeline crashes.
 
 ### Details
+
+- **Background data tasks:** Imports, exports and manual full WebDAV backups continue after leaving the page, with silent stage/progress notifications and results available on return. Notification taps use normal vault authentication; duplicate submissions are blocked. Interrupted tasks ask users to check existing results instead of automatically replaying imports. Existing write safeguards and cleanup boundaries remain in place; import source files are retained. WebDAV streams archives instead of loading the entire ZIP into memory, uses a separate archive-transfer timeout while keeping metadata requests bounded, reports timeouts correctly rather than as Canceled, and retains server backoff.
 
 - **On-demand editing:** Use a compact toolbar and M3E grouped fields for accounts, multiple passwords and websites, with separate database and item icons. Content follows insertion order, supports direct long-press dragging and confirmed deletion, and keeps Add content at the bottom; details use the same order. Remove the classic editor entry and obsolete switches. New entries no longer offer third-party login, while existing providers and linked accounts remain viewable and editable.
 
@@ -106,7 +108,7 @@
 
 - **Passkey backup handling:** On WebDAV backup failure, list affected passkeys, reasons and suggested actions, with retry or explicit skip. Skipping creates an encrypted partial backup with an omission list, retains existing backups and leaves the last complete-backup time unchanged. Partial backups support merge restore only, never replacement. Support exportable legacy private-key formats; failures still block upload unless explicitly skipped.
 
-- **Cloud backup safety:** Successful concurrent WebDAV requests no longer cancel another request’s active cooldown; preserve server Retry-After and host backoff. Downloads replace local files only after a complete write, retaining previous files on network or write failure. Automatic cleanup only handles standard-named Monica temporary backups, preserving unrelated ZIPs, unknown filenames and partial backups.
+- **Cloud backup safety:** WebDAV backup listings use a single directory request, coalesce entry/completion refreshes, and retain the displayed list on refresh failure. Successful concurrent WebDAV requests no longer cancel another request’s active cooldown; preserve server Retry-After and host backoff. Downloads replace local files only after a complete write, retaining previous files on network or write failure. Automatic cleanup only handles standard-named Monica temporary backups, preserving unrelated ZIPs, unknown filenames and partial backups.
 
 - **Restore and data preservation:** Parse replacement backups before transactional writes and roll back entries and related fields on failure or cancellation. Preserve authenticators with different secrets, parameters or recovery data even when accounts match, retaining unknown fields while rebuilding password links. Isolate damaged authenticator records, do not interpret undecryptable ciphertext as a secret, and retry after unlock. Prevent background encryption migration from overwriting concurrent edits and fix startup attachment cleanup potentially removing new files.
 

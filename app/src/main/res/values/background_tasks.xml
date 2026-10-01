@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">Uploading</string>
+    <string name="transfer_downloading">Downloading</string>
+    <string name="transfer_task_busy">Another data task is running. Please wait for it to finish.</string>
+    <string name="transfer_task_done">Data task completed</string>
+    <string name="transfer_task_failed">Data task stopped or needs attention</string>
+    <string name="transfer_interrupted_check_result">The previous task was interrupted by the system. Check the imported data or backup before retrying; it has not been restarted automatically.</string>
+</resources>

@@ -1,7 +1,7 @@
 package takagi.ru.monica.transfer
 
 /** Counts describe the current phase, never an estimated timer. No credential data belongs here. */
-enum class TransferPhase { READING, DECRYPTING, PREPARING, WRITING, ATTACHMENTS, PACKING, ENCRYPTING, SAVING }
+enum class TransferPhase { READING, DECRYPTING, PREPARING, WRITING, ATTACHMENTS, PACKING, ENCRYPTING, SAVING, UPLOADING, DOWNLOADING }
 
 data class TransferProgress(
     val phase: TransferPhase = TransferPhase.READING,

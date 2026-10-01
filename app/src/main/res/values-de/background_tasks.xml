@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Wird hochgeladen"</string>
+    <string name="transfer_downloading">"Wird heruntergeladen"</string>
+    <string name="transfer_task_busy">"Eine Datenaufgabe läuft bereits. Bitte warte, bis sie abgeschlossen ist."</string>
+    <string name="transfer_task_done">"Datenaufgabe abgeschlossen"</string>
+    <string name="transfer_task_failed">"Datenaufgabe beendet oder Eingriff erforderlich"</string>
+    <string name="transfer_interrupted_check_result">"Die letzte Aufgabe wurde vom System unterbrochen. Prüfe vor einem erneuten Versuch die importierten Daten oder die Sicherung. Sie wurde nicht automatisch neu gestartet."</string>
+</resources>

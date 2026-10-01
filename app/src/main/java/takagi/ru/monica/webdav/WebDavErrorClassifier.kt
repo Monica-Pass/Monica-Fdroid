@@ -98,7 +98,10 @@ object WebDavErrorClassifier {
             val cause = current.cause ?: return current
             if (cause === current) return current
             if (current is RateLimitedIOException || current is SardineException ||
-                current is WebDavUntrustedCertificateException) return current
+                current is WebDavUntrustedCertificateException || current is SocketTimeoutException ||
+                current is TimeoutCancellationException || current is TimeoutException ||
+                (current is java.io.InterruptedIOException &&
+                    current.message.orEmpty().contains("timeout", ignoreCase = true))) return current
             current = cause
             depth++
         }

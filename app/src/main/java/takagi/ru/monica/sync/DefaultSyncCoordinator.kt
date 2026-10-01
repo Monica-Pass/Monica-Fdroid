@@ -107,6 +107,14 @@ class DefaultSyncCoordinator(
         }
     }
 
+    internal suspend fun cancelRequest(key: SyncKey, requestId: String) {
+        mutex.withLock {
+            runtimes[key]?.pendingRequests?.removeAll { it.requestId == requestId }
+            runtimes[key]?.takeIf { it.runningRequest?.requestId == requestId }
+                ?.runningJob?.cancel(CancellationException("Task owner stopped"))
+        }
+    }
+
     override suspend fun cancel(key: SyncKey, reason: String?) {
         mutex.withLock {
             val runtime = runtimes[key]
@@ -322,7 +330,9 @@ class DefaultSyncCoordinator(
                 finishedAtMillis = nowMillis(),
             )
         }
-        finishExecution(key, request, result)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            finishExecution(key, request, result)
+        }
     }
 
     private suspend fun finishExecution(

@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Wysyłanie"</string>
+    <string name="transfer_downloading">"Pobieranie"</string>
+    <string name="transfer_task_busy">"Inne zadanie jest w toku. Poczekaj na jego zakończenie."</string>
+    <string name="transfer_task_done">"Zadanie zakończone"</string>
+    <string name="transfer_task_failed">"Zadanie zatrzymane lub wymaga uwagi"</string>
+    <string name="transfer_interrupted_check_result">"System przerwał poprzednie zadanie. Przed ponowieniem sprawdź zaimportowane dane lub kopię zapasową. Nie uruchomiono go ponownie automatycznie."</string>
+</resources>

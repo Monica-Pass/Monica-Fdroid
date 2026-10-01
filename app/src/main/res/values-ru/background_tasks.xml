@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Загрузка на сервер"</string>
+    <string name="transfer_downloading">"Скачивание"</string>
+    <string name="transfer_task_busy">"Уже выполняется другая задача с данными. Дождитесь её завершения."</string>
+    <string name="transfer_task_done">"Задача с данными завершена"</string>
+    <string name="transfer_task_failed">"Задача остановлена или требует внимания"</string>
+    <string name="transfer_interrupted_check_result">"Система прервала предыдущую задачу. Перед повтором проверьте импортированные данные или резервную копию. Автоматического перезапуска не было."</string>
+</resources>

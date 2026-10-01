@@ -6,6 +6,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.isActive
 
 object SyncTaskRunner {
     private val tasks = ConcurrentHashMap<String, PendingTask>()
@@ -44,6 +45,7 @@ object SyncTaskRunner {
 
     suspend fun <T> requestAndAwait(
         request: SyncRequest,
+        cancelWhenWaiterCancelled: Boolean = false,
         resultClassifier: (T) -> SyncExecutionResult = {
             SyncExecutionResult.Success(finishedAtMillis = System.currentTimeMillis())
         },
@@ -92,6 +94,14 @@ object SyncTaskRunner {
                 } catch (error: SyncTaskBlockedException) {
                     SyncTaskAwaitResult.Blocked(error.syncError)
                 } catch (error: CancellationException) {
+                    if (cancelWhenWaiterCancelled && !kotlinx.coroutines.currentCoroutineContext().isActive) {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                            coordinator.cancelRequest(request.target.stableKey, request.requestId)
+                            tasks.remove(request.requestId)?.drop("Task owner stopped")
+                            completion.join()
+                        }
+                        throw error
+                    }
                     SyncTaskAwaitResult.Canceled(error.message)
                 } catch (error: Exception) {
                     SyncTaskAwaitResult.Failed(error)

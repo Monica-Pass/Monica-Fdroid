@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Caricamento in corso"</string>
+    <string name="transfer_downloading">"Download in corso"</string>
+    <string name="transfer_task_busy">"Un’attività sui dati è già in corso. Attendi che termini."</string>
+    <string name="transfer_task_done">"Attività completata"</string>
+    <string name="transfer_task_failed">"Attività interrotta o da verificare"</string>
+    <string name="transfer_interrupted_check_result">"Il sistema ha interrotto l’ultima attività. Controlla i dati importati o il backup prima di riprovare. Non è stata riavviata automaticamente."</string>
+</resources>

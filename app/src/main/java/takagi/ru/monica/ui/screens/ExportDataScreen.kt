@@ -59,7 +59,9 @@ fun ExportDataScreen(
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var sourceKey by rememberSaveable { mutableStateOf(ImportDestination.Local.key) }
-    val job by DatabaseExportJobs.state.collectAsState()
+    val dataJob by DatabaseExportJobs.state.collectAsState()
+    val job = dataJob?.takeIf { it.kind == DataTaskKind.EXPORT }
+    LaunchedEffect(Unit) { DatabaseExportJobs.recoverInterrupted(context.applicationContext) }
     val source = ImportDestination.fromKey(job?.sourceKey ?: sourceKey)
     var formatKey by rememberSaveable { mutableStateOf(ExportOption.ZIP_BACKUP.name) }
     val option = ExportOption.valueOf(job?.formatKey ?: formatKey)
@@ -145,7 +147,7 @@ fun ExportDataScreen(
         password = ""; confirmation = ""
     }
     fun begin() {
-        if (exporting || pending != null) return
+        if (dataJob?.status == ExportJobStatus.RUNNING || pending != null) return
         if (option == ExportOption.STEAM_MAFILE) { showSteamRisk = true; return }
         if (option == ExportOption.KDBX || encrypt) {
             password = ""; confirmation = ""; passwordError = null; showPassword = true
@@ -165,7 +167,7 @@ fun ExportDataScreen(
         bottomBar = {
             Surface {
                 Button(onClick = { if (exporting) onNavigateBack() else begin() },
-                    enabled = exporting || (pending == null && (option != ExportOption.ZIP_BACKUP || preferences.hasDatabaseExportContent()) &&
+                    enabled = exporting || (dataJob?.status != ExportJobStatus.RUNNING && pending == null && (option != ExportOption.ZIP_BACKUP || preferences.hasDatabaseExportContent()) &&
                         (option != ExportOption.STEAM_MAFILE || (!loadingSteam && selectedSteamIds.isNotEmpty()))),
                     modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp).heightIn(min = 56.dp),
                     shape = RoundedCornerShape(28.dp)) {

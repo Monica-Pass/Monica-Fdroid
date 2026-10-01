@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"Envoi en cours"</string>
+    <string name="transfer_downloading">"Téléchargement en cours"</string>
+    <string name="transfer_task_busy">"Une tâche est déjà en cours. Attendez sa fin."</string>
+    <string name="transfer_task_done">"Tâche terminée"</string>
+    <string name="transfer_task_failed">"Tâche arrêtée ou intervention requise"</string>
+    <string name="transfer_interrupted_check_result">"Le système a interrompu la dernière tâche. Vérifiez les données importées ou la sauvegarde avant de réessayer. Elle n’a pas été relancée automatiquement."</string>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">正在上传</string>
+    <string name="transfer_downloading">正在下载</string>
+    <string name="transfer_task_busy">另一个数据任务正在运行，请等待完成。</string>
+    <string name="transfer_task_done">数据任务已完成</string>
+    <string name="transfer_task_failed">数据任务已停止或需要处理</string>
+    <string name="transfer_interrupted_check_result">上次任务被系统中断。请先检查已导入数据或备份，再决定是否重试；未自动重新执行。</string>
+</resources>

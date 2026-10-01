@@ -2923,6 +2923,7 @@ class WebDavHelper(
         isManualTrigger: Boolean = true,  // 默认为手动触发
         contentScope: BackupContentScope = BackupContentScope.MONICA_LOCAL_ONLY,
         skippedPasskeys: List<FailedItem> = emptyList(),
+        progress: TransferProgressReporter = TransferProgressReporter.None,
     ): Result<BackupReport> = withContext(Dispatchers.IO) {
         // 检查是否已有备份正在进行
         if (!backupLock.compareAndSet(false, true)) {
@@ -2937,6 +2938,7 @@ class WebDavHelper(
             )
             
             // 调用重构后的创建方法
+            progress.report(TransferProgress(TransferPhase.PACKING))
             val createResult = createBackupZip(
                 passwords = passwords,
                 secureItems = secureItems,
@@ -2969,7 +2971,7 @@ class WebDavHelper(
 
                 // 上传
                 val partial = skippedPasskeys.isNotEmpty()
-                val uploadResult = uploadBackup(backupFile, isPermanent || partial, isPartial = partial)
+                val uploadResult = uploadBackup(backupFile, isPermanent || partial, isPartial = partial, progress = progress)
                 
                 if (uploadResult.isSuccess) {
                     if (!partial) updateLastBackupTime()
@@ -3031,6 +3033,8 @@ class WebDavHelper(
             android.util.Log.e("WebDavHelper", "Out of memory during backup", e)
             System.gc()
             Result.failure(Exception(strings.get(R.string.backup_memory_insufficient)))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("WebDavHelper", "Backup failed", e)
             Result.failure(
@@ -5763,6 +5767,10 @@ class WebDavHelper(
         return candidates
     }
 
+    private fun backupTransport() = takagi.ru.monica.webdav.WebDavBackupTransport(
+        takagi.ru.monica.webdav.WebDavGateway.buildHttpClient(
+            takagi.ru.monica.webdav.WebDavCredentials(username, password), serverUrl))
+
     private fun createSardineClient(): Sardine {
         // 通过统一的 Gateway 构造，确保所有请求都经过预置式 Basic 鉴权、
         // 速率限制与 User-Agent 拦截器链（与 Kazumi webdav_client 一致）。
@@ -5832,7 +5840,8 @@ class WebDavHelper(
      * 上传备份文件
      * 使用流式上传避免内存溢出
      */
-    suspend fun uploadBackup(file: File, isPermanent: Boolean = false, isPartial: Boolean = false): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun uploadBackup(file: File, isPermanent: Boolean = false, isPartial: Boolean = false,
+        progress: TransferProgressReporter = TransferProgressReporter.None): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (sardine == null) {
                 return@withContext Result.failure(Exception("WebDAV not configured"))
@@ -5863,24 +5872,8 @@ class WebDavHelper(
             }
             val remotePath = "$backupDir/$fileName"
             
-            // 使用流式上传避免内存溢出
-            // Sardine不直接支持InputStream，使用文件直接上传
-            val fileSize = file.length()
-            if (fileSize > 100 * 1024 * 1024) { // 大于100MB
-                // 对于超大文件，分块读取
-                android.util.Log.w("WebDavHelper", "Very large file (${fileSize / 1024 / 1024}MB), may take a while...")
-            }
-            
-            // 使用readBytes但添加内存检查
-            try {
-                val fileBytes = file.readBytes()
-                sardine!!.put(remotePath, fileBytes, "application/zip")
-            } catch (e: OutOfMemoryError) {
-                android.util.Log.e("WebDavHelper", "Out of memory reading file, trying alternative method", e)
-                System.gc()
-                throw e
-            }
-            
+            backupTransport().upload(remotePath, file, progress)
+
             android.util.Log.d("WebDavHelper", "Backup uploaded successfully (${fileSizeMB}MB)")
             
             Result.success(fileName)
@@ -5889,6 +5882,8 @@ class WebDavHelper(
             // 显式请求垃圾回收
             System.gc()
             Result.failure(Exception(strings.get(R.string.backup_memory_insufficient)))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("WebDavHelper", "Failed to upload backup", e)
             // 将底层异常归一为面向用户的错误消息，同时附带规范化 URL 便于排查
@@ -5911,13 +5906,17 @@ class WebDavHelper(
             
             val backupDir = getBackupDirectoryPath()
             
-            // 检查目录是否存在
-            if (!webDavPathExists(backupDir)) {
-                return@withContext Result.success(emptyList())
+            // A listing already establishes whether the directory exists. Avoid a second
+            // PROPFIND; backup cleanup and the visible list share the server's request budget.
+            val resources = try {
+                sardine!!.list(backupDir)
+            } catch (error: Exception) {
+                if (takagi.ru.monica.webdav.WebDavErrorClassifier.classify(error).kind ==
+                    takagi.ru.monica.webdav.WebDavErrorKind.NotFound) {
+                    return@withContext Result.success(emptyList())
+                }
+                throw error
             }
-            
-            // 列出目录内容
-            val resources = sardine!!.list(backupDir)
             
             val backups = resources
                 .filter { !it.isDirectory && it.name.endsWith(".zip") }
@@ -5932,6 +5931,8 @@ class WebDavHelper(
                 .sortedByDescending { it.modified }
             
             Result.success(backups)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -5940,7 +5941,8 @@ class WebDavHelper(
     /**
      * 下载备份文件
      */
-    suspend fun downloadBackup(backupFile: BackupFile, destFile: File): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun downloadBackup(backupFile: BackupFile, destFile: File,
+        progress: TransferProgressReporter = TransferProgressReporter.None): Result<File> = withContext(Dispatchers.IO) {
         try {
             if (sardine == null) {
                 return@withContext Result.failure(Exception("WebDAV not configured"))
@@ -5948,14 +5950,11 @@ class WebDavHelper(
             
             val remotePath = getBackupFilePath(backupFile.name)
             
-            // 下载文件
-            sardine!!.get(remotePath).use { inputStream ->
-                writeBackupAtomically(destFile) { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-            
+            backupTransport().download(remotePath, destFile, progress)
+
             Result.success(destFile)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

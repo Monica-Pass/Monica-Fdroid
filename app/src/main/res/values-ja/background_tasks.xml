@@ -1,0 +1,8 @@
+<resources>
+    <string name="transfer_uploading">"アップロード中"</string>
+    <string name="transfer_downloading">"ダウンロード中"</string>
+    <string name="transfer_task_busy">"別のデータ処理を実行中です。完了までお待ちください。"</string>
+    <string name="transfer_task_done">"データ処理が完了しました"</string>
+    <string name="transfer_task_failed">"データ処理が停止したか確認が必要です"</string>
+    <string name="transfer_interrupted_check_result">"前回の処理はシステムにより中断されました。再試行する前にインポート済みデータやバックアップを確認してください。自動で再実行していません。"</string>
+</resources>

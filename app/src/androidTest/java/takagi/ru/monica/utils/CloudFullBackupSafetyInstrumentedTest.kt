@@ -19,6 +19,9 @@ import java.util.UUID
 
 class CloudFullBackupSafetyInstrumentedTest {
     private val base = InstrumentationRegistry.getInstrumentation().targetContext
+    @org.junit.After fun restoreGatewayContext() {
+        takagi.ru.monica.webdav.WebDavGateway.attach(base)
+    }
     private class IsolatedContext(base: Context) : ContextWrapper(base), AutoCloseable {
         private val prefix = "cloud-safety-${UUID.randomUUID()}-"
         private val names = mutableSetOf<String>()
@@ -181,6 +184,8 @@ class CloudFullBackupSafetyInstrumentedTest {
                 }
                 MockWebServer().use { server ->
                     server.start()
+                    WebDavHelper.setInsecureHttpAllowed(context, true)
+                    takagi.ru.monica.webdav.WebDavGateway.attach(context)
                     val webdav = WebDavHelper(context)
                     field(webdav, "serverUrl", server.url("/").toString().trimEnd('/'))
                     field(webdav, "sardine", com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine())
