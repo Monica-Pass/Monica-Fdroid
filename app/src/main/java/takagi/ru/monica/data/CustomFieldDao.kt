@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CustomFieldDao {
     
+    @Query("SELECT * FROM custom_fields WHERE title GLOB 'monica.content.block.*' ORDER BY entry_id, sort_order, id")
+    fun observeContentBlockFields(): Flow<List<CustomField>>
+
     // =============== 查询操作 ===============
     
     /**

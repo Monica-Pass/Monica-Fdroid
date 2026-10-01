@@ -582,18 +582,16 @@ fun NoteListScreen(
                                     onSelect = handleCategorySelection,
                                     categories = categories,
                                     keepassDatabases = keepassDatabases,
+                                    mdbxDatabases = mdbxDatabases,
                                     bitwardenVaults = bitwardenVaults,
                                     getBitwardenFolders = { vaultId -> database.bitwardenFolderDao().getFoldersByVaultFlow(vaultId) },
                                     getKeePassGroups = getKeePassGroups,
                                     categoryEditMode = categoryMgmt.categoryEditMode,
                                     onRequestCategoryAction = { categoryMgmt.categoryActionTarget = it },
+                                    showQuickFilters = availableTags.isNotEmpty(),
+                                    quickFilterTitle = stringResource(R.string.note_tags),
                                     quickFilterContent = {
                                         if (availableTags.isNotEmpty()) {
-                                            Text(
-                                                text = stringResource(R.string.note_tags),
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()

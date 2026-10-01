@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">驗證之鑰暫不可讀。請解鎖 Monica 再試，原資料仍存。</string>
+</resources>

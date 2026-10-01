@@ -25,8 +25,8 @@ internal fun resolvePasswordPageVisibleTypes(
     aggregateEnabled: Boolean,
     configuredTypes: List<PasswordPageContentType>
 ): List<PasswordPageContentType> {
-    if (!aggregateEnabled) return listOf(PasswordPageContentType.PASSWORD)
-    return PasswordPageContentType.normalizeEnabledTypes(configuredTypes)
+    if (!aggregateEnabled) return listOf(PasswordPageContentType.PASSWORD) + PasswordPageContentType.CREDENTIAL_TYPES
+    return (PasswordPageContentType.normalizeEnabledTypes(configuredTypes) + PasswordPageContentType.CREDENTIAL_TYPES).distinct()
 }
 
 internal fun sanitizeSelectedPasswordPageTypes(
@@ -40,7 +40,7 @@ internal fun sanitizeSelectedPasswordPageTypes(
 internal fun resolvePasswordPageQuickFilterTypes(
     visibleTypes: List<PasswordPageContentType>
 ): List<PasswordPageContentType> {
-    return visibleTypes.filter { it != PasswordPageContentType.PASSWORD }
+    return (visibleTypes.filter { it != PasswordPageContentType.PASSWORD } + PasswordPageContentType.CREDENTIAL_TYPES).distinct()
 }
 
 internal fun resolvePasswordPageDisplayedTypes(
@@ -100,6 +100,9 @@ internal fun PasswordPageContentType.labelRes(): Int = when (this) {
     PasswordPageContentType.NOTE -> R.string.nav_notes
     PasswordPageContentType.AUTHENTICATOR -> R.string.nav_authenticator
     PasswordPageContentType.PASSKEY -> R.string.nav_passkey
+    PasswordPageContentType.API_KEY -> R.string.content_block_api_key
+    PasswordPageContentType.API_TOKEN -> R.string.entry_type_api_token
+    PasswordPageContentType.GPG_KEY -> R.string.content_block_gpg
 }
 
 internal fun PasswordPageContentType.icon(): ImageVector = when (this) {
@@ -108,6 +111,7 @@ internal fun PasswordPageContentType.icon(): ImageVector = when (this) {
     PasswordPageContentType.NOTE -> Icons.Default.Description
     PasswordPageContentType.AUTHENTICATOR -> Icons.Default.Security
     PasswordPageContentType.PASSKEY -> Icons.Default.VpnKey
+    PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY -> Icons.Default.VpnKey
 }
 
 internal fun PasswordListQuickFilterItem.toPasswordPageContentTypeOrNull(): PasswordPageContentType? = when (this) {
@@ -116,10 +120,16 @@ internal fun PasswordListQuickFilterItem.toPasswordPageContentTypeOrNull(): Pass
     PasswordListQuickFilterItem.NOTE -> PasswordPageContentType.NOTE
     PasswordListQuickFilterItem.AUTHENTICATOR -> PasswordPageContentType.AUTHENTICATOR
     PasswordListQuickFilterItem.PASSKEY -> PasswordPageContentType.PASSKEY
+    PasswordListQuickFilterItem.API_KEY -> PasswordPageContentType.API_KEY
+    PasswordListQuickFilterItem.API_TOKEN -> PasswordPageContentType.API_TOKEN
+    PasswordListQuickFilterItem.GPG_KEY -> PasswordPageContentType.GPG_KEY
     else -> null
 }
 
 private fun PasswordPageContentType.toAggregateQuickFilterItemOrNull(): PasswordListQuickFilterItem? = when (this) {
+    PasswordPageContentType.API_KEY -> PasswordListQuickFilterItem.API_KEY
+    PasswordPageContentType.API_TOKEN -> PasswordListQuickFilterItem.API_TOKEN
+    PasswordPageContentType.GPG_KEY -> PasswordListQuickFilterItem.GPG_KEY
     PasswordPageContentType.PASSWORD -> null
     PasswordPageContentType.CARD_WALLET -> PasswordListQuickFilterItem.CARD_WALLET
     PasswordPageContentType.NOTE -> PasswordListQuickFilterItem.NOTE
@@ -132,7 +142,8 @@ internal fun appendAggregateContentQuickFilterItems(
     visibleTypes: List<PasswordPageContentType>,
     aggregateEnabled: Boolean
 ): List<PasswordListQuickFilterItem> {
-    if (!aggregateEnabled) return configuredItems
+    val credentialItems = PasswordPageContentType.CREDENTIAL_TYPES.mapNotNull { it.toAggregateQuickFilterItemOrNull() }
+    if (!aggregateEnabled) return (configuredItems + credentialItems).distinct()
     val aggregateItems = resolvePasswordPageQuickFilterTypes(visibleTypes)
         .mapNotNull(PasswordPageContentType::toAggregateQuickFilterItemOrNull)
     return buildList {

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Questa chiave non è al momento leggibile. Sblocca Monica e riprova. I dati originali sono conservati.</string>
+</resources>

@@ -180,15 +180,24 @@ internal fun CredentialGeneratorSheet(
                 }
             }
             if (suggestions.isNotEmpty()) {
+                // LazyRow measures visible items only. Reserve identical text slots so scrolling
+                // from a short suggestion to a long one cannot resize the sheet or move its controls.
+                val suggestionTitleStyle = MaterialTheme.typography.labelMedium
+                val suggestionValueStyle = MaterialTheme.typography.bodyLarge
+                val suggestionHeight = with(LocalDensity.current) {
+                    suggestionTitleStyle.lineHeight.toDp() + suggestionValueStyle.lineHeight.toDp() * 2
+                } + 40.dp
                 Text(stringResource(R.string.cg_saved_suggestions), style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LazyRow(modifier = Modifier.testTag("generator_suggestions"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(modifier = Modifier.height(suggestionHeight).testTag("generator_suggestions"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     itemsIndexed(suggestions) { index, suggestion ->
                         Surface(onClick = { onApply(suggestion.value) }, shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.widthIn(min = 160.dp, max = 260.dp).testTag("generator_suggestion_$index")) {
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.height(suggestionHeight).widthIn(min = 160.dp, max = 260.dp).testTag("generator_suggestion_$index")) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(suggestion.label, style = MaterialTheme.typography.labelMedium)
-                                Text(suggestion.value, fontFamily = FontFamily.Monospace)
+                                Text(suggestion.label, style = suggestionTitleStyle, maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Text(suggestion.value, style = suggestionValueStyle, fontFamily = FontFamily.Monospace,
+                                    minLines = 2, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             }
                         }
                     }

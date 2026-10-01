@@ -122,7 +122,7 @@ internal fun PasswordListScrollableContent(
                                     .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                NativeTokenFilterChip(nativeTokens)
+
                                 if (appSettings.passwordListQuickFiltersEnabled) {
                                     configuredQuickFilterItems.forEach { item ->
                                         if (shouldShowQuickFilterItem(item, aggregateUiState.visibleContentTypes)) {

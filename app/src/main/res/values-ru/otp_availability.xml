@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Этот ключ временно недоступен для чтения. Разблокируйте Monica и повторите попытку. Исходные данные сохранены.</string>
+</resources>

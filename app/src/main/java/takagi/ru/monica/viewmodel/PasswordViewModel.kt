@@ -455,6 +455,13 @@ class PasswordViewModel internal constructor(
     private val smartDeduplicationEnabled = settingsManager?.settingsFlow?.map { 
         it.smartDeduplicationEnabled 
     }?.stateIn(viewModelScope, SharingStarted.Eagerly, true) ?: kotlinx.coroutines.flow.MutableStateFlow(true)
+    // Cache only type metadata for the list; decoding runs off the UI thread and never writes data.
+    val contentBlockTypes = (customFieldRepository?.observeContentBlockFields()
+        ?: kotlinx.coroutines.flow.flowOf(emptyList<CustomField>()))
+        .map { fields -> takagi.ru.monica.data.model.buildPasswordContentTypeIndex(fields) }
+        .flowOn(kotlinx.coroutines.Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     

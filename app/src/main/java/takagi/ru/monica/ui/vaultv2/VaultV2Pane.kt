@@ -419,6 +419,7 @@ internal data class VaultV2VisibleSnapshotKey(
 	val normalizedQuery: String,
 	val isArchiveView: Boolean,
 	val overviewItemType: VaultV2ItemType? = null,
+	val contentBlockTypes: Map<Long, Set<PasswordPageContentType>> = emptyMap(),
 	val nativeOnly: Boolean = false,
 	val sort: VaultListSort = VaultListSort.TITLE_ASC,
 )
@@ -454,6 +455,7 @@ internal data class VaultV2VisibleListConfig(
 	val normalizedQuery: String,
 	val isArchiveView: Boolean,
 	val overviewItemType: VaultV2ItemType? = null,
+	val contentBlockTypes: Map<Long, Set<PasswordPageContentType>> = emptyMap(),
 	val nativeOnly: Boolean = false,
 	val sort: VaultListSort = VaultListSort.TITLE_ASC,
 )
@@ -495,7 +497,7 @@ private fun PasskeyEntry.isVaultV2LocalOnly(): Boolean {
 }
 
 private fun PasswordPageContentType.toVaultV2ItemTypes(): Set<VaultV2ItemType> = when (this) {
-	PasswordPageContentType.PASSWORD -> setOf(VaultV2ItemType.PASSWORD)
+	PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD -> setOf(VaultV2ItemType.PASSWORD)
 	PasswordPageContentType.AUTHENTICATOR -> setOf(VaultV2ItemType.AUTHENTICATOR)
 	PasswordPageContentType.NOTE -> setOf(VaultV2ItemType.NOTE)
 	PasswordPageContentType.PASSKEY -> setOf(VaultV2ItemType.PASSKEY)
@@ -1283,9 +1285,11 @@ private fun toggleVaultV2ContentType(
 }
 
 private fun VaultV2Item.matchesDisplayedTypes(
-	displayedTypes: Set<PasswordPageContentType>
+	displayedTypes: Set<PasswordPageContentType>,
+	contentBlockTypes: Map<Long, Set<PasswordPageContentType>>
 ): Boolean {
-	return toPasswordPageContentType() in displayedTypes
+	return toPasswordPageContentType() in displayedTypes ||
+        passwordEntry?.let { takagi.ru.monica.data.model.matchesCredentialContentTypes(it, displayedTypes, contentBlockTypes[it.id].orEmpty()) } == true
 }
 
 private fun VaultV2Item.matchesPasswordQuickFilters(
@@ -1409,7 +1413,7 @@ internal fun buildVaultV2VisibleListState(
 			localCategoryIdsInScope = config.localCategoryIdsInScope,
 		)
 	}.filter { item ->
-		if (!item.matchesDisplayedTypes(config.displayedContentTypes)) return@filter false
+		if (!item.matchesDisplayedTypes(config.displayedContentTypes, config.contentBlockTypes)) return@filter false
 		if (!config.isArchiveView && config.overviewItemType != null && item.type != config.overviewItemType) return@filter false
 		if (
 			!config.isArchiveView &&
@@ -2440,6 +2444,7 @@ fun VaultV2Pane(
 		)
 	}
 
+    val contentBlockTypes by passwordViewModel.contentBlockTypes.collectAsStateWithLifecycle()
     val nativeTokens = rememberNativeTokenList(
         if (showOverview) null else mdbxViewModel,
         if (state.isArchiveView) CategoryFilter.Archived else categoryMenuFilter, searchQuery,
@@ -2788,6 +2793,7 @@ fun VaultV2Pane(
 		nativeTokens.onlyTokens,
 		storageSelection,
 		localCategoryIdsInScope,
+		contentBlockTypes,
 		displayedContentTypes,
 		configuredQuickFilterItems,
 		quickFilterFavorite,
@@ -2813,6 +2819,7 @@ fun VaultV2Pane(
 			nativeOnly = nativeTokens.onlyTokens,
 			storageSelection = storageSelection,
 			localCategoryIdsInScope = localCategoryIdsInScope,
+			contentBlockTypes = contentBlockTypes,
 			displayedContentTypes = displayedContentTypes,
 			configuredQuickFilterItems = configuredQuickFilterItems,
 			quickFilterStates = listOf(
@@ -2854,6 +2861,7 @@ fun VaultV2Pane(
 		nativeTokens.onlyTokens,
 		storageSelection,
 		localCategoryIdsInScope,
+		contentBlockTypes,
 		displayedContentTypes,
 		configuredQuickFilterItems,
 		quickFilterFavorite,
@@ -2879,6 +2887,7 @@ fun VaultV2Pane(
 			nativeOnly = nativeTokens.onlyTokens,
 			storageSelection = storageSelection,
 			localCategoryIdsInScope = localCategoryIdsInScope,
+			contentBlockTypes = contentBlockTypes,
 			displayedContentTypes = displayedContentTypes,
 			configuredQuickFilterItems = configuredQuickFilterItems,
 			quickFilterFavorite = quickFilterFavorite,
@@ -3391,10 +3400,9 @@ fun VaultV2Pane(
 							)
 						}
 						if (appSettings.categorySelectionUiMode == CategorySelectionUiMode.CHIP_MENU) {
-						UnifiedCategoryFilterChipMenuDropdown(
+						takagi.ru.monica.ui.PasswordFilterPanel(
 							expanded = isStorageFilterSheetVisible,
 							onDismissRequest = { isStorageFilterSheetVisible = false },
-							offset = UnifiedCategoryFilterChipMenuOffset
 							) {
 								PasswordListCategoryChipMenu(
 									currentFilter = categoryMenuFilter,

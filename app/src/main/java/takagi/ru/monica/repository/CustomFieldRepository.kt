@@ -14,6 +14,8 @@ import takagi.ru.monica.data.CustomFieldDraft
 class CustomFieldRepository(
     private val customFieldDao: CustomFieldDao
 ) {
+    fun observeContentBlockFields(): Flow<List<CustomField>> = customFieldDao.observeContentBlockFields()
+
     // =============== 查询操作 ===============
     
     /**

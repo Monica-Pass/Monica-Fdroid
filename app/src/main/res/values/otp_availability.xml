@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">This authenticator key is temporarily unreadable. Unlock Monica and try again. The original data has been kept.</string>
+</resources>

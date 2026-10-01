@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Cette clé ne peut pas être lue pour le moment. Déverrouillez Monica et réessayez. Les données originales sont conservées.</string>
+</resources>

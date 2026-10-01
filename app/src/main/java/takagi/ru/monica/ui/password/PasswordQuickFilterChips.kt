@@ -61,7 +61,7 @@ internal fun shouldShowQuickFilterItem(
         return true
     }
     val type = item.toPasswordPageContentTypeOrNull() ?: return true
-    return type in aggregateVisibleContentTypes
+    return type in aggregateVisibleContentTypes || type in PasswordPageContentType.CREDENTIAL_TYPES
 }
 
 @Composable
@@ -224,9 +224,12 @@ internal fun PasswordQuickFilterChipItem(
             )
         }
 
+        PasswordListQuickFilterItem.API_KEY,
+        PasswordListQuickFilterItem.API_TOKEN,
+        PasswordListQuickFilterItem.GPG_KEY,
         PasswordListQuickFilterItem.CARD_WALLET -> {
             val type = item.toPasswordPageContentTypeOrNull() ?: return
-            if (type !in aggregateVisibleTypes) return
+            if (type !in aggregateVisibleTypes && type !in PasswordPageContentType.CREDENTIAL_TYPES) return
             PasswordQuickFilterChip(
                 selected = aggregateSelectedTypes.contains(type),
                 onClick = {

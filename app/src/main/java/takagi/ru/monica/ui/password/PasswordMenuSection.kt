@@ -46,7 +46,7 @@ internal fun PasswordMenuSection(
     )
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         val baseHeaderModifier = Modifier
             .fillMaxWidth()
@@ -85,7 +85,7 @@ internal fun PasswordMenuSection(
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                     content = content
                 )
             }
@@ -94,7 +94,7 @@ internal fun PasswordMenuSection(
             // 避免 visible 从 true 突变到 false 触发 AnimatedVisibility 的退出动画。
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
                 content = content
             )
         }

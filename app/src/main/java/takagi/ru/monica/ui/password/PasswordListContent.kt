@@ -890,7 +890,8 @@ fun PasswordListContent(
         includeTokens = !quickFilter2fa && !quickFilterNotes && !quickFilterPasskey &&
             !quickFilterBoundNote && !quickFilterAttachments && !quickFilterWifi && !quickFilterSshKey &&
             !quickFilterBarcode && !quickFilterLocalOnly && !quickFilterUncategorized &&
-            aggregateConfig?.selectedContentTypes.orEmpty().isEmpty(),
+            (aggregateConfig?.selectedContentTypes.orEmpty().isEmpty() ||
+                PasswordPageContentType.API_TOKEN in aggregateConfig?.selectedContentTypes.orEmpty()),
         favoritesOnly = quickFilterFavorite)
     val nativeTypeLabel = stringResource(R.string.entry_type_api_token)
     val nativePasswordCards = remember(nativeTokens.entries, nativeTypeLabel) {
@@ -1109,7 +1110,9 @@ fun PasswordListContent(
         )
     }
     
+    val contentBlockTypes by viewModel.contentBlockTypes.collectAsState()
     val preStackFilteredPasswordEntries = remember(
+        contentBlockTypes,
         nativePasswordCards,
         nativeTokens.onlyTokens,
         passwordEntries,
@@ -1155,6 +1158,7 @@ fun PasswordListContent(
             quickFilterBarcode = quickFilterBarcode,
             effectiveNoStackEntryIds = effectiveNoStackEntryIds,
             hasActiveContentTypeFilter = aggregateUiState.hasActiveContentTypeFilter,
+            contentBlockTypes = contentBlockTypes,
             contentTypeFilterTypes = aggregateUiState.contentTypeFilterTypes
         ) + nativePasswordCards.filterNot { quickFilterNeverStack && it.id !in effectiveNoStackEntryIds }
     }
@@ -2131,7 +2135,7 @@ fun PasswordListContent(
                         }
                     }
 
-                    PasswordPageContentType.PASSWORD -> Unit
+                    PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD -> Unit
                 }
                 processedCount = (processedCount + 1).coerceAtMost(totalToProcess.coerceAtLeast(1))
                 onProgress(processedCount, totalToProcess.coerceAtLeast(1))

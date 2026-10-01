@@ -10,7 +10,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
@@ -22,14 +23,19 @@ import takagi.ru.monica.ui.components.GeneratorSuggestion
 import java.io.File
 
 class CredentialGeneratorSheetTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private var applied: String? = null
-    private fun show(username: Boolean = false, prefs: GeneratorPreferences = GeneratorPreferences(), large: Boolean = false) {
+    private fun show(username: Boolean = false, prefs: GeneratorPreferences = GeneratorPreferences(), large: Boolean = false, suggestions: List<GeneratorSuggestion>? = null) {
+        compose.runOnUiThread {
+            compose.activity.setTurnScreenOn(true)
+            compose.activity.setShowWhenLocked(true)
+            compose.activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, if (large) 2f else 1f)) {
                 MaterialTheme(colorScheme = if (large) darkColorScheme() else lightColorScheme()) {
-                    CredentialGeneratorSheet(username, listOf(GeneratorSuggestion("Fixture", if (username) "sample@example.com" else "test-template-secret")),
+                    CredentialGeneratorSheet(username, suggestions ?: listOf(GeneratorSuggestion("Fixture", if (username) "sample@example.com" else "test-template-secret")),
                         prefs, {}, { applied = it })
                 }
             }
@@ -44,7 +50,7 @@ class CredentialGeneratorSheetTest {
         node("generator_kind").performClick(); compose.onNodeWithTag("generator_kind_$name").performClick(); awaitResult()
     }
     private fun capture(name: String) {
-        val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "generator-ui").apply { mkdirs() }
+        val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "generator-ui").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use {
             compose.onNodeWithTag("credential_generator_scroll").captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
@@ -121,5 +127,31 @@ class CredentialGeneratorSheetTest {
         }
         capture("password-auto-fit")
     }
+
+    private fun verifySuggestionHeight(username: Boolean, large: Boolean) {
+        val full = "long-account-value-".repeat(24)
+        val suggestions = (0 until 12).map { index ->
+            GeneratorSuggestion(if (index < 6) "Preset" else "A much longer saved suggestion label", if (index < 6) "short" else full)
+        }
+        show(username = username, large = large, suggestions = suggestions)
+        awaitResult()
+        val row = node("generator_suggestions")
+        val height = row.getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        val controlsTop = compose.onNodeWithTag("generator_length_slider").getUnclippedBoundsInRoot().top
+        val shortHeight = compose.onNodeWithTag("generator_suggestion_0").getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        row.performScrollToIndex(11)
+        compose.waitForIdle()
+        assertEquals(height, row.getUnclippedBoundsInRoot().let { it.bottom - it.top })
+        assertEquals(controlsTop, compose.onNodeWithTag("generator_length_slider").getUnclippedBoundsInRoot().top)
+        assertEquals(shortHeight, compose.onNodeWithTag("generator_suggestion_11").getUnclippedBoundsInRoot().let { it.bottom - it.top })
+        capture(if (large) "suggestions-large" else "suggestions-username")
+        compose.onNodeWithTag("generator_suggestion_11").performClick()
+        compose.runOnIdle { assertEquals(full, applied) }
+        row.performScrollToIndex(0)
+        assertEquals(height, row.getUnclippedBoundsInRoot().let { it.bottom - it.top })
+        assertEquals(controlsTop, compose.onNodeWithTag("generator_length_slider").getUnclippedBoundsInRoot().top)
+    }
+    @Test fun usernameSuggestionsKeepHeightWhenScrolling() = verifySuggestionHeight(username = true, large = false)
+    @Test fun passwordSuggestionsKeepHeightAtDoubleFontScale() = verifySuggestionHeight(username = false, large = true)
 
 }

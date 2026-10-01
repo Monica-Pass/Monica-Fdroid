@@ -457,6 +457,9 @@ private fun PasswordPageContentType.toLabelRes(): Int = when (this) {
     PasswordPageContentType.NOTE -> R.string.nav_notes
     PasswordPageContentType.AUTHENTICATOR -> R.string.nav_authenticator
     PasswordPageContentType.PASSKEY -> R.string.nav_passkey
+    PasswordPageContentType.API_KEY -> R.string.content_block_api_key
+    PasswordPageContentType.API_TOKEN -> R.string.entry_type_api_token
+    PasswordPageContentType.GPG_KEY -> R.string.content_block_gpg
 }
 
 private fun PasswordPageContentType.toIcon(): ImageVector = when (this) {
@@ -465,6 +468,7 @@ private fun PasswordPageContentType.toIcon(): ImageVector = when (this) {
     PasswordPageContentType.NOTE -> Icons.Default.Description
     PasswordPageContentType.AUTHENTICATOR -> Icons.Default.Security
     PasswordPageContentType.PASSKEY -> Icons.Default.VpnKey
+    PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY -> Icons.Default.VpnKey
 }
 
 private fun PasswordPageContentType.toAddButtonMenuActionOrNull(): AddButtonMenuAction? = when (this) {
@@ -473,6 +477,7 @@ private fun PasswordPageContentType.toAddButtonMenuActionOrNull(): AddButtonMenu
     PasswordPageContentType.NOTE -> AddButtonMenuAction.NOTE
     PasswordPageContentType.AUTHENTICATOR -> AddButtonMenuAction.AUTHENTICATOR
     PasswordPageContentType.PASSKEY -> null
+    PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY -> null
 }
 
 private fun AddButtonMenuAction.toLabelRes(): Int = when (this) {

@@ -37,7 +37,7 @@ internal fun VaultV2QuickFilterRow(
             .padding(top = 2.dp, bottom = 0.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        NativeTokenFilterChip(nativeTokens)
+
         VaultV2QuickFilterChips(
             configuredQuickFilterItems = configuredQuickFilterItems,
             chipState = chipState,

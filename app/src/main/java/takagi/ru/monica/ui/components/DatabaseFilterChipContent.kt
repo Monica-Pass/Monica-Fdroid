@@ -68,10 +68,11 @@ internal fun <T> DatabaseFilterChipContent(
     expanded: Boolean,
     isSelected: (T) -> Boolean,
     onSelect: (T) -> Unit,
+    availableWidth: Dp? = null,
 ) {
     // DropdownMenu's intrinsic width pass also asks Columns for intrinsic heights. Neither query
     // may reach LazyLayout, whose off-screen children deliberately do not exist.
-    val width = (rememberUnifiedCategoryFilterChipMenuWidth() - 32.dp).coerceAtLeast(1.dp)
+    val width = (availableWidth ?: (rememberUnifiedCategoryFilterChipMenuWidth() - 32.dp)).coerceAtLeast(1.dp)
     val density = LocalDensity.current
     val textStyle = MaterialTheme.typography.labelLarge
     val menuHeight = minOf(460.dp, (LocalConfiguration.current.screenHeightDp.dp - 96.dp).coerceAtLeast(48.dp))

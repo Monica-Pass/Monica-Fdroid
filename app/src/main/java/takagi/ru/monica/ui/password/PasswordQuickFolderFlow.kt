@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -40,8 +41,8 @@ internal fun PasswordQuickFolderFlow(
 ) {
     FlowRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         params.quickFolderShortcuts.forEach { shortcut ->
             val editableCategory = shortcut.resolveEditableCategory(params.categories)
@@ -60,7 +61,7 @@ internal fun PasswordQuickFolderFlow(
                 },
                 label = shortcut.title,
                 leadingIcon = shortcut.resolveLeadingIcon(
-                    categoryEditMode = params.categoryEditMode,
+                    categoryEditMode = false,
                     editableCategory = editableCategory
                 )
             )
@@ -78,7 +79,7 @@ internal fun PasswordQuickFolderChipRow(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
     ) {
         params.quickFolderShortcuts.forEach { shortcut ->
             MonicaExpressiveFilterChip(

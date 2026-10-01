@@ -32,28 +32,15 @@ internal data class PasswordQuickFoldersMenuModuleParams(
 @Composable
 internal fun PasswordQuickFiltersMenuModule(params: PasswordQuickFiltersMenuModuleParams) {
     PasswordReorderableTopModuleSection(params = params.sectionParams) {
-        if (params.categoryEditMode) {
-            val horizontalContentPadding = 32.dp
             PasswordQuickFilterEditGrid(
                 params = PasswordQuickFilterEditGridParams(
                     items = params.quickFilterOrder,
-                    measuredSizes = params.quickFilterMeasuredSizes,
-                    availableWidth = (params.menuWidth - horizontalContentPadding).coerceAtLeast(220.dp),
                     chipState = params.chipState,
                     chipCallbacks = params.chipCallbacks,
-                    onOrderCommitted = params.onOrderCommitted
+                    onOrderCommitted = params.onOrderCommitted,
+                    editing = params.categoryEditMode
                 )
             )
-        } else {
-            PasswordQuickFilterFlow(
-                params = PasswordQuickFilterFlowParams(
-                    items = params.quickFilterOrder,
-                    measuredSizes = params.quickFilterMeasuredSizes,
-                    chipState = params.chipState,
-                    chipCallbacks = params.chipCallbacks
-                )
-            )
-        }
     }
 }
 

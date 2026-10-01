@@ -63,9 +63,8 @@ internal fun PasswordListCategoryChipMenuBottomActions(
     PasswordCategoryActionButtons(
         params = PasswordCategoryActionButtonsParams(
             canCreateCategory = onCreateCategory != null,
-            canManageExistingCategories =
-                (onMoveCategory != null || onMoveCategoryToStorageTarget != null || onTransferCategory != null || onRenameCategory != null || onDeleteCategory != null) &&
-                categories.isNotEmpty(),
+            // Quick filters can be reordered even when there are no editable folders.
+            canManageExistingCategories = true,
             categoryEditMode = categoryEditMode,
             onCreateCategory = {
                 onCategoryEditModeChange(false)

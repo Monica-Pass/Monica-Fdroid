@@ -1,37 +1,28 @@
 package takagi.ru.monica.ui
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.geometry.Size
+import kotlinx.coroutines.Job
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyGridState
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
 import takagi.ru.monica.data.PasswordListQuickFilterItem
 import takagi.ru.monica.data.PasswordPageContentType
 
@@ -68,11 +59,10 @@ internal data class PasswordQuickFilterChipCallbacks(
 
 internal data class PasswordQuickFilterEditGridParams(
     val items: List<PasswordListQuickFilterItem>,
-    val measuredSizes: MutableMap<PasswordListQuickFilterItem, IntSize>,
-    val availableWidth: Dp,
     val chipState: PasswordQuickFilterChipState,
     val chipCallbacks: PasswordQuickFilterChipCallbacks,
-    val onOrderCommitted: (List<PasswordListQuickFilterItem>) -> Unit
+    val onOrderCommitted: (List<PasswordListQuickFilterItem>) -> Unit,
+    val editing: Boolean = true
 )
 
 internal fun mergeVisibleQuickFilterOrder(
@@ -93,16 +83,10 @@ private fun PasswordQuickFilterEditItem(
     params: PasswordQuickFilterEditGridParams,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .padding(horizontal = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Box(modifier = modifier) {
         PasswordQuickFilterChipItem(
             item = item,
-            categoryEditMode = true,
+            categoryEditMode = params.editing,
             quickFilterFavorite = params.chipState.favorite,
             onQuickFilterFavoriteChange = params.chipCallbacks.onFavoriteChange,
             quickFilter2fa = params.chipState.twoFa,
@@ -128,87 +112,121 @@ private fun PasswordQuickFilterEditItem(
             aggregateSelectedTypes = params.chipState.aggregateSelectedTypes,
             aggregateVisibleTypes = params.chipState.aggregateVisibleTypes,
             onToggleAggregateType = params.chipCallbacks.onToggleAggregateType,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
         )
-        Spacer(modifier = Modifier.width(4.dp))
-        Icon(
-            imageVector = Icons.Default.DragHandle,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
+
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PasswordQuickFilterEditGrid(params: PasswordQuickFilterEditGridParams) {
     val visibleItems = remember(params.items, params.chipState.aggregateVisibleTypes) {
-        params.items.filter { item ->
-            shouldShowQuickFilterItem(item, params.chipState.aggregateVisibleTypes)
-        }
+        params.items.filter { shouldShowQuickFilterItem(it, params.chipState.aggregateVisibleTypes) }
     }
+    val latestParams by rememberUpdatedState(params)
     var localOrder by remember { mutableStateOf(visibleItems) }
-    val gridState = rememberLazyGridState()
-    val reorderableState = rememberReorderableLazyGridState(gridState) { from, to ->
-        localOrder = localOrder.toMutableList().apply {
-            add(to.index, removeAt(from.index))
-        }
-    }
-    var wasDragging by remember { mutableStateOf(false) }
+    var dragging by remember { mutableStateOf<PasswordListQuickFilterItem?>(null) }
+    var visualOrigin by remember { mutableStateOf(Offset.Zero) }
+    var grabOffset by remember { mutableStateOf(Offset.Zero) }
+    var previousPointer by remember { mutableStateOf(Offset.Zero) }
+    val bounds = remember { mutableStateMapOf<PasswordListQuickFilterItem, Rect>() }
+    val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(visibleItems) {
-        if (!reorderableState.isAnyItemDragging) localOrder = visibleItems
+        if (dragging == null) localOrder = visibleItems
     }
-    LaunchedEffect(reorderableState.isAnyItemDragging) {
-        if (reorderableState.isAnyItemDragging) {
-            wasDragging = true
-        } else if (wasDragging) {
-            wasDragging = false
-            val mergedOrder = mergeVisibleQuickFilterOrder(params.items, localOrder)
-            if (mergedOrder != params.items) {
-                params.onOrderCommitted(mergedOrder)
-            }
-        }
-    }
-
-    val itemSpacing = 8.dp
-    val rowCount = (localOrder.size + 1) / 2
-    val contentHeight = (52.dp * rowCount) +
-        (itemSpacing * (rowCount - 1).coerceAtLeast(0))
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        state = gridState,
-        modifier = Modifier
-            .width(params.availableWidth)
-            .height(contentHeight),
-        verticalArrangement = Arrangement.spacedBy(itemSpacing),
-        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-        userScrollEnabled = false
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        items(
-            items = localOrder,
-            key = { it.name }
-        ) { item ->
-            ReorderableItem(
-                reorderableState,
-                key = item.name
-            ) { isDragging ->
-                val elevation by animateDpAsState(
-                    targetValue = if (isDragging) 8.dp else 0.dp,
-                    label = "quick_filter_drag_elevation"
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer { shadowElevation = elevation.toPx() }
-                        .longPressDraggableHandle()
+        localOrder.forEach { item ->
+            key(item) {
+                val placement = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+                var placementJob by remember { mutableStateOf<Job?>(null) }
+                val active = dragging == item
+                // Measure the untransformed slot; the inner layer alone follows the finger.
+                Box(Modifier
+                    .zIndex(if (active) 1f else 0f)
+                    .onGloballyPositioned { coordinates ->
+                        val next = Rect(coordinates.positionInParent(), Size(coordinates.size.width.toFloat(), coordinates.size.height.toFloat()))
+                        val previous = bounds.put(item, next)
+                        if (previous != null && previous.topLeft != next.topLeft && dragging != null && dragging != item) {
+                            val delta = previous.topLeft - next.topLeft + placement.value
+                            placementJob?.cancel()
+                            placementJob = scope.launch {
+                                placement.snapTo(delta)
+                                placement.animateTo(Offset.Zero, spring())
+                            }
+                        }
+                    }
+                    .testTag("quick_filter_" + item.name)
+                    .pointerInput(params.editing) {
+                        if (!params.editing) return@pointerInput
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { point ->
+                                bounds[item]?.let { rect ->
+                                    placementJob?.cancel()
+                                    dragging = item
+                                    grabOffset = point
+                                    visualOrigin = rect.topLeft
+                                    previousPointer = rect.topLeft + point
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                            },
+                            onDrag = { change, _ ->
+                                if (dragging == item) {
+                                    change.consume()
+                                    val pointer = (bounds[item]?.topLeft ?: Offset.Zero) + change.position
+                                    visualOrigin = pointer - grabOffset
+                                    if ((pointer - previousPointer).getDistance() > 1f) {
+                                        previousPointer = pointer
+                                        if (bounds[item]?.contains(pointer) != true) {
+                                            val target = localOrder.firstOrNull {
+                                                it != item && bounds[it]?.contains(pointer) == true
+                                            }
+                                            if (target != null) {
+                                                localOrder = localOrder.toMutableList().apply {
+                                                    val from = indexOf(item)
+                                                    val to = indexOf(target)
+                                                    add(to, removeAt(from))
+                                                }
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            onDragEnd = {
+                                val delta = visualOrigin - (bounds[item]?.topLeft ?: visualOrigin)
+                                placementJob?.cancel()
+                                placementJob = scope.launch {
+                                    placement.snapTo(delta)
+                                    dragging = null
+                                    placement.animateTo(Offset.Zero, spring())
+                                }
+                                val merged = mergeVisibleQuickFilterOrder(latestParams.items, localOrder)
+                                if (merged != latestParams.items) latestParams.onOrderCommitted(merged)
+                            },
+                            onDragCancel = {
+                                dragging = null
+                                localOrder = latestParams.items.filter {
+                                    shouldShowQuickFilterItem(it, latestParams.chipState.aggregateVisibleTypes)
+                                }
+                            },
+                        )
+                    }
                 ) {
-                    PasswordQuickFilterEditItem(
-                        item = item,
-                        params = params
-                    )
+                    PasswordQuickFilterEditItem(item, params, Modifier.graphicsLayer {
+                        val offset = if (active) visualOrigin - (bounds[item]?.topLeft ?: visualOrigin)
+                            else if (params.editing) placement.value else Offset.Zero
+                        translationX = offset.x
+                        translationY = offset.y
+                        shadowElevation = if (active) 6.dp.toPx() else 0f
+                        shape = RoundedCornerShape(20.dp)
+                    }.testTag("quick_filter_visual_" + item.name))
                 }
             }
         }

@@ -223,7 +223,7 @@ class TotpViewModel internal constructor(
     ): TotpData? {
         if (fallbackIssuer == item.title && fallbackAccountName.isEmpty()) {
             mergedParsedSnapshot[item.id]?.takeIf {
-                it.second != null && it.first.itemData == item.itemData && it.first.title == item.title
+                (it.second != null || item.id < 0) && it.first.itemData == item.itemData && it.first.title == item.title
             }?.let { return it.second }
         }
         val cacheKey = buildString {
@@ -344,10 +344,11 @@ class TotpViewModel internal constructor(
             val cached = passwordTotpSnapshot[password.id]?.takeIf { it.first == password && it.second != null }
                 ?: (password to resolvePasswordAuthenticatorTotp(password))
             nextPasswords[password.id] = cached
-            val resolvedTotpData = cached.second ?: return@mapNotNull null
-            val identityKey = buildTotpIdentityKey(resolvedTotpData)
-            if (takagi.ru.monica.keepass.KeePassTotpDisplaySource.passwordKeys(password)
-                    .any { (it to identityKey) in existingKeys } || !seenVirtualKeys.add(password.id)) {
+            if (password.authenticatorKey.isBlank()) return@mapNotNull null
+            val resolvedTotpData = cached.second
+            val identityKey = resolvedTotpData?.let(::buildTotpIdentityKey)
+            if ((identityKey != null && takagi.ru.monica.keepass.KeePassTotpDisplaySource.passwordKeys(password)
+                    .any { (it to identityKey) in existingKeys }) || !seenVirtualKeys.add(password.id)) {
                 return@mapNotNull null
             }
 
@@ -356,7 +357,8 @@ class TotpViewModel internal constructor(
                 itemType = ItemType.TOTP,
                 title = password.title,
                 notes = strings.get(R.string.entry_message_from_password, password.title),
-                itemData = Json.encodeToString(resolvedTotpData),
+                // Keep an unreadable source visible, without inventing a usable key or writing it back.
+                itemData = resolvedTotpData?.let { Json.encodeToString(it) } ?: password.authenticatorKey,
                 isFavorite = false,
                 createdAt = password.createdAt,
                 updatedAt = password.updatedAt,
@@ -515,7 +517,10 @@ class TotpViewModel internal constructor(
         .map { items ->
             LoadedListState(
                 items = items.map { item ->
-                    ParsedTotpItem(item, parseStoredTotpData(item) ?: TotpData(secret = ""))
+                    ParsedTotpItem(item, parseStoredTotpData(item) ?: TotpData(
+                        secret = "",
+                        boundPasswordId = item.id.takeIf { it < 0 }?.let { -it }
+                    ))
                 },
                 isReady = true
             )
@@ -529,7 +534,9 @@ class TotpViewModel internal constructor(
 
     // Authentication pickers must not inherit the authenticator page's search/category filters.
     val allParsedTotpItems: StateFlow<List<ParsedTotpItem>> = allTotpItemsSource
-        .map { items -> items.mapNotNull { item -> parseStoredTotpData(item)?.let { ParsedTotpItem(item, it) } } }
+        .map { items -> items.mapNotNull { item ->
+            parseStoredTotpData(item)?.takeIf { it.secret.isNotBlank() }?.let { ParsedTotpItem(item, it) }
+        } }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, allTotpItemsSharingStarted, emptyList())
 
@@ -620,7 +627,8 @@ class TotpViewModel internal constructor(
             normalized.algorithm.uppercase(Locale.ROOT),
             normalized.digits.toString(),
             normalized.period.toString(),
-            normalized.counter.toString()
+            normalized.counter.toString(),
+            normalized.pin
         ).joinToString("|")
     }
 

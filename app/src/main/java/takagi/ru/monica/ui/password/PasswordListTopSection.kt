@@ -255,10 +255,9 @@ internal fun PasswordListTopSection(
                         )
                     }
                     if (!isArchiveView && appSettings.categorySelectionUiMode == CategorySelectionUiMode.CHIP_MENU) {
-                        UnifiedCategoryFilterChipMenuDropdown(
+                        PasswordFilterPanel(
                             expanded = isCategorySheetVisible,
-                            onDismissRequest = { onCategorySheetVisibleChange(false) },
-                            offset = UnifiedCategoryFilterChipMenuOffset
+                            onDismissRequest = { onCategorySheetVisibleChange(false) }
                         ) {
                             PasswordListCategoryChipMenu(
                                 currentFilter = currentFilter,

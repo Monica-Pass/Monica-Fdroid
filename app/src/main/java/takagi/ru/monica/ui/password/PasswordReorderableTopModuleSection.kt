@@ -67,7 +67,7 @@ internal fun PasswordReorderableTopModuleSection(
                 }
             )
         },
-        toggleEnabled = !params.categoryEditMode,
+        toggleEnabled = true,
         animate = params.animate,
         content = { content() }
     )

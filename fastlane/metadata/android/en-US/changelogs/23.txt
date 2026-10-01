@@ -1,0 +1,6 @@
+Keep unreadable password-linked authenticators visible without changing their data. Block unavailable code actions and retry after unlock. Fix mOTP entries with different PINs being collapsed in the list.
+Unify top-right filter menus across pages, fix Steam alignment and preserve app scaling.
+
+Filter standalone and embedded API Keys, API Tokens and GPG keys; refine card/document type menus.
+
+Fix generator suggestion height jumps during horizontal scrolling.

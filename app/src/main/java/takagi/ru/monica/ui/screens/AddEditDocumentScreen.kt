@@ -4,6 +4,8 @@ import takagi.ru.monica.ui.components.MonicaExpansionChevron
 import takagi.ru.monica.ui.components.MonicaExpandableContent
 import android.widget.Toast
 import android.graphics.Bitmap
+import takagi.ru.monica.ui.components.MonicaExposedChoiceMenu
+import takagi.ru.monica.ui.components.MonicaMenuChoice
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -786,51 +788,19 @@ fun AddEditDocumentScreen(
                             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                         )
 
-                        ExposedDropdownMenu(
+                        MonicaExposedChoiceMenu(
                             expanded = showDocumentTypeMenu,
-                            onDismissRequest = { showDocumentTypeMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.id_card)) },
-                                onClick = {
-                                    documentType = DocumentType.ID_CARD
-                                    showDocumentTypeMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) }
+                            onDismissRequest = { showDocumentTypeMenu = false },
+                            selectedValue = documentType,
+                            onSelect = { documentType = it },
+                            choices = listOf(
+                                MonicaMenuChoice(DocumentType.ID_CARD, stringResource(R.string.id_card), Icons.Default.Badge),
+                                MonicaMenuChoice(DocumentType.PASSPORT, stringResource(R.string.passport), Icons.Default.FlightTakeoff),
+                                MonicaMenuChoice(DocumentType.DRIVER_LICENSE, stringResource(R.string.drivers_license), Icons.Default.DirectionsCar),
+                                MonicaMenuChoice(DocumentType.SOCIAL_SECURITY, stringResource(R.string.social_security_card), Icons.Default.Security),
+                                MonicaMenuChoice(DocumentType.OTHER, stringResource(R.string.other_document), Icons.Default.Description),
                             )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.passport)) },
-                                onClick = {
-                                    documentType = DocumentType.PASSPORT
-                                    showDocumentTypeMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Default.FlightTakeoff, contentDescription = null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.drivers_license)) },
-                                onClick = {
-                                    documentType = DocumentType.DRIVER_LICENSE
-                                    showDocumentTypeMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Default.DirectionsCar, contentDescription = null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.social_security_card)) },
-                                onClick = {
-                                    documentType = DocumentType.SOCIAL_SECURITY
-                                    showDocumentTypeMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Default.Security, contentDescription = null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.other_document)) },
-                                onClick = {
-                                    documentType = DocumentType.OTHER
-                                    showDocumentTypeMenu = false
-                                },
-                                leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) }
-                            )
-                        }
+                        )
                     }
 
                     // Document Number

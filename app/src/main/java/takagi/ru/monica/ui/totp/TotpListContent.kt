@@ -427,7 +427,7 @@ fun TotpListContent(
     ) {
         filteredTotpItems.mapNotNull { item ->
             val data = totpDataById[item.id] ?: return@mapNotNull null
-            if (data.otpType == OtpType.HOTP) return@mapNotNull null
+            if (data.secret.isBlank() || data.otpType == OtpType.HOTP) return@mapNotNull null
             TotpGenerator.getRemainingSeconds(
                 period = data.period,
                 timeOffset = appSettings.totpTimeOffset,

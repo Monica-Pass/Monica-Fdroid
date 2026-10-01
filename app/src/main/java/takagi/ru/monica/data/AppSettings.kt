@@ -364,7 +364,8 @@ enum class PasswordListQuickFilterItem {
     AUTHENTICATOR,
     PASSKEY,
     NOTE,
-    ATTACHMENTS;
+    ATTACHMENTS,
+    API_KEY, API_TOKEN, GPG_KEY;
 
     companion object {
         val DEFAULT_ORDER: List<PasswordListQuickFilterItem> = listOf(
@@ -468,9 +469,11 @@ enum class PasswordPageContentType {
     CARD_WALLET,
     NOTE,
     AUTHENTICATOR,
-    PASSKEY;
+    PASSKEY,
+    API_KEY, API_TOKEN, GPG_KEY;
 
     companion object {
+        val CREDENTIAL_TYPES = listOf(API_KEY, API_TOKEN, GPG_KEY)
         val DEFAULT_VISIBLE_TYPES: List<PasswordPageContentType> = listOf(
             PASSWORD,
             CARD_WALLET,

@@ -441,7 +441,8 @@ private fun PasswordEntry.hasBoundPasskey(): Boolean =
 private fun PasswordEntry.hasBoundNote(): Boolean = boundNoteId != null
 
 private fun PasswordEntry.matchesLinkedAggregateContentTypes(
-    selectedTypes: Set<PasswordPageContentType>
+    selectedTypes: Set<PasswordPageContentType>,
+    embeddedTypes: Set<PasswordPageContentType> = emptySet()
 ): Boolean {
     val includeAuthenticator =
         PasswordPageContentType.AUTHENTICATOR in selectedTypes && hasBoundAuthenticator()
@@ -449,7 +450,8 @@ private fun PasswordEntry.matchesLinkedAggregateContentTypes(
         PasswordPageContentType.PASSKEY in selectedTypes && hasBoundPasskey()
     val includeNote =
         PasswordPageContentType.NOTE in selectedTypes && hasBoundNote()
-    return includeAuthenticator || includePasskey || includeNote
+    return includeAuthenticator || includePasskey || includeNote ||
+        takagi.ru.monica.data.model.matchesCredentialContentTypes(this, selectedTypes, embeddedTypes)
 }
 
 internal fun filterPreStackPasswordEntries(
@@ -473,7 +475,8 @@ internal fun filterPreStackPasswordEntries(
     quickFilterBarcode: Boolean,
     effectiveNoStackEntryIds: Set<Long>,
     hasActiveContentTypeFilter: Boolean,
-    contentTypeFilterTypes: Set<PasswordPageContentType>
+    contentTypeFilterTypes: Set<PasswordPageContentType>,
+    contentBlockTypes: Map<Long, Set<PasswordPageContentType>> = emptyMap()
 ): List<PasswordEntry> {
     var filtered = passwordEntries.filter { it.id !in deletedItemIds }
 
@@ -534,7 +537,7 @@ internal fun filterPreStackPasswordEntries(
     }
     if (hasActiveContentTypeFilter) {
         filtered = filtered.filter { entry ->
-            entry.matchesLinkedAggregateContentTypes(contentTypeFilterTypes)
+            entry.matchesLinkedAggregateContentTypes(contentTypeFilterTypes, contentBlockTypes[entry.id].orEmpty())
         }
     }
     return filtered
@@ -1312,7 +1315,7 @@ internal suspend fun applyFavoriteSelectionToggle(
                 PasswordPageContentType.CARD_WALLET,
                 PasswordPageContentType.NOTE -> item.entry.isFavorite
                 PasswordPageContentType.PASSKEY,
-                PasswordPageContentType.PASSWORD -> true
+                PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD -> true
             }
         }
     val newFavoriteState = !allFavorited
@@ -1373,7 +1376,7 @@ internal suspend fun applyFavoriteSelectionToggle(
             }
 
             PasswordPageContentType.PASSKEY,
-            PasswordPageContentType.PASSWORD -> Unit
+            PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD -> Unit
         }
     }
 

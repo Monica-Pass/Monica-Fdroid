@@ -1805,7 +1805,7 @@ private fun SteamReadableSectionFrame(
 }
 
 @Composable
-private fun SteamRootTopBar(
+internal fun SteamRootTopBar(
     title: String,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -1827,15 +1827,12 @@ private fun SteamRootTopBar(
         onSearchExpandedChange = onSearchExpandedChange,
         searchHint = searchHint,
         actions = {
-            Box {
-                IconButton(onClick = onOpenStorageSourceMenu) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = stringResource(R.string.database_source_label),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                storageSourceMenu()
+            IconButton(onClick = onOpenStorageSourceMenu) {
+                Icon(
+                    imageVector = Icons.Default.Folder,
+                    contentDescription = stringResource(R.string.database_source_label),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             IconButton(onClick = onOpenSearch) {
                 Icon(
@@ -1862,6 +1859,9 @@ private fun SteamRootTopBar(
                         )
                     }
                 }
+                // Match the other list pages: both popups anchor to the trailing action,
+                // even though the database menu is opened by the folder button.
+                storageSourceMenu()
                 topActionsMenu()
             }
         }
@@ -2003,7 +2003,7 @@ private fun SteamTopActionsMenu(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SteamStorageSourceMenu(
+internal fun SteamStorageSourceMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     selectedSource: SteamStorageSource,
@@ -2017,57 +2017,19 @@ private fun SteamStorageSourceMenu(
         onDismissRequest = onDismissRequest,
         offset = UnifiedCategoryFilterChipMenuOffset
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.category_selection_menu_databases),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MonicaExpressiveFilterChip(
-                    selected = selectedSource is SteamStorageSource.Local,
-                    onClick = { onSelectSource(SteamStorageSource.Local) },
-                    label = stringResource(R.string.category_selection_menu_local_database),
-                    leadingIcon = Icons.Default.Smartphone
-                )
-                mdbxDatabases.forEach { database ->
-                    MonicaExpressiveFilterChip(
-                        selected = selectedSource is SteamStorageSource.Mdbx &&
-                            selectedSource.databaseId == database.id,
-                        onClick = { onSelectSource(SteamStorageSource.Mdbx(database.id)) },
-                        label = database.name.ifBlank { "MDBX" },
-                        leadingIcon = Icons.Default.Storage,
-                        statusDotColor = Color(0xFF22C55E)
-                    )
-                }
-                keepassDatabases.forEach { database ->
-                    MonicaExpressiveFilterChip(
-                        selected = selectedSource is SteamStorageSource.KeePass &&
-                            selectedSource.databaseId == database.id,
-                        onClick = { onSelectSource(SteamStorageSource.KeePass(database.id)) },
-                        label = database.name.ifBlank { "KeePass" },
-                        leadingIcon = Icons.Default.Key
-                    )
-                }
-                bitwardenVaults.forEach { vault ->
-                    MonicaExpressiveFilterChip(
-                        selected = selectedSource is SteamStorageSource.Bitwarden &&
-                            selectedSource.vaultId == vault.id,
-                        onClick = { onSelectSource(SteamStorageSource.Bitwarden(vault.id)) },
-                        label = vault.displayName?.takeIf { it.isNotBlank() } ?: vault.email,
-                        leadingIcon = Icons.Default.VerifiedUser
-                    )
-                }
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
+            val items = buildList<takagi.ru.monica.ui.components.DatabaseFilterChipItem<SteamStorageSource>> {
+                add(takagi.ru.monica.ui.components.DatabaseFilterChipItem("local",
+                    stringResource(R.string.category_selection_menu_local_database), Icons.Default.Smartphone, SteamStorageSource.Local))
+                mdbxDatabases.forEach { db -> add(takagi.ru.monica.ui.components.DatabaseFilterChipItem("mdbx:${db.id}",
+                    db.name.ifBlank { "MDBX" }, Icons.Default.Storage, SteamStorageSource.Mdbx(db.id), Color(0xFF22C55E))) }
+                keepassDatabases.forEach { db -> add(takagi.ru.monica.ui.components.DatabaseFilterChipItem("keepass:${db.id}",
+                    db.name.ifBlank { "KeePass" }, Icons.Default.Key, SteamStorageSource.KeePass(db.id))) }
+                bitwardenVaults.forEach { vault -> add(takagi.ru.monica.ui.components.DatabaseFilterChipItem("bitwarden:${vault.id}",
+                    vault.displayName?.takeIf { it.isNotBlank() } ?: vault.email, Icons.Default.VerifiedUser, SteamStorageSource.Bitwarden(vault.id))) }
             }
+            takagi.ru.monica.ui.components.FilterMenuDatabaseSection(items,
+                isSelected = { it == selectedSource }, onSelect = onSelectSource, collapsible = false)
         }
     }
 }

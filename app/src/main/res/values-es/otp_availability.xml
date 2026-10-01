@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Esta clave no se puede leer temporalmente. Desbloquea Monica e inténtalo de nuevo. Los datos originales se conservan.</string>
+</resources>

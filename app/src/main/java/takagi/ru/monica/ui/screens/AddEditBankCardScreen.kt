@@ -3,6 +3,8 @@ package takagi.ru.monica.ui.screens
 import takagi.ru.monica.ui.components.MonicaExpandableContent
 import android.widget.Toast
 import android.graphics.Bitmap
+import takagi.ru.monica.ui.components.MonicaExposedChoiceMenu
+import takagi.ru.monica.ui.components.MonicaMenuChoice
 import androidx.compose.foundation.background
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
@@ -828,32 +830,17 @@ fun AddEditBankCardScreen(
                             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                         )
 
-                        ExposedDropdownMenu(
+                        MonicaExposedChoiceMenu(
                             expanded = showCardTypeMenu,
-                            onDismissRequest = { showCardTypeMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.debit_card)) },
-                                onClick = {
-                                    cardType = CardType.DEBIT
-                                    showCardTypeMenu = false
-                                }
+                            onDismissRequest = { showCardTypeMenu = false },
+                            selectedValue = cardType,
+                            onSelect = { cardType = it },
+                            choices = listOf(
+                                MonicaMenuChoice(CardType.DEBIT, stringResource(R.string.debit_card)),
+                                MonicaMenuChoice(CardType.CREDIT, stringResource(R.string.credit_card)),
+                                MonicaMenuChoice(CardType.PREPAID, stringResource(R.string.prepaid_card)),
                             )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.credit_card)) },
-                                onClick = {
-                                    cardType = CardType.CREDIT
-                                    showCardTypeMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.prepaid_card)) },
-                                onClick = {
-                                    cardType = CardType.PREPAID
-                                    showCardTypeMenu = false
-                                }
-                            )
-                        }
+                        )
                     }
 
 run {

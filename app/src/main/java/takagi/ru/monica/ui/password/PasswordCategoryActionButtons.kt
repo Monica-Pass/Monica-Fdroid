@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,7 +40,7 @@ internal fun PasswordCategoryActionButtons(
         return
     }
 
-    HorizontalDivider(modifier = modifier.padding(vertical = 4.dp))
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -47,7 +48,7 @@ internal fun PasswordCategoryActionButtons(
         val hasBothActions = params.canCreateCategory && params.canManageExistingCategories
         val buttonContentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
         if (params.canCreateCategory) {
-            OutlinedButton(
+            androidx.compose.material3.FilledTonalButton(
                 onClick = params.onCreateCategory,
                 modifier = Modifier.weight(if (hasBothActions) 1.16f else 1f),
                 contentPadding = buttonContentPadding
@@ -60,30 +61,30 @@ internal fun PasswordCategoryActionButtons(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = stringResource(R.string.add_category),
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         }
         if (params.canManageExistingCategories) {
-            OutlinedButton(
+            androidx.compose.material3.FilledTonalButton(
                 onClick = params.onToggleEditMode,
                 modifier = Modifier.weight(if (hasBothActions) 0.84f else 1f),
                 contentPadding = buttonContentPadding
             ) {
                 Icon(
-                    imageVector = Icons.Default.Edit,
+                    imageVector = if (params.categoryEditMode) Icons.Default.Check else Icons.Default.Edit,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = if (params.categoryEditMode) {
-                        stringResource(R.string.cancel)
+                        stringResource(R.string.filter_panel_done)
                     } else {
-                        stringResource(R.string.edit_category)
+                        stringResource(R.string.edit)
                     },
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Nie można teraz odczytać tego klucza. Odblokuj Monica i spróbuj ponownie. Oryginalne dane zostały zachowane.</string>
+</resources>

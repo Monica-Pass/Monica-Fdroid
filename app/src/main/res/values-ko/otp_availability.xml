@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">현재 이 인증 키를 읽을 수 없습니다. Monica의 잠금을 해제한 후 다시 시도하세요. 원본 데이터는 보존되었습니다.</string>
+</resources>

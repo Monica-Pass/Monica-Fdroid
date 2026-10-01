@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Dieser Authentifizierungsschlüssel kann momentan nicht gelesen werden. Entsperre Monica und versuche es erneut. Die ursprünglichen Daten bleiben erhalten.</string>
+</resources>

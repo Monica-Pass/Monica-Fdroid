@@ -119,10 +119,16 @@ fun TotpCodeCard(
         ) ?: TotpData(secret = "")
     }
     val totpData = remember(resolvedTotpData) { normalizeTotpData(resolvedTotpData) }
+    val hasReadableSecret = totpData.secret.isNotBlank()
+    fun withReadableTotp(action: () -> Unit) {
+        if (hasReadableSecret) action() else android.widget.Toast.makeText(
+            context, context.getString(R.string.totp_temporarily_unavailable), android.widget.Toast.LENGTH_LONG
+        ).show()
+    }
     var showContentDetail by remember(item.id) { mutableStateOf(false) }
     if (showContentDetail) {
         TotpContentDetailSheet(item.title, totpData, item.notes,
-            onDismiss = { showContentDetail = false }, onEdit = onEdit)
+            onDismiss = { showContentDetail = false }, onEdit = onEdit?.takeIf { hasReadableSecret })
     }
 
     
@@ -164,6 +170,7 @@ fun TotpCodeCard(
 
     // 根据当前验证码周期计算验证码/倒计时/进度
     val currentCode = remember(generationWindow, totpData, settings.totpTimeOffset) {
+        if (!hasReadableSecret) return@remember "------"
         when (totpData.otpType) {
             OtpType.HOTP -> TotpGenerator.generateOtp(totpData)
             else -> TotpGenerator.generateOtp(
@@ -176,6 +183,7 @@ fun TotpCodeCard(
     
     // 下一个验证码（用于倒计时结束前5秒内复制）
     val nextCode = remember(generationWindow, totpData, settings.totpTimeOffset) {
+        if (!hasReadableSecret) return@remember "------"
         when (totpData.otpType) {
             OtpType.HOTP -> currentCode // HOTP 不支持下一个
             else -> TotpGenerator.generateOtp(
@@ -308,7 +316,9 @@ fun TotpCodeCard(
             .clip(cardShape)
             .combinedClickable(
                 onClick = {
-                    if (onCardClick != null) {
+                    if (!hasReadableSecret) {
+                        withReadableTotp {}
+                    } else if (onCardClick != null) {
                         onCardClick()
                     } else if (hideCodeByDefault) {
                         isCodeRevealed = !isCodeRevealed
@@ -319,7 +329,7 @@ fun TotpCodeCard(
                 onLongClick = {
                     when {
                         onCardClick != null && onLongClick != null -> onLongClick()
-                        hideCodeByDefault -> onCopyCode(codeToCopy)
+                        hideCodeByDefault -> withReadableTotp { onCopyCode(codeToCopy) }
                         else -> onLongClick?.invoke()
                     }
                 }
@@ -504,14 +514,14 @@ fun TotpCodeCard(
                                 onEdit?.let { edit ->
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.edit)) },
-                                        onClick = { expanded = false; edit() },
+                                        onClick = { expanded = false; withReadableTotp { edit() } },
                                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
                                     )
                                 }
                                 onShowQrCode?.let { showQr ->
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.show_qr_code)) },
-                                        onClick = { expanded = false; showQr(item) },
+                                        onClick = { expanded = false; withReadableTotp { showQr(item) } },
                                         leadingIcon = { Icon(Icons.Default.QrCode, contentDescription = null) }
                                     )
                                 }
@@ -533,7 +543,7 @@ fun TotpCodeCard(
                     }
                 }
 
-                val shouldBlink = remainingSeconds in 1..5 && totpData.otpType != OtpType.HOTP
+                val shouldBlink = hasReadableSecret && remainingSeconds in 1..5 && totpData.otpType != OtpType.HOTP
                 val expiryAlpha by if (shouldBlink) {
                     rememberInfiniteTransition(label = "totp_tile_expiry_blink").animateFloat(
                         initialValue = 1f,
@@ -863,7 +873,7 @@ fun TotpCodeCard(
                                         text = { Text(stringResource(R.string.edit)) },
                                         onClick = {
                                             expanded = false
-                                            onEdit()
+                                            withReadableTotp { onEdit() }
                                         },
                                         leadingIcon = {
                                             Icon(
@@ -880,7 +890,7 @@ fun TotpCodeCard(
                                         text = { Text(stringResource(R.string.show_qr_code)) },
                                         onClick = {
                                             expanded = false
-                                            onShowQrCode(item)
+                                            withReadableTotp { onShowQrCode(item) }
                                         },
                                         leadingIcon = {
                                             Icon(
@@ -919,7 +929,7 @@ fun TotpCodeCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val shouldBlink = remainingSeconds in 1..5 && totpData.otpType != OtpType.HOTP
+                val shouldBlink = hasReadableSecret && remainingSeconds in 1..5 && totpData.otpType != OtpType.HOTP
                 val expiryBlinkAlpha: State<Float> = if (shouldBlink) {
                     val blinkTransition = rememberInfiniteTransition(label = "totp_expiry_blink")
                     blinkTransition.animateFloat(
@@ -1014,7 +1024,7 @@ fun TotpCodeCard(
                     }
                 } else {
                     IconButton(
-                        onClick = { if (onActionMenu != null) onActionMenu() else onCopyCode(codeToCopy) }
+                        onClick = { withReadableTotp { if (onActionMenu != null) onActionMenu() else onCopyCode(codeToCopy) } }
                     ) {
                         Icon(
                             Icons.Default.ContentCopy,
@@ -1032,7 +1042,7 @@ fun TotpCodeCard(
             val useUnifiedProgressBar = settings.validatorUnifiedProgressBar == UnifiedProgressBarMode.ENABLED
             val shouldHideProgress = useUnifiedProgressBar && isStandardPeriod && totpData.otpType != OtpType.HOTP
             
-            when (totpData.otpType) {
+            if (hasReadableSecret) when (totpData.otpType) {
                 OtpType.HOTP -> {
                     // HOTP显示计数器和生成按钮
                     Row(

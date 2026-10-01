@@ -92,7 +92,7 @@ class OrderingPersistenceGuardTest {
         val source = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/password/PasswordQuickFilterEditGrid.kt"
         ).readSourceText()
-        assertTrue(source.contains("GridCells.Fixed(2)"))
+        // Column count is responsive; device tests verify stable geometry in both modes.
         assertTrue(source.contains("shouldShowQuickFilterItem("))
         assertFalse(source.contains("GridCells.Adaptive"))
 

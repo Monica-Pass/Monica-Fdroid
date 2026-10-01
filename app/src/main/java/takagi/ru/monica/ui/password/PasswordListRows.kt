@@ -161,7 +161,7 @@ internal fun LazyListScope.passwordPageListRows(
 
     fun openCard(card: PasswordPageCardItemUi) {
         when (card.type) {
-            PasswordPageContentType.PASSWORD ->
+            PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD ->
                 onPasswordClick(card.entry)
 
             PasswordPageContentType.AUTHENTICATOR ->
@@ -202,7 +202,7 @@ internal fun LazyListScope.passwordPageListRows(
     fun toggleFavoriteForCard(card: PasswordPageCardItemUi) {
         if (nativeTokens?.favoriteDisplayEntry(card.entry) == true) return
         when (card.type) {
-            PasswordPageContentType.PASSWORD ->
+            PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD ->
                 card.passwordId?.let { passwordId ->
                     passwordEntries.firstOrNull { it.id == passwordId }?.let { password ->
                         viewModel.toggleFavorite(password.id, !password.isFavorite)

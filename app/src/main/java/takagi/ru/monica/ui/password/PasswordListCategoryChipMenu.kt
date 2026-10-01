@@ -4,10 +4,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.res.stringResource
+import takagi.ru.monica.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.Flow
@@ -104,9 +114,11 @@ internal fun PasswordListCategoryChipMenu(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).then(Modifier.testTag("filter_scroll_body")),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PasswordDatabaseFiltersSection(
             params = PasswordDatabaseFiltersSectionParams(
                 currentFilter = currentFilter,
@@ -181,6 +193,7 @@ internal fun PasswordListCategoryChipMenu(
             isExpandedStateLoaded = uiState.isExpandedStateLoaded,
         )
 
+        }
         PasswordListCategoryChipMenuBottomActions(
             categories = categories,
             keepassDatabases = keepassDatabases,

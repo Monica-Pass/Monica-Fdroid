@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="totp_temporarily_unavailable">Tạm thời không đọc được khóa xác thực này. Hãy mở khóa Monica rồi thử lại. Dữ liệu gốc vẫn được giữ nguyên.</string>
+</resources>

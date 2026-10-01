@@ -20,7 +20,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.ComponentActivity
+import org.junit.Before
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
@@ -41,7 +43,11 @@ import takagi.ru.monica.viewmodel.CategoryFilter
 
 @RunWith(AndroidJUnit4::class)
 class DatabaseFilterChipMenuTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @Before fun awake() { compose.runOnUiThread {
+        compose.activity.setTurnScreenOn(true); compose.activity.setShowWhenLocked(true)
+        compose.activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    } }
     private val databases = List(512) { LocalKeePassDatabase(it.toLong() + 1, "Database $it", "test/$it") }
 
     @Test fun collapsedPopupCanSelectLastDatabaseWithoutComposingEveryChip() {

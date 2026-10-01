@@ -3,6 +3,14 @@ package takagi.ru.monica.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import takagi.ru.monica.ui.components.MonicaExpressiveFilterChip
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,6 +27,16 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,44 +66,12 @@ internal data class PasswordDatabaseFiltersSectionParams(
     val onSelectFilter: (CategoryFilter) -> Unit
 )
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun PasswordDatabaseFiltersSection(
     params: PasswordDatabaseFiltersSectionParams,
     modifier: Modifier = Modifier
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 0f else -90f,
-        animationSpec = tween(durationMillis = 160),
-        label = "database_section_arrow"
-    )
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { expanded = !expanded }
-                .padding(vertical = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.category_selection_menu_databases),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.graphicsLayer { rotationZ = arrowRotation }
-            )
-        }
         val allLabel = stringResource(R.string.category_all)
         val localLabel = stringResource(R.string.category_selection_menu_local_database)
         val items = remember(params.keepassDatabases, params.mdbxDatabases, params.bitwardenVaults, allLabel, localLabel) {
@@ -114,10 +100,7 @@ internal fun PasswordDatabaseFiltersSection(
                 }
             }
         }
-        DatabaseFilterChipContent(
-            items = items,
-            expanded = expanded,
-            isSelected = { filter ->
+        val isSelected: (CategoryFilter) -> Boolean = { filter ->
                 when (filter) {
                     CategoryFilter.All -> params.currentFilter is CategoryFilter.All
                     CategoryFilter.Local -> params.currentFilter.isMonicaDatabaseFilter()
@@ -126,14 +109,13 @@ internal fun PasswordDatabaseFiltersSection(
                     is CategoryFilter.BitwardenVault -> params.currentFilter.isBitwardenVaultFilter(filter.vaultId)
                     else -> false
                 }
-            },
-            onSelect = params.onSelectFilter,
-        )
-    }
+        }
+    takagi.ru.monica.ui.components.FilterMenuDatabaseSection(
+        items = items, isSelected = isSelected, onSelect = params.onSelectFilter, modifier = modifier,
+    )
 }
 
 private val StorageHealthyGreen = Color(0xFF22C55E)
 
-private fun BitwardenVault.hasHealthyConnection(): Boolean {
-    return isConnected && !encryptedRefreshToken.isNullOrBlank()
-}
+private fun BitwardenVault.hasHealthyConnection(): Boolean =
+    isConnected && !encryptedRefreshToken.isNullOrBlank()

@@ -834,7 +834,7 @@ fun PasskeyListScreen(
                                     },
                                     categoryEditMode = categoryMgmt.categoryEditMode,
                                     onRequestCategoryAction = { categoryMgmt.categoryActionTarget = it },
-                                    quickFilterContent = {},
+                                    showQuickFilters = false,
                                     trailingContent = {
                                         CategoryManagementTrailingContent(
                                             state = categoryMgmt,

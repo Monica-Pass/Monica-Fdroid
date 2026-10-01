@@ -167,7 +167,7 @@ internal fun resolveNonEmptyAggregateContentTypes(
 ): List<PasswordPageContentType> {
     return configuredTypes.filter { type ->
         when (type) {
-            PasswordPageContentType.PASSWORD -> true
+            PasswordPageContentType.API_KEY, PasswordPageContentType.API_TOKEN, PasswordPageContentType.GPG_KEY, PasswordPageContentType.PASSWORD -> true
             PasswordPageContentType.CARD_WALLET ->
                 bankCards.any { it.matchesAggregateCategory(categoryFilter, localCategoryIdsInScope = localCategoryIdsInScope) } ||
                     documents.any { it.matchesAggregateCategory(categoryFilter, localCategoryIdsInScope = localCategoryIdsInScope) } ||

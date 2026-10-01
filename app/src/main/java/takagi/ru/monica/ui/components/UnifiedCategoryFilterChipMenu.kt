@@ -9,6 +9,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -104,6 +107,7 @@ private fun <T> rememberAsyncComputed(
 }
 
 val UnifiedCategoryFilterChipMenuOffset = DpOffset(x = 48.dp, y = 6.dp)
+internal val UnifiedCategoryFilterChipMenuMaxHeight = 460.dp
 private val UnifiedCategoryFilterChipMenuMinWidth = 280.dp
 private val UnifiedCategoryFilterChipMenuMaxWidth = 336.dp
 private val UnifiedCategoryFilterChipMenuCompactInset = 72.dp
@@ -126,7 +130,7 @@ private fun unifiedCategoryFilterChipMenuLayoutModifier(): Modifier {
     val resolvedMenuWidth = rememberUnifiedCategoryFilterChipMenuWidth()
     return Modifier
         .widthIn(min = resolvedMenuWidth, max = resolvedMenuWidth)
-        .heightIn(max = 460.dp)
+        .heightIn(max = UnifiedCategoryFilterChipMenuMaxHeight)
 }
 
 @Composable
@@ -149,25 +153,7 @@ fun UnifiedCategoryFilterChipMenuDropdown(
     offset: DpOffset = UnifiedCategoryFilterChipMenuOffset,
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        shapes = MaterialTheme.shapes.copy(
-            extraSmall = RoundedCornerShape(20.dp),
-            small = RoundedCornerShape(20.dp)
-        )
-    ) {
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = onDismissRequest,
-            offset = offset,
-            shape = UnifiedCategoryFilterChipMenuShape,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shadowElevation = 10.dp,
-            tonalElevation = 0.dp,
-            modifier = unifiedCategoryFilterChipMenuModifier()
-        ) {
-            content()
-        }
-    }
+    MonicaFilterMenu(expanded, onDismissRequest, offset = offset, content = content)
 }
 
 @Composable
@@ -177,38 +163,8 @@ private fun ChipMenuSection(
     onExpandedChange: (Boolean) -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 0f else -90f,
-        animationSpec = tween(durationMillis = 160),
-        label = "chip_menu_section_arrow"
-    )
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { onExpandedChange(!expanded) }
-                .padding(vertical = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.graphicsLayer { rotationZ = arrowRotation }
-            )
-        }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterMenuSectionHeader(title, expanded, { onExpandedChange(!expanded) })
         AnimatedVisibility(
             visible = expanded,
             enter = expandVertically(animationSpec = tween(180)) + fadeIn(animationSpec = tween(120)),
@@ -245,7 +201,9 @@ fun UnifiedCategoryFilterChipMenu(
     onRequestCategoryAction: ((Category) -> Unit)? = null,
     typeQuickFilters: List<UnifiedTypeQuickFilter> = emptyList(),
     quickFilterContent: (@Composable ColumnScope.() -> Unit)? = null,
-    trailingContent: (@Composable ColumnScope.() -> Unit)? = null
+    trailingContent: (@Composable ColumnScope.() -> Unit)? = null,
+    showQuickFilters: Boolean = true,
+    quickFilterTitle: String? = null,
 ) {
     if (!visible) return
 
@@ -364,9 +322,11 @@ fun UnifiedCategoryFilterChipMenu(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
+            .testTag("unified_filter_scroll_body"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DatabaseChipMenuSection(
             selected = selected,
             onSelect = onSelect,
@@ -375,9 +335,10 @@ fun UnifiedCategoryFilterChipMenu(
             bitwardenVaults = bitwardenVaults,
         )
 
+        if (showQuickFilters) {
         if (quickFilterContent != null) {
             ChipMenuSection(
-                title = stringResource(R.string.category_selection_menu_quick_filters),
+                title = quickFilterTitle ?: stringResource(R.string.category_selection_menu_quick_filters),
                 expanded = quickFiltersExpanded,
                 onExpandedChange = { quickFiltersExpanded = it }
             ) {
@@ -385,14 +346,14 @@ fun UnifiedCategoryFilterChipMenu(
             }
         } else {
             ChipMenuSection(
-                title = stringResource(R.string.category_selection_menu_quick_filters),
+                title = quickFilterTitle ?: stringResource(R.string.category_selection_menu_quick_filters),
                 expanded = quickFiltersExpanded,
                 onExpandedChange = { quickFiltersExpanded = it }
             ) {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     quickFilterItems.forEach { item ->
                         MonicaExpressiveFilterChip(
@@ -418,6 +379,7 @@ fun UnifiedCategoryFilterChipMenu(
             }
         }
 
+        }
         if (showDeferredFolderSection && folderChips.isNotEmpty()) {
             ChipMenuSection(
                 title = stringResource(R.string.category_selection_menu_folders),
@@ -427,7 +389,7 @@ fun UnifiedCategoryFilterChipMenu(
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     folderChips.forEach { chip ->
                         val editableCategory = if (
@@ -463,6 +425,7 @@ fun UnifiedCategoryFilterChipMenu(
             }
         }
 
+        }
         trailingContent?.invoke(this)
     }
 }
@@ -477,7 +440,7 @@ fun UnifiedDatabaseFilterChipMenu(
     bitwardenVaults: List<BitwardenVault>,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.fillMaxWidth().padding(16.dp)) {
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
         DatabaseChipMenuSection(
             selected = selected,
             onSelect = onSelect,
@@ -485,6 +448,7 @@ fun UnifiedDatabaseFilterChipMenu(
             mdbxDatabases = mdbxDatabases,
             bitwardenVaults = bitwardenVaults,
             initiallyExpanded = true,
+            collapsible = false,
         )
     }
 }
@@ -497,40 +461,8 @@ private fun DatabaseChipMenuSection(
     mdbxDatabases: List<LocalMdbxDatabase>,
     bitwardenVaults: List<BitwardenVault>,
     initiallyExpanded: Boolean = false,
+    collapsible: Boolean = true,
 ) {
-    var databasesExpanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        val dbArrowRotation by animateFloatAsState(
-            targetValue = if (databasesExpanded) 0f else -90f,
-            animationSpec = tween(durationMillis = 160),
-            label = "database_section_arrow"
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { databasesExpanded = !databasesExpanded }
-                .padding(vertical = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.category_selection_menu_databases),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.graphicsLayer { rotationZ = dbArrowRotation }
-            )
-        }
         val allLabel = stringResource(R.string.category_all)
         val localLabel = stringResource(R.string.category_selection_menu_local_database)
         val items = remember(keepassDatabases, mdbxDatabases, bitwardenVaults, allLabel, localLabel) {
@@ -559,9 +491,10 @@ private fun DatabaseChipMenuSection(
                 }
             }
         }
-        DatabaseFilterChipContent(
+        FilterMenuDatabaseSection(
             items = items,
-            expanded = databasesExpanded,
+            initiallyExpanded = initiallyExpanded,
+            collapsible = collapsible,
             isSelected = { filter ->
                 when (filter) {
                     UnifiedCategoryFilterSelection.All -> selected is UnifiedCategoryFilterSelection.All
@@ -574,7 +507,6 @@ private fun DatabaseChipMenuSection(
             },
             onSelect = onSelect,
         )
-    }
 }
 
 /**
