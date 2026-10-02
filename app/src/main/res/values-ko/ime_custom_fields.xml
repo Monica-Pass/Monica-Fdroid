@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">이 필드를 사용할 수 없습니다. 항목을 다시 열거나 보관함의 잠금을 해제한 후 다시 시도하세요.</string>
+</resources>

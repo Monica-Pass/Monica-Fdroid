@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">Este campo no está disponible. Vuelve a abrir la entrada o desbloquea la bóveda e inténtalo de nuevo.</string>
+</resources>

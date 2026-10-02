@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">Ce champ est indisponible. Rouvrez l’entrée ou déverrouillez le coffre, puis réessayez.</string>
+</resources>

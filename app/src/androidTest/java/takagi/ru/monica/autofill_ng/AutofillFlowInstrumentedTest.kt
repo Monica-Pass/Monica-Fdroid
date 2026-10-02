@@ -160,6 +160,51 @@ class AutofillFlowInstrumentedTest {
         notificationCleanupFailure?.let { throw it }
     }
 
+    @Test fun systemPickerFillsEmbeddedBillingAddressIntoNativeForm() = runBlocking {
+        embeddedWalletForm("wallet_address", takagi.ru.monica.data.SecureItem(
+            itemType = takagi.ru.monica.data.ItemType.BILLING_ADDRESS, title = "Office",
+            itemData = Json.encodeToString(takagi.ru.monica.data.model.BillingAddressData(
+                streetAddress = "123 Main Street", city = "Shanghai", stateProvince = "Shanghai", postalCode = "200000", country = "CN"))),
+            "street=OK city=OK region=OK country=OK zip=OK")
+    }
+
+    @Test fun systemPickerFillsEmbeddedBankCardIntoNativeForm() = runBlocking {
+        embeddedWalletForm("wallet_card", takagi.ru.monica.data.SecureItem(
+            itemType = takagi.ru.monica.data.ItemType.BANK_CARD, title = "Visa",
+            itemData = Json.encodeToString(takagi.ru.monica.data.model.BankCardData(
+                security.encryptData("4242424242424242"), "Test Person", "08", "2030", security.encryptData("123")))),
+            "card=OK cvv=OK")
+    }
+
+    @Test fun systemPickerFillsEmbeddedDocumentIntoNativeForm() = runBlocking {
+        embeddedWalletForm("wallet_document", takagi.ru.monica.data.SecureItem(
+            itemType = takagi.ru.monica.data.ItemType.DOCUMENT, title = "Passport",
+            itemData = Json.encodeToString(takagi.ru.monica.data.model.DocumentData(
+                takagi.ru.monica.data.model.DocumentType.PASSPORT, security.encryptData("P-12345"), "Test Person"))),
+            "document=OK person=OK")
+    }
+
+    private suspend fun embeddedWalletForm(scenario: String, item: takagi.ru.monica.data.SecureItem, expected: String) {
+        val owner = dao.insertPasswordEntry(PasswordEntry(title = "Wallet fixture", website = "", username = "", password = ""))
+        insertedIds += owner
+        val snapshot = takagi.ru.monica.data.model.EmbeddedWalletContent.create(item)
+        PasswordDatabase.getDatabase(context).customFieldDao().insert(takagi.ru.monica.data.CustomField(entryId = owner,
+            title = takagi.ru.monica.data.model.EmbeddedWalletContent.fieldName(snapshot.kind),
+            value = security.encryptData(snapshot.encode()), isProtected = true))
+        open(scenario)
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_manual_entry_title) ||
+            it.contentDescription?.toString() == context.getString(R.string.autofill_manual_entry_title) })
+        tap(waitNode { it.text?.toString() == "Wallet fixture · ${item.title}" })
+        expectStatus(expected)
+        val screenshot = ui.takeScreenshot()
+        if (screenshot != null) {
+            val dir = java.io.File(context.filesDir, "wallet-autofill-tests").apply { mkdirs() }
+            java.io.File(dir, "$scenario.png").outputStream().use { screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            screenshot.recycle()
+        }
+    }
+
     @Test fun systemAutofillFillsStandardNativeLoginWithoutVerification() {
         open("standard")
         fillFromSystem(NATIVE_TITLE)

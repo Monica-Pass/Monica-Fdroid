@@ -280,7 +280,21 @@ internal fun parseBankCardCandidate(
         raw = item.itemData,
         decryptIfNeeded = decryptIfNeeded
     ) ?: return null
-    return item to data
+    return item to data.copy(
+        cardNumber = readableAutofillText(data.cardNumber, decryptIfNeeded),
+        cardholderName = readableAutofillText(data.cardholderName, decryptIfNeeded),
+        expiryMonth = readableAutofillText(data.expiryMonth, decryptIfNeeded),
+        expiryYear = readableAutofillText(data.expiryYear, decryptIfNeeded),
+        cvv = readableAutofillText(data.cvv, decryptIfNeeded),
+        pin = readableAutofillText(data.pin, decryptIfNeeded),
+        accountNumber = readableAutofillText(data.accountNumber, decryptIfNeeded),
+        bankName = readableAutofillText(data.bankName, decryptIfNeeded),
+        nickname = readableAutofillText(data.nickname, decryptIfNeeded),
+        iban = readableAutofillText(data.iban, decryptIfNeeded),
+        swiftBic = readableAutofillText(data.swiftBic, decryptIfNeeded),
+        routingNumber = readableAutofillText(data.routingNumber, decryptIfNeeded),
+        billingAddress = readableAutofillText(data.billingAddress, decryptIfNeeded)
+    )
 }
 
 internal fun parseDocumentCandidate(
@@ -291,7 +305,28 @@ internal fun parseDocumentCandidate(
         raw = item.itemData,
         decryptIfNeeded = decryptIfNeeded
     ) ?: return null
-    return item to data
+    return item to data.copy(
+        documentNumber = readableAutofillText(data.documentNumber, decryptIfNeeded),
+        fullName = readableAutofillText(data.fullName, decryptIfNeeded),
+        firstName = readableAutofillText(data.firstName, decryptIfNeeded),
+        middleName = readableAutofillText(data.middleName, decryptIfNeeded),
+        lastName = readableAutofillText(data.lastName, decryptIfNeeded),
+        username = readableAutofillText(data.username, decryptIfNeeded),
+        email = readableAutofillText(data.email, decryptIfNeeded),
+        phone = readableAutofillText(data.phone, decryptIfNeeded),
+        ssn = readableAutofillText(data.ssn, decryptIfNeeded),
+        passportNumber = readableAutofillText(data.passportNumber, decryptIfNeeded),
+        licenseNumber = readableAutofillText(data.licenseNumber, decryptIfNeeded),
+        address1 = readableAutofillText(data.address1, decryptIfNeeded),
+        address2 = readableAutofillText(data.address2, decryptIfNeeded),
+        address3 = readableAutofillText(data.address3, decryptIfNeeded),
+        city = readableAutofillText(data.city, decryptIfNeeded),
+        stateProvince = readableAutofillText(data.stateProvince, decryptIfNeeded),
+        postalCode = readableAutofillText(data.postalCode, decryptIfNeeded),
+        country = readableAutofillText(data.country, decryptIfNeeded),
+        company = readableAutofillText(data.company, decryptIfNeeded),
+        expiryDate = readableAutofillText(data.expiryDate, decryptIfNeeded)
+    )
 }
 
 internal fun parseBillingAddressCandidate(
@@ -302,7 +337,18 @@ internal fun parseBillingAddressCandidate(
         raw = item.itemData,
         decryptIfNeeded = decryptIfNeeded
     ) ?: return null
-    return item to data
+    return item to data.copy(
+        fullName = readableAutofillText(data.fullName, decryptIfNeeded),
+        company = readableAutofillText(data.company, decryptIfNeeded),
+        streetAddress = readableAutofillText(data.streetAddress, decryptIfNeeded),
+        apartment = readableAutofillText(data.apartment, decryptIfNeeded),
+        city = readableAutofillText(data.city, decryptIfNeeded),
+        stateProvince = readableAutofillText(data.stateProvince, decryptIfNeeded),
+        postalCode = readableAutofillText(data.postalCode, decryptIfNeeded),
+        country = readableAutofillText(data.country, decryptIfNeeded),
+        phone = readableAutofillText(data.phone, decryptIfNeeded),
+        email = readableAutofillText(data.email, decryptIfNeeded)
+    )
 }
 
 internal fun BankCardData.matchesAutofillSearch(query: String): Boolean {
@@ -501,4 +547,13 @@ private fun BillingAddressData.toAutofillAddress(): String {
         postalCode,
         country,
     ).filter { it.isNotBlank() }.joinToString(", ")
+}
+
+/** A damaged individual field is unavailable, never ciphertext offered as fill text. */
+private fun readableAutofillText(value: String, decrypt: ((String) -> String)?): String = try {
+    decrypt?.invoke(value) ?: value
+} catch (cancelled: kotlinx.coroutines.CancellationException) {
+    throw cancelled
+} catch (_: Exception) {
+    ""
 }

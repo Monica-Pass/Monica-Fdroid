@@ -12,9 +12,18 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PasswordEntryDao {
     @Transaction
+    @Query("SELECT $WALLET_PASSWORD_COLUMNS FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0 AND (creditCardNumber != '' OR creditCardHolder != '' OR addressLine != '' OR city != '' OR state != '' OR zipCode != '' OR country != '' OR EXISTS(SELECT 1 FROM custom_fields WHERE entry_id = password_entries.id AND title IN ('monica.content.wallet.bank_card','monica.content.wallet.document','monica.content.wallet.address')))")
+    suspend fun getWalletPasswordRows(): List<WalletPasswordRow>
+
+    @Query("SELECT $WALLET_PASSWORD_COLUMNS FROM password_entries WHERE id = :id AND $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0")
+    suspend fun getWalletPasswordRowById(id: Long): WalletPasswordRow?
+
+    @Transaction
     @Query("""
         SELECT id, title, username, website, password, appName, appPackageName,
-               isFavorite, authenticatorKey, keepassDatabaseId, mdbx_database_id, bitwarden_vault_id
+               isFavorite, authenticatorKey, keepassDatabaseId, mdbx_database_id, bitwarden_vault_id,
+               EXISTS(SELECT 1 FROM custom_fields WHERE entry_id = password_entries.id
+                   AND TRIM(title) != '' AND title NOT LIKE 'monica.%') AS hasCustomFields
         FROM password_entries
         WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0
           AND LOWER(loginType) NOT IN ('gpg_key', 'api_key')
@@ -24,7 +33,9 @@ interface PasswordEntryDao {
     @Transaction
     @Query("""
         SELECT id, title, username, website, password, appName, appPackageName,
-               isFavorite, authenticatorKey, keepassDatabaseId, mdbx_database_id, bitwarden_vault_id
+               isFavorite, authenticatorKey, keepassDatabaseId, mdbx_database_id, bitwarden_vault_id,
+               EXISTS(SELECT 1 FROM custom_fields WHERE entry_id = password_entries.id
+                   AND TRIM(title) != '' AND title NOT LIKE 'monica.%') AS hasCustomFields
         FROM password_entries
         WHERE id = :id AND $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0
           AND LOWER(loginType) NOT IN ('gpg_key', 'api_key')

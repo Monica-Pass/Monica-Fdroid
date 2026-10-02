@@ -55,7 +55,7 @@ class MonicaKeyboardLayoutTest {
                         MonicaImeContent(settings = AppSettings(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT),
                             uiState = state, onDatabaseScopeSelected = {}, onInsertPassword = {}, onInsertUsername = {},
                             onInsertWebsite = {}, onSmartFillPassword = {}, onInsertAuthenticatorCode = {},
-                            onInsertCardWalletValue = {}, onSmartFillCardWallet = {},
+                            onInsertCardWalletValue = { _, _ -> }, onSmartFillCardWallet = {},
                             onKeyPressed = ::type, onBackspace = { connection().deleteSurroundingText(1, 0) },
                             onDeleteAll = { editor.text.clear() }, onUndoDeleteAll = {}, onEnter = { enters++ },
                             onSpace = { type(" ") }, onShiftToggle = { state = state.copy(isUppercase = !state.isUppercase) },

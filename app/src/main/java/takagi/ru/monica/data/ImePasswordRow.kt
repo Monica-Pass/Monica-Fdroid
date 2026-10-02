@@ -16,4 +16,5 @@ data class ImePasswordRow(
     val keepassDatabaseId: Long?,
     @ColumnInfo(name = "mdbx_database_id") val mdbxDatabaseId: Long?,
     @ColumnInfo(name = "bitwarden_vault_id") val bitwardenVaultId: Long?,
+    val hasCustomFields: Boolean = false,
 )

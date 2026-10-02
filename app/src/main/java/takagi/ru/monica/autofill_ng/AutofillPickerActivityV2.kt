@@ -155,6 +155,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
     
     companion object {
         private const val EXTRA_ARGS = "extra_args"
+        private const val EXTRA_ARGS_BUNDLE = "extra_args_bundle"
         const val EXTRA_MANUAL_MODE = "extra_manual_mode"
         const val EXTRA_MANUAL_TARGET_PACKAGE = "extra_manual_target_package"
         const val EXTRA_IME_MODE = "extra_ime_mode"
@@ -168,11 +169,57 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
         private var lastLaunchAtMs: Long = 0L
         
         /**
-         * 创建启动 Intent（契约保持不变，确保 Service 兼容）
+         * Only framework types cross the PendingIntent boundary. Android 12 may
+         * eagerly unpack extras in system_server and discard custom Parcelables.
          */
         fun getIntent(context: Context, args: Args): Intent {
             return Intent(context, AutofillPickerActivityV2::class.java).apply {
-                putExtra(EXTRA_ARGS, args)
+                putExtra(EXTRA_ARGS_BUNDLE, Bundle().apply {
+                    putString("application_id", args.applicationId)
+                    putString("web_domain", args.webDomain)
+                    putString("web_scheme", args.webScheme)
+                    putString("interaction_id", args.interactionIdentifier)
+                    putStringArrayList("aliases", args.interactionIdentifierAliases)
+                    putString("captured_username", args.capturedUsername)
+                    putString("captured_password", args.capturedPassword)
+                    putParcelableArrayList("autofill_ids", args.autofillIds)
+                    putStringArrayList("autofill_hints", args.autofillHints)
+                    putLongArray("suggested_ids", args.suggestedPasswordIds)
+                    putBoolean("save_mode", args.isSaveMode)
+                    putString("signature", args.fieldSignatureKey)
+                    putBoolean("response_auth", args.responseAuthMode)
+                    putBoolean("remember", args.rememberLastFilled)
+                })
+            }
+        }
+
+        internal fun readArgs(intent: Intent): Args? {
+            intent.setExtrasClassLoader(Args::class.java.classLoader)
+            intent.getBundleExtra(EXTRA_ARGS_BUNDLE)?.let { bundle ->
+                @Suppress("DEPRECATION")
+                return Args(
+                    applicationId = bundle.getString("application_id"),
+                    webDomain = bundle.getString("web_domain"),
+                    webScheme = bundle.getString("web_scheme"),
+                    interactionIdentifier = bundle.getString("interaction_id"),
+                    interactionIdentifierAliases = bundle.getStringArrayList("aliases"),
+                    capturedUsername = bundle.getString("captured_username"),
+                    capturedPassword = bundle.getString("captured_password"),
+                    autofillIds = bundle.getParcelableArrayList("autofill_ids"),
+                    autofillHints = bundle.getStringArrayList("autofill_hints"),
+                    suggestedPasswordIds = bundle.getLongArray("suggested_ids"),
+                    isSaveMode = bundle.getBoolean("save_mode", false),
+                    fieldSignatureKey = bundle.getString("signature"),
+                    responseAuthMode = bundle.getBoolean("response_auth", false),
+                    rememberLastFilled = bundle.getBoolean("remember", true),
+                )
+            }
+            // Accept already-issued intents from the previous contract.
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(EXTRA_ARGS, Args::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(EXTRA_ARGS)
             }
         }
         
@@ -283,12 +330,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
     }
     
     private val args by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(EXTRA_ARGS, Args::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(EXTRA_ARGS)
-        } ?: Args()
+        readArgs(intent) ?: Args()
     }
     
     private val explicitManualMode by lazy {
@@ -543,12 +585,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        val newArgs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(EXTRA_ARGS, Args::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(EXTRA_ARGS)
-        }
+        val newArgs = readArgs(intent)
         AutofillLogger.w(
             "PICKER",
             "onNewIntent received while picker is active; reusing current instance",
@@ -1210,7 +1247,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             }
         }
 
-        if (filledCount == 0 && autofillIds.size == 1) {
+        if (filledCount == 0 && autofillIds.size == 1 && hints?.singleOrNull().isNullOrBlank()) {
             val fallbackValue = data.cardNumber.ifBlank { data.cardholderName }
             if (fallbackValue.isNotBlank()) {
                 filledValues[autofillIds.first()] = fallbackValue
@@ -1286,7 +1323,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             }
         }
 
-        if (filledCount == 0 && autofillIds.size == 1) {
+        if (filledCount == 0 && autofillIds.size == 1 && hints?.singleOrNull().isNullOrBlank()) {
             val displayName = listOf(data.firstName, data.middleName, data.lastName)
                 .filter { it.isNotBlank() }
                 .joinToString(" ")
@@ -1363,7 +1400,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             }
         }
 
-        if (filledCount == 0 && autofillIds.size == 1) {
+        if (filledCount == 0 && autofillIds.size == 1 && hints?.singleOrNull().isNullOrBlank()) {
             val fallbackValue = data.toAutofillAddressForPicker().ifBlank { data.fullName }
             if (fallbackValue.isNotBlank()) {
                 filledValues[autofillIds.first()] = fallbackValue
@@ -1699,6 +1736,9 @@ private fun AutofillPickerContent(
     }
     var pendingAddTarget by rememberSaveable { mutableStateOf<AutofillAddTarget?>(null) }
     val appDb = remember(context) { PasswordDatabase.getDatabase(context.applicationContext) }
+    val walletFillRepository = remember(appDb, securityManager) {
+        WalletAutofillRepository(appDb, securityManager::decryptDataIfMonicaCiphertext)
+    }
     val secureItemRepository = remember(appDb, securityManager) {
         SecureItemRepository(
             appDb.secureItemDao(),
@@ -1907,6 +1947,7 @@ private fun AutofillPickerContent(
         try {
             val suggestedIds = args.suggestedPasswordIds?.toList() ?: emptyList()
             val loadedData = withContext(Dispatchers.IO) {
+                val embeddedWallet = walletFillRepository.loadEmbeddedItems()
                 AutofillPickerLoadedData(
                     suggestedPasswords = if (suggestedIds.isNotEmpty()) {
                         repository.getPasswordsByIds(suggestedIds)
@@ -1914,9 +1955,12 @@ private fun AutofillPickerContent(
                         emptyList()
                     },
                     allPasswords = repository.getAllPasswordEntries().first().filterNot { it.isKeyCredential() },
-                    allBankCards = secureItemRepository.getActiveItemsByType(ItemType.BANK_CARD).first(),
-                    allDocuments = secureItemRepository.getActiveItemsByType(ItemType.DOCUMENT).first(),
-                    allBillingAddresses = secureItemRepository.getActiveItemsByType(ItemType.BILLING_ADDRESS).first()
+                    allBankCards = secureItemRepository.getActiveItemsByType(ItemType.BANK_CARD).first() +
+                        embeddedWallet.filter { it.itemType == ItemType.BANK_CARD },
+                    allDocuments = secureItemRepository.getActiveItemsByType(ItemType.DOCUMENT).first() +
+                        embeddedWallet.filter { it.itemType == ItemType.DOCUMENT },
+                    allBillingAddresses = secureItemRepository.getActiveItemsByType(ItemType.BILLING_ADDRESS).first() +
+                        embeddedWallet.filter { it.itemType == ItemType.BILLING_ADDRESS }
                 )
             }
             suggestedPasswords = loadedData.suggestedPasswords
@@ -2023,28 +2067,25 @@ private fun AutofillPickerContent(
         )
     }
 
-    val parsedBankCards = remember(allBankCards, securityManager) {
-        allBankCards.mapNotNull { item ->
-            parseBankCardCandidate(
-                item,
-                decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
-            )
+    val parsedBankCards by produceState<List<Pair<SecureItem, BankCardData>>>(emptyList(), allBankCards, securityManager) {
+        value = withContext(Dispatchers.IO) {
+            allBankCards.mapNotNull { item ->
+                parseBankCardCandidate(item, securityManager::decryptDataIfMonicaCiphertext)
+            }
         }
     }
-    val parsedDocuments = remember(allDocuments, securityManager) {
-        allDocuments.mapNotNull { item ->
-            parseDocumentCandidate(
-                item,
-                decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
-            )
+    val parsedDocuments by produceState<List<Pair<SecureItem, DocumentData>>>(emptyList(), allDocuments, securityManager) {
+        value = withContext(Dispatchers.IO) {
+            allDocuments.mapNotNull { item ->
+                parseDocumentCandidate(item, securityManager::decryptDataIfMonicaCiphertext)
+            }
         }
     }
-    val parsedBillingAddresses = remember(allBillingAddresses, securityManager) {
-        allBillingAddresses.mapNotNull { item ->
-            parseBillingAddressCandidate(
-                item,
-                decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
-            )
+    val parsedBillingAddresses by produceState<List<Pair<SecureItem, BillingAddressData>>>(emptyList(), allBillingAddresses, securityManager) {
+        value = withContext(Dispatchers.IO) {
+            allBillingAddresses.mapNotNull { item ->
+                parseBillingAddressCandidate(item, securityManager::decryptDataIfMonicaCiphertext)
+            }
         }
     }
 
@@ -2116,7 +2157,7 @@ private fun AutofillPickerContent(
                     selectedKeePassGroupPath = selectedKeePassGroupPath,
                     selectedVaultId = selectedVaultId,
                     selectedFolderId = selectedFolderId
-                ) && (searchQuery.isBlank() || data.matchesAutofillSearch(searchQuery))
+                ) && (searchQuery.isBlank() || item.title.contains(searchQuery.trim(), ignoreCase = true) || data.matchesAutofillSearch(searchQuery))
             }
         }
     }
@@ -2138,7 +2179,7 @@ private fun AutofillPickerContent(
                     selectedKeePassGroupPath = selectedKeePassGroupPath,
                     selectedVaultId = selectedVaultId,
                     selectedFolderId = selectedFolderId
-                ) && (searchQuery.isBlank() || data.matchesAutofillSearch(searchQuery))
+                ) && (searchQuery.isBlank() || item.title.contains(searchQuery.trim(), ignoreCase = true) || data.matchesAutofillSearch(searchQuery))
             }
         }
     }
@@ -2160,7 +2201,7 @@ private fun AutofillPickerContent(
                     selectedKeePassGroupPath = selectedKeePassGroupPath,
                     selectedVaultId = selectedVaultId,
                     selectedFolderId = selectedFolderId
-                ) && (searchQuery.isBlank() || data.matchesAutofillSearch(searchQuery))
+                ) && (searchQuery.isBlank() || item.title.contains(searchQuery.trim(), ignoreCase = true) || data.matchesAutofillSearch(searchQuery))
             }
         }
     }
@@ -2434,25 +2475,43 @@ private fun AutofillPickerContent(
             })
         }
     }
-    val handleBankCardClick: (SecureItem, BankCardData) -> Unit = { item, data ->
-        if (canDirectFillBankCard) {
-            onAutofillBankCard(item)
-        } else {
-            structuredCopyDialog = StructuredAutofillCopyDialogState.BankCard(item, data)
+    val handleBankCardClick: (SecureItem, BankCardData) -> Unit = { item, _ ->
+        coroutineScope.launch {
+            val current = walletFillRepository.resolveCurrent(item)
+            val parsed = current?.let { parseBankCardCandidate(it, securityManager::decryptDataIfMonicaCiphertext) }
+            if (parsed == null) {
+                android.widget.Toast.makeText(context, R.string.ime_custom_field_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+            } else if (canDirectFillBankCard) {
+                onAutofillBankCard(parsed.first)
+            } else {
+                structuredCopyDialog = StructuredAutofillCopyDialogState.BankCard(parsed.first, parsed.second)
+            }
         }
     }
-    val handleDocumentClick: (SecureItem, DocumentData) -> Unit = { item, data ->
-        if (canDirectFillDocument) {
-            onAutofillDocument(item)
-        } else {
-            structuredCopyDialog = StructuredAutofillCopyDialogState.Document(item, data)
+    val handleDocumentClick: (SecureItem, DocumentData) -> Unit = { item, _ ->
+        coroutineScope.launch {
+            val current = walletFillRepository.resolveCurrent(item)
+            val parsed = current?.let { parseDocumentCandidate(it, securityManager::decryptDataIfMonicaCiphertext) }
+            if (parsed == null) {
+                android.widget.Toast.makeText(context, R.string.ime_custom_field_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+            } else if (canDirectFillDocument) {
+                onAutofillDocument(parsed.first)
+            } else {
+                structuredCopyDialog = StructuredAutofillCopyDialogState.Document(parsed.first, parsed.second)
+            }
         }
     }
-    val handleBillingAddressClick: (SecureItem, BillingAddressData) -> Unit = { item, data ->
-        if (canDirectFillBillingAddress) {
-            onAutofillBillingAddress(item)
-        } else {
-            structuredCopyDialog = StructuredAutofillCopyDialogState.BillingAddress(item, data)
+    val handleBillingAddressClick: (SecureItem, BillingAddressData) -> Unit = { item, _ ->
+        coroutineScope.launch {
+            val current = walletFillRepository.resolveCurrent(item)
+            val parsed = current?.let { parseBillingAddressCandidate(it, securityManager::decryptDataIfMonicaCiphertext) }
+            if (parsed == null) {
+                android.widget.Toast.makeText(context, R.string.ime_custom_field_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+            } else if (canDirectFillBillingAddress) {
+                onAutofillBillingAddress(parsed.first)
+            } else {
+                structuredCopyDialog = StructuredAutofillCopyDialogState.BillingAddress(parsed.first, parsed.second)
+            }
         }
     }
     val navigateBackToList: () -> Unit = {

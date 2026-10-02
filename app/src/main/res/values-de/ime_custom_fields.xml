@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">Dieses Feld ist nicht verfügbar. Öffne den Eintrag erneut oder entsperre den Tresor und versuche es noch einmal.</string>
+</resources>

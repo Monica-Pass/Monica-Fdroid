@@ -436,12 +436,20 @@ class EnhancedAutofillStructureParserV2 {
         ),
         AutofillHintMatcher(
             hint = InternalHint.ADDRESS_CITY,
+            target = HintConstants.AUTOFILL_HINT_POSTAL_ADDRESS_LOCALITY,
+        ),
+        AutofillHintMatcher(
+            hint = InternalHint.ADDRESS_CITY,
             target = "address-level2",
         ),
         AutofillHintMatcher(
             hint = InternalHint.ADDRESS_CITY,
             target = "city",
             partly = true,
+        ),
+        AutofillHintMatcher(
+            hint = InternalHint.ADDRESS_REGION,
+            target = HintConstants.AUTOFILL_HINT_POSTAL_ADDRESS_REGION,
         ),
         AutofillHintMatcher(
             hint = InternalHint.ADDRESS_REGION,
@@ -456,6 +464,10 @@ class EnhancedAutofillStructureParserV2 {
             hint = InternalHint.ADDRESS_REGION,
             target = "province",
             partly = true,
+        ),
+        AutofillHintMatcher(
+            hint = InternalHint.ADDRESS_COUNTRY,
+            target = HintConstants.AUTOFILL_HINT_POSTAL_ADDRESS_COUNTRY,
         ),
         AutofillHintMatcher(
             hint = InternalHint.ADDRESS_COUNTRY,

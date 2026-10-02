@@ -3,6 +3,8 @@ package takagi.ru.monica.ime
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.Image
@@ -32,6 +34,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -62,6 +65,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Check
@@ -119,11 +123,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import takagi.ru.monica.R
 import takagi.ru.monica.autofill_ng.ui.rememberAppIcon
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.ThemeMode
+import takagi.ru.monica.data.ImeCustomFieldRow
 import takagi.ru.monica.ui.PasswordListInitialLoadingIndicator
 import takagi.ru.monica.ui.theme.MonicaTheme
 import takagi.ru.monica.util.PasswordGenerator
@@ -143,6 +151,7 @@ internal data class MonicaImePasswordEntry(
     val bitwardenVaultId: Long? = null,
     val appName: String = "",
     val hasTotp: Boolean = false,
+    val hasCustomFields: Boolean = false,
     val alphabeticalLetter: String? = null,
 )
 
@@ -178,6 +187,7 @@ internal data class MonicaImeCardWalletEntry(
     val mdbxDatabaseId: Long? = null,
     val bitwardenVaultId: Long? = null,
     val alphabeticalLetter: String? = null,
+    val supportsQuickFill: Boolean = true,
 )
 
 internal data class MonicaImeUiState(
@@ -264,7 +274,7 @@ internal fun MonicaImeContent(
     onInsertWebsite: (MonicaImePasswordEntry) -> Unit,
     onSmartFillPassword: (MonicaImePasswordEntry) -> Unit,
     onInsertAuthenticatorCode: (MonicaImeAuthenticatorEntry) -> Unit,
-    onInsertCardWalletValue: (MonicaImeCardWalletField) -> Unit,
+    onInsertCardWalletValue: (MonicaImeCardWalletEntry, MonicaImeCardWalletField) -> Unit,
     onSmartFillCardWallet: (MonicaImeCardWalletEntry) -> Unit,
     onKeyPressed: (String) -> Unit,
     onBackspace: () -> Unit,
@@ -283,6 +293,8 @@ internal fun MonicaImeContent(
     onSwitchInputMethod: () -> Unit,
     onDismiss: () -> Unit,
     onInsertPasswordTotp: ((MonicaImePasswordEntry) -> Unit)? = null,
+    observeCustomFields: (Long) -> Flow<List<ImeCustomFieldRow>> = { flowOf(emptyList()) },
+    onInsertCustomField: (MonicaImePasswordEntry, Long) -> Unit = { _, _ -> },
 ) {
     val darkTheme = when (settings.themeMode) {
         ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
@@ -360,7 +372,9 @@ internal fun MonicaImeContent(
                                             if (onInsertPasswordTotp != null) onInsertPasswordTotp(entry)
                                             else if (entry.totpCode.isNotBlank()) onKeyPressed(entry.totpCode)
                                         },
-                                        onSmartFillPassword = onSmartFillPassword
+                                        onSmartFillPassword = onSmartFillPassword,
+                                        observeCustomFields = observeCustomFields,
+                                        onInsertCustomField = onInsertCustomField,
                                     )
                                 }
                                 MonicaImePanel.AUTHENTICATORS -> {
@@ -1107,8 +1121,11 @@ private fun UnlockedVaultPane(
     onInsertUsername: (MonicaImePasswordEntry) -> Unit,
     onInsertWebsite: (MonicaImePasswordEntry) -> Unit,
     onInsertTotp: (MonicaImePasswordEntry) -> Unit,
-    onSmartFillPassword: (MonicaImePasswordEntry) -> Unit
+    onSmartFillPassword: (MonicaImePasswordEntry) -> Unit,
+    observeCustomFields: (Long) -> Flow<List<ImeCustomFieldRow>>,
+    onInsertCustomField: (MonicaImePasswordEntry, Long) -> Unit,
 ) {
+    var expandedEntryId by rememberSaveable { mutableStateOf<Long?>(null) }
     val showAutofillLoading = uiState.isAutofillLoading ||
         (uiState.unlocked && uiState.errorMessage == null && uiState.databaseOptions.isEmpty())
 
@@ -1139,6 +1156,10 @@ private fun UnlockedVaultPane(
             ) { entry ->
                 PasswordEntryCard(
                     entry = entry,
+                    expanded = expandedEntryId == entry.id,
+                    onToggleExpanded = { expandedEntryId = entry.id.takeUnless { it == expandedEntryId } },
+                    observeCustomFields = observeCustomFields,
+                    onInsertCustomField = { onInsertCustomField(entry, it) },
                     onSmartFill = { onSmartFillPassword(entry) },
                     onInsertPassword = { onInsertPassword(entry) },
                     onInsertUsername = { onInsertUsername(entry) },
@@ -1382,7 +1403,7 @@ private fun CardWalletPane(
     uiState: MonicaImeUiState,
     onDatabaseScopeSelected: (MonicaImeDatabaseScope) -> Unit,
     onSearchEditRequested: () -> Unit,
-    onInsertField: (MonicaImeCardWalletField) -> Unit,
+    onInsertField: (MonicaImeCardWalletEntry, MonicaImeCardWalletField) -> Unit,
     onSmartFill: (MonicaImeCardWalletEntry) -> Unit
 ) {
     ImeVaultPane(
@@ -1420,7 +1441,7 @@ private fun CardWalletPane(
                 CardWalletEntryCard(
                     entry = entry,
                     onSmartFill = { onSmartFill(entry) },
-                    onInsertField = onInsertField
+                    onInsertField = { field -> onInsertField(entry, field) }
                 )
             }
         }
@@ -1550,17 +1571,17 @@ private fun ImeEntryActions(content: @Composable FlowRowScope.() -> Unit) {
 }
 
 @Composable
-private fun ImeFillAction(label: String, onClick: () -> Unit, icon: @Composable (() -> Unit)? = null) {
+private fun ImeFillAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, singleLine: Boolean = false, icon: @Composable (() -> Unit)? = null) {
     OutlinedButton(
         onClick = onClick,
-        modifier = Modifier.widthIn(min = 48.dp),
+        modifier = if (singleLine) modifier.widthIn(min = 48.dp, max = 200.dp) else modifier,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
     ) {
         if (icon != null) {
             icon()
             Spacer(modifier = Modifier.width(4.dp))
         }
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(text = label, style = MaterialTheme.typography.labelMedium, maxLines = if (singleLine) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1613,14 +1634,14 @@ private fun CardWalletEntryCard(
         ) { ImeExpandIndicator(expanded) }
 
         if (expanded) {
-            ImeEntryActions {
-                ImeFillAction(stringResource(R.string.ime_quick_fill), onClick = {
-                    expanded = false
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp)
+                .testTag("ime_wallet_actions_${entry.id}"), horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                if (entry.supportsQuickFill) ImeFillAction(stringResource(R.string.ime_quick_fill), onClick = {
                     onSmartFill()
                 })
                 entry.fields.forEach { field ->
                     ImeFillAction(field.label, onClick = {
-                        expanded = false
                         onInsertField(field)
                     })
                 }
@@ -1633,13 +1654,35 @@ private fun CardWalletEntryCard(
 @Composable
 private fun PasswordEntryCard(
     entry: MonicaImePasswordEntry,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    observeCustomFields: (Long) -> Flow<List<ImeCustomFieldRow>>,
+    onInsertCustomField: (Long) -> Unit,
     onSmartFill: () -> Unit,
     onInsertPassword: () -> Unit,
     onInsertUsername: () -> Unit,
     onInsertWebsite: () -> Unit,
     onInsertTotp: () -> Unit
 ) {
-    var expanded by rememberSaveable(entry.id) { mutableStateOf(false) }
+    var fields by remember(entry.id) { mutableStateOf<List<ImeCustomFieldRow>>(emptyList()) }
+    var fieldsLoading by remember(entry.id) { mutableStateOf(false) }
+    var fieldsFailed by remember(entry.id) { mutableStateOf(false) }
+    var retry by remember(entry.id) { mutableStateOf(0) }
+    LaunchedEffect(entry.id, expanded, entry.hasCustomFields, retry) {
+        fields = emptyList()
+        fieldsFailed = false
+        fieldsLoading = expanded && entry.hasCustomFields
+        if (expanded && entry.hasCustomFields) {
+            try {
+                observeCustomFields(entry.id).collect { fields = it; fieldsLoading = false }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                fieldsLoading = false
+                fieldsFailed = true
+            }
+        }
+    }
     val appIcon = entry.packageName.takeIf { it.isNotBlank() }?.let { rememberAppIcon(it) }
 
     ImeEntryCard(id = entry.id) {
@@ -1648,7 +1691,7 @@ private fun PasswordEntryCard(
                 entry.website.ifBlank { stringResource(R.string.ime_untitled_account) }
             },
             subtitle = entry.username,
-            onClick = { expanded = !expanded },
+            onClick = onToggleExpanded,
             icon = {
                 if (appIcon != null) {
                     Image(bitmap = appIcon, contentDescription = null, modifier = Modifier.size(24.dp))
@@ -1659,21 +1702,52 @@ private fun PasswordEntryCard(
         ) { ImeExpandIndicator(expanded) }
 
         if (expanded) {
-            ImeEntryActions {
-                ImeFillAction(stringResource(R.string.ime_quick_fill), onSmartFill)
-                ImeFillAction(stringResource(R.string.password), onInsertPassword)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp).testTag("ime_primary_actions_${entry.id}"),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (entry.username.isNotBlank() || entry.password.isNotBlank()) {
+                    ImePasswordFillAction(stringResource(R.string.ime_quick_fill), onSmartFill)
+                }
+                if (entry.password.isNotBlank()) ImePasswordFillAction(stringResource(R.string.password), onInsertPassword)
                 if (entry.username.isNotBlank()) {
-                    ImeFillAction(stringResource(R.string.username), onInsertUsername)
+                    ImePasswordFillAction(stringResource(R.string.username), onInsertUsername)
                 }
                 if (entry.website.isNotBlank()) {
-                    ImeFillAction(stringResource(R.string.website), onInsertWebsite)
+                    ImePasswordFillAction(stringResource(R.string.website), onInsertWebsite)
                 }
                 if (entry.hasTotp || entry.totpCode.isNotBlank()) {
-                    ImeFillAction(stringResource(R.string.ime_fill_current_otp), onInsertTotp) {
+                    ImePasswordFillAction(stringResource(R.string.ime_fill_current_otp), onInsertTotp) {
                         Icon(Icons.Default.VerifiedUser, contentDescription = null, modifier = Modifier.size(14.dp))
                     }
                 }
             }
+            if (fieldsLoading || fieldsFailed || fields.isNotEmpty()) {
+                Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp)
+                    .testTag("ime_custom_actions_${entry.id}"), verticalAlignment = Alignment.CenterVertically) {
+                    if (fieldsLoading) Text(stringResource(R.string.loading),
+                        Modifier.padding(vertical = 12.dp), style = MaterialTheme.typography.labelMedium)
+                    else if (fieldsFailed) ImePasswordFillAction(stringResource(R.string.retry), { retry++ })
+                    else LazyRow(Modifier.weight(1f).testTag("ime_custom_fields_${entry.id}"),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        items(fields, key = { it.id }) { field ->
+                            ImePasswordFillAction(field.label, { onInsertCustomField(field.id) },
+                                Modifier.testTag("ime_custom_field_${field.id}"),
+                                icon = if (field.isProtected) ({
+                                    Icon(Icons.Default.Lock, stringResource(R.string.custom_field_sensitive), Modifier.size(14.dp))
+                                }) else null)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
         }
     }
 }
+
+@Composable
+private fun ImePasswordFillAction(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: @Composable (() -> Unit)? = null
+) = ImeFillAction(label, onClick, modifier, singleLine = true, icon = icon)

@@ -34,6 +34,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.unit.Density
@@ -52,6 +53,11 @@ import org.junit.runner.RunWith
 import takagi.ru.monica.R
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.ThemeMode
+import takagi.ru.monica.data.ImeCustomFieldRow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.awaitCancellation
 
 @RunWith(AndroidJUnit4::class)
 class MonicaImeUiTest {
@@ -66,6 +72,9 @@ class MonicaImeUiTest {
     private var contentLocale = Locale.SIMPLIFIED_CHINESE
     private var autofillOpenCount = 0
     private var undoCount = 0
+    private var walletQuickFillCount = 0
+    private var observeFields: (Long) -> Flow<List<ImeCustomFieldRow>> = { flowOf(emptyList()) }
+    private var fillField: (Long, Long) -> Unit = { _, _ -> }
 
     private fun showKeyboard(
         width: Dp = 360.dp,
@@ -110,8 +119,8 @@ class MonicaImeUiTest {
                             onInsertWebsite = { commit(it.website) },
                             onSmartFillPassword = {},
                             onInsertAuthenticatorCode = { commit(it.code) },
-                            onInsertCardWalletValue = { commit(it.value) },
-                            onSmartFillCardWallet = {},
+                            onInsertCardWalletValue = { _, field -> commit(field.value) },
+                            onSmartFillCardWallet = { walletQuickFillCount++ },
                             onKeyPressed = { value ->
                                 if (state.isSearchEditing) {
                                     state = state.copy(query = appendImeSearchQuery(state.query, value))
@@ -128,7 +137,9 @@ class MonicaImeUiTest {
                             onSearchEditFinished = { state = state.copy(isSearchEditing = false) },
                             onSearchCleared = { state = state.copy(query = "") },
                             onPanelSelected = { state = state.selectVaultPanel(it, isLoading = false) },
-                            onSwitchInputMethod = {}, onDismiss = {}
+                            onSwitchInputMethod = {}, onDismiss = {},
+                            observeCustomFields = { observeFields(it) },
+                            onInsertCustomField = { entry, id -> fillField(entry.id, id) }
                         )
                     }
                 }
@@ -165,7 +176,8 @@ class MonicaImeUiTest {
     private fun capture(name: String) {
         val bitmap = compose.onNodeWithTag("ime_test_keyboard").captureToImage().asAndroidBitmap()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        File(context.getExternalFilesDir("ime-ui-tests"), "$name.png").outputStream().use {
+        val directory = File(context.filesDir, "ime-ui-tests").apply { mkdirs() }
+        File(directory, "$name.png").outputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
@@ -302,19 +314,61 @@ class MonicaImeUiTest {
     @Test fun websiteActionFillsTheSavedAddressAndKeepsTheEntryExpanded() {
         showKeyboard()
         compose.onNodeWithText("Aster Mail").performClick()
-        compose.onNodeWithText(text(R.string.website)).assertIsDisplayed().performClick()
+        val initialHeight = bounds("ime_vault_entry_1").height
+        compose.onNodeWithText(text(R.string.website)).performScrollTo().assertIsDisplayed().performClick()
         compose.runOnIdle { assertEquals(state.entries.first().website, editor.text.toString()) }
         compose.onNodeWithText(text(R.string.website)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.username)).assertHasClickAction()
         compose.onNodeWithText(text(R.string.password)).assertHasClickAction()
         capture("website-expanded")
-        assertEquals(
-            "Website stays alongside the other fill actions at a regular width",
-            compose.onNodeWithText(text(R.string.ime_quick_fill)).fetchSemanticsNode().boundsInRoot.top,
-            compose.onNodeWithText(text(R.string.website)).fetchSemanticsNode().boundsInRoot.top,
-            1f
-        )
+        assertEquals(initialHeight, bounds("ime_vault_entry_1").height, 1f)
         capture("website-expanded")
+    }
+
+    @Test fun embeddedAddressActionsStayOnOneRowAtLargeFontAndFillChosenField() {
+        state = state.copy(activePanel = MonicaImePanel.DOCUMENTS, cardWalletEntries = listOf(
+            MonicaImeCardWalletEntry(-41, "Shopping · Office", "Shanghai", "账单地址", false, "Monica",
+                listOf("姓名", "街道地址", "城市", "省/州", "邮编", "国家", "公司", "电话", "邮箱").map {
+                    MonicaImeCardWalletField(it, if (it == "邮箱") "test@example.invalid" else "fixture")
+                }, supportsQuickFill = false)))
+        showKeyboard(width = 320.dp, fontScale = 1.5f, dark = true)
+        compose.onNodeWithText("Shopping · Office").performClick()
+        compose.onNodeWithText(text(R.string.ime_quick_fill)).assertDoesNotExist()
+        val height = bounds("ime_vault_entry_-41").height
+        val first = compose.onNodeWithText("姓名").fetchSemanticsNode().boundsInRoot.top
+        capture("wallet-address-dark-large")
+        compose.onNodeWithText("邮箱").performScrollTo().assertIsDisplayed()
+        assertEquals(first, compose.onNodeWithText("邮箱").fetchSemanticsNode().boundsInRoot.top, 1f)
+        assertEquals(height, bounds("ime_vault_entry_-41").height, 1f)
+        capture("wallet-address-scrolled")
+        compose.onNodeWithText("邮箱").performClick()
+        compose.runOnIdle { assertEquals("test@example.invalid", editor.text.toString()) }
+        compose.onNodeWithTag("ime_wallet_actions_-41").assertIsDisplayed()
+        assertEquals(height, bounds("ime_vault_entry_-41").height, 1f)
+        compose.runOnIdle { editor.setText("") }
+        compose.onNodeWithText("城市").performScrollTo().assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("fixture", editor.text.toString()) }
+        compose.onNodeWithTag("ime_wallet_actions_-41").assertIsDisplayed()
+        capture("wallet-after-consecutive-fills")
+        compose.onNodeWithText("Shopping · Office").performClick()
+        compose.onNodeWithTag("ime_wallet_actions_-41").assertDoesNotExist()
+        compose.onNodeWithText("Shopping · Office").performClick()
+        compose.onNodeWithTag("ime_wallet_actions_-41").assertIsDisplayed()
+    }
+
+    @Test fun cardQuickFillKeepsActionsOpenUntilManuallyCollapsed() {
+        state = state.copy(activePanel = MonicaImePanel.DOCUMENTS,
+            cardWalletEntries = listOf(state.cardWalletEntries.first()))
+        showKeyboard()
+        compose.onNodeWithText("Aster Mail").performClick()
+        compose.onNodeWithText(text(R.string.ime_quick_fill)).performClick()
+        compose.runOnIdle { assertEquals(1, walletQuickFillCount) }
+        compose.onNodeWithTag("ime_wallet_actions_1").assertIsDisplayed()
+        compose.onNodeWithText("Card number").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("4242424242424242", editor.text.toString()) }
+        compose.onNodeWithTag("ime_wallet_actions_1").assertIsDisplayed()
+        compose.onNodeWithText("Aster Mail").performClick()
+        compose.onNodeWithTag("ime_wallet_actions_1").assertDoesNotExist()
     }
 
     @Test fun blankWebsitesDoNotExposeAnEmptyFillAction() {
@@ -325,17 +379,72 @@ class MonicaImeUiTest {
         compose.onNodeWithText(text(R.string.username)).assertIsDisplayed()
     }
 
-    @Test fun narrowScreenWrapsWebsiteActionWithoutCrowdingTheRail() {
+    @Test fun narrowScreenScrollsWebsiteActionWithoutGrowingOrCrowdingTheRail() {
         showKeyboard(width = 320.dp, fontScale = 1.3f)
         compose.onNodeWithText("Aster Mail").performClick()
+        val initialHeight = bounds("ime_vault_entry_1").height
+        val quickFill = compose.onNodeWithText(text(R.string.ime_quick_fill)).fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText(text(R.string.website)).performScrollTo()
         capture("narrow-website")
         compose.onNodeWithText(text(R.string.website)).assertIsDisplayed()
         assertControlsAlignWithList()
-        val quickFill = compose.onNodeWithText(text(R.string.ime_quick_fill)).fetchSemanticsNode().boundsInRoot
         val website = compose.onNodeWithText(text(R.string.website)).fetchSemanticsNode().boundsInRoot
         val rail = bounds("ime_vault_scroll_rail")
-        assertTrue("The extra action wraps on narrow screens", website.top > quickFill.top)
+        assertEquals("Actions remain on one horizontally scrolling row", quickFill.top, website.top, 1f)
+        assertEquals(initialHeight, bounds("ime_vault_entry_1").height, 1f)
         assertTrue(website.right < rail.left)
+    }
+
+    @Test fun manyCustomFieldsStayCompactAndOnlyTheExpandedEntryIsObserved() {
+        state = state.copy(entries = state.entries.map { it.copy(hasCustomFields = true) })
+        val active = mutableSetOf<Long>()
+        observeFields = { id -> flow {
+            active.add(id)
+            try {
+                emit(List(80) { ImeCustomFieldRow(it + 1L, if (it == 0) "密保答案" else "Field $it", it % 2 == 0) })
+                awaitCancellation()
+            } finally { active.remove(id) }
+        } }
+        fillField = { _, id -> commit("synthetic-$id") }
+        showKeyboard(width = 320.dp, fontScale = 1.5f, dark = true)
+        compose.runOnIdle { assertTrue(active.isEmpty()) }
+        compose.onNodeWithText("Aster Mail").performClick()
+        compose.onNodeWithTag("ime_custom_field_1").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(setOf(1L), active) }
+        val height = bounds("ime_vault_entry_1").height
+        val pane = bounds("ime_vault_pane")
+        capture("custom-fields-dark-large")
+        compose.onNodeWithTag("ime_custom_fields_1").performScrollToIndex(79)
+        compose.onNodeWithTag("ime_custom_field_80").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("synthetic-80", editor.text.toString()) }
+        assertEquals(height, bounds("ime_vault_entry_1").height, 1f)
+        assertEquals(pane.height, bounds("ime_vault_pane").height, 1f)
+        capture("custom-fields-scrolled")
+        compose.onNodeWithTag("ime_vault_list").performScrollToIndex(1)
+        compose.onNodeWithText("Birch Account").performClick()
+        compose.runOnIdle { assertEquals(setOf(2L), active) }
+        compose.onNodeWithTag("ime_custom_fields_1").assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(unlocked = false) }
+        compose.onNodeWithTag("ime_custom_fields_2").assertDoesNotExist()
+        compose.runOnIdle { assertTrue(active.isEmpty()) }
+    }
+
+    @Test fun customOnlyEntryCanRetryLoadingAndFillWithoutExposingQuickFill() {
+        state = state.copy(entries = listOf(state.entries.first().copy(username = "", password = "", website = "", hasCustomFields = true)))
+        var attempts = 0
+        observeFields = { flow {
+            attempts++
+            if (attempts == 1) error("Synthetic failure")
+            emit(listOf(ImeCustomFieldRow(41, "Group number", false)))
+        } }
+        fillField = { _, _ -> commit("fixture-group") }
+        showKeyboard()
+        compose.onNodeWithText("Aster Mail").performClick()
+        compose.onNodeWithText(text(R.string.retry)).performClick()
+        compose.onNodeWithText(text(R.string.ime_quick_fill)).assertDoesNotExist()
+        compose.onNodeWithTag("ime_custom_field_41").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(2, attempts); assertEquals("fixture-group", editor.text.toString()) }
+        capture("custom-only-light")
     }
 
     @Test fun longEnglishLabelsAndLargeTextStayWithinTheContentArea() {

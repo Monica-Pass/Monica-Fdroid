@@ -1,6 +1,7 @@
-Keep unreadable password-linked authenticators visible without changing their data. Block unavailable code actions and retry after unlock. Fix mOTP entries with different PINs being collapsed in the list.
-Unify top-right filter menus across pages, fix Steam alignment and preserve app scaling.
-
-Filter standalone and embedded API Keys, API Tokens and GPG keys; refine card/document type menus.
-
-Fix generator suggestion height jumps during horizontal scrolling.
+Fill embedded cards, addresses and documents; add standalone addresses to the keyboard.
+Fix lost autofill-picker targets on Android 12.
+Fill custom fields with compact scrolling keyboard actions.
+Keep unreadable OTP entries visible; distinguish mOTP PINs.
+Unify filter menus, fix Steam alignment and respect app scaling.
+Filter standalone/embedded API Keys, API Tokens and GPG keys; refine type menus.
+Fix generator suggestion height jumps.

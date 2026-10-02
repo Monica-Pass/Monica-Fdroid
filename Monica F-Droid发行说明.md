@@ -6,6 +6,12 @@
 
 ### 简要
 
+- 修复 Android 12 等系统打开自动填充选择页时丢失目标表单信息的问题。
+
+- 自动填充与 Monica 键盘支持密码内的银行卡、账单地址和证件副本；键盘补齐独立账单地址。
+
+- Monica 键盘支持填写密码项目的自定义字段，横向滚动操作按钮，避免列表拥挤。
+
 - 统一生成器常用建议高度，修复横向滚动时页面上下跳动。
 
 - 快捷筛选新增 API Key、API 令牌和 GPG 密钥，同时匹配独立项目与密码内嵌内容。
@@ -17,6 +23,12 @@
 - 修复相同绑定账号下，密钥相同但 PIN 不同的 mOTP 验证器被误合并显示的问题。
 
 ### 详细
+
+- **系统选择页兼容：** 使用系统可解析的参数传递目标输入框、字段类型及认证上下文，避免 Android 12 转交请求时丢失信息；兼容旧调用，不放宽原有解锁要求。
+
+- **卡包内容填充：** 密码内副本作为标明所属项目的候选，沿用卡片字段映射并兼容旧版支付与地址字段，不另存重复卡片。键盘提供单行横向字段按钮，填写字段或快速填充后保持展开，点击卡片标题手动收起；账单地址和内嵌副本逐字段填写；仅在打开卡包面板时读取，点击时重新检查最新数据、来源与解锁状态，阻止删除、移动、锁库或输入框切换后的过期填写。损坏字段不输出密文，不更改存储、备份或同步格式。
+
+- **键盘自定义字段：** 展开项目后按名称选择字段，支持只有自定义字段的密码项目；常用操作与自定义字段各占一行、从左侧对齐并可横向滚动，同一时间只展开一个项目。按钮不显示字段值，受保护字段标注锁图标；仅展开时加载字段名称，点击时读取最新值直接填写，保留 Base64 密钥、空格、换行和 Unicode。字段删除、项目移动、锁库或输入框切换后阻止过期填写，不更改数据和备份格式。
 
 - **生成器常用建议：** 用户名和密码共用等高建议卡片及横向列表；预留一行标题、两行明文预览，随字体缩放统一增高，超长内容省略显示，点击仍使用完整原值，避免可见建议切换时推动下方控件。
 
@@ -32,6 +44,12 @@
 
 ### Summary
 
+- Fix lost target-form information when opening the autofill picker on Android 12 and similar systems.
+
+- Fill embedded bank cards, billing addresses and documents through autofill and the Monica keyboard; add standalone billing addresses to the keyboard.
+
+- Fill password-entry custom fields with the Monica keyboard; scroll actions horizontally to keep the list compact.
+
 - Keep generator suggestion cards at a consistent height to prevent vertical jumps while scrolling.
 
 - Add API Key, API Token and GPG key filters for standalone entries and embedded password content.
@@ -43,6 +61,12 @@
 - Fix mOTP authenticators with the same binding and secret but different PINs being collapsed in the list.
 
 ### Details
+
+- **System picker compatibility:** Transfer target IDs, field hints and authentication context using framework-readable values, avoiding dropped arguments on Android 12. Preserve the previous caller contract and authentication requirements.
+
+- **Wallet content filling:** Offer embedded copies with their parent entry names using shared card mappings, including legacy payment/address fields, without creating duplicate records. The keyboard uses one horizontally scrolling action row that stays expanded after field or quick fills until the header is tapped, with explicit field selection for addresses and embedded copies. Load wallet data only when opening its panel; recheck current values, ownership and unlock state on selection. Reject stale fills after deletion, moves, locking or input changes, never fill unreadable ciphertext, and retain existing storage, backup and sync formats.
+
+- **Keyboard custom fields:** Select fields by name, including entries with no username or password. Expand one entry at a time with separate left-aligned, horizontally scrolling rows for common actions and custom fields. Keep values out of buttons and mark protected fields with a lock. Load names only when expanded and read the latest value on selection, preserving Base64 keys, whitespace, line breaks and Unicode. Reject stale fills after deletion, entry moves, vault locking or input changes, without changing data or backup formats.
 
 - **Generator suggestions:** Use equal-height cards and a stable horizontal row for username and password suggestions. Reserve one title line and two plaintext preview lines, scale the shared height with the font setting, and apply the full original value when a truncated preview is selected.
 

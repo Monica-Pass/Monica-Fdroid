@@ -15,6 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.data.CustomField
 import takagi.ru.monica.security.SecurityManager
 
 /** Exercises the actual service loader and sort helper with a synthetic, wide Chinese vault. */
@@ -38,7 +39,11 @@ class MonicaImePerformanceTest {
                 website = "https://example$index.com", username = "fixture-$index", password = "fixture",
                 notes = "n".repeat(8192),
             ) }
-            database.passwordEntryDao().insertPasswordEntries(records)
+            val ids = database.passwordEntryDao().insertPasswordEntries(records)
+            database.customFieldDao().insertAll(ids.flatMap { id ->
+                List(4) { field -> CustomField(entryId = id, title = "Custom $field",
+                    value = "v".repeat(1024), isProtected = true, sortOrder = field) }
+            })
             val loadMethod = service.javaClass.declaredMethods.single { it.name == "loadImeVaultSources" }
                 .apply { isAccessible = true }
             val loadTimes = mutableListOf<Long>()
@@ -77,7 +82,7 @@ class MonicaImePerformanceTest {
                     } / 1_000_000
                 }
             }
-            val result = "rows=3000 notesBytes=24576000 loadMs=$loadTimes sortMs=$sortTimes " +
+            val result = "rows=3000 customFields=12000 notesBytes=24576000 loadMs=$loadTimes sortMs=$sortTimes " +
                 "firstQueryMs=$firstQueryTimes cachedQueryMicros=$cachedQueryMicros"
             Log.i("MonicaImePerformance", result)
             println(result)

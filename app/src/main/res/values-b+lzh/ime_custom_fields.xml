@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">此欄暫不可用。請重啟此項，或解鎖密碼庫再試。</string>
+</resources>

@@ -58,6 +58,21 @@ public class AutofillFormFixtureActivity extends Activity {
         layout.addView(status);
         setContentView(layout);
         switch (scenario) {
+            case "wallet_address":
+                field("street","Street Address",InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS,View.AUTOFILL_HINT_POSTAL_ADDRESS);
+                field("city","City",InputType.TYPE_CLASS_TEXT,"addressLocality");
+                field("region","Region",InputType.TYPE_CLASS_TEXT,"addressRegion");
+                field("country","Country",InputType.TYPE_CLASS_TEXT,"addressCountry");
+                field("zip","Postal Code",InputType.TYPE_CLASS_TEXT,View.AUTOFILL_HINT_POSTAL_CODE);
+                break;
+            case "wallet_card":
+                field("card","Card number",InputType.TYPE_CLASS_NUMBER,View.AUTOFILL_HINT_CREDIT_CARD_NUMBER);
+                field("cvv","CVV",InputType.TYPE_CLASS_NUMBER,View.AUTOFILL_HINT_CREDIT_CARD_SECURITY_CODE);
+                break;
+            case "wallet_document":
+                field("document","Passport number",InputType.TYPE_CLASS_TEXT,"identityNumber");
+                field("person","Full Name",InputType.TYPE_CLASS_TEXT,View.AUTOFILL_HINT_NAME);
+                break;
             case "web": case "web_dynamic": addWebForm(scenario.equals("web_dynamic")); break;
             case "unlabelled":
                 field("user","",InputType.TYPE_CLASS_TEXT,null);
@@ -147,6 +162,17 @@ public class AutofillFormFixtureActivity extends Activity {
     private String value(String key) { return fields.containsKey(key) ? fields.get(key).getText().toString() : null; }
 
     private void updateStatus() {
+        if (fields.containsKey("street")) {
+            status.setText("street=" + state(value("street"), "123 Main Street, Shanghai, Shanghai, 200000, CN")
+                + " city=" + state(value("city"), "Shanghai") + " region=" + state(value("region"), "Shanghai")
+                + " country=" + state(value("country"), "CN") + " zip=" + state(value("zip"), "200000")); return;
+        }
+        if (fields.containsKey("card")) {
+            status.setText("card=" + state(value("card"), "4242424242424242") + " cvv=" + state(value("cvv"), "123")); return;
+        }
+        if (fields.containsKey("document")) {
+            status.setText("document=" + state(value("document"), "P-12345") + " person=" + state(value("person"), "Test Person")); return;
+        }
         status.setText("user=" + state(value("user"),USERNAME) + " password=" + state(value("password"),PASSWORD)
                 + " otp=" + state(value("otp"),"unused") + " other=" + state(value("other"),"unused"));
     }

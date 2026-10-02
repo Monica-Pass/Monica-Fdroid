@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">Это поле недоступно. Откройте запись заново или разблокируйте хранилище и повторите попытку.</string>
+</resources>

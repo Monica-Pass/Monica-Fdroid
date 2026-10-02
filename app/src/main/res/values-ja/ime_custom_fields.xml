@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">このフィールドは利用できません。項目を開き直すか、保管庫のロックを解除して再試行してください。</string>
+</resources>

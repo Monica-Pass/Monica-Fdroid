@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ime_custom_field_unavailable">This field is unavailable. Reopen the entry or unlock the vault and try again.</string>
+</resources>

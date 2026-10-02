@@ -24,6 +24,7 @@ import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.AndroidUiDispatcher
 import androidx.compose.ui.platform.ComposeView
+import androidx.room.withTransaction
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
@@ -41,6 +42,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,6 +54,7 @@ import takagi.ru.monica.data.LocalKeePassDatabase
 import takagi.ru.monica.data.LocalMdbxDatabase
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.ImePasswordRow
+import takagi.ru.monica.data.ImeCustomFieldRow
 import takagi.ru.monica.data.SecureItem
 import takagi.ru.monica.data.model.CardWalletDataCodec
 import takagi.ru.monica.data.model.DocumentData
@@ -86,6 +90,7 @@ open class MonicaInputMethodService : InputMethodService() {
     private var composeView: ComposeView? = null
     private var recomposer: Recomposer? = null
     private var refreshJob: Job? = null
+    private var customFieldFillJob: Job? = null
     private var refreshRequest: ImeRefreshRequest? = null
     private var databaseObserverJob: Job? = null
     private var authenticatorTickerJob: Job? = null
@@ -93,6 +98,9 @@ open class MonicaInputMethodService : InputMethodService() {
     private var vaultGeneration = 0L
     private var totpSourceCache: List<SecureItem>? = null
     private var cardWalletSourceCache: List<SecureItem>? = null
+    private val walletFillRepository by lazy {
+        takagi.ru.monica.autofill_ng.WalletAutofillRepository(database, securityManager::decryptDataIfMonicaCiphertext)
+    }
     private val loadedVaultPanels = mutableMapOf<MonicaImePanel, ImeVaultPresentation>()
     private var pendingUnlockPanel: MonicaImePanel? = null
     private var pendingClearedInputText: String? = null
@@ -251,8 +259,10 @@ open class MonicaInputMethodService : InputMethodService() {
                             },
                             onSmartFillPassword = ::handleSmartFillPassword,
                             onInsertPasswordTotp = ::insertCurrentPasswordTotp,
+                            observeCustomFields = ::observeImeCustomFields,
+                            onInsertCustomField = ::insertCurrentCustomField,
                             onInsertAuthenticatorCode = { commitExternalText(it.code) },
-                            onInsertCardWalletValue = { commitExternalText(it.value) },
+                            onInsertCardWalletValue = { entry, field -> insertCurrentWalletField(entry, field.label) },
                             onSmartFillCardWallet = ::handleSmartFillCardWallet,
                             onKeyPressed = ::handleKeyPress,
                             onBackspace = ::handleBackspace,
@@ -289,6 +299,7 @@ open class MonicaInputMethodService : InputMethodService() {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         inputGeneration++
+        customFieldFillJob?.cancel()
         inputViewVisible = true
         window?.window?.let { imeWindow ->
             imeWindow.navigationBarColor = Color.BLACK
@@ -343,6 +354,7 @@ open class MonicaInputMethodService : InputMethodService() {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         inputGeneration++
+        customFieldFillJob?.cancel()
         inputViewVisible = false
         refreshJob?.cancel()
     }
@@ -354,6 +366,7 @@ open class MonicaInputMethodService : InputMethodService() {
     }
 
     override fun onWindowHidden() {
+        customFieldFillJob?.cancel()
         inputViewVisible = false
         refreshJob?.cancel()
         super.onWindowHidden()
@@ -501,9 +514,10 @@ open class MonicaInputMethodService : InputMethodService() {
                     Triple(keepassSignatures, bitwardenSignatures, mdbxSignatures)
                 },
                 database.passwordEntryDao().observeActivePasswordRevision(),
-                database.secureItemDao().observeActiveItemRevision()
-            ) { sourceSignatures, passwordRevision, secureItemRevision ->
-                Triple(sourceSignatures, passwordRevision, secureItemRevision)
+                database.secureItemDao().observeActiveItemRevision(),
+                database.customFieldDao().observeImeFieldEntryIds()
+            ) { sourceSignatures, passwordRevision, secureItemRevision, fieldEntryIds ->
+                Triple(sourceSignatures, passwordRevision to fieldEntryIds, secureItemRevision)
             }.collect {
                 invalidateVaultSourceCache()
                 val currentState = uiState.value
@@ -537,6 +551,7 @@ open class MonicaInputMethodService : InputMethodService() {
     }
 
     private fun handlePanelSelection(panel: MonicaImePanel) {
+        customFieldFillJob?.cancel()
         clearPendingDeleteUndo()
         if (panel == MonicaImePanel.KEYBOARD) {
             suppressAutoUnlockUntilNextAttempt = false
@@ -701,7 +716,9 @@ open class MonicaInputMethodService : InputMethodService() {
             val cardWalletItems = if (currentState.activePanel == MonicaImePanel.DOCUMENTS) {
                 cachedCards ?: (
                     database.secureItemDao().getActiveItemsByTypeSync(ItemType.BANK_CARD) +
-                        database.secureItemDao().getActiveItemsByTypeSync(ItemType.DOCUMENT)
+                        database.secureItemDao().getActiveItemsByTypeSync(ItemType.DOCUMENT) +
+                        database.secureItemDao().getActiveItemsByTypeSync(ItemType.BILLING_ADDRESS) +
+                        walletFillRepository.loadEmbeddedItems()
                     )
             } else cachedCards
             val cardWalletResults = if (currentState.activePanel == MonicaImePanel.DOCUMENTS) {
@@ -987,6 +1004,8 @@ open class MonicaInputMethodService : InputMethodService() {
             }
             .filter { entryMatchesScope(it, selectedScope) }
             .filter { queryMatches(it, search) }
+            .map { it.copy(fields = it.fields.map { field -> field.copy(value = "") },
+                supportsQuickFill = it.supportsQuickFill && it.id > 0) }
         val sortKeys = entries.map { it.id }.zip(normalizedImeSortKeys(entries.map(::imeCardWalletAlphabeticalLabel))
             .map { it.lowercase(Locale.ROOT) }).toMap()
         return entries.map { it.copy(alphabeticalLetter = imeIndexLetter(sortKeys.getValue(it.id))) }.sortedWith(
@@ -1053,6 +1072,57 @@ open class MonicaInputMethodService : InputMethodService() {
         return runCatching {
             securityManager.decryptDataIfMonicaCiphertext(value)
         }.getOrDefault(value)
+    }
+
+    private fun observeImeCustomFields(entryId: Long): Flow<List<ImeCustomFieldRow>> =
+        database.customFieldDao().observeImeFields(entryId)
+            .map { rows -> rows.filter { isImeCustomFieldName(it.label) } }
+            .flowOn(Dispatchers.IO)
+
+    private fun insertCurrentCustomField(entry: MonicaImePasswordEntry, fieldId: Long) {
+        val target = inputGeneration
+        val scope = uiState.value.selectedDatabaseScope
+        val connection = currentInputConnection ?: return
+        customFieldFillJob?.cancel()
+        customFieldFillJob = serviceScope.launch {
+            val settings = settingsManager.settingsFlow.first()
+            if (!updateUnlockState(settings)) return@launch
+            val value = try {
+                withContext(Dispatchers.IO) {
+                    database.withTransaction {
+                        val current = database.passwordEntryDao().getImePasswordRowById(entry.id)
+                            ?: return@withTransaction null
+                        // A moved/deleted entry or a field belonging to another entry must not be filled.
+                        if (current.keepassDatabaseId != entry.keepassDatabaseId ||
+                            current.mdbxDatabaseId != entry.mdbxDatabaseId ||
+                            current.bitwardenVaultId != entry.bitwardenVaultId) return@withTransaction null
+                        val field = database.customFieldDao().getFieldById(fieldId)
+                            ?.takeIf { it.entryId == entry.id && isImeCustomFieldName(it.title) }
+                            ?: return@withTransaction null
+                        // Custom fields can legitimately contain Base64 keys. Only explicit Monica
+                        // ciphertext prefixes identify encryption here; never guess from the value.
+                        securityManager.decryptDataIfMonicaCiphertext(field.value)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.w("MonicaIME", "Could not read custom field: ${error.javaClass.simpleName}")
+                null
+            }
+            currentCoroutineContext().ensureActive()
+            val state = uiState.value
+            if (target != inputGeneration || !inputViewVisible || currentInputConnection !== connection ||
+                state.activePanel != MonicaImePanel.PASSWORDS || state.isSearchEditing ||
+                state.selectedDatabaseScope != scope || state.entries.none { it.id == entry.id } ||
+                !updateUnlockState(settings)) return@launch
+            // Preserve spaces, Unicode and line breaks; never use the clipboard or log the value.
+            if (!value.isNullOrEmpty()) {
+                clearPendingDeleteUndo()
+                if (connection.commitText(value, 1)) return@launch
+            }
+            uiState.update { it.copy(errorMessage = strings.get(takagi.ru.monica.R.string.ime_custom_field_unavailable)) }
+        }
     }
 
     private fun insertCurrentPasswordTotp(entry: MonicaImePasswordEntry) {
@@ -1172,8 +1242,38 @@ open class MonicaInputMethodService : InputMethodService() {
                 mdbxLabel = mdbxLabel,
                 bitwardenLabel = bitwardenLabel
             )
+            ItemType.BILLING_ADDRESS -> toImeBillingAddressEntryOrNull(
+                keepassLookup, mdbxLookup, bitwardenLookup, localLabel, keepassLabel, mdbxLabel, bitwardenLabel
+            )
             else -> null
         }
+    }
+
+    private fun SecureItem.toImeBillingAddressEntryOrNull(
+        keepassLookup: Map<Long, LocalKeePassDatabase>, mdbxLookup: Map<Long, LocalMdbxDatabase>,
+        bitwardenLookup: Map<Long, BitwardenVault>, localLabel: String, keepassLabel: String,
+        mdbxLabel: String, bitwardenLabel: String
+    ): MonicaImeCardWalletEntry? {
+        val data = takagi.ru.monica.autofill_ng.parseBillingAddressCandidate(
+            this, securityManager::decryptDataIfMonicaCiphertext)?.second ?: return null
+        val fields = listOfNotNull(
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.full_name), data.fullName),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.street_address), data.streetAddress),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.apartment), data.apartment),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.city), data.city),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.state_province), data.stateProvince),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.postal_code), data.postalCode),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.country), data.country),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.document_company_label), data.company),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.phone), data.phone),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.email), data.email)
+        )
+        if (fields.isEmpty()) return null
+        return MonicaImeCardWalletEntry(id, title.ifBlank { data.fullName }, data.city,
+            strings.get(takagi.ru.monica.R.string.billing_address), isFavorite,
+            resolveSourceLabel(this, keepassLookup, mdbxLookup, bitwardenLookup,
+                localLabel, keepassLabel, mdbxLabel, bitwardenLabel), fields,
+            keepassDatabaseId, mdbxDatabaseId, bitwardenVaultId, supportsQuickFill = false)
     }
 
     private fun SecureItem.toImeBankCardEntryOrNull(
@@ -1185,17 +1285,16 @@ open class MonicaInputMethodService : InputMethodService() {
         mdbxLabel: String,
         bitwardenLabel: String
     ): MonicaImeCardWalletEntry? {
-        val data = CardWalletDataCodec.parseBankCardData(
-            raw = itemData,
-            decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
-        ) ?: return null
+        val data = takagi.ru.monica.autofill_ng.parseBankCardCandidate(
+            this, securityManager::decryptDataIfMonicaCiphertext
+        )?.second ?: return null
         val fields = listOfNotNull(
-            fieldOrNull(strings.get(takagi.ru.monica.R.string.card_number), resolveSecretValue(data.cardNumber)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.card_number), data.cardNumber),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.cardholder_name), data.cardholderName),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.expiry_date), formatExpiry(data.expiryMonth, data.expiryYear)),
-            fieldOrNull(strings.get(takagi.ru.monica.R.string.cvv), resolveSecretValue(data.cvv)),
-            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_pin_label), resolveSecretValue(data.pin)),
-            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_account_number_label), resolveSecretValue(data.accountNumber)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.cvv), data.cvv),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_pin_label), data.pin),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_account_number_label), data.accountNumber),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.bank_card_routing_number_label), data.routingNumber),
             fieldOrNull("IBAN", data.iban),
             fieldOrNull("SWIFT/BIC", data.swiftBic)
@@ -1206,7 +1305,7 @@ open class MonicaInputMethodService : InputMethodService() {
                 data.bankName.ifBlank { strings.get(takagi.ru.monica.R.string.bank_card_default_title) }
             }
         }
-        val subtitle = listOf(data.bankName, maskCardNumber(resolveSecretValue(data.cardNumber).orEmpty()))
+        val subtitle = listOf(data.bankName, maskCardNumber(data.cardNumber.orEmpty()))
             .filter { it.isNotBlank() }
             .joinToString(" · ")
         return MonicaImeCardWalletEntry(
@@ -1241,19 +1340,18 @@ open class MonicaInputMethodService : InputMethodService() {
         mdbxLabel: String,
         bitwardenLabel: String
     ): MonicaImeCardWalletEntry? {
-        val data = CardWalletDataCodec.parseDocumentData(
-            raw = itemData,
-            decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
-        ) ?: return null
+        val data = takagi.ru.monica.autofill_ng.parseDocumentCandidate(
+            this, securityManager::decryptDataIfMonicaCiphertext
+        )?.second ?: return null
         val fullName = data.displayName()
         val fields = listOfNotNull(
-            fieldOrNull(strings.get(takagi.ru.monica.R.string.document_number), resolveSecretValue(data.documentNumber)),
+            fieldOrNull(strings.get(takagi.ru.monica.R.string.document_number), data.documentNumber),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.full_name), fullName),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.expiry_date_label), data.expiryDate),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.cardholder_label), data.username),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.email), data.email),
             fieldOrNull(strings.get(takagi.ru.monica.R.string.phone), data.phone),
-            fieldOrNull("SSN", resolveSecretValue(data.ssn))
+            fieldOrNull("SSN", data.ssn)
         )
         if (fields.isEmpty()) return null
         return MonicaImeCardWalletEntry(
@@ -1289,7 +1387,7 @@ open class MonicaInputMethodService : InputMethodService() {
         bitwardenLabel: String
     ): ImeRefreshResult? {
         val decryptedUsername = resolveFillableField(username)
-        if (decryptedUsername.isNullOrBlank() && password.isBlank()) {
+        if (decryptedUsername.isNullOrBlank() && password.isBlank() && !hasCustomFields) {
             return null
         }
 
@@ -1305,6 +1403,7 @@ open class MonicaInputMethodService : InputMethodService() {
                 password = password,
                 isFavorite = isFavorite,
                 hasTotp = authenticatorKey.isNotBlank(),
+                hasCustomFields = hasCustomFields,
                 sourceLabel = resolveSourceLabel(
                     entry = this,
                     keepassLookup = keepassLookup,
@@ -1389,10 +1488,12 @@ open class MonicaInputMethodService : InputMethodService() {
     }
 
     private fun invalidateVaultSourceCache() {
+        customFieldFillJob?.cancel()
         vaultGeneration++
         vaultSourceCache = null
         totpSourceCache = null
         cardWalletSourceCache = null
+        walletFillRepository.clear()
         loadedVaultPanels.clear()
     }
 
@@ -1570,8 +1671,42 @@ open class MonicaInputMethodService : InputMethodService() {
     }
 
     private fun handleSmartFillCardWallet(entry: MonicaImeCardWalletEntry) {
-        clearPendingDeleteUndo()
-        performSequentialImeFill(entry.fields.map { it.value }.filter { it.isNotBlank() })
+        if (entry.supportsQuickFill) insertCurrentWalletField(entry, null)
+    }
+
+    private fun insertCurrentWalletField(entry: MonicaImeCardWalletEntry, label: String?) {
+        val target = inputGeneration
+        val selectedScope = uiState.value.selectedDatabaseScope
+        val connection = currentInputConnection ?: return
+        val expected = cardWalletSourceCache?.singleOrNull { it.id == entry.id } ?: return
+        customFieldFillJob?.cancel()
+        customFieldFillJob = serviceScope.launch {
+            val settings = settingsManager.settingsFlow.first()
+            if (!updateUnlockState(settings)) return@launch
+            val current = walletFillRepository.resolveCurrent(expected)
+            val sources = vaultSourceCache
+            val fields = if (current != null && sources != null) withContext(Dispatchers.IO) {
+                current.toImeCardWalletEntryOrNull(sources.keepassLookup, sources.mdbxLookup, sources.bitwardenLookup,
+                    strings.get(takagi.ru.monica.R.string.filter_monica), "KeePass", "MDBX", "Bitwarden")?.fields
+            } else null
+            currentCoroutineContext().ensureActive()
+            val state = uiState.value
+            if (target != inputGeneration || !inputViewVisible || currentInputConnection !== connection ||
+                state.activePanel != MonicaImePanel.DOCUMENTS || state.isSearchEditing ||
+                state.selectedDatabaseScope != selectedScope || state.cardWalletEntries.none { it.id == entry.id } ||
+                !updateUnlockState(settings)) return@launch
+            val values = if (label == null) fields.orEmpty().map { it.value }
+                else fields.orEmpty().filter { it.label == label }.map { it.value }
+            if (values.isEmpty() || (label != null && values.size != 1)) {
+                uiState.update { it.copy(errorMessage = strings.get(takagi.ru.monica.R.string.ime_custom_field_unavailable)) }
+            } else if (label != null) {
+                clearPendingDeleteUndo()
+                connection.commitText(values.single(), 1)
+            } else {
+                clearPendingDeleteUndo()
+                performSequentialImeFill(values)
+            }
+        }
     }
 
     private fun performSequentialImeFill(values: List<String>) {

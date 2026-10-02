@@ -11,6 +11,18 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface CustomFieldDao {
+    @Query("SELECT * FROM custom_fields WHERE entry_id IN (SELECT id FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0) AND title IN ('monica.content.wallet.bank_card','monica.content.wallet.document','monica.content.wallet.address') ORDER BY entry_id, sort_order, id")
+    suspend fun getWalletFields(): List<CustomField>
+
+    @Query("SELECT * FROM custom_fields WHERE entry_id = :entryId AND title IN ('monica.content.wallet.bank_card','monica.content.wallet.document','monica.content.wallet.address') ORDER BY sort_order, id")
+    suspend fun getWalletFieldsByEntryId(entryId: Long): List<CustomField>
+
+    /** Do not bring secrets or large embedded payloads into keyboard UI state. */
+    @Query("SELECT id, title AS label, is_protected AS isProtected FROM custom_fields WHERE entry_id = :entryId AND TRIM(title) != '' AND title NOT LIKE 'monica.%' AND value != '' ORDER BY sort_order, id")
+    fun observeImeFields(entryId: Long): Flow<List<ImeCustomFieldRow>>
+
+    @Query("SELECT DISTINCT entry_id FROM custom_fields WHERE TRIM(title) != '' AND title NOT LIKE 'monica.%' ORDER BY entry_id")
+    fun observeImeFieldEntryIds(): Flow<List<Long>>
     
     @Query("SELECT * FROM custom_fields WHERE title GLOB 'monica.content.block.*' ORDER BY entry_id, sort_order, id")
     fun observeContentBlockFields(): Flow<List<CustomField>>
