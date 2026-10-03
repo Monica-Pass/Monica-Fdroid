@@ -14,19 +14,19 @@ class MdbxSnapshotStructureScrollRegressionGuardTest {
         val pageBody = source
             .substringAfter("private fun MdbxSnapshotStructurePage(")
             .substringBefore("internal fun SnapshotStructurePreviewPage(")
-        val previewBody = source
-            .substringAfter("fun SnapshotStructurePreviewPage(")
-            .substringBefore("internal fun StructureTreePanel(")
-        val portraitBranch = previewBody.substringAfter("        } else {")
+        val browser = projectFile("app/src/main/java/takagi/ru/monica/ui/screens/MdbxFolderBrowser.kt").readText()
+        val preview = projectFile("app/src/main/java/takagi/ru/monica/ui/screens/MdbxSnapshotBrowser.kt").readText()
 
         assertTrue(
             "Snapshot preview must receive a bounded remaining height below the optional loading indicator.",
             pageBody.contains("modifier = Modifier.weight(1f)")
         )
         assertTrue(
-            "Portrait snapshot structure must own a vertical scroll state instead of rendering an unscrollable Column.",
-            portraitBranch.contains(".verticalScroll(")
+            "Each folder pane must retain a bounded lazy list, not an eagerly expanded tree.",
+            browser.contains("Box(Modifier.weight(1f))") && browser.contains("LazyColumn(")
         )
+        assertTrue("Comparison must use independently scrollable panes", preview.contains("pane(true, Modifier.weight(1f))") &&
+            preview.contains("pane(false, Modifier.weight(1f))") && !preview.contains(".verticalScroll("))
     }
 
     private fun projectFile(relativePath: String): File {

@@ -40,21 +40,20 @@ internal class KeePassCredentialTransitionStore(
         val storedKeyFile = keyFileBytes?.let { bytes ->
             keyFileStore.copyBytes(bytes, keyFileName)
         }
-        preferences.edit()
-            .putString(passwordKey(databaseId), securityManager.encryptData(password))
-            .putString(keyFileKey(databaseId), storedKeyFile?.relativePath)
-            .putLong(createdAtKey(databaseId), nowProvider())
-            .apply()
+        synchronized(takagi.ru.monica.security.PortablePreferenceCipherMigration.lock) {
+            check(preferences.edit()
+                .putString(passwordKey(databaseId), securityManager.encryptData(password))
+                .putString(keyFileKey(databaseId), storedKeyFile?.relativePath)
+                .putLong(createdAtKey(databaseId), nowProvider())
+                .commit()) { "Cannot persist KeePass credential transition" }
+        }
         return storedKeyFile
     }
 
     fun read(databaseId: Long): PendingCredentials? {
         val encryptedPassword = preferences.getString(passwordKey(databaseId), null) ?: return null
-        val createdAt = preferences.getLong(createdAtKey(databaseId), 0L)
-        if (createdAt <= 0L || nowProvider() - createdAt > MAX_AGE_MILLIS) {
-            clear(databaseId)
-            return null
-        }
+        // A long absence or temporary key failure does not prove that the file
+        // rewrite completed. Keep this fallback until the caller verifies it.
         return runCatching {
             val keyPath = preferences.getString(keyFileKey(databaseId), null)
             PendingCredentials(
@@ -62,12 +61,11 @@ internal class KeePassCredentialTransitionStore(
                 keyFileBytes = keyPath?.let(keyFileStore::readInternal)
             )
         }.onFailure { error ->
-            Log.w(TAG, "Discarding unreadable KeePass credential transition", error)
-            clear(databaseId)
+            Log.w(TAG, "KeePass credential transition unavailable; preserving fallback (${error.javaClass.simpleName})")
         }.getOrNull()
     }
 
-    fun clear(databaseId: Long) {
+    fun clear(databaseId: Long) = synchronized(takagi.ru.monica.security.PortablePreferenceCipherMigration.lock) {
         preferences.edit()
             .remove(passwordKey(databaseId))
             .remove(keyFileKey(databaseId))
@@ -84,6 +82,5 @@ internal class KeePassCredentialTransitionStore(
     private companion object {
         const val TAG = "KeePassCredentialTxn"
         const val PREFERENCES_NAME = "keepass_credential_transitions"
-        const val MAX_AGE_MILLIS = 7L * 24L * 60L * 60L * 1000L
     }
 }

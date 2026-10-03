@@ -24,6 +24,6 @@ internal fun DetailSectionLayout(
 internal fun DetailGroupItem(index: Int, count: Int, content: @Composable ColumnScope.() -> Unit) {
     Surface(Modifier.fillMaxWidth(), shape = entryGroupShape(index, count),
         color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+        Column(Modifier.padding(horizontal = 16.dp, vertical = if (LocalCompactCredentialFields.current) 10.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }

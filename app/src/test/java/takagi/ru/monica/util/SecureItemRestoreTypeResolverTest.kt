@@ -7,6 +7,21 @@ import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.utils.SecureItemRestoreTypeResolver
 
 class SecureItemRestoreTypeResolverTest {
+    @Test fun preservesExplicitNewWalletTypesDespiteOverlappingLegacyFields() {
+        for (file in listOf("billing_address_1.json", "Monica_cards_docs.csv")) {
+            assertEquals(ItemType.BILLING_ADDRESS, SecureItemRestoreTypeResolver.resolve("BILLING_ADDRESS",
+                """{"fullName":"Alice","company":"Example","country":"CN","postalCode":"200000"}""", file))
+            assertEquals(ItemType.PAYMENT_ACCOUNT, SecureItemRestoreTypeResolver.resolve("PAYMENT_ACCOUNT",
+                """{"iban":"fixture","routingNumber":"123","accountName":"Alice"}""", file))
+        }
+    }
+
+    @Test fun infersNewWalletTypesFromTheirDistinctiveFields() {
+        assertEquals(ItemType.PAYMENT_ACCOUNT, SecureItemRestoreTypeResolver.resolve(null,
+            """{"paymentType":"BANK_ACCOUNT","iban":"fixture"}"""))
+        assertEquals(ItemType.BILLING_ADDRESS, SecureItemRestoreTypeResolver.resolve(null,
+            """{"streetAddress":"Test street","company":"Example","country":"CN"}"""))
+    }
 
     @Test
     fun resolvesLegacyBankCardPayloadFromCardsDocsCsv() {

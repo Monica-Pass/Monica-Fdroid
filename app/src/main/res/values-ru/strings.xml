@@ -1730,7 +1730,7 @@
     <string name="developer_view_logs">Просмотр логов</string>
     <string name="developer_view_logs_desc">Просмотр логов Logcat приложения</string>
     <string name="developer_clear_log_buffer">Очистить буфер логов</string>
-    <string name="developer_clear_log_buffer_desc">Очистить буфер логов устройства</string>
+    <string name="developer_clear_log_buffer_desc">Очистите буфер журналов, воспроизведите ошибку и отправьте журналы разработчику.</string>
     <string name="developer_share_logs">Поделиться логами</string>
     <string name="developer_share_logs_desc">Экспорт и отправка последних логов</string>
     <string name="developer_functions">Функции разработчика</string>

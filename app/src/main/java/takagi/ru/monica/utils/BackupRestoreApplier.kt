@@ -401,7 +401,9 @@ object BackupRestoreApplier {
                 val mappedEntryId = passwordIdMap[historyEntry.entryId] ?: return@forEach
                 if (destinationWriter != null && !destinationWriter.isNewPassword(mappedEntryId)) return@forEach
                 try {
-                    passwordRepository.insertPasswordHistory(
+                    // The restore owns this Room database. A repository supplied by
+                    // a background entry point may not have its optional history DAO.
+                    PasswordDatabase.getDatabase(context).passwordHistoryDao().insert(
                         PasswordHistoryEntry(
                             entryId = mappedEntryId,
                             password = encryptImportedPasswordForDisplay(

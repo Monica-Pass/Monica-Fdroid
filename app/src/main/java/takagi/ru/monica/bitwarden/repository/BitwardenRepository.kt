@@ -202,7 +202,12 @@ class BitwardenRepository(private val context: Context) {
     
     // 加密的 SharedPreferences
     private val securePrefs by lazy {
-        takagi.ru.monica.security.SecurePreferencesStore.open(context, PREFS_NAME).preferences
+        try {
+            takagi.ru.monica.security.RecoverableBitwardenSettings.open(context)
+        } catch (_: Exception) {
+            Log.w(TAG, "Bitwarden settings unavailable; preserving originals and disabling automatic sync")
+            null
+        }
     }
 
     
@@ -225,7 +230,7 @@ class BitwardenRepository(private val context: Context) {
      * 获取活跃的 Vault
      */
     suspend fun getActiveVault(): BitwardenVault? = withContext(Dispatchers.IO) {
-        val activeVaultId = securePrefs.getLong(KEY_ACTIVE_VAULT_ID, -1)
+        val activeVaultId = (securePrefs?.getLong(KEY_ACTIVE_VAULT_ID, -1) ?: -1)
         if (activeVaultId > 0) {
             vaultDao.getVaultById(activeVaultId)
         } else {
@@ -237,7 +242,7 @@ class BitwardenRepository(private val context: Context) {
      * 设置活跃的 Vault
      */
     fun setActiveVault(vaultId: Long) {
-        securePrefs.edit().putLong(KEY_ACTIVE_VAULT_ID, vaultId).apply()
+        securePrefs?.edit()?.putLong(KEY_ACTIVE_VAULT_ID, vaultId)?.apply()
     }
     
     /**
@@ -783,8 +788,8 @@ class BitwardenRepository(private val context: Context) {
             }
 
             // 重置活跃 Vault
-            if (securePrefs.getLong(KEY_ACTIVE_VAULT_ID, -1) == vaultId) {
-                securePrefs.edit().remove(KEY_ACTIVE_VAULT_ID).apply()
+            if ((securePrefs?.getLong(KEY_ACTIVE_VAULT_ID, -1) ?: -1) == vaultId) {
+                securePrefs?.edit()?.remove(KEY_ACTIVE_VAULT_ID)?.apply()
             }
             
             Log.d(TAG, "Vault 已登出: $vaultId")
@@ -877,7 +882,7 @@ class BitwardenRepository(private val context: Context) {
                 val result = syncService.fullSync(vault, accessToken, symmetricKey)
 
                 // 更新最后同步时间
-                securePrefs.edit().putLong(KEY_LAST_SYNC_TIME, System.currentTimeMillis()).apply()
+                securePrefs?.edit()?.putLong(KEY_LAST_SYNC_TIME, System.currentTimeMillis())?.apply()
 
                 when (result) {
                     is ServiceSyncResult.Success -> {
@@ -2052,12 +2057,12 @@ class BitwardenRepository(private val context: Context) {
     // ==================== 设置 ====================
     
     var isAutoSyncEnabled: Boolean
-        get() = securePrefs.getBoolean(KEY_AUTO_SYNC_ENABLED, true)
-        set(value) = securePrefs.edit().putBoolean(KEY_AUTO_SYNC_ENABLED, value).apply()
+        get() = (securePrefs?.getBoolean(KEY_AUTO_SYNC_ENABLED, true) ?: false)
+        set(value) { securePrefs?.edit()?.putBoolean(KEY_AUTO_SYNC_ENABLED, value)?.apply() }
     
     var isSyncOnWifiOnly: Boolean
-        get() = securePrefs.getBoolean(KEY_SYNC_ON_WIFI_ONLY, false)
-        set(value) = securePrefs.edit().putBoolean(KEY_SYNC_ON_WIFI_ONLY, value).apply()
+        get() = (securePrefs?.getBoolean(KEY_SYNC_ON_WIFI_ONLY, false) ?: true)
+        set(value) { securePrefs?.edit()?.putBoolean(KEY_SYNC_ON_WIFI_ONLY, value)?.apply() }
     
     /**
      * 是否永不锁定 Bitwarden
@@ -2068,11 +2073,11 @@ class BitwardenRepository(private val context: Context) {
      * - 适合安全环境下使用
      */
     var isNeverLockEnabled: Boolean
-        get() = securePrefs.getBoolean(KEY_NEVER_LOCK_BITWARDEN, false)
-        set(value) = securePrefs.edit().putBoolean(KEY_NEVER_LOCK_BITWARDEN, value).apply()
+        get() = (securePrefs?.getBoolean(KEY_NEVER_LOCK_BITWARDEN, false) ?: false)
+        set(value) { securePrefs?.edit()?.putBoolean(KEY_NEVER_LOCK_BITWARDEN, value)?.apply() }
     
     val lastSyncTime: Long
-        get() = securePrefs.getLong(KEY_LAST_SYNC_TIME, 0)
+        get() = (securePrefs?.getLong(KEY_LAST_SYNC_TIME, 0) ?: 0)
 
     /**
      * 同步队列计数（实时）

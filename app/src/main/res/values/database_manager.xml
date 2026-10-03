@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manager_open_database">Open database settings</string>
+    <string name="manager_dual">Switch single / dual pane</string>
+    <string name="manager_databases">Databases</string>
+    <string name="manager_choose_destination">Choose destination</string>
+    <string name="manager_selection_destination">%1$d selected → %2$s</string>
+    <string name="manager_items_selected">%1$d items · %2$d selected</string>
+    <string name="manager_confirm_transfer">Transfer %1$d selected items from %2$s to %3$s / %4$s? The source is retained until the destination has been verified.</string>
+    <string name="manager_result">Transfer result</string>
+    <string name="manager_result_count">Completed: %1$d · Requires attention: %2$d</string>
+    <string name="manager_technical_details">Technical details</string>
+    <string name="manager_select">Select item</string>
+    <string name="manager_failure_format">The destination cannot preserve all original information. Keep the source and choose a database of the same format. See details for the affected fields.</string>
+    <string name="manager_failure_changed">The data changed or verification failed. The source was retained. Refresh both panes and review the destination before retrying.</string>
+    <string name="manager_failure_locked">The database needs to be unlocked or its original file is unavailable. Open it in database settings, then refresh this pane.</string>
+    <string name="manager_failure_general">This operation could not complete. Check both panes and the details before retrying: the destination may contain a partial copy.</string>
+</resources>

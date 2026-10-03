@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Gestionar información original</string>
+    <string name="mdbx_native_summary">Explorar carpetas, entradas y campos originales</string>
+    <string name="mdbx_native_search">Buscar nombres o tipos</string>
+    <string name="mdbx_native_readonly">Los campos originales son de solo lectura. Cambiar el nombre desde la lista no modifica el contenido.</string>
+    <string name="mdbx_native_schema">Versión del formato: %1$d</string>
+    <string name="mdbx_native_failed">No se pudo completar la operación. Actualiza para comprobar el estado guardado antes de reintentar.</string>
+    <string name="mdbx_native_snapshot_readonly">Estructura de instantánea de solo lectura. Restaura desde el menú de la instantánea.</string>
+</resources>

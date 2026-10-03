@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Zarządzaj oryginalnymi danymi</string>
+    <string name="mdbx_native_summary">Przeglądaj foldery, wpisy i oryginalne pola</string>
+    <string name="mdbx_native_search">Szukaj nazw lub typów</string>
+    <string name="mdbx_native_readonly">Oryginalne pola są tylko do odczytu. Zmiana nazwy na liście nie zmienia zawartości.</string>
+    <string name="mdbx_native_schema">Wersja formatu danych: %1$d</string>
+    <string name="mdbx_native_failed">Nie udało się ukończyć operacji. Odśwież i sprawdź zapisany stan przed ponowną próbą.</string>
+    <string name="mdbx_native_snapshot_readonly">Struktura migawki jest tylko do odczytu. Przywracanie jest dostępne w menu migawki.</string>
+</resources>

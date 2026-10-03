@@ -201,7 +201,8 @@ internal fun KeePassNativeManagerScreen(
     database: LocalKeePassDatabase,
     viewModel: LocalKeePassViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateSpecialized: (KeePassNativeResolvedRoute) -> Unit
+    onNavigateSpecialized: (KeePassNativeResolvedRoute) -> Unit,
+    initialEntryUuid: String? = null
 ) {
     val scope = rememberCoroutineScope()
     val conflictResolutionVersion by viewModel.conflictResolution.resolutionVersion.collectAsStateWithLifecycle()
@@ -214,7 +215,7 @@ internal fun KeePassNativeManagerScreen(
             retainedState.currentGroupUuid?.let { uuid -> KeePassNativeGroupIdentity(database.id, uuid) }
         )
     }
-    var selectedEntryIdentity by remember(database.id) { mutableStateOf<KeePassNativeEntryIdentity?>(null) }
+    var selectedEntryIdentity by remember(database.id, initialEntryUuid) { mutableStateOf(initialEntryUuid?.let { KeePassNativeEntryIdentity(database.id, UUID.fromString(it)) }) }
     var editingEntryIdentity by remember(database.id) { mutableStateOf<KeePassNativeEntryIdentity?>(null) }
     var searchQuery by remember(database.id) { mutableStateOf(retainedState.searchQuery) }
     var searchExpanded by remember(database.id) {

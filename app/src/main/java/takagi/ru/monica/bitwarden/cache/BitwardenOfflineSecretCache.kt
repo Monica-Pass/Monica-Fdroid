@@ -38,10 +38,12 @@ class BitwardenOfflineSecretCache(
         val encrypted = runCatching { securityManager.encryptDataLegacyCompat(plainSecret) }
             .getOrNull() ?: return
 
-        prefs.edit()
-            .putString(secretKey(entryId), encrypted)
-            .putString(cipherKey(entryId), cipherId)
-            .apply()
+        synchronized(takagi.ru.monica.security.PortablePreferenceCipherMigration.lock) {
+            prefs.edit()
+                .putString(secretKey(entryId), encrypted)
+                .putString(cipherKey(entryId), cipherId)
+                .apply()
+        }
 
         memoryCache = memoryCache.toMutableMap().also {
             it[entryId] = CachedSecret(cipherId = cipherId, secret = plainSecret)
@@ -77,7 +79,7 @@ class BitwardenOfflineSecretCache(
         return decrypted
     }
 
-    fun clear(entryId: Long) {
+    fun clear(entryId: Long) = synchronized(takagi.ru.monica.security.PortablePreferenceCipherMigration.lock) {
         prefs.edit()
             .remove(secretKey(entryId))
             .remove(cipherKey(entryId))

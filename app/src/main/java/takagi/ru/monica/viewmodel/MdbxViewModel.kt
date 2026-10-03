@@ -234,6 +234,37 @@ class MdbxViewModel(
 
     suspend fun nativeApiTokenFolders(databaseId: Long) = mdbx2Repository.listFolders(databaseId)
 
+    internal suspend fun nativeBrowser(databaseId: Long) = mdbx2Repository.nativeBrowser(databaseId)
+    internal suspend fun nativeObject(databaseId: Long, entryId: String) = mdbx2Repository.nativeObject(databaseId, entryId)
+    internal suspend fun createNativeFolder(databaseId: Long, name: String, parentId: String?) {
+        mdbx2Repository.createFolder(databaseId, name, parentId)
+        refreshAfterNativeManagement(databaseId)
+    }
+    internal suspend fun renameNativeFolder(databaseId: Long, folderId: String, name: String) {
+        mdbx2Repository.renameFolder(databaseId, folderId, name)
+        refreshAfterNativeManagement(databaseId)
+    }
+    internal suspend fun moveNativeFolder(databaseId: Long, folderId: String, parentId: String?) {
+        mdbx2Repository.moveFolder(databaseId, folderId, parentId)
+        refreshAfterNativeManagement(databaseId)
+    }
+    internal suspend fun renameNativeObject(databaseId: Long,
+        expected: takagi.ru.monica.repository.MdbxNativeObjectSummary, name: String) {
+        mdbx2Repository.renameNativeObject(databaseId, expected, name)
+        importEntriesFromVault(databaseId)
+        refreshAfterNativeManagement(databaseId)
+    }
+    internal suspend fun refreshManagerProjection(databaseId: Long) {
+        importEntriesFromVault(databaseId)
+        refreshAfterNativeManagement(databaseId)
+    }
+
+    private suspend fun refreshAfterNativeManagement(databaseId: Long) {
+        nativeApiTokenList.invalidate(databaseId)
+        invalidateMdbxViewCaches(databaseId)
+        refreshSingleVaultState(databaseId)
+    }
+
     suspend fun transferNativeApiToken(summary: NativeApiTokenSummary, targetDatabaseId: Long,
         targetFolderId: String?, copy: Boolean): NativeApiTokenSummary = try {
         mdbx2Repository.transferNativeApiToken(summary, targetDatabaseId, targetFolderId, copy)

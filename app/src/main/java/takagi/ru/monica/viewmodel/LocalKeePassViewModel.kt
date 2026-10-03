@@ -4238,14 +4238,7 @@ class LocalKeePassViewModel(
     }
 
     private fun buildKdbxCredentials(password: String, keyFileBytes: ByteArray?): Credentials {
-        if (keyFileBytes == null) {
-            return Credentials.from(EncryptedValue.fromString(password))
-        }
-        return if (password.isBlank()) {
-            Credentials.from(keyFileBytes)
-        } else {
-            Credentials.from(EncryptedValue.fromString(password), keyFileBytes)
-        }
+        return takagi.ru.monica.utils.KeePassCredentialSupport.buildExactCredentials(password, keyFileBytes)
     }
     
     /**

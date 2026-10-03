@@ -1,7 +1,5 @@
 package takagi.ru.monica.ui.screens
 
-import takagi.ru.monica.testing.readSourceText
-
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,14 +11,13 @@ class MultiCredentialPasswordCreationGuardTest {
     fun newPasswordKeepsSingleEditorAndEnablesMenuBasedBatchMode() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readSourceText()
+        ).readText()
         val viewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readSourceText()
+        ).readText()
 
         assertTrue(screen.contains("val isMultiCredentialMode = usesCredentialCards && credentialUsernames.size > 1"))
         assertTrue(screen.contains("multiCredentialEditorSectionName"))
-        assertTrue(screen.contains("showCredentialPicker"))
         assertTrue(screen.contains("PasswordCredentialPickerSheet("))
         assertTrue(screen.contains("showCommonCredentialEditor"))
         assertTrue(screen.contains("onSelect = ::showCredentialEditor"))
@@ -30,7 +27,7 @@ class MultiCredentialPasswordCreationGuardTest {
         assertTrue(screen.contains("selectedAuthenticatorCredentialIndex"))
         assertTrue(screen.contains("credentialAttachmentDrafts"))
         assertFalse(screen.contains("selectedAttachmentCredentialIndex"))
-        assertTrue(screen.contains("return \"replica:\$replicaGroupId|target:\${entry.toStorageTarget().stableKey}\""))
+        assertTrue(screen.contains("entry.passwordProjectKey()"))
         assertTrue(viewModel.contains("fun saveCredentialsAcrossTargets("))
         assertTrue(viewModel.contains("SavedPasswordCredential"))
         assertFalse(screen.contains("passwords = credentialDrafts.map { it.password }"))
@@ -40,7 +37,7 @@ class MultiCredentialPasswordCreationGuardTest {
     fun editingKeepsLegacyGroupedPasswordEditor() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readSourceText()
+        ).readText()
 
         assertTrue(screen.contains("if (isEditing)"))
         assertTrue(screen.contains("val canAddIndependentCredential"))
@@ -58,10 +55,10 @@ class MultiCredentialPasswordCreationGuardTest {
     fun batchEditorKeepsOnlyCustomFieldsCommonAndScopesPersonalMetadataPerCredential() {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/screens/AddEditPasswordScreen.kt"
-        ).readSourceText()
+        ).readText()
         val viewModel = projectFile(
             "app/src/main/java/takagi/ru/monica/viewmodel/PasswordViewModel.kt"
-        ).readSourceText()
+        ).readText()
 
         assertTrue(screen.contains("CredentialMetadataDraft"))
         assertTrue(screen.contains("credentialMetadataDrafts"))
@@ -69,13 +66,13 @@ class MultiCredentialPasswordCreationGuardTest {
         assertTrue(screen.contains("firstCredential.notes = notes"))
         assertTrue(screen.contains("showCredentialEditorContent && shouldShowCategoryAndNotes()"))
         assertTrue(screen.contains("showCredentialEditorContent && shouldShowPersonalInfo()"))
-        assertTrue(screen.contains("showCredentialEditorContent && shouldShowAddressInfo()"))
+        assertTrue(screen.contains("PasswordContentSection.ADDRESS -> shouldShowAddressInfo() || shouldShowPersonalInfo()"))
         assertTrue(screen.contains("showCredentialEditorContent && shouldShowPaymentInfo()"))
         assertTrue(screen.contains("isMultiCredentialMode && showCredentialEditorContent"))
         assertTrue(screen.contains("credentialCustomFields"))
         assertTrue(screen.contains("mergePasswordCredentialCustomFields("))
         assertTrue(viewModel.contains("credentialFields = credentials[credentialIndex].customFields"))
-        assertTrue(viewModel.contains("customFields = credentialCustomFields"))
+        assertTrue(viewModel.contains("requestedCustomFields = credentialCustomFields"))
     }
 
     private fun projectFile(relativePath: String): File {

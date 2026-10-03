@@ -1299,6 +1299,7 @@ fun SteamScreen(
             onOpenStorageSourceMenu = { showStorageSourceMenu = true },
             topActionsMenu = {
                 SteamTopActionsMenu(
+                    storageSource = uiState.storageSource,
                     expanded = showTopActionsMenu,
                     onDismissRequest = { showTopActionsMenu = false },
                     selectedSection = selectedSection,
@@ -1923,6 +1924,7 @@ private fun SteamDetailTopBar(
 
 @Composable
 private fun SteamTopActionsMenu(
+    storageSource: SteamStorageSource,
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     selectedSection: SteamSection,
@@ -1937,6 +1939,12 @@ private fun SteamTopActionsMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest
     ) {
+        takagi.ru.monica.ui.screens.DatabaseManagerMenuItem(when (storageSource) {
+            is SteamStorageSource.Mdbx -> takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.MDBX, storageSource.databaseId)
+            is SteamStorageSource.KeePass -> takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.KEEPASS, storageSource.databaseId)
+            else -> null
+        }, onDismissRequest)
+
         SteamSection.entries.forEach { section ->
             DropdownMenuItem(
                 text = {

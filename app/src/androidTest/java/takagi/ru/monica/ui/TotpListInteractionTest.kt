@@ -63,6 +63,8 @@ class TotpListInteractionTest {
         val visible = mutableStateOf(true)
         val selection = AtomicReference(Selection())
         val singleDeletes = mutableListOf<Long>()
+        var passkeyScans = 0
+        var authenticatorScans = 0
         val first = "PR138 Alpha"
         val second = "PR138 Beta"
         try {
@@ -94,7 +96,8 @@ class TotpListInteractionTest {
                         onAuthenticatorLayoutModeChange = {},
                         onTotpClick = {},
                         onDeleteTotp = { singleDeletes += it.id },
-                        onQuickScanTotp = {},
+                        onQuickScanTotp = { authenticatorScans++ },
+                        onScanFidoQr = { passkeyScans++ },
                         onSelectionModeChange = { active, count, exit, _, _, delete ->
                             selection.set(Selection(active, count, exit, delete))
                         }
@@ -103,6 +106,19 @@ class TotpListInteractionTest {
             }
             awaitCard(first)
             awaitCard(second)
+            compose.onAllNodesWithContentDescription(context.getString(R.string.more_options)).onFirst().performClick()
+            compose.onNodeWithText(context.getString(R.string.passkey_scan_qr_menu_title)).assertIsDisplayed()
+            val menu = compose.onNode(isPopup()).captureToImage().asAndroidBitmap()
+            File(context.filesDir, "passkey-scan-totp-${layout.name}.png").outputStream().use {
+                menu.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            menu.recycle()
+            compose.onNodeWithText(context.getString(R.string.passkey_scan_qr_menu_title)).performClick()
+            compose.onNode(isPopup()).assertDoesNotExist()
+            compose.runOnIdle { assertEquals(1, passkeyScans); assertEquals(0, authenticatorScans) }
+            compose.onAllNodesWithContentDescription(context.getString(R.string.more_options)).onFirst().performClick()
+            compose.onNodeWithText(context.getString(R.string.quick_action_scan_qr)).performClick()
+            compose.runOnIdle { assertEquals(1, passkeyScans); assertEquals(1, authenticatorScans) }
             // Measure the real list wrappers, not a fixture with its own spacing.
             val firstBounds = card(first).fetchSemanticsNode().boundsInRoot
             val secondBounds = card(second).fetchSemanticsNode().boundsInRoot

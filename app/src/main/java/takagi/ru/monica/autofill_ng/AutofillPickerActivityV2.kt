@@ -2,6 +2,7 @@ package takagi.ru.monica.autofill_ng
 
 import takagi.ru.monica.utils.AppLocaleStringResolver
 
+import takagi.ru.monica.data.passwordProjectKey
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -1588,6 +1589,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
 private data class AutofillPickerLoadedData(
     val suggestedPasswords: List<PasswordEntry>,
     val allPasswords: List<PasswordEntry>,
+    val displayUsernames: Map<Long, String>,
     val allBankCards: List<SecureItem>,
     val allDocuments: List<SecureItem>,
     val allBillingAddresses: List<SecureItem>
@@ -1625,6 +1627,7 @@ private fun AutofillPickerContent(
     var selectedPassword by remember { mutableStateOf<PasswordEntry?>(null) }
     
     var allPasswords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
+    var displayUsernames by remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
     var suggestedPasswords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
     var searchedPasswords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
     var allBankCards by remember { mutableStateOf<List<SecureItem>>(emptyList()) }
@@ -1948,13 +1951,18 @@ private fun AutofillPickerContent(
             val suggestedIds = args.suggestedPasswordIds?.toList() ?: emptyList()
             val loadedData = withContext(Dispatchers.IO) {
                 val embeddedWallet = walletFillRepository.loadEmbeddedItems()
+                val entries = repository.getAllPasswordEntries().first().filterNot { it.isKeyCredential() }
                 AutofillPickerLoadedData(
                     suggestedPasswords = if (suggestedIds.isNotEmpty()) {
                         repository.getPasswordsByIds(suggestedIds)
                     } else {
                         emptyList()
                     },
-                    allPasswords = repository.getAllPasswordEntries().first().filterNot { it.isKeyCredential() },
+                    allPasswords = entries,
+                    // Resolve legacy encrypted usernames once on IO. Presentation must never
+                    // replace the original record passed to copy/fill/save actions.
+                    displayUsernames = entries.associate { entry -> entry.id to
+                        runCatching { securityManager.decryptDataIfMonicaCiphertext(entry.username) }.getOrDefault("") },
                     allBankCards = secureItemRepository.getActiveItemsByType(ItemType.BANK_CARD).first() +
                         embeddedWallet.filter { it.itemType == ItemType.BANK_CARD },
                     allDocuments = secureItemRepository.getActiveItemsByType(ItemType.DOCUMENT).first() +
@@ -1965,6 +1973,7 @@ private fun AutofillPickerContent(
             }
             suggestedPasswords = loadedData.suggestedPasswords
             allPasswords = loadedData.allPasswords
+            displayUsernames = loadedData.displayUsernames
             allBankCards = loadedData.allBankCards
             allDocuments = loadedData.allDocuments
             allBillingAddresses = loadedData.allBillingAddresses
@@ -2089,6 +2098,12 @@ private fun AutofillPickerContent(
         }
     }
 
+    val credentialNumbers = remember(allPasswords, displayUsernames) {
+        allPasswords.groupBy { it.passwordProjectKey() to displayUsernames[it.id] }.values
+            .filter { it.size > 1 }.flatMap { group ->
+                group.sortedBy { it.id }.mapIndexed { index, entry -> entry.id to index + 1 }
+            }.toMap()
+    }
     val basePasswords = if (searchQuery.isBlank()) allPasswords else searchedPasswords
 
     val sourceFilteredPasswords by remember(
@@ -2824,6 +2839,8 @@ private fun AutofillPickerContent(
                                             ) { password ->
                                                 SuggestedPasswordListItem(
                                                     password = password,
+                                                    displayUsernameOverride = displayUsernames[password.id],
+                                                    credentialLabel = credentialNumbers[password.id]?.let { stringResource(R.string.project_credential_password_number, it) },
                                                     iconCardsEnabled = iconCardsEnabled,
                                                     showSmartCopyOptions = hasNotificationPermission,
                                                     onPrepareAutofill = onPrepareAutofill,
@@ -2879,6 +2896,8 @@ private fun AutofillPickerContent(
                                         ) { password ->
                                             PasswordListItem(
                                                 password = password,
+                                                displayUsernameOverride = displayUsernames[password.id],
+                                                    credentialLabel = credentialNumbers[password.id]?.let { stringResource(R.string.project_credential_password_number, it) },
                                                 showDropdownMenu = true,
                                                 iconCardsEnabled = iconCardsEnabled,
                                                 showSmartCopyOptions = hasNotificationPermission,

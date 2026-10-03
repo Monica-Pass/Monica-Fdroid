@@ -974,6 +974,10 @@ interface PasswordEntryDao {
     @Transaction
     @Query("SELECT * FROM password_entries WHERE bitwarden_vault_id IS NULL AND keepassDatabaseId IS NULL AND mdbx_database_id IS NULL AND isDeleted = 0 AND isArchived = 0 ORDER BY isFavorite DESC, updatedAt DESC")
     suspend fun getAllLocalEntries(): List<PasswordEntry>
+
+    /** Backups must include archived records; trash is exported separately. */
+    @Query("SELECT * FROM password_entries WHERE bitwarden_vault_id IS NULL AND keepassDatabaseId IS NULL AND mdbx_database_id IS NULL AND isDeleted = 0 ORDER BY isFavorite DESC, updatedAt DESC")
+    suspend fun getLocalBackupEntries(): List<PasswordEntry>
     
     /**
      * 获取所有 KeePass 条目

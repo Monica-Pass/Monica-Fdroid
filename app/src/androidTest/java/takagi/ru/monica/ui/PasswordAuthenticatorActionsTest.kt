@@ -32,7 +32,7 @@ class PasswordAuthenticatorActionsTest {
     private fun show(value: TotpData = data) {
         compose.setContent { MaterialTheme {
             PasswordAuthenticatorCard(PasswordEntry(id = 1, title = "Fixture", username = "alice", password = "", website = ""),
-                value, AppSettings(validatorUnifiedProgressBar = UnifiedProgressBarMode.ENABLED), {})
+                value, AppSettings(validatorUnifiedProgressBar = UnifiedProgressBarMode.ENABLED), {}, connected = true)
         } }
     }
     private fun card() = compose.onNodeWithTag("password_authenticator_card")

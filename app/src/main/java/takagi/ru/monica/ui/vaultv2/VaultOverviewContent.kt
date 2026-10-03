@@ -53,6 +53,7 @@ internal fun VaultOverviewContent(
     onTrash: () -> Unit,
     onAllItems: () -> Unit,
     onSearch: () -> Unit,
+    onScanFidoQr: () -> Unit,
     onUnlock: () -> Unit,
     selection: VaultOverviewSelectionState,
     onRequestDeleteItem: (VaultV2Item) -> Unit,
@@ -164,6 +165,7 @@ internal fun VaultOverviewContent(
         onSelectScope = onSelectScope, onOpenSource = onOpenSource, onOpenItem = onOpenItem,
         onOpenType = onOpenType, onOpenFolder = onOpenFolder, onFavorites = onFavorites,
         onArchive = onArchive, onTrash = onTrash, onAllItems = onAllItems, onSearch = onSearch,
+        onScanFidoQr = onScanFidoQr,
         onUnlock = onUnlock, modifier = Modifier.fillMaxSize(),
         selection = selection, onRequestDeleteItem = onRequestDeleteItem,
     )

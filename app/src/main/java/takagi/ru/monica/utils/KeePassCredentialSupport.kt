@@ -15,6 +15,13 @@ data class KeePassCredentialCandidate(
 )
 
 object KeePassCredentialSupport {
+    /** kotpass 0.10 masks raw 32-byte key data in place; never give it caller-owned bytes. */
+    fun buildExactCredentials(password: String, keyFileBytes: ByteArray?): Credentials = when {
+        keyFileBytes == null -> Credentials.from(EncryptedValue.fromString(password))
+        password.isBlank() -> Credentials.from(keyFileBytes.copyOf())
+        else -> Credentials.from(EncryptedValue.fromString(password), keyFileBytes.copyOf())
+    }
+
     fun buildCredentialCandidates(password: String, keyFileBytes: ByteArray?): List<KeePassCredentialCandidate> {
         if (keyFileBytes == null) {
             return listOf(
@@ -37,7 +44,7 @@ object KeePassCredentialSupport {
                     runCatching {
                         KeePassCredentialCandidate(
                             label = "$label/key-only",
-                            credentials = Credentials.from(keyBytes)
+                            credentials = Credentials.from(keyBytes.copyOf())
                         )
                     }.getOrNull()?.let { candidates += it }
                 }
@@ -47,7 +54,7 @@ object KeePassCredentialSupport {
                         runCatching {
                             KeePassCredentialCandidate(
                                 label = "$label/empty-password+key",
-                                credentials = Credentials.from(EncryptedValue.fromString(""), keyBytes)
+                                credentials = Credentials.from(EncryptedValue.fromString(""), keyBytes.copyOf())
                             )
                         }.getOrNull()?.let { candidates += it }
                     }
@@ -58,7 +65,7 @@ object KeePassCredentialSupport {
                     runCatching {
                         KeePassCredentialCandidate(
                             label = "$label/password+key",
-                            credentials = Credentials.from(EncryptedValue.fromString(password), keyBytes)
+                            credentials = Credentials.from(EncryptedValue.fromString(password), keyBytes.copyOf())
                         )
                     }.getOrNull()?.let { candidates += it }
                 }

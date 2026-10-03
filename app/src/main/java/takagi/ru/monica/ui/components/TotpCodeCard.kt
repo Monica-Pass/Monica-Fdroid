@@ -101,6 +101,7 @@ fun TotpCodeCard(
     immersiveBackgroundVisible: Boolean = backgroundContent != null,
     cardVerticalPadding: Dp? = null,
     showContentDetails: Boolean = false,
+    showIdentity: Boolean = true,
     cardShape: androidx.compose.ui.graphics.Shape = MonicaItemCardShape,
     codeSectionSpacing: Dp = 8.dp,
     progressSectionSpacing: Dp = 4.dp
@@ -647,7 +648,8 @@ fun TotpCodeCard(
                     cardVerticalPadding ?: if (uniformAuthenticatorLayout) 12.dp else 10.dp
                 )
             ) {
-            // 标题和菜单
+            // Standalone cards show identity; embedded credentials already identify the account.
+            if (showIdentity) {
             Row(
                 modifier = Modifier.fillMaxWidth().then(
                     if (uniformAuthenticatorLayout) Modifier.height(headerHeight) else Modifier
@@ -922,6 +924,7 @@ fun TotpCodeCard(
             }
 
             Spacer(modifier = Modifier.height(codeSectionSpacing))
+            }
 
             // 验证码显示
             Row(
@@ -1022,7 +1025,7 @@ fun TotpCodeCard(
                             )
                         }
                     }
-                } else {
+                } else if (showIdentity) {
                     IconButton(
                         onClick = { withReadableTotp { if (onActionMenu != null) onActionMenu() else onCopyCode(codeToCopy) } }
                     ) {
@@ -1032,6 +1035,12 @@ fun TotpCodeCard(
                         )
                     }
                 }
+                if (!showIdentity && onActionMenu != null) {
+                    IconButton(onClick = onActionMenu) {
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
+                    }
+                }
+
             }
             
             Spacer(modifier = Modifier.height(progressSectionSpacing))

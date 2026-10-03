@@ -79,6 +79,7 @@ fun PasswordAuthenticatorCard(
     data: TotpData,
     settings: AppSettings,
     onEdit: () -> Unit,
+    connected: Boolean = false,
 ) {
     val context = LocalContext.current
     // This item only supplies display identity to the existing renderer. It is never persisted.
@@ -98,10 +99,11 @@ fun PasswordAuthenticatorCard(
     Box {
         TotpCodeCard(
             item = displayItem, parsedTotpData = data,
-            appSettings = settings.copy(validatorUnifiedProgressBar = takagi.ru.monica.data.UnifiedProgressBarMode.DISABLED),
+            appSettings = settings.copy(validatorUnifiedProgressBar = takagi.ru.monica.data.UnifiedProgressBarMode.DISABLED,
+                iconCardsEnabled = settings.iconCardsEnabled && !connected),
             modifier = Modifier.fillMaxWidth().testTag("password_authenticator_card"),
-            cardVerticalPadding = 16.dp, showContentDetails = true, onEdit = onEdit,
-            cardShape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            cardVerticalPadding = 16.dp, showContentDetails = true, showIdentity = !connected, onEdit = onEdit,
+            cardShape = if (connected) entryGroupShape(1, 2) else androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
             onCardClick = { menuOpen = true }, onLongClick = { menuOpen = true },
             onActionMenu = { menuOpen = true }, onCopyCode = { menuOpen = true },
         )

@@ -249,13 +249,13 @@ open class MonicaInputMethodService : InputMethodService() {
                                 requestRefreshVaultEntries()
                             },
                             onInsertPassword = { entry ->
-                                resolveFillableField(entry.password)?.let(::commitExternalText)
+                                insertCurrentCredential(entry, "password")
                             },
                             onInsertUsername = { entry ->
-                                resolveFillableField(entry.username)?.let(::commitExternalText)
+                                insertCurrentCredential(entry, "username")
                             },
                             onInsertWebsite = { entry ->
-                                resolveFillableField(entry.website)?.let(::commitExternalText)
+                                insertCurrentCredential(entry, "website")
                             },
                             onSmartFillPassword = ::handleSmartFillPassword,
                             onInsertPasswordTotp = ::insertCurrentPasswordTotp,
@@ -1658,16 +1658,40 @@ open class MonicaInputMethodService : InputMethodService() {
         currentInputConnection?.commitText(text, 1)
     }
 
-    private fun handleSmartFillPassword(entry: MonicaImePasswordEntry) {
-        clearPendingDeleteUndo()
-        val username = resolveFillableField(entry.username).orEmpty()
-        val password = resolveFillableField(entry.password).orEmpty()
-        val values = if (isCurrentFieldLikelyPassword()) {
-            listOf(password)
-        } else {
-            listOf(username, password)
-        }.filter { it.isNotBlank() }
-        performSequentialImeFill(values)
+    private fun handleSmartFillPassword(entry: MonicaImePasswordEntry) = insertCurrentCredential(entry, null)
+
+    /** Resolve only the selected row; edits/deletes must not fill stale cached credentials. */
+    private fun insertCurrentCredential(entry: MonicaImePasswordEntry, field: String?) {
+        val target = inputGeneration
+        val connection = currentInputConnection ?: return
+        val passwordField = isCurrentFieldLikelyPassword()
+        serviceScope.launch {
+            val settings = settingsManager.settingsFlow.first()
+            if (!updateUnlockState(settings)) return@launch
+            val values = try {
+                withContext(Dispatchers.IO) {
+                    val current = database.passwordEntryDao().getImePasswordRowById(entry.id) ?: return@withContext emptyList()
+                    if (current.keepassDatabaseId != entry.keepassDatabaseId || current.mdbxDatabaseId != entry.mdbxDatabaseId ||
+                        current.bitwardenVaultId != entry.bitwardenVaultId) return@withContext emptyList()
+                    val selected = when (field) {
+                        "username" -> listOf(current.username)
+                        "password" -> listOf(current.password)
+                        "website" -> listOf(current.website)
+                        else -> if (passwordField) listOf(current.password) else listOf(current.username, current.password)
+                    }
+                    selected.mapNotNull(::resolveFillableField).filter { it.isNotBlank() }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { emptyList() }
+            if (target != inputGeneration || !inputViewVisible || currentInputConnection !== connection ||
+                !updateUnlockState(settings)) return@launch
+            if (values.isEmpty()) {
+                uiState.update { it.copy(errorMessage = strings.get(takagi.ru.monica.R.string.ime_custom_field_unavailable)) }
+                return@launch
+            }
+            clearPendingDeleteUndo()
+            if (field != null) connection.commitText(values.single(), 1) else performSequentialImeFill(values)
+        }
     }
 
     private fun handleSmartFillCardWallet(entry: MonicaImeCardWalletEntry) {

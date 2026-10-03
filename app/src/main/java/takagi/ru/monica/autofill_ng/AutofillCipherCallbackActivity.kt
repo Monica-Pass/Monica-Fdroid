@@ -258,6 +258,10 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
             return
         }
 
+        if (passwordEntry.isDeleted || passwordEntry.isArchived) {
+            cancelAndFinish("credential_no_longer_available")
+            return
+        }
         if (rejectBlockedRequest()) return
         val accountValue = AccountFillPolicy.resolveAccountIdentifier(passwordEntry, securityManager)
         val decryptedPassword = AutofillSecretResolver.decryptPasswordOrNull(

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Manage original information</string>
+    <string name="mdbx_native_summary">Browse folders, entries and original fields</string>
+    <string name="mdbx_native_search">Search names or types</string>
+    <string name="mdbx_native_readonly">Original fields are read-only. Rename entries from the list without changing their contents.</string>
+    <string name="mdbx_native_schema">Data format version: %1$d</string>
+    <string name="mdbx_native_failed">The operation could not be completed. Refresh to check the saved state before trying again.</string>
+    <string name="mdbx_native_snapshot_readonly">Read-only snapshot structure. Restoring is available from the snapshot menu.</string>
+</resources>

@@ -1198,6 +1198,13 @@ class WebDavHelper(
      * 
      */
     private fun saveConfig() {
+        // Keep the old configuration until all protected fields are committed together.
+        securityManager.putProtectedStrings(mapOf(
+            SECURE_KEY_SERVER_URL to serverUrl.ifBlank { null },
+            SECURE_KEY_USERNAME to username.ifBlank { null },
+            SECURE_KEY_PASSWORD to password.ifBlank { null },
+            SECURE_KEY_ENCRYPTION_PASSWORD to encryptionPassword.ifBlank { null }
+        ))
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().apply {
             putBoolean(KEY_ENABLE_ENCRYPTION, enableEncryption)
@@ -1207,13 +1214,6 @@ class WebDavHelper(
             remove(KEY_ENCRYPTION_PASSWORD)
             apply()
         }
-        securityManager.putProtectedString(SECURE_KEY_SERVER_URL, serverUrl.ifBlank { null })
-        securityManager.putProtectedString(SECURE_KEY_USERNAME, username.ifBlank { null })
-        securityManager.putProtectedString(SECURE_KEY_PASSWORD, password.ifBlank { null })
-        securityManager.putProtectedString(
-            SECURE_KEY_ENCRYPTION_PASSWORD,
-            encryptionPassword.ifBlank { null }
-        )
     }
     
     /**
@@ -3407,7 +3407,10 @@ class WebDavHelper(
                                     nativeTokens += takagi.ru.monica.transfer.NativeTokenBackupAssets.decode(tempFile.readText(Charsets.UTF_8))
                                     takagi.ru.monica.transfer.NativeTokenBackupAssets.validate(nativeTokens)
                                 }
-                                isDatabaseExport && normalizedEntryName == "trash/trash_passwords.json" -> {
+                                (isDatabaseExport || !importDataOnly) &&
+                                    (normalizedEntryName == "trash/trash_passwords.json" || normalizedEntryName.endsWith("/trash/trash_passwords.json")) -> {
+                                    // Stage trash alongside live rows so replacement commits both
+                                    // together. Older full backups also use this root-level path.
                                     val rows = org.json.JSONArray(tempFile.readText(Charsets.UTF_8))
                                     for (i in 0 until rows.length()) {
                                         val row = rows.getJSONObject(i)
@@ -3420,7 +3423,8 @@ class WebDavHelper(
                                         restoredPasswordCount++
                                     }
                                 }
-                                isDatabaseExport && normalizedEntryName == "trash/trash_secure_items.json" -> {
+                                (isDatabaseExport || !importDataOnly) &&
+                                    (normalizedEntryName == "trash/trash_secure_items.json" || normalizedEntryName.endsWith("/trash/trash_secure_items.json")) -> {
                                     val rows = org.json.JSONArray(tempFile.readText(Charsets.UTF_8))
                                     for (i in 0 until rows.length()) {
                                         val row = rows.getJSONObject(i)

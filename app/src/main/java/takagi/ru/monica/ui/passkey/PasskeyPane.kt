@@ -33,6 +33,7 @@ internal fun PasskeyPane(
     onDeletePasskey: (PasskeyEntry) -> Unit,
     showStandaloneSettingsEntry: Boolean = false,
     onOpenStandaloneSettings: () -> Unit = {},
+    onScanFidoQr: () -> Unit,
     onNavigateToAuthenticator: () -> Unit
 ) {
     if (isCompactWidth) {
@@ -45,6 +46,7 @@ internal fun PasskeyPane(
             },
             showStandaloneSettingsEntry = showStandaloneSettingsEntry,
             onOpenStandaloneSettings = onOpenStandaloneSettings,
+            onScanFidoQr = onScanFidoQr,
             onNavigateToAuthenticator = onNavigateToAuthenticator
         )
     } else {
@@ -61,6 +63,7 @@ internal fun PasskeyPane(
                     onPasskeyClick = onPasskeyOpen,
                     showStandaloneSettingsEntry = showStandaloneSettingsEntry,
                     onOpenStandaloneSettings = onOpenStandaloneSettings,
+                    onScanFidoQr = onScanFidoQr,
                     onNavigateToAuthenticator = onNavigateToAuthenticator
                 )
             }

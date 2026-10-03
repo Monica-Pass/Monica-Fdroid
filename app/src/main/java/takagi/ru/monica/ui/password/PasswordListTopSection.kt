@@ -180,7 +180,7 @@ internal fun PasswordListTopSection(
     }
     val onOpenKeePassNativeManager: () -> Unit = {
         selectedKeePassDatabaseId?.let { databaseId ->
-            localKeePassViewModel.openNativeManager(databaseId)
+            takagi.ru.monica.ui.screens.DatabaseManagerNavigation.open(takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.KEEPASS, databaseId))
         }
     }
     Column {
@@ -401,6 +401,12 @@ internal fun PasswordListTopSection(
                                         }
                                     )
                                 }
+                            }
+                            if (selectedMdbxDatabaseId != null) {
+                                KeepassNativeManagerTopActionsMenuItem(onClick = {
+                                    onTopActionsMenuExpandedChange(false)
+                                    takagi.ru.monica.ui.screens.DatabaseManagerNavigation.open(takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.MDBX, selectedMdbxDatabaseId))
+                                })
                             }
                             if (
                                 selectedMdbxDatabaseId != null &&

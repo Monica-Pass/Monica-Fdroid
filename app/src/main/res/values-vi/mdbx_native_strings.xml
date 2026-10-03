@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Quản lý thông tin gốc</string>
+    <string name="mdbx_native_summary">Duyệt thư mục, mục và trường gốc</string>
+    <string name="mdbx_native_search">Tìm tên hoặc loại</string>
+    <string name="mdbx_native_readonly">Các trường gốc chỉ đọc. Đổi tên mục trong danh sách không thay đổi nội dung.</string>
+    <string name="mdbx_native_schema">Phiên bản định dạng: %1$d</string>
+    <string name="mdbx_native_failed">Không thể hoàn tất. Hãy làm mới để kiểm tra trạng thái đã lưu trước khi thử lại.</string>
+    <string name="mdbx_native_snapshot_readonly">Cấu trúc ảnh chụp chỉ đọc. Dùng menu ảnh chụp để khôi phục.</string>
+</resources>

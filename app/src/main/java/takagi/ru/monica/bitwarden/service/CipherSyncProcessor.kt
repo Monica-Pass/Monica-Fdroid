@@ -342,6 +342,8 @@ class CipherSyncProcessor(
         val totp = decryptString(login.totp, symmetricKey) ?: ""
         val parsedUris = parseLoginUris(login.uris, symmetricKey)
         val customFields = decryptedFields.associate { it.name to it.value }
+        val remoteProjectId = customFields[takagi.ru.monica.data.model.ProjectCredentialGroup.FIELD]
+            ?.let(takagi.ru.monica.data.model.ProjectCredentialGroup::parse)?.projectId
         val isSteamMaFileEntry = SteamExternalMaFileContract.isMarked(
             decryptedFields.map { it.name to it.value }
         )
@@ -393,6 +395,7 @@ class CipherSyncProcessor(
             // 创建新条目（不吞并本地同名条目，保持数据源独立）
             val newEntry = PasswordEntry(
                 title = name,
+                passwordGroupId = remoteProjectId,
                 website = parsedUris.website,
                 username = username,
                 password = encryptedPassword,
@@ -433,6 +436,7 @@ class CipherSyncProcessor(
                 passwordEntryDao.update(
                     existing.copy(
                         title = name,
+                        passwordGroupId = remoteProjectId ?: existing.passwordGroupId,
                         website = if (existing.isApiKeyEntry() || remoteLoginType == takagi.ru.monica.data.model.ApiKeyEntryFields.TYPE)
                             parsedUris.website else parsedUris.website.ifBlank { existing.website },
                         username = username,
@@ -496,6 +500,7 @@ class CipherSyncProcessor(
             
             val updated = existing.copy(
                 title = name,
+                passwordGroupId = remoteProjectId ?: existing.passwordGroupId,
                 website = if (existing.isApiKeyEntry() || remoteLoginType == takagi.ru.monica.data.model.ApiKeyEntryFields.TYPE)
                     parsedUris.website else parsedUris.website.ifBlank { existing.website },
                 username = username,

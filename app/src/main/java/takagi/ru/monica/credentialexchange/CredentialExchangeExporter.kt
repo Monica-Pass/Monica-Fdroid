@@ -24,7 +24,7 @@ import takagi.ru.monica.utils.PasswordWebsiteCodec
 
 class CredentialExchangeExporter(private val context: Context) {
     class Prepared(val json: String, val passwordCount: Int, val passkeyCount: Int, val skippedPasskeys: Int,
-        val skippedSharedItems: Int = 0) {
+        val skippedSharedItems: Int = 0, val skippedOtps: Int = 0) {
         override fun toString() = "Prepared credential exchange (<redacted>)"
     }
 
@@ -51,6 +51,8 @@ class CredentialExchangeExporter(private val context: Context) {
                 PasswordEntry(id = id, title = entry.title,
                     username = entry.username, password = entry.password, website = entry.url, notes = entry.notes,
                     keepassDatabaseId = destination.databaseId, loginType = entry.loginType,
+                    authenticatorKey = entry.authenticatorKey,
+                    createdAt = Date(entry.createdAtMillis ?: 0L), updatedAt = Date(entry.updatedAtMillis ?: 0L),
                     appPackageName = entry.appPackageName, appName = entry.appName)
             }
             passkeys = repository.readPasskeyEntries(destination.databaseId).getOrThrow()
@@ -68,6 +70,7 @@ class CredentialExchangeExporter(private val context: Context) {
                     }
                 PasswordEntry(id = id, title = stored.title, username = data.optString("username"),
                     password = data.getString("password_plain"), website = data.optString("website"),
+                    authenticatorKey = data.optString("authenticator_key"),
                     notes = data.optString("notes"), loginType = data.optString("login_type", "PASSWORD"),
                         sshKeyData = data.readMdbxSshKeyData(),
                     appPackageName = data.optString("app_package_name"), appName = data.optString("app_name"))
@@ -115,13 +118,21 @@ class CredentialExchangeExporter(private val context: Context) {
         var skipped = 0
         var passwordCount = 0
         var passkeyCount = 0
+        var skippedOtps = 0
         if ("basic-auth" in requestedTypes) passwords.filter { it.loginType == "PASSWORD" }.forEach { entry ->
+            val nativePlaintext = destination.keepassId != null || destination.mdbxId != null
+            fun plaintext(value: String) = if (nativePlaintext) value else security.decryptDataIfMonicaCiphertext(value)
+            val username = plaintext(entry.username)
+            val otpPayload = plaintext(entry.authenticatorKey)
+            val otp = if ("totp" in requestedTypes) CxfTotpExport.fromPayload(otpPayload, entry.title, username) else null
+            if (otpPayload.isNotBlank() && otp == null) skippedOtps++
+            // One basic-auth per Item: receivers often store only one login per item.
+            // Keep its OTP beside that exact password, even within a multi-account project.
             items += CxfCredentialCodec.Item(
                 id = "password:${entry.id}", title = entry.title,
                 urls = PasswordWebsiteCodec.parse(entry.website).filter { it.isNotBlank() },
-                logins = listOf(CxfCredentialCodec.Login(entry.username,
-                    if (destination.keepassId != null || destination.mdbxId != null) entry.password
-                    else security.decryptDataIfMonicaCiphertext(entry.password))),
+                logins = listOf(CxfCredentialCodec.Login(username, plaintext(entry.password))),
+                totp = otp,
                 notes = entry.notes, createdAt = entry.createdAt.time, modifiedAt = entry.updatedAt.time, favorite = entry.isFavorite,
                 androidApps = appScopes[entry.id] ?: buildJsonArray {
                     entry.linkedAppBindings().forEach { app -> addJsonObject {
@@ -161,6 +172,6 @@ class CredentialExchangeExporter(private val context: Context) {
             } finally { pkcs8.fill(0) }
         }
         val json = CxfCredentialCodec.encode(items, "Monica", requestedTypes)
-        Prepared(json, passwordCount, passkeyCount, skipped, skippedSharedItems)
+        Prepared(json, passwordCount, passkeyCount, skipped, skippedSharedItems, skippedOtps)
     }
 }

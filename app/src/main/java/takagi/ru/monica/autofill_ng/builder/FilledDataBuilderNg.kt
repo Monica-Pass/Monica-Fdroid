@@ -14,6 +14,7 @@ import takagi.ru.monica.autofill_ng.model.FilledPartition
 import takagi.ru.monica.autofill_ng.model.toAutofillCipherLogin
 import takagi.ru.monica.autofill_ng.AutofillSecretResolver
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.data.passwordProjectKey
 import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.security.SessionManager
 import takagi.ru.monica.utils.SettingsManager
@@ -75,13 +76,25 @@ class FilledDataBuilderNg(
         val filledPartitions = if (loginViews.isEmpty()) {
             emptyList()
         } else {
-            val ciphers = passwords.mapNotNull { entry ->
+            // Presentation only: keep each real row ID and never combine credentials.
+            val resolved = passwords.mapNotNull { entry ->
                 buildCipherForResponse(
                     entry = entry,
                     fallbackWebsite = request.uri.orEmpty(),
                     requireAuthentication = requireAuthentication,
                     isVaultLocked = isVaultLocked
-                )
+                )?.let { entry to it }
+            }
+            // Legacy usernames may be encrypted with different nonces. Group the resolved
+            // account name, without decrypting credentials a second time on the suggestion path.
+            val numbers = resolved.groupBy { (entry, cipher) -> entry.passwordProjectKey() to cipher.username }.values
+                .filter { it.size > 1 }.flatMap { group -> group.sortedBy { it.first.id }
+                    .mapIndexed { index, row -> row.first.id to index + 1 } }.toMap()
+            val ciphers = resolved.map { (entry, cipher) ->
+                numbers[entry.id]?.let { number ->
+                    cipher.copy(subtitle = listOf(cipher.subtitle, context.getString(takagi.ru.monica.R.string.project_credential_password_number, number))
+                        .filter { it.isNotBlank() }.joinToString(" · "))
+                } ?: cipher
             }
 
             ciphers

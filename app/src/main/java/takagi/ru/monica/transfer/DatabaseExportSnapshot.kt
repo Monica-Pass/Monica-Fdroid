@@ -148,7 +148,8 @@ internal class DatabaseExportSnapshotLoader(context: Context) {
                         val owner = ownerByUuid[node.entry.uuid.toString()] ?: continue
                         for (ref in node.entry.binaries) {
                             val data = session.database.binaries[ref.hash] ?: error("Missing KDBX attachment")
-                            attachments += ExportAttachment(owner, ref.name, "application/octet-stream",
+                            attachments += ExportAttachment(owner, ref.name,
+                                java.net.URLConnection.guessContentTypeFromName(ref.name) ?: "application/octet-stream",
                                 0L, 0L) { output -> data.inputStream().use { copyAttachmentPayload(it, output) } }
                         }
                     }

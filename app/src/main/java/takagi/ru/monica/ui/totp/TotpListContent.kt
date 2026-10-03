@@ -183,6 +183,7 @@ import takagi.ru.monica.ui.main.navigation.toBottomNavItem
 import takagi.ru.monica.ui.main.layout.AdaptiveMainScaffold
 import takagi.ru.monica.ui.password.buildAdditionalInfoPreview
 import takagi.ru.monica.ui.password.MultiPasswordEntryCard
+import takagi.ru.monica.ui.password.PasskeyScanTopActionsMenuItem
 import takagi.ru.monica.ui.password.PasswordTopActionsDropdownMenu
 import takagi.ru.monica.ui.password.StackedPasswordGroup
 import takagi.ru.monica.ui.password.PasswordEntryCard
@@ -223,6 +224,7 @@ fun TotpListContent(
     onTotpClick: (Long) -> Unit,
     onDeleteTotp: (takagi.ru.monica.data.SecureItem) -> Unit,
     onQuickScanTotp: () -> Unit,
+    onScanFidoQr: () -> Unit,
     onSelectionModeChange: (
         isSelectionMode: Boolean,
         selectedCount: Int,
@@ -795,6 +797,11 @@ fun TotpListContent(
                         expanded = showTopActionsMenu,
                         onDismissRequest = { showTopActionsMenu = false }
                     ) {
+                        takagi.ru.monica.ui.screens.DatabaseManagerMenuItem(
+                            selectedKeePassDatabaseId?.let { takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.KEEPASS, it) }
+                                ?: (currentFilter as? takagi.ru.monica.viewmodel.TotpCategoryFilter.MdbxDatabase)?.let { takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.MDBX, it.databaseId) }
+                        ) { showTopActionsMenu = false }
+
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.quick_action_scan_qr)) },
                                 leadingIcon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
@@ -802,6 +809,10 @@ fun TotpListContent(
                                     showTopActionsMenu = false
                                     onQuickScanTotp()
                                 }
+                            )
+                            PasskeyScanTopActionsMenuItem(
+                                onDismissMenu = { showTopActionsMenu = false },
+                                onScanFidoQr = onScanFidoQr,
                             )
                             val isTileLayout =
                                 appSettings.authenticatorLayoutMode == AuthenticatorLayoutMode.TILE

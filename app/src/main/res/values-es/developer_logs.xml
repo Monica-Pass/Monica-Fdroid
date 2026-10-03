@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Registros de diagnóstico</string>
+    <string name="developer_logs_entry_description">Buscar, filtrar y compartir el informe completo</string>
+    <string name="developer_logs_search">Buscar registros, etiquetas o excepciones</string>
+    <string name="developer_logs_source">Origen: %1$s</string>
+    <string name="developer_logs_hint">Reproduce el problema y actualiza. Un registro de error no siempre indica un fallo de la función.</string>
+    <string name="developer_logs_share_full">Compartir registros</string>
+    <string name="developer_logs_result_count">%1$d de %2$d eventos · Actualizado %3$s</string>
+    <string name="developer_logs_no_matches">No hay coincidencias. Cambia la búsqueda o los filtros.</string>
+    <string name="developer_logs_clear_confirmation">¿Borrar los registros de diagnóstico? Los datos de la bóveda y los ajustes se conservan. Los datos del entorno y los registros nuevos pueden seguir apareciendo.</string>
+    <string name="developer_logs_copy_event">Copiar evento</string>
+    <string name="developer_logs_preview_limit">Vista previa acortada. Copia el evento o comparte el informe completo para ver todo el texto.</string>
+    <string name="developer_logs_expand">Expandir evento</string>
+    <string name="developer_logs_collapse">Contraer evento</string>
+    <string name="developer_logs_security">Seguridad</string>
+    <string name="developer_verification_group">Verificación y compatibilidad</string>
+    <string name="developer_forensics_group">Diagnóstico de sincronización Bitwarden</string>
+    <string name="developer_logs_copy_failed">No se puede copiar este evento. Comparte el archivo de registro completo.</string>
+</resources>

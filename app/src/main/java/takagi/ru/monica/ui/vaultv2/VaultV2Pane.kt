@@ -2756,7 +2756,9 @@ fun VaultV2Pane(
 		}
 	}
 	val onOpenKeePassNativeManager: () -> Unit = {
-		selectedKeePassDatabaseId?.let(localKeePassViewModel::openNativeManager)
+		selectedKeePassDatabaseId?.let { databaseId ->
+            takagi.ru.monica.ui.screens.DatabaseManagerNavigation.open(takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.KEEPASS, databaseId))
+        }
 	}
 
 	BackHandler(
@@ -3353,6 +3355,7 @@ fun VaultV2Pane(
 				onTrash = { overviewSelection.clear(); handleOpenTrashPage() },
 				onAllItems = { openOverviewList() },
 				onSearch = { overviewSelection.clear() },
+				onScanFidoQr = onScanFidoQr,
 				onUnlock = {
 					if (selectedBitwardenVaultId != null) showBitwardenUnlockDialog = true
 					else selectedKeePassDatabaseId?.let(localKeePassViewModel::openNativeManager)
@@ -3574,6 +3577,10 @@ fun VaultV2Pane(
 						expanded = isAuthenticated && isTopActionsMenuExpanded,
 						onDismissRequest = { isTopActionsMenuExpanded = false }
 						) {
+                            takagi.ru.monica.ui.screens.DatabaseManagerMenuItem(selectedMdbxDatabaseId?.let {
+                                takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.MDBX, it)
+                            }) { isTopActionsMenuExpanded = false }
+
 							VaultV2SortMenuItem(appSettings.vaultListSort) {
 								isTopActionsMenuExpanded = false
 								showSortSheet = true

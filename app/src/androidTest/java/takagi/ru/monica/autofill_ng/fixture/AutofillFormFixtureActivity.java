@@ -173,7 +173,7 @@ public class AutofillFormFixtureActivity extends Activity {
         if (fields.containsKey("document")) {
             status.setText("document=" + state(value("document"), "P-12345") + " person=" + state(value("person"), "Test Person")); return;
         }
-        status.setText("user=" + state(value("user"),USERNAME) + " password=" + state(value("password"),PASSWORD)
+        status.setText("user=" + state(value("user"),getIntent().getStringExtra("expectedUsername") == null ? USERNAME : getIntent().getStringExtra("expectedUsername")) + " password=" + state(value("password"),getIntent().getStringExtra("expectedPassword") == null ? PASSWORD : getIntent().getStringExtra("expectedPassword"))
                 + " otp=" + state(value("otp"),"unused") + " other=" + state(value("other"),"unused"));
     }
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">元の情報を管理</string>
+    <string name="mdbx_native_summary">フォルダー、項目、元のフィールドを表示</string>
+    <string name="mdbx_native_search">名前や種類を検索</string>
+    <string name="mdbx_native_readonly">元のフィールドは読み取り専用です。一覧から名前を変更しても内容は変わりません。</string>
+    <string name="mdbx_native_schema">データ形式のバージョン：%1$d</string>
+    <string name="mdbx_native_failed">操作を完了できませんでした。更新して保存状態を確認してから再試行してください。</string>
+    <string name="mdbx_native_snapshot_readonly">スナップショット構造は読み取り専用です。復元にはスナップショットのメニューを使用してください。</string>
+</resources>

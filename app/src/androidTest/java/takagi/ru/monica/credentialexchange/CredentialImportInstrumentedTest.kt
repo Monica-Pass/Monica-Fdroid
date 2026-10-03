@@ -186,6 +186,11 @@ class CredentialImportInstrumentedTest {
                 assertEquals(target.kind.name, samples.size, importer.importExchange(source, target).imported)
                 val restored = importedPasswords(target).sortedBy { it.title }.map { security.decryptDataIfMonicaCiphertext(it.password) }
                 assertEquals(samples, restored)
+                if (target.kind == ImportDestinationKind.MDBX) {
+                    assertEquals(0, mdbx.repairReadablePasswordCiphertexts(target.databaseId))
+                    importedPasswords(target).forEach { row -> mdbx.upsertPassword(row.copy(notes = "edited")) }
+                    assertEquals(0, mdbx.repairReadablePasswordCiphertexts(target.databaseId))
+                }
                 val exported = CredentialExchangeExporter(context).prepare(target, setOf("basic-auth"))
                 assertEquals(samples, CxfCredentialCodec.decode(exported.json).items.filter { it.title.startsWith(prefix) }
                     .sortedBy { it.title }.flatMap { it.logins }.map { it.password })

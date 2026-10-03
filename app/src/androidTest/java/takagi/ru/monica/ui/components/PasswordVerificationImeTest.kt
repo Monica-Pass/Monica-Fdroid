@@ -73,7 +73,7 @@ class PasswordVerificationImeTest {
                             verifiedPasswords += it
                             it == validPassword
                         },
-                        onSetPassword = { createdPasswords += it },
+                        onSetPassword = { createdPasswords += it; true },
                         onSuccess = {
                             successes++
                             authenticated = true

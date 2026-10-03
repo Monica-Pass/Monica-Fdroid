@@ -318,6 +318,7 @@ fun MdbxManagerScreen(
                     MdbxManagerPage.Detail(current.databaseId, current.source)
                 }
             }
+            is MdbxManagerPage.Native -> MdbxManagerPage.Detail(current.databaseId, current.source)
             is MdbxManagerPage.Health -> MdbxManagerPage.Detail(current.databaseId, current.source)
             is MdbxManagerPage.Attachments -> MdbxManagerPage.Detail(current.databaseId, current.source)
             is MdbxManagerPage.Maintenance -> MdbxManagerPage.Detail(current.databaseId, current.source)
@@ -350,7 +351,7 @@ fun MdbxManagerScreen(
             SnackbarHost(hostState = snackbarHostState)
         },
         topBar = {
-            MdbxTopAppBar(
+            if (page !is MdbxManagerPage.Native) MdbxTopAppBar(
                 title = {
                     if (snapshotPage != null && snapshotTopBarName != null) {
                         Column {
@@ -486,6 +487,7 @@ fun MdbxManagerScreen(
                                 viewModel.showDeltaHistory(db)
                                 page = MdbxManagerPage.CommitHistory(db.id, current.source)
                             },
+                            onShowNative = { DatabaseManagerNavigation.open(takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.MDBX, db.id)) },
                             onShowAttachments = {
                                 viewModel.refreshVaultDiagnostics(listOf(db))
                                 page = MdbxManagerPage.Attachments(db.id, current.source)
@@ -520,6 +522,11 @@ fun MdbxManagerScreen(
                             }
                         }
                     )
+                }
+                is MdbxManagerPage.Native -> {
+                    Box(Modifier.consumeWindowInsets(padding)) {
+                        MdbxNativeManagerScreen(current.databaseId, displayedDatabase?.name ?: "MDBX", viewModel, goBack)
+                    }
                 }
                 is MdbxManagerPage.Conflict -> {
                     val state = conflictDialogState as? MdbxViewModel.MdbxConflictDialogState.Visible
@@ -1074,6 +1081,7 @@ private sealed class MdbxManagerPage {
     sealed class DatabasePage(open val databaseId: Long, open val source: MdbxManagerSource?) : MdbxManagerPage()
     data class Detail(override val databaseId: Long, override val source: MdbxManagerSource?) : DatabasePage(databaseId, source)
     data class Conflict(override val databaseId: Long, override val source: MdbxManagerSource?) : DatabasePage(databaseId, source)
+    data class Native(override val databaseId: Long, override val source: MdbxManagerSource?) : DatabasePage(databaseId, source)
     data class Snapshots(override val databaseId: Long, override val source: MdbxManagerSource?) : DatabasePage(databaseId, source)
     data class SnapshotStructure(
         override val databaseId: Long,
@@ -1091,6 +1099,7 @@ private fun MdbxManagerPage.depth(): Int = when (this) {
     is MdbxManagerPage.Source -> 1
     is MdbxManagerPage.Detail -> 2
     is MdbxManagerPage.Conflict -> 3
+    is MdbxManagerPage.Native -> 3
     is MdbxManagerPage.Snapshots -> 3
     is MdbxManagerPage.SnapshotStructure -> 4
     is MdbxManagerPage.CommitHistory -> 3
@@ -1106,6 +1115,7 @@ private val MdbxManagerPageSaver: Saver<MdbxManagerPage, Any> = Saver(
             is MdbxManagerPage.Source -> listOf("Source", page.source.name)
             is MdbxManagerPage.Detail -> listOf("Detail", page.databaseId, page.source?.name ?: "")
             is MdbxManagerPage.Conflict -> listOf("Conflict", page.databaseId, page.source?.name ?: "")
+            is MdbxManagerPage.Native -> listOf("Native", page.databaseId, page.source?.name ?: "")
             is MdbxManagerPage.Snapshots -> listOf("Snapshots", page.databaseId, page.source?.name ?: "")
             is MdbxManagerPage.SnapshotStructure -> listOf(
                 "SnapshotStructure",
@@ -1129,6 +1139,7 @@ private val MdbxManagerPageSaver: Saver<MdbxManagerPage, Any> = Saver(
             }
             "Detail" -> MdbxManagerPage.Detail(list[1] as Long, parseMdbxManagerSourceOrNull(list[2] as String))
             "Conflict" -> MdbxManagerPage.Conflict(list[1] as Long, parseMdbxManagerSourceOrNull(list[2] as String))
+            "Native" -> MdbxManagerPage.Native(list[1] as Long, parseMdbxManagerSourceOrNull(list[2] as String))
             "Snapshots" -> MdbxManagerPage.Snapshots(list[1] as Long, parseMdbxManagerSourceOrNull(list[2] as String))
             "SnapshotStructure" -> MdbxManagerPage.SnapshotStructure(
                 list[1] as Long,
@@ -1158,6 +1169,7 @@ private fun MdbxManagerPage.title(strings: StringResolver): String = when (this)
     }
     is MdbxManagerPage.Detail -> strings.get(R.string.mdbx_ui_database_information)
     is MdbxManagerPage.Conflict -> strings.get(R.string.mdbx_ui_manager_conflicts_title)
+    is MdbxManagerPage.Native -> strings.get(R.string.mdbx_native_title)
     is MdbxManagerPage.Snapshots -> strings.get(R.string.mdbx_ui_object_snapshot)
     is MdbxManagerPage.SnapshotStructure -> strings.get(R.string.mdbx_ui_manager_snapshot_details)
     is MdbxManagerPage.CommitHistory -> strings.get(R.string.mdbx_ui_manager_history_title)
@@ -1289,7 +1301,8 @@ internal fun MdbxVaultDetailPage(
     onShowMaintenance: () -> Unit,
     onMigrate: (() -> Unit)?,
     onSetDefault: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onShowNative: (() -> Unit)? = null
 ) {
     val strings = rememberScreenStrings()
     val context = LocalContext.current
@@ -1336,6 +1349,9 @@ internal fun MdbxVaultDetailPage(
         }
         item {
             MdbxActionGroup(title = strings.get(R.string.settings_data_management), actions = buildList {
+                if (onShowNative != null && database.engineTypeEnum == MdbxEngineType.RUST_MDBX2) add(MdbxAction(
+                    icon = Icons.Default.Folder, title = strings.get(R.string.mdbx_native_title),
+                    subtitle = strings.get(R.string.mdbx_native_summary), onClick = onShowNative))
                 if (supportsSnapshots) add(MdbxAction(
                     icon = Icons.Default.Restore,
                     title = strings.get(R.string.mdbx_ui_object_snapshot),
@@ -2680,13 +2696,13 @@ private fun MdbxSnapshotStructurePage(
     compareMode: Boolean
 ) {
     val activity = LocalContext.current.findActivity()
-    val originalOrientation = remember(activity) { activity?.requestedOrientation }
+    val originalOrientation = rememberSaveable { activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
 
     LaunchedEffect(compareMode, activity) {
         activity?.requestedOrientation = if (compareMode) {
             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         } else {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            originalOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
     DisposableEffect(activity, originalOrientation) {
@@ -2701,10 +2717,10 @@ private fun MdbxSnapshotStructurePage(
         modifier = Modifier
             .fillMaxSize()
             .padding(
-                horizontal = 16.dp,
-                vertical = 8.dp
+                horizontal = 12.dp,
+                vertical = 4.dp
             ),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (isLoading) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -2718,215 +2734,7 @@ private fun MdbxSnapshotStructurePage(
 }
 
 @Composable
-internal fun SnapshotStructurePreviewPage(
-    preview: MdbxStructurePreview?,
-    compareMode: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val strings = rememberScreenStrings()
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
-        if (preview == null) {
-            Text(
-                strings.get(R.string.mdbx_ui_snapshot_structure_loading),
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else if (compareMode) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StructureTreePanel(
-                    title = strings.get(R.string.mdbx_ui_current_version),
-                    nodes = preview.currentNodes,
-                    modifier = Modifier.weight(1f),
-                    framed = true
-                )
-                StructureTreePanel(
-                    title = strings.get(R.string.mdbx_ui_snapshot_version),
-                    nodes = preview.snapshotNodes,
-                    modifier = Modifier.weight(1f),
-                    framed = true
-                )
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                StructureTreePanel(
-                    title = "",
-                    nodes = preview.snapshotNodes,
-                    modifier = Modifier.fillMaxWidth(),
-                    framed = true
-                )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun StructureTreePanel(
-    title: String,
-    nodes: List<MdbxStructureNode>,
-    modifier: Modifier = Modifier,
-    framed: Boolean = true
-) {
-    val strings = rememberScreenStrings()
-    var expandedIds by remember(nodes) {
-        mutableStateOf(nodes.filter { it.type == MdbxStructureNodeType.FOLDER }.map { it.id }.toSet())
-    }
-    val content: @Composable () -> Unit = {
-        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            if (title.isNotBlank()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        strings.get(R.string.mdbx_ui_item_count, nodes.count { it.type == MdbxStructureNodeType.ENTRY }),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
-            if (nodes.isEmpty()) {
-                Text(
-                    strings.get(R.string.mdbx_ui_structure_empty),
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                val visibleNodes = remember(nodes, expandedIds) { visibleStructureNodes(nodes, expandedIds) }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .width(IntrinsicSize.Max)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    visibleNodes.forEach { item ->
-                        key(item.node.id) {
-                        StructureTreeRow(
-                            node = item.node,
-                            depth = item.depth,
-                            isExpanded = item.node.id in expandedIds,
-                            hasChildren = item.hasChildren,
-                            onToggle = {
-                                expandedIds = if (item.node.id in expandedIds) {
-                                    expandedIds - item.node.id
-                                } else {
-                                    expandedIds + item.node.id
-                                }
-                            }
-                        )
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (framed) {
-        MdbxCard(modifier = modifier) { content() }
-    } else {
-        Surface(modifier = modifier, color = Color.Transparent) { content() }
-    }
-}
-
-private data class VisibleStructureNode(
-    val node: MdbxStructureNode,
-    val depth: Int,
-    val hasChildren: Boolean
-)
-
-private fun visibleStructureNodes(
-    nodes: List<MdbxStructureNode>,
-    expandedIds: Set<String>
-): List<VisibleStructureNode> {
-    val childrenByParent = nodes.groupBy { it.parentId }
-    fun walk(parentId: String?, depth: Int): List<VisibleStructureNode> =
-        childrenByParent[parentId].orEmpty().sortedWith(structureTreeNodeComparator).flatMap { node ->
-            val hasChildren = childrenByParent.containsKey(node.id)
-            listOf(VisibleStructureNode(node, depth, hasChildren)) +
-                if (hasChildren && node.id in expandedIds) walk(node.id, depth + 1) else emptyList()
-        }
-    return walk(null, 0)
-}
-
-private val structureTreeNodeComparator = compareBy<MdbxStructureNode>(
-    { if (it.type == MdbxStructureNodeType.FOLDER) 0 else 1 },
-    { it.name.lowercase(Locale.ROOT) },
-    { it.path.lowercase(Locale.ROOT) },
-    { it.id }
-)
-
-@Composable
-private fun StructureTreeRow(
-    node: MdbxStructureNode,
-    depth: Int,
-    isExpanded: Boolean,
-    hasChildren: Boolean,
-    onToggle: () -> Unit
-) {
-    val statusColor = structureStatusColor(node.status)
-    Surface(
-        color = if (node.type == MdbxStructureNodeType.FOLDER) MaterialTheme.colorScheme.surfaceContainer
-            else MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MdbxFieldShape,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().widthIn(min = 280.dp).heightIn(min = 64.dp)
-                .then(if (hasChildren) Modifier.mdbxClickable(onClick = onToggle) else Modifier)
-                .padding(start = 12.dp + 20.dp * depth, end = 12.dp, top = 10.dp, bottom = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (hasChildren) {
-                Icon(if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = stringResource(if (isExpanded) R.string.mdbx_ui_collapse_details else R.string.mdbx_ui_show_details),
-                    modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else Spacer(modifier = Modifier.width(20.dp))
-            Icon(if (node.type == MdbxStructureNodeType.FOLDER) Icons.Default.Folder else Icons.Default.Description,
-                contentDescription = null, modifier = Modifier.size(22.dp),
-                tint = if (node.type == MdbxStructureNodeType.FOLDER) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant)
-            Column(modifier = Modifier.widthIn(min = 120.dp, max = 240.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(node.name, style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (node.type == MdbxStructureNodeType.FOLDER) FontWeight.SemiBold else FontWeight.Normal)
-                if (node.metadata.isNotBlank()) Text(node.metadata, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (node.status != MdbxStructureNodeStatus.UNCHANGED) {
-                Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.12f)) {
-                    Text(structureStatusLabel(node.status), modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        style = MaterialTheme.typography.labelMedium, color = statusColor)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun structureStatusColor(status: MdbxStructureNodeStatus): Color =
+internal fun structureStatusColor(status: MdbxStructureNodeStatus): Color =
     when (status) {
         MdbxStructureNodeStatus.ADDED -> MaterialTheme.colorScheme.primary
         MdbxStructureNodeStatus.REMOVED -> MaterialTheme.colorScheme.error
@@ -2935,7 +2743,7 @@ private fun structureStatusColor(status: MdbxStructureNodeStatus): Color =
     }
 
 @Composable
-private fun structureStatusLabel(status: MdbxStructureNodeStatus): String = when (status) {
+internal fun structureStatusLabel(status: MdbxStructureNodeStatus): String = when (status) {
     MdbxStructureNodeStatus.ADDED -> stringResource(R.string.mdbx_ui_action_created)
     MdbxStructureNodeStatus.REMOVED -> stringResource(R.string.mdbx_ui_structure_removed)
     MdbxStructureNodeStatus.MODIFIED -> stringResource(R.string.mdbx_ui_action_modified)

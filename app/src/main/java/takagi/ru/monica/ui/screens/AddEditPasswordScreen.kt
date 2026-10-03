@@ -1,6 +1,8 @@
 package takagi.ru.monica.ui.screens
 
 import takagi.ru.monica.data.passwordProjectKey
+import takagi.ru.monica.data.model.ProjectCredentialGroup
+import takagi.ru.monica.ui.components.ProjectCredentialEditor
 import kotlinx.serialization.json.jsonObject
 import takagi.ru.monica.data.model.PasswordContentBlocks
 import takagi.ru.monica.ui.components.PasswordContentBlockCard
@@ -463,6 +465,12 @@ private fun PasswordEntryEditor(
         mutableStateListOf("")
     }
     var originalIds by remember { mutableStateOf<List<Long>>(emptyList()) }
+    var allProjectOriginalIds by remember { mutableStateOf<List<Long>>(emptyList()) }
+    var primaryProjectGroup by remember { mutableStateOf(ProjectCredentialGroup.Group()) }
+    val extraCredentialGroups = remember { mutableStateListOf<ProjectCredentialGroup.Group>() }
+    var hasProjectCredentialMetadata by remember { mutableStateOf(false) }
+    var projectCredentialLoadFailed by remember { mutableStateOf(false) }
+
     var unreadablePasswordIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var hasOwnershipConflict by remember { mutableStateOf(false) }
 
@@ -495,6 +503,7 @@ private fun PasswordEntryEditor(
     var isFavorite by rememberSaveable { mutableStateOf(false) }
     // 每个密码条目维护独立可见状态，避免一个小眼睛影响全部条目
     val passwordVisibilityStates = remember { mutableStateMapOf<Int, Boolean>() }
+    var projectGeneratorTarget by remember { mutableStateOf<Pair<String, String?>?>(null) }
     var showPasswordGenerator by remember { mutableStateOf(false) }
     var currentPasswordIndexForGenerator by remember { mutableStateOf(-1) }
     var selectedCredentialEditorIndex by rememberSaveable { mutableStateOf(0) }
@@ -631,7 +640,7 @@ private fun PasswordEntryEditor(
     var barcodePayload by rememberSaveable { mutableStateOf("") }
     val isPasswordCredentialMode = loginType.equals("PASSWORD", ignoreCase = true) &&
         !loginType.equals(LOGIN_TYPE_BARCODE, ignoreCase = true)
-    val canAddIndependentCredential = isPasswordCredentialMode &&
+    val canAddIndependentCredential = isPasswordCredentialMode && extraCredentialGroups.isEmpty() && !hasProjectCredentialMetadata &&
         (!isEditing || originalIds.size == 1)
     val usesCredentialCards = isPasswordCredentialMode &&
         (!isEditing || (originalIds.size == 1 && credentialUsernames.size > 1))
@@ -1383,6 +1392,9 @@ private fun PasswordEntryEditor(
 
     fun removePasswordFieldAt(index: Int) {
         if (index !in passwords.indices) return
+        if (!isMultiCredentialMode && index in primaryProjectGroup.passwords.indices) {
+            primaryProjectGroup = primaryProjectGroup.copy(passwords = primaryProjectGroup.passwords.filterIndexed { i, _ -> i != index })
+        }
         passwords.removeAt(index)
         shiftIndexedStateMapAfterRemoval(inlineGeneratedPasswords, index)
         shiftIndexedStateMapAfterRemoval(passwordVisibilityStates, index)
@@ -1909,13 +1921,13 @@ private fun PasswordEntryEditor(
             PasswordContentSection.PAYMENT -> shouldShowPaymentInfo()
             PasswordContentSection.CONTACT -> false
             PasswordContentSection.ADDRESS -> shouldShowAddressInfo() || shouldShowPersonalInfo() || copiedContent(EmbeddedWalletContent.Kind.ADDRESS) != null
-            PasswordContentSection.CUSTOM_FIELDS -> section.name in requestedContentSections || contentExtraFields.any { it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
+            PasswordContentSection.CUSTOM_FIELDS -> section.name in requestedContentSections || contentExtraFields.any { it.title != ProjectCredentialGroup.FIELD && it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
             PasswordContentSection.ATTACHMENTS -> section.name in requestedContentSections || existingContentAttachments.isNotEmpty() || credentialAttachmentDrafts.any { it.isNotEmpty() }
         } }
     }
     fun visibleContentTokens(): List<String> = takagi.ru.monica.data.model.PasswordWalletProjection.walletOrder(listOf("AUTHENTICATOR") + requestedContentSections +
-        EntryContentFields.order(contentExtraFields) + visibleContentSections().map { it.name } + storedBlocks.map { it.token })
-        .filter { key -> key in visibleContentSections().map { it.name } || storedBlocks.any { it.token == key } }
+        EntryContentFields.order(contentExtraFields) + visibleContentSections().map { it.name } + storedBlocks.map { it.token } + extraCredentialGroups.map { ProjectCredentialGroup.token(it.id) })
+        .filter { key -> key in visibleContentSections().map { it.name } || storedBlocks.any { it.token == key } || extraCredentialGroups.any { ProjectCredentialGroup.token(it.id) == key } }
     fun moveContentToken(token: String, offset: Int) {
         val ordered = visibleContentTokens().toMutableList()
         val index = ordered.indexOf(token)
@@ -1939,7 +1951,7 @@ private fun PasswordEntryEditor(
             PasswordContentSection.PAYMENT -> if (isMultiCredentialMode) {
                 activeCredentialMetadata.creditCardNumber = ""; activeCredentialMetadata.creditCardHolder = ""; activeCredentialMetadata.creditCardExpiry = ""; activeCredentialMetadata.creditCardCVV = ""
             } else { creditCardNumber = ""; creditCardHolder = ""; creditCardExpiry = ""; creditCardCVV = "" }
-            PasswordContentSection.CUSTOM_FIELDS -> contentExtraFields.removeAll { it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
+            PasswordContentSection.CUSTOM_FIELDS -> contentExtraFields.removeAll { it.title != ProjectCredentialGroup.FIELD && it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
             PasswordContentSection.ATTACHMENTS -> credentialAttachmentDrafts.getOrNull(if (isMultiCredentialMode) selectedCredentialEditorIndex else 0)?.clear()
         }
         contentExtraFields.removeAll { field -> EntrySupplementalSpecs.forSection(section.name).any { EntryContentFields.key(section.name, it.key) == field.title } }
@@ -2284,10 +2296,32 @@ private fun PasswordEntryEditor(
                             }.sortedBy { it.id }
                         }
                         
+                        allProjectOriginalIds = siblings.map { it.id }
+                        val projectFields = withContext(Dispatchers.IO) {
+                            viewModel.getCustomFieldsByEntryIds(siblings.map { it.id }).mapValues { (_, fields) -> fields.map(CustomFieldDraft::fromCustomField) }
+                        }
+                        hasProjectCredentialMetadata = projectFields.values.any { fields -> fields.any { it.title == ProjectCredentialGroup.FIELD } }
+                        val restoredGroups = if (hasProjectCredentialMetadata) try {
+                            ProjectCredentialGroup.restore(siblings.map { sibling ->
+                                val state = viewModel.inspectSecretState(sibling)
+                                check(state is SecretValueState.Available || state == SecretValueState.Empty)
+                                sibling.copy(password = state.plainValueOrEmpty(), authenticatorKey = securityManager.decryptDataIfMonicaCiphertext(sibling.authenticatorKey))
+                            }, projectFields)
+                        } catch (_: Exception) { projectCredentialLoadFailed = true; emptyList() } else emptyList()
+                        if (restoredGroups.isNotEmpty()) {
+                            primaryProjectGroup = restoredGroups.first()
+                            extraCredentialGroups.clear(); extraCredentialGroups.addAll(restoredGroups.drop(1))
+                            username = primaryProjectGroup.username
+                            credentialUsernames.clear(); credentialUsernames.add(username)
+                            applyAuthenticatorInput(primaryProjectGroup.otp)
+                        }
+                        val primarySiblings = if (restoredGroups.isNotEmpty()) siblings.filter { sibling ->
+                            primaryProjectGroup.passwords.any { it.originalEntryId == sibling.id }
+                        }.sortedBy { sibling -> primaryProjectGroup.passwords.indexOfFirst { it.originalEntryId == sibling.id } } else siblings
                         passwords.clear()
-                        if (siblings.isNotEmpty()) {
+                        if (primarySiblings.isNotEmpty()) {
                             val siblingSecretStates = withContext(Dispatchers.Default) {
-                                siblings.map { sibling ->
+                                primarySiblings.map { sibling ->
                                     val secretState = viewModel.inspectSecretState(sibling)
                                     sibling to secretState
                                 }
@@ -2304,7 +2338,11 @@ private fun PasswordEntryEditor(
                                     secretState.plainValueOrEmpty()
                                 }
                             )
-                            originalIds = siblings.map { s: PasswordEntry -> s.id }
+                            originalIds = primarySiblings.map { s: PasswordEntry -> s.id }
+                            if (!hasProjectCredentialMetadata) primaryProjectGroup = primaryProjectGroup.copy(
+                                username = username, passwords = primarySiblings.mapIndexed { index, sibling ->
+                                    ProjectCredentialGroup.Password(value = passwords[index], originalEntryId = sibling.id)
+                                })
                             unreadablePasswordIds = unreadableIds
                         } else {
                             passwords.add(entry.password)
@@ -2347,7 +2385,7 @@ private fun PasswordEntryEditor(
                         
                         // 加载自定义字段
                         val existingFields = withContext(Dispatchers.IO) {
-                            viewModel.getCustomFieldsByEntryIdSync(actualId)
+                            viewModel.getCustomFieldsByEntryIdSync(originalIds.firstOrNull() ?: actualId)
                         }
                         customFields.clear()
                         
@@ -2519,6 +2557,10 @@ private fun PasswordEntryEditor(
                 showAuthenticatorParameters = true
                 showInlineOtpSettings = true
                 Toast.makeText(context, R.string.otp_parameters_invalid, Toast.LENGTH_SHORT).show()
+                return@handleSave
+            }
+            if (projectCredentialLoadFailed) {
+                Toast.makeText(context, R.string.project_credential_unreadable, Toast.LENGTH_LONG).show()
                 return@handleSave
             }
             if (copyingWallet) return@handleSave
@@ -2776,7 +2818,8 @@ private fun PasswordEntryEditor(
 
             // A single account may still contain several legacy password rows.
             // Preserve all of them through the grouped save path.
-            val usesIndependentCredentialSave = usesCredentialCards && (isMultiCredentialMode || passwords.size <= 1)
+            val usesIndependentCredentialSave = !hasProjectCredentialMetadata && extraCredentialGroups.isEmpty() &&
+                usesCredentialCards && (isMultiCredentialMode || passwords.size <= 1)
             if (usesIndependentCredentialSave) {
                 coroutineScope.launch {
                     val copiedIconFiles = mutableListOf<String>()
@@ -3049,7 +3092,13 @@ private fun PasswordEntryEditor(
             } else {
                 viewModel.savePasswordsAcrossTargets(
                             embeddedContentSave = deferredEmbeddedSave,
-                    originalIds = originalIds.takeIf { isEditing }.orEmpty(),
+                    originalIds = (if (hasProjectCredentialMetadata || extraCredentialGroups.isNotEmpty()) allProjectOriginalIds else originalIds).takeIf { isEditing }.orEmpty(),
+                    projectCredentials = if (hasProjectCredentialMetadata || extraCredentialGroups.isNotEmpty()) {
+                        listOf(primaryProjectGroup.copy(username = currentUsername, otp = currentAuthKey,
+                            passwords = passwords.mapIndexed { index, value ->
+                                (primaryProjectGroup.passwords.getOrNull(index) ?: ProjectCredentialGroup.Password()).copy(value = value)
+                            })) + extraCredentialGroups.sortedBy { visibleContentTokens().indexOf(ProjectCredentialGroup.token(it.id)) }
+                    } else null,
                     commonEntry = commonEntry.copy(
                         replicaGroupId = currentReplicaGroupId.takeIf { isEditing }
                     ),
@@ -3248,6 +3297,132 @@ private fun PasswordEntryEditor(
         IconButton(onClick = onNavigateBack) {
             Icon(MonicaIcons.Navigation.back, contentDescription = stringResource(R.string.back))
         }
+    }
+    val primaryAuthenticatorField: @Composable () -> Unit = {
+                    Column {
+                        Column {
+                            CompositionLocalProvider(takagi.ru.monica.ui.components.LocalFilledEntryForm provides contentMode) {
+                                OutlinedTextField(
+                                    value = authenticatorSecret,
+                                    onValueChange = ::applyAuthenticatorInput,
+                                    label = { Text(stringResource(R.string.authenticator_key_optional)) },
+                                    placeholder = { Text(stringResource(R.string.authenticator_key_hint)) },
+                                    leadingIcon = { Icon(Icons.Default.VpnKey, null) },
+                                    trailingIcon = {
+                                        Row {
+                                            if (onScanAuthenticatorQrCode != null) IconButton(onClick = onScanAuthenticatorQrCode) {
+                                                Icon(Icons.Default.QrCodeScanner, stringResource(R.string.scan_qr_code))
+                                            }
+                                            IconButton(onClick = { showInlineOtpSettings = true }, modifier = Modifier.testTag("password_otp_settings")) {
+                                                Icon(Icons.Default.MoreVert, stringResource(R.string.advanced_options))
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().testTag("password_otp_secret"),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                                    supportingText = if (selectedAuthenticatorOtpType == OtpType.STEAM) {
+                                        { Text(stringResource(R.string.steam_uses_5_chars)) }
+                                    } else null,
+                                    shape = if (contentMode && loginType.equals("PASSWORD", ignoreCase = true)) RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 24.dp, bottomEnd = 24.dp) else RoundedCornerShape(if (contentMode) 24.dp else 12.dp)
+                                )
+                            }
+
+                            if (showInlineOtpSettings) MonicaModalBottomSheet(
+                                onDismissRequest = { showInlineOtpSettings = false },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            ) {
+                                LazyColumn(Modifier.fillMaxWidth().testTag("content_detail_scroll").imePadding(),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) {
+                                    item {
+                                        Column {
+                                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                                Text(stringResource(R.string.authenticator_key_optional), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                                IconButton(onClick = { showInlineOtpSettings = false }, modifier = Modifier.testTag("content_detail_back")) {
+                                                    Icon(Icons.Default.Check, stringResource(R.string.save))
+                                                }
+                                            }
+                            OtpTypeSelector(
+                                type = selectedAuthenticatorOtpType,
+                                onChange = { type ->
+                                    selectedAuthenticatorOtpTypeName = type.name
+                                    applyAuthenticatorParameters(authenticatorParameters.selectType(type))
+                                },
+                                modifier = Modifier.padding(top = 10.dp),
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            OtpParameterFields(
+                                type = selectedAuthenticatorOtpType, draft = authenticatorParameters,
+                                onChange = ::applyAuthenticatorParameters, includeAdvanced = false,
+                            )
+                            TextButton(modifier = Modifier.testTag("password_otp_advanced"),
+                                onClick = { showAuthenticatorParameters = !showAuthenticatorParameters }) {
+                                Text(stringResource(R.string.advanced_options))
+                                Icon(if (showAuthenticatorParameters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
+                            }
+                            MonicaExpandableContent(expanded = showAuthenticatorParameters) {
+                                OtpParameterFields(
+                                    type = selectedAuthenticatorOtpType, draft = authenticatorParameters,
+                                    onChange = ::applyAuthenticatorParameters, includeRequired = false,
+                                )
+                            }
+
+                            if (totpViewModel != null) {
+                                OutlinedButton(
+                                    onClick = { showAuthenticatorPicker = true },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 10.dp),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Security, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        if (authenticatorSecret.isNotBlank()) {
+                                            stringResource(R.string.bound_authenticator_change)
+                                        } else {
+                                            stringResource(R.string.bind_authenticator)
+                                        }
+                                    )
+                                }
+
+                                if (selectedExistingTotpTitle.isNotBlank()) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.selected_authenticator_format,
+                                            selectedExistingTotpTitle
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 6.dp)
+                                    )
+                                }
+                            }
+
+                                        }
+                                    }
+                                }
+                            }
+
+                            MonicaExpandableContent(
+                                expanded = authenticatorPreviewVisible
+                            ) {
+                                authenticatorPreviewTotpData?.let { previewData ->
+                                    InlineTotpPreviewCard(
+                                        totpData = previewData,
+                                        currentSeconds = authenticatorPreviewCurrentSeconds,
+                                        progressTimeMillis = authenticatorPreviewProgressTimeMillis,
+                                        timeOffset = settings.totpTimeOffset,
+                                        smoothProgress = settings.validatorSmoothProgress,
+                                        modifier = Modifier.padding(top = 10.dp).testTag("password_otp_inline_preview"),
+                                        showHeader = false,
+                                        showProgress = true
+                                    )
+                                }
+                            }
+                        }
+                    }
     }
     Scaffold(
         topBar = {
@@ -3963,7 +4138,7 @@ private fun PasswordEntryEditor(
                                         if (settings.separateUsernameAccountEnabled && !isMultiCredentialMode) separatedUsernameSuggestionVisible
                                         else if (isMultiCredentialMode) credentialUsernameSuggestionVisible else usernameSuggestionVisible
                                     } else focusedPasswordFieldIndex == previousIndex && passwords[previousIndex].isBlank() && !inlineGeneratedPasswords[previousIndex].isNullOrBlank()
-                                    val endsPasswordGroup = index == visiblePasswordIndices.last() ||
+                                    val endsPasswordGroup = (index == visiblePasswordIndices.last() && !contentMode) ||
                                         (focusedPasswordFieldIndex == index && pwd.isBlank() && !inlineGeneratedPasswords[index].isNullOrBlank()) ||
                                         (isEditing && originalIds.getOrNull(index) in unreadablePasswordIds) || hasOwnershipConflict
                                     val isPasswordVisible = isPasswordFieldVisible(index)
@@ -4103,11 +4278,15 @@ private fun PasswordEntryEditor(
                                     }
                                 }
 
+                                if (contentMode && shouldShowSecurityVerification()) {
+                                    primaryAuthenticatorField()
+                                }
+
                                 // 旧的“一个条目多个密码”编辑能力继续保留；批量凭据每页固定一个密码。
                                 if (!isMultiCredentialMode) {
                                     TextButton(
                                         onClick = { passwords.add("") },
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier.fillMaxWidth().testTag("password_editor_add_password"),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Icon(Icons.Default.Add, null)
@@ -4124,8 +4303,16 @@ private fun PasswordEntryEditor(
             if (contentMode) item("content_group_spacing") { Spacer(Modifier.height(12.dp)) }
             val sectionOrder = if (contentMode) visibleContentTokens() else PasswordContentSection.entries.map { it.name }
             sectionOrder.forEach { token ->
+                val extraGroup = extraCredentialGroups.firstOrNull { ProjectCredentialGroup.token(it.id) == token }
                 val storedBlock = storedBlocks.firstOrNull { it.token == token }
-                if (storedBlock != null) {
+                if (extraGroup != null) {
+                    contentItem(key = token) {
+                        ProjectCredentialEditor(extraGroup,
+                            onChange = { updated -> val index = extraCredentialGroups.indexOfFirst { it.id == updated.id }; if (index >= 0) extraCredentialGroups[index] = updated },
+                            onRemove = { extraCredentialGroups.removeAll { it.id == extraGroup.id }; requestedContentSections.remove(token) },
+                            onGenerate = { passwordId -> projectGeneratorTarget = extraGroup.id to passwordId }, settings = settings)
+                    }
+                } else if (storedBlock != null) {
                     contentItem(key = token) {
                         val order = visibleContentTokens().filterNot { it == "AUTHENTICATOR" }
                         val position = order.indexOf(token)
@@ -4141,132 +4328,10 @@ private fun PasswordEntryEditor(
                 when (section) {
                     PasswordContentSection.AUTHENTICATOR -> {
             // Security Card (TOTP) - 根据设置和数据决定是否显示
-            if (showCredentialEditorContent && shouldShowSecurityVerification()) {
+            if (showCredentialEditorContent && shouldShowSecurityVerification() &&
+                !(contentMode && loginType.equals("PASSWORD", ignoreCase = true))) {
                 item(key = "content_authenticator") {
-                    Column {
-                        Column {
-                            CompositionLocalProvider(takagi.ru.monica.ui.components.LocalFilledEntryForm provides contentMode) {
-                                OutlinedTextField(
-                                    value = authenticatorSecret,
-                                    onValueChange = ::applyAuthenticatorInput,
-                                    label = { Text(stringResource(R.string.authenticator_key_optional)) },
-                                    placeholder = { Text(stringResource(R.string.authenticator_key_hint)) },
-                                    leadingIcon = { Icon(Icons.Default.VpnKey, null) },
-                                    trailingIcon = {
-                                        Row {
-                                            if (onScanAuthenticatorQrCode != null) IconButton(onClick = onScanAuthenticatorQrCode) {
-                                                Icon(Icons.Default.QrCodeScanner, stringResource(R.string.scan_qr_code))
-                                            }
-                                            IconButton(onClick = { showInlineOtpSettings = true }, modifier = Modifier.testTag("password_otp_settings")) {
-                                                Icon(Icons.Default.MoreVert, stringResource(R.string.advanced_options))
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().testTag("password_otp_secret"),
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                    supportingText = if (selectedAuthenticatorOtpType == OtpType.STEAM) {
-                                        { Text(stringResource(R.string.steam_uses_5_chars)) }
-                                    } else null,
-                                    shape = RoundedCornerShape(if (contentMode) 24.dp else 12.dp)
-                                )
-                            }
-
-                            if (showInlineOtpSettings) MonicaModalBottomSheet(
-                                onDismissRequest = { showInlineOtpSettings = false },
-                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                            ) {
-                                LazyColumn(Modifier.fillMaxWidth().testTag("content_detail_scroll").imePadding(),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) {
-                                    item {
-                                        Column {
-                                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                                Text(stringResource(R.string.authenticator_key_optional), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                                                IconButton(onClick = { showInlineOtpSettings = false }, modifier = Modifier.testTag("content_detail_back")) {
-                                                    Icon(Icons.Default.Check, stringResource(R.string.save))
-                                                }
-                                            }
-                            OtpTypeSelector(
-                                type = selectedAuthenticatorOtpType,
-                                onChange = { type ->
-                                    selectedAuthenticatorOtpTypeName = type.name
-                                    applyAuthenticatorParameters(authenticatorParameters.selectType(type))
-                                },
-                                modifier = Modifier.padding(top = 10.dp),
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            OtpParameterFields(
-                                type = selectedAuthenticatorOtpType, draft = authenticatorParameters,
-                                onChange = ::applyAuthenticatorParameters, includeAdvanced = false,
-                            )
-                            TextButton(modifier = Modifier.testTag("password_otp_advanced"),
-                                onClick = { showAuthenticatorParameters = !showAuthenticatorParameters }) {
-                                Text(stringResource(R.string.advanced_options))
-                                Icon(if (showAuthenticatorParameters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
-                            }
-                            MonicaExpandableContent(expanded = showAuthenticatorParameters) {
-                                OtpParameterFields(
-                                    type = selectedAuthenticatorOtpType, draft = authenticatorParameters,
-                                    onChange = ::applyAuthenticatorParameters, includeRequired = false,
-                                )
-                            }
-
-                            if (totpViewModel != null) {
-                                OutlinedButton(
-                                    onClick = { showAuthenticatorPicker = true },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 10.dp),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.Security, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        if (authenticatorSecret.isNotBlank()) {
-                                            stringResource(R.string.bound_authenticator_change)
-                                        } else {
-                                            stringResource(R.string.bind_authenticator)
-                                        }
-                                    )
-                                }
-
-                                if (selectedExistingTotpTitle.isNotBlank()) {
-                                    Text(
-                                        text = stringResource(
-                                            R.string.selected_authenticator_format,
-                                            selectedExistingTotpTitle
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 6.dp)
-                                    )
-                                }
-                            }
-
-                                        }
-                                    }
-                                }
-                            }
-
-                            MonicaExpandableContent(
-                                expanded = authenticatorPreviewVisible
-                            ) {
-                                authenticatorPreviewTotpData?.let { previewData ->
-                                    InlineTotpPreviewCard(
-                                        totpData = previewData,
-                                        currentSeconds = authenticatorPreviewCurrentSeconds,
-                                        progressTimeMillis = authenticatorPreviewProgressTimeMillis,
-                                        timeOffset = settings.totpTimeOffset,
-                                        smoothProgress = settings.validatorSmoothProgress,
-                                        modifier = Modifier.padding(top = 10.dp).testTag("password_otp_inline_preview"),
-                                        showHeader = false,
-                                        showProgress = true
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    primaryAuthenticatorField()
                 }
             }
 
@@ -4410,7 +4475,7 @@ private fun PasswordEntryEditor(
                     PasswordContentSection.CUSTOM_FIELDS -> {
             if (contentMode) {
                 val fields = if (isMultiCredentialMode && showCredentialEditorContent) activeCredentialMetadata.credentialCustomFields else customFields
-                val visibleFields = fields.filterNot { it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
+                val visibleFields = fields.filterNot { it.title == ProjectCredentialGroup.FIELD || it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
                 if (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || visibleFields.isNotEmpty()) contentItem("content_custom_fields") {
                     takagi.ru.monica.ui.components.EntryContentPanel(PasswordContentSection.CUSTOM_FIELDS,
                         visibleFields.joinToString(" · ") { it.title }, editingContentSection == "CUSTOM_FIELDS",
@@ -4423,7 +4488,7 @@ private fun PasswordEntryEditor(
                             }
                         }
                         takagi.ru.monica.ui.components.EntryContentFieldButton(visibleFields) { updated ->
-                            val managed = fields.filter { it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
+                            val managed = fields.filter { it.title == ProjectCredentialGroup.FIELD || it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
                             fields.clear(); fields.addAll(managed + updated)
                         }
                     }
@@ -4948,6 +5013,12 @@ if (!contentMode && hasExtraSection("PAYMENT")) {
                 if (section == PasswordContentSection.PAYMENT) openPaymentEditor() else if (section == PasswordContentSection.ADDRESS) openAddressEditor() else if (section == PasswordContentSection.DOCUMENT) openDocumentEditor() else editingContentSection = section.name
             },
             onDismiss = { showContentMenu = false },
+            onAddCredential = if (!isMultiCredentialMode && !isBarcodeMode && templateDraft == null) ({
+                val group = ProjectCredentialGroup.Group()
+                extraCredentialGroups.add(group)
+                requestedContentSections.add(ProjectCredentialGroup.token(group.id))
+                showContentMenu = false
+            }) else null,
             onAddBlock = if (isMultiCredentialMode && showCommonEditorContent) null else ({ kind ->
                 showContentMenu = false; editingBlock = PasswordContentBlocks.create(kind)
             }),
@@ -4969,6 +5040,25 @@ if (!contentMode && hasExtraSection("PAYMENT")) {
                 showAppSelectorFromWebsite = false
             }
         )
+    }
+
+    projectGeneratorTarget?.let { (groupId, passwordId) ->
+        takagi.ru.monica.ui.components.CredentialGeneratorSheet(
+            username = passwordId == null,
+            suggestions = buildCommonAccountOptions(if (passwordId == null) "username" else "password").map {
+                takagi.ru.monica.ui.components.GeneratorSuggestion(it.type, it.content)
+            },
+            preferences = generatorPreferences,
+            onDismiss = { projectGeneratorTarget = null },
+            onApply = { generated ->
+                val index = extraCredentialGroups.indexOfFirst { it.id == groupId }
+                if (index >= 0) {
+                    val group = extraCredentialGroups[index]
+                    extraCredentialGroups[index] = if (passwordId == null) group.copy(username = generated)
+                        else group.copy(passwords = group.passwords.map { if (it.id == passwordId) it.copy(value = generated) else it })
+                }
+                projectGeneratorTarget = null
+            })
     }
 
     if (showPasswordGenerator) {

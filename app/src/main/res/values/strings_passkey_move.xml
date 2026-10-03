@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="passkey_move_result_title">Move result</string>
+    <string name="passkey_move_result_summary">Completed %1$d; needs attention %2$d</string>
+    <string name="passkey_move_success_count">Moved %1$d items</string>
+    <string name="passkey_move_unnamed_account">Unnamed account</string>
+    <string name="passkey_move_bound_reason">This passkey is linked to a password entry and cannot be moved separately. Move the linked password entry, or unlink the passkey first.</string>
+    <string name="passkey_move_reference_reason">This item is only a reference and has no private key that can be moved separately. Use the original app or vault that holds the actual passkey.</string>
+    <string name="passkey_move_bitwarden_reason">The storage mode or private key does not meet the Bitwarden migration requirements. Unlock Monica and retry, or choose another vault. Device-bound keys cannot be exported; keep them on the original device or register a new passkey with the service.</string>
+    <string name="passkey_move_conflict_reason">The target KeePass database already contains the same passkey credential. Nothing was overwritten. Check the existing entry or choose another database.</string>
+    <string name="passkey_move_update_reason">The move did not complete, and the exact cause could not be determined. Check that the source and destination vaults are unlocked and writable, with enough free space. Inspect both vaults before retrying; do not delete the source.</string>
+    <string name="passkey_move_cleanup_reason">The destination has been saved, but source cleanup did not finish. Copies may remain in both vaults. Check the destination and the source vault or sync status before continuing; do not repeat the move blindly.</string>
+</resources>

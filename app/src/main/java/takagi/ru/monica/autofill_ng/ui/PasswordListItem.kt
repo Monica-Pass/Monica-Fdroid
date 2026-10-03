@@ -88,6 +88,8 @@ sealed class PasswordItemAction {
 @Composable
 fun PasswordListItem(
     password: PasswordEntry,
+    credentialLabel: String? = null,
+    displayUsernameOverride: String? = null,
     showDropdownMenu: Boolean = false,
     iconCardsEnabled: Boolean = false,
     showSmartCopyOptions: Boolean = false,
@@ -98,7 +100,8 @@ fun PasswordListItem(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val displayTitle = password.title.ifEmpty { password.username }.toSafeComposeText()
-    val displayUsername = password.username.toSafeComposeText()
+    val displayUsername = (displayUsernameOverride ?: password.username).toSafeComposeText()
+    val displaySubtitle = listOfNotNull(displayUsername.takeIf { it.isNotEmpty() }, credentialLabel).joinToString(" · ")
 
     Surface(
         modifier = modifier
@@ -144,7 +147,7 @@ fun PasswordListItem(
                 )
                 
                 // 用户名 (如果有title则显示username)
-                if (password.title.isNotEmpty() && password.username.isNotEmpty()) {
+                if (displaySubtitle.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -157,7 +160,7 @@ fun PasswordListItem(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = displayUsername,
+                            text = displaySubtitle,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -464,6 +467,8 @@ fun AppIcon(
 @Composable
 fun SuggestedPasswordListItem(
     password: PasswordEntry,
+    credentialLabel: String? = null,
+    displayUsernameOverride: String? = null,
     iconCardsEnabled: Boolean = false,
     showSmartCopyOptions: Boolean = false,
     onPrepareAutofill: ((PasswordEntry) -> Unit)? = null,
@@ -472,7 +477,8 @@ fun SuggestedPasswordListItem(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val displayTitle = password.title.ifEmpty { password.username }.toSafeComposeText()
-    val displayUsername = password.username.toSafeComposeText()
+    val displayUsername = (displayUsernameOverride ?: password.username).toSafeComposeText()
+    val displaySubtitle = listOfNotNull(displayUsername.takeIf { it.isNotEmpty() }, credentialLabel).joinToString(" · ")
     
     Card(
         modifier = modifier
@@ -516,10 +522,10 @@ fun SuggestedPasswordListItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     
-                    if (password.title.isNotEmpty() && password.username.isNotEmpty()) {
+                    if (displaySubtitle.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = displayUsername,
+                            text = displaySubtitle,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                             maxLines = 1,

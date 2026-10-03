@@ -2050,7 +2050,7 @@
     <string name="developer_view_logs">"Visualizza registri"</string>
     <string name="developer_view_logs_desc">"Visualizza l\'applicazione Logcat output log"</string>
     <string name="developer_clear_log_buffer">"Cancella il buffer di registro"</string>
-    <string name="developer_clear_log_buffer_desc">"Cancella buffer di registro del dispositivo"</string>
+    <string name="developer_clear_log_buffer_desc">Svuota il buffer, riproduci il problema e condividi i registri con lo sviluppatore.</string>
     <string name="developer_share_logs">"Condividi registri"</string>
     <string name="developer_share_logs_desc">"Esportare e condividere registri recenti"</string>
     <string name="developer_functions">"Funzioni dello sviluppatore"</string>
@@ -2118,7 +2118,7 @@
     <string name="state">"Stato/Province"</string>
     <string name="zip_code">"Codice postale"</string>
     <string name="payment_info">"Informazioni di pagamento"</string>
-    <string name="credit_card_number">"Numero della carta di credito"</string>
+    <string name="credit_card_number">"Carta n."</string>
     <string name="card_holder">"Titolare della carta"</string>
     <string name="credit_card_encrypted">"I dati della carta di credito sono criptati"</string>
     <string name="expand">"Espandere"</string>

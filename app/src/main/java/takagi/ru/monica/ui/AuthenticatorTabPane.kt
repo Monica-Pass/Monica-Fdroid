@@ -27,6 +27,7 @@ internal fun AuthenticatorTabPane(
     localKeePassViewModel: takagi.ru.monica.viewmodel.LocalKeePassViewModel,
     onTotpOpen: (Long) -> Unit,
     onNavigateToQuickTotpScan: () -> Unit,
+    onScanFidoQr: () -> Unit,
     onSelectionModeChange: (
         Boolean,
         Int,
@@ -53,6 +54,7 @@ internal fun AuthenticatorTabPane(
                 totpViewModel.deleteTotpItem(totp)
             },
             onQuickScanTotp = onNavigateToQuickTotpScan,
+            onScanFidoQr = onScanFidoQr,
             onSelectionModeChange = onSelectionModeChange,
             showStandaloneSettingsEntry = showStandaloneSettingsEntry,
             onOpenStandaloneSettings = onOpenStandaloneSettings

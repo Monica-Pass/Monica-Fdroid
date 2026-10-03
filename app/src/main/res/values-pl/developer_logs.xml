@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Dzienniki diagnostyczne</string>
+    <string name="developer_logs_entry_description">Szukaj, filtruj i udostępniaj pełny raport</string>
+    <string name="developer_logs_search">Szukaj w dziennikach, tagach i wyjątkach</string>
+    <string name="developer_logs_source">Źródło: %1$s</string>
+    <string name="developer_logs_hint">Odtwórz problem i odśwież. Wpis błędu nie zawsze oznacza awarię funkcji.</string>
+    <string name="developer_logs_share_full">Udostępnij dzienniki</string>
+    <string name="developer_logs_result_count">%1$d z %2$d zdarzeń · Aktualizacja %3$s</string>
+    <string name="developer_logs_no_matches">Brak pasujących wpisów. Zmień zapytanie lub filtry.</string>
+    <string name="developer_logs_clear_confirmation">Wyczyścić dzienniki diagnostyczne? Dane sejfu i ustawienia zostaną zachowane. Informacje o środowisku i nowe wpisy mogą nadal być widoczne.</string>
+    <string name="developer_logs_copy_event">Kopiuj zdarzenie</string>
+    <string name="developer_logs_preview_limit">Podgląd skrócony. Skopiuj zdarzenie lub udostępnij pełny raport, aby zobaczyć cały tekst.</string>
+    <string name="developer_logs_expand">Rozwiń zdarzenie</string>
+    <string name="developer_logs_collapse">Zwiń zdarzenie</string>
+    <string name="developer_logs_security">Bezpieczeństwo</string>
+    <string name="developer_verification_group">Weryfikacja i zgodność</string>
+    <string name="developer_forensics_group">Diagnostyka synchronizacji Bitwarden</string>
+    <string name="developer_logs_copy_failed">Nie można skopiować tego zdarzenia. Udostępnij pełny plik dziennika.</string>
+</resources>

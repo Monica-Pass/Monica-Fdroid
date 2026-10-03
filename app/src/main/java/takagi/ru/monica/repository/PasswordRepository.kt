@@ -61,7 +61,7 @@ class PasswordRepository(
         passwordEntryDao.getActivePasswordTitles()
 
     suspend fun getAllLocalPasswordEntries(): List<PasswordEntry> {
-        return passwordEntryDao.getAllLocalEntries().withoutExternalSteamMaFileEntries()
+        return passwordEntryDao.getLocalBackupEntries().withoutExternalSteamMaFileEntries()
     }
     
     fun getPasswordEntriesByCategory(categoryId: Long): Flow<List<PasswordEntry>> {

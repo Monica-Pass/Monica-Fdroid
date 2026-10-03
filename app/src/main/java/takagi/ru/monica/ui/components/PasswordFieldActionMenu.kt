@@ -9,6 +9,11 @@
 
 package takagi.ru.monica.ui.components
 
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.round
+import androidx.compose.ui.platform.testTag
+
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -93,7 +98,12 @@ class PasswordFieldActionMenuState {
     internal var showLargeDisplay by mutableStateOf(false)
     internal var showBarcode by mutableStateOf(false)
 
-    fun open() {
+    internal var touchAnchor by mutableStateOf<Offset?>(null)
+
+    fun open() { openAt(null) }
+
+    fun openAt(position: Offset?) {
+        touchAnchor = position
         expanded = true
     }
 
@@ -169,9 +179,10 @@ fun PasswordFieldActionMenuHost(
     includeVisibilityToggle: Boolean = false,
     isVisible: Boolean = true,
     onToggleVisibility: (() -> Unit)? = null,
-    onCreateSend: ((title: String, text: String) -> Unit)? = null
+    onCreateSend: ((title: String, text: String) -> Unit)? = null,
+    onCopy: (() -> Unit)? = null
 ) {
-    Box(modifier = Modifier.size(0.dp)) {
+    Box(modifier = Modifier.absoluteOffset { (state.touchAnchor ?: Offset.Zero).round() }.size(0.dp)) {
         PasswordFieldActionDropdown(
             state = state,
             label = label,
@@ -182,10 +193,10 @@ fun PasswordFieldActionMenuHost(
             isVisible = isVisible,
             onToggleVisibility = onToggleVisibility,
             onCreateSend = onCreateSend,
-            offset = PasswordFieldActionContentOffset
+            offset = PasswordFieldActionContentOffset, onCopy = onCopy
         )
     }
-    PasswordFieldActionDialogs(state = state, label = label, value = value, context = context)
+    PasswordFieldActionDialogs(state = state, label = label, value = value, context = context, onCopy = onCopy)
 }
 
 @Composable
@@ -240,6 +251,7 @@ private fun PasswordFieldActionDropdown(
             onDismissRequest = { state.expanded = false },
             offset = offset,
             modifier = Modifier
+                .testTag("password_field_action_popup")
                 .widthIn(min = 236.dp, max = 286.dp)
                 .shadow(10.dp, PasswordFieldActionMenuShape)
                 .clip(PasswordFieldActionMenuShape)

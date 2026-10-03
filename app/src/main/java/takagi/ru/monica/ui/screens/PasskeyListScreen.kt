@@ -67,7 +67,6 @@ import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.data.model.PasskeyBinding
 import takagi.ru.monica.data.model.PasskeyBindingCodec
 import takagi.ru.monica.data.model.StorageTarget
-import takagi.ru.monica.keepass.KeePassPasskeyCredentialConflictException
 import takagi.ru.monica.repository.KeePassCompatibilityBridge
 import takagi.ru.monica.repository.KeePassWorkspaceRepository
 import takagi.ru.monica.ui.PasswordListCategoryChipMenuBottomActions
@@ -106,8 +105,15 @@ import takagi.ru.monica.ui.common.state.rememberSaveableLazyListState
 import takagi.ru.monica.ui.icons.UnmatchedIconFallback
 import takagi.ru.monica.ui.icons.rememberAutoMatchedSimpleIcon
 import takagi.ru.monica.ui.icons.shouldShowFallbackSlot
+import takagi.ru.monica.ui.password.PasskeyScanTopActionsMenuItem
 import takagi.ru.monica.ui.password.PasswordTopActionsDropdownMenu
 import takagi.ru.monica.bitwarden.sync.SyncStatus
+import takagi.ru.monica.passkey.PasskeyMoveReport
+import takagi.ru.monica.passkey.PasskeyMoveReporter
+import takagi.ru.monica.passkey.PasskeyBitwardenMoveBlockedException
+import takagi.ru.monica.passkey.PasskeyMoveSourceCleanupException
+import takagi.ru.monica.ui.components.PasskeyMoveResultDialog
+import kotlinx.coroutines.CancellationException
 import takagi.ru.monica.passkey.PasskeyCredentialIdCodec
 import takagi.ru.monica.passkey.PasskeyPrivateKeyStore
 import takagi.ru.monica.passkey.managementKey
@@ -129,6 +135,7 @@ import takagi.ru.monica.ui.common.pull.PullSearchHint
 @Composable
 fun PasskeyListScreen(
     viewModel: PasskeyViewModel,
+    onScanFidoQr: () -> Unit,
     onPasskeyClick: (PasskeyEntry) -> Unit = {},
     passwordViewModel: PasswordViewModel? = null,
     onNavigateToPasswordDetail: (Long) -> Unit = {},
@@ -265,6 +272,8 @@ fun PasskeyListScreen(
     var passkeyToMoveCategory by remember { mutableStateOf<PasskeyEntry?>(null) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedPasskeys by remember { mutableStateOf(setOf<String>()) }
+    var moveReport by remember { mutableStateOf<PasskeyMoveReport?>(null) }
+    var moveInProgress by remember { mutableStateOf(false) }
     var pendingDeletePasskey by remember { mutableStateOf<PasskeyEntry?>(null) }
     var selectedCategoryFilter by remember { mutableStateOf<UnifiedCategoryFilterSelection>(UnifiedCategoryFilterSelection.All) }
     var showCategoryFilterDialog by remember { mutableStateOf(false) }
@@ -636,12 +645,15 @@ fun PasskeyListScreen(
             )
         }
 
-        val queueDelete = queueSourceBitwardenDeleteAfterPasskeyMove(passkey, target)
-        if (queueDelete.isFailure) {
-            return Result.failure(
-                queueDelete.exceptionOrNull()
-                    ?: IllegalStateException("Queue Bitwarden delete failed")
-            )
+        val queueDelete = try {
+            queueSourceBitwardenDeleteAfterPasskeyMove(passkey, target)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            Result.failure(error)
+        }
+        queueDelete.exceptionOrNull()?.let { error ->
+            if (error is CancellationException) throw error
+            return Result.failure(PasskeyMoveSourceCleanupException(error))
         }
 
         return Result.success(Unit)
@@ -745,15 +757,6 @@ fun PasskeyListScreen(
                 searchHint = stringResource(R.string.passkey_search_placeholder),
                 onActionPillBoundsChanged = { bounds -> categoryPillBoundsInWindow = bounds },
                 actions = {
-                    onNavigateToAuthenticator?.let { navigateToAuthenticator ->
-                        IconButton(onClick = navigateToAuthenticator) {
-                            Icon(
-                                imageVector = Icons.Default.Security,
-                                contentDescription = stringResource(R.string.authenticator),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                     if (appSettings.categorySelectionUiMode == takagi.ru.monica.data.CategorySelectionUiMode.CHIP_MENU) {
                         IconButton(onClick = { showCategoryFilterDialog = true }) {
                             Icon(
@@ -795,22 +798,20 @@ fun PasskeyListScreen(
                             }
                         }
                     }
+                    IconButton(onClick = { isSearchExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = stringResource(R.string.search),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Box {
-                        IconButton(onClick = { isSearchExpanded = true }) {
+                        IconButton(onClick = { showTopActionsMenu = true }) {
                             Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = stringResource(R.string.search),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.more_options),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        }
-                        if (showStandaloneSettingsEntry) {
-                            IconButton(onClick = { showTopActionsMenu = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.more_options),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
                         if (appSettings.categorySelectionUiMode == takagi.ru.monica.data.CategorySelectionUiMode.CHIP_MENU) {
                             UnifiedCategoryFilterChipMenuDropdown(
@@ -854,14 +855,32 @@ fun PasskeyListScreen(
                             expanded = showTopActionsMenu,
                             onDismissRequest = { showTopActionsMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.nav_settings)) },
-                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                onClick = {
-                                    showTopActionsMenu = false
-                                    onOpenStandaloneSettings()
-                                }
+                        DatabaseManagerMenuItem(selectedCategoryFilter.managerDatabase()) { showTopActionsMenu = false }
+
+                            PasskeyScanTopActionsMenuItem(
+                                onDismissMenu = { showTopActionsMenu = false },
+                                onScanFidoQr = onScanFidoQr,
                             )
+                            onNavigateToAuthenticator?.let { navigateToAuthenticator ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.authenticator)) },
+                                    leadingIcon = { Icon(Icons.Default.Security, contentDescription = null) },
+                                    onClick = {
+                                        showTopActionsMenu = false
+                                        navigateToAuthenticator()
+                                    },
+                                )
+                            }
+                            if (showStandaloneSettingsEntry) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.nav_settings)) },
+                                    leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                    onClick = {
+                                        showTopActionsMenu = false
+                                        onOpenStandaloneSettings()
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -1288,37 +1307,39 @@ fun PasskeyListScreen(
         allowMove = true,
         onTargetSelected = { target, action ->
             val passkey = passkeyToMoveCategory ?: return@UnifiedMoveToCategoryBottomSheet
+            if (moveInProgress) return@UnifiedMoveToCategoryBottomSheet
+            moveInProgress = true
             scope.launch {
-                val effectiveAction = action
-                if (effectiveAction == UnifiedMoveAction.COPY && action == UnifiedMoveAction.COPY) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.passkey_copy_uses_move_hint),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                val persistResult = persistStorageTarget(passkey, target)
-                if (persistResult.isFailure) {
-                    Toast.makeText(
-                        context,
-                        context.getString(passkeyMoveFailureMessageRes(persistResult.exceptionOrNull())),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@launch
-                }
+                try {
+                    if (action == UnifiedMoveAction.COPY) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.passkey_copy_uses_move_hint),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    val report = PasskeyMoveReporter.execute(listOf(passkey)) { persistStorageTarget(it, target) }
+                    if (report.issues.isNotEmpty()) {
+                        passkeyToMoveCategory = null
+                        moveReport = report
+                        return@launch
+                    }
 
-                val targetLabel = when (target) {
-                    UnifiedMoveCategoryTarget.Uncategorized -> context.getString(R.string.category_none)
-                    is UnifiedMoveCategoryTarget.MonicaCategory -> categoryMap[target.categoryId]?.name ?: context.getString(R.string.category_none)
-                    is UnifiedMoveCategoryTarget.BitwardenVaultTarget -> context.getString(R.string.filter_bitwarden)
-                    is UnifiedMoveCategoryTarget.BitwardenFolderTarget -> context.getString(R.string.filter_bitwarden)
-                    is UnifiedMoveCategoryTarget.KeePassDatabaseTarget -> keepassDatabases.find { it.id == target.databaseId }?.name ?: context.getString(R.string.filter_keepass)
-                    is UnifiedMoveCategoryTarget.KeePassGroupTarget -> decodeKeePassPathForDisplay(target.groupPath)
-                    is UnifiedMoveCategoryTarget.MdbxDatabaseTarget -> "MDBX"
-                    is UnifiedMoveCategoryTarget.MdbxFolderTarget -> "MDBX"
+                    val targetLabel = when (target) {
+                        UnifiedMoveCategoryTarget.Uncategorized -> context.getString(R.string.category_none)
+                        is UnifiedMoveCategoryTarget.MonicaCategory -> categoryMap[target.categoryId]?.name ?: context.getString(R.string.category_none)
+                        is UnifiedMoveCategoryTarget.BitwardenVaultTarget -> context.getString(R.string.filter_bitwarden)
+                        is UnifiedMoveCategoryTarget.BitwardenFolderTarget -> context.getString(R.string.filter_bitwarden)
+                        is UnifiedMoveCategoryTarget.KeePassDatabaseTarget -> keepassDatabases.find { it.id == target.databaseId }?.name ?: context.getString(R.string.filter_keepass)
+                        is UnifiedMoveCategoryTarget.KeePassGroupTarget -> decodeKeePassPathForDisplay(target.groupPath)
+                        is UnifiedMoveCategoryTarget.MdbxDatabaseTarget -> "MDBX"
+                        is UnifiedMoveCategoryTarget.MdbxFolderTarget -> "MDBX"
+                    }
+                    Toast.makeText(context, context.getString(R.string.passkey_category_updated, targetLabel), Toast.LENGTH_SHORT).show()
+                    passkeyToMoveCategory = null
+                } finally {
+                    moveInProgress = false
                 }
-                Toast.makeText(context, context.getString(R.string.passkey_category_updated, targetLabel), Toast.LENGTH_SHORT).show()
-                passkeyToMoveCategory = null
             }
         }
     )
@@ -1339,63 +1360,34 @@ fun PasskeyListScreen(
         allowCopy = true,
         allowMove = true,
         onTargetSelected = { target, action ->
+            if (moveInProgress) return@UnifiedMoveToCategoryBottomSheet
+            val selectedItems = combinedPasskeys.filter { selectedPasskeys.contains(it.managementKey()) }
+            moveInProgress = true
             scope.launch {
-                val selectedItems = combinedPasskeys.filter { selectedPasskeys.contains(it.managementKey()) }
-                val movable = selectedItems.filter { it.boundPasswordId == null && it.syncStatus != "REFERENCE" }
-                val lockedCount = selectedItems.size - movable.size
-                var movedCount = 0
-                var failedCount = 0
-                var blockedCount = 0
-                var keepassConflictCount = 0
-
-                val effectiveAction = action
-
-                if (effectiveAction == UnifiedMoveAction.COPY && action == UnifiedMoveAction.COPY) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.passkey_copy_uses_move_hint),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                movable.forEach { passkey ->
-                    val persistResult = persistStorageTarget(passkey, target)
-                    if (persistResult.isSuccess) {
-                        movedCount++
-                    } else {
-                        when (persistResult.exceptionOrNull()) {
-                            is PasskeyBitwardenMoveBlockedException -> blockedCount++
-                            is KeePassPasskeyCredentialConflictException -> keepassConflictCount++
-                            else -> failedCount++
-                        }
+                try {
+                    if (action == UnifiedMoveAction.COPY) {
+                        Toast.makeText(context, context.getString(R.string.passkey_copy_uses_move_hint), Toast.LENGTH_SHORT).show()
                     }
+                    val report = PasskeyMoveReporter.execute(selectedItems) { persistStorageTarget(it, target) }
+                    showBatchMoveCategoryDialog = false
+                    selectionMode = false
+                    selectedPasskeys = emptySet()
+                    if (report.issues.isNotEmpty()) {
+                        moveReport = report
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.passkey_move_success_count, report.movedCount),
+                            Toast.LENGTH_SHORT).show()
+                    }
+                } finally {
+                    moveInProgress = false
                 }
-
-                val baseMessage = context.getString(R.string.selected_items, movedCount)
-                val skippedTotal = lockedCount + failedCount + blockedCount + keepassConflictCount
-                val toastMessage = if (skippedTotal > 0) context.getString(R.string.legacy_ui_result_with_skipped, baseMessage, skippedTotal) else baseMessage
-                Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
-                if (blockedCount > 0) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.passkey_bitwarden_move_blocked_count, blockedCount),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                if (keepassConflictCount > 0) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.passkey_keepass_credential_conflict_count, keepassConflictCount),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                showBatchMoveCategoryDialog = false
-                selectionMode = false
-                selectedPasskeys = emptySet()
             }
         }
     )
+
+    moveReport?.let { report ->
+        PasskeyMoveResultDialog(report = report, onDismiss = { moveReport = null })
+    }
 
     CategoryManagementCreateDialog(
         state = categoryMgmt,
@@ -2239,17 +2231,6 @@ private fun SafeAnimatedVisibility(
         enter = enter,
         exit = exit
     ) { content() }
-}
-
-private class PasskeyBitwardenMoveBlockedException :
-    IllegalStateException("Passkey cannot be migrated to Bitwarden")
-
-private fun passkeyMoveFailureMessageRes(error: Throwable?): Int {
-    return when (error) {
-        is PasskeyBitwardenMoveBlockedException -> R.string.passkey_bitwarden_move_blocked
-        is KeePassPasskeyCredentialConflictException -> R.string.passkey_keepass_credential_conflict
-        else -> R.string.passkey_bitwarden_move_failed
-    }
 }
 
 private fun isPasskeyMigratableToBitwarden(context: Context, passkey: PasskeyEntry): Boolean {

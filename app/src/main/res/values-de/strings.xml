@@ -2242,7 +2242,7 @@
     <string name="developer_view_logs">Protokolle anzeigen</string>
     <string name="developer_view_logs_desc">Anwendungs-Logcat-Ausgabeprotokolle anzeigen</string>
     <string name="developer_clear_log_buffer">Protokollpuffer löschen</string>
-    <string name="developer_clear_log_buffer_desc">Geräteprotokollpuffer löschen</string>
+    <string name="developer_clear_log_buffer_desc">Leere den Protokollpuffer, reproduziere den Fehler und teile die Protokolle mit dem Entwickler.</string>
     <string name="developer_share_logs">Protokolle teilen</string>
     <string name="developer_share_logs_desc">Letzte Protokolle exportieren und teilen</string>
     <string name="developer_functions">Entwicklerfunktionen</string>
@@ -2316,7 +2316,7 @@
     <string name="state">Bundesland/Provinz</string>
     <string name="zip_code">Postleitzahl</string>
     <string name="payment_info">Zahlungsinformationen</string>
-    <string name="credit_card_number">Kreditkartennummer</string>
+    <string name="credit_card_number">Kartennummer</string>
     <string name="card_holder">Karteninhaber</string>
     <string name="credit_card_encrypted">Kreditkarteninformationen sind verschlüsselt</string>
     <string name="expand">Erweitern</string>

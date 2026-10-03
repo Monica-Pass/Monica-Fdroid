@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Nhật ký chẩn đoán</string>
+    <string name="developer_logs_entry_description">Tìm kiếm, lọc và chia sẻ báo cáo đầy đủ</string>
+    <string name="developer_logs_search">Tìm nhật ký, thẻ hoặc ngoại lệ</string>
+    <string name="developer_logs_source">Nguồn: %1$s</string>
+    <string name="developer_logs_hint">Tái hiện sự cố rồi làm mới. Nhật ký mức lỗi không phải lúc nào cũng có nghĩa là chức năng bị hỏng.</string>
+    <string name="developer_logs_share_full">Chia sẻ toàn bộ nhật ký</string>
+    <string name="developer_logs_result_count">%1$d / %2$d sự kiện · Cập nhật %3$s</string>
+    <string name="developer_logs_no_matches">Không có nhật ký phù hợp. Hãy đổi từ khóa hoặc bộ lọc.</string>
+    <string name="developer_logs_clear_confirmation">Xóa nhật ký chẩn đoán? Dữ liệu kho và cài đặt được giữ lại. Thông tin môi trường và nhật ký mới vẫn có thể xuất hiện.</string>
+    <string name="developer_logs_copy_event">Sao chép sự kiện</string>
+    <string name="developer_logs_preview_limit">Bản xem trước đã rút gọn. Sao chép sự kiện hoặc chia sẻ báo cáo đầy đủ để xem toàn bộ nội dung.</string>
+    <string name="developer_logs_expand">Mở rộng nhật ký</string>
+    <string name="developer_logs_collapse">Thu gọn nhật ký</string>
+    <string name="developer_logs_security">Bảo mật</string>
+    <string name="developer_verification_group">Xác minh và tương thích</string>
+    <string name="developer_forensics_group">Chẩn đoán đồng bộ Bitwarden</string>
+    <string name="developer_logs_copy_failed">Không thể sao chép sự kiện này. Hãy chia sẻ tệp nhật ký đầy đủ.</string>
+</resources>

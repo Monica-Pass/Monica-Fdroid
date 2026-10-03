@@ -2242,7 +2242,7 @@
     <string name="developer_view_logs">로그 보기</string>
     <string name="developer_view_logs_desc">애플리케이션 Logcat 출력 로그 보기</string>
     <string name="developer_clear_log_buffer">로그 버퍼 지우기</string>
-    <string name="developer_clear_log_buffer_desc">기기 로그 버퍼 지우기</string>
+    <string name="developer_clear_log_buffer_desc">로그 버퍼를 지운 후 문제를 재현하고 개발자에게 로그를 공유하세요.</string>
     <string name="developer_share_logs">로그 공유</string>
     <string name="developer_share_logs_desc">최근 로그 내보내기 및 공유</string>
     <string name="developer_functions">개발자 기능</string>
@@ -2316,7 +2316,7 @@
     <string name="state">시/도</string>
     <string name="zip_code">우편번호</string>
     <string name="payment_info">결제 정보</string>
-    <string name="credit_card_number">신용카드 번호</string>
+    <string name="credit_card_number">카드 번호</string>
     <string name="card_holder">카드 소지자</string>
     <string name="credit_card_encrypted">신용카드 정보는 암호화됩니다</string>
     <string name="expand">확장</string>

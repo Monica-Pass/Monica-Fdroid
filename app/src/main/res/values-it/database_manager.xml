@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manager_open_database">Apri impostazioni database</string>
+    <string name="manager_dual">Passa a uno o due pannelli</string>
+    <string name="manager_databases">Database</string>
+    <string name="manager_choose_destination">Scegli destinazione</string>
+    <string name="manager_selection_destination">%1$d selezionati → %2$s</string>
+    <string name="manager_items_selected">%1$d elementi · %2$d selezionati</string>
+    <string name="manager_confirm_transfer">Trasferire %1$d elementi da %2$s a %3$s / %4$s? L’origine viene conservata fino alla verifica della destinazione.</string>
+    <string name="manager_result">Risultato trasferimento</string>
+    <string name="manager_result_count">Completati: %1$d · Da verificare: %2$d</string>
+    <string name="manager_technical_details">Dettagli tecnici</string>
+    <string name="manager_select">Seleziona elemento</string>
+    <string name="manager_failure_format">Il formato di destinazione non conserva tutte le informazioni originali. L’origine è conservata. Scegli lo stesso formato; i campi interessati sono nei dettagli.</string>
+    <string name="manager_failure_changed">Dati modificati o verifica non riuscita. L’origine è conservata. Aggiorna entrambi i pannelli e controlla la destinazione prima di riprovare.</string>
+    <string name="manager_failure_locked">Database bloccato o file originale non disponibile. Aprilo nelle impostazioni e aggiorna questo pannello.</string>
+    <string name="manager_failure_general">Operazione incompleta. Controlla entrambi i pannelli e i dettagli: la destinazione potrebbe contenere copie parziali.</string>
+</resources>

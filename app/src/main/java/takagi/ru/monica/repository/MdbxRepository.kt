@@ -79,7 +79,11 @@ interface MdbxRepository {
         passkeys.forEach { deletePasskey(it) }
     }
 
-    /** Acknowledgements are emitted only after native persistence, including partial batches. */
+    /**
+     * Import passwords have been normalized and encrypted exactly once by the restore applier.
+     * Their decrypted contents must not be interpreted as another encryption envelope.
+     * Acknowledgements are emitted only after native persistence, including partial batches.
+     */
     suspend fun upsertImportBatch(
         databaseId: Long,
         passwords: List<PasswordEntry>,

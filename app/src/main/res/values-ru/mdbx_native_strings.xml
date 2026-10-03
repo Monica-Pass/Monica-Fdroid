@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Управление исходными данными</string>
+    <string name="mdbx_native_summary">Папки, записи и исходные поля</string>
+    <string name="mdbx_native_search">Поиск по названию или типу</string>
+    <string name="mdbx_native_readonly">Исходные поля доступны только для чтения. Переименование записи в списке не меняет её содержимое.</string>
+    <string name="mdbx_native_schema">Версия формата данных: %1$d</string>
+    <string name="mdbx_native_failed">Не удалось завершить операцию. Обновите и проверьте сохранённое состояние перед повторной попыткой.</string>
+    <string name="mdbx_native_snapshot_readonly">Структура снимка доступна только для чтения. Восстановление доступно в меню снимка.</string>
+</resources>

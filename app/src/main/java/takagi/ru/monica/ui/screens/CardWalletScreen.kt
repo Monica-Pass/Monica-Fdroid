@@ -946,6 +946,8 @@ fun CardWalletScreen(
                         expanded = showTopActionsMenu,
                         onDismissRequest = { showTopActionsMenu = false }
                     ) {
+                        DatabaseManagerMenuItem(selectedCategoryFilter.managerDatabase()) { showTopActionsMenu = false }
+
                             if (showStandaloneSettingsEntry) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.nav_settings)) },

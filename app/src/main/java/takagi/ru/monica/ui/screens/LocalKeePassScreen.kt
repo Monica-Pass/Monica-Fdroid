@@ -409,7 +409,7 @@ internal fun LocalKeePassScreen(
             onOpenNativeManager = { db ->
                 showDatabaseDetailSheet = false
                 selectedDatabase = null
-                viewModel.openNativeManager(db.id)
+                DatabaseManagerNavigation.open(takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.KEEPASS, db.id))
             }
         )
     }

@@ -190,7 +190,7 @@
     <string name="field_state">State</string>
     <string name="field_postal_code">Postal</string>
     <string name="field_country">Country</string>
-    <string name="field_card_number">Card No.</string>
+    <string name="field_card_number">Card Number</string>
     <string name="field_card_valid">✓ Valid</string>
     <string name="field_cardholder">Cardholder</string>
     <string name="field_expiry">Expiry</string>
@@ -2277,7 +2277,7 @@
     <string name="developer_view_logs">View Logs</string>
     <string name="developer_view_logs_desc">View application Logcat output logs</string>
     <string name="developer_clear_log_buffer">Clear Log Buffer</string>
-    <string name="developer_clear_log_buffer_desc">Clear device log buffer</string>
+    <string name="developer_clear_log_buffer_desc">Clear the log buffer, reproduce the bug, then share the logs with the developer.</string>
     <string name="developer_share_logs">Share Logs</string>
     <string name="developer_share_logs_desc">Export and share recent logs</string>
     <string name="developer_functions">Developer Functions</string>
@@ -2351,7 +2351,7 @@
     <string name="state">State/Province</string>
     <string name="zip_code">Zip Code</string>
     <string name="payment_info">Payment Information</string>
-    <string name="credit_card_number">Credit Card Number</string>
+    <string name="credit_card_number">Card Number</string>
     <string name="card_holder">Card Holder</string>
     <string name="credit_card_encrypted">Credit card information is encrypted</string>
     <string name="expand">Expand</string>
@@ -4693,4 +4693,11 @@
     <string name="language_snow_leopard" translatable="false">芝士雪豹语</string>
     <string name="qs_lang_snow_leopard" translatable="false">芝士雪豹语</string>
     <string name="cg_vault_frequent">Frequently used in vault</string>
+
+    <string name="local_recovery_action">Recover with master password</string>
+    <string name="local_recovery_password">Monica master password</string>
+    <string name="local_recovery_description">Use the encrypted recovery material saved on this device. No cloud connection is needed. Original configuration files are preserved.</string>
+    <string name="local_recovery_failed">Recovery could not be completed. Check your master password and try again. If the problem persists, keep your app data and copy the diagnostic information.</string>
+    <string name="local_recovery_limits">Recovery requires the database and attachment files. Legacy data not yet converted and hardware-only passkeys may still require the original device keys.</string>
+    <string name="local_recovery_save_failed">Could not safely save the master password. Original data has been preserved.</string>
 </resources>

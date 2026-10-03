@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">原始資料</string>
+    <string name="mdbx_native_summary">覽目錄、條目及原欄位</string>
+    <string name="mdbx_native_search">尋名或類</string>
+    <string name="mdbx_native_readonly">原欄位惟可閱；條目可更名，其內容不易。</string>
+    <string name="mdbx_native_schema">資料格式版本：%1$d</string>
+    <string name="mdbx_native_failed">操作未成。請先重載，察已存之狀，再試。</string>
+    <string name="mdbx_native_snapshot_readonly">快照結構惟可閱。還原請用快照選單。</string>
+</resources>

@@ -8,11 +8,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,38 +18,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WarningAmber
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Surface
+import takagi.ru.monica.ui.components.SettingsPanelGroup
+import takagi.ru.monica.ui.components.SettingsPanelRow
+import takagi.ru.monica.ui.components.SettingsSubpageTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,10 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -80,7 +64,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import takagi.ru.monica.BuildConfig
 import takagi.ru.monica.R
-import takagi.ru.monica.autofill_ng.AutofillPickerActivityV2
 import takagi.ru.monica.autofill_ng.core.AutofillLogger
 import takagi.ru.monica.bitwarden.service.BitwardenDiagLogger
 import takagi.ru.monica.bitwarden.service.BitwardenSyncForensicsLogger
@@ -97,20 +80,22 @@ import takagi.ru.monica.viewmodel.SettingsViewModel
  * 开发者设置页面
  * 包含日志查看、清除以及开发者专用功能
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeveloperSettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToMdbx: () -> Unit = {}
+    onNavigateToMdbx: () -> Unit = {},
+    onNavigateToLogs: () -> Unit
 ) {
     val context = LocalContext.current
     val securityManager = remember(context) { SecurityManager(context.applicationContext) }
     val settings by viewModel.settings.collectAsState()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
+    var confirmClearLogs by remember { mutableStateOf(false) }
+    var clearingLogs by remember { mutableStateOf(false) }
 
-    var showDebugLogsDialog by remember { mutableStateOf(false) }
     var disablePasswordVerification by remember { mutableStateOf(settings.disablePasswordVerification) }
     var passkeyHyperOsBiometricBypassEnabled by remember {
         mutableStateOf(settings.passkeyHyperOsBiometricBypassEnabled)
@@ -170,110 +155,53 @@ fun DeveloperSettingsScreen(
         }
     }
 
-    // 准备共享元素 Modifier
-    val sharedTransitionScope = takagi.ru.monica.ui.LocalSharedTransitionScope.current
-    val animatedVisibilityScope = takagi.ru.monica.ui.LocalAnimatedVisibilityScope.current
-
-    var sharedModifier: Modifier = Modifier
-    if (false && sharedTransitionScope != null && animatedVisibilityScope != null) {
-        with(sharedTransitionScope!!) {
-            sharedModifier = Modifier.sharedBounds(
-                sharedContentState = rememberSharedContentState(key = "developer_settings_card"),
-                animatedVisibilityScope = animatedVisibilityScope!!,
-                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-            )
-        }
-    }
-
-    Scaffold(
-        modifier = sharedModifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.developer_settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = stringResource(R.string.developer_settings_back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(scrollState)
-        ) {
-            // 日志调试区域
-            SettingsSection(
-                title = stringResource(R.string.developer_log_debugging)
-            ) {
-                SettingsItem(
-                    icon = Icons.Default.BugReport,
-                    title = stringResource(R.string.developer_view_logs),
-                    subtitle = stringResource(R.string.developer_view_logs_desc),
-                    onClick = { showDebugLogsDialog = true }
-                )
-
-                SettingsItem(
-                    icon = Icons.Default.DeleteSweep,
-                    title = stringResource(R.string.developer_clear_log_buffer),
-                    subtitle = stringResource(R.string.developer_clear_log_buffer_desc),
-                    onClick = {
-                        scope.launch {
-                            val clearResult = DeveloperLogDebugHelper.clearLogs(context)
-                            val message = if (clearResult.logcatCleared) {
-                                context.getString(R.string.developer_log_buffer_cleared)
-                            } else {
-                                context.getString(
-                                    R.string.developer_clear_failed,
-                                    clearResult.reason ?: "unknown"
-                                )
-                            }
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-
-                SettingsItem(
-                    icon = Icons.Default.Share,
-                    title = stringResource(R.string.developer_share_logs),
-                    subtitle = stringResource(R.string.developer_share_logs_desc),
-                    onClick = {
-                        scope.launch {
-                            try {
-                                val snapshot = DeveloperLogDebugHelper.collectLogs(context)
-                                val shareIntent =
-                                    DeveloperLogDebugHelper.createShareIntent(context, snapshot.report)
-                                context.startActivity(
-                                    Intent.createChooser(
-                                        shareIntent,
-                                        context.getString(R.string.developer_share_title)
-                                    )
-                                )
-                            } catch (e: Exception) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.developer_share_failed,
-                                        e.message ?: "unknown"
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
-                )
+    val clearTitle = stringResource(R.string.developer_clear_log_buffer)
+    val clearMessage = stringResource(R.string.developer_logs_clear_confirmation)
+    val clearAction = stringResource(R.string.clear)
+    val cancelAction = stringResource(R.string.cancel)
+    if (confirmClearLogs) AlertDialog(
+        onDismissRequest = { confirmClearLogs = false },
+        icon = { Icon(Icons.Default.DeleteSweep, null) },
+        title = { Text(clearTitle) },
+        text = { Text(clearMessage) },
+        confirmButton = { TextButton(onClick = {
+            confirmClearLogs = false
+            clearingLogs = true
+            scope.launch {
+                try {
+                    val result = DeveloperLogDebugHelper.clearLogs(context)
+                    Toast.makeText(context, context.getString(
+                        if (result.logcatCleared) R.string.developer_log_buffer_cleared
+                        else R.string.developer_clear_failed, result.reason.orEmpty()), Toast.LENGTH_LONG).show()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    Toast.makeText(context, context.getString(R.string.developer_clear_failed,
+                        error.message.orEmpty()), Toast.LENGTH_LONG).show()
+                } finally { clearingLogs = false }
             }
+        }) { Text(clearAction) } },
+        dismissButton = { TextButton(onClick = { confirmClearLogs = false }) {
+            Text(cancelAction)
+        } })
 
-            // 开发者功能
-            SettingsSection(
-                title = stringResource(R.string.developer_functions)
-            ) {
-                SettingsItemWithSwitch(
+    Scaffold(topBar = {
+        SettingsSubpageTopBar(stringResource(R.string.developer_settings), onNavigateBack)
+    }) { paddingValues ->
+        Column(Modifier.fillMaxSize().padding(paddingValues).verticalScroll(scrollState)
+            .padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SettingsPanelGroup(stringResource(R.string.developer_log_debugging)) {
+                SettingsPanelRow(Icons.Default.BugReport,
+                    stringResource(R.string.developer_view_logs),
+                    stringResource(R.string.developer_logs_entry_description), onClick = onNavigateToLogs)
+                SettingsPanelRow(Icons.Default.DeleteSweep,
+                    stringResource(R.string.developer_clear_log_buffer),
+                    stringResource(R.string.developer_clear_log_buffer_desc),
+                    onClick = { confirmClearLogs = true }, enabled = !clearingLogs)
+
+            }
+            SettingsPanelGroup(stringResource(R.string.developer_verification_group)) {
+                SettingsPanelRow(
                     icon = Icons.Default.Lock,
                     title = stringResource(R.string.developer_disable_password_verification),
                     subtitle = stringResource(R.string.developer_disable_password_verification_desc),
@@ -301,7 +229,7 @@ fun DeveloperSettingsScreen(
                     }
                 )
 
-                SettingsItemWithSwitch(
+                SettingsPanelRow(
                     icon = Icons.Default.WarningAmber,
                     title = stringResource(R.string.developer_passkey_hyperos_biometric_bypass),
                     subtitle = stringResource(R.string.developer_passkey_hyperos_biometric_bypass_desc),
@@ -313,26 +241,9 @@ fun DeveloperSettingsScreen(
                         }
                     }
                 )
-
-                SettingsItemWithSwitch(
-                    icon = Icons.Default.AutoAwesome,
-                    title = stringResource(R.string.developer_launcher_name_use_pass),
-                    subtitle = stringResource(R.string.developer_launcher_name_use_pass_desc),
-                    checked = appLauncherLabel == AppLauncherLabel.MONICA_PASS,
-                    onCheckedChange = { enabled ->
-                        val nextLabel = if (enabled) {
-                            AppLauncherLabel.MONICA_PASS
-                        } else {
-                            AppLauncherLabel.MONICA
-                        }
-                        appLauncherLabel = nextLabel
-                        scope.launch {
-                            viewModel.updateAppLauncherLabel(nextLabel)
-                        }
-                    }
-                )
-
-                SettingsItemWithSwitch(
+            }
+            SettingsPanelGroup(stringResource(R.string.developer_forensics_group)) {
+                SettingsPanelRow(
                     icon = Icons.Default.BugReport,
                     title = stringResource(R.string.developer_bitwarden_forensics_toggle),
                     subtitle = stringResource(R.string.developer_bitwarden_forensics_toggle_desc),
@@ -345,7 +256,7 @@ fun DeveloperSettingsScreen(
                     }
                 )
 
-                SettingsItemWithSwitch(
+                SettingsPanelRow(
                     icon = Icons.Default.WarningAmber,
                     title = stringResource(R.string.developer_bitwarden_forensics_raw_toggle),
                     subtitle = stringResource(R.string.developer_bitwarden_forensics_raw_toggle_desc),
@@ -368,7 +279,7 @@ fun DeveloperSettingsScreen(
                     }
                     ?: stringResource(R.string.developer_bitwarden_forensics_dir_not_set)
 
-                SettingsItem(
+                SettingsPanelRow(
                     icon = Icons.Default.Share,
                     title = stringResource(R.string.developer_bitwarden_forensics_dir),
                     subtitle = directorySubtitle,
@@ -380,7 +291,7 @@ fun DeveloperSettingsScreen(
                     }
                 )
 
-                SettingsItem(
+                SettingsPanelRow(
                     icon = Icons.Default.DeleteSweep,
                     title = stringResource(R.string.developer_bitwarden_forensics_clear_dir),
                     subtitle = stringResource(R.string.developer_bitwarden_forensics_clear_dir_desc),
@@ -396,41 +307,37 @@ fun DeveloperSettingsScreen(
                         ).show()
                     }
                 )
-
-                SettingsItem(
+            }
+            SettingsPanelGroup(stringResource(R.string.developer_functions)) {
+                SettingsPanelRow(
+                    icon = Icons.Default.AutoAwesome,
+                    title = stringResource(R.string.developer_launcher_name_use_pass),
+                    subtitle = stringResource(R.string.developer_launcher_name_use_pass_desc),
+                    checked = appLauncherLabel == AppLauncherLabel.MONICA_PASS,
+                    onCheckedChange = { enabled ->
+                        val nextLabel = if (enabled) {
+                            AppLauncherLabel.MONICA_PASS
+                        } else {
+                            AppLauncherLabel.MONICA
+                        }
+                        appLauncherLabel = nextLabel
+                        scope.launch {
+                            viewModel.updateAppLauncherLabel(nextLabel)
+                        }
+                    }
+                )
+                SettingsPanelRow(
                     icon = Icons.Default.Science,
                     title = stringResource(R.string.mdbx_format_title),
                     subtitle = stringResource(R.string.mdbx_format_description),
                     onClick = onNavigateToMdbx
                 )
-            }
-            SettingsSection(
-                title = stringResource(R.string.developer_autofill_debug)
-            ) {
-                SettingsItem(
-                    icon = Icons.Default.AutoAwesome,
-                    title = stringResource(R.string.developer_launch_autofill_v2_test),
-                    subtitle = stringResource(R.string.developer_launch_autofill_v2_desc),
-                    onClick = {
-                        try {
-                            val testIntent = AutofillPickerActivityV2.getTestIntent(context)
-                            context.startActivity(testIntent)
-                        } catch (e: Exception) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.developer_launch_failed, e.message),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                )
-
                 // 显示会话状态
                 if (BuildConfig.DEBUG) {
                     val sessionUnlocked by SessionManager.isUnlocked.collectAsState()
                     val remainingMinutes = SessionManager.getRemainingMinutes()
 
-                    SettingsItem(
+                    SettingsPanelRow(
                         icon = if (sessionUnlocked) Icons.Default.LockOpen else Icons.Default.Lock,
                         title = stringResource(R.string.developer_session_status),
                         subtitle = if (sessionUnlocked) {
@@ -459,46 +366,14 @@ fun DeveloperSettingsScreen(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 警告提示
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.developer_warning),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.errorContainer) {
+                Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.WarningAmber, null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                    Text(stringResource(R.string.developer_warning), style = MaterialTheme.typography.bodySmall)
                 }
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(20.dp))
         }
-    }
-
-    // 显示日志对话框
-    if (showDebugLogsDialog) {
-        DebugLogsDialog(
-            onDismiss = { showDebugLogsDialog = false }
-        )
     }
 }
 
@@ -511,247 +386,12 @@ private fun summarizeDocumentTreeUri(uriRaw: String): String {
     return name ?: uriRaw.take(64)
 }
 
-/**
- * 调试日志对话框 - 分级显示关键日志
- */
-@Composable
-fun DebugLogsDialog(
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var snapshot by remember {
-        mutableStateOf(
-            DeveloperLogSnapshot(
-                report = "",
-                lines = emptyList()
-            )
-        )
-    }
-    var isLoading by remember { mutableStateOf(true) }
-    var filter by remember { mutableStateOf(DeveloperLogFilter.ALL) }
-
-    suspend fun refreshLogs() {
-        isLoading = true
-        snapshot = try {
-            DeveloperLogDebugHelper.collectLogs(context)
-        } catch (e: Exception) {
-            DeveloperLogSnapshot(
-                report = context.getString(R.string.developer_load_failed, e.message ?: "unknown"),
-                lines = emptyList()
-            )
-        }
-        isLoading = false
-    }
-
-    LaunchedEffect(Unit) {
-        refreshLogs()
-    }
-
-    val allLines = snapshot.lines
-    val errorCount = allLines.count { it.level == DeveloperLogLevel.ERROR }
-    val warningCount = allLines.count { it.level == DeveloperLogLevel.WARN }
-    val filteredLines = remember(allLines, filter) {
-        when (filter) {
-            DeveloperLogFilter.ALL -> allLines
-            DeveloperLogFilter.ERROR -> allLines.filter { it.level == DeveloperLogLevel.ERROR }
-            DeveloperLogFilter.WARNING -> allLines.filter { it.level == DeveloperLogLevel.WARN }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.BugReport,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp)
-            )
-        },
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.developer_system_logs),
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(
-                    onClick = { scope.launch { refreshLogs() } },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.developer_refresh),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        },
-        text = {
-            Column {
-                if (!isLoading && allLines.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = filter == DeveloperLogFilter.ALL,
-                            onClick = { filter = DeveloperLogFilter.ALL },
-                            label = { Text("${stringResource(R.string.developer_filter_all)} (${allLines.size})") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        )
-                        FilterChip(
-                            selected = filter == DeveloperLogFilter.ERROR,
-                            onClick = { filter = DeveloperLogFilter.ERROR },
-                            label = { Text("${stringResource(R.string.developer_filter_errors)} ($errorCount)") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Error,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        )
-                        FilterChip(
-                            selected = filter == DeveloperLogFilter.WARNING,
-                            onClick = { filter = DeveloperLogFilter.WARNING },
-                            label = { Text("${stringResource(R.string.developer_filter_warnings)} ($warningCount)") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.WarningAmber,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(420.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    when {
-                        isLoading -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-
-                        filteredLines.isEmpty() -> {
-                            Text(
-                                text = if (snapshot.report.isNotBlank()) {
-                                    snapshot.report
-                                } else {
-                                    stringResource(R.string.developer_no_logs)
-                                },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(12.dp)
-                                    .verticalScroll(rememberScrollState()),
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                lineHeight = 16.sp
-                            )
-                        }
-
-                        else -> {
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                itemsIndexed(filteredLines) { _, line ->
-                                    DeveloperLogLineItem(line)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.developer_close))
-            }
-        }
-    )
-}
-
-@Composable
-private fun DeveloperLogLineItem(line: DeveloperLogLine) {
-    val textColor = when (line.level) {
-        DeveloperLogLevel.ERROR -> MaterialTheme.colorScheme.error
-        DeveloperLogLevel.WARN -> MaterialTheme.colorScheme.tertiary
-        DeveloperLogLevel.INFO -> MaterialTheme.colorScheme.onSurface
-        DeveloperLogLevel.DEBUG -> MaterialTheme.colorScheme.onSurfaceVariant
-        DeveloperLogLevel.VERBOSE -> MaterialTheme.colorScheme.onSurfaceVariant
-        DeveloperLogLevel.OTHER -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Text(
-        text = line.text,
-        color = textColor,
-        fontFamily = FontFamily.Monospace,
-        fontSize = 11.sp,
-        lineHeight = 16.sp
-    )
-}
-
-private enum class DeveloperLogLevel {
-    ERROR,
-    WARN,
-    INFO,
-    DEBUG,
-    VERBOSE,
-    OTHER
-}
-
-private enum class DeveloperLogFilter {
-    ALL,
-    ERROR,
-    WARNING
-}
-
-private data class DeveloperLogLine(
-    val text: String,
-    val level: DeveloperLogLevel
-)
-
-private data class DeveloperLogSnapshot(
-    val report: String,
-    val lines: List<DeveloperLogLine>
-)
-
-private data class ClearLogsResult(
+internal data class ClearLogsResult(
     val logcatCleared: Boolean,
     val reason: String?
 )
 
-private object DeveloperLogDebugHelper {
+internal object DeveloperLogDebugHelper {
     private const val LOG_LINE_LIMIT = 1200
     private const val SHARE_DIR = "temp_share"
     private const val SHARE_PREFIX = "monica_logs_"
@@ -764,8 +404,8 @@ private object DeveloperLogDebugHelper {
         "SmartFieldDetector:V",
         "*:S"
     )
-    private val timeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    private val fileFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+    private val timeFormatter get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    private val fileFormatter get() = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
 
     suspend fun collectLogs(context: Context): DeveloperLogSnapshot = withContext(Dispatchers.IO) {
         runCatching { AutofillLogger.initialize(context.applicationContext) }
@@ -930,24 +570,22 @@ private object DeveloperLogDebugHelper {
             }
         }
 
-        val parsedSystem = parseLines(selectedLogs)
-        val parsedPersisted = parseLines(persistedAutofillLogs)
-        val parsedBitwarden = parseLines(persistedBitwardenLogs)
-        val parsedForensics = parseLines(persistedForensicsLogs)
-        val parsedMdbx = parseLines(persistedMdbxLogs)
-        val parsedSecurity = parseLines(persistedSecurityLogs)
-        val parsedSteam = parseLines(persistedSteamLogs)
-        val parsed = when {
-            parsedSystem.isNotEmpty() -> parsedSystem
-            parsedSteam.isNotEmpty() -> parsedSteam
-            parsedMdbx.isNotEmpty() -> parsedMdbx
-            parsedSecurity.isNotEmpty() -> parsedSecurity
-            parsedForensics.isNotEmpty() -> parsedForensics
-            parsedBitwarden.isNotEmpty() -> parsedBitwarden
-            parsedPersisted.isNotEmpty() -> parsedPersisted
-            else -> parseLines(autofillLogs)
-        }
-        DeveloperLogSnapshot(report = report, lines = parsed)
+        val sources = linkedMapOf(
+            DeveloperLogSource.SYSTEM to selectedLogs,
+            DeveloperLogSource.AUTOFILL to persistedAutofillLogs,
+            DeveloperLogSource.BITWARDEN to persistedBitwardenLogs,
+            DeveloperLogSource.FORENSICS to persistedForensicsLogs,
+            DeveloperLogSource.MDBX to persistedMdbxLogs,
+            DeveloperLogSource.SECURITY to persistedSecurityLogs,
+            DeveloperLogSource.STEAM to persistedSteamLogs,
+            DeveloperLogSource.PASSKEY to persistedPasskeyLogs,
+        )
+        DeveloperLogSnapshot(report, sources.flatMap { (source, raw) ->
+            val persisted = parseDeveloperLogEvents(raw, source)
+            (if (source == DeveloperLogSource.AUTOFILL) mergeDeveloperAutofillEvents(
+                persisted, parseDeveloperLogEvents(autofillLogs, source)
+            ) else persisted).asReversed()
+        }, System.currentTimeMillis())
     }
 
     suspend fun clearLogs(context: Context): ClearLogsResult = withContext(Dispatchers.IO) {
@@ -1086,39 +724,6 @@ private object DeveloperLogDebugHelper {
         return readLogcat(command)
     }
 
-    private fun parseLines(raw: String): List<DeveloperLogLine> {
-        if (raw.isBlank()) return emptyList()
-        return raw
-            .lineSequence()
-            .map { it.trimEnd() }
-            .filter { it.isNotBlank() }
-            .map { line ->
-                DeveloperLogLine(
-                    text = line,
-                    level = detectLevel(line)
-                )
-            }
-            .toList()
-    }
-
-    private fun detectLevel(line: String): DeveloperLogLevel {
-        if (line.contains("FATAL EXCEPTION", ignoreCase = true)) return DeveloperLogLevel.ERROR
-        if (line.contains("[ERROR]")) return DeveloperLogLevel.ERROR
-        if (line.contains("[WARN]")) return DeveloperLogLevel.WARN
-        if (line.contains("[INFO]")) return DeveloperLogLevel.INFO
-        if (line.contains("[DEBUG]")) return DeveloperLogLevel.DEBUG
-
-        val match = Regex("""\s([VDIWEAF])\s[^:]+:\s""").find(line)
-        val levelChar = match?.groupValues?.getOrNull(1) ?: return DeveloperLogLevel.OTHER
-        return when (levelChar) {
-            "E", "F", "A" -> DeveloperLogLevel.ERROR
-            "W" -> DeveloperLogLevel.WARN
-            "I" -> DeveloperLogLevel.INFO
-            "D" -> DeveloperLogLevel.DEBUG
-            "V" -> DeveloperLogLevel.VERBOSE
-            else -> DeveloperLogLevel.OTHER
-        }
-    }
 }
 
 private const val DEVELOPER_LOG_SHARE_TEXT_LIMIT = 48_000

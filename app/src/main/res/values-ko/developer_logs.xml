@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">진단 로그</string>
+    <string name="developer_logs_entry_description">전체 진단 보고서 검색, 필터링 및 공유</string>
+    <string name="developer_logs_search">로그, 태그 또는 예외 검색</string>
+    <string name="developer_logs_source">출처: %1$s</string>
+    <string name="developer_logs_hint">문제를 재현한 후 새로고침하세요. 오류 수준의 로그가 항상 기능 고장을 뜻하지는 않습니다.</string>
+    <string name="developer_logs_share_full">전체 로그 공유</string>
+    <string name="developer_logs_result_count">%2$d개 중 %1$d개 · %3$s 업데이트</string>
+    <string name="developer_logs_no_matches">일치하는 로그가 없습니다. 검색어나 필터를 변경하세요.</string>
+    <string name="developer_logs_clear_confirmation">진단 로그를 지울까요? 보관함 데이터와 설정은 유지됩니다. 현재 환경 정보와 새 로그는 계속 표시될 수 있습니다.</string>
+    <string name="developer_logs_copy_event">이 이벤트 복사</string>
+    <string name="developer_logs_preview_limit">미리보기가 축약되었습니다. 이벤트를 복사하거나 전체 보고서를 공유하면 모든 내용을 볼 수 있습니다.</string>
+    <string name="developer_logs_expand">로그 펼치기</string>
+    <string name="developer_logs_collapse">로그 접기</string>
+    <string name="developer_logs_security">보안</string>
+    <string name="developer_verification_group">인증 및 호환성</string>
+    <string name="developer_forensics_group">Bitwarden 동기화 진단</string>
+    <string name="developer_logs_copy_failed">이 이벤트를 복사할 수 없습니다. 전체 로그 파일을 공유하세요.</string>
+</resources>

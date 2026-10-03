@@ -77,7 +77,8 @@ internal fun mdbxUnknownFields(payload: String): List<Pair<String, String>> {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun MdbxUnknownEntryContent(title: String, type: String, payload: String?, failed: Boolean, onBack: () -> Unit) {
+internal fun MdbxUnknownEntryContent(title: String, type: String, payload: String?, failed: Boolean, onBack: () -> Unit,
+    notice: String = stringResource(R.string.mdbx_unknown_read_only), metadataContent: @Composable () -> Unit = {}) {
     val fields = remember(payload) { payload?.let(::mdbxUnknownFields).orEmpty() }
     val visible = remember(payload) { mutableStateMapOf<Int, Boolean>() }
     Scaffold(topBar = {
@@ -94,7 +95,8 @@ internal fun MdbxUnknownEntryContent(title: String, type: String, payload: Strin
                 Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(type, style = MaterialTheme.typography.titleMedium)
-                        Text(stringResource(R.string.mdbx_unknown_read_only), style = MaterialTheme.typography.bodyMedium)
+                        Text(notice, style = MaterialTheme.typography.bodyMedium)
+                        metadataContent()
                     }
                 }
                 Spacer(Modifier.height(12.dp))

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Log diagnostici</string>
+    <string name="developer_logs_entry_description">Cerca, filtra e condividi un rapporto completo</string>
+    <string name="developer_logs_search">Cerca log, tag o eccezioni</string>
+    <string name="developer_logs_source">Origine: %1$s</string>
+    <string name="developer_logs_hint">Riproduci il problema, poi aggiorna. Un log di errore non indica sempre un malfunzionamento.</string>
+    <string name="developer_logs_share_full">Condividi tutti i log</string>
+    <string name="developer_logs_result_count">%1$d di %2$d eventi · Aggiornato %3$s</string>
+    <string name="developer_logs_no_matches">Nessun log corrispondente. Modifica la ricerca o i filtri.</string>
+    <string name="developer_logs_clear_confirmation">Cancellare i log diagnostici? I dati della cassaforte e le impostazioni restano invariati. I dettagli di sistema e i nuovi log possono ancora comparire.</string>
+    <string name="developer_logs_copy_event">Copia evento</string>
+    <string name="developer_logs_preview_limit">Anteprima abbreviata. Copia l’evento o condividi il rapporto completo per leggere tutto il testo.</string>
+    <string name="developer_logs_expand">Espandi evento</string>
+    <string name="developer_logs_collapse">Comprimi evento</string>
+    <string name="developer_logs_security">Sicurezza</string>
+    <string name="developer_verification_group">Verifica e compatibilità</string>
+    <string name="developer_forensics_group">Diagnostica sincronizzazione Bitwarden</string>
+    <string name="developer_logs_copy_failed">Impossibile copiare questo evento. Condividi il file di log completo.</string>
+</resources>

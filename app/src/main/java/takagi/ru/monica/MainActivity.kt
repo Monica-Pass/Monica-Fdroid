@@ -411,6 +411,9 @@ class MainActivity : BaseMonicaActivity() {
             is takagi.ru.monica.security.SecureStartupResult.Blocked -> {
                 Log.w(TAG, "Secure storage startup blocked: ${startup.failure.reason}")
                 val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure)
+                val recovery = takagi.ru.monica.security.LocalVaultRecovery(this)
+                val canRecover = recovery.available()
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
                 setContent {
                     takagi.ru.monica.ui.theme.MonicaTheme {
                         takagi.ru.monica.ui.screens.SecureStorageRecoveryScreen(
@@ -419,7 +422,12 @@ class MainActivity : BaseMonicaActivity() {
                                 getSystemService(android.content.ClipboardManager::class.java)
                                     .setPrimaryClip(android.content.ClipData.newPlainText("Monica diagnostic", diagnostic))
                             },
-                            onExit = { finish() }
+                            onExit = { finish() },
+                            onRecover = if (canRecover) { password ->
+                                val recovered = withContext(Dispatchers.IO) { recovery.recover(password) }
+                                if (recovered) recreate()
+                                recovered
+                            } else null
                         )
                     }
                 }
@@ -871,6 +879,11 @@ fun MonicaContent(
     val settings by settingsViewModel.settings.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(navController) {
+        takagi.ru.monica.ui.screens.DatabaseManagerNavigation.requests.collect { key ->
+            navController.navigate("database_manager?database=${android.net.Uri.encode(key)}") { launchSingleTop = true }
+        }
+    }
     LaunchedEffect(localKeePassViewModel, navController) {
         localKeePassViewModel.nativeManagerOpenRequests.collect {
             if (navController.currentDestination?.route != Screen.LocalKeePass.route) {
@@ -1025,6 +1038,17 @@ fun MonicaContent(
                 runCatching {
                     delay(15_000)
                     sensitiveFieldMigrationManager.runUnlockedSmallBatch()
+                    securityManager.migrateProtectedDeviceCiphertexts()
+                    takagi.ru.monica.security.PortableLocalCipherMigration.run(database, securityManager)
+                    takagi.ru.monica.security.PortablePreferenceCipherMigration.run(context, securityManager)
+                    runCatching { takagi.ru.monica.security.RecoverableBitwardenSettings.open(context) }
+                    takagi.ru.monica.data.PasswordHistoryManager(context).exportHistoryJson()
+                    takagi.ru.monica.data.CommonAccountPreferences(context).defaultEmail.first()
+                    takagi.ru.monica.utils.KeePassKeyFileStore(context).migrateDeviceEncryptedCopies()
+                    if (context.getDatabasePath("steam_database").exists()) {
+                        takagi.ru.monica.security.PortableLocalCipherMigration.run(
+                            takagi.ru.monica.steam.data.SteamDatabase.getDatabase(context), securityManager, steam = true)
+                    }
                 }.onFailure { error ->
                     Log.w(
                         "SensitiveMigration",
@@ -3672,6 +3696,7 @@ fun MonicaContent(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
+                onNavigateToLogs = { navController.navigate(Screen.DeveloperLogs.route) { launchSingleTop = true } },
                 onNavigateToMdbx = {
                     navController.navigate(Screen.MdbxManager.createRoute()) {
                         popUpTo(Screen.MdbxManager.routePattern) { inclusive = true }
@@ -3682,6 +3707,16 @@ fun MonicaContent(
             }
         }
         
+        composable(
+            route = Screen.DeveloperLogs.route,
+            enterTransition = { easyNotesScreenEnter() },
+            exitTransition = { easyNotesScreenExit() },
+            popEnterTransition = { easyNotesScreenEnter() },
+            popExitTransition = { easyNotesScreenExit() }
+        ) {
+            takagi.ru.monica.ui.screens.DeveloperLogsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
         composable(
             route = Screen.Extensions.route,
             enterTransition = { easyNotesScreenEnter() },
@@ -4025,6 +4060,40 @@ fun MonicaContent(
                 },
                 onConsumeMessage = {
                     dedupViewModel.consumeMessage()
+                }
+            )
+        }
+
+        composable(
+            route = "database_manager?database={database}",
+            arguments = listOf(navArgument("database") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            enterTransition = { easyNotesScreenEnter() }, exitTransition = { easyNotesScreenExit() },
+            popEnterTransition = { easyNotesScreenEnter() }, popExitTransition = { easyNotesScreenExit() }
+        ) { entry ->
+            takagi.ru.monica.ui.screens.DatabaseManagerScreen(
+                initialDatabaseKey = entry.arguments?.getString("database"),
+                mdbxViewModel = mdbxViewModel, keepassViewModel = localKeePassViewModel,
+                onManageDatabase = { database ->
+                    if (database.mdbxId != null) navController.navigate(Screen.MdbxManager.createRoute(databaseId = database.databaseId))
+                    else navController.navigate(Screen.LocalKeePass.route)
+                },
+                onBack = { navController.popBackStack() },
+                onNativeEntry = { route ->
+                    when (route) {
+                        is KeePassNativeResolvedRoute.Password ->
+                            navController.navigate(Screen.PasswordDetail.createRoute(route.id)) { launchSingleTop = true }
+                        is KeePassNativeResolvedRoute.Totp ->
+                            navController.navigate(Screen.AddEditTotp.createRoute(route.id)) { launchSingleTop = true }
+                        is KeePassNativeResolvedRoute.Note ->
+                            navController.navigate(Screen.NoteDetail.createRoute(route.id)) { launchSingleTop = true }
+                        is KeePassNativeResolvedRoute.BankCard ->
+                            navController.navigate("bank_card_detail/${route.id}") { launchSingleTop = true }
+                        is KeePassNativeResolvedRoute.Document ->
+                            navController.navigate(Screen.DocumentDetail.createRoute(route.id)) { launchSingleTop = true }
+                        is KeePassNativeResolvedRoute.Passkey ->
+                            navController.navigate(Screen.PasskeyDetail.createRoute(route.recordId)) { launchSingleTop = true }
+                        KeePassNativeResolvedRoute.Generic -> Unit
+                    }
                 }
             )
         }

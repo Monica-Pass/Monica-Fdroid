@@ -1122,7 +1122,7 @@
     <string name="developer_view_logs">Xem nhật ký</string>
     <string name="developer_view_logs_desc">Xem nhật ký đầu ra Logcat của ứng dụng</string>
     <string name="developer_clear_log_buffer">Xóa bộ đệm nhật ký</string>
-    <string name="developer_clear_log_buffer_desc">Xóa bộ đệm nhật ký của thiết bị</string>
+    <string name="developer_clear_log_buffer_desc">Xóa bộ đệm nhật ký, tái hiện lỗi rồi chia sẻ nhật ký với nhà phát triển.</string>
     <string name="developer_share_logs">Chia sẻ nhật ký</string>
     <string name="developer_share_logs_desc">Xuất và chia sẻ nhật ký gần đây</string>
     <string name="developer_functions">Chức năng nhà phát triển</string>
@@ -1190,7 +1190,7 @@
     <string name="state">Tỉnh/Thành</string>
     <string name="zip_code">Mã bưu điện</string>
     <string name="payment_info">Thông tin thanh toán</string>
-    <string name="credit_card_number">Số thẻ tín dụng</string>
+    <string name="credit_card_number">Số thẻ</string>
     <string name="card_holder">Chủ thẻ</string>
     <string name="credit_card_encrypted">Thông tin thẻ tín dụng đã được mã hóa</string>
     <string name="expand">Mở rộng</string>

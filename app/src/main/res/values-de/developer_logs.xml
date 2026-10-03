@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Diagnoseprotokolle</string>
+    <string name="developer_logs_entry_description">Vollständigen Diagnosebericht suchen, filtern und teilen</string>
+    <string name="developer_logs_search">Protokolle, Tags oder Ausnahmen suchen</string>
+    <string name="developer_logs_source">Quelle: %1$s</string>
+    <string name="developer_logs_hint">Problem reproduzieren, dann aktualisieren. Fehlerprotokolle bedeuten nicht immer einen Funktionsausfall.</string>
+    <string name="developer_logs_share_full">Alle Protokolle teilen</string>
+    <string name="developer_logs_result_count">%1$d von %2$d Ereignissen · Aktualisiert %3$s</string>
+    <string name="developer_logs_no_matches">Keine passenden Protokolle. Suchbegriff oder Filter ändern.</string>
+    <string name="developer_logs_clear_confirmation">Diagnoseprotokolle leeren? Tresordaten und Einstellungen bleiben erhalten. Umgebungsdaten und neue Protokolle können weiterhin erscheinen.</string>
+    <string name="developer_logs_copy_event">Ereignis kopieren</string>
+    <string name="developer_logs_preview_limit">Vorschau gekürzt. Ereignis kopieren oder vollständigen Bericht teilen, um alles zu sehen.</string>
+    <string name="developer_logs_expand">Ereignis aufklappen</string>
+    <string name="developer_logs_collapse">Ereignis zuklappen</string>
+    <string name="developer_logs_security">Sicherheit</string>
+    <string name="developer_verification_group">Verifizierung &amp; Kompatibilität</string>
+    <string name="developer_forensics_group">Bitwarden-Synchronisierungsdiagnose</string>
+    <string name="developer_logs_copy_failed">Dieses Ereignis kann nicht kopiert werden. Bitte die vollständige Protokolldatei teilen.</string>
+</resources>

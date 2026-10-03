@@ -14,6 +14,9 @@ internal object SecureItemRestoreTypeResolver {
         sourceFileName: String? = null
     ): ItemType? {
         val parsedType = parseTypeAlias(rawType)
+        // New wallet types share identity/bank fields. Their explicit type must
+        // survive legacy cards_docs filenames and generic shape inference.
+        if (parsedType == ItemType.BILLING_ADDRESS || parsedType == ItemType.PAYMENT_ACCOUNT) return parsedType
         val inferredType = inferTypeFromItemData(itemData)
         val looksLikeLegacyCardDocFile =
             sourceFileName?.contains("cards_docs", ignoreCase = true) == true
@@ -28,6 +31,8 @@ internal object SecureItemRestoreTypeResolver {
     private fun parseTypeAlias(rawType: String?): ItemType? {
         val normalized = rawType?.trim()?.uppercase(Locale.ROOT)?.replace('-', '_') ?: return null
         return when (normalized) {
+            ItemType.BILLING_ADDRESS.name, "BILLINGADDRESS", "ADDRESS", "账单地址" -> ItemType.BILLING_ADDRESS
+            ItemType.PAYMENT_ACCOUNT.name, "PAYMENTACCOUNT", "PAYMENT", "支付账户" -> ItemType.PAYMENT_ACCOUNT
             ItemType.TOTP.name,
             "AUTHENTICATOR",
             "AUTHENTICATORS",
@@ -70,6 +75,8 @@ internal object SecureItemRestoreTypeResolver {
         val keys = root.keys
 
         if (looksLikeTotp(keys)) return ItemType.TOTP
+        if ("paymentType" in keys) return ItemType.PAYMENT_ACCOUNT
+        if ("streetAddress" in keys && "documentType" !in keys) return ItemType.BILLING_ADDRESS
         if (looksLikeBankCard(keys)) return ItemType.BANK_CARD
         if (looksLikeDocument(keys)) return ItemType.DOCUMENT
         if (looksLikeNote(keys)) return ItemType.NOTE

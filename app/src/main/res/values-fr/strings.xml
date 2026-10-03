@@ -2050,7 +2050,7 @@
     <string name="developer_view_logs">Afficher les journaux</string>
     <string name="developer_view_logs_desc">Afficher les journaux de sortie de l\'application Logcat</string>
     <string name="developer_clear_log_buffer">Effacer le tampon du journal</string>
-    <string name="developer_clear_log_buffer_desc">Effacer le tampon du journal de l\'appareil</string>
+    <string name="developer_clear_log_buffer_desc">Videz le tampon, reproduisez le problème, puis partagez les journaux avec le développeur.</string>
     <string name="developer_share_logs">Partager les journaux</string>
     <string name="developer_share_logs_desc">Exporter et partager les journaux récents</string>
     <string name="developer_functions">Fonctions de développeur</string>
@@ -2118,7 +2118,7 @@
     <string name="state">État/Province</string>
     <string name="zip_code">Code postal</string>
     <string name="payment_info">Informations de paiement</string>
-    <string name="credit_card_number">Numéro de Carte de Crédit</string>
+    <string name="credit_card_number">Numéro de carte</string>
     <string name="card_holder">Titulaire de la carte</string>
     <string name="credit_card_encrypted">Les informations de carte de crédit sont chiffrées</string>
     <string name="expand">Développer</string>

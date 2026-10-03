@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.vaultv2
 
+import takagi.ru.monica.ui.screens.managerDatabase
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -39,6 +41,8 @@ import takagi.ru.monica.data.VaultOverviewConfig
 import takagi.ru.monica.data.VaultOverviewModule
 import takagi.ru.monica.data.bitwarden.BitwardenVault
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.ui.password.PasskeyScanTopActionsMenuItem
+import takagi.ru.monica.ui.password.PasswordTopActionsDropdownMenu
 import takagi.ru.monica.ui.components.ExpressiveTopBar
 import takagi.ru.monica.ui.components.GroupedItemDefaults
 import takagi.ru.monica.ui.components.UnifiedCategoryFilterChipMenuDropdown
@@ -76,6 +80,7 @@ internal fun VaultOverviewScreen(
     onTrash: () -> Unit,
     onAllItems: () -> Unit,
     onSearch: () -> Unit,
+    onScanFidoQr: () -> Unit,
     onUnlock: () -> Unit,
     cardStackState: VaultOverviewCardStackState = remember { VaultOverviewCardStackState() },
     isDetailVisible: Boolean = false,
@@ -84,6 +89,7 @@ internal fun VaultOverviewScreen(
     onRequestDeleteItem: (VaultV2Item) -> Unit = {},
     walletStackLoopEnabled: Boolean = false,
 ) {
+    var showTopActions by rememberSaveable { mutableStateOf(false) }
     var showSources by rememberSaveable { mutableStateOf(false) }
     var showCustomization by rememberSaveable { mutableStateOf(false) }
     var pinModule by rememberSaveable { mutableStateOf<String?>(null) }
@@ -158,8 +164,27 @@ internal fun VaultOverviewScreen(
                     Icon(Icons.Default.Search, stringResource(R.string.search))
                 }
                 Box {
-                    IconButton(onClick = { showCustomization = true }, modifier = Modifier.testTag("overview_customize")) {
-                        Icon(Icons.Default.Tune, stringResource(R.string.vault_overview_customize))
+                    IconButton(onClick = { showTopActions = true }, modifier = Modifier.testTag("overview_more")) {
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
+                    }
+                    PasswordTopActionsDropdownMenu(
+                        expanded = showTopActions,
+                        onDismissRequest = { showTopActions = false },
+                    ) {
+                        takagi.ru.monica.ui.screens.DatabaseManagerMenuItem(overviewScopeSelection(currentScope).managerDatabase()) { showTopActions = false }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.vault_overview_customize)) },
+                            leadingIcon = { Icon(Icons.Default.Tune, null) },
+                            modifier = Modifier.testTag("overview_customize"),
+                            onClick = {
+                                showTopActions = false
+                                showCustomization = true
+                            },
+                        )
+                        PasskeyScanTopActionsMenuItem(
+                            onDismissMenu = { showTopActions = false },
+                            onScanFidoQr = onScanFidoQr,
+                        )
                     }
                     UnifiedCategoryFilterChipMenuDropdown(
                         expanded = showSources,

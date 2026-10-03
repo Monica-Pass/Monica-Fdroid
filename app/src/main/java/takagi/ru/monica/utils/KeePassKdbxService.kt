@@ -465,6 +465,7 @@ class KeePassKdbxService(
         private const val FIELD_MONICA_TOTP_DATA = "MonicaTotpData"
         private const val FIELD_MONICA_ITEM_TYPE = "MonicaItemType"
         private const val FIELD_MONICA_ITEM_DATA = "MonicaItemData"
+        private const val FIELD_MONICA_ITEM_NOTES = "MonicaItemNotes"
         private const val FIELD_MONICA_IMAGE_PATHS = "MonicaImagePaths"
         private const val FIELD_MONICA_IS_FAVORITE = "MonicaIsFavorite"
         private const val FIELD_BANK_NAME = "Bank Name"
@@ -2892,6 +2893,24 @@ class KeePassKdbxService(
         }
     }
 
+    /** Copy the complete native group profile, retaining metadata absent from the editor. */
+    internal suspend fun copyManagerGroupProfile(databaseId: Long, targetUuid: UUID,
+        source: KeePassNativeGroupRecord): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            mutateDatabase(databaseId) { loaded ->
+                requireUniqueNativeGroup(loaded.nativeSession.value, targetUuid)
+                val iconUuid = source.customIcon?.let { UUID.randomUUID() }
+                fun replace(group: Group): Group = if (group.uuid == targetUuid) {
+                    source.nativeGroup.copy(uuid = targetUuid, groups = group.groups, entries = group.entries,
+                        customIconUuid = iconUuid ?: source.customIconUuid)
+                } else group.copy(groups = group.groups.map(::replace))
+                var updated = loaded.keePassDatabase.modifyParentGroup { replace(this) }
+                if (iconUuid != null) updated = updated.modifyCustomIcons { it + (iconUuid to requireNotNull(source.customIcon)) }
+                MutationPlan(updatedDatabase = updated, result = Unit)
+            }
+        }
+    }
+
     internal suspend fun updateNativeGroupProperties(
         databaseId: Long,
         groupUuid: UUID,
@@ -3278,7 +3297,13 @@ class KeePassKdbxService(
 
         try {
             val result = withDatabaseMutationLocks(listOf(sourceDatabaseId, targetDatabaseId)) {
-                val sourceLoaded = getCachedLoadedDatabase(sourceDatabaseId) ?: loadDatabase(sourceDatabaseId)
+                val cachedSource = getCachedLoadedDatabase(sourceDatabaseId) ?: loadDatabase(sourceDatabaseId)
+                // Verify against persisted KDBX values, whose timestamps have format-defined precision.
+                val sourceLoaded = openDatabaseStreamSource(cachedSource.database).use { source ->
+                    check(source.revision == cachedSource.sourceRevision) { "Source changed before transfer." }
+                    cachedSource.copy(keePassDatabase = decodeDatabase(source.openStream(), cachedSource.credentials,
+                        source.header, cachedSource.database.resolvedActiveFilePath()))
+                }
                 val targetLoaded = if (sourceDatabaseId == targetDatabaseId) {
                     sourceLoaded
                 } else {
@@ -3363,6 +3388,7 @@ class KeePassKdbxService(
                     },
                     removeSource = {
                         if (moveSource) {
+                            check(takagi.ru.monica.security.SessionManager.isUnlocked.value) { "The vault is locked; both copies were retained." }
                             val updatedSource = KeePassLosslessTransfer.removeEntry(
                                 sourceDatabase = sourceLoaded.keePassDatabase,
                                 sourceEntryUuid = sourceUuid
@@ -4876,11 +4902,14 @@ class KeePassKdbxService(
         }
     }
 
+    internal fun portableSecureItemFields(item: SecureItem): Map<String, String> =
+        buildSecureItemFields(item).map { (name, value) -> name to value.content }.toMap()
+
     private fun buildSecureItemFields(item: SecureItem): EntryFields {
         val monicaId = if (item.id > 0) item.id.toString() else ""
         val portableItemData = portableSecureItemDataForKeePass(item)
         val noteForExternal = if (item.itemType == ItemType.NOTE) {
-            val decoded = NoteContentCodec.decodeFromItem(item)
+            val decoded = NoteContentCodec.decode(portableItemData, item.notes)
             NoteContentCodec.toExternalReadableContent(decoded.content)
         } else {
             item.notes
@@ -4895,6 +4924,10 @@ class KeePassKdbxService(
             FIELD_MONICA_IMAGE_PATHS to EntryValue.Plain(item.imagePaths),
             FIELD_MONICA_IS_FAVORITE to EntryValue.Plain(item.isFavorite.toString())
         )
+        if (item.itemType == ItemType.NOTE) {
+            // Standard Notes exposes the body to other clients; retain the separate Monica notes too.
+            pairs += FIELD_MONICA_ITEM_NOTES to EntryValue.Encrypted(EncryptedValue.fromString(item.notes))
+        }
         if (item.itemType == ItemType.BANK_CARD) {
             CardWalletDataCodec.parseBankCardData(portableItemData)?.let { cardData ->
                 appendBankCardFields(pairs, cardData)
@@ -6128,7 +6161,9 @@ class KeePassKdbxService(
             val itemData = payload.data
 
             val title = getStandardTitle(entry, resolutionContext)
-            val notes = getStandardNotes(entry, resolutionContext)
+            val notes = if (itemType == ItemType.NOTE && FIELD_MONICA_ITEM_NOTES in entry.fields.keys)
+                getFieldValue(entry, FIELD_MONICA_ITEM_NOTES, resolutionContext)
+            else getStandardNotes(entry, resolutionContext)
             val legacyImagePaths = getFieldValue(entry, FIELD_MONICA_IMAGE_PATHS, resolutionContext)
             val imagePaths = hydrateSecureItemImagePaths(
                 itemType = itemType,
@@ -6365,6 +6400,7 @@ class KeePassKdbxService(
             "Notes",
             FIELD_MONICA_ITEM_TYPE,
             FIELD_MONICA_ITEM_DATA,
+            FIELD_MONICA_ITEM_NOTES,
             FIELD_MONICA_IMAGE_PATHS,
             FIELD_MONICA_IS_FAVORITE,
             FIELD_MONICA_ITEM_ID
@@ -7687,11 +7723,7 @@ class KeePassKdbxService(
     }
 
     private fun buildExactCredentials(password: String, keyFileBytes: ByteArray?): Credentials {
-        return when {
-            keyFileBytes == null -> Credentials.from(EncryptedValue.fromString(password))
-            password.isBlank() -> Credentials.from(keyFileBytes)
-            else -> Credentials.from(EncryptedValue.fromString(password), keyFileBytes)
-        }
+        return KeePassCredentialSupport.buildExactCredentials(password, keyFileBytes)
     }
 
     private fun countEntries(group: Group): Int {

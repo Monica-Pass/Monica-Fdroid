@@ -1,7 +1,7 @@
-Fill embedded cards, addresses and documents; add standalone addresses to the keyboard.
-Fix lost autofill-picker targets on Android 12.
-Fill custom fields with compact scrolling keyboard actions.
-Keep unreadable OTP entries visible; distinguish mOTP PINs.
-Unify filter menus, fix Steam alignment and respect app scaling.
-Filter standalone/embedded API Keys, API Tokens and GPG keys; refine type menus.
-Fix generator suggestion height jumps.
+Add multi-account password projects with separate OTPs and autofill.
+Add dual-pane database management and continuous searchable logs.
+Protect local vault and connection recovery; preserve originals on key failure.
+Fix backup restore, KeePass keyfiles and Android 12 autofill.
+Fill embedded wallet fields; retain unreadable OTPs.
+Explain skipped passkey moves and add passkey QR scanning.
+Refine credential details, filters, generator sizing and editor stability.

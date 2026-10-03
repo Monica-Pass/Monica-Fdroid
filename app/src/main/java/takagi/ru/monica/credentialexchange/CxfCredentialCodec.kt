@@ -41,6 +41,8 @@ object CxfCredentialCodec {
         val modifiedAt: Long = createdAt,
         val favorite: Boolean = false,
         val androidApps: JsonArray = JsonArray(emptyList()),
+        // Export-only supplemental TOTP. Import capabilities remain explicitly limited.
+        val totp: CxfTotpExport? = null,
     ) {
         override fun toString() = "Item(<redacted>, logins=${logins.size}, passkeys=${passkeys.size})"
     }
@@ -190,6 +192,17 @@ object CxfCredentialCodec {
                                     put("userDisplayName", key.userDisplayName)
                                     put("userHandle", requireBase64Url(key.userHandle, 1, 64))
                                     put("key", requireBase64Url(key.key, 16, 16_384))
+                                }
+                            }
+                            if ("totp" in requestedTypes) item.totp?.let { otp ->
+                                addJsonObject {
+                                    put("type", "totp")
+                                    put("secret", otp.secret)
+                                    put("period", otp.period)
+                                    put("digits", otp.digits)
+                                    put("algorithm", otp.algorithm)
+                                    put("username", otp.username)
+                                    put("issuer", otp.issuer)
                                 }
                             }
                             if (item.notes.isNotEmpty() && "note" in requestedTypes) addJsonObject {

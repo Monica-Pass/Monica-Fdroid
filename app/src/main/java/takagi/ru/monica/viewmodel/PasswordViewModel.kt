@@ -1,6 +1,7 @@
 package takagi.ru.monica.viewmodel
 
 import takagi.ru.monica.data.explicitPasswordGroupId
+import takagi.ru.monica.data.model.storageScopeKey
 import takagi.ru.monica.utils.StringResolver
 
 import takagi.ru.monica.R
@@ -3014,10 +3015,11 @@ class PasswordViewModel internal constructor(
         restoreAuthenticatedUiState()
     }
     
-    fun setMasterPassword(password: String) {
-        securityManager.setMasterPassword(password)
+    fun setMasterPassword(password: String): Boolean {
+        if (!securityManager.setMasterPassword(password)) return false
         _isAuthenticated.value = true
         securityManager.markVaultAuthenticated()
+        return true
     }
     
     fun isMasterPasswordSet(): Boolean {
@@ -4659,33 +4661,12 @@ class PasswordViewModel internal constructor(
      */
     fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {
-            // 1. 验证当前密码
-            if (!securityManager.verifyMasterPassword(currentPassword)) {
-                // TODO: 通知UI密码错误
-                return@launch
+            // Changing the wrapping password keeps the same MDK. Rewriting every
+            // item is unnecessary and could overwrite a concurrent edit or sync.
+            val saved = withContext(Dispatchers.IO) {
+                securityManager.resetMasterPassword(currentPassword, newPassword)
             }
-            
-            // 2. 获取所有加密数据
-            val allPasswords = repository.getAllPasswordEntries().first()
-            
-            // 3. 使用当前密码解密所有数据
-            val decryptedPasswords = allPasswords.map { entry ->
-                entry.copy(password = decryptForDisplay(entry.password))
-            }
-            
-            // 4. 设置新密码
-            securityManager.setMasterPassword(newPassword)
-            
-            // 5. 使用新密码重新加密所有数据
-            decryptedPasswords.forEach { entry ->
-                repository.updatePasswordEntry(entry.copy(
-                    password = securityManager.encryptData(entry.password),
-                    updatedAt = Date()
-                ))
-            }
-            
-            // 6. 重新认证
-            _isAuthenticated.value = true
+            if (saved) _isAuthenticated.value = true
         }
     }
     
@@ -4830,9 +4811,16 @@ class PasswordViewModel internal constructor(
         customFields: List<CustomFieldDraft> = emptyList(),
         onCompleteWithIds: (firstPasswordId: Long?, savedPasswordIds: List<Long>) -> Unit = { _, _ -> },
         embeddedContentSave: takagi.ru.monica.data.model.DeferredEmbeddedContentSave? = null,
+        projectCredentials: List<takagi.ru.monica.data.model.ProjectCredentialGroup.Group>? = null,
         onComplete: (firstPasswordId: Long?) -> Unit = {}
     ) {
         viewModelScope.launch {
+            if (projectCredentials != null) {
+                val result = saveProjectCredentials(originalIds, commonEntry, projectCredentials, targets, customFields, embeddedContentSave)
+                onComplete(result.firstOrNull())
+                onCompleteWithIds(result.firstOrNull(), result)
+                return@launch
+            }
             val requestedTargetKeys = targets.distinctBy(StorageTarget::stableKey)
                 .map(StorageTarget::stableKey)
             val saveResult = try {
@@ -5139,6 +5127,162 @@ class PasswordViewModel internal constructor(
         return resolver.keePassUriPermissionState(Uri.parse(resolvedActiveFilePath())) == KeePassUriPermissionState.READ_WRITE
     }
 
+    private val projectCredentialSaveMutex = kotlinx.coroutines.sync.Mutex()
+
+    /** Uses real encrypted password rows, sharing only an explicit project identity. */
+    private suspend fun saveProjectCredentials(
+        originalIds: List<Long>, commonEntry: PasswordEntry,
+        groups: List<takagi.ru.monica.data.model.ProjectCredentialGroup.Group>, targets: List<StorageTarget>,
+        commonFields: List<CustomFieldDraft>, embeddedContentSave: takagi.ru.monica.data.model.DeferredEmbeddedContentSave?
+    ): List<Long> = withContext(Dispatchers.IO) {
+        projectCredentialSaveMutex.lock()
+        val created = mutableListOf<Long>()
+        val changed = mutableListOf<Pair<PasswordEntry, List<CustomFieldDraft>>>()
+        var destinationsCommitted = false
+        try {
+            val rows = takagi.ru.monica.data.model.ProjectCredentialGroup.rows(groups)
+            val destinations = targets.distinctBy(StorageTarget::stableKey)
+            check(destinations.isNotEmpty() && canWriteKeePassTargets(destinations))
+            val original = originalIds.map { requireNotNull(repository.getPasswordEntryById(it)) }
+            check(original.none { it.isDeleted || it.hasOwnershipConflict() })
+            val projectId = original.firstOrNull()?.explicitPasswordGroupId()
+                ?: commonEntry.explicitPasswordGroupId() ?: UUID.randomUUID().toString()
+            val replicaId = original.firstOrNull()?.replicaGroupId ?: projectId
+            val all = repository.getAllPasswordEntries().first().filter {
+                !it.isDeleted && !it.isArchived && (it.explicitPasswordGroupId() == projectId ||
+                    it.replicaGroupId == replicaId || it.id in originalIds)
+            }
+            val fieldsById = all.associate { entry -> entry.id to getCustomFieldsByEntryIdSync(entry.id).map(CustomFieldDraft::fromCustomField) }
+            // Reject future metadata before making any write.
+            all.forEach { entry ->
+                val fields = fieldsById[entry.id].orEmpty()
+                check(fields.none { it.title == takagi.ru.monica.data.model.ProjectCredentialGroup.FIELD } ||
+                    takagi.ru.monica.data.model.ProjectCredentialGroup.read(fields) != null)
+            }
+            val saved = mutableSetOf<Long>()
+            val owners = mutableListOf<Long>()
+            val assignedProjects = mutableMapOf<String, MutableSet<String>>()
+            for (target in destinations) {
+                val scopeRows = all.filter { it.toStorageTarget().storageScopeKey() == target.storageScopeKey() && it.id !in saved }
+                val exactRows = scopeRows.filter { it.toStorageTarget().stableKey == target.stableKey }
+                val targetRows = exactRows.ifEmpty {
+                    if (destinations.count { it.storageScopeKey() == target.storageScopeKey() } == 1) scopeRows else emptyList()
+                }
+                // Copies into two folders in the same database are separate projects. Reusing
+                // one row twice both loses the first folder and duplicates credential metadata.
+                val usedProjects = assignedProjects.getOrPut(target.storageScopeKey()) { mutableSetOf() }
+                val preferredProject = targetRows.firstOrNull()?.explicitPasswordGroupId() ?: projectId
+                val targetProjectId = if (preferredProject in usedProjects) UUID.randomUUID().toString() else preferredProject
+                usedProjects += targetProjectId
+                for ((index, row) in rows.withIndex()) {
+                    val existing = targetRows.firstOrNull { it.id == row.password.originalEntryId }
+                        ?: targetRows.singleOrNull {
+                            takagi.ru.monica.data.model.ProjectCredentialGroup.read(fieldsById[it.id].orEmpty())?.passwordId == row.password.id
+                        }
+                    val rowFields = takagi.ru.monica.data.model.ProjectCredentialGroup.put(
+                        if (index == 0) commonFields else fieldsById[existing?.id ?: row.password.originalEntryId].orEmpty(), row.metadata.forProject(targetProjectId))
+                    val entry = target.applyToPasswordEntry(commonEntry.copy(
+                        passwordGroupId = targetProjectId, username = row.username, password = row.password.value,
+                        authenticatorKey = row.otp,
+                    ), replicaGroupId = replicaId)
+                    if (existing != null) {
+                        val currentMetadata = takagi.ru.monica.data.model.ProjectCredentialGroup.read(fieldsById[existing.id].orEmpty())
+                        check(row.password.metadata == null || (currentMetadata?.passwordId == row.password.id && currentMetadata.groupId == row.metadata.groupId))
+                        val secret = inspectSecretState(existing)
+                        check(secret is SecretValueState.Available || secret == SecretValueState.Empty)
+                        changed += existing.copy(password = secret.plainValueOrEmpty()) to fieldsById[existing.id].orEmpty()
+                    }
+                    val deferred = if (index == 0) embeddedContentSave else null
+                    val id = if (existing != null) {
+                        saveGroupedPasswordsInternal(
+                            originalIds = listOf(existing.id), requestedEntry = entry,
+                            passwords = listOf(row.password.value), requestedCustomFields = rowFields,
+                            skipCategoryBinding = true, embeddedContentSave = deferred
+                        ) ?: error("Credential row save failed")
+                    } else {
+                        val initialFields = deferred?.initialFields(rowFields, emptyList()) ?: rowFields
+                        val newId = createPasswordEntryInternal(entry.copy(id = 0,
+                            replicaGroupId = entry.replicaGroupId.takeIf { entry.mdbxDatabaseId == null }),
+                            includeDetailedLog = false, skipCategoryBinding = true, customFieldsOverride = initialFields)
+                            ?: error("Credential row create failed")
+                        // Track immediately, including failures while publishing fields or copying assets.
+                        created += newId
+                        saveCustomFieldsForEntry(newId, initialFields)
+                        deferred?.record(newId, rowFields, entry.boundNoteId)
+                        row.password.originalEntryId?.let { sourceId ->
+                            all.firstOrNull { it.id == sourceId }?.let { source ->
+                                copyProjectCredentialAttachments(source, requireNotNull(repository.getPasswordEntryById(newId)))
+                            }
+                        }
+                        newId
+                    }
+                    saved += id
+                    if (index == 0) {
+                        val previousOwner = all.filter { it.id in originalIds }.minWithOrNull(
+                            compareBy<PasswordEntry> {
+                                val meta = takagi.ru.monica.data.model.ProjectCredentialGroup.read(fieldsById[it.id].orEmpty())
+                                if (meta?.primary != false) 0 else 1
+                            }.thenBy { takagi.ru.monica.data.model.ProjectCredentialGroup.read(fieldsById[it.id].orEmpty())?.passwordOrder ?: 0 }.thenBy { it.id })
+                        // Removing the first password must not orphan the project's shared files.
+                        if (previousOwner != null && previousOwner.id != id &&
+                            previousOwner.id != row.password.originalEntryId && previousOwner.id !in rows.mapNotNull { it.password.originalEntryId }) {
+                            copyProjectCredentialAttachments(previousOwner, requireNotNull(repository.getPasswordEntryById(id)))
+                        }
+                        owners += id
+                    }
+                }
+            }
+            // Only remove explicitly deleted rows after every destination has accepted every row.
+            val selected = destinations.map { it.stableKey }.toSet()
+            val removed = all.filter { it.id in originalIds && it.id !in saved &&
+                (destinations.size == 1 || it.toStorageTarget().stableKey in selected) }
+            destinationsCommitted = true
+            if (removed.isNotEmpty()) check(deletePasswordEntriesBatch(removed) == removed.size) {
+                "Some removed credentials are still retained; reload before retrying"
+            }
+            owners
+        } catch (error: Exception) {
+            if (!destinationsCommitted) withContext(NonCancellable) {
+                changed.asReversed().forEach { (entry, fields) ->
+                    runCatching {
+                        check(updatePasswordEntryInternal(entry, customFieldsOverride = fields, skipCategoryBinding = true))
+                        saveCustomFieldsForEntry(entry.id, fields)
+                    }.onFailure { Log.e("PasswordViewModel", "Credential rollback needs retry; original rows retained") }
+                }
+                rollbackIndependentCredentialCreates(created)
+            }
+            if (error is CancellationException) throw error
+            Log.e("PasswordViewModel", "Project credential save incomplete; committed destinations retained=$destinationsCommitted")
+            emptyList()
+        } finally { projectCredentialSaveMutex.unlock() }
+    }
+
+    private suspend fun copyProjectCredentialAttachments(source: PasswordEntry, target: PasswordEntry) {
+        val context = appContext ?: return
+        val facade = AttachmentContainer.facade(context)
+        val count = facade.listByPassword(source.id).size
+        if (count == 0) return
+        val db = takagi.ru.monica.data.PasswordDatabase.getDatabase(context)
+        fun keepassContext(entry: PasswordEntry) = entry.keepassDatabaseId?.let { databaseId ->
+            entry.keepassEntryUuid?.let { uuid -> takagi.ru.monica.attachments.facade.AttachmentFacade.KeePassContext(databaseId, uuid) }
+        }
+        suspend fun bitwardenContext(entry: PasswordEntry) = entry.bitwardenVaultId?.let { vaultId ->
+            db.bitwardenVaultDao().getVaultById(vaultId)?.let { vault -> getAttachmentBitwardenContext(vault, entry.bitwardenCipherId) }
+        }
+        val sourceBw = bitwardenContext(source)
+        val copied = when {
+            target.keepassDatabaseId != null -> facade.copyAttachmentsToKeePassEntry(source.id, target.id,
+                target.keepassDatabaseId, requireNotNull(target.keepassEntryUuid), source.keepassDatabaseId,
+                source.keepassEntryUuid, sourceBw)
+            target.bitwardenVaultId != null -> facade.copyAttachmentsToBitwardenEntry(source.id, target.id,
+                requireNotNull(bitwardenContext(target)), sourceBw, keepassContext(source))
+            else -> facade.cloneAttachmentsToNewOwner(
+                takagi.ru.monica.attachments.model.AttachmentOwner.password(source.id),
+                takagi.ru.monica.attachments.model.AttachmentOwner.password(target.id), sourceBw, keepassContext(source))
+        }
+        check(copied == count) { "All credential attachments must be copied before deleting the source" }
+    }
+
     private suspend fun saveGroupedPasswordsInternal(
         originalIds: List<Long>,
         requestedEntry: PasswordEntry,
@@ -5155,7 +5299,7 @@ class PasswordViewModel internal constructor(
         val commonEntry = if (embeddedContentSave?.replacesNote(requestedCustomFields) == true)
             requestedEntry.copy(boundNoteId = previousId?.let { repository.getPasswordEntryById(it)?.boundNoteId }) else requestedEntry
         var firstId: Long? = null
-        val normalizedPasswords = if (commonEntry.loginType.uppercase(java.util.Locale.ROOT) in
+        val normalizedPasswords = if (customFields.any { it.title == takagi.ru.monica.data.model.ProjectCredentialGroup.FIELD } || commonEntry.loginType.uppercase(java.util.Locale.ROOT) in
             takagi.ru.monica.data.model.TemplateCredentialDraft.types) passwords else passwords.map { it.trim() }
         val normalizedInput = normalizedPasswords.filter { it.isNotEmpty() }
         val preservedUnreadablePasswords = if (normalizedInput.isEmpty() && originalIds.isNotEmpty()) {
@@ -5220,6 +5364,7 @@ class PasswordViewModel internal constructor(
                     keepassDatabaseId = draftEntry.keepassDatabaseId,
                     keepassGroupPath = draftEntry.keepassGroupPath,
                     mdbxDatabaseId = draftEntry.mdbxDatabaseId,
+                    mdbxFolderId = draftEntry.mdbxFolderId,
                     authenticatorKey = draftEntry.authenticatorKey,
                     passkeyBindings = draftEntry.passkeyBindings,
                     sshKeyData = draftEntry.sshKeyData,

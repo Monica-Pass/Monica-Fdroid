@@ -128,7 +128,7 @@ class SecureStartupInstrumentedTest {
         }
     }
 
-    @Test fun bitwardenFailureAlsoBlocksWithoutTouchingMonicaConfiguration() {
+    @Test fun bitwardenFailureDoesNotBlockOrModifyTheLocalVault() {
         Fixture().use { f ->
             f.create()
             SecurePreferencesStore.open(f.context, SecurePreferencesStore.BITWARDEN)
@@ -136,8 +136,7 @@ class SecureStartupInstrumentedTest {
             raw.edit().remove("__androidx_security_crypto_encrypted_prefs_key_keyset__").commit()
             val before = f.raw.all.toMap()
             val damaged = raw.all.toMap()
-            val result = SecureStorageStartup.prepare(f.context) as SecureStartupResult.Blocked
-            assertEquals(SecurePreferencesStore.BITWARDEN, result.failure.store)
+            assertTrue(SecureStorageStartup.prepare(f.context) is SecureStartupResult.Ready)
             assertEquals(before, f.raw.all)
             assertEquals(damaged, raw.all)
         }

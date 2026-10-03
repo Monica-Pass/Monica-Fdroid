@@ -86,7 +86,7 @@ class VaultOverviewTypeGridTest {
                                     securityManager = remember { SecurityManager(context) }, reduceAnimations = false, trashCount = 0,
                                     onConfigChange = { config = it(config) }, onSelectScope = {}, onOpenSource = {}, onOpenItem = {},
                                     onOpenType = { opened += it }, onOpenFolder = {}, onFavorites = {}, onArchive = {}, onTrash = {},
-                                    onAllItems = {}, onSearch = {}, onUnlock = {},
+                                    onAllItems = {}, onSearch = {}, onScanFidoQr = {}, onUnlock = {},
                                 )
                             }
                         }

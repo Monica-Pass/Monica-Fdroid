@@ -2050,7 +2050,7 @@
     <string name="developer_view_logs">Pokaż dziennik</string>
     <string name="developer_view_logs_desc">Wyświetl dziennik aplikacji z Logcat</string>
     <string name="developer_clear_log_buffer">Wyczyść bufor dziennika</string>
-    <string name="developer_clear_log_buffer_desc">Wyczyść bufor dziennika urządzenia</string>
+    <string name="developer_clear_log_buffer_desc">Wyczyść bufor, odtwórz błąd i udostępnij dzienniki deweloperowi.</string>
     <string name="developer_share_logs">Udostępnij dziennik</string>
     <string name="developer_share_logs_desc">Eksportuj i udostępnij ostatnie wpisy dziennika</string>
     <string name="developer_functions">Narzędzia programistyczne</string>
@@ -2118,7 +2118,7 @@
     <string name="state">Województwo / region</string>
     <string name="zip_code">Kod poczt.</string>
     <string name="payment_info">Dane płatności</string>
-    <string name="credit_card_number">Numer karty</string>
+    <string name="credit_card_number">Nr karty</string>
     <string name="card_holder">Posiadacz karty</string>
     <string name="credit_card_encrypted">Dane karty są zaszyfrowane</string>
     <string name="expand">Rozwiń</string>

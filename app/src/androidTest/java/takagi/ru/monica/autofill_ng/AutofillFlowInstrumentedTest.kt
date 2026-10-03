@@ -72,6 +72,8 @@ class AutofillFlowInstrumentedTest {
     private val insertedValidatorIds = mutableListOf<Long>()
     private var oldPreferences: List<Boolean>? = null
     private var oldOtpPreferences: Triple<Boolean, Boolean, Int>? = null
+    private var expectedUsername: String? = null
+    private var expectedPassword: String? = null
     private var notificationTestStarted = false
     private var notificationChannelExisted = false
     private val notifications by lazy { context.getSystemService(NotificationManager::class.java) }
@@ -203,6 +205,63 @@ class AutofillFlowInstrumentedTest {
             java.io.File(dir, "$scenario.png").outputStream().use { screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
             screenshot.recycle()
         }
+    }
+
+    @Test fun groupedDropdownFillsSecondAccountsSecondPasswordAndItsOwnOtp() = runBlocking {
+        groupedSystemFill(inline = false)
+    }
+
+    @Test fun groupedInlineFillsSecondAccountsSecondPasswordAndItsOwnOtp() = runBlocking {
+        groupedSystemFill(inline = true)
+    }
+
+    @Test fun groupedManualPickerFillsSecondAccountsSecondPasswordAndItsOwnOtp() = runBlocking {
+        groupedSystemFill(inline = false, manual = true)
+    }
+
+    private suspend fun groupedSystemFill(inline: Boolean, manual: Boolean = false) {
+        prepareOtpNotificationTest()
+        val project = java.util.UUID.randomUUID().toString()
+        val groups = listOf(
+            takagi.ru.monica.data.model.ProjectCredentialGroup.Group(username = "group-personal", otp = "JBSWY3DPEHPK3PXP",
+                passwords = listOf(takagi.ru.monica.data.model.ProjectCredentialGroup.Password(value = "personal-1"))),
+            takagi.ru.monica.data.model.ProjectCredentialGroup.Group(username = "group-work", otp = OTP_SECRET,
+                passwords = listOf(takagi.ru.monica.data.model.ProjectCredentialGroup.Password(value = "work-1"),
+                    takagi.ru.monica.data.model.ProjectCredentialGroup.Password(value = "work-2"))))
+        // Remove only this test's generic native suggestion to keep inline candidates visible.
+        dao.deletePasswordEntryById(insertedIds.first())
+        for (row in takagi.ru.monica.data.model.ProjectCredentialGroup.rows(groups)) {
+            val id = dao.insertPasswordEntry(PasswordEntry(title = "Grouped autofill fixture", username = security.encryptData(row.username),
+                password = security.encryptData(row.password.value), authenticatorKey = security.encryptData(row.otp),
+                passwordGroupId = project, appPackageName = fixturePackage, website = ""))
+            insertedIds += id
+            PasswordDatabase.getDatabase(context).customFieldDao().insert(takagi.ru.monica.data.CustomField(entryId = id,
+                title = takagi.ru.monica.data.model.ProjectCredentialGroup.FIELD, value = row.metadata.forProject(project).raw.toString()))
+        }
+        expectedUsername = "group-work"
+        expectedPassword = "work-2"
+        open(if (inline) "inline" else "standard")
+        focusFirstField()
+        if (manual) tap(waitNode(scroll = true) { it.text?.toString() == context.getString(R.string.autofill_manual_entry_title) ||
+            it.contentDescription?.toString() == context.getString(R.string.autofill_manual_entry_title) })
+        val number = context.getString(R.string.project_credential_password_number, 2)
+        val suggestion = waitNode(scroll = true) { node ->
+            val label = "${node.text?.toString().orEmpty()} ${node.contentDescription?.toString().orEmpty()}"
+            label.contains("group-work") && label.contains(number) &&
+                (!inline || node.window?.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD)
+        }
+        ui.takeScreenshot()?.let { bitmap ->
+            val dir = java.io.File(context.filesDir, "group-system-tests").apply { mkdirs() }
+            java.io.File(dir, if (manual) "manual.png" else if (inline) "inline.png" else "dropdown.png").outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+            bitmap.recycle()
+        }
+        assertNoOtpNotificationFor(300)
+        tap(suggestion)
+        if (manual) tap(waitNode(scroll = true) { it.text?.toString() == context.getString(R.string.autofill) })
+        expectStatus("user=OK password=OK")
+        expectOtpNotification("Grouped autofill fixture")
     }
 
     @Test fun systemAutofillFillsStandardNativeLoginWithoutVerification() {
@@ -563,6 +622,8 @@ class AutofillFlowInstrumentedTest {
             component = ComponentName(fixturePackage,AutofillFormFixtureActivity::class.java.name)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             putExtra("scenario",scenario)
+            putExtra("expectedUsername", expectedUsername)
+            putExtra("expectedPassword", expectedPassword)
             putExtra("accessibilityOnly",accessibilityOnly)
             putExtra("fixtureInstance", instance)
         })
@@ -687,7 +748,7 @@ class AutofillFlowInstrumentedTest {
         } while (SystemClock.elapsedRealtime() < deadline)
     }
 
-    private fun expectOtpNotification() {
+    private fun expectOtpNotification(expectedTitle: String = NATIVE_TITLE) {
         val deadline = SystemClock.elapsedRealtime() + 10000
         var notification: Notification? = null
         while (notification == null && SystemClock.elapsedRealtime() < deadline) {
@@ -696,28 +757,35 @@ class AutofillFlowInstrumentedTest {
         }
         val actual = requireNotNull(notification) { "Selected OTP credential did not publish its notification" }
         assertEquals(OTP_CHANNEL_ID, actual.channelId)
-        assertTrue(actual.extras.getCharSequence(Notification.EXTRA_TITLE).toString().contains(NATIVE_TITLE))
+        assertTrue(actual.extras.getCharSequence(Notification.EXTRA_TITLE).toString().contains(expectedTitle))
         val code = actual.extras.getCharSequence(Notification.EXTRA_TEXT).toString().filter(Char::isDigit)
         val now = System.currentTimeMillis() / 1000
         val expected = listOf(now - 30, now, now + 30).map { TotpGenerator.generateOtp(TotpData(secret = OTP_SECRET), currentSeconds = it) }
         assertTrue("Notification must contain the selected fixture's current OTP", code in expected)
     }
 
-    private fun waitNode(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
+    private fun waitNode(scroll: Boolean = false, predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
         val end = SystemClock.elapsedRealtime() + 10000
         var fixtureStatus: String? = null
+        var lastScroll = 0L
         do {
             val queue = ArrayDeque<AccessibilityNodeInfo>()
             ui.rootInActiveWindow?.let(queue::add)
             ui.windows.mapNotNull { it.root }.forEach(queue::add)
             var count = 0
+            val scrollable = mutableListOf<AccessibilityNodeInfo>()
             while (queue.isNotEmpty() && count++ < 600) {
                 val node = queue.removeFirst()
                 if (node.contentDescription?.toString() == "fixture-status") {
                     fixtureStatus = node.text?.toString()
                 }
                 if (predicate(node)) return node
+                if (node.isScrollable && node.packageName?.toString() != fixturePackage) scrollable += node
                 for (index in 0 until node.childCount) node.getChild(index)?.let(queue::add)
+            }
+            if (scroll && SystemClock.elapsedRealtime() - lastScroll > 900) {
+                scrollable.firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                lastScroll = SystemClock.elapsedRealtime()
             }
             Thread.sleep(50)
         } while (SystemClock.elapsedRealtime() < end)

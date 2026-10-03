@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">診断ログ</string>
+    <string name="developer_logs_entry_description">診断レポート全体を検索・絞り込み・共有</string>
+    <string name="developer_logs_search">ログ、タグ、例外を検索</string>
+    <string name="developer_logs_source">ソース：%1$s</string>
+    <string name="developer_logs_hint">問題を再現してから更新してください。エラーレベルのログが必ずしも機能の不具合を意味するわけではありません。</string>
+    <string name="developer_logs_share_full">ログ全体を共有</string>
+    <string name="developer_logs_result_count">%2$d 件中 %1$d 件 · %3$s 更新</string>
+    <string name="developer_logs_no_matches">一致するログがありません。検索語やフィルターを変更してください。</string>
+    <string name="developer_logs_clear_confirmation">診断ログを消去しますか？保管庫のデータと設定は保持されます。現在の環境情報や新しいログは引き続き表示される場合があります。</string>
+    <string name="developer_logs_copy_event">このイベントをコピー</string>
+    <string name="developer_logs_preview_limit">プレビューは省略されています。イベントをコピーするか、レポート全体を共有すると全文を確認できます。</string>
+    <string name="developer_logs_expand">ログを展開</string>
+    <string name="developer_logs_collapse">ログを折りたたむ</string>
+    <string name="developer_logs_security">セキュリティ</string>
+    <string name="developer_verification_group">認証と互換性</string>
+    <string name="developer_forensics_group">Bitwarden 同期診断</string>
+    <string name="developer_logs_copy_failed">このイベントをコピーできません。ログファイル全体を共有してください。</string>
+</resources>

@@ -22,6 +22,29 @@ import takagi.ru.monica.ui.theme.MonicaTheme
 class SecureStorageRecoveryUiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun passwordRecoveryHandlesFailureWithoutExposingPasswordOrRunningAutomatically() {
+        var calls = 0
+        compose.setContent {
+            MonicaTheme {
+                SecureStorageRecoveryScreen({}, {}, {}, onRecover = {
+                    calls++
+                    throw java.io.IOException("Synthetic failed recovery")
+                })
+            }
+        }
+        compose.onNodeWithTag("secure_startup_recover").assertIsNotEnabled()
+        compose.runOnIdle { assertEquals(0, calls) }
+        compose.onNodeWithTag("secure_startup_password").performScrollTo().performTextInput("synthetic-password")
+        compose.onNodeWithTag("secure_startup_recover").performClick()
+        compose.onNodeWithTag("secure_startup_recovery_error").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("secure_startup_recover").assertIsNotEnabled()
+        compose.runOnIdle { assertEquals(1, calls) }
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "local-recovery-error.png")
+            .outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        bitmap.recycle()
+    }
+
     @Test fun blockedScreenKeepsActionsReachableWithLargeTextAndDoesNotRunThemAutomatically() {
         var night by mutableStateOf(false)
         var retries = 0

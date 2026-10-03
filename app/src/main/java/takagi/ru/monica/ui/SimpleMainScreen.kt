@@ -2511,6 +2511,7 @@ fun SimpleMainScreen(
                 }
                 BottomNavItem.Authenticator -> {
                     AuthenticatorTabPane(
+                        onScanFidoQr = onNavigateToFidoQrScan,
                         isCompactWidth = isCompactWidth,
                         wideListPaneWidth = wideListPaneWidth,
                         totpViewModel = totpViewModel,
@@ -2622,6 +2623,7 @@ fun SimpleMainScreen(
                 }
                 BottomNavItem.Passkey -> {
                     PasskeyPane(
+                        onScanFidoQr = onNavigateToFidoQrScan,
                         isCompactWidth = isCompactWidth,
                         wideListPaneWidth = wideListPaneWidth,
                         passkeyViewModel = passkeyViewModel,
@@ -2905,6 +2907,7 @@ fun SimpleMainScreen(
                     }
                     BottomNavItem.Authenticator -> {
                         AuthenticatorTabPane(
+                            onScanFidoQr = onNavigateToFidoQrScan,
                             isCompactWidth = isCompactWidth,
                             wideListPaneWidth = wideListPaneWidth,
                             totpViewModel = totpViewModel,
@@ -3016,6 +3019,7 @@ fun SimpleMainScreen(
                     }
                     BottomNavItem.Passkey -> {
                         PasskeyPane(
+                            onScanFidoQr = onNavigateToFidoQrScan,
                             isCompactWidth = isCompactWidth,
                             wideListPaneWidth = wideListPaneWidth,
                             passkeyViewModel = passkeyViewModel,

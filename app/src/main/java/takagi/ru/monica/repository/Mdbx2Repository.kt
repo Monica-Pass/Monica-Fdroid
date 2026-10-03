@@ -64,6 +64,8 @@ import uniffi.mdbx_ffi.MdbxHealthRepairStatus as NativeMdbxHealthRepairStatus
 import uniffi.mdbx_ffi.MdbxSnapshotKind
 import uniffi.mdbx_ffi.MdbxSnapshotStructureNode
 import uniffi.mdbx_ffi.MdbxVault
+import uniffi.mdbx_ffi.MdbxTigaScope
+import uniffi.mdbx_ffi.MdbxTigaScopeType
 import uniffi.mdbx_ffi.MdbxWriteCommand
 import uniffi.mdbx_ffi.defaultWriteOperationLimits
 
@@ -410,6 +412,82 @@ class Mdbx2Repository(
             try { NativeApiTokenAssets.validate(bytes, expected.size, expected.sha256); bytes }
             catch (error: Throwable) { bytes.fill(0); throw error }
         }
+
+    internal suspend fun nativeBrowser(databaseId: Long): MdbxNativeBrowser =
+        sessions.withNativeReadVault(databaseId) { _, vault -> readMdbxNativeBrowser(vault) }
+
+    internal suspend fun managerCapture(databaseId: Long, id: String): MdbxManagerObject =
+        sessions.withNativeReadVault(databaseId, MdbxTigaScope(MdbxTigaScopeType.ENTRY, id)) { _, vault ->
+            captureMdbxManagerObject(vault, id)
+        }
+
+    internal suspend fun managerCopy(databaseId: Long, value: MdbxManagerObject, folder: String?, groups: MutableMap<String, String> = mutableMapOf()): String =
+        sessions.withMutatingVault(databaseId) { _, vault ->
+            try { copyMdbxManagerObject(vault, value, folder, groups) }
+            finally { markPendingUpload(databaseId) }
+        }
+
+    internal suspend fun managerMove(databaseId: Long, value: MdbxNativeObjectSummary, folder: String?) {
+        sessions.withMutatingVault(databaseId) { _, vault ->
+            moveMdbxManagerObject(vault, value, folder)
+            markPendingUpload(databaseId)
+        }
+    }
+
+    internal suspend fun managerDeleteVerifiedSource(databaseId: Long, value: MdbxManagerObject) {
+        sessions.withMutatingVault(databaseId) { _, vault ->
+            check(takagi.ru.monica.security.SessionManager.isUnlocked.value) { "The vault is locked; both copies were retained." }
+            check(vault.getObjectSummary(value.summary.id)?.nativeBrowserSummary() == value.summary) {
+                "The source changed while copying. Both copies were retained."
+            }
+            verifyMdbxManagerObject(vault, value.summary.id, value, value.summary.collectionId)
+            vault.executeWriteOperation(UUID.randomUUID().toString(), "manager-move-source", listOf(
+                MdbxWriteCommand.DeleteEntry(value.summary.id, value.summary.collectionId)))
+            markPendingUpload(databaseId)
+        }
+    }
+
+    internal suspend fun managerFolderProfile(databaseId: Long, id: String) =
+        sessions.withNativeReadVault(databaseId) { _, vault -> vault.getCollectionProfile(id) }
+
+    internal suspend fun managerDeleteTree(databaseId: Long, folderId: String, expectedHead: String) {
+        sessions.withMutatingVault(databaseId) { _, vault ->
+            check(takagi.ru.monica.security.SessionManager.isUnlocked.value) { "The vault is locked; both copies were retained." }
+            val branches = vault.listBranches()
+            val head = branches.firstOrNull { it.branchName.equals("main", true) }?.headCommitId ?: branches.maxByOrNull { it.updatedAt }?.headCommitId
+            check(head == expectedHead) { "The source changed while copying. Both copies were retained." }
+            val browser = readMdbxNativeBrowser(vault)
+            val root = browser.nodes.single { it.id == folderId && it.type == MdbxStructureNodeType.FOLDER }
+            val tree = databaseManagerDescendants(browser.nodes, root)
+            val commands = tree.filter { it.type == MdbxStructureNodeType.ENTRY }.map {
+                val value = browser.objects.getValue(it.id)
+                MdbxWriteCommand.DeleteEntry(value.id, value.collectionId)
+            } + tree.filter { it.type == MdbxStructureNodeType.FOLDER }.asReversed().map { MdbxWriteCommand.DeleteProject(it.id) }
+            vault.executeWriteOperation(UUID.randomUUID().toString(), "manager-move-tree", commands)
+            markPendingUpload(databaseId)
+        }
+    }
+
+    internal suspend fun managerSetFolderProfile(databaseId: Long, id: String, profile: uniffi.mdbx_ffi.MdbxCollectionProfile) {
+        sessions.withMutatingVault(databaseId) { _, vault ->
+            vault.setCollectionProfile(id, profile.collectionTypeId, profile.payload, profile.payloadSchemaVersion,
+                profile.allowedObjectTypeIds, profile.requiredCapabilityIds)
+            markPendingUpload(databaseId)
+        }
+    }
+
+    internal suspend fun nativeObject(databaseId: Long, entryId: String): MdbxNativeObjectDetail =
+        sessions.withNativeReadVault(databaseId,
+            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, entryId)) { _, vault ->
+            readMdbxNativeObject(vault, entryId)
+        }
+
+    internal suspend fun renameNativeObject(databaseId: Long, expected: MdbxNativeObjectSummary, title: String) {
+        sessions.withMutatingVault(databaseId) { _, vault ->
+            renameMdbxNativeObject(vault, expected, title)
+            if (title != expected.title) markPendingUpload(databaseId)
+        }
+    }
 
     internal suspend fun readUnknownEntry(databaseId: Long, entryId: String): MdbxStoredVaultEntry =
         sessions.withNativeReadVault(databaseId,
@@ -801,6 +879,9 @@ class Mdbx2Repository(
         for (stored in candidates) {
             val payload = runCatching { Json.parseToJsonElement(stored.payloadJson).jsonObject }.getOrNull() ?: continue
             val original = (payload["password_plain"] as? JsonPrimitive)?.contentOrNull ?: continue
+            // New writes explicitly identify password_plain as user content. A password
+            // can itself be a valid Monica ciphertext; never "repair" that content.
+            if ((payload["monica_password_encoding"] as? JsonPrimitive)?.contentOrNull == "plaintext-v1") continue
             if (!securityManager.looksLikeMonicaCiphertext(original)) continue
             val plain = runCatching { decryptSensitiveValue(original, "password", 0) }.getOrNull() ?: continue
             if (plain == original) continue
@@ -811,7 +892,7 @@ class Mdbx2Repository(
                     ?: return@withMutatingVault
                 // Do not overwrite edits made after the read, or change fields owned by another client.
                 if (current.deleted || current.payloadJson != stored.payloadJson) return@withMutatingVault
-                val repairedPayload = JsonObject(payload + ("password_plain" to JsonPrimitive(plain)))
+                val repairedPayload = JsonObject(payload + mapOf("password_plain" to JsonPrimitive(plain), "monica_password_encoding" to JsonPrimitive("plaintext-v1")))
                 executeEntryCommandGroups(databaseId, vault, "monica-repair-portable-password",
                     listOf(listOf(MdbxWriteCommand.UpdateEntry(physicalId, current.collectionId,
                         current.objectTypeId, current.title, repairedPayload.toString()))))
@@ -856,7 +937,7 @@ class Mdbx2Repository(
                 pendingBytes += bytes
                 if (largeEntry) flush()
             }
-            for (entry in passwords) append(passwordMutation(entry))
+            for (entry in passwords) append(passwordMutation(entry, normalizedImport = true))
             for (item in secureItems) append(secureItemMutation(item))
             for (passkey in passkeys) append(passkeyMutation(passkey))
             flush()
@@ -1818,7 +1899,7 @@ class Mdbx2Repository(
         return count.coerceIn(1, MAX_PENDING_SYNC_ITEMS)
     }
 
-    private suspend fun passwordMutation(entry: PasswordEntry): EntryMutation? {
+    private suspend fun passwordMutation(entry: PasswordEntry, normalizedImport: Boolean = false): EntryMutation? {
         val databaseId = entry.mdbxDatabaseId ?: return null
         MdbxUnknownEntry.requireEditable(entry)
         entry.replicaGroupId?.takeIf { runCatching { UUID.fromString(it) }.isSuccess }?.let { nativeId ->
@@ -1830,6 +1911,16 @@ class Mdbx2Repository(
             }
         }
         val entryId = passwordObjectId(entry)
+        val once = securityManager.decryptData(entry.password)
+        // BackupRestoreApplier has already normalized and wrapped imported passwords once.
+        // On later edits, retain the native plaintext contract instead of guessing from content.
+        val nativePlaintext = if (!normalizedImport && securityManager.looksLikeMonicaCiphertext(once)) {
+            readStoredEntries(databaseId).firstOrNull { it.entryId == entryId }?.let { stored ->
+                JSONObject(stored.payloadJson).optString("monica_password_encoding") == "plaintext-v1"
+            } == true
+        } else false
+        val plaintext = if (normalizedImport || nativePlaintext) once
+            else decryptSensitiveValue(entry.password, "password", entry.id)
         val payload = JSONObject()
             .put("kind", "password")
             .put("monica_entry_id", entryId)
@@ -1839,7 +1930,8 @@ class Mdbx2Repository(
             .put("username", entry.username)
             .put("app_package_name", entry.appPackageName)
             .put("app_name", entry.appName)
-            .put("password_plain", decryptSensitiveValue(entry.password, "password", entry.id))
+            .put("password_plain", plaintext)
+            .put("monica_password_encoding", "plaintext-v1")
             .put("notes", entry.notes)
             .put("sort_order", entry.sortOrder)
             .put("category_id", entry.categoryId)

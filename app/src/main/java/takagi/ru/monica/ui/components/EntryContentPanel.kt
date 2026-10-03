@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LocalPinnableContainer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +45,13 @@ fun EntryContentPanel(
     val downLabel = stringResource(R.string.move_down)
     var menu by remember { mutableStateOf(false) }
     var confirmRemoval by remember { mutableStateOf(false) }
+    val pinnableContainer = LocalPinnableContainer.current
+    // The dialog is composed by a lazy row. Keep that row alive while its window is
+    // open, including before any text field gains focus and pins itself.
+    DisposableEffect(pinnableContainer, open, menu, confirmRemoval) {
+        val pin = if (open || menu || confirmRemoval) pinnableContainer?.pin() else null
+        onDispose { pin?.release() }
+    }
     Card(onClick = { onOpenChange(true) },
         modifier = Modifier.fillMaxWidth().testTag("content_panel_${section.name}")
             .then(drag.modifier)

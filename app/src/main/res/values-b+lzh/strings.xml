@@ -2051,7 +2051,7 @@
     <string name="developer_view_logs">阅日志</string>
     <string name="developer_view_logs_desc">阅应用 Logcat 输出之日志</string>
     <string name="developer_clear_log_buffer">清日志缓冲</string>
-    <string name="developer_clear_log_buffer_desc">清本机日志缓冲</string>
+    <string name="developer_clear_log_buffer_desc">请清空日志缓冲区后复现 bug，分享日志给开发者。</string>
     <string name="developer_share_logs">分享日志</string>
     <string name="developer_share_logs_desc">出近日之日志以分享</string>
     <string name="developer_functions">开发者之用</string>
@@ -2119,7 +2119,7 @@
     <string name="state">省州</string>
     <string name="zip_code">邮编</string>
     <string name="payment_info">付款之识</string>
-    <string name="credit_card_number">信用卡号</string>
+    <string name="credit_card_number">卡号</string>
     <string name="card_holder">持卡者</string>
     <string name="credit_card_encrypted">信用卡之识已加密</string>
     <string name="expand">展</string>

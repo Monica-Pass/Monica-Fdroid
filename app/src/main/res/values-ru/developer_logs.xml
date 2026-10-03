@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Диагностические журналы</string>
+    <string name="developer_logs_entry_description">Поиск, фильтрация и отправка полного отчёта</string>
+    <string name="developer_logs_search">Поиск по журналам, тегам и исключениям</string>
+    <string name="developer_logs_source">Источник: %1$s</string>
+    <string name="developer_logs_hint">Воспроизведите проблему и обновите журнал. Запись уровня ошибки не всегда означает сбой функции.</string>
+    <string name="developer_logs_share_full">Поделиться журналами</string>
+    <string name="developer_logs_result_count">%1$d из %2$d событий · Обновлено %3$s</string>
+    <string name="developer_logs_no_matches">Нет совпадений. Измените запрос или фильтры.</string>
+    <string name="developer_logs_clear_confirmation">Очистить диагностические журналы? Данные хранилища и настройки сохранятся. Сведения о системе и новые записи могут остаться видимыми.</string>
+    <string name="developer_logs_copy_event">Копировать событие</string>
+    <string name="developer_logs_preview_limit">Предпросмотр сокращён. Скопируйте событие или отправьте полный отчёт, чтобы увидеть весь текст.</string>
+    <string name="developer_logs_expand">Развернуть событие</string>
+    <string name="developer_logs_collapse">Свернуть событие</string>
+    <string name="developer_logs_security">Безопасность</string>
+    <string name="developer_verification_group">Проверка и совместимость</string>
+    <string name="developer_forensics_group">Диагностика синхронизации Bitwarden</string>
+    <string name="developer_logs_copy_failed">Не удалось скопировать событие. Поделитесь полным файлом журнала.</string>
+</resources>

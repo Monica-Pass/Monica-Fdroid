@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manager_open_database">Ouvrir les paramètres de la base</string>
+    <string name="manager_dual">Passer à un ou deux volets</string>
+    <string name="manager_databases">Bases de données</string>
+    <string name="manager_choose_destination">Choisir la destination</string>
+    <string name="manager_selection_destination">%1$d sélectionnés → %2$s</string>
+    <string name="manager_items_selected">%1$d éléments · %2$d sélectionnés</string>
+    <string name="manager_confirm_transfer">Transférer %1$d éléments de %2$s vers %3$s / %4$s ? La source est conservée jusqu’à la vérification de la destination.</string>
+    <string name="manager_result">Résultat du transfert</string>
+    <string name="manager_result_count">Terminés : %1$d · À vérifier : %2$d</string>
+    <string name="manager_technical_details">Détails techniques</string>
+    <string name="manager_select">Sélectionner cet élément</string>
+    <string name="manager_failure_format">Le format de destination ne conserve pas toutes les informations. La source est conservée. Choisissez le même format ; consultez les champs concernés dans les détails.</string>
+    <string name="manager_failure_changed">Les données ont changé ou la vérification a échoué. La source est conservée. Actualisez les deux volets et vérifiez la destination avant de réessayer.</string>
+    <string name="manager_failure_locked">Base verrouillée ou fichier original indisponible. Ouvrez-la dans les paramètres puis actualisez ce volet.</string>
+    <string name="manager_failure_general">Opération incomplète. Vérifiez les deux volets et les détails : la destination peut contenir des copies partielles.</string>
+</resources>

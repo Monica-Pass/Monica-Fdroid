@@ -8,6 +8,23 @@ import takagi.ru.monica.utils.KeePassCredentialSupport
 import java.util.Base64
 
 class KeePassCredentialSupportTest {
+    @Test
+    fun raw32ByteKeyRemainsUnchangedAndEachCandidateUsesTheOriginalBytes() {
+        for (password in listOf("", "synthetic-password")) {
+            val key = ByteArray(32) { (it + 7).toByte() }
+            val original = key.copyOf()
+            repeat(3) {
+                val exact = KeePassCredentialSupport.buildExactCredentials(password, key)
+                org.junit.Assert.assertArrayEquals(original, exact.key!!.getBinary())
+                org.junit.Assert.assertArrayEquals(original, key)
+                val candidates = KeePassCredentialSupport.buildCredentialCandidates(password, key)
+                candidates.filter { it.label.startsWith("raw/") }.forEach {
+                    org.junit.Assert.assertArrayEquals(it.label, original, it.credentials.key!!.getBinary())
+                }
+                org.junit.Assert.assertArrayEquals(original, key)
+            }
+        }
+    }
 
     @Test
     fun noKeyFile_buildsPasswordOnlyCandidate() {

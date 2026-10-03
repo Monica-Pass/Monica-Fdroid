@@ -319,6 +319,7 @@ internal fun CompactDraggableTabContent(
             }
             BottomNavItem.Authenticator -> {
                 TotpListContent(
+                    onScanFidoQr = onNavigateToFidoQrScan,
                     viewModel = totpViewModel,
                     passwordViewModel = passwordViewModel,
                     appSettings = appSettings,
@@ -375,6 +376,7 @@ internal fun CompactDraggableTabContent(
             }
             BottomNavItem.Passkey -> {
                 PasskeyListScreen(
+                    onScanFidoQr = onNavigateToFidoQrScan,
                     viewModel = passkeyViewModel,
                     passwordViewModel = passwordViewModel,
                     onNavigateToPasswordDetail = onNavigateToPasswordDetail,

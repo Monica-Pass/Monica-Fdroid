@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Diagnostic logs</string>
+    <string name="developer_logs_entry_description">Search, filter and share a complete diagnostic report</string>
+    <string name="developer_logs_search">Search logs, tags or exceptions</string>
+    <string name="developer_logs_source">Source: %1$s</string>
+    <string name="developer_logs_hint">Reproduce the issue, then refresh. Error-level logs do not always mean a feature has failed.</string>
+    <string name="developer_logs_share_full">Share full logs</string>
+    <string name="developer_logs_result_count">%1$d of %2$d events · Updated %3$s</string>
+    <string name="developer_logs_no_matches">No matching logs. Try another keyword or filter.</string>
+    <string name="developer_logs_clear_confirmation">Clear diagnostic log buffers? Vault data and settings are kept. Current environment details and new logs may still appear.</string>
+    <string name="developer_logs_copy_event">Copy event</string>
+    <string name="developer_logs_preview_limit">Preview shortened. Copy the event or share the full report to view all text.</string>
+    <string name="developer_logs_expand">Expand log event</string>
+    <string name="developer_logs_collapse">Collapse log event</string>
+    <string name="developer_logs_security">Security</string>
+    <string name="developer_verification_group">Verification &amp; compatibility</string>
+    <string name="developer_forensics_group">Bitwarden sync diagnostics</string>
+    <string name="developer_logs_copy_failed">Unable to copy this event. Share the full log file instead.</string>
+</resources>

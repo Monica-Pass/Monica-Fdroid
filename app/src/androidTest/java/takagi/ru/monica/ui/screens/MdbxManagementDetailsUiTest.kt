@@ -9,7 +9,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,12 +18,22 @@ import java.io.File
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Before
 import takagi.ru.monica.R
 import takagi.ru.monica.repository.*
 import takagi.ru.monica.viewmodel.MdbxViewModel
 
 class MdbxManagementDetailsUiTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @Before fun readyTestWindow() {
+        compose.runOnUiThread {
+            compose.activity.setTurnScreenOn(true)
+            compose.activity.setShowWhenLocked(true)
+            compose.activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input keyevent KEYCODE_WAKEUP").close()
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
+    }
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun label(id: Int) = context.getString(id)
 
@@ -91,7 +102,8 @@ class MdbxManagementDetailsUiTest {
         screenshot("mdbx-history-parameters.png")
         compose.onNodeWithText(delta.createdAt).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(delta.changedObjectIds).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(delta.message!!).performScrollTo().assertIsDisplayed()
+        // The message also appears in the summary; assert the complete technical field below it.
+        compose.onAllNodesWithText(delta.message!!).onLast().performScrollTo().assertIsDisplayed()
     }
 
     private fun screenshot(name: String) {

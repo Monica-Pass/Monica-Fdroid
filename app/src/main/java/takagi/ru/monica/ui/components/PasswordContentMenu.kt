@@ -48,6 +48,7 @@ fun PasswordContentMenu(
     onAdd: (PasswordContentSection) -> Unit,
     onDismiss: () -> Unit,
     onAddBlock: ((PasswordContentBlocks.Kind) -> Unit)? = null,
+    onAddCredential: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
@@ -57,6 +58,14 @@ fun PasswordContentMenu(
             Text(stringResource(R.string.password_content_same_item), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp).padding(bottom = 16.dp))
+            if (onAddCredential != null) {
+                Surface(onClick = onAddCredential, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).testTag("add_project_credential")) {
+                    ListItem(headlineContent = { Text(stringResource(R.string.project_credential)) },
+                        leadingContent = { Icon(Icons.Default.Person, null) }, trailingContent = { Icon(Icons.Default.Add, null) },
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh))
+                }
+            }
             if (onAddBlock != null) {
                 var more by remember { mutableStateOf(false) }
                 val kinds = listOf(PasswordContentBlocks.Kind.API_KEY, PasswordContentBlocks.Kind.API_TOKEN,

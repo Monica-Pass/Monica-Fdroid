@@ -5,6 +5,7 @@ import takagi.ru.monica.ui.components.DetailGroupItem
 import takagi.ru.monica.ui.components.entryGroupShape
 
 import takagi.ru.monica.data.passwordProjectKey
+import takagi.ru.monica.data.model.ProjectCredentialGroup
 import takagi.ru.monica.data.model.PasswordContentBlocks
 import takagi.ru.monica.ui.components.PasswordContentBlockCard
 import takagi.ru.monica.ui.components.PasswordContentBlockDetail
@@ -31,6 +32,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -218,6 +220,15 @@ fun PasswordDetailScreen(
     // 密码条目状态
     var passwordEntry by remember { mutableStateOf<PasswordEntry?>(null) }
     var groupPasswords by remember { mutableStateOf<List<PasswordEntry>>(emptyList()) }
+    var credentialMetadata by remember { mutableStateOf<Map<Long, ProjectCredentialGroup.Metadata>>(emptyMap()) }
+    LaunchedEffect(groupPasswords) {
+        credentialMetadata = withContext(Dispatchers.IO) {
+            viewModel.getCustomFieldsByEntryIds(groupPasswords.map { it.id }).mapNotNull { (id, fields) ->
+                ProjectCredentialGroup.read(fields.map(takagi.ru.monica.data.CustomFieldDraft::fromCustomField))?.let { id to it }
+            }.toMap()
+        }
+    }
+
     var displayPasswords by remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
     var initialDetailDataLoaded by remember { mutableStateOf(false) }
     var bitwardenFoldersByVault by remember {
@@ -237,6 +248,13 @@ fun PasswordDetailScreen(
     
     // 自定义字段状态
     var customFields by remember { mutableStateOf<List<CustomField>>(emptyList()) }
+    val projectContentOwnerId = credentialMetadata.entries.filter { it.value.primary }
+        .minByOrNull { it.value.passwordOrder }?.key ?: passwordId
+    LaunchedEffect(initialDetailDataLoaded, projectContentOwnerId, credentialMetadata) {
+        if (initialDetailDataLoaded && projectContentOwnerId != passwordId) {
+            customFields = withContext(Dispatchers.IO) { viewModel.getCustomFieldsByEntryIdSync(projectContentOwnerId) }
+        }
+    }
     val passwordHistory by viewModel.getPasswordHistoryFlow(passwordId).collectAsState(initial = emptyList())
     val passwordHistoryVisibility = remember { mutableStateMapOf<Long, Boolean>() }
     val bitwardenSyncRawHistoryFlow = remember(
@@ -273,7 +291,7 @@ fun PasswordDetailScreen(
                 it.title == MONICA_MANUAL_STACK_GROUP_FIELD_TITLE ||
                     it.title == MONICA_NO_STACK_FIELD_TITLE
             }
-            .filterNot { it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) }
+            .filterNot { it.title == ProjectCredentialGroup.FIELD || it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) }
             .filterNot {
                 settings.separateUsernameAccountEnabled &&
                     (it.title == MONICA_USERNAME_ALIAS_FIELD_TITLE ||
@@ -407,6 +425,24 @@ fun PasswordDetailScreen(
     // 密码可见性
     var passwordVisible by remember { mutableStateOf(false) }
     var isResyncingUnreadablePassword by remember { mutableStateOf(false) }
+    val resyncUnreadable: (PasswordEntry) -> Unit = resync@{ targetEntry ->
+                                if (isResyncingUnreadablePassword) return@resync
+                                coroutineScope.launch {
+                                    isResyncingUnreadablePassword = true
+                                    val result = viewModel.recoverUnreadableBitwardenEntry(targetEntry.id)
+                                    val message = when (result) {
+                                        BitwardenRecoveryResult.Success ->
+                                            context.getString(R.string.bitwarden_password_resync_success)
+                                        is BitwardenRecoveryResult.Error ->
+                                            context.getString(R.string.bitwarden_password_resync_failed, result.message)
+                                        is BitwardenRecoveryResult.EmptyVaultBlocked ->
+                                            context.getString(R.string.bitwarden_password_resync_blocked, result.reason)
+                                    }
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                    isResyncingUnreadablePassword = false
+                                }
+                            }
+
     var unavailablePasswordSources by remember { mutableStateOf<Map<Long, PasswordSource>>(emptyMap()) }
 
     // 加载密码详情
@@ -642,7 +678,8 @@ fun PasswordDetailScreen(
             )
         }
     ) { paddingValues ->
-        passwordEntry?.let { entry ->
+        passwordEntry?.let { selectedEntry ->
+            val entry = groupPasswords.firstOrNull { it.id == projectContentOwnerId } ?: selectedEntry
             val isGpgTemplate = entry.isGpgKeyEntry() || customFields.any { it.title == takagi.ru.monica.data.model.GpgEntryFields.MARKER && it.value == "GPG_KEY" }
             val isApiTemplate = entry.isApiKeyEntry() || takagi.ru.monica.data.model.ApiKeyEntryFields.isApiKey(customFields.associate { it.title to it.value })
             val storageInfoEntries = remember(
@@ -711,9 +748,9 @@ fun PasswordDetailScreen(
             val detailPasswords = remember(entry, groupPasswords) {
                 groupPasswords.ifEmpty { listOf(entry) }
             }
-            val shouldShowPasswordCard = remember(detailPasswords, unavailablePasswordSources) {
+            val shouldShowPasswordCard = remember(detailPasswords, displayPasswords, unavailablePasswordSources) {
                 detailPasswords.any { passwordEntry ->
-                    passwordEntry.password.isNotBlank() || unavailablePasswordSources[passwordEntry.id] != null
+                    !displayPasswords[passwordEntry.id].isNullOrBlank() || unavailablePasswordSources[passwordEntry.id] != null
                 }
             }
             val websiteTargets = remember(entry.website) { normalizeWebsiteUrls(entry.website) }
@@ -788,7 +825,24 @@ fun PasswordDetailScreen(
                     )
                 }
 
-                if (shouldShowBasicInfo) {
+                val credentialGroups = if (credentialMetadata.isNotEmpty()) detailPasswords.groupBy {
+                    credentialMetadata[it.id]?.groupId ?: "primary"
+                }.values.sortedBy { credentialMetadata[it.first().id]?.groupOrder ?: 0 }
+                else if (!entry.isSsoLogin() && !isGpgTemplate && !isApiTemplate &&
+                    (shouldShowBasicInfo || shouldShowPasswordCard || detailTotp != null)) listOf(detailPasswords)
+                else emptyList()
+                if (credentialGroups.isNotEmpty()) {
+                    val primaryRows = credentialGroups.first()
+                    item("primary_project_credential") {
+                        ProjectCredentialDetailCard(primaryRows, credentialMetadata, displayPasswords, unavailablePasswordSources,
+                            context, settings, onCreateSend, onEditPassword,
+                            onResyncUnreadable = resyncUnreadable, isResyncingUnreadable = isResyncingUnreadablePassword,
+                            onDelete = { itemToDelete = it; showDeleteDialog = true },
+                            resolvedTotp = if (credentialMetadata.isEmpty()) detailTotp else null,
+                            separatedUsername = if (credentialMetadata.isEmpty() && settings.separateUsernameAccountEnabled) separatedUsername else "")
+                    }
+                }
+                if (shouldShowBasicInfo && credentialGroups.isEmpty()) {
                     item("basic_info") {
                         BasicInfoCard(
                             entry = entry,
@@ -810,29 +864,13 @@ fun PasswordDetailScreen(
                     }
                 }
 
-                if (shouldShowPasswordCard && !isGpgTemplate && !isApiTemplate) {
+                if (shouldShowPasswordCard && !isGpgTemplate && !isApiTemplate && credentialGroups.isEmpty()) {
                     item("passwords") {
                         PasswordListCard(
                             passwords = detailPasswords,
                             displayPasswords = displayPasswords,
                             unavailablePasswordSources = unavailablePasswordSources,
-                            onResyncUnreadable = { targetEntry ->
-                                if (isResyncingUnreadablePassword) return@PasswordListCard
-                                coroutineScope.launch {
-                                    isResyncingUnreadablePassword = true
-                                    val result = viewModel.recoverUnreadableBitwardenEntry(targetEntry.id)
-                                    val message = when (result) {
-                                        BitwardenRecoveryResult.Success ->
-                                            context.getString(R.string.bitwarden_password_resync_success)
-                                        is BitwardenRecoveryResult.Error ->
-                                            context.getString(R.string.bitwarden_password_resync_failed, result.message)
-                                        is BitwardenRecoveryResult.EmptyVaultBlocked ->
-                                            context.getString(R.string.bitwarden_password_resync_blocked, result.reason)
-                                    }
-                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                    isResyncingUnreadablePassword = false
-                                }
-                            },
+                            onResyncUnreadable = resyncUnreadable,
                             isResyncingUnreadable = isResyncingUnreadablePassword,
                             showSecurityAnalysis = settings.passwordDetailSecurityAnalysisEnabled,
                             onDelete = { targetEntry ->
@@ -841,20 +879,6 @@ fun PasswordDetailScreen(
                             },
                             context = context,
                             onCreateSend = onCreateSend
-                        )
-                    }
-                }
-
-                if (settings.passwordDetailSecurityAnalysisEnabled) {
-                    item("security_analysis") {
-                        PasswordDetailSecurityAnalysisCard(
-                            hasTwoFactor = detailTotp != null,
-                            hasBoundPasskey = boundPasskeys.isNotEmpty() || entry.passkeyBindings.isNotBlank(),
-                            passkeyAvailable = isPasskeyAvailableForEntry(
-                                entry = entry,
-                                signinDomains = passkeySigninDomains,
-                                catalog = passkeySupportCatalog
-                            )
                         )
                     }
                 }
@@ -872,7 +896,7 @@ fun PasswordDetailScreen(
                     it.title == takagi.ru.monica.data.model.EntryContentFields.ORDER
                 }?.value?.split(',').orEmpty()
                 val detailBlocks = PasswordContentBlocks.read(customFields.map { takagi.ru.monica.data.CustomFieldDraft(id = it.id, title = it.title, value = it.value, isProtected = it.isProtected) })
-                val orderedContent = takagi.ru.monica.data.model.PasswordWalletProjection.walletOrder(savedContentOrder + detailBlocks.map { it.token } + listOf("AUTHENTICATOR", "PAYMENT", "DOCUMENT", "CUSTOM_FIELDS", "ATTACHMENTS", "NOTES", "CONTACT", "ADDRESS"))
+                val orderedContent = takagi.ru.monica.data.model.PasswordWalletProjection.walletOrder(savedContentOrder + credentialGroups.drop(1).map { ProjectCredentialGroup.token((credentialMetadata[it.first().id]?.groupId ?: "primary")) } + detailBlocks.map { it.token } + listOf("AUTHENTICATOR", "PAYMENT", "DOCUMENT", "CUSTOM_FIELDS", "ATTACHMENTS", "NOTES", "CONTACT", "ADDRESS"))
                 val walletSections = orderedContent.filter { section ->
                     val supplemental = displayCustomFields.any { field ->
                         takagi.ru.monica.ui.components.EntrySupplementalSpecs.forSection(section).any {
@@ -894,6 +918,14 @@ fun PasswordDetailScreen(
                     }
                 }
                 orderedContent.forEach { section ->
+                    credentialGroups.drop(1).firstOrNull { ProjectCredentialGroup.token((credentialMetadata[it.first().id]?.groupId ?: "primary")) == section }?.let { rows ->
+                        item(key = section) {
+                            ProjectCredentialDetailCard(rows, credentialMetadata, displayPasswords, unavailablePasswordSources,
+                                context, settings, onCreateSend, onEditPassword,
+                            onResyncUnreadable = resyncUnreadable, isResyncingUnreadable = isResyncingUnreadablePassword,
+                                onDelete = { itemToDelete = it; showDeleteDialog = true })
+                        }
+                    }
                     detailBlocks.firstOrNull { it.token == section }?.let { stored ->
                         item(key = section) {
                             var open by remember(entry.id, stored) { mutableStateOf(false) }
@@ -903,7 +935,7 @@ fun PasswordDetailScreen(
                     }
                     when (section) {
                         "AUTHENTICATOR" -> {
-                detailTotp?.let { data ->
+                if (credentialGroups.isEmpty()) detailTotp?.let { data ->
                     item("totp") {
                         takagi.ru.monica.ui.components.PasswordAuthenticatorCard(
                             entry, data, settings, onEdit = { onEditPassword(entry.id) })
@@ -1001,6 +1033,20 @@ fun PasswordDetailScreen(
 
                         }
 
+                    }
+                }
+
+                if (settings.passwordDetailSecurityAnalysisEnabled) {
+                    item("security_analysis") {
+                        PasswordDetailSecurityAnalysisCard(
+                            hasTwoFactor = detailTotp != null,
+                            hasBoundPasskey = boundPasskeys.isNotEmpty() || entry.passkeyBindings.isNotBlank(),
+                            passkeyAvailable = isPasskeyAvailableForEntry(
+                                entry = entry,
+                                signinDomains = passkeySigninDomains,
+                                catalog = passkeySupportCatalog
+                            )
+                        )
                     }
                 }
 
@@ -2420,6 +2466,58 @@ private fun hasPaymentInfo(entry: PasswordEntry): Boolean {
            entry.creditCardCVV.isNotEmpty()
 }
 
+
+@Composable
+internal fun ProjectCredentialDetailCard(
+    rows: List<PasswordEntry>, metadata: Map<Long, ProjectCredentialGroup.Metadata>,
+    values: Map<Long, String>, unavailable: Map<Long, PasswordSource>, context: Context,
+    settings: AppSettings, onCreateSend: ((String, String) -> Unit)?, onEdit: (Long) -> Unit,
+    onDelete: (PasswordEntry) -> Unit,
+    resolvedTotp: TotpData? = null, separatedUsername: String = "",
+    onResyncUnreadable: (PasswordEntry) -> Unit, isResyncingUnreadable: Boolean,
+) {
+    val ordered = rows.sortedBy { metadata[it.id]?.passwordOrder ?: 0 }
+    val first = ordered.first()
+    val info = metadata[first.id]
+    val parsedTotp by produceState<TotpData?>(null, first.id, first.authenticatorKey) {
+        value = withContext(Dispatchers.Default) {
+            runCatching { takagi.ru.monica.util.TotpDataResolver.fromAuthenticatorKey(
+                takagi.ru.monica.security.SecurityManager(context).decryptDataIfMonicaCiphertext(first.authenticatorKey)) }.getOrNull()
+        }
+    }
+    val totp = resolvedTotp ?: parsedTotp
+    val accounts = buildList {
+        if (first.username.isNotEmpty()) add(stringResource(R.string.field_account) to first.username)
+        if (separatedUsername.isNotEmpty()) add(stringResource(R.string.autofill_username) to separatedUsername)
+    }
+    // Group rows come from sanitized list metadata; secret availability lives in values.
+    val passwordRows = ordered.filter { !values[it.id].isNullOrBlank() || unavailable[it.id] != null }
+    val count = accounts.size + passwordRows.size + if (totp != null) 1 else 0
+    CompositionLocalProvider(takagi.ru.monica.ui.components.LocalCompactCredentialFields provides true) {
+    DetailSectionLayout(info?.label?.ifBlank { stringResource(R.string.project_credential) }
+        ?: stringResource(R.string.project_credential)) {
+        accounts.forEachIndexed { index, (label, value) ->
+            DetailGroupItem(index, count) {
+                InfoFieldWithCopy(label, value, context = context, onCreateSend = onCreateSend)
+            }
+        }
+        passwordRows.forEachIndexed { index, row -> key(row.id) {
+            DetailGroupItem(index + accounts.size, count) {
+                PasswordItemRow(entry = row, displayPassword = values[row.id].orEmpty(), unavailableSource = unavailable[row.id],
+                    onResyncUnreadable = { onResyncUnreadable(row) }, isResyncingUnreadable = isResyncingUnreadable,
+                    showSecurityAnalysis = settings.passwordDetailSecurityAnalysisEnabled, index = index + 1,
+                    showIndex = passwordRows.size > 1, onDelete = { onDelete(row) }, context = context,
+                    canDelete = metadata.isEmpty() && passwordRows.size > 1, onCreateSend = onCreateSend)
+            }
+        } }
+        totp?.let {
+            takagi.ru.monica.ui.components.PasswordAuthenticatorCard(first, it, settings,
+                onEdit = { onEdit(first.id) }, connected = accounts.isNotEmpty() || passwordRows.isNotEmpty())
+        }
+    }
+}
+}
+
 @Composable
 private fun PasswordListCard(
     passwords: List<PasswordEntry>,
@@ -2503,7 +2601,7 @@ internal fun PasswordItemRow(
         PasswordStrengthAnalyzer.StrengthLevel.VERY_STRONG -> MaterialTheme.colorScheme.primary
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = Modifier.testTag("detail_password_${entry.id}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (hasPasswordValue && !isUnavailable) {
             val qrActions = takagi.ru.monica.ui.components.LocalQrTemplateActions.current
             CompositionLocalProvider(takagi.ru.monica.ui.components.LocalQrTemplateActions provides qrActions?.forEntry?.invoke(entry.id)) {
@@ -2612,6 +2710,7 @@ internal fun PasswordItemRow(
 
         if (showSecurityAnalysis && hasPasswordValue && !isUnavailable) {
             Surface(
+                modifier = if (takagi.ru.monica.ui.components.LocalCompactCredentialFields.current) Modifier.padding(start = 36.dp) else Modifier,
                 shape = RoundedCornerShape(8.dp),
                 color = strengthColor.copy(alpha = 0.16f),
                 contentColor = strengthColor

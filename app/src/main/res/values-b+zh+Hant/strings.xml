@@ -195,7 +195,7 @@
     <string name="field_state">省份</string>
     <string name="field_postal_code">郵編</string>
     <string name="field_country">國家</string>
-    <string name="field_card_number">信用卡號</string>
+    <string name="field_card_number">卡號</string>
     <string name="field_card_valid">✓ 卡號有效</string>
     <string name="field_cardholder">持卡人姓名</string>
     <string name="field_expiry">有效期</string>
@@ -1920,7 +1920,7 @@
     <string name="developer_view_logs">查看日誌</string>
     <string name="developer_view_logs_desc">查看應用程式的 Logcat 輸出日誌</string>
     <string name="developer_clear_log_buffer">清除日誌緩衝區</string>
-    <string name="developer_clear_log_buffer_desc">清除裝置的日誌緩衝區</string>
+    <string name="developer_clear_log_buffer_desc">請清空日誌緩衝區後重現 bug，分享日誌給開發者。</string>
     <string name="developer_share_logs">分享日誌</string>
     <string name="developer_share_logs_desc">匯出並分享最近的日誌</string>
     <string name="developer_functions">開發者功能</string>
@@ -1988,7 +1988,7 @@
     <string name="state">省份</string>
     <string name="zip_code">郵編</string>
     <string name="payment_info">支付資料</string>
-    <string name="credit_card_number">信用卡號</string>
+    <string name="credit_card_number">卡號</string>
     <string name="card_holder">持卡人</string>
     <string name="credit_card_encrypted">信用卡資料已加密儲存</string>
     <string name="expand">展開</string>
@@ -4352,4 +4352,11 @@
     <string name="custom_icon_installed_load_failed">無法載入圖示，請重試。</string>
     <string name="custom_icon_installed_save_failed">無法使用此圖示，請重試或選擇其他圖示。</string>
     <string name="field_barcode_linear_too_wide">螢幕寬度不足以清楚顯示此條碼，請橫向查看或使用 QR 碼。</string>
+
+    <string name="local_recovery_action">使用主密碼復原</string>
+    <string name="local_recovery_password">Monica 主密碼</string>
+    <string name="local_recovery_description">使用本機儲存的加密復原資料，無需連接雲端。復原會保留原設定檔。</string>
+    <string name="local_recovery_failed">未能完成復原。請檢查主密碼後重試；如果仍失敗，請保留應用程式資料並複製診斷資訊。</string>
+    <string name="local_recovery_limits">復原仍需保留資料庫和附件檔案。尚未轉換的舊資料、硬體專用通行金鑰可能仍需要原裝置金鑰。</string>
+    <string name="local_recovery_save_failed">無法安全儲存主密碼，原有資料已保留。</string>
 </resources>

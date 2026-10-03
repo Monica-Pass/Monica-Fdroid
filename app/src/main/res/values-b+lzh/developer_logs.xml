@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">診斷誌</string>
+    <string name="developer_logs_entry_description">檢索、篩選與分享診斷全誌</string>
+    <string name="developer_logs_search">檢索誌文、標籤或異常</string>
+    <string name="developer_logs_source">來源：%1$s</string>
+    <string name="developer_logs_hint">先重現其誤，再更新誌文。誌列錯誤，未必功能有失。</string>
+    <string name="developer_logs_share_full">分享全誌</string>
+    <string name="developer_logs_result_count">%1$d / %2$d 則 · %3$s 更新</string>
+    <string name="developer_logs_no_matches">無相符誌文，請更換檢詞或篩選。</string>
+    <string name="developer_logs_clear_confirmation">清除診斷誌？密碼庫與設定皆留。環境資訊及新誌仍可顯示。</string>
+    <string name="developer_logs_copy_event">複製此則</string>
+    <string name="developer_logs_preview_limit">預覽已略。複製此則或分享全誌，可覽全文。</string>
+    <string name="developer_logs_expand">展開誌文</string>
+    <string name="developer_logs_collapse">收起誌文</string>
+    <string name="developer_logs_security">安全</string>
+    <string name="developer_verification_group">驗證與相容</string>
+    <string name="developer_forensics_group">Bitwarden 同步診斷</string>
+    <string name="developer_logs_copy_failed">此則未能複製，請分享全誌。</string>
+</resources>

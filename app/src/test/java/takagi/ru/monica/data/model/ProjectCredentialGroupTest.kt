@@ -1,0 +1,58 @@
+package takagi.ru.monica.data.model
+
+import kotlinx.serialization.json.*
+import org.junit.Assert.*
+import org.junit.Test
+import takagi.ru.monica.data.PasswordEntry
+
+class ProjectCredentialGroupTest {
+    @Test fun metadataContainsNoSecretsAndRestoresIndependentAccounts() {
+        val groups = listOf(ProjectCredentialGroup.Group(username = "alpha", passwords = listOf(ProjectCredentialGroup.Password(value = "alphaSecret")), otp = "ALPHA_OTP"),
+            ProjectCredentialGroup.Group(label = "Work", username = "beta", passwords = listOf(ProjectCredentialGroup.Password(value = "betaSecret"), ProjectCredentialGroup.Password(value = "otherSecret"))))
+        val rows = ProjectCredentialGroup.rows(groups)
+        assertTrue(rows.all { !it.metadata.raw.toString().contains("Secret") && !it.metadata.raw.toString().contains("OTP") })
+        val entries = rows.mapIndexed { index, row -> PasswordEntry(id = index + 1L, title = "Shared", website = "", username = row.username, password = row.password.value, authenticatorKey = row.otp) }
+        val fields = rows.mapIndexed { index, row -> index + 1L to ProjectCredentialGroup.put(emptyList(), row.metadata) }.toMap()
+        val restored = ProjectCredentialGroup.restore(entries.reversed(), fields)
+        assertEquals(listOf("alpha", "beta"), restored.map { it.username })
+        assertEquals(listOf("betaSecret", "otherSecret"), restored[1].passwords.map { it.value })
+        assertEquals("", restored[1].otp)
+        assertEquals(groups.map { it.id }, restored.map { it.id })
+    }
+    @Test fun reorderAndEditRetainPasswordIdentitiesAndUnknownMetadata() {
+        val original = ProjectCredentialGroup.Group(passwords = listOf(ProjectCredentialGroup.Password(value = "a"), ProjectCredentialGroup.Password(value = "b")))
+        val rows = ProjectCredentialGroup.rows(listOf(original))
+        val future = JsonPrimitive(9007199254740993L)
+        val changed = original.copy(passwords = rows.map { it.password.copy(metadata = it.metadata.copy(raw = JsonObject(it.metadata.raw + ("future" to future)))) }.reversed())
+        val updated = ProjectCredentialGroup.rows(listOf(changed))
+        assertEquals(rows.map { it.metadata.passwordId }.reversed(), updated.map { it.metadata.passwordId })
+        assertTrue(updated.all { it.metadata.raw["future"] == future })
+    }
+    @Test fun legacyProjectRemainsOneAccountAndUnsupportedMetadataIsRejected() {
+        val entries = listOf(PasswordEntry(id = 1, title = "Old", website = "", username = "a", password = "one"), PasswordEntry(id = 2, title = "Old", website = "", username = "a", password = "two"))
+        assertEquals(2, ProjectCredentialGroup.restore(entries, emptyMap()).single().passwords.size)
+        val bad = listOf(takagi.ru.monica.data.CustomFieldDraft(title = ProjectCredentialGroup.FIELD, value = "{}"))
+        assertThrows(IllegalArgumentException::class.java) { ProjectCredentialGroup.restore(entries, mapOf(1L to bad)) }
+    }
+    @Test fun duplicateIdsAndConflictingAccountFieldsAreRejected() {
+        val password = ProjectCredentialGroup.Password(value = "secret")
+        assertThrows(IllegalArgumentException::class.java) {
+            ProjectCredentialGroup.rows(listOf(ProjectCredentialGroup.Group(passwords = listOf(password)),
+                ProjectCredentialGroup.Group(passwords = listOf(password))))
+        }
+        val rows = ProjectCredentialGroup.rows(listOf(ProjectCredentialGroup.Group(username = "original",
+            passwords = listOf(password, ProjectCredentialGroup.Password(value = "other")))))
+        val fields = rows.mapIndexed { i, row -> i + 1L to ProjectCredentialGroup.put(emptyList(), row.metadata) }.toMap()
+        val entries = rows.mapIndexed { i, row -> PasswordEntry(id = i + 1L, title = "Project", website = "",
+            username = row.username, password = row.password.value) }
+        assertThrows(IllegalArgumentException::class.java) {
+            ProjectCredentialGroup.restore(listOf(entries[0], entries[1].copy(username = "externally changed")), fields)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ProjectCredentialGroup.restore(listOf(entries[0], entries[1].copy(authenticatorKey = "different OTP")), fields)
+        }
+        val projectId = java.util.UUID.randomUUID().toString()
+        assertEquals(projectId, ProjectCredentialGroup.parse(rows[0].metadata.forProject(projectId).raw.toString())?.projectId)
+    }
+
+}

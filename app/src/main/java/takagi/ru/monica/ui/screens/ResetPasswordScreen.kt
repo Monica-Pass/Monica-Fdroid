@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +29,7 @@ fun ResetPasswordScreen(
     skipCurrentPassword: Boolean = false
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val currentPasswordImeModifier = rememberBringIntoViewOnFocusModifier()
     val newPasswordImeModifier = rememberBringIntoViewOnFocusModifier()
@@ -268,21 +270,25 @@ fun ResetPasswordScreen(
                             isLoading = true
                             errorMessage = ""
                             
-                            val resetSuccess = if (skipCurrentPassword) {
-                                // If skipping current password, directly set new password
-                                securityManager.setMasterPassword(newPassword)
-                                true
-                            } else {
-                                // Normal reset with current password verification
-                                securityManager.resetMasterPassword(currentPassword, newPassword)
+                            val current = currentPassword
+                            val replacement = newPassword
+                            scope.launch {
+                                try {
+                                    val verified = skipCurrentPassword || kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        securityManager.verifyMasterPassword(current)
+                                    }
+                                    if (!verified) errorMessage = context.getString(R.string.current_password_incorrect)
+                                    else {
+                                        val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                            securityManager.setMasterPassword(replacement)
+                                        }
+                                        if (saved) showSuccessDialog = true
+                                        else errorMessage = context.getString(R.string.local_recovery_save_failed)
+                                    }
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                                catch (_: Exception) { errorMessage = context.getString(R.string.local_recovery_save_failed) }
+                                finally { isLoading = false }
                             }
-                            
-                            if (resetSuccess) {
-                                showSuccessDialog = true
-                            } else {
-                                errorMessage = context.getString(R.string.current_password_incorrect)
-                            }
-                            isLoading = false
                         }
                     }
                 },

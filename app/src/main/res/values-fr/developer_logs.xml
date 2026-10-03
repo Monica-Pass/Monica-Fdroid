@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="developer_logs_title">Journaux de diagnostic</string>
+    <string name="developer_logs_entry_description">Rechercher, filtrer et partager un rapport complet</string>
+    <string name="developer_logs_search">Rechercher un journal, une balise ou une exception</string>
+    <string name="developer_logs_source">Source : %1$s</string>
+    <string name="developer_logs_hint">Reproduisez le problème, puis actualisez. Un journal de niveau erreur ne signifie pas toujours une panne.</string>
+    <string name="developer_logs_share_full">Partager les journaux</string>
+    <string name="developer_logs_result_count">%1$d sur %2$d événements · Mise à jour %3$s</string>
+    <string name="developer_logs_no_matches">Aucun journal correspondant. Modifiez la recherche ou les filtres.</string>
+    <string name="developer_logs_clear_confirmation">Effacer les journaux de diagnostic ? Les données du coffre et les réglages sont conservés. Les informations système et les nouveaux journaux peuvent rester visibles.</string>
+    <string name="developer_logs_copy_event">Copier cet événement</string>
+    <string name="developer_logs_preview_limit">Aperçu raccourci. Copiez cet événement ou partagez le rapport complet pour lire tout le texte.</string>
+    <string name="developer_logs_expand">Développer cet événement</string>
+    <string name="developer_logs_collapse">Réduire cet événement</string>
+    <string name="developer_logs_security">Sécurité</string>
+    <string name="developer_verification_group">Vérification et compatibilité</string>
+    <string name="developer_forensics_group">Diagnostic de synchronisation Bitwarden</string>
+    <string name="developer_logs_copy_failed">Impossible de copier cet événement. Partagez le fichier journal complet.</string>
+</resources>

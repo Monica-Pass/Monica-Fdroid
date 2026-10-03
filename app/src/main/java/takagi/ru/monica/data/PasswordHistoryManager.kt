@@ -94,13 +94,16 @@ class PasswordHistoryManager(context: Context) {
     private suspend fun migrateLegacyHistoryIfNeeded() {
         appContext.passwordHistoryDataStore.edit { preferences ->
             val raw = preferences[HISTORY_KEY] ?: return@edit
-            if (raw.isBlank() || securityManager.looksLikeMonicaCiphertext(raw)) {
+            if (raw.isBlank() || raw.startsWith("MDK|")) {
                 return@edit
             }
             val decoded = runCatching {
-                json.decodeFromString<List<PasswordGenerationHistory>>(raw)
+                val plain = if (securityManager.looksLikeMonicaCiphertext(raw)) securityManager.decryptData(raw) else raw
+                json.decodeFromString<List<PasswordGenerationHistory>>(plain)
             }.getOrNull() ?: return@edit
-            preferences[HISTORY_KEY] = encodeHistoryPayload(decoded.take(MAX_HISTORY_SIZE))
+            val encrypted = encodeHistoryPayload(decoded)
+            check(json.decodeFromString<List<PasswordGenerationHistory>>(securityManager.decryptData(encrypted)) == decoded)
+            preferences[HISTORY_KEY] = encrypted
         }
     }
 

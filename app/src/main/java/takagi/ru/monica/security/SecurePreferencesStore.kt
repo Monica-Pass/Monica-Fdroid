@@ -54,8 +54,23 @@ internal object SecurePreferencesStore {
         }
     }
 
-    @Synchronized
     fun open(context: Context, name: String, alias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): Opened {
+        if (name == MONICA && alias == MasterKey.DEFAULT_MASTER_KEY_ALIAS) {
+            val recovery = LocalVaultRecovery(context)
+            val active = recovery.activeStore()
+            val opened = openRaw(context, active?.first ?: name, active?.second ?: alias)
+            try { recovery.validate(opened.preferences) }
+            catch (error: SecureStorageUnavailableException) { throw error }
+            catch (error: Exception) {
+                throw SecureStorageUnavailableException(MONICA, "RECOVERY_VALIDATION_FAILED", error)
+            }
+            return opened.copy(preferences = recovery.wrap(opened.preferences))
+        }
+        return openRaw(context, name, alias)
+    }
+
+    @Synchronized
+    internal fun openRaw(context: Context, name: String, alias: String): Opened {
         try {
             preflight(context, name, alias)
             val masterKey = MasterKey.Builder(context, alias)
@@ -77,7 +92,6 @@ internal object SecurePreferencesStore {
         }
     }
 
-    @Synchronized
     fun validateExisting(context: Context, name: String) {
         preflight(context, name)
         if (context.getSharedPreferences(name, Context.MODE_PRIVATE).all.isNotEmpty()) open(context, name)
@@ -104,12 +118,13 @@ internal object SecureStorageStartup {
     fun prepare(context: Context): SecureStartupResult {
         readiness.value = false
         return try {
-            // Both stores share the default master-key alias. Check both before allowing
-            // a fresh store to create that alias while an older store still needs it.
-            SecurePreferencesStore.preflight(context, SecurePreferencesStore.MONICA)
-            SecurePreferencesStore.preflight(context, SecurePreferencesStore.BITWARDEN)
+            // Do not create the shared legacy alias over an existing Bitwarden store.
+            // An unreadable Bitwarden settings store must not block a healthy local vault.
+            if (LocalVaultRecovery(context).activeStore() == null &&
+                context.getSharedPreferences(SecurePreferencesStore.MONICA, Context.MODE_PRIVATE).all.isEmpty()) {
+                SecurePreferencesStore.preflight(context, SecurePreferencesStore.BITWARDEN)
+            }
             val manager = SecurityManager(context)
-            SecurePreferencesStore.validateExisting(context, SecurePreferencesStore.BITWARDEN)
             readiness.value = true
             SecureStartupResult.Ready(manager)
         } catch (error: SecureStorageUnavailableException) {

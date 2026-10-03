@@ -1103,7 +1103,7 @@
     <string name="developer_view_logs">ログを表示</string>
     <string name="developer_view_logs_desc">アプリケーションのLogcat出力ログを表示</string>
     <string name="developer_clear_log_buffer">ログバッファをクリア</string>
-    <string name="developer_clear_log_buffer_desc">デバイスのログバッファをクリア</string>
+    <string name="developer_clear_log_buffer_desc">ログバッファを消去してから不具合を再現し、ログを開発者に共有してください。</string>
     <string name="developer_share_logs">ログを共有</string>
     <string name="developer_share_logs_desc">最近のログをエクスポートして共有</string>
     <string name="developer_functions">開発者機能</string>
@@ -1171,7 +1171,7 @@
     <string name="state">都道府県</string>
     <string name="zip_code">郵便番号</string>
     <string name="payment_info">支払い情報</string>
-    <string name="credit_card_number">クレジットカード番号</string>
+    <string name="credit_card_number">カード番号</string>
     <string name="card_holder">カード名義人</string>
     <string name="credit_card_encrypted">クレジットカード情報は暗号化されています</string>
     <string name="expand">展開</string>

@@ -259,10 +259,17 @@ class CommonAccountPreferences(
                 KEY_BILLING_ADDRESS_JSON
             ).forEach { key ->
                 val raw = preferences[key] ?: return@forEach
-                if (raw.isBlank() || securityManager.looksLikeMonicaCiphertext(raw)) {
-                    return@forEach
-                }
-                preferences[key] = protectedPreferenceValue(raw)
+                if (raw.isBlank() || raw.startsWith("MDK|")) return@forEach
+                if (securityManager.looksLikeMonicaCiphertext(raw)) {
+                    if (!securityManager.isVaultRuntimeUnlocked()) return@forEach
+                    val replacement = runCatching {
+                        val plain = securityManager.decryptData(raw)
+                        val encrypted = protectedPreferenceValue(plain)
+                        check(securityManager.decryptData(encrypted) == plain)
+                        encrypted
+                    }.getOrNull() ?: return@forEach
+                    preferences[key] = replacement
+                } else preferences[key] = protectedPreferenceValue(raw)
             }
         }
     }

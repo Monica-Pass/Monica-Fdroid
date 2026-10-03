@@ -2242,7 +2242,7 @@
     <string name="developer_view_logs">Ver registros</string>
     <string name="developer_view_logs_desc">Ver registros de salida de Logcat de la aplicación</string>
     <string name="developer_clear_log_buffer">Borrar búfer de registros</string>
-    <string name="developer_clear_log_buffer_desc">Borrar búfer de registros del dispositivo</string>
+    <string name="developer_clear_log_buffer_desc">Borra el búfer, reproduce el error y comparte los registros con el desarrollador.</string>
     <string name="developer_share_logs">Compartir registros</string>
     <string name="developer_share_logs_desc">Exportar y compartir registros recientes</string>
     <string name="developer_functions">Funciones de desarrollador</string>
@@ -2316,7 +2316,7 @@
     <string name="state">Estado/Provincia</string>
     <string name="zip_code">Código postal</string>
     <string name="payment_info">Información de pago</string>
-    <string name="credit_card_number">Número de tarjeta de crédito</string>
+    <string name="credit_card_number">Nº de tarjeta</string>
     <string name="card_holder">Titular de la tarjeta</string>
     <string name="credit_card_encrypted">La información de la tarjeta de crédito está cifrada</string>
     <string name="expand">Expandir</string>

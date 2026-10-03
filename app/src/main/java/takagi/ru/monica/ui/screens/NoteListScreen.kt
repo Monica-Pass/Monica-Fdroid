@@ -634,6 +634,11 @@ fun NoteListScreen(
                             expanded = showTopActionsMenu,
                             onDismissRequest = { showTopActionsMenu = false }
                         ) {
+                        DatabaseManagerMenuItem(
+                            selectedKeePassDatabaseId?.let { takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.KEEPASS, it) }
+                                ?: (selectedCategoryFilter as? NoteCategoryFilter.MdbxDatabase)?.let { takagi.ru.monica.credentialexchange.ImportDestination(takagi.ru.monica.credentialexchange.ImportDestinationKind.MDBX, it.databaseId) }
+                        ) { showTopActionsMenu = false }
+
                             if (showStandaloneSettingsEntry) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.nav_settings)) },

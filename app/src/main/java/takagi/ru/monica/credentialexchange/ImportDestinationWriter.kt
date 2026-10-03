@@ -31,6 +31,7 @@ class ImportDestinationWriter(
     private val passwords: PasswordRepository,
     private val secureItems: SecureItemRepository,
     private val progress: TransferProgressReporter = TransferProgressReporter.None,
+    private val destinationFolder: String? = null,
 ) {
     private val database = PasswordDatabase.getDatabase(context)
     private val strings = AppLocaleStringResolver(context)
@@ -191,7 +192,11 @@ class ImportDestinationWriter(
             (destination.bitwardenId == null || entry.publicKeyAlgorithm == PasskeyEntry.ALGORITHM_ES256)
 
     suspend fun insertPassword(entry: PasswordEntry, importedFields: List<CustomFieldBackupEntry> = emptyList()): Long =
-        passwordWriter.insertPasswordEntry(destination.password(entry)).also {
+        passwordWriter.insertPasswordEntry(destination.password(entry).copy(
+            categoryId = destinationFolder?.toLongOrNull().takeIf { destination.kind == ImportDestinationKind.LOCAL },
+            keepassGroupPath = destinationFolder.takeIf { destination.keepassId != null },
+            mdbxFolderId = destinationFolder.takeIf { destination.mdbxId != null },
+        )).also {
         check(it > 0)
         pendingPasswordFields[it] = importedFields.map { field -> Triple(field.title, field.value, field.isProtected) }
         passwordIds += it
@@ -199,7 +204,11 @@ class ImportDestinationWriter(
         if (destination.keepassId == null && destination.mdbxId == null) committedPasswords += it
     }
 
-    suspend fun insertSecureItem(entry: SecureItem): Long = secureItemWriter.insertItem(destination.secureItem(entry)).also {
+    suspend fun insertSecureItem(entry: SecureItem): Long = secureItemWriter.insertItem(destination.secureItem(entry).copy(
+        categoryId = destinationFolder?.toLongOrNull().takeIf { destination.kind == ImportDestinationKind.LOCAL },
+        keepassGroupPath = destinationFolder.takeIf { destination.keepassId != null },
+        mdbxFolderId = destinationFolder.takeIf { destination.mdbxId != null },
+    )).also {
         check(it > 0)
         secureItemIds += it
         touchedSecureItemIds += it

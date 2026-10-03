@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">원본 정보 관리</string>
+    <string name="mdbx_native_summary">폴더, 항목 및 원본 필드 탐색</string>
+    <string name="mdbx_native_search">이름 또는 유형 검색</string>
+    <string name="mdbx_native_readonly">원본 필드는 읽기 전용입니다. 목록에서 이름을 바꿔도 내용은 변경되지 않습니다.</string>
+    <string name="mdbx_native_schema">데이터 형식 버전: %1$d</string>
+    <string name="mdbx_native_failed">작업을 완료하지 못했습니다. 새로고침하여 저장 상태를 확인한 뒤 다시 시도하세요.</string>
+    <string name="mdbx_native_snapshot_readonly">스냅샷 구조는 읽기 전용입니다. 복원하려면 스냅샷 메뉴를 사용하세요.</string>
+</resources>

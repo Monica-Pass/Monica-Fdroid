@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manager_open_database">Datenbankeinstellungen öffnen</string>
+    <string name="manager_dual">Ein-/Zweispaltenansicht wechseln</string>
+    <string name="manager_databases">Datenbanken</string>
+    <string name="manager_choose_destination">Ziel wählen</string>
+    <string name="manager_selection_destination">%1$d ausgewählt → %2$s</string>
+    <string name="manager_items_selected">%1$d Einträge · %2$d ausgewählt</string>
+    <string name="manager_confirm_transfer">%1$d ausgewählte Einträge von %2$s nach %3$s / %4$s übertragen? Die Quelle bleibt bis zur Prüfung des Ziels erhalten.</string>
+    <string name="manager_result">Übertragungsergebnis</string>
+    <string name="manager_result_count">Abgeschlossen: %1$d · Zu prüfen: %2$d</string>
+    <string name="manager_technical_details">Technische Details</string>
+    <string name="manager_select">Eintrag auswählen</string>
+    <string name="manager_failure_format">Das Zielformat kann nicht alle Originalinformationen erhalten. Die Quelle bleibt erhalten. Wählen Sie dasselbe Format; betroffene Felder stehen in den Details.</string>
+    <string name="manager_failure_changed">Daten geändert oder Prüfung fehlgeschlagen. Die Quelle bleibt erhalten. Beide Spalten aktualisieren und das Ziel vor einem erneuten Versuch prüfen.</string>
+    <string name="manager_failure_locked">Datenbank gesperrt oder Originaldatei nicht verfügbar. In den Datenbankeinstellungen öffnen und diese Spalte aktualisieren.</string>
+    <string name="manager_failure_general">Vorgang nicht abgeschlossen. Beide Spalten und die Details prüfen: Am Ziel können unvollständige Kopien liegen.</string>
+</resources>

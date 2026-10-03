@@ -74,6 +74,24 @@ class KeePassKeyFileStore(
         }
     }
 
+    /** Migrate only copies owned by this store; unreadable originals remain untouched. */
+    internal fun migrateDeviceEncryptedCopies() = synchronized(IO_LOCK) {
+        if (!securityManager.isVaultRuntimeUnlocked()) return@synchronized
+        root.listFiles()?.filter { it.isFile && !it.name.startsWith(".") }?.forEach { target ->
+            if (!securityManager.isVaultRuntimeUnlocked()) return@synchronized
+            if (target.length() > 4 * 1024 * 1024) return@forEach
+            runCatching {
+                val original = target.readText(Charsets.UTF_8)
+                if (!original.startsWith("C2|") && !original.startsWith("V2|")) return@runCatching
+                val plain = securityManager.decryptData(original)
+                require(Base64.decode(plain, Base64.NO_WRAP).isNotEmpty())
+                val replacement = securityManager.encryptData(plain)
+                check(replacement.startsWith("MDK|") && securityManager.decryptData(replacement) == plain)
+                if (securityManager.isVaultRuntimeUnlocked()) replaceEncryptedFile(target, replacement)
+            }
+        }
+    }
+
     fun exportInternal(relativePath: String, targetUri: Uri) {
         val bytes = readInternal(relativePath)
         appContext.contentResolver.openOutputStream(targetUri, "w")?.use { output ->

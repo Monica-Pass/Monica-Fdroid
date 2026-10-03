@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Gestisci informazioni originali</string>
+    <string name="mdbx_native_summary">Esplora cartelle, voci e campi originali</string>
+    <string name="mdbx_native_search">Cerca nomi o tipi</string>
+    <string name="mdbx_native_readonly">I campi originali sono di sola lettura. Rinominare una voce dalla lista non modifica il contenuto.</string>
+    <string name="mdbx_native_schema">Versione del formato: %1$d</string>
+    <string name="mdbx_native_failed">Operazione non completata. Aggiorna per verificare lo stato salvato prima di riprovare.</string>
+    <string name="mdbx_native_snapshot_readonly">Struttura di sola lettura. Usa il menu delle istantanee per ripristinare.</string>
+</resources>

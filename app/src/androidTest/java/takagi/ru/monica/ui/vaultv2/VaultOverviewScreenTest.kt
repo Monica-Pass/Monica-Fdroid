@@ -103,7 +103,7 @@ class VaultOverviewScreenTest {
                             onOpenType = { route = "type:${it.name}:$scopeKey" }, onOpenFolder = { route = "folder:${it.key}" },
                             onFavorites = { route = "favorites:$scopeKey" }, onArchive = { route = "archive:$scopeKey" },
                             onTrash = { route = "trash:$scopeKey" }, onAllItems = { route = "all:$scopeKey" },
-                            onSearch = { route = "search:$scopeKey" }, onUnlock = { route = "unlock:$scopeKey" })
+                            onSearch = { route = "search:$scopeKey" }, onScanFidoQr = { route = "fido_qr_scan" }, onUnlock = { route = "unlock:$scopeKey" })
                         VaultV2FabMenu(0.dp, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer,
                             onExpandStateChanged = {}, menuActions = listOf(
                                 VaultV2FabMenuAction(Icons.Default.Add, R.string.item_type_password) { created = "password:$scopeKey" }))
@@ -113,6 +113,25 @@ class VaultOverviewScreenTest {
             }
         }
         compose.onNodeWithTag("vault_overview_screen").assertIsDisplayed()
+    }
+
+    @Test fun passkeyScanMenuOpensExistingRouteAndKeepsCustomization() {
+        showOverview()
+        compose.onNodeWithTag("overview_more").performClick()
+        compose.onNodeWithTag("overview_customize").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.passkey_scan_qr_menu_title)).assertIsDisplayed()
+        val bitmap = compose.onNode(isPopup()).captureToImage().asAndroidBitmap()
+        File(context.filesDir, "passkey-scan-overview.png").outputStream().use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        bitmap.recycle()
+        compose.onNodeWithText(context.getString(R.string.passkey_scan_qr_menu_title)).performClick()
+        compose.runOnIdle { assertEquals("fido_qr_scan", route) }
+        compose.onNodeWithTag("return_home").performClick()
+        compose.onNode(isPopup()).assertDoesNotExist()
+        compose.onNodeWithTag("overview_more").performClick()
+        compose.onNodeWithTag("overview_customize").performClick()
+        compose.onNodeWithTag("overview_module_settings").assertIsDisplayed()
     }
 
     @Test fun recentModuleOpensEntryAndCanCollapseAndHide() {
@@ -128,6 +147,7 @@ class VaultOverviewScreenTest {
         val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
         File(context.filesDir,"vault-recent-315.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) }
         bitmap.recycle()
+        compose.onNodeWithTag("overview_more").performClick()
         compose.onNodeWithTag("overview_customize").performClick()
         compose.onNodeWithTag("overview_visible_RECENT").performClick()
         Espresso.pressBack()
@@ -156,6 +176,7 @@ class VaultOverviewScreenTest {
 
     @Test fun moduleVisibilityOrderAndCollapseWorkIndependently() {
         showOverview()
+        compose.onNodeWithTag("overview_more").performClick()
         compose.onNodeWithTag("overview_customize").performClick()
         compose.onNodeWithTag("overview_move_down_CARDS").performClick()
         compose.runOnIdle { assertEquals("RECENT", config.order.first()) }
@@ -311,7 +332,7 @@ class VaultOverviewScreenTest {
         showOverview()
         compose.onNodeWithTag("overview_scope").performClick()
         databaseChoice("work@example.test").performClick()
-        compose.onNodeWithTag("overview_customize").performTouchInput { swipeLeft() }
+        compose.onNodeWithTag("overview_more").performTouchInput { swipeLeft() }
         compose.runOnIdle { assertEquals("search:bitwarden:2", route) }
     }
 

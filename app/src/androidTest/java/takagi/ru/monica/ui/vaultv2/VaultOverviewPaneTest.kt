@@ -287,7 +287,7 @@ class VaultOverviewPaneTest {
         compose.onNodeWithTag("overview_search_results").assertIsDisplayed()
         compose.onNodeWithContentDescription(context.getString(R.string.topbar_close_search)).performClick()
         compose.onNodeWithTag("overview_top_bar").assertIsDisplayed()
-        compose.onNodeWithTag("overview_customize").assertIsDisplayed()
+        compose.onNodeWithTag("overview_more").assertIsDisplayed()
         compose.runOnIdle {
             assertFalse(state.overviewListOpen)
             assertEquals("local", state.storageFilterType)

@@ -217,7 +217,7 @@
     <string name="field_state">省份嗷呜</string>
     <string name="field_postal_code">邮编嗷呜</string>
     <string name="field_country">国家嗷呜</string>
-    <string name="field_card_number">信用卡号嗷呜</string>
+    <string name="field_card_number">卡号嗷呜</string>
     <string name="field_card_valid">✓ 卡号有效嗷呜</string>
     <string name="field_cardholder">持卡人姓名嗷呜</string>
     <string name="field_expiry">有效期嗷呜</string>
@@ -2111,7 +2111,7 @@
     <string name="developer_view_logs">查看日志嗷呜</string>
     <string name="developer_view_logs_desc">查看应用的 Logcat 输出日志嗷呜</string>
     <string name="developer_clear_log_buffer">清除日志缓冲区嗷呜</string>
-    <string name="developer_clear_log_buffer_desc">清除设备的日志缓冲区嗷呜</string>
+    <string name="developer_clear_log_buffer_desc">请清空日志缓冲区后复现 bug，分享日志给开发者。</string>
     <string name="developer_share_logs">分享日志嗷呜</string>
     <string name="developer_share_logs_desc">导出并分享最近的日志嗷呜</string>
     <string name="developer_functions">开发者功能嗷呜</string>
@@ -2185,7 +2185,7 @@
     <string name="state">省份嗷呜</string>
     <string name="zip_code">邮编嗷呜</string>
     <string name="payment_info">支付信息嗷呜</string>
-    <string name="credit_card_number">信用卡号嗷呜</string>
+    <string name="credit_card_number">卡号嗷呜</string>
     <string name="card_holder">持卡人嗷呜</string>
     <string name="credit_card_encrypted">信用卡信息已加密存储嗷呜</string>
     <string name="expand">展开嗷呜</string>

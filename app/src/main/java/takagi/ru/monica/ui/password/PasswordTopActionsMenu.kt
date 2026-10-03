@@ -80,6 +80,21 @@ internal fun PasswordTopActionsDropdownMenu(
 }
 
 @Composable
+internal fun PasskeyScanTopActionsMenuItem(
+    onDismissMenu: () -> Unit,
+    onScanFidoQr: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.passkey_scan_qr_menu_title)) },
+        leadingIcon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
+        onClick = {
+            onDismissMenu()
+            onScanFidoQr()
+        },
+    )
+}
+
+@Composable
 internal fun CommonPasswordTopActionsMenuItems(
     onDismissMenu: () -> Unit,
     onShowDisplayOptions: () -> Unit,
@@ -104,14 +119,7 @@ internal fun CommonPasswordTopActionsMenuItems(
         )
     }
     if (onScanFidoQr != null) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.passkey_scan_qr_menu_title)) },
-            leadingIcon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
-            onClick = {
-                onDismissMenu()
-                onScanFidoQr()
-            }
-        )
+        PasskeyScanTopActionsMenuItem(onDismissMenu = onDismissMenu, onScanFidoQr = onScanFidoQr)
     }
     DropdownMenuItem(
         text = { Text(stringResource(R.string.common_account_title)) },

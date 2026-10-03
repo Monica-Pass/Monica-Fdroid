@@ -1,5 +1,7 @@
 package takagi.ru.monica.keepass
 
+import kotlinx.coroutines.CancellationException
+import takagi.ru.monica.passkey.PasskeyMoveSourceCleanupException
 import takagi.ru.monica.data.PasskeyEntry
 import takagi.ru.monica.passkey.PasskeyCredentialIdCodec
 import takagi.ru.monica.repository.KeePassCompatibilityBridge
@@ -60,7 +62,8 @@ class KeePassPasskeyUpdateExecutor(
                 databaseId = oldDatabaseId!!,
                 passkeys = listOf(existing)
             ).getOrElse { error ->
-                return Result.failure(error)
+                if (error is CancellationException) throw error
+                return Result.failure(PasskeyMoveSourceCleanupException(error))
             }
             return Result.success(updated)
         }

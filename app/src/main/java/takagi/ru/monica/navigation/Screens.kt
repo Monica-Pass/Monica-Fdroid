@@ -221,7 +221,8 @@ sealed class Screen(val route: String) {
     object ColorSchemeSelection : Screen("color_scheme_selection")
     object CustomColorSettings : Screen("custom_color_settings")
     object Generator : Screen("generator")  // 添加生成器页面路由
-    object DeveloperSettings : Screen("developer_settings")  // 添加开发者设置页面路由
+    object DeveloperSettings : Screen("developer_settings")
+    object DeveloperLogs : Screen("developer_logs")
     object PermissionManagement : Screen("permission_management")  // 权限管理页面路由
     object QuickSetup : Screen("quick_setup")  // 快速初始化引导
     object Extensions : Screen("extensions")  // 功能拓展页面路由

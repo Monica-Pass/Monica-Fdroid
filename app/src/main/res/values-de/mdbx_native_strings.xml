@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_title">Originalinformationen verwalten</string>
+    <string name="mdbx_native_summary">Ordner, Einträge und Originalfelder durchsuchen</string>
+    <string name="mdbx_native_search">Namen oder Typen suchen</string>
+    <string name="mdbx_native_readonly">Originalfelder sind schreibgeschützt. Einträge können in der Liste ohne Inhaltsänderung umbenannt werden.</string>
+    <string name="mdbx_native_schema">Datenformatversion: %1$d</string>
+    <string name="mdbx_native_failed">Der Vorgang konnte nicht abgeschlossen werden. Aktualisieren und den gespeicherten Stand vor einem erneuten Versuch prüfen.</string>
+    <string name="mdbx_native_snapshot_readonly">Schreibgeschützte Snapshot-Struktur. Wiederherstellung über das Snapshot-Menü.</string>
+</resources>
