@@ -11,14 +11,6 @@ This repository is only for **F-Droid** builds. Main repository: [Monica for And
 <p><strong>A local-first password vault that bridges Bitwarden and KeePass</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-<p>
-	Friend Link:
-	<a href="https://linux.do" title="Linux.do">
-		<img src="https://www.google.com/s2/favicons?domain=linux.do&sz=64" alt="Linux.do" width="22" />
-		Linux.do
-	</a>
-</p>
-
 [![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
@@ -166,6 +158,13 @@ Monica's design, compatibility work, and several feature directions have been in
 - [Steam Desktop Authenticator](https://github.com/Jessecar96/SteamDesktopAuthenticator) - reference for Steam maFile format, Steam Guard, and trade confirmation compatibility.
 - [steamguard-cli](https://github.com/dyc3/steamguard-cli) - reference for Steam Guard login, authenticator transfer, and confirmation protocol implementation.
 - [AnotherVaporAuth](https://github.com/freefrank/AnotherVaporAuth) - reference for Steam mobile authenticator, login approval, and confirmation UX.
+
+---
+
+## Friend Links
+
+- [Linux.do](https://linux.do)
+- [TinadecOffice](https://github.com/Tinadec/TinadecOffice)
 
 ---
 

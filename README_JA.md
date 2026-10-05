@@ -11,14 +11,6 @@
 <p><strong>Bitwarden と KeePass をつなぐローカル優先のパスワード保管庫</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-<p>
-	友達リンク:
-	<a href="https://linux.do" title="Linux.do">
-		<img src="https://www.google.com/s2/favicons?domain=linux.do&sz=64" alt="Linux.do" width="22" />
-		Linux.do
-	</a>
-</p>
-
 [![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
@@ -166,6 +158,13 @@ Monica の設計、互換性対応、そして一部の機能方針は、以下�
 - [Steam Desktop Authenticator](https://github.com/Jessecar96/SteamDesktopAuthenticator) - Steam maFile 形式、Steam Guard、取引確認互換性の参考。
 - [steamguard-cli](https://github.com/dyc3/steamguard-cli) - Steam Guard ログイン、認証器移行、確認プロトコル実装の参考。
 - [AnotherVaporAuth](https://github.com/freefrank/AnotherVaporAuth) - Steam モバイル認証器、ログイン承認、確認フロー体験の参考。
+
+---
+
+## 友好リンク
+
+- [Linux.do](https://linux.do)
+- [TinadecOffice](https://github.com/Tinadec/TinadecOffice)
 
 ---
 

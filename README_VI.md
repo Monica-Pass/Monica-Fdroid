@@ -11,14 +11,6 @@ Kho lưu trữ này chỉ dành cho việc xây dựng **F-Droid**. Kho chính: 
 <p><strong>Kho mat khau uu tien local, ket noi Bitwarden va KeePass</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-<p>
-	Lien ket ban be:
-	<a href="https://linux.do" title="Linux.do">
-		<img src="https://www.google.com/s2/favicons?domain=linux.do&sz=64" alt="Linux.do" width="22" />
-		Linux.do
-	</a>
-</p>
-
 [![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
@@ -166,6 +158,13 @@ Thiet ke, kha nang tuong thich va mot so dinh huong tinh nang cua Monica da nhan
 - [Steam Desktop Authenticator](https://github.com/Jessecar96/SteamDesktopAuthenticator) - tham khao ve dinh dang Steam maFile, Steam Guard va kha nang tuong thich xac nhan giao dich.
 - [steamguard-cli](https://github.com/dyc3/steamguard-cli) - tham khao ve dang nhap Steam Guard, chuyen authenticator va trien khai giao thuc xac nhan.
 - [AnotherVaporAuth](https://github.com/freefrank/AnotherVaporAuth) - tham khao ve Steam mobile authenticator, phe duyet dang nhap va trai nghiem xac nhan.
+
+---
+
+## Lien Ket Ban Be
+
+- [Linux.do](https://linux.do)
+- [TinadecOffice](https://github.com/Tinadec/TinadecOffice)
 
 ---
 

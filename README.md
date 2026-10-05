@@ -15,14 +15,6 @@
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 
-<p>
-	友情链接：
-	<a href="https://linux.do" title="Linux.do">
-		<img src="https://www.google.com/s2/favicons?domain=linux.do&sz=64" alt="Linux.do" width="22" />
-		Linux.do
-	</a>
-</p>
-
 [![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
@@ -191,6 +183,13 @@ Monica 的设计、兼容性适配与部分功能方向，受到了以下优秀�
 - [Steam Desktop Authenticator](https://github.com/Jessecar96/SteamDesktopAuthenticator) - Steam maFile 格式、Steam Guard 与交易确认兼容性的参考。
 - [steamguard-cli](https://github.com/dyc3/steamguard-cli) - Steam Guard 登录、令牌迁移与确认协议实现的参考。
 - [AnotherVaporAuth](https://github.com/freefrank/AnotherVaporAuth) - Steam 移动验证器、登录批准与确认流程体验的参考。
+
+---
+
+## 友情链接
+
+- [Linux.do](https://linux.do)
+- [TinadecOffice](https://github.com/Tinadec/TinadecOffice)
 
 ---
 

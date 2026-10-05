@@ -11,14 +11,6 @@
 <p><strong>Локально‑ориентированное хранилище паролей, объединяющее Bitwarden и KeePass</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-<p>
-	Дружественная ссылка:
-	<a href="https://linux.do" title="Linux.do">
-		<img src="https://www.google.com/s2/favicons?domain=linux.do&sz=64" alt="Linux.do" width="22" />
-		Linux.do
-	</a>
-</p>
-
 [![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
@@ -166,6 +158,13 @@ MDBX — это разрабатываемый Monica локально-орие�
 - [Steam Desktop Authenticator](https://github.com/Jessecar96/SteamDesktopAuthenticator) — референс по формату Steam maFile, Steam Guard и совместимости подтверждений обмена.
 - [steamguard-cli](https://github.com/dyc3/steamguard-cli) — референс по Steam Guard login, переносу аутентификатора и реализации протокола подтверждений.
 - [AnotherVaporAuth](https://github.com/freefrank/AnotherVaporAuth) — референс по мобильному Steam-аутентификатору, подтверждению входа и UX подтверждений.
+
+---
+
+## Дружественные ссылки
+
+- [Linux.do](https://linux.do)
+- [TinadecOffice](https://github.com/Tinadec/TinadecOffice)
 
 ---
 

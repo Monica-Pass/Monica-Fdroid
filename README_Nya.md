@@ -11,14 +11,6 @@
 <p><strong>把 Bitwarden 和 KeePass 都收进肉球里的本地优先密码库喵</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-<p>
-	猫猫的朋友：
-	<a href="https://linux.do" title="Linux.do">
-		<img src="https://www.google.com/s2/favicons?domain=linux.do&sz=64" alt="Linux.do" width="22" />
-		Linux.do
-	</a>
-</p>
-
 [![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
@@ -184,6 +176,13 @@ Monica 的设计、兼容性适配与部分功能方向，受到了这些优秀�
 - [Bitwarden](https://bitwarden.com/) - 开源密码管理生态、Vault 模型与同步能力的重要参考喵。
 - [KeePass](https://keepass.info/) - 本地密码库理念与 `.kdbx` 生态兼容的重要基础喵。
 - [Stratum Auth](https://github.com/stratumauth/app) - 身份验证器体验、图标资源与相关兼容支持参考喵。
+
+---
+
+## 猫猫的朋友喵
+
+- [Linux.do](https://linux.do)
+- [TinadecOffice](https://github.com/Tinadec/TinadecOffice)
 
 ---
 
