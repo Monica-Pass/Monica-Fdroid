@@ -6,11 +6,14 @@ import android.graphics.Color
 import android.graphics.Paint
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.graphics.asAndroidBitmap
 import java.io.File
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.activity.ComponentActivity
+import org.junit.Before
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onNodeWithTag
@@ -26,7 +29,45 @@ import takagi.ru.monica.R
 import takagi.ru.monica.ui.theme.MonicaTheme
 
 class CardFaceCropperTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Before fun focus() {
+        compose.runOnUiThread {
+            compose.activity.setShowWhenLocked(true)
+            compose.activity.setTurnScreenOn(true)
+            compose.activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        compose.waitUntil(10_000) { compose.activity.hasWindowFocus() }
+    }
+
+    @Test fun photoControlsStayReachableWithLargeDarkText() {
+        val source = Bitmap.createBitmap(800, 1000, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.rgb(22, 72, 65)) }
+        var busy by mutableStateOf(false)
+        var skipped = 0
+        compose.setContent {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, 1.6f)) {
+                androidx.compose.material3.MaterialTheme(colorScheme = androidx.compose.material3.darkColorScheme()) {
+                    CardFaceCropper(source, busy, null, {}, {}, onSkipCrop = { skipped++ })
+                }
+            }
+        }
+        compose.onNodeWithTag("photo_crop_skip").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("card_face_crop_confirm").assertIsDisplayed()
+        assertTrue("Large text actions must stack instead of squeezing words into narrow columns",
+            compose.onNodeWithTag("photo_crop_skip").fetchSemanticsNode().boundsInRoot.bottom <=
+                compose.onNodeWithTag("card_face_crop_confirm").fetchSemanticsNode().boundsInRoot.top)
+        assertEquals(1, skipped)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        compose.onRoot().captureToImage().asAndroidBitmap().let { image ->
+            File(context.filesDir, "photo-crop-large-dark.png").outputStream().use {
+                image.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+        compose.runOnIdle { busy = true }
+        compose.onNodeWithTag("photo_crop_skip").assertIsNotEnabled()
+        compose.onNodeWithTag("card_face_crop_confirm").assertIsNotEnabled()
+    }
 
     @Test fun portraitImageStaysInsideViewportDuringZoomAndPan() {
         val source = Bitmap.createBitmap(400, 2400, Bitmap.Config.ARGB_8888).apply {
@@ -36,6 +77,8 @@ class CardFaceCropperTest {
         compose.setContent { MonicaTheme {
             CardFaceCropper(source, false, null, {}, {})
         } }
+
+        compose.onNodeWithTag("photo_crop_skip").assertDoesNotExist()
 
         fun assertPreviewIsClipped(stage: String) {
             val root = compose.onRoot()
@@ -114,7 +157,7 @@ class CardFaceCropperTest {
         }
         compose.onNodeWithTag("card_face_crop_confirm").performClick()
         compose.runOnIdle { assertTrue(result!!.width < CardCropGeometry.centered(1600, 1000).width) }
-        compose.onNodeWithText(context.getString(R.string.card_face_crop_reset)).performClick()
+        compose.onNodeWithTag("card_face_crop_reset").performClick()
         compose.onNodeWithTag("card_face_crop_confirm").performClick()
         compose.runOnIdle { assertEquals(CardCropGeometry.centered(1600, 1000), result) }
     }

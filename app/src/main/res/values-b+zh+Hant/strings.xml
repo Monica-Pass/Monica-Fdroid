@@ -526,8 +526,6 @@
     <string name="interface_scale_reset">還原預設</string>
     <string name="bottom_nav_auto_hide_single_tab_title">僅剩一個頁籤時隱藏導航欄</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">當底部導航只啟用一個頁籤時，自動隱藏導航欄，並改為通過右上角菜單進入設定。</string>
-    <string name="draggable_bottom_nav">可拖拽底部導航欄</string>
-    <string name="draggable_bottom_nav_description">上滑導航欄可顯示快捷操作面板</string>
     <string name="add_document_title">新增證件</string>
     <string name="edit_document_title">編輯證件</string>
     <string name="no_documents_title">還沒有證件</string>
@@ -1657,8 +1655,6 @@
     <string name="passkey_strict_validation_title">嚴格校驗</string>
     <string name="passkey_strict_validation_desc">阻斷明顯不符合依賴方來源規則的請求。</string>
     <string name="passkey_strict_validation_warning">嚴格模式可能會攔截接入不規範的應用程式登入，僅在排障時開啓。</string>
-    <string name="passkey_hyperos_bypass_title">HyperOS 生物辨識兼容</string>
-    <string name="passkey_hyperos_bypass_desc">在小米 HyperOS 上跳過通行密鑰生物辨識提示，並在需要時回退到主密碼驗證。</string>
     <string name="passkey_diagnostics_title">校驗診斷</string>
     <string name="passkey_diagnostics_summary">請求數：%1$d，可疑：%2$d，嚴格候選：%3$d</string>
     <string name="passkey_diagnostics_top_bucket">最高風險：%1$s @ %2$s（可疑 %3$d）</string>
@@ -1927,8 +1923,6 @@
     <string name="developer_disable_password_verification">關閉密碼驗證</string>
     <string name="developer_disable_password_verification_desc">在應用程式、自動填入、Monica 鍵盤和危險操作中跳過身份驗證。仍保留二次確認，匯出加密密碼仍必須設定。</string>
     <string name="developer_disable_password_verification_failed">無法開啓全場景免驗證。請先正常解鎖 Monica 一次，然後重試。</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS 兼容</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">在 HyperOS 裝置上跳過通行密鑰生物辨識，並回退到主密碼。除非該裝置生物辨識彈窗異常，否則保持關閉。</string>
     <string name="developer_launcher_name_use_pass">主應用程式名稱顯示 Monica Pass</string>
     <string name="developer_launcher_name_use_pass_desc">開啓後桌面主入口顯示 Monica Pass，關閉後顯示 Monica。隻影響主入口名稱。</string>
     <string name="developer_bitwarden_forensics_toggle">啟用 Bitwarden 同步取證</string>
@@ -2401,7 +2395,6 @@
     <string name="quick_action_backup">備份</string>
     <string name="quick_action_security">安全分析</string>
     <string name="quick_action_import">匯入數據</string>
-    <string name="quick_add_not_supported">暫時沒想過這裏有啥用</string>
     <string name="multi_del_batch_delete">批量刪除</string>
     <string name="multi_del_select_all">全選</string>
     <string name="multi_del_select_items">請選擇要刪除的項目</string>

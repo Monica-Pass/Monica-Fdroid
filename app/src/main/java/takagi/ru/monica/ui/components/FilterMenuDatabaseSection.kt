@@ -1,6 +1,9 @@
 package takagi.ru.monica.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -70,12 +73,17 @@ internal fun <T> FilterMenuDatabaseSection(
                     item.label, leadingIcon = item.icon, statusDotColor = item.statusDotColor,
                     modifier = Modifier.testTag("database_filter_" + item.key))
             }
-            if (showExpanded) FlowRow(Modifier.fillMaxWidth().testTag("database_expanded"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)) {
-                items.forEach { key(it.key) { chip(it) } }
-            } else Row(Modifier.fillMaxWidth().horizontalScroll(scroll).testTag("database_row"),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)) {
-                items.forEach { key(it.key) { chip(it) } }
+            // Keep one animated viewport when replacing the single row with
+            // wrapped rows. The large-list path already owns its size animation.
+            Box(Modifier.fillMaxWidth().testTag("database_chip_viewport")
+                .animateContentSize(tween(220, easing = FastOutSlowInEasing))) {
+                if (showExpanded) FlowRow(Modifier.fillMaxWidth().testTag("database_expanded"),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)) {
+                    items.forEach { key(it.key) { chip(it) } }
+                } else Row(Modifier.fillMaxWidth().horizontalScroll(scroll).testTag("database_row"),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)) {
+                    items.forEach { key(it.key) { chip(it) } }
+                }
             }
         }
     }

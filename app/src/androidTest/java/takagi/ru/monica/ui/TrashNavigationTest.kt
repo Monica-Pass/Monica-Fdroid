@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.test.espresso.Espresso
@@ -44,6 +46,7 @@ import java.util.UUID
 @RunWith(AndroidJUnit4::class)
 class TrashNavigationTest {
     @get:Rule val compose = createComposeRule()
+    private val restoration by lazy { StateRestorationTester(compose) }
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val application get() = context.applicationContext as Application
     private val settings = SettingsManager(context)
@@ -67,7 +70,6 @@ class TrashNavigationTest {
         settings.updateTrashAutoDeleteDays(0)
         settings.updateBottomNavVisibility(BottomNavContentTab.PASSWORDS, true)
         settings.updateBottomNavVisibility(BottomNavContentTab.VAULT_V2, true)
-        settings.updateUseDraggableBottomNav(false)
         settings.updateHideFabOnScroll(false)
     }
 
@@ -80,7 +82,6 @@ class TrashNavigationTest {
             BottomNavContentTab.entries.forEach { tab ->
                 settings.updateBottomNavVisibility(tab, originalSettings.bottomNavVisibility.isVisible(tab))
             }
-            settings.updateUseDraggableBottomNav(originalSettings.useDraggableBottomNav)
             settings.updateHideFabOnScroll(originalSettings.hideFabOnScroll)
             settings.updateAutoHideBottomNavWhenSingleTab(originalSettings.autoHideBottomNavWhenSingleTab)
             settings.updateVaultOverviewEnabled(originalSettings.vaultOverviewEnabled)
@@ -130,13 +131,7 @@ class TrashNavigationTest {
         verifyReturnAndSelection(startTab = 1)
     }
 
-    @Test fun draggableVaultKeepsItsTabAndUsesTheSameReturnFabPosition() {
-        runBlocking {
-            settings.updateUseDraggableBottomNav(true)
-            settings.updateVaultOverviewEnabled(false)
-        }
-        verifyReturnAndSelection(startTab = 0, draggable = true)
-    }
+
 
     @Test fun returnFabMatchesAddFabWithTheBottomNavigationHidden() {
         runBlocking {
@@ -146,11 +141,49 @@ class TrashNavigationTest {
         verifyReturnAndSelection(startTab = 1)
     }
 
-    private fun verifyReturnAndSelection(startTab: Int, draggable: Boolean = false) {
+    @Test fun ordinaryNavigationRetainsOrderSelectionAndFabAfterStateRestoration() {
+        fun step(name: String) { File(context.filesDir, "navigation-progress.txt").appendText(name + "\n") }
+        File(context.filesDir, "navigation-progress.txt").writeText("start\n")
+        runBlocking {
+            BottomNavContentTab.entries.forEach {
+                settings.updateBottomNavVisibility(it, it == BottomNavContentTab.VAULT_V2 || it == BottomNavContentTab.PASSWORDS)
+            }
+            settings.updateAutoHideBottomNavWhenSingleTab(false)
+            settings.updateVaultOverviewEnabled(false)
+        }
+        showMain()
+        step("main shown")
+        settleFrames()
+        fun nav(label: Int) = compose.onNode(hasText(context.getString(label)) and
+            SemanticsMatcher.keyIsDefined(SemanticsProperties.Selected))
+        val vault = nav(R.string.nav_v2_vault_short)
+        val password = nav(R.string.nav_passwords_short)
+        password.assertIsSelected()
+        assertTrue(vault.fetchSemanticsNode().boundsInRoot.left < password.fetchSemanticsNode().boundsInRoot.left)
+        val fab = action(R.string.add).fetchSemanticsNode().boundsInRoot
+        assertTrue("FAB must stay above navigation", fab.bottom <= password.fetchSemanticsNode().boundsInRoot.top)
+        capture("ordinary-navigation")
+        step("navigation and FAB verified")
+        vault.performClick()
+        settleFrames()
+        vault.assertIsSelected()
+        step("vault selected")
+        restoration.emulateSavedInstanceStateRestore()
+        step("state restored")
+        settleFrames()
+        vault.assertIsSelected()
+        password.performClick()
+        settleFrames()
+        password.assertIsSelected()
+        action(R.string.add).assertIsDisplayed()
+
+    }
+
+    private fun verifyReturnAndSelection(startTab: Int) {
         val first = addDeletedPassword("first")
         val second = addDeletedPassword("second")
         val other = addDeletedPassword("other database", bitwardenVaultId = Long.MAX_VALUE)
-        showMain(startTab = startTab, draggable = draggable)
+        showMain(startTab = startTab)
         if (startTab == 1) compose.runOnIdle { passwordModel.setCategoryFilter(CategoryFilter.Local) }
         settleFrames()
         val addBounds = action(R.string.add).fetchSemanticsNode().boundsInRoot
@@ -241,7 +274,7 @@ class TrashNavigationTest {
 
     private fun capture(name: String) {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
-        File(context.getExternalFilesDir(null), "$name.png").outputStream().use {
+        File(context.filesDir, "$name.png").outputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
@@ -257,7 +290,7 @@ class TrashNavigationTest {
 
     private fun <T : ViewModel> keep(model: T): T = model.also { models += it }
 
-    private fun showMain(startTab: Int = 1, draggable: Boolean = false) {
+    private fun showMain(startTab: Int = 1) {
         val security = SecurityManager(context)
         val passwords = PasswordRepository(database.passwordEntryDao(), categoryDao = database.categoryDao(),
             bitwardenFolderDao = database.bitwardenFolderDao(), passwordArchiveSyncMetaDao = database.passwordArchiveSyncMetaDao())
@@ -279,7 +312,7 @@ class TrashNavigationTest {
         // The main screen also hosts continuously updating clocks and callback state.
         // Advance bounded frames instead of asking Espresso to settle the entire app.
         compose.mainClock.autoAdvance = false
-        compose.setContent {
+        restoration.setContent {
             MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
                 SimpleMainScreen(passwordViewModel = passwordModel, settingsViewModel = settingsModel,
                     totpViewModel = totp, bankCardViewModel = cards, documentViewModel = documents,
@@ -295,7 +328,7 @@ class TrashNavigationTest {
         }
         compose.waitUntil(15_000) {
             compose.mainClock.advanceTimeBy(32)
-            settingsModel.settings.value.useDraggableBottomNav == draggable && compose.onAllNodesWithContentDescription(
+            compose.onAllNodesWithContentDescription(
                 context.getString(R.string.more_options)).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithContentDescription(context.getString(R.string.more_options)).assertIsDisplayed()

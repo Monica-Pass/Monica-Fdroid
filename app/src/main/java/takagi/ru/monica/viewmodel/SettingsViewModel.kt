@@ -204,12 +204,6 @@ class SettingsViewModel(
         }
     }
 
-    fun updatePasskeyHyperOsBiometricBypassEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.updatePasskeyHyperOsBiometricBypassEnabled(enabled)
-        }
-    }
-
     fun updateBitwardenSyncForensicsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.updateBitwardenSyncForensicsEnabled(enabled)
@@ -320,12 +314,6 @@ class SettingsViewModel(
         }
     }
     
-    fun updateUseDraggableBottomNav(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.updateUseDraggableBottomNav(enabled)
-        }
-    }
-
     fun updateAutoHideBottomNavWhenSingleTab(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.updateAutoHideBottomNavWhenSingleTab(enabled)

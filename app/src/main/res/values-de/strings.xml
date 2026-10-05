@@ -540,8 +540,6 @@
     <string name="interface_scale_reset">Auf Standard zurücksetzen</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Navigation ausblenden, wenn nur eine Registerkarte vorhanden ist bleibt bestehen</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">Mit einer Registerkarte können Sie die untere Navigation ausblenden und das Einstellungsmenü oben rechts verwenden.</string>
-    <string name="draggable_bottom_nav">Schiebbare untere Navigation</string>
-    <string name="draggable_bottom_nav_description">Wischen Sie auf der Navigationsleiste nach oben, um schnelle Aktionen anzuzeigen</string>
 
     <!-- Document -->
     <string name="add_document_title">Dokument hinzufügen</string>
@@ -1829,8 +1827,6 @@
     <string name="passkey_strict_validation_title">Strikte Validierung</string>
     <string name="passkey_strict_validation_desc">Blockieren Anfragen, die eindeutig im Widerspruch zu den Ursprungsregeln der vertrauenden Seite stehen.</string>
     <string name="passkey_strict_validation_warning">Der strikte Modus kann fehlerhafte Apps blockieren. Lassen Sie es deaktiviert, es sei denn, Sie führen ein erneutes Debugging durch.</string>
-    <string name="passkey_hyperos_bypass_title">HyperOS Biometrische Kompatibilität</string>
-    <string name="passkey_hyperos_bypass_desc">Überspringen Sie auf Xiaomi HyperOS biometrische Eingabeaufforderungen und verwenden Sie bei Bedarf den Master-Passwort-Fallback.</string>
     <string name="passkey_diagnostics_title">Validierungsdiagnose</string>
     <string name="passkey_diagnostics_summary">Anfragen: %1$d, Verdächtig: %2$d, Strikte Kandidaten: %3$d</string>
     <string name="passkey_diagnostics_top_bucket">Top Bucket: %1$s @ %2$s (verdächtig %3$d)</string>
@@ -2249,8 +2245,6 @@
     <string name="developer_disable_password_verification">Passwortüberprüfung deaktivieren</string>
     <string name="developer_disable_password_verification_desc">Identitätsprüfung in der App, beim Autofill, in der Monica-Tastatur und bei gefährlichen Aktionen überspringen. Bestätigungen und Exportpasswörter bleiben erforderlich.</string>
     <string name="developer_disable_password_verification_failed">Die vollständige Umgehung konnte nicht aktiviert werden. Entsperre Monica einmal normal und versuche es erneut.</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS-Kompatibilität</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">Überspringen Sie auf HyperOS-Geräten die biometrische Überprüfung Passkey und Auf das Master-Passwort zurückgreifen. Lassen Sie dies deaktiviert, es sei denn, biometrische Eingabeaufforderungen schlagen auf diesem Gerät fehl.</string>
     <string name="developer_launcher_name_use_pass">Verwenden Sie Monica Pass als Launcher-Namen</string>
     <string name="developer_launcher_name_use_pass_desc">Ein: Monica Pass. Aus: Monica. Dadurch wird nur der Hauptname des Launcher-Eintrags geändert.</string>
     <string name="developer_bitwarden_forensics_toggle">Bitwarden-Synchronisierungsforensik aktivieren</string>
@@ -2801,7 +2795,6 @@
     <string name="quick_action_import">Importieren</string>
 
     <!-- Quick Add -->
-    <string name="quick_add_not_supported">Schnelles Hinzufügen ist für diese Seite nicht verfügbar</string>
 
     <!-- V2 Folder Management -->
     <string name="v2_folder_management_title">Ordnerverwaltung</string>

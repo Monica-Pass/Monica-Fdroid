@@ -17,6 +17,11 @@ import androidx.compose.ui.unit.dp
 import java.io.File
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.semantics.SemanticsProperties
+import kotlinx.coroutines.*
+import takagi.ru.monica.sync.*
 import org.junit.Rule
 import org.junit.Test
 import takagi.ru.monica.R
@@ -24,6 +29,83 @@ import takagi.ru.monica.data.MdbxSyncStatus
 
 class MdbxSyncIndicatorTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Test fun silentBackgroundTaskAnimatesOnlyItsVaultAndStopsOnEveryOutcome() {
+        val databaseId = -System.nanoTime()
+        val selected = mutableStateOf(databaseId)
+        val visible = mutableStateOf(true)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val syncLabel = compose.activity.getString(R.string.legacy_ui_sync_mdbx)
+        val runningLabel = compose.activity.getString(R.string.keepass_remote_sync_status_syncing)
+        // Compose's auto-advance policy cancels infinite animations. Control the
+        // clock before composition so bitmap checks exercise real animation frames.
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MaterialTheme {
+                if (visible.value) MdbxPathSyncActions(MdbxPathSyncState(
+                    databaseId = selected.value, pendingCount = 0, isSyncing = false, onSync = {}
+                ))
+            }
+        }
+        fun waitForState(description: String) {
+            compose.waitUntil(10_000) {
+                compose.mainClock.advanceTimeByFrame()
+                compose.onAllNodes(hasContentDescription(syncLabel) and
+                    SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, description))
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+        try {
+            for (outcome in listOf("success", "failure", "cancellation")) {
+                val release = CompletableDeferred<Unit>()
+                val started = CompletableDeferred<Unit>()
+                val job = scope.launch {
+                    SyncTaskRunner.requestAndAwait(SyncRequest(
+                        requestId = "indicator-$databaseId-$outcome", target = SyncTarget.MdbxVault(databaseId),
+                        trigger = SyncTrigger.WORKER_RECOVERY, createdAtMillis = System.currentTimeMillis(),
+                        priority = SyncPriority.BACKGROUND, mode = SyncMode.SILENT
+                    )) {
+                        started.complete(Unit)
+                        release.await()
+                        when (outcome) {
+                            "failure" -> throw java.io.IOException("synthetic sync failure")
+                            "cancellation" -> throw CancellationException("synthetic cancellation")
+                            else -> Unit
+                        }
+                    }
+                }
+                try {
+                    runBlocking { withTimeout(10_000) { started.await() } }
+                    waitForState(runningLabel)
+                    compose.mainClock.advanceTimeBy(32)
+                    val first = compose.onNodeWithContentDescription(syncLabel).captureToImage().asAndroidBitmap()
+                    compose.mainClock.advanceTimeBy(144)
+                    val second = compose.onNodeWithContentDescription(syncLabel).captureToImage().asAndroidBitmap()
+                    assertFalse("Background execution must visibly rotate the icon", first.sameAs(second))
+                    compose.runOnUiThread { selected.value = databaseId - 1 }
+                    waitForState("")
+                    compose.runOnUiThread { selected.value = databaseId }
+                    waitForState(runningLabel)
+                    // Re-enter the breadcrumb while the independent worker is still running.
+                    compose.runOnUiThread { visible.value = false }
+                    compose.mainClock.advanceTimeByFrame()
+                    compose.runOnUiThread { visible.value = true }
+                    waitForState(runningLabel)
+                } finally {
+                    release.complete(Unit)
+                    runBlocking { withTimeout(10_000) { job.join() } }
+                }
+                waitForState("")
+                val first = compose.onNodeWithContentDescription(syncLabel).captureToImage().asAndroidBitmap()
+                compose.mainClock.advanceTimeBy(144)
+                val second = compose.onNodeWithContentDescription(syncLabel).captureToImage().asAndroidBitmap()
+                assertTrue("Icon must stop after $outcome", first.sameAs(second))
+            }
+        } finally {
+            compose.mainClock.autoAdvance = true
+            scope.cancel()
+        }
+    }
 
     @Test fun failedChecksStayVisibleWithoutClaimingUnsyncedItemsAndRetryStillWorks() {
         val status = mutableStateOf(MdbxSyncStatus.IN_SYNC)
@@ -36,7 +118,7 @@ class MdbxSyncIndicatorTest {
             CompositionLocalProvider(LocalContext provides context()) {
                 MaterialTheme {
                     Row(Modifier.width(320.dp)) {
-                        MdbxPathSyncActions(MdbxPathSyncState(count.value, false, status.value.name) { retries++ })
+                        MdbxPathSyncActions(MdbxPathSyncState(-1L, count.value, false, status.value.name) { retries++ })
                     }
                 }
             }

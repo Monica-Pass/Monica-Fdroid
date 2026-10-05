@@ -167,7 +167,8 @@ class MdbxViewModel(
     private val passkeyDao: PasskeyDao,
     private val attachmentDao: AttachmentDao,
     private val customFieldDao: CustomFieldDao,
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val backgroundOnly: Boolean = false
 ) : AndroidViewModel(application) {
 
     private val context: Context get() = getApplication()
@@ -317,7 +318,7 @@ class MdbxViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        if (!backgroundOnly) viewModelScope.launch(Dispatchers.IO) {
             normalizeExistingRemoteVaultNames()
         }
     }
@@ -1737,6 +1738,12 @@ class MdbxViewModel(
         }
     }
 
+    internal suspend fun syncAutomatically(databaseId: Long): SyncTaskAwaitResult<Unit> {
+        if (!takagi.ru.monica.security.SessionManager.isUnlocked.value) return SyncTaskAwaitResult.Skipped("locked")
+        return runMdbxSyncThroughCoordinator(databaseId, "mdbx-auto", SyncTrigger.WORKER_RECOVERY,
+            SyncPriority.BACKGROUND, SyncMode.SILENT)
+    }
+
     fun autoSyncVisibleVault(databaseId: Long) {
         viewModelScope.launch {
             if (_operationState.value is OperationState.Loading) return@launch
@@ -1746,6 +1753,10 @@ class MdbxViewModel(
             if (database?.isUsable != true) return@launch
             if (database != null && !database.supports(MdbxCapability.REMOTE_SYNC)) {
                 refreshSingleVaultState(databaseId)
+                return@launch
+            }
+            if (database != null && database.isRemoteSource()) {
+                takagi.ru.monica.workers.MdbxAutoSyncWorker.enqueue(context, databaseId, pull = true)
                 return@launch
             }
             val shouldSync = database != null &&
@@ -1786,6 +1797,11 @@ class MdbxViewModel(
             throttleMs = throttleMs,
             operationName = "sync"
         ) {
+            if (trigger == SyncTrigger.WORKER_RECOVERY &&
+                (!takagi.ru.monica.security.SessionManager.isUnlocked.value ||
+                    !takagi.ru.monica.workers.MdbxAutoSyncPreferences(context).isEnabled(databaseId))) {
+                return@runMdbxTaskThroughCoordinator
+            }
             refreshVaultFromSource(databaseId)
             refreshSingleVaultState(databaseId)
         }

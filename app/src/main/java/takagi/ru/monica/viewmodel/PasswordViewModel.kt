@@ -3277,21 +3277,6 @@ class PasswordViewModel internal constructor(
         }
     }
     
-    /**
-     * 快速添加密码（从底部导航栏快速添加）
-     */
-    fun quickAddPassword(title: String, username: String, password: String) {
-        if (title.isBlank()) return
-        val entry = PasswordEntry(
-            title = title,
-            username = username,
-            password = password,
-            website = "",
-            notes = "",
-            isFavorite = false
-        )
-        addPasswordEntry(entry)
-    }
     
     fun updatePasswordEntry(entry: PasswordEntry) {
         viewModelScope.launch {

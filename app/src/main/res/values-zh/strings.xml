@@ -576,8 +576,6 @@
     <string name="interface_scale_reset">恢复默认</string>
     <string name="bottom_nav_auto_hide_single_tab_title">仅剩一个页签时隐藏导航栏</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">当底部导航只启用一个页签时，自动隐藏导航栏，并改为通过右上角菜单进入设置。</string>
-    <string name="draggable_bottom_nav">可拖拽底部导航栏</string>
-    <string name="draggable_bottom_nav_description">上滑导航栏可显示快捷操作面板</string>
     
     <!-- Document -->
     <string name="add_document_title">添加证件</string>
@@ -1829,8 +1827,6 @@
     <string name="passkey_strict_validation_title">严格校验</string>
     <string name="passkey_strict_validation_desc">阻断明显不符合依赖方来源规则的请求。</string>
     <string name="passkey_strict_validation_warning">严格模式可能会拦截接入不规范的应用登录，仅在排障时开启。</string>
-    <string name="passkey_hyperos_bypass_title">HyperOS 生物识别兼容</string>
-    <string name="passkey_hyperos_bypass_desc">在小米 HyperOS 上跳过通行密钥生物识别提示，并在需要时回退到主密码验证。</string>
     <string name="passkey_diagnostics_title">校验诊断</string>
     <string name="passkey_diagnostics_summary">请求数：%1$d，可疑：%2$d，严格候选：%3$d</string>
     <string name="passkey_diagnostics_top_bucket">最高风险：%1$s @ %2$s（可疑 %3$d）</string>
@@ -2138,8 +2134,6 @@
     <string name="developer_disable_password_verification">关闭密码验证</string>
     <string name="developer_disable_password_verification_desc">在应用、自动填充、Monica 键盘和危险操作中跳过身份验证。仍保留二次确认，导出加密密码仍必须设置。</string>
     <string name="developer_disable_password_verification_failed">无法开启全场景免验证。请先正常解锁 Monica 一次，然后重试。</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS 兼容</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">在 HyperOS 设备上跳过通行密钥生物识别，并回退到主密码。除非该设备生物识别弹窗异常，否则保持关闭。</string>
     <string name="developer_launcher_name_use_pass">主应用名称显示 Monica Pass</string>
     <string name="developer_launcher_name_use_pass_desc">开启后桌面主入口显示 Monica Pass，关闭后显示 Monica。只影响主入口名称。</string>
     <string name="developer_bitwarden_forensics_toggle">启用 Bitwarden 同步取证</string>
@@ -2678,7 +2672,6 @@
     <string name="quick_action_import">导入数据</string>
     
     <!-- Quick Add -->
-    <string name="quick_add_not_supported">暂时没想过这里有啥用</string>
 
 
     <string name="multi_del_batch_delete">批量删除</string>

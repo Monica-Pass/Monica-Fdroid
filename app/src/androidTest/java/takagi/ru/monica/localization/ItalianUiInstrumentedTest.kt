@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -41,9 +42,6 @@ import org.junit.runner.RunWith
 import takagi.ru.monica.R
 import takagi.ru.monica.data.Language
 import takagi.ru.monica.security.SecurityManager
-import takagi.ru.monica.ui.components.DraggableBottomNavScaffold
-import takagi.ru.monica.ui.components.DraggableNavItem
-import takagi.ru.monica.ui.components.QuickAddCallback
 import takagi.ru.monica.ui.main.navigation.BottomNavItem
 import takagi.ru.monica.ui.main.navigation.shortLabelRes
 import takagi.ru.monica.ui.screens.LanguageSelectionDialog
@@ -128,14 +126,16 @@ class ItalianUiInstrumentedTest {
         show(dark = true, fontScale = 1.5f) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(360.dp).fillMaxHeight()) {
-                    DraggableBottomNavScaffold(
-                        navItems = tabs.map { item -> DraggableNavItem(
-                            key = item.key, icon = item.icon, labelRes = item.shortLabelRes(),
-                            selected = item == selected, onClick = { selected = item },
-                        ) },
-                        quickAddCallback = QuickAddCallback({ _, _, _ -> }, { _, _ -> }, { _, _ -> }, { _, _ -> }),
-                        content = {},
-                    )
+                    androidx.compose.material3.NavigationBar {
+                        tabs.forEach { item ->
+                            val label = androidx.compose.ui.res.stringResource(item.shortLabelRes())
+                            NavigationBarItem(
+                                selected = selected == item, onClick = { selected = item },
+                                icon = { androidx.compose.material3.Icon(item.icon, null) },
+                                label = { androidx.compose.material3.Text(label, maxLines = 2) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -148,7 +148,7 @@ class ItalianUiInstrumentedTest {
             node.assertIsDisplayed()
             val layout = compose.onNodeWithText(label, useUnmergedTree = true).assertNoTextOverflow()
             assertEquals(1.5f, layout.layoutInput.density.fontScale, 0.001f)
-            assertEquals("Dock label wraps: $label", 1, layout.lineCount)
+            assertTrue("Dock label fits: $label", layout.lineCount <= 2)
             node.performClick()
             compose.runOnIdle { assertEquals(item, selected) }
         }

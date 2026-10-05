@@ -491,8 +491,6 @@
     <string name="interface_scale_reset">"Ripristino di default"</string>
     <string name="bottom_nav_auto_hide_single_tab_title">"Nascondere la navigazione quando rimane solo una scheda"</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">"Con una scheda, nascondere il nav in basso e utilizzare il menu Impostazioni in alto a destra."</string>
-    <string name="draggable_bottom_nav">"Nav inferiore trascinabile"</string>
-    <string name="draggable_bottom_nav_description">"Scorri verso l\'alto sulla barra del nav per rivelare azioni rapide"</string>
     <string name="add_document_title">"Aggiungi documento"</string>
     <string name="edit_document_title">"Modifica documento"</string>
     <string name="no_documents_title">"Ancora nessun documento"</string>
@@ -1680,8 +1678,6 @@
     <string name="passkey_strict_validation_title">"Validazione rigorosa"</string>
     <string name="passkey_strict_validation_desc">"Bloccare le richieste che sono chiaramente in conflitto con le regole di origine delle parti in causa."</string>
     <string name="passkey_strict_validation_warning">"La modalità Strict può bloccare le app buggy. Lascia perdere a meno che tu non stia effettuando il debug."</string>
-    <string name="passkey_hyperos_bypass_title">"Compatibilità biometrica HyperOS"</string>
-    <string name="passkey_hyperos_bypass_desc">"Su Xiaomi HyperOS, salta i prompt biometrici passkey e usa il fallback master-password quando necessario."</string>
     <string name="passkey_diagnostics_title">"Diagnostica di convalida"</string>
     <string name="passkey_diagnostics_summary">"Richieste: %1$d, Sospetto: %2$d, Candidati rigorosi: %3$d"</string>
     <string name="passkey_diagnostics_top_bucket">"Secchio superiore: %1$s @ %2$s (sospetto %3$d)"</string>
@@ -2057,8 +2053,6 @@
     <string name="developer_disable_password_verification">"Disattiva la verifica della password"</string>
     <string name="developer_disable_password_verification_desc">"Salta la verifica dell\'identità attraverso l\'app, tra cui Autofill, Monica Keyboard e azioni distruttive. Le finestre di dialogo di conferma rimangono e le password di crittografia di esportazione sono ancora necessarie."</string>
     <string name="developer_disable_password_verification_failed">"Impossibile abilitare il bypass di verifica completo. Sblocca Monica normalmente una volta, quindi riprova."</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">"Compatibilità con Passkey HyperOS"</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">"Sui dispositivi HyperOS, salta la verifica biometrica passkey e torna alla password principale. Tienilo spento a meno che i prompt biometrici non falliscano su quel dispositivo."</string>
     <string name="developer_launcher_name_use_pass">"Usa Monica Pass come nome del launcher"</string>
     <string name="developer_launcher_name_use_pass_desc">"On: Monica Pass. Off: Monica. Questo cambia solo il nome principale del lanciatore."</string>
     <string name="developer_bitwarden_forensics_toggle">"Abilitare Bitwarden Sync Forensics"</string>
@@ -2549,7 +2543,6 @@
     <string name="quick_action_backup">"Backup"</string>
     <string name="quick_action_security">"Sicurezza"</string>
     <string name="quick_action_import">"Importa"</string>
-    <string name="quick_add_not_supported">"Quick add non è disponibile per questa pagina"</string>
     <string name="v2_folder_management_title">"Gestione cartelle"</string>
     <string name="v2_folder_management_subtitle">"Organizza e sincronizza le tue cartelle"</string>
     <string name="v2_sync_all_title">"Sincronizzazione completa Bitwarden"</string>

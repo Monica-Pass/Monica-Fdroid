@@ -195,6 +195,41 @@ class PasswordFilterPanelTest {
         compose.waitForIdle()
         compose.onNodeWithTag("password_filter_panel").assertDoesNotExist()
     }
+    @Test fun databaseExpansionAndCollapseHaveIntermediateFramesAndCanReverse() {
+        databases = (1..6).map { LocalKeePassDatabase(id = it.toLong(), name = "Vault $it", filePath = "test-$it") }
+        show()
+        fun height() = compose.onNodeWithTag("database_chip_viewport").fetchSemanticsNode().boundsInRoot.height
+        fun toggle() { compose.onNodeWithTag("database_expand_toggle").performClick(); compose.mainClock.advanceTimeByFrame() }
+        try {
+            for (largeFont in listOf(false, true)) {
+                compose.runOnIdle { fontScale.value = if (largeFont) 1.5f else 1f; dark.value = largeFont }
+                compose.waitForIdle()
+                compose.mainClock.autoAdvance = false
+                val collapsed = height()
+                toggle()
+                compose.mainClock.advanceTimeBy(80)
+                val expanding = height()
+                snapshot("database-expanding-$largeFont")
+                compose.mainClock.advanceTimeBy(400)
+                val expanded = height()
+                assertTrue("Expansion must include an intermediate height: $collapsed < $expanding < $expanded",
+                    expanding > collapsed + 1 && expanding < expanded - 1)
+                toggle()
+                compose.mainClock.advanceTimeBy(80)
+                val collapsing = height()
+                assertTrue("Collapse must include an intermediate height", collapsing > collapsed + 1 && collapsing < expanded - 1)
+                compose.mainClock.advanceTimeBy(400)
+                assertEquals(collapsed, height(), 1f)
+                toggle()
+                compose.mainClock.advanceTimeBy(64)
+                toggle()
+                compose.mainClock.advanceTimeBy(400)
+                assertEquals("Rapid reversal must finish collapsed", collapsed, height(), 1f)
+                compose.mainClock.autoAdvance = true
+            }
+        } finally { compose.mainClock.autoAdvance = true }
+    }
+
     @Test fun databaseRowExpandsWithinHeightLimitAndExitAnimates() {
         databases = (1..16).map { LocalKeePassDatabase(id = it.toLong(), name = "Vault $it", filePath = "test-$it") }
         show()

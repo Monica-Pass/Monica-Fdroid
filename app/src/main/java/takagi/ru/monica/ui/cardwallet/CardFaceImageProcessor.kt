@@ -108,6 +108,34 @@ object CardFaceImageProcessor {
         catch (_: Exception) { Result.failure(ImportException(Failure.DECODE_FAILED)) }
     }
 
+    /** Same crop transform as card artwork, with one final compression by ImageManager. */
+    suspend fun cropPhoto(source: Bitmap, region: CardCropGeometry): Result<Bitmap> = withContext(Dispatchers.Default) {
+        var output: Bitmap? = null
+        try {
+            require(!source.isRecycled && region.width.isFinite() && region.height.isFinite())
+            require(region.width > 0f && region.height > 0f)
+            val width = minOf(2048, region.width.toInt()).coerceAtLeast(1)
+            val height = (width * region.height / region.width).toInt().coerceIn(1, 2048)
+            val cropped = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            output = cropped
+            Canvas(cropped).apply {
+                drawColor(Color.WHITE)
+                drawCropSource(this, source, region, 0f, 0f, width.toFloat(),
+                    android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+            }
+            Result.success(cropped)
+        } catch (error: CancellationException) {
+            output?.recycle()
+            throw error
+        } catch (_: OutOfMemoryError) {
+            output?.recycle()
+            Result.failure(ImportException(Failure.DECODE_FAILED))
+        } catch (_: Exception) {
+            output?.recycle()
+            Result.failure(ImportException(Failure.DECODE_FAILED))
+        }
+    }
+
     /** Draw the original bitmap through one transform; rotating never reallocates or recompresses it. */
     internal fun drawCropSource(canvas: Canvas, source: Bitmap, region: CardCropGeometry,
         left: Float, top: Float, frameWidth: Float, paint: android.graphics.Paint) {

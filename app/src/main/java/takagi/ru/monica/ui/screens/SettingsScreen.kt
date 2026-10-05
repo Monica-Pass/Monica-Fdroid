@@ -3,18 +3,15 @@ package takagi.ru.monica.ui.screens
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -32,13 +29,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import android.app.Activity
-import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -51,11 +45,9 @@ import takagi.ru.monica.R
 import takagi.ru.monica.ui.components.MonicaExpandableContent
 import takagi.ru.monica.ui.components.BottomNavConfigRow
 import takagi.ru.monica.ui.components.MonicaExpansionChevron
-import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.BottomNavContentTab
 import takagi.ru.monica.data.InterfaceScale
 import takagi.ru.monica.data.Language
-import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.ui.components.TrashSettingsSheet
 import takagi.ru.monica.data.ThemeMode
 import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
@@ -75,13 +67,9 @@ import takagi.ru.monica.utils.UpdateChecker
 import takagi.ru.monica.utils.UpdateDownloadProgress
 import takagi.ru.monica.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import takagi.ru.monica.data.SecureItem
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -1343,189 +1331,15 @@ fun SettingsScreen(
     
     // 预览功能对话框
     if (previewFeaturesExpanded) {
-        val previewDialogContentMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.58f).dp
-        AlertDialog(
-            onDismissRequest = { previewFeaturesExpanded = false },
-            icon = {
-                Icon(
-                    Icons.Default.Science,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            },
-            title = {
-                Text(stringResource(R.string.preview_features_title))
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = previewDialogContentMaxHeight)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        stringResource(R.string.preview_features_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // === 实验功能分组 ===
-                    Text(
-                        text = stringResource(R.string.experimental_features_section),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    // 可拖拽底部导航栏开关
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { viewModel.updateUseDraggableBottomNav(!settings.useDraggableBottomNav) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SwipeUp,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.draggable_bottom_nav),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = stringResource(R.string.draggable_bottom_nav_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.useDraggableBottomNav,
-                            onCheckedChange = { viewModel.updateUseDraggableBottomNav(it) }
-                        )
-                    }
-
-                    // 滚动隐藏 FAB 开关
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { viewModel.updateHideFabOnScroll(!settings.hideFabOnScroll) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.hide_fab_on_scroll_title),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = stringResource(R.string.hide_fab_on_scroll_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.hideFabOnScroll,
-                            onCheckedChange = { viewModel.updateHideFabOnScroll(it) }
-                        )
-                    }
-
-                    // 导航栏版本切换 - Removed
-
-                    // Bitwarden 底部状态栏开关（实验）
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                viewModel.updateBitwardenBottomStatusBarEnabled(
-                                    !settings.bitwardenBottomStatusBarEnabled
-                                )
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Sync,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.bitwarden_bottom_status_bar_title),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = stringResource(R.string.bitwarden_bottom_status_bar_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.bitwardenBottomStatusBarEnabled,
-                            onCheckedChange = { viewModel.updateBitwardenBottomStatusBarEnabled(it) }
-                        )
-                    }
-
-                    // 减少动画设置
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { viewModel.updateReduceAnimations(!settings.reduceAnimations) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Speed,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.reduce_animations),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = stringResource(R.string.reduce_animations_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = settings.reduceAnimations,
-                            onCheckedChange = { viewModel.updateReduceAnimations(it) }
-                        )
-                    }
-
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { previewFeaturesExpanded = false }) {
-                    Text(stringResource(R.string.close))
-                }
-            }
+        PreviewFeaturesDialog(
+            settings = settings,
+            onHideFabOnScrollChanged = viewModel::updateHideFabOnScroll,
+            onBitwardenStatusChanged = viewModel::updateBitwardenBottomStatusBarEnabled,
+            onReduceAnimationsChanged = viewModel::updateReduceAnimations,
+            onDismiss = { previewFeaturesExpanded = false },
         )
     }
-    
+
     // Clear All Data Confirmation Bottom Sheet
     if (showClearDataDialog) {
         var clearPasswords by remember { mutableStateOf(true) }

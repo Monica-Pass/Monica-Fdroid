@@ -378,8 +378,6 @@
     <string name="bottom_nav_settings_entry_subtitle">Выберите видимые вкладки и измените их порядок</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Скрывать навигацию при одной вкладке</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">Если осталась одна вкладка, нижняя навигация скрывается, а «Настройки» доступны через меню вверху.</string>
-    <string name="draggable_bottom_nav">Перетаскиваемая навигация</string>
-    <string name="draggable_bottom_nav_description">Проведите вверх по панели навигации, чтобы открыть быстрые действия</string>
 
     <!-- Document -->
     <string name="add_document_title">Добавить документ</string>
@@ -1336,8 +1334,6 @@
     <string name="passkey_strict_validation_title">Строгая проверка</string>
     <string name="passkey_strict_validation_desc">Блокировать запросы, явно нарушающие правила relying-party.</string>
     <string name="passkey_strict_validation_warning">Строгий режим может блокировать приложения с багами. Включайте только для отладки.</string>
-    <string name="passkey_hyperos_bypass_title">Совместимость с биометрией HyperOS</string>
-    <string name="passkey_hyperos_bypass_desc">На Xiaomi HyperOS пропускать биометрические запросы passkey и использовать мастер-пароль при необходимости.</string>
     <string name="passkey_diagnostics_title">Диагностика проверки</string>
     <string name="passkey_diagnostics_summary">Запросов: %1$d, подозрительных: %2$d, строгих: %3$d</string>
     <string name="passkey_diagnostics_top_bucket">Топ: %1$s @ %2$s (подозр. %3$d)</string>
@@ -2251,7 +2247,6 @@
     <string name="quick_action_import">Импорт</string>
 
     <!-- Quick Add -->
-    <string name="quick_add_not_supported">Быстрое добавление недоступно на этой странице</string>
 
     <!-- V2 Folder Management -->
     <string name="v2_folder_management_title">Управление папками</string>
@@ -3811,8 +3806,6 @@
     <string name="delete_payment_account_message">Этот способ оплаты будет перемещён в корзину.</string>
     <string name="delete_payment_account_title">Удалить способ оплаты?</string>
     <string name="delete_permanently">Удалить навсегда</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Совместимость Passkey с HyperOS</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">На устройствах HyperOS пропускать биометрическую проверку passkey и использовать мастер-пароль. Не включайте это, если биометрия работает нормально.</string>
     <string name="disabled">Отключено</string>
     <string name="duplicate">Дублировать</string>
     <string name="edit_barcode_title">Изменить QR-код</string>

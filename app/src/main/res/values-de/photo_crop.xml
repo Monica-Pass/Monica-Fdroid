@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">Foto zuschneiden</string>
+    <string name="photo_crop_skip">Nicht zuschneiden</string>
+    <string name="photo_crop_continue">Zuschneiden und weiter</string>
+    <string name="card_face_crop_apply">Kartenbild verwenden</string>
+</resources>

@@ -74,8 +74,6 @@
     <string name="biometric_weak_warning_message">この端末は弱い生体認証のみ対応しており、なりすまし耐性が低くなります。指紋ロック解除を有効にしますか？</string>
     <string name="biometric_weak_warning_confirm">有効にする</string>
     <string name="biometric_weak_warning_cancel">キャンセル</string>
-    <string name="passkey_hyperos_bypass_title">HyperOS 生体認証互換モード</string>
-    <string name="passkey_hyperos_bypass_desc">Xiaomi HyperOS ではパスキーの生体認証画面を省略し、必要に応じてマスターパスワードで認証します。</string>
     
     <!-- Password List Screen -->
     <string name="search_passwords">パスワードを検索...</string>
@@ -2185,8 +2183,6 @@
     <string name="otp_type_description_motp">PIN コード保護を備えたモバイル OTP</string>
     <string name="bottom_nav_auto_hide_single_tab_title">タブが 1 つだけ残っている場合はナビゲーションを非表示にする</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">1 つのタブで、下部のナビゲーションを非表示にし、右上の [設定] メニューを使用します。</string>
-    <string name="draggable_bottom_nav">ドラッグ可能な下部ナビゲーション</string>
-    <string name="draggable_bottom_nav_description">ナビゲーション バーを上にスワイプすると、クイック アクションが表示されます</string>
     <string name="export_option_zip">フルバックアップ (ZIP)</string>
     <string name="export_option_zip_desc">パスワード、メモ、画像を含むすべてをエクスポートします。 WindowsおよびAndroidで動作します。</string>
     <string name="export_option_kdbx">KeePass形式(KDBX)</string>
@@ -2844,7 +2840,6 @@
     <string name="quick_action_backup">バックアップ</string>
     <string name="quick_action_security">安全</string>
     <string name="quick_action_import">輸入</string>
-    <string name="quick_add_not_supported">このページではクイック追加は利用できません</string>
     <string name="v2_folder_management_title">フォルダー管理</string>
     <string name="v2_folder_management_subtitle">フォルダーを整理して同期する</string>
     <string name="v2_sync_all_title">Bitwarden フル同期</string>
@@ -4050,8 +4045,6 @@
     <string name="autofill_password_suggestion_setting_desc">登録フォームやパスワード変更フォームに、強力なパスワードの生成機能を表示します</string>
     <string name="autofill_blacklist_no_apps">インストール済みのアプリが見つかりません</string>
     <string name="autofill_blacklist_no_match">「%s」に一致するアプリはありません</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">パスキーの HyperOS 互換性</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">HyperOS 端末でパスキーの生体認証を省略し、マスターパスワードを使用します。その端末で生体認証の表示に失敗する場合を除き、オフにしてください。</string>
     <string name="permission_request_granted">%1$s の権限が付与されました</string>
     <string name="permission_already_granted">%1$s の権限は付与済みです</string>
     <string name="permission_status_refreshed">権限の状態を更新しました</string>

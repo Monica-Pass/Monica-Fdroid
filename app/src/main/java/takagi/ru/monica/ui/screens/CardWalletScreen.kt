@@ -59,6 +59,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Rect
@@ -102,6 +103,7 @@ import takagi.ru.monica.ui.cardwallet.WalletSelectionSectionHeader
 import takagi.ru.monica.ui.cardwallet.rememberWalletSelectionScrollAnchor
 import takagi.ru.monica.ui.cardwallet.rememberWalletStackEntries
 import takagi.ru.monica.ui.cardwallet.rememberWalletStackPreview
+import takagi.ru.monica.ui.cardwallet.orderWalletIndependentEntries
 import takagi.ru.monica.ui.cardwallet.reorderWalletSingleCards
 import takagi.ru.monica.ui.cardwallet.toggleWalletSelectionGroup
 import takagi.ru.monica.data.isKeePassOwned
@@ -1139,7 +1141,10 @@ fun CardWalletScreen(
                             showIndividualCards = searchQuery.isNotBlank(),
                             selectionMode = isSelectionMode
                         )
-                        val displayItems = stackProjection.entries
+                        // Membership is prepared off-thread, but drag order must update in this frame.
+                        val displayItems = remember(stackProjection.entries, localFilteredItems) {
+                            orderWalletIndependentEntries(stackProjection.entries, localFilteredItems)
+                        }
                         val captureSelectionScrollAnchor = rememberWalletSelectionScrollAnchor(
                             listState, stackProjection, isSelectionMode
                         )
@@ -1155,8 +1160,8 @@ fun CardWalletScreen(
                             if (isSelectionMode) {
                                 localFilteredItems = reorderWalletSingleCards(
                                     localFilteredItems,
-                                    displayItems.getOrNull(from.index)?.takeIf { it.key == from.key },
-                                    displayItems.getOrNull(to.index)?.takeIf { it.key == to.key }
+                                    displayItems.firstOrNull { it.key == from.key },
+                                    displayItems.firstOrNull { it.key == to.key }
                                 )
                             }
                         }
@@ -1318,12 +1323,13 @@ fun CardWalletScreen(
                                 val walletItem = (displayItem as WalletStackListEntry.Single).card
                                 val item = walletItem.item
                                 val canDrag = isSelectionMode && displayItem.selectionStackId == null
-                                WalletSelectionCardFrame(entry = displayItem) {
-                                    ReorderableItem(
-                                        reorderableLazyListState,
-                                        key = displayItem.key,
-                                        enabled = canDrag
-                                    ) { isDragging ->
+                                // Placement animation and drag z-index must belong to the lazy row.
+                                ReorderableItem(
+                                    reorderableLazyListState,
+                                    key = displayItem.key,
+                                    enabled = canDrag
+                                ) { isDragging ->
+                                    WalletSelectionCardFrame(entry = displayItem, modifier = Modifier.testTag("wallet_card_${walletItem.id}")) {
                                         val isSelected = selectedIds.contains(walletItem.id)
                                         val toggleSelection = {
                                             if (!isSelectionMode) {

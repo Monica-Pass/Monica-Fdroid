@@ -1,0 +1,5 @@
+<resources>
+    <string name="mdbx_auto_sync_title">自动同步</string>
+    <string name="mdbx_auto_sync_manual_hint">已关闭 · 按需手动同步</string>
+    <string name="mdbx_auto_sync_enabled_hint">保存后上传，前台解锁时检查更新</string>
+</resources>

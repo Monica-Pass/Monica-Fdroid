@@ -107,6 +107,7 @@ fun AutofillSettingsV2Screen(
     onNavigateToBlockedFields: () -> Unit,
     onNavigateToSaveBlockedTargets: () -> Unit,
 ) {
+    var showDefaultManager by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -209,6 +210,8 @@ fun AutofillSettingsV2Screen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
+
+    if (showDefaultManager) DefaultPasswordManagerSheet { showDefaultManager = false; refreshStatus() }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
@@ -315,6 +318,15 @@ fun AutofillSettingsV2Screen(
                         Text(stringResource(R.string.autofill_v2_set_system_service))
                     }
                 }
+            }
+
+            takagi.ru.monica.ui.components.SettingsPanelGroup("") {
+                takagi.ru.monica.ui.components.SettingsPanelRow(
+                    Icons.Outlined.Settings,
+                    stringResource(R.string.default_manager_title),
+                    stringResource(R.string.default_manager_entry_hint),
+                    onClick = { showDefaultManager = true }
+                )
             }
 
             SectionCard(

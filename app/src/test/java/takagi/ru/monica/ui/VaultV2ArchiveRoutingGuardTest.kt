@@ -11,16 +11,10 @@ class VaultV2ArchiveRoutingGuardTest {
         val screen = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
         ).readText()
-        val archiveCallbacks = Regex(
-            "onOpenVaultV2ArchivePage\\s*=\\s*\\{([\\s\\S]*?)\\n\\s*},|" +
-                "onOpenArchivePage\\s*=\\s*\\{([\\s\\S]*?)\\n\\s*},"
-        ).findAll(screen).map { it.value }.toList()
-
-        assertTrue(archiveCallbacks.isNotEmpty())
-        assertTrue(archiveCallbacks.all { it.contains("vaultV2PaneState.openArchiveView()") })
-        assertTrue(screen.contains("onOpenArchivePage = vaultV2PaneState::openArchiveView"))
-        assertFalse(archiveCallbacks.any { it.contains("CategoryFilter.Archived") })
-        assertFalse(archiveCallbacks.any { it.contains("BottomNavItem.Passwords.key") })
+        val vaultCall = screen.substringAfter("VaultV2Pane(").substringBefore("detailContent =")
+        assertTrue(vaultCall.contains("onOpenArchivePage = vaultV2PaneState::openArchiveView"))
+        assertFalse(vaultCall.contains("CategoryFilter.Archived"))
+        assertFalse(vaultCall.contains("selectedTabKey = BottomNavItem.Passwords.key"))
     }
 
     @Test

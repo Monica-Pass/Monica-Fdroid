@@ -9,7 +9,7 @@
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
 <p><strong>把 Bitwarden 和 KeePass 都收进肉球里的本地优先密码库喵</strong></p>
-<p>Android / Browser · Local Vault · TOTP · WebDAV Backup</p>
+<p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 <p>
 	猫猫的朋友：
@@ -36,7 +36,7 @@
 
 Monica 是人家认真打理的小窝喵。
 
-它会把 **Bitwarden** 和 **KeePass** 的好东西都轻轻叼回来，放进本地的秘密保险箱里喵。密码、2FA、私密笔记、敏感附件，都可以在 Android 和浏览器之间乖乖待好喵。
+它会把 **Bitwarden** 和 **KeePass** 的好东西都轻轻叼回来，放进本地的秘密保险箱里喵。密码、2FA、私密笔记、敏感附件，都可以在 Android 设备上乖乖待好喵。
 
 人家的想法很简单喵：重要的数据最好睡在自己的窝里，不要随便交给陌生的云朵保管喵。
 
@@ -48,12 +48,6 @@ Monica 的开发者只是一个会犯懒的大笨蛋铲屎官喵。
 
 官网入口在这里喵: https://monica-pass.github.io/MonicaDocs/
 
-> Monica for Windows 已经钻进纸箱里归档了喵。想考古的话看这里喵: [Monica-for-Windows](https://github.com/JoyinJoester/Monica-for-Windows)
->
-> Monica for Browser 也已经趴进纸箱归档了喵。新的 Monica Extension 正在重新搭窝开发中，敬请期待喵。
->
-> 现在项目主要由一只猫维护喵，爪子、时间和精力都有限喵。所以 Monica for Wear 只能暂时趴着休息喵。当前猫力主要集中在 Monica for Android 的功能完善、体验优化和稳定性维护上喵。谢谢你愿意摸摸头理解喵。
-
 ---
 
 ## 给刚进窝的小猫看喵
@@ -62,7 +56,7 @@ Monica 的开发者只是一个会犯懒的大笨蛋铲屎官喵。
 
 - 如果你喜欢本地优先的密码管理，不想把账号数据托管到第三方云，Monica 会很合适喵。
 - 如果你既使用 Bitwarden，也维护 KeePass（`.kdbx`）数据，Monica 可以帮你把两边的东西放进同一个窝里喵。
-- 如果你日常使用 Android，又想在浏览器里完成自动填充，Monica 也可以陪你一起工作喵。
+- 如果你想在 Android 应用和手机浏览器里完成自动填充，Monica 也可以陪你一起工作喵。
 
 ### 你可以得到什么喵
 
@@ -79,17 +73,9 @@ MDBX 是 Monica 正在搭的新本地优先加密 vault 格式喵。它不是一
 
 ### 怎么把 Monica 带回家喵
 
-Android 小猫这样做喵：
-
 1. 去 [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases) 下载最新 APK 喵。
 2. 在 Android 8.0+ 设备上安装喵。
 3. 初始化主密码喵，然后把它好好记住喵。
-
-浏览器插件小猫这样做喵：
-
-1. 在 `Monica for Browser` 目录构建插件喵。
-2. 打开 `chrome://extensions/` 并启用开发者模式喵。
-3. 选择「加载已解压的扩展程序」，导入 `dist` 目录喵。
 
 ### 现在还会有一点点遗憾喵
 
@@ -186,7 +172,6 @@ Android 小猫这样做喵：
 - Android 配置：`compileSdk 35`，`targetSdk 34`，`minSdk 26`，详见 `Monica for Android/app/build.gradle` 喵。
 - Android 构建基线：AGP `8.6.0`，Kotlin `2.0.21`，Compose BOM `2026.03.00` 喵。
 - 版本信息以 `Monica for Android/gradle/libs.versions.toml` 与 `Monica for Android/app/build.gradle` 为准喵。
-- 浏览器端技术栈：React + TypeScript + Vite，详见 `Monica for Browser/package.json` 喵。
 - 欢迎通过 Issue / PR 参与功能和安全改进喵。
 
 ---

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">写真を切り抜く</string>
+    <string name="photo_crop_skip">切り抜かない</string>
+    <string name="photo_crop_continue">切り抜いて次へ</string>
+    <string name="card_face_crop_apply">画像を使用</string>
+</resources>

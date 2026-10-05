@@ -542,8 +542,6 @@
     <string name="interface_scale_reset">Reset to default</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Hide navigation when only one tab remains</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">With one tab, hide bottom nav and use the top-right Settings menu.</string>
-    <string name="draggable_bottom_nav">Draggable Bottom Nav</string>
-    <string name="draggable_bottom_nav_description">Swipe up on the nav bar to reveal quick actions</string>
     
     <!-- Document -->
     <string name="add_document_title">Add Document</string>
@@ -1860,8 +1858,6 @@
     <string name="passkey_strict_validation_title">Strict Validation</string>
     <string name="passkey_strict_validation_desc">Block requests that clearly conflict with relying-party origin rules.</string>
     <string name="passkey_strict_validation_warning">Strict mode can block buggy apps. Leave it off unless you\'re debugging.</string>
-    <string name="passkey_hyperos_bypass_title">HyperOS Biometric Compatibility</string>
-    <string name="passkey_hyperos_bypass_desc">On Xiaomi HyperOS, skip passkey biometric prompts and use master-password fallback when needed.</string>
     <string name="passkey_diagnostics_title">Validation Diagnostics</string>
     <string name="passkey_diagnostics_summary">Requests: %1$d, Suspicious: %2$d, Strict Candidates: %3$d</string>
     <string name="passkey_diagnostics_top_bucket">Top bucket: %1$s @ %2$s (suspicious %3$d)</string>
@@ -2284,8 +2280,6 @@
     <string name="developer_disable_password_verification">Disable Password Verification</string>
     <string name="developer_disable_password_verification_desc">Skip identity verification across the app, including Autofill, Monica Keyboard, and destructive actions. Confirmation dialogs remain, and export encryption passwords are still required.</string>
     <string name="developer_disable_password_verification_failed">Could not enable full verification bypass. Unlock Monica normally once, then try again.</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS Compatibility</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">On HyperOS devices, skip passkey biometric verification and fall back to master password. Keep this off unless biometric prompts fail on that device.</string>
     <string name="developer_launcher_name_use_pass">Use Monica Pass as launcher name</string>
     <string name="developer_launcher_name_use_pass_desc">On: Monica Pass. Off: Monica. This only changes the main launcher entry name.</string>
     <string name="developer_bitwarden_forensics_toggle">Enable Bitwarden Sync Forensics</string>
@@ -2844,7 +2838,6 @@
     <string name="quick_action_import">Import</string>
     
     <!-- Quick Add -->
-    <string name="quick_add_not_supported">Quick add is not available for this page</string>
 
     <!-- V2 Folder Management -->
     <string name="v2_folder_management_title">Folder Management</string>

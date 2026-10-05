@@ -7,8 +7,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
 import androidx.activity.compose.setContent
@@ -40,13 +38,11 @@ import androidx.credentials.exceptions.CreateCredentialUnknownException
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import takagi.ru.monica.R
-import takagi.ru.monica.bitwarden.repository.BitwardenRepository
 import takagi.ru.monica.data.AppSettings
 import takagi.ru.monica.data.Category
 import takagi.ru.monica.data.LocalKeePassDatabase
@@ -73,15 +69,12 @@ import takagi.ru.monica.ui.components.UnifiedMoveCategoryTarget
 import takagi.ru.monica.ui.components.UnifiedMoveToCategoryBottomSheet
 import takagi.ru.monica.ui.theme.MonicaTheme
 import takagi.ru.monica.utils.BiometricAuthHelper
-import takagi.ru.monica.utils.DeviceUtils
 import takagi.ru.monica.utils.KeePassKdbxService
 import takagi.ru.monica.utils.SettingsManager
 import takagi.ru.monica.utils.decodeKeePassPathForDisplay
 import java.io.ByteArrayOutputStream
 import java.security.KeyPairGenerator
-import java.security.KeyStore
 import java.security.MessageDigest
-import java.security.Signature
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.ECGenParameterSpec
@@ -488,7 +481,7 @@ class PasskeyCreateActivity : FragmentActivity() {
                         pendingBitwardenFolderId = selectedBitwardenFolderId
                         pendingMdbxDatabaseId = selectedMdbxDatabaseId
                         pendingMdbxFolderId = selectedMdbxFolderId
-                        requestPasskeyUserVerificationBeforeCreate()
+                        requestBiometricAuth()
                     },
                     onBindToPassword = {
                         showPasswordPicker = true
@@ -533,7 +526,7 @@ class PasskeyCreateActivity : FragmentActivity() {
                         pendingMdbxDatabaseId = selectedMdbxDatabaseId
                         pendingMdbxFolderId = selectedMdbxFolderId
                         showPasswordPicker = false
-                        requestPasskeyUserVerificationBeforeCreate()
+                        requestBiometricAuth()
                     }
                 )
 
@@ -572,36 +565,6 @@ class PasskeyCreateActivity : FragmentActivity() {
         }
     }
 
-    private fun requestPasskeyUserVerificationBeforeCreate() {
-        val settings = runBlocking {
-            SettingsManager(applicationContext).settingsFlow.first()
-        }
-        val shouldBypassBiometric = PasskeyBiometricCompatibilityPolicy.shouldBypassBiometricForPasskey(
-            romType = DeviceUtils.getROMType(),
-            isBypassEnabled = settings.passkeyHyperOsBiometricBypassEnabled,
-            hasHyperOsSystemProperty = DeviceUtils.isHyperOsSystemPropertyPresent(),
-        )
-
-        if (!shouldBypassBiometric) {
-            requestBiometricAuth()
-            return
-        }
-
-        repository.logAudit("PASSKEY_CREATE_BIOMETRIC_BYPASSED_HYPER_OS", pendingRpId)
-        recordPasskeyEvent(stage = "biometric_bypassed_hyperos")
-
-        if (securityManager.isMasterPasswordSet()) {
-            showMasterPasswordDialog.value = true
-            return
-        }
-
-        createPasskey(
-            pendingRequestJson,
-            pendingRpId,
-            pendingUserName,
-            pendingUserDisplayName,
-        )
-    }
     
     /**
      * 请求生物识别验证
@@ -610,7 +573,13 @@ class PasskeyCreateActivity : FragmentActivity() {
     private fun requestBiometricAuth() {
         repository.logAudit("PASSKEY_CREATE_BIOMETRIC_REQUESTED", pendingRpId)
         recordPasskeyEvent(stage = "biometric_requested")
-        
+
+        if (!biometricHelper.isBiometricAvailable() && securityManager.isMasterPasswordSet()) {
+            recordPasskeyEvent(stage = "biometric_unavailable")
+            showMasterPasswordDialog.value = true
+            return
+        }
+
         biometricHelper.authenticate(
             activity = this,
             title = getString(R.string.biometric_title_passkey_create),
@@ -621,7 +590,7 @@ class PasskeyCreateActivity : FragmentActivity() {
                 recordPasskeyEvent(stage = "biometric_success")
                 createPasskey(pendingRequestJson, pendingRpId, pendingUserName, pendingUserDisplayName)
             },
-            onError = { errorCode, errString ->
+            onError = biometricError@ { errorCode, errString ->
                 repository.logAudit("PASSKEY_CREATE_BIOMETRIC_FAILED", 
                     "$pendingRpId|error=$errorCode|$errString")
                 Log.e(TAG, "Biometric auth failed: $errorCode - $errString")
@@ -630,6 +599,10 @@ class PasskeyCreateActivity : FragmentActivity() {
                     errorType = "BiometricError:$errorCode",
                     errorMessage = errString.toString(),
                 )
+                if (securityManager.isMasterPasswordSet()) {
+                    showMasterPasswordDialog.value = true
+                    return@biometricError
+                }
                 // 生物识别失败，必须使用 PendingIntentHandler 设置异常响应
                 val resultIntent = Intent()
                 PendingIntentHandler.setCreateCredentialException(

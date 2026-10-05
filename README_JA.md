@@ -9,7 +9,7 @@
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
 <p><strong>Bitwarden と KeePass をつなぐローカル優先のパスワード保管庫</strong></p>
-<p>Android / Browser · Local Vault · TOTP · WebDAV Backup</p>
+<p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 <p>
 	友達リンク:
@@ -35,15 +35,9 @@
 </div>
 
 Monica は **Bitwarden** と **KeePass** を統合するローカルパスワード保管庫です。
-ローカル優先の保存を中心に、Android とブラウザでパスワード、2FA、セキュアノート、添付ファイルを一元管理できます。
+ローカル優先の保存を中心に、Android 端末でパスワード、2FA、セキュアノート、添付ファイルを一元管理できます。
 
 サイト: https://monica-pass.github.io/MonicaDocs/
-
-> Monica for Windows はアーカイブ済みです。過去コード: [Monica-for-Windows](https://github.com/JoyinJoester/Monica-for-Windows)
->
-> Monica for Browser はアーカイブ済みです。新しい Monica Extension は現在リライト・開発中です。お楽しみに。
->
-> 現在このプロジェクトは主に私一人で保守しているため、使える時間とリソースに限りがあります。そのため、Monica for Wear は当面のあいだ継続的な更新が難しい状況です。現段階では Monica for Android の機能改善、使い勝手の向上、安定性の維持に注力していきます。ご理解とご支援に感謝します。
 
 ---
 
@@ -52,7 +46,7 @@ Monica は **Bitwarden** と **KeePass** を統合するローカルパスワー
 ### Monica が向いているユーザー
 - クラウド依存ではなく、ローカル優先のパスワード管理を求めるユーザー。
 - Bitwarden データと KeePass (`.kdbx`) の両方を扱うユーザー。
-- Android を日常利用しつつ、ブラウザ自動入力も使いたいユーザー。
+- Android アプリやモバイルブラウザで自動入力を使いたいユーザー。
 
 ### できること
 - ログイン情報、カード情報、個人情報、ノート、添付ファイルをローカル暗号化保管。
@@ -67,14 +61,8 @@ MDBX は Monica が開発中のローカル優先暗号化 vault 形式です。
 
 ### クイックインストール
 
-Android:
 1. [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases) から最新 APK を取得。
 2. Android 8.0+ にインストールし、マスターパスワードを初期設定。
-
-ブラウザ拡張 (Chrome / Edge):
-1. `Monica for Browser` をビルド。
-2. `chrome://extensions/` でデベロッパーモードを有効化。
-3. 「パッケージ化されていない拡張機能を読み込む」で `dist` を選択。
 
 ### 既知の制限
 - システム互換性の都合により、Monica for Android は一部の Xiaomi HyperOS 端末でパスキーを作成できません。酷 U さん提供の解決モジュール [HyperMonica](https://github.com/Wuming155/HyperMonica) をお試しください。
@@ -163,7 +151,6 @@ Monica が役に立った場合は、継続開発とセキュリティ強化へ�
 - Android 設定: `compileSdk 35`, `targetSdk 34`, `minSdk 26`（`Monica for Android/app/build.gradle`）。
 - Android ビルド基準: AGP `8.6.0`, Kotlin `2.0.21`, Compose BOM `2026.03.00`（Material3 は BOM に追従）。
 - バージョンの一次情報: `Monica for Android/gradle/libs.versions.toml` と `Monica for Android/app/build.gradle`。
-- ブラウザ技術スタック: React + TypeScript + Vite（`Monica for Browser/package.json`）。
 - Issue / PR でのコントリビューション歓迎。
 
 ---

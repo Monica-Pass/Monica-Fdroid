@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">Ritaglia foto</string>
+    <string name="photo_crop_skip">Senza ritaglio</string>
+    <string name="photo_crop_continue">Ritaglia e continua</string>
+    <string name="card_face_crop_apply">Usa immagine</string>
+</resources>

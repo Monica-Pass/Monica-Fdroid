@@ -9,7 +9,7 @@
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
 <p><strong>Локально‑ориентированное хранилище паролей, объединяющее Bitwarden и KeePass</strong></p>
-<p>Android / Browser · Local Vault · TOTP · WebDAV Backup</p>
+<p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 <p>
 	Дружественная ссылка:
@@ -35,15 +35,9 @@
 </div>
 
 Monica — это локальное хранилище паролей, которое объединяет **Bitwarden** и **KeePass**.
-Проект построен вокруг принципа local-first и помогает управлять паролями, 2FA, защищенными заметками и конфиденциальными вложениями на Android и в браузере.
+Проект построен вокруг принципа local-first и помогает управлять паролями, 2FA, защищенными заметками и конфиденциальными вложениями на устройствах Android.
 
 Сайт: https://monica-pass.github.io/MonicaDocs/
-
-> Monica for Windows архивирован. Исторический код: [Monica-for-Windows](https://github.com/JoyinJoester/Monica-for-Windows)
->
-> Monica for Browser архивирован. Новый Monica Extension сейчас переписывается и активно разрабатывается — следите за обновлениями.
->
-> Сейчас проект в основном поддерживается мной одним, поэтому времени и ресурсов ограниченно. Из-за этого Monica for Wear временно не может обновляться постоянно. Сейчас мой основной фокус — улучшение функций, опыта и стабильности Monica for Android. Спасибо за понимание и поддержку.
 
 ---
 
@@ -52,7 +46,7 @@ Monica — это локальное хранилище паролей, кото
 ### Для кого Monica
 - Для тех, кто хочет локальное управление паролями вместо полностью облачного хранения.
 - Для пользователей, которые работают и с Bitwarden, и с KeePass (`.kdbx`).
-- Для тех, кому нужны и Android‑клиент, и автозаполнение в браузере.
+- Для тех, кому нужно автозаполнение в приложениях Android и мобильных браузерах.
 
 ### Что вы получаете
 - Локальный зашифрованный vault для логинов, карт, персональных данных, заметок и вложений.
@@ -67,14 +61,8 @@ MDBX — это разрабатываемый Monica локально-орие�
 
 ### Быстрая установка
 
-Android:
 1. Скачайте последний APK из [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases).
 2. Установите на Android 8.0+ и задайте мастер‑пароль.
-
-Расширение браузера (Chrome / Edge):
-1. Соберите в каталоге `Monica for Browser`.
-2. Откройте `chrome://extensions/` и включите режим разработчика.
-3. Нажмите «Загрузить распакованное расширение» и выберите папку `dist`.
 
 ### Известное ограничение
 - Из-за ограничений совместимости Monica for Android сейчас не может создавать passkeys на некоторых устройствах Xiaomi HyperOS. Можно попробовать модуль [HyperMonica](https://github.com/Wuming155/HyperMonica) от 酷 U.
@@ -163,7 +151,6 @@ Android:
 - Android config: `compileSdk 35`, `targetSdk 34`, `minSdk 26` (см. `Monica for Android/app/build.gradle`).
 - Базовые версии сборки Android: AGP `8.6.0`, Kotlin `2.0.21`, Compose BOM `2026.03.00` (Material3 синхронизирован по BOM).
 - Источник правды версий: `Monica for Android/gradle/libs.versions.toml` и `Monica for Android/app/build.gradle`.
-- Техстек браузера: React + TypeScript + Vite (см. `Monica for Browser/package.json`).
 - Вклад через Issues и PR приветствуется.
 
 ---

@@ -491,8 +491,6 @@
     <string name="interface_scale_reset">Przywróć domyślne</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Ukryj pasek przy jednej karcie</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">Gdy pozostanie jedna karta, ukryj dolny pasek. Ustawienia otworzysz z menu u góry po prawej.</string>
-    <string name="draggable_bottom_nav">Wysuwany pasek</string>
-    <string name="draggable_bottom_nav_description">Przesuń pasek w górę, aby otworzyć szybkie działania</string>
     <string name="add_document_title">Dodaj dokument</string>
     <string name="edit_document_title">Edytuj dokument</string>
     <string name="no_documents_title">Brak dokumentów</string>
@@ -1680,8 +1678,6 @@
     <string name="passkey_strict_validation_title">Ścisła weryfikacja</string>
     <string name="passkey_strict_validation_desc">Blokuj żądania wyraźnie naruszające reguły pochodzenia strony.</string>
     <string name="passkey_strict_validation_warning">Tryb ścisły może blokować wadliwe aplikacje. Włączaj go tylko do diagnostyki.</string>
-    <string name="passkey_hyperos_bypass_title">Biometria w HyperOS</string>
-    <string name="passkey_hyperos_bypass_desc">Na Xiaomi HyperOS pomijaj biometrię kluczy dostępu i w razie potrzeby używaj hasła głównego.</string>
     <string name="passkey_diagnostics_title">Diagnostyka weryfikacji</string>
     <string name="passkey_diagnostics_summary">Żądania: %1$d, podejrzane: %2$d, do ścisłej kontroli: %3$d</string>
     <string name="passkey_diagnostics_top_bucket">Główna grupa: %1$s @ %2$s (podejrzane: %3$d)</string>
@@ -2057,8 +2053,6 @@
     <string name="developer_disable_password_verification">Wyłącz weryfikację tożsamości</string>
     <string name="developer_disable_password_verification_desc">Pomijaj weryfikację w całej aplikacji, także przy autouzupełnianiu, używaniu klawiatury Moniki i usuwaniu danych. Okna potwierdzenia pozostają aktywne. Hasła szyfrowania eksportu nadal są wymagane.</string>
     <string name="developer_disable_password_verification_failed">Nie można wyłączyć całej weryfikacji. Odblokuj Monikę w zwykły sposób i spróbuj ponownie.</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Klucze dostępu w HyperOS</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">Na urządzeniach z HyperOS używaj hasła głównego zamiast biometrii przy kluczach dostępu. Włącz tylko wtedy, gdy weryfikacja biometryczna nie działa.</string>
     <string name="developer_launcher_name_use_pass">Nazwa ikony: Monica Pass</string>
     <string name="developer_launcher_name_use_pass_desc">Włączone: Monica Pass. Wyłączone: Monica. Zmienia tylko nazwę głównej ikony aplikacji.</string>
     <string name="developer_bitwarden_forensics_toggle">Diagnostyka synchronizacji Bitwarden</string>
@@ -2549,7 +2543,6 @@
     <string name="quick_action_backup">Kopia zapasowa</string>
     <string name="quick_action_security">Ochrona</string>
     <string name="quick_action_import">Importuj</string>
-    <string name="quick_add_not_supported">Szybkie dodawanie nie jest dostępne na tej stronie</string>
     <string name="v2_folder_management_title">Foldery</string>
     <string name="v2_folder_management_subtitle">Uporządkuj i synchronizuj foldery</string>
     <string name="v2_sync_all_title">Pełna synchronizacja Bitwarden</string>

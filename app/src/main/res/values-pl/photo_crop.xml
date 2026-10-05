@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">Przytnij zdjęcie</string>
+    <string name="photo_crop_skip">Bez przycinania</string>
+    <string name="photo_crop_continue">Przytnij i kontynuuj</string>
+    <string name="card_face_crop_apply">Użyj grafiki</string>
+</resources>

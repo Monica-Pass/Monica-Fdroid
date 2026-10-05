@@ -186,11 +186,7 @@ import java.util.Date
 import java.util.Locale
 import takagi.ru.monica.ui.components.QrCodeDialog
 import takagi.ru.monica.ui.components.ExpressiveTopBar
-import takagi.ru.monica.ui.components.DraggableBottomNavScaffold
 import takagi.ru.monica.ui.components.SwipeableAddFab
-import takagi.ru.monica.ui.components.DraggableNavItem
-import takagi.ru.monica.ui.components.QuickActionItem
-import takagi.ru.monica.ui.components.QuickAddCallback
 import takagi.ru.monica.ui.components.SyncStatusIcon
 import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
 import takagi.ru.monica.ui.components.CreateCategoryDialog
@@ -451,6 +447,7 @@ fun PasswordListContent(
             database.supports(MdbxCapability.REMOTE_SYNC)
         ) {
             MdbxPathSyncState(
+                databaseId = database.id,
                 lastSyncStatus = database.lastSyncStatus,
                 pendingCount = database.mdbxPathPendingSyncCount(mdbxPendingSyncCounts[database.id]),
                 isSyncing = mdbxOperationState is takagi.ru.monica.viewmodel.MdbxViewModel.OperationState.Loading,

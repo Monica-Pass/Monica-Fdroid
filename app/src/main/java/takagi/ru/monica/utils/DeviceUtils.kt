@@ -198,13 +198,6 @@ object DeviceUtils {
     }
 
     /**
-     * Uses Xiaomi's HyperOS system property as a strict signal to avoid broad ROM misclassification.
-     */
-    fun isHyperOsSystemPropertyPresent(): Boolean {
-        return hasSystemProperty("ro.mi.os.version.name")
-    }
-
-    /**
      * Returns true if the device is running Xiaomi HyperOS.
      *
      * Uses reflection to read the system property directly (same approach as Bitwarden PR #6316),

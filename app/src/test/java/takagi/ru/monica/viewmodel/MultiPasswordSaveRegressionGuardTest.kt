@@ -219,7 +219,7 @@ class MultiPasswordSaveRegressionGuardTest {
         val renderMainSurface = mainScreenSource.substringAfter("fun RenderMainSurface() {")
             .substringBefore("val prepareTotpAddStorageDefaults")
         val scaledMainSurfaceLayer = renderMainSurface.substringAfter("Box(\n        modifier = Modifier")
-            .substringBefore("if (useDraggableNav")
+            .substringBefore("Scaffold(")
         val overlayCallIndex = mainScreenSource.indexOf("MainScreenFabOverlay(")
         val renderCallIndex = mainScreenSource.indexOf("RenderMainSurface()", startIndex = overlayCallIndex)
 
@@ -1471,9 +1471,6 @@ class MultiPasswordSaveRegressionGuardTest {
         val simpleMainSource = projectFile(
             "app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt"
         ).readSourceText()
-        val compactTabsSource = projectFile(
-            "app/src/main/java/takagi/ru/monica/ui/CompactDraggableTabContent.kt"
-        ).readSourceText()
 
         assertTrue(
             "VaultV2 must receive MdbxViewModel so the password-list menu can run the same sync path as the MDBX manager.",
@@ -1581,8 +1578,7 @@ class MultiPasswordSaveRegressionGuardTest {
         )
         assertTrue(
             "All VaultV2 hosts must pass through the shared MdbxViewModel.",
-            simpleMainSource.contains("mdbxViewModel = mdbxViewModel") &&
-                compactTabsSource.contains("mdbxViewModel = mdbxViewModel")
+            simpleMainSource.contains("mdbxViewModel = mdbxViewModel")
         )
     }
 

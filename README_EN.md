@@ -9,7 +9,7 @@ This repository is only for **F-Droid** builds. Main repository: [Monica for And
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
 <p><strong>A local-first password vault that bridges Bitwarden and KeePass</strong></p>
-<p>Android / Browser · Local Vault · TOTP · WebDAV Backup</p>
+<p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 <p>
 	Friend Link:
@@ -35,15 +35,9 @@ This repository is only for **F-Droid** builds. Main repository: [Monica for And
 </div>
 
 Monica is a local password vault that aggregates **Bitwarden** and **KeePass**.
-It is built around local-first storage and helps you manage passwords, 2FA, secure notes, and sensitive attachments across Android and browser clients.
+It is built around local-first storage and helps you manage passwords, 2FA, secure notes, and sensitive attachments on Android devices.
 
 Website: https://monica-pass.github.io/MonicaDocs/
-
-> Monica for Windows is archived. Historical code: [Monica-for-Windows](https://github.com/JoyinJoester/Monica-for-Windows)
->
-> Monica for Browser is archived. The new Monica Extension is currently being rewritten and under active development — stay tuned.
->
-> Since the project is currently maintained mostly by me alone, both time and bandwidth are limited. Because of that, Monica for Wear cannot be updated continuously for the time being. My current focus will stay on improving features, experience, and stability for Monica for Android. Thanks for your understanding and support.
 
 ---
 
@@ -52,7 +46,7 @@ Website: https://monica-pass.github.io/MonicaDocs/
 ### Who Monica is for
 - Users who want local-first password management instead of fully hosted cloud storage.
 - Users who work with both Bitwarden data and KeePass (`.kdbx`) files.
-- Users who need Android daily usage and browser autofill at the same time.
+- Users who need autofill in Android apps and mobile browsers.
 
 ### What you get
 - Encrypted local vault for logins, cards, identity data, notes, and attachments.
@@ -67,14 +61,8 @@ If you want to integrate MDBX in another client, start with the [MDBX workspace 
 
 ### Quick install
 
-Android:
 1. Download the latest APK from [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases).
 2. Install on Android 8.0+ and initialize your master password.
-
-Browser extension (Chrome / Edge):
-1. Build from `Monica for Browser`.
-2. Open `chrome://extensions/` and enable Developer mode.
-3. Load unpacked and choose the `dist` folder.
 
 ### Known limitation
 - Due to system compatibility constraints, Monica for Android currently cannot create passkeys on some Xiaomi HyperOS devices. You can try [HyperMonica](https://github.com/Wuming155/HyperMonica), a workaround module contributed by a Coolapk community member.
@@ -163,7 +151,6 @@ Your support mainly funds:
 - Android config: `compileSdk 35`, `targetSdk 34`, `minSdk 26` (see `Monica for Android/app/build.gradle`).
 - Android build baseline: AGP `8.6.0`, Kotlin `2.0.21`, Compose BOM `2026.03.00` (Material3 aligned by BOM).
 - Version source of truth: `Monica for Android/gradle/libs.versions.toml` and `Monica for Android/app/build.gradle`.
-- Browser tech stack: React + TypeScript + Vite (see `Monica for Browser/package.json`).
 - Contributions via Issues and PRs are welcome.
 
 ---

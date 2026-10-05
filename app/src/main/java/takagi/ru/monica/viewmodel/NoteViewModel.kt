@@ -371,23 +371,6 @@ class NoteViewModel internal constructor(
         return localKeePassDatabaseDao?.getDatabaseById(databaseId) != null
     }
     
-    /**
-     * 快速添加笔记（从底部导航栏快速添加）
-     */
-    fun quickAddNote(title: String, content: String) {
-        if (title.isBlank() && content.isBlank()) return
-        val fullContent = if (title.isNotBlank() && content.isNotBlank()) {
-            "$title\n\n$content"
-        } else if (title.isNotBlank()) {
-            title
-        } else {
-            content
-        }
-        addNote(
-            content = fullContent,
-            title = title.takeIf { it.isNotBlank() }
-        )
-    }
     
     // 添加笔记
     fun addNote(

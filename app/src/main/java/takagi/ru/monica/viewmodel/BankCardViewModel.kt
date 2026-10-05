@@ -375,23 +375,6 @@ class BankCardViewModel internal constructor(
         return repository.normalizeLegacyDetachedKeePassItem(item, ::hasKeePassDatabase)
     }
 
-    /**
-     * 快速添加银行卡（从底部导航栏快速添加）
-     */
-    fun quickAddBankCard(name: String, cardNumber: String) {
-        if (name.isBlank()) return
-        val cardData = BankCardData(
-            cardNumber = cardNumber,
-            cardholderName = "",
-            expiryMonth = "",
-            expiryYear = "",
-            cvv = "",
-            bankName = name,
-            cardType = CardType.CREDIT
-        )
-        addCard(title = name, cardData = cardData)
-    }
-
     // 添加银行卡
     fun addCard(
         title: String,

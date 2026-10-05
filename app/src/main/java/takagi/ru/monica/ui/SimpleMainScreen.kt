@@ -3,103 +3,49 @@ package takagi.ru.monica.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
-import androidx.compose.runtime.NonRestartableComposable
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -110,22 +56,16 @@ import takagi.ru.monica.R
 import takagi.ru.monica.ui.screens.key
 import takagi.ru.monica.ui.screens.toTrashScopeFilter
 import takagi.ru.monica.ui.cardwallet.WalletStackOverlayHost
-import takagi.ru.monica.data.AddButtonBehaviorMode
-import takagi.ru.monica.data.AppSettings
-import takagi.ru.monica.data.AddButtonMenuAction
 import takagi.ru.monica.data.BottomNavContentTab
 import takagi.ru.monica.data.PasskeyEntry
-import takagi.ru.monica.data.PasswordPageContentType
 import takagi.ru.monica.data.PasswordQuickAccessManager
 import takagi.ru.monica.data.model.PasskeyBindingCodec
 import takagi.ru.monica.data.model.TimelineEvent
 import takagi.ru.monica.passkey.managementKey
-import takagi.ru.monica.utils.BiometricHelper
 import takagi.ru.monica.viewmodel.PasswordViewModel
 import takagi.ru.monica.viewmodel.SettingsViewModel
 import takagi.ru.monica.viewmodel.TotpViewModel
 import takagi.ru.monica.viewmodel.CategoryFilter
-import takagi.ru.monica.data.Category
 import takagi.ru.monica.viewmodel.BankCardViewModel
 import takagi.ru.monica.viewmodel.DocumentViewModel
 import takagi.ru.monica.viewmodel.GeneratorViewModel
@@ -134,75 +74,27 @@ import takagi.ru.monica.viewmodel.NoteViewModel
 import takagi.ru.monica.viewmodel.PasskeyViewModel
 import takagi.ru.monica.viewmodel.TimelineViewModel
 import takagi.ru.monica.viewmodel.BillingAddressViewModel
-import takagi.ru.monica.ui.screens.SettingsScreen
 import takagi.ru.monica.ui.screens.GeneratorScreen  // 添加生成器页面导入
-import takagi.ru.monica.ui.screens.NoteListScreen
-import takagi.ru.monica.ui.screens.NoteListContent
-import takagi.ru.monica.ui.screens.PasswordDetailScreen
-import takagi.ru.monica.ui.screens.SendScreen
-import takagi.ru.monica.ui.screens.CardWalletScreen
 import takagi.ru.monica.ui.screens.CardWalletTab
-import takagi.ru.monica.ui.screens.BankCardDetailScreen
-import takagi.ru.monica.ui.screens.BillingAddressDetailScreen
-import takagi.ru.monica.ui.screens.DocumentDetailScreen
 import takagi.ru.monica.ui.screens.HistoryTab
 import takagi.ru.monica.ui.screens.TimelineScreen
-import takagi.ru.monica.ui.screens.PasskeyListScreen
 import takagi.ru.monica.steam.ui.SteamScreen
-import takagi.ru.monica.ui.gestures.SwipeActions
-import takagi.ru.monica.ui.haptic.rememberHapticFeedback
-import kotlin.math.absoluteValue
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-import takagi.ru.monica.ui.components.QrCodeDialog
 import takagi.ru.monica.ui.components.ExpressiveTopBar
-import takagi.ru.monica.ui.components.DraggableBottomNavScaffold
 import takagi.ru.monica.ui.components.SwipeableAddFab
-import takagi.ru.monica.ui.components.DraggableNavItem
-import takagi.ru.monica.ui.components.QuickActionItem
-import takagi.ru.monica.ui.components.QuickAddCallback
-import takagi.ru.monica.ui.components.SyncStatusIcon
-import takagi.ru.monica.ui.components.M3IdentityVerifyDialog
 import takagi.ru.monica.ui.components.PasswordQuickAccessItem
 import takagi.ru.monica.ui.components.rankFrequentPasswordQuickAccessItems
 import takagi.ru.monica.ui.components.rankRecentPasswordQuickAccessItems
 import takagi.ru.monica.ui.components.CardWalletAddTypeChip
-import takagi.ru.monica.ui.components.UnifiedCategoryFilterBottomSheet
-import takagi.ru.monica.ui.components.UnifiedCategoryFilterSelection
-import takagi.ru.monica.ui.components.UnifiedMoveCategoryTarget
-import takagi.ru.monica.ui.components.UnifiedMoveToCategoryBottomSheet
-import takagi.ru.monica.ui.common.dialog.DeleteConfirmDialog
-import takagi.ru.monica.ui.common.layout.DetailPane
-import takagi.ru.monica.ui.common.layout.InspectorRow
-import takagi.ru.monica.ui.common.layout.ListPane
-import takagi.ru.monica.ui.common.pull.PullActionVisualState
-import takagi.ru.monica.ui.common.pull.PullGestureIndicator
-import takagi.ru.monica.ui.common.pull.rememberPullActionState
-import takagi.ru.monica.ui.common.selection.CategoryListItem
-import takagi.ru.monica.ui.common.selection.SelectionActionBar
-import takagi.ru.monica.ui.common.selection.SelectionModeTopBar
 import takagi.ru.monica.ui.main.navigation.BottomNavItem
-import takagi.ru.monica.ui.main.navigation.fullLabelRes
 import takagi.ru.monica.ui.main.navigation.indexToDefaultTabKey
 import takagi.ru.monica.ui.main.navigation.shortLabelRes
 import takagi.ru.monica.ui.main.navigation.toBottomNavItem
-import takagi.ru.monica.ui.main.layout.AdaptiveMainScaffold
-import takagi.ru.monica.ui.password.buildAdditionalInfoPreview
-import takagi.ru.monica.ui.password.MultiPasswordEntryCard
-import takagi.ru.monica.ui.password.StackedPasswordGroup
-import takagi.ru.monica.ui.password.PasswordEntryCard
 import takagi.ru.monica.ui.password.StackCardMode
 import takagi.ru.monica.ui.password.resolvePasswordPageVisibleTypes
 import takagi.ru.monica.ui.password.sanitizeSelectedPasswordPageTypes
-import takagi.ru.monica.ui.password.PasswordListAggregateConfig
-import takagi.ru.monica.ui.password.getGroupKeyForMode
-import takagi.ru.monica.ui.password.getPasswordGroupTitle
-import takagi.ru.monica.ui.password.getPasswordInfoKey
 import takagi.ru.monica.ui.vaultv2.VaultV2Pane
 import takagi.ru.monica.ui.vaultv2.VaultV2DetailKind
-import takagi.ru.monica.ui.vaultv2.VaultV2PaneState
 import takagi.ru.monica.ui.vaultv2.VaultV2RetainedStateViewModel
 import takagi.ru.monica.data.VaultOverviewUsageManager
 import takagi.ru.monica.data.vaultOverviewKey
@@ -215,24 +107,11 @@ import takagi.ru.monica.data.bitwarden.BitwardenSend
 import takagi.ru.monica.bitwarden.sync.SyncBlockReason
 import takagi.ru.monica.bitwarden.sync.buildMiniHintDetail
 import takagi.ru.monica.bitwarden.sync.buildMiniHintTitle
-import takagi.ru.monica.bitwarden.sync.buildDetailLine
-import takagi.ru.monica.bitwarden.sync.buildHeadline
-import takagi.ru.monica.bitwarden.sync.SyncStatus
 import takagi.ru.monica.bitwarden.sync.VaultSyncStatus
 import takagi.ru.monica.security.SecurityManager
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyListState
-import takagi.ru.monica.ui.screens.AddEditPasswordScreen
-import takagi.ru.monica.ui.screens.AddEditTotpScreen
 import takagi.ru.monica.ui.screens.AddEditBankCardScreen
 import takagi.ru.monica.ui.screens.AddEditBillingAddressScreen
 import takagi.ru.monica.ui.screens.AddEditDocumentScreen
-import takagi.ru.monica.ui.screens.AddEditNoteScreen
-import takagi.ru.monica.ui.screens.AddEditSendScreen
-import takagi.ru.monica.ui.theme.MonicaTheme
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 // Keep this file as orchestration layer: state wiring + tab routing + pane transitions.
 // Feature-specific rendering should stay in dedicated composables/files.
@@ -1337,21 +1216,8 @@ fun SimpleMainScreen(
             }
         }
     }
-    // 可拖拽导航栏模式开关 (将来可从设置中读取)
-    val useDraggableNav = appSettings.useDraggableBottomNav
     
-    // 构建导航项列表 (用于可拖拽导航栏)
-    val draggableNavItems = remember(tabs, selectedDockTab) {
-        tabs.map { item ->
-            DraggableNavItem(
-                key = item.key,
-                icon = item.icon,
-                labelRes = item.shortLabelRes(),
-                selected = item.key == selectedDockTab.key,
-                onClick = { selectedTabKey = item.key }
-            )
-        }
-    }
+
     
     val activity = LocalContext.current.findActivity()
     val widthSizeClass = activity?.let { calculateWindowSizeClass(it).widthSizeClass }
@@ -2159,186 +2025,17 @@ fun SimpleMainScreen(
     }
 
     // --- Main surface composition ---
-    // Decides draggable nav vs classic scaffold and dispatches per-tab content.
+    // Uses the standard adaptive scaffold and dispatches per-tab content.
     @Composable
     fun RenderMainSurface() {
     Box(modifier = Modifier.fillMaxSize()) {
-    // 根据设置选择导航模式
     Box(
         modifier = Modifier
             .matchParentSize()
             .nestedScroll(nestedScrollConnection)
     ) {
-        if (useDraggableNav && isCompactWidth && !shouldHideBottomNavigation) {
-        // 使用可拖拽底部导航栏
-        DraggableBottomNavScaffold(
-            navItems = draggableNavItems,
-            statusIndicatorVisible = shouldShowBitwardenSyncIndicator,
 
-            quickAddCallback = QuickAddCallback(
-                onAddPassword = { title, username, password ->
-                    passwordViewModel.quickAddPassword(title, username, password)
-                },
-                onAddTotp = { name, secret ->
-                    totpViewModel.quickAddTotp(name, secret)
-                },
-                onAddBankCard = { name, number ->
-                    bankCardViewModel.quickAddBankCard(name, number)
-                },
-                onAddNote = { title, content ->
-                    noteViewModel.quickAddNote(title, content)
-                }
-            ),
-            floatingActionButton = {}, // FAB 移至外层 Overlay
-            content = { paddingValues ->
-                CompactDraggableTabContent(
-                    onCreateApiToken = onCreateApiToken,
-                    onOpenApiTokens = onOpenApiTokens,
-                    paddingValues = paddingValues,
-                    currentTab = currentTab,
-                    showStandaloneSettingsEntry = shouldHideBottomNavigation,
-                    onOpenStandaloneSettings = onNavigateToStandaloneSettings,
-                    passwordViewModel = passwordViewModel,
-                    settingsViewModel = settingsViewModel,
-                    securityManager = securityManager,
-                    keepassDatabases = keepassDatabases,
-						mdbxDatabases = mdbxDatabases,
-                    bitwardenVaults = bitwardenVaults,
-                    localKeePassViewModel = localKeePassViewModel,
-                    mdbxViewModel = mdbxViewModel,
-                    passwordGroupMode = passwordGroupMode,
-                    stackCardMode = stackCardMode,
-                    onPasswordOpen = handlePasswordDetailOpen,
-                    onBankCardOpen = handleBankCardOpen,
-                    onDocumentOpen = handleDocumentOpen,
-                    onNoteOpen = { handleNoteOpen(it) },
-                    onPasskeyOpen = handlePasskeyOpen,
-                    onPasswordSelectionModeChange = { isSelectionMode, count, onExit, onSelectAll, onFavorite, onMoveToCategory, onStack, onDelete ->
-                        isPasswordSelectionMode = isSelectionMode
-                        selectedPasswordCount = count
-                        onExitPasswordSelection = onExit
-                        onSelectAllPasswords = onSelectAll
-                        onFavoriteSelectedPasswords = onFavorite
-                        onMoveToCategoryPasswords = onMoveToCategory
-                        onManualStackPasswords = onStack
-                        onDeleteSelectedPasswords = onDelete
-                    },
-                    onBackToTopVisibilityChange = { visible ->
-                        passwordListShowBackToTop = visible
-                    },
-                    passwordScrollToTopRequestKey = passwordScrollToTopRequestKey,
-                    totpViewModel = totpViewModel,
-                    onTotpOpen = handleTotpOpen,
-                    onNavigateToAddTotp = onNavigateToAddTotp,
-                    onNavigateToQuickTotpScan = onNavigateToQuickTotpScan,
-                    pendingSteamQrResult = pendingSteamQrResult,
-                    pendingSteamQrAccountId = pendingSteamQrAccountId,
-                    onConsumePendingSteamQrResult = onConsumePendingSteamQrResult,
-                    onScanSteamQrCode = onScanSteamQrCode,
-                    onNavigateToFidoQrScan = onNavigateToFidoQrScan,
-                    onTotpSelectionModeChange = { isSelectionMode, count, onExit, onSelectAll, onMoveToCategory, onDelete ->
-                        isTotpSelectionMode = isSelectionMode
-                        selectedTotpCount = count
-                        onExitTotpSelection = onExit
-                        onSelectAllTotp = onSelectAll
-                        onMoveToCategoryTotp = onMoveToCategory
-                        onDeleteSelectedTotp = onDelete
-                    },
-                    cardWalletSaveableStateHolder = cardWalletSaveableStateHolder,
-                    bankCardViewModel = bankCardViewModel,
-                    documentViewModel = documentViewModel,
-                    billingAddressViewModel = billingAddressViewModel,
-                    cardWalletContentState = cardWalletContentState,
-                    generatorViewModel = generatorViewModel,
-                    generatorRefreshRequestKey = generatorRefreshRequestKey,
-                    onGeneratorRefreshRequestConsumed = { generatorRefreshRequestKey = 0 },
-                    noteViewModel = noteViewModel,
-                    onNavigateToAddNote = handleNoteOpen,
-                    onNavigateToSearchedNote = onNavigateToSearchedNote,
-                    onNavigateToNoteDetail = onNavigateToNoteDetail,
-                    onNavigateToBankCardDetail = onNavigateToBankCardDetail,
-                    onNavigateToDocumentDetail = onNavigateToDocumentDetail,
-                    onNavigateToBillingAddressDetail = handleBillingAddressOpen,
-                    onNavigateToPasskeyDetail = onNavigateToPasskeyDetail,
-                    onNavigateToMdbxCommitHistory = onNavigateToMdbxCommitHistory,
-                    onNoteSelectionModeChange = { isSelectionMode ->
-                        isNoteSelectionMode = isSelectionMode
-                    },
-                    onNoteBitwardenScopeChanged = { noteBitwardenVaultId = it },
-                    timelineViewModel = timelineViewModel,
-                    passkeyViewModel = passkeyViewModel,
-                    onNavigateToPasswordDetail = onNavigateToPasswordDetail,
-                    onNavigateToAuthenticator = {
-                        selectedTabKey = BottomNavItem.Authenticator.key
-                    },
-                    bitwardenViewModel = bitwardenViewModel,
-                    onSendBitwardenEvent = handleSendBitwardenEvent,
-                    onNavigateToChangePassword = onNavigateToChangePassword,
-                    onNavigateToSecurityQuestion = onNavigateToSecurityQuestion,
-                    onNavigateToMasterPasswordLocking = onNavigateToMasterPasswordLocking,
-                    onNavigateToSyncBackup = onNavigateToSyncBackup,
-                    onNavigateToAutofill = onNavigateToAutofill,
-                    onNavigateToPasskeySettings = onNavigateToPasskeySettings,
-                    onNavigateToBottomNavSettings = onNavigateToBottomNavSettings,
-                    onNavigateToColorScheme = onNavigateToColorScheme,
-                    onSecurityAnalysis = onSecurityAnalysis,
-                    onNavigateToDeveloperSettings = onNavigateToDeveloperSettings,
-                    onNavigateToPermissionManagement = onNavigateToPermissionManagement,
-                    onNavigateToMonicaPlus = onNavigateToMonicaPlus,
-                    onNavigateToExtensions = onNavigateToExtensions,
-                    onNavigateToCommonAccountTemplates = onNavigateToCommonAccountTemplates,
-                    onNavigateToPageCustomization = onNavigateToPageCustomization,
-                    onOpenVaultV2HistoryPage = {
-                        openHistoryPage()
-                    },
-                    onOpenVaultV2TrashPage = {
-                        openTrashPage()
-                    },
-                    onOpenVaultV2ArchivePage = {
-                        vaultV2PaneState.openArchiveView()
-                    },
-                    onClearAllData = onClearAllData,
-                    cardWalletSubTab = cardWalletSubTab,
-                    passwordHistoryPageMode = passwordHistoryPageMode,
-                    passwordHistoryInitialTrashScopeKey = passwordHistoryInitialTrashScopeKey,
-                    onTrashSelectionModeChange = onTrashSelectionModeChange,
-                    onOpenHistoryPage = openHistoryPage,
-                    onOpenTrashPage = openTrashPage,
-                    onCloseHistoryPage = closeHistoryPage,
-                    isPasswordSelectionMode = isPasswordSelectionMode,
-                    selectedPasswordCount = selectedPasswordCount,
-                    onExitPasswordSelection = onExitPasswordSelection,
-                    onSelectAllPasswords = onSelectAllPasswords,
-                    onFavoriteSelectedPasswords = onFavoriteSelectedPasswords,
-                    onMoveToCategoryPasswords = onMoveToCategoryPasswords,
-                    onManualStackPasswords = onManualStackPasswords,
-                    onDeleteSelectedPasswords = onDeleteSelectedPasswords,
-                    isTotpSelectionMode = isTotpSelectionMode,
-                    selectedTotpCount = selectedTotpCount,
-                    onExitTotpSelection = onExitTotpSelection,
-                    onSelectAllTotp = onSelectAllTotp,
-                    onMoveToCategoryTotp = onMoveToCategoryTotp,
-                    onDeleteSelectedTotp = onDeleteSelectedTotp,
-                    isBankCardSelectionMode = isBankCardSelectionMode,
-                    selectedBankCardCount = selectedBankCardCount,
-                    onExitBankCardSelection = onExitBankCardSelection,
-                    onSelectAllBankCards = onSelectAllBankCards,
-                    onFavoriteBankCards = onFavoriteBankCards,
-                    onStackWalletCards = onStackWalletCards,
-                    onMoveToCategoryBankCards = onMoveToCategoryBankCards,
-                    onDeleteSelectedBankCards = onDeleteSelectedBankCards,
-                    isDocumentSelectionMode = isDocumentSelectionMode,
-                    selectedDocumentCount = selectedDocumentCount,
-                    onExitDocumentSelection = onExitDocumentSelection,
-                    onSelectAllDocuments = onSelectAllDocuments,
-                    onMoveToCategoryDocuments = onMoveToCategoryDocuments,
-                    onDeleteSelectedDocuments = onDeleteSelectedDocuments,
-                    vaultV2PaneState = vaultV2PaneState,
-                )
-            }
-        )
-    } else {
-        // 使用传统底部导航栏
+        // 普通自适应导航栏
     Scaffold(
         topBar = {
             // 顶部栏由各自页面内部控制（如 ExpressiveTopBar），这里保持为空以避免叠加
@@ -3159,7 +2856,7 @@ fun SimpleMainScreen(
             }
         }
     }
-    }
+
     }
 
     val prepareTotpAddStorageDefaults: (Long?, Long?, String?, Long?, String?, Long?, String?, Boolean) -> Unit = { categoryId, keepassDatabaseId, keepassGroupPath, mdbxDatabaseId, mdbxFolderId, bitwardenVaultId, bitwardenFolderId, explicit ->
@@ -3344,11 +3041,7 @@ fun SimpleMainScreen(
     )
 
     val navBarInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val compactBottomOffset = if (useDraggableNav) {
-        92.dp + navBarInsetBottom
-    } else {
-        88.dp + navBarInsetBottom
-    }
+    val compactBottomOffset = 88.dp + navBarInsetBottom
     val hintModifier = if (isCompactWidth) {
         Modifier
             .align(Alignment.BottomStart)

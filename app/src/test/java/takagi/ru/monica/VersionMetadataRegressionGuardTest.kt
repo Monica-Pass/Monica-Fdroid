@@ -12,10 +12,10 @@ class VersionMetadataRegressionGuardTest {
     fun `fdroid version metadata remains static and reproducible`() {
         val buildScript = projectFile("app/build.gradle").readSourceText()
 
-        assertTrue(buildScript.contains("versionCode 22"))
-        assertTrue(buildScript.contains("versionName \"1.0.315\""))
-        assertTrue(buildScript.contains("'BASE_VERSION_NAME', '\"1.0.315\"'"))
-        assertTrue(buildScript.contains("'FULL_VERSION_NAME', '\"1.0.315\"'"))
+        assertTrue(buildScript.contains("versionCode 24"))
+        assertTrue(buildScript.contains("versionName \"1.0.317\""))
+        assertTrue(buildScript.contains("'BASE_VERSION_NAME', '\"1.0.317\"'"))
+        assertTrue(buildScript.contains("'FULL_VERSION_NAME', '\"1.0.317\"'"))
         assertTrue(buildScript.contains("'BUILD_TIME', '\"\"'"))
     }
 

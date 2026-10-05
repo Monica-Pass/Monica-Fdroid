@@ -31,13 +31,11 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.PublicKeyCredential
-import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialUnknownException
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import takagi.ru.monica.R
 import takagi.ru.monica.data.AppSettings
@@ -50,7 +48,6 @@ import takagi.ru.monica.security.SecurityManager
 import takagi.ru.monica.ui.components.MasterPasswordDialog
 import takagi.ru.monica.ui.theme.MonicaTheme
 import takagi.ru.monica.utils.BiometricAuthHelper
-import takagi.ru.monica.utils.DeviceUtils
 import takagi.ru.monica.utils.SettingsManager
 import java.security.KeyStore
 import java.security.MessageDigest
@@ -315,7 +312,7 @@ class PasskeyAuthActivity : FragmentActivity() {
                 PasskeyAuthScreen(
                     passkey = currentPasskey,
                     onConfirm = {
-                        requestPasskeyUserVerification(currentPasskey)
+                        requestBiometricAuth(currentPasskey)
                     },
                     onCancel = {
                         repository.logAudit("PASSKEY_AUTH_CANCELLED", currentPasskey.credentialId)
@@ -363,35 +360,6 @@ class PasskeyAuthActivity : FragmentActivity() {
         }
     }
 
-    private fun requestPasskeyUserVerification(passkey: PasskeyEntry) {
-        val settings = runBlocking {
-            SettingsManager(applicationContext).settingsFlow.first()
-        }
-        val shouldBypassBiometric = PasskeyBiometricCompatibilityPolicy.shouldBypassBiometricForPasskey(
-            romType = DeviceUtils.getROMType(),
-            isBypassEnabled = settings.passkeyHyperOsBiometricBypassEnabled,
-            hasHyperOsSystemProperty = DeviceUtils.isHyperOsSystemPropertyPresent(),
-        )
-
-        if (!shouldBypassBiometric) {
-            requestBiometricAuth(passkey)
-            return
-        }
-
-        repository.logAudit("PASSKEY_AUTH_BIOMETRIC_BYPASSED_HYPER_OS", passkey.credentialId)
-        recordPasskeyEvent(
-            stage = "biometric_bypassed_hyperos",
-            rpId = passkey.rpId,
-            credentialId = passkey.credentialId,
-        )
-
-        if (securityManager.isMasterPasswordSet()) {
-            showMasterPasswordDialog.value = true
-            return
-        }
-
-        authenticateWithPasskey(pendingRequestJson, passkey)
-    }
     
     /**
      * 请求生物识别验证

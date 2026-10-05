@@ -149,4 +149,14 @@ class WalletStackProjectionTest {
         assertSame(cards, reorderWalletSingleCards(cards, member, single))
         assertSame(cards, reorderWalletSingleCards(cards, null, single))
     }
+    @Test fun `local drag order overrides stale projection without moving group members or headers`() {
+        val original = listOf(1L, 2L, 3L, 4L).map(::card)
+        val entries = projectWalletStacks(original, listOf(WalletStack("group", listOf(3, 4))), selectionMode = true)
+        val reordered = orderWalletIndependentEntries(entries, listOf(original[1], original[0], original[2], original[3]))
+        assertEquals(listOf("stack:group", "card:3", "card:4", "selection:unstacked", "card:2", "card:1"), reordered.map { it.key })
+        entries.take(4).forEachIndexed { index, entry -> assertSame(entry, reordered[index]) }
+        assertEquals(entries, orderWalletIndependentEntries(reordered, original))
+        assertSame(entries, orderWalletIndependentEntries(entries, original.take(1)))
+    }
+
 }

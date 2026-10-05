@@ -10,12 +10,11 @@ import org.junit.Test
 class VaultV2SecurityWiringGuardTest {
 
     @Test
-    fun `compact vault passes security dependencies to the vault pane`() {
-        val compactContent = source("ui/CompactDraggableTabContent.kt")
-        val vaultCall = compactContent
-            .substringAfter("BottomNavItem.VaultV2 ->")
+    fun `ordinary vault passes security dependencies to the vault pane`() {
+        val mainContent = source("ui/SimpleMainScreen.kt")
+        val vaultCall = mainContent
             .substringAfter("VaultV2Pane(")
-            .substringBefore("BottomNavItem.Passwords ->")
+            .substringBefore("detailContent =")
 
         assertTrue(vaultCall.contains("securityManager = securityManager"))
         assertTrue(vaultCall.contains("biometricEnabled = appSettings.biometricEnabled"))

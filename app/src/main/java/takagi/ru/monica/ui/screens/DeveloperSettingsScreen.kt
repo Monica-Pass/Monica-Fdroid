@@ -97,9 +97,8 @@ fun DeveloperSettingsScreen(
     var clearingLogs by remember { mutableStateOf(false) }
 
     var disablePasswordVerification by remember { mutableStateOf(settings.disablePasswordVerification) }
-    var passkeyHyperOsBiometricBypassEnabled by remember {
-        mutableStateOf(settings.passkeyHyperOsBiometricBypassEnabled)
-    }
+    var showDefaultManager by remember { mutableStateOf(false) }
+    if (showDefaultManager) DefaultPasswordManagerSheet { showDefaultManager = false }
     var bitwardenSyncForensicsEnabled by remember {
         mutableStateOf(settings.bitwardenSyncForensicsEnabled)
     }
@@ -114,14 +113,12 @@ fun DeveloperSettingsScreen(
     }
     LaunchedEffect(
         settings.disablePasswordVerification,
-        settings.passkeyHyperOsBiometricBypassEnabled,
         settings.bitwardenSyncForensicsEnabled,
         settings.bitwardenSyncForensicsDirectoryUri,
         settings.bitwardenSyncForensicsRawCaptureEnabled,
         settings.appLauncherLabel
     ) {
         disablePasswordVerification = settings.disablePasswordVerification
-        passkeyHyperOsBiometricBypassEnabled = settings.passkeyHyperOsBiometricBypassEnabled
         bitwardenSyncForensicsEnabled = settings.bitwardenSyncForensicsEnabled
         bitwardenSyncForensicsDirectoryUri = settings.bitwardenSyncForensicsDirectoryUri
         bitwardenSyncForensicsRawCaptureEnabled = settings.bitwardenSyncForensicsRawCaptureEnabled
@@ -230,16 +227,10 @@ fun DeveloperSettingsScreen(
                 )
 
                 SettingsPanelRow(
-                    icon = Icons.Default.WarningAmber,
-                    title = stringResource(R.string.developer_passkey_hyperos_biometric_bypass),
-                    subtitle = stringResource(R.string.developer_passkey_hyperos_biometric_bypass_desc),
-                    checked = passkeyHyperOsBiometricBypassEnabled,
-                    onCheckedChange = { enabled ->
-                        passkeyHyperOsBiometricBypassEnabled = enabled
-                        scope.launch {
-                            viewModel.updatePasskeyHyperOsBiometricBypassEnabled(enabled)
-                        }
-                    }
+                    icon = Icons.Default.Lock,
+                    title = stringResource(R.string.default_manager_title),
+                    subtitle = stringResource(R.string.default_manager_entry_hint),
+                    onClick = { showDefaultManager = true }
                 )
             }
             SettingsPanelGroup(stringResource(R.string.developer_forensics_group)) {

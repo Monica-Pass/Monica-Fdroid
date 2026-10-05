@@ -208,3 +208,25 @@ internal fun reorderWalletSingleCards(
     if (fromIndex < 0 || toIndex < 0) return cards
     return cards.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
 }
+
+/** Apply local drag order without waiting for background membership projection.
+ * Headers and grouped members keep their exact slots and identities.
+ */
+internal fun orderWalletIndependentEntries(
+    entries: List<WalletStackListEntry>,
+    cards: List<WalletListItem>
+): List<WalletStackListEntry> {
+    val singles = entries.filterIsInstance<WalletStackListEntry.Single>()
+        .filter { it.selectionStackId == null }
+    if (singles.size < 2) return entries
+    val byId = singles.associateBy { it.card.id }
+    val ordered = cards.mapNotNull { byId[it.id] }
+    // A filter/membership refresh may still be in flight. Do not drop or duplicate rows.
+    if (ordered.size != singles.size || ordered == singles) return entries
+    var index = 0
+    return entries.map { entry ->
+        if (entry is WalletStackListEntry.Single && entry.selectionStackId == null) {
+            ordered[index++]
+        } else entry
+    }
+}

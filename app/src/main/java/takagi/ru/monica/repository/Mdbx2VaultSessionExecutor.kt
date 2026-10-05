@@ -299,7 +299,8 @@ internal class Mdbx2VaultSessionExecutor(
                 "MDBX2 refresh requires an external local vault"
             }
             val workingCopy = resolveLocalFile(database)
-            if (database.lastSyncStatus == takagi.ru.monica.data.MdbxSyncStatus.PENDING_UPLOAD.name) {
+            // A failed publication still owns committed local edits. Never refresh over them.
+            if (database.lastSyncStatus in setOf(MdbxSyncStatus.PENDING_UPLOAD.name, MdbxSyncStatus.FAILED.name)) {
                 publishExternal(database, workingCopy)
                 database = requireDatabase(databaseId)
             }
@@ -537,11 +538,10 @@ internal class Mdbx2VaultSessionExecutor(
                 publishExternal(database, file)
             }
             MdbxSourceType.REMOTE_WEBDAV,
-            MdbxSourceType.REMOTE_ONEDRIVE -> databaseDao.updateSyncStatus(
-                database.id,
-                takagi.ru.monica.data.MdbxSyncStatus.PENDING_UPLOAD.name,
-                null
-            )
+            MdbxSourceType.REMOTE_ONEDRIVE -> {
+                databaseDao.updateSyncStatus(database.id, MdbxSyncStatus.PENDING_UPLOAD.name, null)
+                runCatching { takagi.ru.monica.workers.MdbxAutoSyncWorker.enqueue(appContext, database.id) }
+            }
         }
     }
 

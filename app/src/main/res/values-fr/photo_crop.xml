@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">Recadrer la photo</string>
+    <string name="photo_crop_skip">Sans recadrage</string>
+    <string name="photo_crop_continue">Recadrer et continuer</string>
+    <string name="card_face_crop_apply">Utiliser l’image</string>
+</resources>

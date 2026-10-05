@@ -45,12 +45,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -61,6 +65,10 @@ import takagi.ru.monica.data.LocalMdbxDatabase
 import takagi.ru.monica.data.MdbxSyncStatus
 import takagi.ru.monica.sync.SyncErrorKind
 import takagi.ru.monica.sync.SyncPhase
+import takagi.ru.monica.sync.SyncTarget
+import takagi.ru.monica.sync.SyncTaskRunner
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import takagi.ru.monica.ui.components.QuickStatusTransferBar
 import takagi.ru.monica.ui.components.QuickStatusTransferPhase
 import takagi.ru.monica.ui.components.QuickStatusTransferState
@@ -77,6 +85,7 @@ internal fun LocalMdbxDatabase.mdbxPathShouldFlushPendingUpload(): Boolean =
     lastSyncStatus == MdbxSyncStatus.PENDING_UPLOAD.name
 
 internal data class MdbxPathSyncState(
+    val databaseId: Long,
     val pendingCount: Int,
     val isSyncing: Boolean,
     val lastSyncStatus: String? = null,
@@ -530,6 +539,14 @@ internal fun PasswordQuickFolderBreadcrumbPath(
 
 @Composable
 internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
+    val backgroundSyncing by remember(state.databaseId) {
+        val target = SyncTarget.MdbxVault(state.databaseId)
+        SyncTaskRunner.statuses.map { statuses ->
+            statuses.values.any { it.target == target && it.phase == SyncPhase.RUNNING }
+        }.distinctUntilChanged()
+    }.collectAsState(initial = false)
+    val isSyncing = state.isSyncing || backgroundSyncing
+    val syncingDescription = if (isSyncing) stringResource(R.string.keepass_remote_sync_status_syncing) else ""
     val statusLabel = when (state.lastSyncStatus) {
         MdbxSyncStatus.FAILED.name -> R.string.keepass_remote_sync_status_failed
         MdbxSyncStatus.CONFLICT.name -> R.string.keepass_remote_sync_status_conflict
@@ -585,7 +602,7 @@ internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
                 ),
                 label = "mdbx-path-sync-rotation"
             )
-        val rotation = if (state.isSyncing) spin else 0f
+        val rotation = if (isSyncing) spin else 0f
 
         Surface(
             shape = CircleShape,
@@ -596,7 +613,7 @@ internal fun MdbxPathSyncActions(state: MdbxPathSyncState) {
         ) {
             IconButton(
                 onClick = state.onSync,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp).semantics { stateDescription = syncingDescription }
             ) {
                 Icon(
                     imageVector = Icons.Default.Sync,

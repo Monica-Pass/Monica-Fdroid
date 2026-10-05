@@ -1,0 +1,5 @@
+<resources>
+    <string name="mdbx_auto_sync_title">Automatic sync</string>
+    <string name="mdbx_auto_sync_manual_hint">Off · Sync manually when needed</string>
+    <string name="mdbx_auto_sync_enabled_hint">Upload on save; check updates while unlocked in the foreground</string>
+</resources>

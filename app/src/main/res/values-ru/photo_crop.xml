@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">Обрезать фото</string>
+    <string name="photo_crop_skip">Без обрезки</string>
+    <string name="photo_crop_continue">Обрезать и далее</string>
+    <string name="card_face_crop_apply">Использовать обложку</string>
+</resources>

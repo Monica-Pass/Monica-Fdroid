@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">사진 자르기</string>
+    <string name="photo_crop_skip">자르지 않기</string>
+    <string name="photo_crop_continue">자르고 계속</string>
+    <string name="card_face_crop_apply">이미지 사용</string>
+</resources>

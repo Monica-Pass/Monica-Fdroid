@@ -73,8 +73,6 @@
     <string name="biometric_weak_warning_message">Thiết bị này chỉ hỗ trợ sinh trắc học yếu, khả năng chống giả mạo thấp hơn. Bạn có muốn tiếp tục bật mở khóa bằng vân tay không?</string>
     <string name="biometric_weak_warning_confirm">Tiếp tục</string>
     <string name="biometric_weak_warning_cancel">Hủy</string>
-    <string name="passkey_hyperos_bypass_title">Tương thích sinh trắc học HyperOS</string>
-    <string name="passkey_hyperos_bypass_desc">Trên Xiaomi HyperOS, bỏ qua hộp thoại sinh trắc học cho passkey và dùng xác minh mật khẩu chính khi cần.</string>
     
     <!-- Password List Screen -->
     <string name="search_passwords">Tìm kiếm mật khẩu...</string>
@@ -2186,8 +2184,6 @@
     <string name="password_fill_no_templates_hint">Trước tiên, hãy tạo mẫu mật khẩu trong Thông tin tài khoản chung.</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Ẩn điều hướng khi chỉ còn một tab</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">Với một tab, ẩn điều hướng phía dưới và sử dụng menu Cài đặt trên cùng bên phải.</string>
-    <string name="draggable_bottom_nav">Điều hướng phía dưới có thể kéo được</string>
-    <string name="draggable_bottom_nav_description">Vuốt lên trên thanh điều hướng để hiển thị các thao tác nhanh</string>
     <string name="export_select_option">Chọn tùy chọn xuất</string>
     <string name="export_option_zip">Sao lưu toàn bộ (ZIP)</string>
     <string name="export_option_zip_desc">Xuất mọi thứ, bao gồm mật khẩu, ghi chú và hình ảnh. Hoạt động trên Windows và Android.</string>
@@ -2857,7 +2853,6 @@
     <string name="quick_action_backup">Hỗ trợ</string>
     <string name="quick_action_security">Bảo vệ</string>
     <string name="quick_action_import">Nhập khẩu</string>
-    <string name="quick_add_not_supported">Tính năng thêm nhanh không có sẵn cho trang này</string>
     <string name="v2_folder_management_title">Quản lý thư mục</string>
     <string name="v2_folder_management_subtitle">Sắp xếp và đồng bộ hóa các thư mục của bạn</string>
     <string name="v2_sync_all_title">Đồng bộ hóa hoàn toàn Bitwarden</string>
@@ -4091,8 +4086,6 @@
     <string name="autofill_password_suggestion_setting_desc">Hiện trình tạo mật khẩu mạnh trong biểu mẫu đăng ký và đổi mật khẩu</string>
     <string name="autofill_blacklist_no_apps">Không tìm thấy ứng dụng đã cài</string>
     <string name="autofill_blacklist_no_match">Không có ứng dụng khớp \"%s\"</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Tương thích khóa truy cập HyperOS</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">Trên HyperOS, bỏ qua xác minh sinh trắc học khóa truy cập và dùng mật khẩu chính. Chỉ bật khi lời nhắc sinh trắc học trên thiết bị đó không hoạt động.</string>
     <string name="permission_request_granted">Đã cấp quyền %1$s</string>
     <string name="permission_already_granted">Quyền %1$s đã được cấp</string>
     <string name="permission_status_refreshed">Đã cập nhật trạng thái quyền</string>

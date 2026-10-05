@@ -14,6 +14,10 @@ import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -39,55 +43,97 @@ import takagi.ru.monica.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardFaceCropper(source: Bitmap, busy: Boolean, error: Int?, onCancel: () -> Unit, onConfirm: (CardCropGeometry) -> Unit) {
+fun CardFaceCropper(
+    source: Bitmap, busy: Boolean, error: Int?, onCancel: () -> Unit,
+    onConfirm: (CardCropGeometry) -> Unit,
+    onSkipCrop: (() -> Unit)? = null,
+) {
     var region by remember(source) { mutableStateOf(CardCropGeometry.centered(source.width, source.height)) }
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG) }
     val frameWidth = minOf(viewport.width * .9f, viewport.height * .8f * CardFaceImageProcessor.CARD_ASPECT_RATIO)
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.card_face_crop_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        topBar = { TopAppBar(title = { Text(stringResource(if (onSkipCrop != null) R.string.photo_crop_title else R.string.card_face_crop_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             navigationIcon = { IconButton(onClick = onCancel, enabled = !busy, modifier = Modifier.testTag("card_face_crop_cancel")) {
                 Icon(Icons.Default.Close, stringResource(R.string.cancel))
             } },
-            actions = { IconButton(onClick = { onConfirm(region) }, enabled = !busy && frameWidth > 0f, modifier = Modifier.testTag("card_face_crop_confirm")) {
-                Icon(Icons.Default.Check, stringResource(R.string.confirm))
-            } }) },
-        bottomBar = { Column(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically) {
-                FilledTonalIconButton(onClick = { region = region.rotated(source.width, source.height, clockwise = false) },
-                    enabled = !busy, modifier = Modifier.size(56.dp).testTag("card_face_rotate_left")) {
-                    Icon(Icons.Default.RotateLeft, stringResource(R.string.card_face_rotate_left))
-                }
-                FilledTonalButton(onClick = { region = CardCropGeometry.centered(source.width, source.height) },
-                    enabled = !busy, modifier = Modifier.heightIn(min = 56.dp).weight(1f, fill = false).testTag("card_face_crop_reset")) {
-                    Icon(Icons.Default.RestartAlt, null, Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.card_face_crop_reset))
-                }
-                FilledTonalIconButton(onClick = { region = region.rotated(source.width, source.height, clockwise = true) },
-                    enabled = !busy, modifier = Modifier.size(56.dp).testTag("card_face_rotate_right")) {
-                    Icon(Icons.Default.RotateRight, stringResource(R.string.card_face_rotate_right))
+            ) },
+        bottomBar = {
+            Surface(color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                Column(Modifier.fillMaxWidth().navigationBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.widthIn(max = 480.dp).fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
+                        val shape = RoundedCornerShape(16.dp)
+                        FilledTonalIconButton(onClick = { region = region.rotated(source.width, source.height, false) },
+                            enabled = !busy, shape = shape,
+                            modifier = Modifier.size(48.dp).testTag("card_face_rotate_left")) {
+                            Icon(Icons.Default.RotateLeft, stringResource(R.string.card_face_rotate_left))
+                        }
+                        FilledTonalIconButton(onClick = { region = region.rotated(source.width, source.height, true) },
+                            enabled = !busy, shape = shape,
+                            modifier = Modifier.size(48.dp).testTag("card_face_rotate_right")) {
+                            Icon(Icons.Default.RotateRight, stringResource(R.string.card_face_rotate_right))
+                        }
+                        FilledTonalIconToggleButton(checked = region.flipHorizontal,
+                            onCheckedChange = { region = region.flipped(source.width, source.height, true) },
+                            enabled = !busy, shape = shape,
+                            modifier = Modifier.size(48.dp).testTag("card_face_flip_horizontal")) {
+                            Icon(Icons.Default.Flip, stringResource(R.string.card_face_flip_horizontal))
+                        }
+                        FilledTonalIconToggleButton(checked = region.flipVertical,
+                            onCheckedChange = { region = region.flipped(source.width, source.height, false) },
+                            enabled = !busy, shape = shape,
+                            modifier = Modifier.size(48.dp).testTag("card_face_flip_vertical")) {
+                            Icon(Icons.Default.Flip, stringResource(R.string.card_face_flip_vertical), Modifier.rotate(90f))
+                        }
+                        FilledTonalIconButton(onClick = { region = CardCropGeometry.centered(source.width, source.height) },
+                            enabled = !busy, shape = shape,
+                            modifier = Modifier.size(48.dp).testTag("card_face_crop_reset")) {
+                            Icon(Icons.Default.RestartAlt, stringResource(R.string.card_face_crop_reset))
+                        }
+                    }
+                    if (LocalConfiguration.current.screenHeightDp > 400) {
+                        Text(stringResource(R.string.card_face_crop_rotation_hint), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+                    val stackedActions = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
+                    @Composable fun SkipAction(modifier: Modifier) {
+                        if (onSkipCrop != null) FilledTonalButton(onClick = onSkipCrop, enabled = !busy,
+                            modifier = modifier.heightIn(min = 48.dp).testTag("photo_crop_skip")) {
+                            Text(stringResource(R.string.photo_crop_skip))
+                        }
+                    }
+                    @Composable fun ConfirmAction(modifier: Modifier) {
+                        Button(onClick = { onConfirm(region) }, enabled = !busy && frameWidth > 0f,
+                            modifier = modifier.heightIn(min = 48.dp).testTag("card_face_crop_confirm")) {
+                            Icon(Icons.Default.Check, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(if (onSkipCrop != null) R.string.photo_crop_continue else R.string.card_face_crop_apply))
+                        }
+                    }
+                    if (stackedActions) {
+                        Column(Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SkipAction(Modifier.fillMaxWidth())
+                            ConfirmAction(Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Row(Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SkipAction(Modifier.weight(1f))
+                            ConfirmAction(Modifier.weight(1f))
+                        }
+                    }
+                    if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 }
             }
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), maxItemsInEachRow = 2) {
-                FilterChip(selected = region.flipHorizontal,
-                    onClick = { region = region.flipped(source.width, source.height, horizontal = true) }, enabled = !busy,
-                    label = { Text(stringResource(R.string.card_face_flip_horizontal)) },
-                    leadingIcon = { Icon(Icons.Default.Flip, null, Modifier.size(20.dp)) },
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("card_face_flip_horizontal"))
-                FilterChip(selected = region.flipVertical,
-                    onClick = { region = region.flipped(source.width, source.height, horizontal = false) }, enabled = !busy,
-                    label = { Text(stringResource(R.string.card_face_flip_vertical)) },
-                    leadingIcon = { Icon(Icons.Default.Flip, null, Modifier.size(20.dp).rotate(90f)) },
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("card_face_flip_vertical"))
-            }
-            Text(stringResource(R.string.card_face_crop_rotation_hint), style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        } }
+        }
+
     ) { padding ->
         Canvas(Modifier.fillMaxSize().padding(padding)
             // Clip after the Scaffold insets so transformed images cannot cover the bars.

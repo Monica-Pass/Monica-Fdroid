@@ -23,6 +23,107 @@ import takagi.ru.monica.utils.MdbxRemoteWriteMode
 class Mdbx2RemoteSyncCoordinatorTest {
 
     @Test
+    fun localEditWithMissingRemoteBlobRecoversBeforePublication() = runBlocking {
+        val root = tempDirectory("mdbx2-missing-blob-local-edit")
+        try {
+            val transport = MemoryTransport()
+            val source = FakeEngine("vault-a", "device-a")
+            val target = FakeEngine("vault-a", "device-b")
+            val sourceSync = coordinator(root, source, FakeStateDao())
+            val targetDao = FakeStateDao()
+            val targetSync = coordinator(root, target, targetDao)
+            val path = "vaults/main.mdbx"
+            sourceSync.publishBootstrap(1, path, transport)
+            targetSync.registerDownloadedBootstrap(2, path)
+            val bytes = ByteArray(700_000) { (it % 251).toByte() }
+            val blobId = source.addAvailableBlob(bytes)
+            source.advance("remote-with-attachment")
+            sourceSync.synchronize(1, path, transport)
+            target.expectBlob(blobId, bytes.size.toULong())
+            target.advance("local-edit-before-attachment-download")
+
+            val report = targetSync.synchronize(2, path, transport)
+
+            assertTrue(target.hasBlob(blobId, bytes.size.toULong()))
+            assertEquals(1, report.uploadedSegments)
+            assertEquals(1, report.downloadedBlobs)
+            assertEquals(null, MdbxSyncStateStore(targetDao).read(2).pendingSegment)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
+    fun missingBlobRecoveryFailurePreservesLocalChangesAndRetriesAfterRestart() = runBlocking {
+        for (failure in listOf("absent", "corrupt", "timeout")) {
+            val root = tempDirectory("mdbx2-blob-recovery-$failure")
+            try {
+                val transport = MemoryTransport()
+                val engine = FakeEngine("vault-a", "device-a")
+                val dao = FakeStateDao()
+                val sync = coordinator(root, engine, dao)
+                val path = "vaults/main.mdbx"
+                sync.publishBootstrap(1, path, transport)
+                val initial = MdbxSyncStateStore(dao).read(1)
+                val bytes = "encrypted-attachment".toByteArray()
+                val blobId = engine.addAvailableBlob(bytes)
+                engine.expectBlob(blobId, bytes.size.toULong())
+                engine.advance("unsynced-local-edit")
+                val blobPath = MdbxRemoteSyncPaths.blobPath(path, blobId)
+                val file = File(root, "remote-blob").apply { writeBytes(bytes) }
+                if (failure != "absent") {
+                    if (failure == "corrupt") file.writeBytes(ByteArray(bytes.size))
+                    transport.writeFrom(blobPath, file, MdbxRemoteWriteMode.CREATE_ONLY)
+                }
+                val failing = object : MdbxRemoteTransport by transport {
+                    override suspend fun readTo(path: String, destination: File) {
+                        if (failure == "timeout" && path == blobPath) {
+                            throw java.net.SocketTimeoutException("timeout")
+                        }
+                        transport.readTo(path, destination)
+                    }
+                }
+                val error = runCatching { sync.synchronize(1, path, failing) }.exceptionOrNull()
+                assertNotNull("$failure must not acknowledge unsynchronized changes", error)
+                assertEquals(initial.exportCheckpoint, MdbxSyncStateStore(dao).read(1).exportCheckpoint)
+                assertEquals(initial.syncedCommitInventory, MdbxSyncStateStore(dao).read(1).syncedCommitInventory)
+                assertEquals("unsynced-local-edit", engine.checkpoint().commitInventory)
+                assertTrue(transport.writeOrder.none { it.endsWith(".mdbxsync") })
+
+                file.writeBytes(bytes)
+                transport.writeFrom(blobPath, file, MdbxRemoteWriteMode.REPLACE)
+                val restarted = coordinator(root, engine, dao)
+                val report = restarted.synchronize(1, path, transport)
+                assertEquals(1, report.uploadedSegments)
+                assertEquals(1, report.downloadedBlobs)
+                assertTrue(engine.hasBlob(blobId, bytes.size.toULong()))
+                assertEquals(0, restarted.synchronize(1, path, transport).uploadedSegments)
+            } finally { root.deleteRecursively() }
+        }
+    }
+
+    @Test
+    fun bootstrapAttachmentIsRecoveredEvenWithoutNewSegments() = runBlocking {
+        val root = tempDirectory("mdbx2-bootstrap-blob-recovery")
+        try {
+            val transport = MemoryTransport()
+            val engine = FakeEngine("vault-a", "receiver")
+            val sync = coordinator(root, engine, FakeStateDao())
+            val path = "vaults/main.mdbx"
+            sync.registerDownloadedBootstrap(1, path)
+            val bytes = "bootstrap-attachment".toByteArray()
+            val blobId = engine.addAvailableBlob(bytes)
+            engine.expectBlob(blobId, bytes.size.toULong())
+            val file = File(root, "blob").apply { writeBytes(bytes) }
+            transport.writeFrom(MdbxRemoteSyncPaths.blobPath(path, blobId), file, MdbxRemoteWriteMode.CREATE_ONLY)
+            val report = sync.synchronize(1, path, transport)
+            assertEquals(1, report.downloadedBlobs)
+            assertEquals(0, report.uploadedSegments)
+            assertEquals(0, report.downloadedSegments)
+            assertTrue(engine.hasBlob(blobId, bytes.size.toULong()))
+            assertEquals(0, sync.synchronize(1, path, transport).downloadedBlobs)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
     fun referencedStateWaitsWithoutAcknowledgementAndResumesAfterDependencyArrives() = runBlocking {
         val root = tempDirectory("mdbx2-state-dependencies")
         try {
@@ -242,14 +343,21 @@ class Mdbx2RemoteSyncCoordinatorTest {
             val first = coordinator(root, engine, dao)
             val remotePath = "vaults/main.mdbx"
             first.publishBootstrap(1L, remotePath, transport)
+            val bytes = "pending-segment-attachment".toByteArray()
+            val blobId = engine.addAvailableBlob(bytes)
             engine.advance("c1")
 
             assertTrue(runCatching { first.synchronize(1L, remotePath, transport) }.isFailure)
             assertNotNull(MdbxSyncStateStore(dao).read(1L).pendingSegment)
 
+            // Recovery must also handle a durable segment created by a previous
+            // attempt, with an attachment now available only on the remote.
+            engine.expectBlob(blobId, bytes.size.toULong())
+
             val restarted = coordinator(root, engine, dao)
             val report = restarted.synchronize(1L, remotePath, transport)
             assertEquals(1, report.uploadedSegments)
+            assertEquals(1, report.downloadedBlobs)
             assertTrue(MdbxSyncStateStore(dao).read(1L).pendingSegment == null)
         } finally {
             root.deleteRecursively()
@@ -341,7 +449,7 @@ class Mdbx2RemoteSyncCoordinatorTest {
             assertTrue(runCatching { targetCoordinator.synchronize(2L, remotePath, transport) }.isFailure)
             val interruptedState = MdbxSyncStateStore(targetDao).read(2L)
             assertTrue(interruptedState.remoteStreams.isEmpty())
-            assertEquals("c1", interruptedState.exportCheckpoint?.commitInventory)
+            assertEquals("c0", interruptedState.exportCheckpoint?.commitInventory)
 
             targetCoordinator.synchronize(2L, remotePath, transport)
             assertTrue(target.hasBlob(blobId, ciphertext.size.toULong()))

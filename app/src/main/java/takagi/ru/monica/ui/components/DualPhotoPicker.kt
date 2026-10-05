@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -76,7 +77,7 @@ fun DualPhotoPicker(
     var backBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showFrontImageDialog by remember { mutableStateOf(false) }
     var showBackImageDialog by remember { mutableStateOf(false) }
-    var pendingSlot by remember { mutableStateOf<DualPhotoSlot?>(null) }
+    var pendingSlot by rememberSaveable { mutableStateOf<DualPhotoSlot?>(null) }
     var pendingCameraImagePath by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCameraImageUri by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoImport by remember { mutableStateOf<PendingDualPhotoImport?>(null) }
@@ -85,11 +86,7 @@ fun DualPhotoPicker(
     val resolvedBackLabel = backLabel ?: stringResource(R.string.photo_back_label)
 
     fun clearPendingPhotoImport() {
-        pendingPhotoImport?.bitmap?.let { bitmap ->
-            if (!bitmap.isRecycled) {
-                bitmap.recycle()
-            }
-        }
+        // Drop ownership after the UI/job releases it. Recycling here can race a preview or crop.
         pendingPhotoImport = null
         isSavingPendingPhoto = false
     }
@@ -121,7 +118,7 @@ fun DualPhotoPicker(
         }
     }
 
-    suspend fun confirmPendingPhotoImport(quality: Int) {
+    suspend fun confirmPendingPhotoImport(bitmap: Bitmap, quality: Int) {
         val importRequest = pendingPhotoImport ?: return
         try {
             isSavingPendingPhoto = true
@@ -130,7 +127,7 @@ fun DualPhotoPicker(
                 "Confirming photo import for slot=${importRequest.slot} quality=$quality"
             )
             val fileName = imageManager.saveImage(
-                bitmap = importRequest.bitmap,
+                bitmap = bitmap,
                 compressionFormat = Bitmap.CompressFormat.JPEG,
                 compressionQuality = quality
             )
@@ -343,7 +340,7 @@ fun DualPhotoPicker(
                 }
             },
             onImageClicked = { showFrontImageDialog = true },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().testTag("dual_photo_front")
         )
         
         // 背面照片（所有证件类型都显示背面照片选择器）
@@ -365,7 +362,7 @@ fun DualPhotoPicker(
                 }
             },
             onImageClicked = { showBackImageDialog = true },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().testTag("dual_photo_back")
         )
     }
     
@@ -385,7 +382,7 @@ fun DualPhotoPicker(
     }
 
     pendingPhotoImport?.let { importRequest ->
-        ImageImportConfirmDialog(
+        PhotoImportEditor(
             imageManager = imageManager,
             bitmap = importRequest.bitmap,
             originalSizeBytes = importRequest.originalSizeBytes,
@@ -394,9 +391,10 @@ fun DualPhotoPicker(
                 clearPendingPhotoImport()
                 pendingSlot = null
             },
-            onConfirm = { quality ->
-                scope.launch {
-                    confirmPendingPhotoImport(quality)
+            onConfirm = { bitmap, quality ->
+                if (!isSavingPendingPhoto) {
+                    isSavingPendingPhoto = true
+                    scope.launch { confirmPendingPhotoImport(bitmap, quality) }
                 }
             }
         )

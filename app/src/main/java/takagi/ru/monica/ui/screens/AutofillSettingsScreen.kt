@@ -60,6 +60,7 @@ import java.io.File
 fun AutofillSettingsScreen(
     onNavigateBack: () -> Unit
 ) {
+    var showDefaultManager by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -148,6 +149,8 @@ fun AutofillSettingsScreen(
         refreshAutofillStatus()
     }
     
+    if (showDefaultManager) DefaultPasswordManagerSheet { showDefaultManager = false; refreshAutofillStatus() }
+
     Scaffold(
         modifier = scaffoldModifier,
         topBar = {
@@ -212,6 +215,15 @@ fun AutofillSettingsScreen(
             }
             
             // 系统设置卡片
+            takagi.ru.monica.ui.components.SettingsPanelGroup("") {
+                takagi.ru.monica.ui.components.SettingsPanelRow(
+                    Icons.Outlined.Settings,
+                    stringResource(R.string.default_manager_title),
+                    stringResource(R.string.default_manager_entry_hint),
+                    onClick = { showDefaultManager = true }
+                )
+            }
+
             SectionCard(
                 title = stringResource(R.string.autofill_system_settings_title),
                 icon = Icons.Outlined.Settings,

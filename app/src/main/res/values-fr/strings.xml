@@ -491,8 +491,6 @@
     <string name="interface_scale_reset">Valeur par défaut</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Masquer si un seul onglet</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">Avec un seul onglet, les réglages restent accessibles en haut à droite.</string>
-    <string name="draggable_bottom_nav">Navigation inférieure déplaçable</string>
-    <string name="draggable_bottom_nav_description">Faites glisser votre doigt vers le haut sur la barre de navigation pour révéler des actions rapides</string>
     <string name="add_document_title">Ajouter un document</string>
     <string name="edit_document_title">Modifier le document</string>
     <string name="no_documents_title">Aucun document</string>
@@ -1680,8 +1678,6 @@
     <string name="passkey_strict_validation_title">Validation stricte</string>
     <string name="passkey_strict_validation_desc">Bloquez les demandes qui entrent clairement en conflit avec les règles d\'origine de la partie de confiance.</string>
     <string name="passkey_strict_validation_warning">Le mode strict peut bloquer les applications buggées. Laissez-le désactivé sauf si vous déboguez.</string>
-    <string name="passkey_hyperos_bypass_title">Compatibilité biométrique HyperOS</string>
-    <string name="passkey_hyperos_bypass_desc">Sur Xiaomi HyperOS, ignorez les invites biométriques de clé d\'accès et utilisez le mot de passe principal de secours si nécessaire.</string>
     <string name="passkey_diagnostics_title">Diagnostic de validation</string>
     <string name="passkey_diagnostics_summary">Demandes : %1$d, Suspect : %2$d, Candidats stricts : %3$d</string>
     <string name="passkey_diagnostics_top_bucket">Godet supérieur : %1$s @ %2$s (%3$d suspect)</string>
@@ -2057,8 +2053,6 @@
     <string name="developer_disable_password_verification">Désactiver la vérification du mot de passe</string>
     <string name="developer_disable_password_verification_desc">Ignorez la vérification d\'identité dans l\'application, y compris la saisie automatique, le clavier Monica et les actions destructrices. Les boîtes de dialogue de confirmation demeurent et les mots de passe de chiffrement d\'exportation sont toujours requis.</string>
     <string name="developer_disable_password_verification_failed">Impossible d\'activer le contournement complet de la vérification. Déverrouillez Monica normalement une fois, puis réessayez.</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Compatibilité de la clé d\'accès HyperOS</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">Sur les appareils HyperOS, ignorez la vérification biométrique des clés d\'accès et utilisez le mot de passe principal. Gardez cette option désactivée, sauf si les invites biométriques échouent sur cet appareil.</string>
     <string name="developer_launcher_name_use_pass">Utilisez Monica Pass comme nom de lanceur</string>
     <string name="developer_launcher_name_use_pass_desc">Activé : Monica Pass. Désactivé : Monica. Ce réglage modifie uniquement le nom de l’entrée principale du lanceur.</string>
     <string name="developer_bitwarden_forensics_toggle">Activer l\'analyse médico-légale de Bitwarden Sync</string>
@@ -2549,7 +2543,6 @@
     <string name="quick_action_backup">Sauvegarde</string>
     <string name="quick_action_security">Sécurité</string>
     <string name="quick_action_import">Importer</string>
-    <string name="quick_add_not_supported">L\'ajout rapide n\'est pas disponible pour cette page</string>
     <string name="v2_folder_management_title">Gestion des dossiers</string>
     <string name="v2_folder_management_subtitle">Organisez et synchronisez vos dossiers</string>
     <string name="v2_sync_all_title">Synchro complète Bitwarden</string>

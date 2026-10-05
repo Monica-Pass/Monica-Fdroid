@@ -12,7 +12,7 @@
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
 <p><strong>聚合 Bitwarden 与 KeePass 的本地优先密码库</strong></p>
-<p>Android / Browser · Local Vault · TOTP · WebDAV Backup</p>
+<p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 
 <p>
@@ -39,15 +39,9 @@
 </div>
 
 Monica 是一个聚合 **Bitwarden** 与 **KeePass** 的本地密码库（Local Vault）。
-它以本地存储优先为核心，帮助你在 Android 与浏览器端统一管理账号密码、2FA、私密笔记与敏感附件。
+它以本地存储优先为核心，帮助你在 Android 设备上统一管理账号密码、2FA、私密笔记与敏感附件。
 
 官网入口: https://monica-pass.github.io/MonicaDocs/
-
-> Monica for Windows 已归档。历史代码见: [Monica-for-Windows](https://github.com/JoyinJoester/Monica-for-Windows)
->
-> Monica for Browser 已归档。新的 Monica Extension 正在重写开发中，敬请期待。
->
-> 由于目前项目主要由我一人维护，时间与精力都比较有限，因此 Monica for Wear 暂时无法保持持续更新。现阶段我会将主要重心放在 Monica for Android 的功能完善、体验优化与稳定性维护上，也感谢大家的理解与支持。
 
 ---
 
@@ -56,7 +50,7 @@ Monica 是一个聚合 **Bitwarden** 与 **KeePass** 的本地密码库（Local 
 ### Monica 适合谁
 - 需要本地优先密码管理，不希望账号数据托管到第三方云。
 - 既使用 Bitwarden，也维护 KeePass (`.kdbx`) 数据。
-- 需要 Android 日常使用，同时在浏览器里完成自动填充。
+- 需要在 Android 应用和手机浏览器中使用自动填充。
 
 ### 你能得到什么
 - 本地加密保险箱: 登录信息、银行卡、身份信息、私密笔记、附件。
@@ -73,14 +67,8 @@ MDBX 是 Monica 正在推进的本地优先加密 vault 格式。它不是简单
 
 ### 快速安装
 
-Android:
 1. 从 [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases) 下载最新 APK。
 2. 在 Android 8.0+ 设备安装并初始化主密码。
-
-浏览器插件 (Chrome / Edge):
-1. 在 `Monica for Browser` 目录构建插件。
-2. 打开 `chrome://extensions/` 并启用开发者模式。
-3. 选择“加载已解压的扩展程序”，导入 `dist` 目录。
 
 ### 已知限制
 - 由于系统兼容性原因，Monica for Android 目前在部分小米 HyperOS 设备上无法创建通行密钥（Passkey）。可以尝试酷 U 提供的解决模块：[HyperMonica](https://github.com/Wuming155/HyperMonica)。
@@ -188,7 +176,6 @@ Android:
 - Android 配置: `compileSdk 35`，`targetSdk 34`，`minSdk 26`（见 `Monica for Android/app/build.gradle`）。
 - Android 构建基线: AGP `8.6.0`，Kotlin `2.0.21`，Compose BOM `2026.03.00`（Material3 跟随 BOM）。
 - 版本信息以 `Monica for Android/gradle/libs.versions.toml` 与 `Monica for Android/app/build.gradle` 为准。
-- 浏览器端技术栈: React + TypeScript + Vite（见 `Monica for Browser/package.json`）。
 - 欢迎通过 Issue / PR 参与功能和安全改进。
 
 ---
@@ -242,3 +229,13 @@ Monica 基于 [GNU General Public License v3.0](LICENSE) 开源发布。
 这是 Monica 的 F-Droid 专用构建仓库。应用问题、功能建议和用户反馈请提交到 [Monica 主仓库](https://github.com/Monica-Pass/Monica/issues)，方便 Monica 团队查看和处理。
 
 F-Droid metadata 或打包问题请联系：joyin8888@foxmail.com
+
+
+### Shizuku default password manager / 默认密码管理器
+
+The Android 14+ helper in developer and autofill settings adapts the secure-settings transaction logic from [cr-zhichen/password-manager-switch](https://github.com/cr-zhichen/password-manager-switch) (MIT, copyright 2026 cr-zhichen). It targets the installed Monica edition for the current Android user, verifies writes, and supports restoring the previous configuration. The original MIT notice is included in `app/src/main/assets/licenses/password-manager-switch.txt`.
+
+开发者设置与自动填充设置中的 Shizuku 入口参考上述原项目（MIT），用于 HyperOS 隐藏第三方密码管理器设置入口的情况。仅设置当前 Monica 版本，不导入原项目的自更新等功能；系统设置读回成功不代表所有 HyperOS 通行密钥流程均已验证。
+
+On multi-user devices, Shizuku may also require Monica to be installed for the owner user before starting the helper for a secondary user. Only the calling user settings are changed.
+多用户设备上，Shizuku 可能需要主用户也安装 Monica 才能启动副用户的辅助服务；实际更改仍限定于调用用户。

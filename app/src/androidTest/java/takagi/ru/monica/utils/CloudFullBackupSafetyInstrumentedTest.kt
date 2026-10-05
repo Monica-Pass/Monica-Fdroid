@@ -47,6 +47,8 @@ class CloudFullBackupSafetyInstrumentedTest {
         val endpoint = InstrumentationRegistry.getArguments().getString("fullBackupWebDavUrl")
         org.junit.Assume.assumeTrue("No isolated real WebDAV endpoint provided", !endpoint.isNullOrBlank())
         IsolatedContext(base).use { context ->
+            WebDavHelper.setInsecureHttpAllowed(context, true)
+            takagi.ru.monica.webdav.WebDavGateway.attach(context)
             val helper = WebDavHelper(context)
             field(helper, "serverUrl", endpoint!! + "/" + UUID.randomUUID())
             val client = com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine()

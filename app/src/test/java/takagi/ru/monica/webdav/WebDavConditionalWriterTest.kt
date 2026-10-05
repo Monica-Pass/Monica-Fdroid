@@ -12,6 +12,25 @@ import org.junit.Test
 import takagi.ru.monica.utils.MdbxRemoteWriteMode
 
 class WebDavConditionalWriterTest {
+    @Test fun transient503RetainsRetryAfterAndConditionalHeaderOnRetry() = kotlinx.coroutines.runBlocking {
+        val server = MockWebServer().apply { start() }
+        val source = tempFile("immutable retry payload")
+        val waits = mutableListOf<Long>()
+        try {
+            server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "2"))
+            server.enqueue(MockResponse().setResponseCode(201))
+            val writer = WebDavConditionalWriter(OkHttpClient())
+            MdbxWebDavRetry("fixture", { 0L }, { waits += it }).run {
+                writer.write(server.url("/segment").toString(), source, MdbxRemoteWriteMode.CREATE_ONLY, null)
+            }
+            assertEquals(listOf(2000L), waits)
+            repeat(2) {
+                val request = server.takeRequest(5, TimeUnit.SECONDS)!!
+                assertEquals("*", request.getHeader("If-None-Match"))
+                assertArrayEquals(source.readBytes(), request.body.readByteArray())
+            }
+        } finally { source.delete(); server.shutdown() }
+    }
     @Test
     fun createOnlyUsesAtomicIfNoneMatchAndStreamsFile() {
         val server = MockWebServer()

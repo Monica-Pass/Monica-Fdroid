@@ -47,6 +47,11 @@ internal class WebDavConditionalWriter(
             val body = response.body?.string().orEmpty()
             when (response.code) {
                 409, 412 -> throw WebDavPreconditionException(response.code, body)
+                429, 503 -> throw RateLimitedIOException(
+                    "WebDAV write throttled: HTTP ${response.code}",
+                    RateLimitInterceptor.parseRetryAfterMillis(response.header("Retry-After"), System.currentTimeMillis())
+                        ?: 30_000L
+                )
                 else -> throw IOException(
                     body.ifBlank { "WebDAV write failed: HTTP ${response.code}" }
                 )

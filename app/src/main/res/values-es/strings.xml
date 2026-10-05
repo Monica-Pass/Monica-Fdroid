@@ -540,8 +540,6 @@
     <string name="interface_scale_reset">Restablecer valores predeterminados</string>
     <string name="bottom_nav_auto_hide_single_tab_title">Ocultar navegación cuando solo queda una pestaña</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">Con una pestaña, oculta la navegación inferior y usa el menú de configuración superior derecho.</string>
-    <string name="draggable_bottom_nav">Navegación inferior arrastrable</string>
-    <string name="draggable_bottom_nav_description">Desliza hacia arriba en la barra de navegación para revelar acciones rápidas</string>
 
     <!-- Document -->
     <string name="add_document_title">Agregar documento</string>
@@ -1829,8 +1827,6 @@
     <string name="passkey_strict_validation_title">Validación estricta</string>
     <string name="passkey_strict_validation_desc">Bloquear solicitudes que claramente entren en conflicto con las reglas de origen del usuario de confianza.</string>
     <string name="passkey_strict_validation_warning">El modo estricto puede bloquear aplicaciones con errores. Déjalo desactivado salvo que estés depurando.</string>
-    <string name="passkey_hyperos_bypass_title">Compatibilidad biométrica HyperOS</string>
-    <string name="passkey_hyperos_bypass_desc">En Xiaomi HyperOS, omite las indicaciones biométricas de llave de acceso y usa la contraseña maestra alternativa cuando sea necesario.</string>
     <string name="passkey_diagnostics_title">Diagnóstico de validación</string>
     <string name="passkey_diagnostics_summary">Solicitudes: %1$d, Sospechosas: %2$d, Candidatos estrictos: %3$d</string>
     <string name="passkey_diagnostics_top_bucket">Depósito superior: %1$s @ %2$s (sospechoso) %3$d)</string>
@@ -2249,8 +2245,6 @@
     <string name="developer_disable_password_verification">Desactivar verificación de contraseña</string>
     <string name="developer_disable_password_verification_desc">Omite la verificación de identidad en la aplicación, Autocompletar, el teclado Monica y las acciones peligrosas. Se mantienen las confirmaciones y las contraseñas de exportación.</string>
     <string name="developer_disable_password_verification_failed">No se pudo activar la omisión completa. Desbloquea Monica normalmente una vez e inténtalo de nuevo.</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">llave de acceso HyperOS Compatibilidad</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">Activado Dispositivos HyperOS, omita la verificación biométrica llave de acceso y recurra a la contraseña maestra. Mantén esta opción desactivada a menos que las indicaciones biométricas fallen en ese dispositivo.</string>
     <string name="developer_launcher_name_use_pass">Utilice Monica Pass como nombre del iniciador</string>
     <string name="developer_launcher_name_use_pass_desc">Activado: Monica Pass. Apagado: Monica. Esto solo cambia el nombre de la entrada del iniciador principal.</string>
     <string name="developer_bitwarden_forensics_toggle">Habilitar Bitwarden Sync Forensics</string>
@@ -2801,7 +2795,6 @@
     <string name="quick_action_import">Importar</string>
 
     <!-- Quick Add -->
-    <string name="quick_add_not_supported">La adición rápida no está disponible para esta página</string>
 
     <!-- V2 Folder Management -->
     <string name="v2_folder_management_title">Carpeta Administración</string>

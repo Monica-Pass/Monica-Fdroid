@@ -174,6 +174,13 @@ internal class Mdbx2RemoteSyncCoordinator(
             require(state.bootstrapCheckpoint != null && state.exportCheckpoint != null) {
                 "MDBX2 remote sync bootstrap state is missing"
             }
+            // A bootstrap or an interrupted receive can leave referenced Blobs
+            // absent locally. Repair them before publishing: a subsequent local
+            // edit must not prevent reaching the download that makes upload safe.
+            val recoveredBlobs = downloadMissingBlobs(
+                databaseId, remoteVaultPath, transport, engine, state
+            )
+            state = recoveredBlobs.state
             var report = Mdbx2RemoteSyncReport()
             val publication = publishLocalSegments(
                 databaseId = databaseId,
@@ -204,7 +211,7 @@ internal class Mdbx2RemoteSyncCoordinator(
                 publishedCheckpoint = state.exportCheckpoint,
                 syncedCommitInventory = receive.syncedCommitInventory,
                 downloadedSegments = receive.downloadedSegments,
-                downloadedBlobs = receive.downloadedBlobs,
+                downloadedBlobs = recoveredBlobs.downloadedBlobs + receive.downloadedBlobs,
                 appliedCommits = receive.appliedCommits,
                 skippedCommits = receive.skippedCommits,
                 conflicts = receive.conflicts,

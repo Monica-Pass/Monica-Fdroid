@@ -1,5 +1,10 @@
 package takagi.ru.monica.ui.screens
 
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import takagi.ru.monica.workers.MdbxAutoSyncPreferences
+import takagi.ru.monica.workers.MdbxAutoSyncWorker
+
 import androidx.compose.foundation.text.selection.SelectionContainer
 
 import android.app.Activity
@@ -1318,7 +1323,7 @@ internal fun MdbxVaultDetailPage(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -1459,10 +1464,13 @@ private fun MdbxSyncOverview(
     onSync: () -> Unit
 ) {
     val strings = rememberScreenStrings()
+    val context = LocalContext.current
+    val preferences = remember(context) { MdbxAutoSyncPreferences(context) }
+    var automatic by remember(database.id) { mutableStateOf(preferences.isEnabled(database.id)) }
     val status = diagnostics?.lastSyncStatus ?: database.lastSyncStatus
     val syncing = status == MdbxSyncStatus.SYNCING.name
     val syncProblem = status == MdbxSyncStatus.FAILED.name || status == MdbxSyncStatus.CONFLICT.name
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             MdbxIconBadge(sourceIcon(database))
@@ -1526,6 +1534,29 @@ private fun MdbxSyncOverview(
                 Text(diagnostics.unavailableReason ?: strings.get(R.string.mdbx_unavailable_local_copy),
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            }
+        }
+        if (database.isRemoteSource()) {
+            MdbxCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().toggleable(
+                        value = automatic, role = Role.Switch,
+                        onValueChange = { enabled ->
+                            preferences.setEnabled(database.id, enabled)
+                            automatic = enabled
+                            if (enabled) MdbxAutoSyncWorker.enqueue(context, database.id, pull = true)
+                        }
+                    ).padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(strings.get(R.string.mdbx_auto_sync_title), style = MaterialTheme.typography.titleSmall)
+                        Text(strings.get(if (automatic) R.string.mdbx_auto_sync_enabled_hint else R.string.mdbx_auto_sync_manual_hint),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(checked = automatic, onCheckedChange = null)
+                }
             }
         }
     }

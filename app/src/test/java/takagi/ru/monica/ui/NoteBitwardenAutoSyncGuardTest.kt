@@ -83,7 +83,6 @@ class NoteBitwardenAutoSyncGuardTest {
         val source = projectFile("app/src/main/java/takagi/ru/monica/ui/screens/NoteListScreen.kt").readText()
         val mainScreen = projectFile("app/src/main/java/takagi/ru/monica/ui/SimpleMainScreen.kt").readText()
         val notePane = projectFile("app/src/main/java/takagi/ru/monica/ui/note/NotePane.kt").readText()
-        val compactContent = projectFile("app/src/main/java/takagi/ru/monica/ui/CompactDraggableTabContent.kt").readText()
 
         assertTrue(source.contains("bitwardenViewModel: BitwardenViewModel,"))
         assertFalse(source.contains("BitwardenViewModel = viewModel()"))
@@ -93,7 +92,7 @@ class NoteBitwardenAutoSyncGuardTest {
         assertTrue(mainScreen.contains("BottomNavItem.Notes -> noteBitwardenVaultId"))
         assertEquals(2, Regex("bitwardenViewModel = bitwardenViewModel").findAll(notePane).count())
         assertEquals(2, Regex("onBitwardenScopeChanged = onBitwardenScopeChanged").findAll(notePane).count())
-        assertTrue(compactContent.contains("onBitwardenScopeChanged = onNoteBitwardenScopeChanged"))
+        assertTrue(mainScreen.contains("onBitwardenScopeChanged = { noteBitwardenVaultId = it }"))
     }
 
     private fun projectFile(path: String): File {

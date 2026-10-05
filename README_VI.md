@@ -9,7 +9,7 @@ Kho lưu trữ này chỉ dành cho việc xây dựng **F-Droid**. Kho chính: 
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
 <p><strong>Kho mat khau uu tien local, ket noi Bitwarden va KeePass</strong></p>
-<p>Android / Browser · Local Vault · TOTP · WebDAV Backup</p>
+<p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 <p>
 	Lien ket ban be:
@@ -35,15 +35,9 @@ Kho lưu trữ này chỉ dành cho việc xây dựng **F-Droid**. Kho chính: 
 </div>
 
 Monica la kho mat khau cuc bo tong hop **Bitwarden** va **KeePass**.
-Ung dung uu tien luu tru local, giup quan ly mat khau, 2FA, ghi chu bao mat va tep dinh kem tren Android va trinh duyet.
+Ung dung uu tien luu tru local, giup quan ly mat khau, 2FA, ghi chu bao mat va tep dinh kem tren thiet bi Android.
 
 Trang web: https://monica-pass.github.io/MonicaDocs/
-
-> Monica for Windows da duoc luu tru (archived). Ma nguon lich su: [Monica-for-Windows](https://github.com/JoyinJoester/Monica-for-Windows)
->
-> Monica for Browser da duoc luu tru (archived). Monica Extension moi dang duoc viet lai va phat trien tich cuc — hay don cho.
->
-> Hien tai du an chu yeu do mot minh toi duy tri, nen thoi gian va nguon luc deu rat gioi han. Vi vay, Monica for Wear tam thoi chua the duoc cap nhat lien tuc. Trong giai doan nay, toi se tap trung uu tien cho Monica for Android, bao gom hoan thien tinh nang, cai thien trai nghiem va duy tri do on dinh. Cam on ban da thong cam va ung ho.
 
 ---
 
@@ -52,7 +46,7 @@ Trang web: https://monica-pass.github.io/MonicaDocs/
 ### Monica phu hop voi ai
 - Nguoi can quan ly mat khau local-first, khong muon phu thuoc hoan toan vao cloud.
 - Nguoi su dung ca du lieu Bitwarden va file KeePass (`.kdbx`).
-- Nguoi dung Android hang ngay va can autofill tren trinh duyet.
+- Nguoi can autofill trong ung dung Android va trinh duyet di dong.
 
 ### Gia tri ban nhan duoc
 - Kho du lieu ma hoa local cho dang nhap, the, thong tin dinh danh, ghi chu va tep.
@@ -67,14 +61,8 @@ Neu ban muon tich hop MDBX vao client khac, hay bat dau voi [MDBX workspace READ
 
 ### Cai dat nhanh
 
-Android:
 1. Tai APK moi nhat tai [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases).
 2. Cai dat tren Android 8.0+ va khoi tao master password.
-
-Tien ich trinh duyet (Chrome / Edge):
-1. Build tu `Monica for Browser`.
-2. Mo `chrome://extensions/` va bat Developer mode.
-3. Chon Load unpacked va tro den thu muc `dist`.
 
 ### Gioi han da biet
 - Do han che tuong thich he thong, Monica for Android hien tai khong the tao passkey tren mot so thiet bi Xiaomi HyperOS. Co the thu module [HyperMonica](https://github.com/Wuming155/HyperMonica) do 酷 U cung cap.
@@ -163,7 +151,6 @@ Nguon ung ho duoc uu tien cho:
 - Cau hinh Android: `compileSdk 35`, `targetSdk 34`, `minSdk 26` (xem `Monica for Android/app/build.gradle`).
 - Moc build Android: AGP `8.6.0`, Kotlin `2.0.21`, Compose BOM `2026.03.00` (Material3 dong bo theo BOM).
 - Nguon thong tin phien ban: `Monica for Android/gradle/libs.versions.toml` va `Monica for Android/app/build.gradle`.
-- Cong nghe browser: React + TypeScript + Vite (xem `Monica for Browser/package.json`).
 - Hoan nghenh dong gop qua Issue va PR.
 
 ---

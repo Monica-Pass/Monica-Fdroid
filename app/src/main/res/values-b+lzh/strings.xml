@@ -492,8 +492,6 @@
     <string name="interface_scale_reset">复初</string>
     <string name="bottom_nav_auto_hide_single_tab_title">独存一页时隐底栏</string>
     <string name="bottom_nav_auto_hide_single_tab_subtitle">仅余一页签时，底栏自隐；可由右上菜单入“设”。</string>
-    <string name="draggable_bottom_nav">底栏可拖</string>
-    <string name="draggable_bottom_nav_description">上划底栏，即见捷用之项。</string>
     <string name="add_document_title">增证件</string>
     <string name="edit_document_title">修证件</string>
     <string name="no_documents_title">尚无证件</string>
@@ -1681,8 +1679,6 @@
     <string name="passkey_strict_validation_title">严验</string>
     <string name="passkey_strict_validation_desc">明违依赖方来源之规者，阻之。</string>
     <string name="passkey_strict_validation_warning">严验或阻接入有误之应用；宜仅于查错时启用。</string>
-    <string name="passkey_hyperos_bypass_title">HyperOS 生体兼容</string>
-    <string name="passkey_hyperos_bypass_desc">于小米 HyperOS 上略过通行之钥生体提示，必要时改以总钥验明。</string>
     <string name="passkey_diagnostics_title">校验之察</string>
     <string name="passkey_diagnostics_summary">请求：%1$d，可疑：%2$d，严验候选：%3$d</string>
     <string name="passkey_diagnostics_top_bucket">最高组：%1$s @ %2$s（可疑 %3$d）</string>
@@ -2058,8 +2054,6 @@
     <string name="developer_disable_password_verification">免密钥之验</string>
     <string name="developer_disable_password_verification_desc">应用、自填、Monica 键盘及破坏性操作皆略验身；确认之窗仍在，导出之加密密钥仍须设。</string>
     <string name="developer_disable_password_verification_failed">未能全免验身。请先依常法启封 Monica 一次，再试之。</string>
-    <string name="developer_passkey_hyperos_biometric_bypass">Passkey HyperOS 兼容</string>
-    <string name="developer_passkey_hyperos_biometric_bypass_desc">于 HyperOS 设备略过通行之钥生体验证，改用总钥。仅生体提示失常时，方宜启用。</string>
     <string name="developer_launcher_name_use_pass">以 Monica Pass 为桌面之名</string>
     <string name="developer_launcher_name_use_pass_desc">启则名为 Monica Pass，停则名为 Monica；仅易桌面主入口之名。</string>
     <string name="developer_bitwarden_forensics_toggle">启 Bitwarden 同步取证</string>
@@ -2550,7 +2544,6 @@
     <string name="quick_action_backup">备份</string>
     <string name="quick_action_security">察安危</string>
     <string name="quick_action_import">纳</string>
-    <string name="quick_add_not_supported">此页暂不可快捷新增</string>
     <string name="v2_folder_management_title">理卷夹</string>
     <string name="v2_folder_management_subtitle">整卷夹，并同步之</string>
     <string name="v2_sync_all_title">Bitwarden 全量同步</string>

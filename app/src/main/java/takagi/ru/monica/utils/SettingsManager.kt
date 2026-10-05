@@ -44,7 +44,10 @@ import takagi.ru.monica.data.VaultOverviewConfig
 import takagi.ru.monica.data.QuickSetupPreset
 import takagi.ru.monica.data.quickSetupNavigationVisibility
 
-private val Context.dataStore by preferencesDataStore("settings")
+private val Context.dataStore by preferencesDataStore(
+    name = "settings",
+    produceMigrations = { listOf(RetiredFeaturesMigration) },
+)
 
 data class RememberedStorageTarget(
     val categoryId: Long? = null,
@@ -106,7 +109,6 @@ data class PageAdjustmentSettingsSnapshot(
     val bottomNavVisibilitySend: Boolean = false,
     val bottomNavVisibilityPasskey: Boolean = true,
     val bottomNavVisibilitySteam: Boolean = false,
-    val useDraggableBottomNav: Boolean = false,
     val autoHideBottomNavWhenSingleTab: Boolean = false,
     val passwordListQuickAccessEnabled: Boolean = true,
     val passwordListTopModulesOrder: List<String> = emptyList(),
@@ -191,12 +193,9 @@ class SettingsManager(private val context: Context) {
         private val SHOW_STEAM_TAB_KEY = booleanPreferencesKey("show_steam_tab")
         private val DYNAMIC_COLOR_ENABLED_KEY = booleanPreferencesKey("dynamic_color_enabled")
         private val BOTTOM_NAV_ORDER_KEY = stringPreferencesKey("bottom_nav_order")
-        private val USE_DRAGGABLE_BOTTOM_NAV_KEY = booleanPreferencesKey("use_draggable_bottom_nav")
         private val AUTO_HIDE_BOTTOM_NAV_WHEN_SINGLE_TAB_KEY =
             booleanPreferencesKey("auto_hide_bottom_nav_when_single_tab")
         private val DISABLE_PASSWORD_VERIFICATION_KEY = booleanPreferencesKey("disable_password_verification")
-        private val PASSKEY_HYPEROS_BIOMETRIC_BYPASS_ENABLED_KEY =
-            booleanPreferencesKey("passkey_hyperos_biometric_bypass_enabled")
         private val BITWARDEN_SYNC_FORENSICS_ENABLED_KEY =
             booleanPreferencesKey("bitwarden_sync_forensics_enabled")
         private val BITWARDEN_SYNC_FORENSICS_DIRECTORY_URI_KEY =
@@ -562,12 +561,9 @@ class SettingsManager(private val context: Context) {
                 steam = preferences[SHOW_STEAM_TAB_KEY] ?: false
             ),
             bottomNavOrder = sanitizedOrder,
-            useDraggableBottomNav = preferences[USE_DRAGGABLE_BOTTOM_NAV_KEY] ?: false,
             autoHideBottomNavWhenSingleTab =
                 preferences[AUTO_HIDE_BOTTOM_NAV_WHEN_SINGLE_TAB_KEY] ?: false,
             disablePasswordVerification = preferences[DISABLE_PASSWORD_VERIFICATION_KEY] ?: false,
-            passkeyHyperOsBiometricBypassEnabled =
-                preferences[PASSKEY_HYPEROS_BIOMETRIC_BYPASS_ENABLED_KEY] ?: false,
             bitwardenSyncForensicsEnabled =
                 preferences[BITWARDEN_SYNC_FORENSICS_ENABLED_KEY] ?: false,
             bitwardenSyncForensicsDirectoryUri =
@@ -895,12 +891,6 @@ class SettingsManager(private val context: Context) {
         this[AUTO_HIDE_BOTTOM_NAV_WHEN_SINGLE_TAB_KEY] = false
     }
 
-    suspend fun updateUseDraggableBottomNav(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[USE_DRAGGABLE_BOTTOM_NAV_KEY] = enabled
-        }
-    }
-
     suspend fun updateAutoHideBottomNavWhenSingleTab(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[AUTO_HIDE_BOTTOM_NAV_WHEN_SINGLE_TAB_KEY] = enabled
@@ -926,12 +916,6 @@ class SettingsManager(private val context: Context) {
     suspend fun updateDisablePasswordVerification(disabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[DISABLE_PASSWORD_VERIFICATION_KEY] = disabled
-        }
-    }
-
-    suspend fun updatePasskeyHyperOsBiometricBypassEnabled(enabled: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[PASSKEY_HYPEROS_BIOMETRIC_BYPASS_ENABLED_KEY] = enabled
         }
     }
 
@@ -1390,7 +1374,6 @@ class SettingsManager(private val context: Context) {
             bottomNavVisibilitySend = settings.bottomNavVisibility.send,
             bottomNavVisibilityPasskey = settings.bottomNavVisibility.passkey,
             bottomNavVisibilitySteam = settings.bottomNavVisibility.steam,
-            useDraggableBottomNav = settings.useDraggableBottomNav,
             autoHideBottomNavWhenSingleTab = settings.autoHideBottomNavWhenSingleTab,
             passwordListQuickAccessEnabled = settings.passwordListQuickAccessEnabled,
             passwordListTopModulesOrder = settings.passwordListTopModulesOrder.map { it.name },
@@ -1568,7 +1551,6 @@ class SettingsManager(private val context: Context) {
                 preferences[SHOW_SEND_TAB_KEY] = snapshot.bottomNavVisibilitySend
                 preferences[SHOW_PASSKEY_TAB_KEY] = snapshot.bottomNavVisibilityPasskey
                 preferences[SHOW_STEAM_TAB_KEY] = snapshot.bottomNavVisibilitySteam
-                preferences[USE_DRAGGABLE_BOTTOM_NAV_KEY] = snapshot.useDraggableBottomNav
                 preferences[AUTO_HIDE_BOTTOM_NAV_WHEN_SINGLE_TAB_KEY] =
                     snapshot.autoHideBottomNavWhenSingleTab
             }

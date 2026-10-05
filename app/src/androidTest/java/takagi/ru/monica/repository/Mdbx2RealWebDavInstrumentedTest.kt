@@ -263,7 +263,30 @@ class Mdbx2RealWebDavInstrumentedTest {
                 }
             )
 
-            val downloadReport = coordinatorB.synchronize(databaseB, remotePath, transport)
+            // Apply real native metadata, then interrupt the attachment download.
+            // Editing in this state used to strand every later upload at "has no size".
+            val interruptedTransport = object : takagi.ru.monica.utils.MdbxRemoteTransport by transport {
+                override suspend fun readTo(path: String, destination: File) {
+                    if ("/blobs/" in path) throw java.net.SocketTimeoutException("synthetic attachment timeout")
+                    transport.readTo(path, destination)
+                }
+            }
+            val interrupted = runCatching {
+                coordinatorB.synchronize(databaseB, remotePath, interruptedTransport)
+            }.exceptionOrNull()
+            assertTrue("Must interrupt the real Blob download", interrupted is java.net.SocketTimeoutException)
+            val missingBlob = repositoryB.withVaultForSync(databaseB) { _, vault ->
+                vault.listExternalBlobReferences(null, 16u).items.single()
+            }
+            assertEquals(uniffi.mdbx_ffi.MdbxExternalBlobState.MISSING, missingBlob.state)
+            assertEquals(null, missingBlob.totalSize)
+            repositoryB.upsertPassword(passwordEntry.copy(id = 849997L, mdbxDatabaseId = databaseB,
+                title = "Local edit after attachment timeout"))
+            val recoveredCoordinator = Mdbx2RemoteSyncCoordinator(clientBRoot,
+                Mdbx2RepositorySyncSessionProvider(Mdbx2Repository(context, databaseDao, securityManager)),
+                MdbxSyncStateStore(room.mdbxSyncStateDao()))
+            val downloadReport = recoveredCoordinator.synchronize(databaseB, remotePath, transport)
+            assertTrue("Local edit must publish after attachment recovery", downloadReport.uploadedSegments > 0)
             assertTrue(downloadReport.downloadedSegments > 0)
             val replicaBlobReferences = repositoryB.withVaultForSync(databaseB) { _, vault ->
                 vault.listExternalBlobReferences(null, 16u).items
@@ -349,8 +372,66 @@ class Mdbx2RealWebDavInstrumentedTest {
                 MdbxSyncStatus.PENDING_UPLOAD.name,
                 databaseDao.getDatabaseById(databaseB)?.lastSyncStatus
             )
+            if (InstrumentationRegistry.getArguments().getString("mdbxExerciseAutoSync") == "true") {
+                val work = androidx.work.WorkManager.getInstance(context)
+                databaseIds.forEach { work.cancelUniqueWork("mdbx-auto-$it").result.get() }
+                val previouslyUnlocked = takagi.ru.monica.security.SessionManager.isUnlocked.value
+                setDeviceId(sessionPreferences, "real-$providerKey-a-$runId")
+                try {
+                    takagi.ru.monica.workers.MdbxAutoSyncPreferences(context).setEnabled(databaseA, true)
+                    takagi.ru.monica.security.SessionManager.markUnlocked()
+                    // Delete only this synthetic vault's attachment ciphertext.
+                    // WorkManager must repair it from the provider before publishing the edit.
+                    val localBlob = vaultABlobRoot.walkTopDown().single {
+                        it.isFile && it.name == sourceBlob.blobId
+                    }
+                    check(localBlob.canonicalPath.startsWith(vaultABlobRoot.canonicalPath + File.separator))
+                    check(localBlob.delete())
+                    assertEquals(null, repositoryA.withVaultForSync(databaseA) { _, vault ->
+                        vault.listExternalBlobReferences(null, 16u).items.single { it.blobId == sourceBlob.blobId }.totalSize
+                    })
+                    val previousJobs = work.getWorkInfosForUniqueWork("mdbx-auto-$databaseA").get().map { it.id }.toSet()
+                    repositoryA.upsertPassword(passwordEntry.copy(id = 849999L, title = "Automatic delivery"))
+                    kotlinx.coroutines.withTimeout(30_000L) {
+                        while (work.getWorkInfosForUniqueWork("mdbx-auto-$databaseA").get()
+                            .none { it.id !in previousJobs && it.state == androidx.work.WorkInfo.State.RUNNING }) {
+                            kotlinx.coroutines.delay(50)
+                        }
+                    }
+                    repositoryA.upsertPassword(passwordEntry.copy(id = 849998L, title = "Saved during upload"))
+                    repeat(20) { takagi.ru.monica.workers.MdbxAutoSyncWorker.enqueue(context, databaseA) }
+                    kotlinx.coroutines.withTimeout(120_000L) {
+                        while (true) {
+                            val jobs = work.getWorkInfosForUniqueWork("mdbx-auto-$databaseA").get().filter { it.id !in previousJobs }
+                            if (jobs.any { it.state == androidx.work.WorkInfo.State.SUCCEEDED } &&
+                                jobs.none { !it.state.isFinished }) break
+                            kotlinx.coroutines.delay(250)
+                        }
+                    }
+                    assertTrue("Automatic job must import its result into the UI projection",
+                        room.passwordEntryDao().getByMdbxDatabaseIdSync(databaseA).any { it.title == "Automatic delivery" })
+                    assertTrue("Automatic job must recover the missing attachment",
+                        repositoryA.withVaultForSync(databaseA) { _, vault ->
+                            vault.hasExternalBlob(sourceBlob.blobId, requireNotNull(sourceBlob.totalSize))
+                        })
+                    assertEquals(MdbxSyncStatus.IN_SYNC.name, databaseDao.getDatabaseById(databaseA)?.lastSyncStatus)
+                    reopenedCoordinatorB.synchronize(databaseB, remotePath, transport)
+                    assertTrue("An edit during the running upload must also arrive",
+                        reopenedB.readStoredEntries(databaseB).any { it.title == "Saved during upload" && !it.deleted })
+                    assertTrue("Other replica must receive the automatically uploaded edit",
+                        reopenedB.readStoredEntries(databaseB).any { it.title == "Automatic delivery" && !it.deleted })
+                } finally {
+                    if (!previouslyUnlocked) takagi.ru.monica.security.SessionManager.markLocked()
+                }
+            }
         } finally {
             databaseIds.forEach { databaseId ->
+                takagi.ru.monica.workers.MdbxAutoSyncPreferences(context).setEnabled(databaseId, false)
+                runCatching { androidx.work.WorkManager.getInstance(context).cancelUniqueWork("mdbx-auto-$databaseId").result.get() }
+                runCatching { room.passwordEntryDao().deleteAllByMdbxDatabaseId(databaseId) }
+                runCatching { room.secureItemDao().deleteAllByMdbxDatabaseId(databaseId) }
+                runCatching { room.passkeyDao().deleteAllByMdbxDatabaseId(databaseId) }
+
                 runCatching { stateStore.delete(databaseId) }
                 runCatching { databaseDao.deleteDatabaseById(databaseId) }
             }

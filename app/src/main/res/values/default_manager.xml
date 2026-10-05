@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_manager_title">Default password manager (Shizuku)</string>
+    <string name="default_manager_entry_hint">Set Monica using Shizuku when HyperOS hides third-party password manager settings</string>
+    <string name="default_manager_description">Set the default manager for the current Android user. Requires Android 14 or later and Shizuku authorization. Successful settings verification does not guarantee every HyperOS passkey flow.</string>
+    <string name="default_manager_denied">Permission denied. Allow Monica in Shizuku and retry</string>
+    <string name="default_manager_read_failed">Could not read system settings. Refresh and retry</string>
+    <string name="default_manager_unset">Not set</string>
+    <string name="default_manager_unknown">Not read yet</string>
+    <string name="default_manager_restore">Restore previous settings</string>
+    <string name="default_manager_apply">Set to Monica</string>
+    <string name="default_manager_restore_confirm">Restore the system configuration saved before the last switch.</string>
+    <string name="default_manager_confirm">Change the default password manager for this user. The current configuration will first be saved locally for restoration.</string>
+    <string name="default_manager_credential">Primary credential provider</string>
+    <string name="default_manager_autofill">Autofill service</string>
+    <string name="default_manager_replace_warning">Other credential providers will be disabled. Their data will not be deleted.</string>
+    <string name="default_manager_restored">Previous system settings restored and verified</string>
+    <string name="default_manager_applied">Monica selected and system settings verified</string>
+    <string name="default_manager_write_failed">Could not complete or verify the change. Refresh to check the state; the saved configuration is available for restoration.</string>
+    <string name="default_manager_ready">Connected and authorized</string>
+    <string name="default_manager_permission">Authorization required</string>
+    <string name="default_manager_stopped">Install and start Shizuku</string>
+    <string name="default_manager_unsupported">Requires Android 14+ and Shizuku 13+</string>
+    <string name="default_manager_grant">Authorize Shizuku</string>
+    <string name="default_manager_open_shizuku">Open Shizuku</string>
+    <string name="default_manager_include_autofill">Also set autofill</string>
+    <string name="default_manager_include_autofill_hint">Switch the autofill service to Monica</string>
+    <string name="default_manager_keep_others">Keep other credential providers</string>
+    <string name="default_manager_keep_others_hint">Keep enabled providers and make Monica the primary provider</string>
+    <string name="default_manager_refresh">Refresh status</string>
+    <string name="default_manager_source">Based on cr-zhichen/password-manager-switch · MIT</string>
+</resources>

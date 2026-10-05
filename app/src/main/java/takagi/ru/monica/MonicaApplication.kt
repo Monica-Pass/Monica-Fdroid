@@ -1,5 +1,7 @@
 package takagi.ru.monica
 
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.flow.collectLatest
 import android.app.Application
 import android.content.Context
 import android.os.PowerManager
@@ -78,6 +80,7 @@ class MonicaApplication : Application() {
             MainThreadStallMonitor.start()
             takagi.ru.monica.security.SecureStorageStartup.awaitReadyForMaintenance(this@MonicaApplication)
             scheduleKeePassRemoteUploadRecovery()
+            startMdbxAutoSyncRecovery()
             syncLauncherEntryPointsWithSettings()
             startChangeTriggeredBackupObserver()
         }
@@ -101,6 +104,25 @@ class MonicaApplication : Application() {
             ChangeTriggeredBackupScheduler(this).start()
         }.onFailure { error ->
             Log.w(TAG, "Failed to start change-triggered backup observer", error)
+        }
+    }
+
+    private fun startMdbxAutoSyncRecovery() {
+        startupScope.launch(Dispatchers.Main) {
+            androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                SessionManager.isUnlocked.collectLatest { unlocked ->
+                    if (unlocked) while (true) {
+                        withContext(Dispatchers.IO) {
+                            runCatching {
+                                val dao = takagi.ru.monica.data.PasswordDatabase.getDatabase(this@MonicaApplication).localMdbxDatabaseDao()
+                                dao.getAvailableDatabasesSnapshot().filter(takagi.ru.monica.workers.MdbxAutoSyncWorker::eligible)
+                                    .forEach { row -> takagi.ru.monica.workers.MdbxAutoSyncWorker.enqueue(this@MonicaApplication, row.id, pull = true) }
+                            }
+                        }
+                        delay(60_000L)
+                    }
+                }
+            }
         }
     }
 

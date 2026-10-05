@@ -3,6 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application>
+        <activity android:name="takagi.ru.monica.ui.screens.DefaultManagerTestActivity" android:exported="false" />
+        <activity
+            android:name="takagi.ru.monica.ui.screens.MdbxSyncOptionsTestActivity"
+            android:exported="false" />
         <activity
             android:name="takagi.ru.monica.localization.LocaleTestActivity"
             android:exported="false" />

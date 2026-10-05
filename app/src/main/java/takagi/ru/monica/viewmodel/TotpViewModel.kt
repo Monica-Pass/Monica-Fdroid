@@ -975,23 +975,6 @@ class TotpViewModel internal constructor(
             decryptStoredSensitiveValue(itemData) == decryptStoredSensitiveValue(imported.itemData)
     }
     
-    /**
-     * 快速添加TOTP（从底部导航栏快速添加）
-     */
-    fun quickAddTotp(name: String, secret: String) {
-        if (name.isBlank() || secret.isBlank()) return
-        val totpData = TotpData(
-            secret = secret.replace(" ", "").uppercase(),
-            issuer = name,
-            accountName = name
-        )
-        saveTotpItem(
-            id = null,
-            title = name,
-            notes = "",
-            totpData = totpData
-        )
-    }
     
     /**
      * 根据密钥查找现有的TOTP项目

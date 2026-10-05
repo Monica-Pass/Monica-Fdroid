@@ -33,6 +33,23 @@ import uniffi.mdbx_ffi.createPortableBackup
 @RunWith(AndroidJUnit4::class)
 class Mdbx2ExternalPublicationInstrumentedTest {
     @Test
+    fun failedPublicationRefreshPreservesCommittedLocalEdits() = runBlocking {
+        val fixture = createExternalFixture()
+        val dao = PasswordDatabase.getDatabase(InstrumentationRegistry.getInstrumentation().targetContext).localMdbxDatabaseDao()
+        try {
+            val original = requireNotNull(fixture.databaseA())
+            // Commit locally while withholding external publication, as after a failed write.
+            dao.updateDatabase(original.copy(sourceType = MdbxSourceType.LOCAL_INTERNAL.name))
+            fixture.repositoryA.upsertPasswords(listOf(testEntry(FIRST_ENTRY_ID, fixture.databaseAId, "Pending after failed upload")))
+            dao.updateDatabase(original.copy(lastSyncStatus = MdbxSyncStatus.FAILED.name))
+            fixture.repositoryA.refreshExternalWorkingCopy(fixture.databaseAId)
+            assertTrue(fixture.repositoryA.readStoredEntries(fixture.databaseAId).any { it.title == "Pending after failed upload" && !it.deleted })
+            val publishedId = fixture.importPublishedVault()
+            assertTrue(fixture.repositoryA.readStoredEntries(publishedId).any { it.title == "Pending after failed upload" && !it.deleted })
+        } finally { fixture.close() }
+    }
+
+    @Test
     fun divergentExternalCopiesPreserveIndependentEntries() = runBlocking {
         val fixture = createExternalFixture()
         try {

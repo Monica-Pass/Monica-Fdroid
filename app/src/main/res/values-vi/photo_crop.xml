@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photo_crop_title">Cắt ảnh</string>
+    <string name="photo_crop_skip">Không cắt</string>
+    <string name="photo_crop_continue">Cắt và tiếp tục</string>
+    <string name="card_face_crop_apply">Dùng ảnh thẻ</string>
+</resources>
