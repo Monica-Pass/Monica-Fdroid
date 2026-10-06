@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.addCallback
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
@@ -32,6 +33,7 @@ import androidx.credentials.GetCredentialResponse
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.PublicKeyCredential
 import androidx.credentials.exceptions.GetCredentialUnknownException
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
@@ -93,6 +95,10 @@ class PasskeyAuthActivity : FragmentActivity() {
     private val showMasterPasswordDialog = mutableStateOf(false)
     private val masterPasswordError = mutableStateOf(false)
     
+    private var resultFinished = false
+    private var signingStarted = false
+    private var biometricInFlight = false
+    private var verificationAttempt = 0
     private var passkey: PasskeyEntry? = null
     private var pendingRequestJson: String = ""
     private var pendingCallingAppInfo: CallingAppInfo? = null
@@ -105,6 +111,7 @@ class PasskeyAuthActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        onBackPressedDispatcher.addCallback(this) { cancelAuthentication() }
         Log.i(TAG, "PasskeyAuthActivity onCreate")
         
         // 首先尝试从 PendingIntentHandler 获取请求（这是正确的方式）
@@ -125,16 +132,10 @@ class PasskeyAuthActivity : FragmentActivity() {
             Log.d(TAG, "CallingAppInfo origin: ${PasskeyBrowserOrigin.read(this, pendingCallingAppInfo)}")
             Log.d(TAG, "CallingAppInfo packageName: ${pendingCallingAppInfo?.packageName}")
             
-            // 获取 clientDataHash（如果提供）
-            providerRequest.credentialOptions.firstOrNull()?.let { opt ->
-                if (opt is GetPublicKeyCredentialOption) {
-                    pendingClientDataHash = opt.clientDataHash
-                    Log.d(TAG, "clientDataHash: ${pendingClientDataHash?.contentToString()}")
-                }
-            }
+
         }
         
-        val requestJson = intent.getStringExtra(MonicaCredentialProviderService.EXTRA_REQUEST_JSON) ?: ""
+        var requestJson = intent.getStringExtra(MonicaCredentialProviderService.EXTRA_REQUEST_JSON) ?: ""
         val credentialId = intent.getStringExtra(MonicaCredentialProviderService.EXTRA_CREDENTIAL_ID) ?: ""
         val recordId = intent.getLongExtra(MonicaCredentialProviderService.EXTRA_RECORD_ID, 0L)
 
@@ -195,7 +196,7 @@ class PasskeyAuthActivity : FragmentActivity() {
                 .takeIf { it > 0L }
                 ?.let { database.passkeyDao().getPasskeyByRecordId(it) }
                 ?.takeIf { it.credentialId == credentialId }
-            if (passkey == null) {
+            if (passkey == null && recordId <= 0L) {
                 passkey = database.passkeyDao().getPasskeyById(credentialId)
             }
             if (passkey == null) {
@@ -205,7 +206,7 @@ class PasskeyAuthActivity : FragmentActivity() {
                     passkey = all.firstOrNull {
                         (recordId <= 0L || it.id == recordId) &&
                             normalizeCredentialId(it.credentialId) == normalizedId
-                    } ?: all.firstOrNull { normalizeCredentialId(it.credentialId) == normalizedId }
+                    }
                 }
             }
         }
@@ -227,6 +228,30 @@ class PasskeyAuthActivity : FragmentActivity() {
                 GetCredentialUnknownException("Passkey not found")
             )
             setResult(Activity.RESULT_OK, resultIntent)
+            finish()
+            return
+        }
+
+        // The selected row and the final platform option must describe the same ceremony.
+        // Never sign an Intent extra alone or use an unrelated option's clientDataHash.
+        try {
+            val original = PasskeyGetRequestPolicy.parse(requestJson)
+            require(original.allows(currentPasskey)) { "Credential not allowed for this request" }
+            val actualOption = providerRequest?.credentialOptions
+                ?.filterIsInstance<GetPublicKeyCredentialOption>()
+                ?.firstOrNull { option ->
+                    runCatching {
+                        val actual = PasskeyGetRequestPolicy.parse(option.requestJson)
+                        original.isSameCeremony(actual) && actual.allows(currentPasskey)
+                    }.getOrDefault(false)
+                } ?: throw IllegalArgumentException("Missing matching platform credential request")
+            requestJson = actualOption.requestJson
+            pendingClientDataHash = actualOption.clientDataHash
+        } catch (error: Exception) {
+            val resultIntent = Intent()
+            PendingIntentHandler.setGetCredentialException(resultIntent, GetCredentialUnknownException(error.message))
+            setResult(Activity.RESULT_OK, resultIntent)
+            resultFinished = true
             finish()
             return
         }
@@ -316,12 +341,9 @@ class PasskeyAuthActivity : FragmentActivity() {
                     },
                     onCancel = {
                         repository.logAudit("PASSKEY_AUTH_CANCELLED", currentPasskey.credentialId)
-                        // 用户取消生物识别时，提供主密码验证回退
-                        showMasterPasswordDialog.value = true
+                        cancelAuthentication()
                     },
-                    onUseMasterPassword = {
-                        showMasterPasswordDialog.value = true
-                    }
+                    onUseMasterPassword = { openMasterPassword() }
                 )
 
                 if (showMasterPasswordDialog.value) {
@@ -330,7 +352,8 @@ class PasskeyAuthActivity : FragmentActivity() {
                             showMasterPasswordDialog.value = false
                             masterPasswordError.value = false
                         },
-                        onConfirm = { password ->
+                        onConfirm = passwordConfirm@{ password ->
+                            if (resultFinished || signingStarted || isFinishing) return@passwordConfirm
                             if (securityManager.verifyMasterPassword(password)) {
                                 masterPasswordError.value = false
                                 showMasterPasswordDialog.value = false
@@ -365,7 +388,37 @@ class PasskeyAuthActivity : FragmentActivity() {
      * 请求生物识别验证
      * 只有通过生物识别后才能使用 Passkey 进行签名
      */
+    private fun openMasterPassword() {
+        if (resultFinished || signingStarted || isFinishing) return
+        verificationAttempt++
+        biometricInFlight = false
+        biometricHelper.cancelAuthentication()
+        showMasterPasswordDialog.value = true
+    }
+
+    private fun cancelAuthentication() {
+        if (resultFinished || signingStarted) return
+        resultFinished = true
+        verificationAttempt++
+        biometricInFlight = false
+        showMasterPasswordDialog.value = false
+        biometricHelper.cancelAuthentication()
+        val resultIntent = Intent()
+        PendingIntentHandler.setGetCredentialException(resultIntent, GetCredentialCancellationException())
+        setResult(Activity.RESULT_OK, resultIntent)
+        finish()
+    }
+
+    override fun onDestroy() {
+        verificationAttempt++
+        biometricHelper.cancelAuthentication()
+        super.onDestroy()
+    }
+
     private fun requestBiometricAuth(passkey: PasskeyEntry) {
+        if (resultFinished || signingStarted || biometricInFlight || isFinishing) return
+        biometricInFlight = true
+        val attempt = ++verificationAttempt
         repository.logAudit("PASSKEY_AUTH_BIOMETRIC_REQUESTED", passkey.credentialId)
         recordPasskeyEvent(
             stage = "biometric_requested",
@@ -382,6 +435,7 @@ class PasskeyAuthActivity : FragmentActivity() {
                 errorType = "BiometricUnavailable",
                 errorMessage = "Biometric unavailable, fallback to master password",
             )
+            biometricInFlight = false
             showMasterPasswordDialog.value = true
             return
         }
@@ -391,7 +445,9 @@ class PasskeyAuthActivity : FragmentActivity() {
             title = getString(R.string.biometric_title_passkey_auth),
             subtitle = getString(R.string.biometric_subtitle_passkey_auth, passkey.rpId),
             negativeButtonText = getString(R.string.cancel),
-            onSuccess = {
+            onSuccess = success@{
+                if (attempt != verificationAttempt || resultFinished || signingStarted || isFinishing) return@success
+                biometricInFlight = false
                 repository.logAudit("PASSKEY_AUTH_BIOMETRIC_SUCCESS", passkey.credentialId)
                 recordPasskeyEvent(
                     stage = "biometric_success",
@@ -400,7 +456,9 @@ class PasskeyAuthActivity : FragmentActivity() {
                 )
                 authenticateWithPasskey(pendingRequestJson, passkey)
             },
-            onError = { errorCode, errString ->
+            onError = failure@{ errorCode, errString ->
+                if (attempt != verificationAttempt || resultFinished || signingStarted || isFinishing) return@failure
+                biometricInFlight = false
                 repository.logAudit("PASSKEY_AUTH_BIOMETRIC_FAILED", 
                     "${passkey.credentialId}|error=$errorCode|$errString")
                 Log.e(TAG, "Biometric auth failed: $errorCode - $errString")
@@ -414,7 +472,8 @@ class PasskeyAuthActivity : FragmentActivity() {
                 // 生物识别失败时，提供主密码验证回退
                 showMasterPasswordDialog.value = true
             },
-            onCancel = {
+            onCancel = cancelled@{
+                if (attempt != verificationAttempt || resultFinished || signingStarted || isFinishing) return@cancelled
                 repository.logAudit("PASSKEY_AUTH_BIOMETRIC_CANCELLED", passkey.credentialId)
                 Log.d(TAG, "Biometric auth cancelled by user")
                 recordPasskeyEvent(
@@ -424,8 +483,7 @@ class PasskeyAuthActivity : FragmentActivity() {
                     errorType = "BiometricCancelled",
                     errorMessage = "User cancelled biometric auth",
                 )
-                // 用户取消时，提供主密码验证回退
-                showMasterPasswordDialog.value = true
+                cancelAuthentication()
             }
         )
     }
@@ -434,7 +492,14 @@ class PasskeyAuthActivity : FragmentActivity() {
         requestJson: String,
         passkey: PasskeyEntry
     ) {
+        if (resultFinished || signingStarted || isFinishing) return
+        signingStarted = true
+        verificationAttempt++
+        biometricHelper.cancelAuthentication()
         try {
+            require(PasskeyGetRequestPolicy.parse(requestJson).allows(passkey)) { "Credential not allowed" }
+            val current = runBlocking { database.passkeyDao().getPasskeyByRecordId(passkey.id) }
+            require(current == passkey) { "Passkey changed during authentication; select it again" }
             recordPasskeyEvent(
                 stage = "auth_started",
                 requestJson = requestJson,
@@ -567,6 +632,7 @@ class PasskeyAuthActivity : FragmentActivity() {
                 put("clientExtensionResults", JSONObject())
             }
             
+            resultFinished = true
             Log.d(TAG, "Authentication successful")
             repository.logAudit("PASSKEY_AUTH_SUCCESS", 
                 "${passkey.credentialId}|rpId=${passkey.rpId}|signCount=$newSignCount")
@@ -588,6 +654,7 @@ class PasskeyAuthActivity : FragmentActivity() {
             finish()
             
         } catch (e: Exception) {
+            resultFinished = true
             Log.e(TAG, "Failed to authenticate with passkey", e)
             repository.logAudit("PASSKEY_AUTH_ERROR", 
                 "${passkey.credentialId}|error=${e.message}")
@@ -879,7 +946,7 @@ private fun PasskeyAuthScreen(
 
                     PasskeyAuthInfoRow(
                         icon = Icons.Default.Person,
-        title = passkey.displayTitle(),
+        title = passkey.authenticationTitle(),
                         subtitle = if (
                             passkey.userName != passkey.userDisplayName &&
                             passkey.userDisplayName.isNotBlank()

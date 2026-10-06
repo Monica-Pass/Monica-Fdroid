@@ -40,7 +40,7 @@ class PasskeyRemarkAndNavigationGuardTest {
     }
 
     @Test
-    fun credentialSelectorUsesRemarkFirstTitle() {
+    fun credentialSelectorUsesAccountTitleWithoutNotes() {
         val provider = projectFile(
             "app/src/main/java/takagi/ru/monica/passkey/MonicaCredentialProviderService.kt"
         ).readText()
@@ -48,8 +48,8 @@ class PasskeyRemarkAndNavigationGuardTest {
             "app/src/main/java/takagi/ru/monica/passkey/PasskeyAuthActivity.kt"
         ).readText()
 
-        assertTrue(provider.contains("passkey.displayTitle()"))
-        assertTrue(authActivity.contains("title = passkey.displayTitle()"))
+        assertTrue(provider.contains("passkey.authenticationTitle()"))
+        assertTrue(authActivity.contains("title = passkey.authenticationTitle()"))
     }
 
     @Test

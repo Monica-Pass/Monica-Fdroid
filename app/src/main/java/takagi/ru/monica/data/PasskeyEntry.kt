@@ -204,6 +204,12 @@ data class PasskeyEntry(
 
     fun hasPersistentId(): Boolean = id > 0L
 
+    /** Authentication surfaces show account identity without disclosing vault notes. */
+    fun authenticationTitle(): String = userDisplayName.trim()
+        .ifBlank { userName.trim() }
+        .ifBlank { rpName.trim() }
+        .ifBlank { rpId.trim() }
+
     /** Monica 展示名称：用户备注优先，不改写 WebAuthn 原始名称。 */
     fun displayTitle(): String = notes.trim()
         .ifBlank { userDisplayName.trim() }

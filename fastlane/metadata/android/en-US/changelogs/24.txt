@@ -3,3 +3,4 @@ Tiga: twinkling fill, drag/snap, haptics.
 Remove draggable navigation/HyperOS bypass; keep tabs/FAB/recents/backups/password/biometrics.
 Crop card photos. MDBX2 auto sync/retry, attachments/spinner, WebDAV 503/429 fixes.
 Shizuku (14+): retain providers/restore. Fix wallet/list motion.
+Passkeys: preserve IDs/notes, enforce allow-lists, cancel correctly, hide private notes.

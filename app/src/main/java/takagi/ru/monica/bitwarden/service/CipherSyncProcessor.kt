@@ -1347,7 +1347,9 @@ class CipherSyncProcessor(
 
         val login = cipher.login
         val name = decryptString(cipher.name, symmetricKey) ?: "Passkey"
-        val notes = extractPasskeyUserNotes(decryptString(cipher.notes, symmetricKey))
+        val decryptedNotes = decryptString(cipher.notes, symmetricKey)
+        require(cipher.notes.isNullOrEmpty() || decryptedNotes != null) { "Unable to decrypt passkey notes" }
+        val notes = extractPasskeyUserNotes(decryptedNotes)
         val fallbackUserName = decryptString(login?.username, symmetricKey) ?: ""
 
         val fallbackRpId = login?.uris
@@ -1411,7 +1413,7 @@ class CipherSyncProcessor(
                     rpName = rpName.ifBlank { existing.rpName },
                     userName = userName.ifBlank { existing.userName },
                     userDisplayName = userName.ifBlank { existing.userDisplayName },
-                    notes = notes.ifBlank { existing.notes },
+                    notes = notes,
                     bitwardenVaultId = vault.id,
                     bitwardenCipherId = cipher.id,
                     syncStatus = "REFERENCE",
@@ -1496,7 +1498,7 @@ class CipherSyncProcessor(
                         privateKeyAlias = mergedPrivateKey,
                         isDiscoverable = decoded.discoverable,
                         signCount = maxOf(existing.signCount, decoded.counter),
-                        notes = notes.ifBlank { existing.notes },
+                        notes = notes,
                         bitwardenVaultId = vault.id,
                         bitwardenCipherId = cipher.id,
                         syncStatus = syncStatus,
@@ -1596,8 +1598,7 @@ class CipherSyncProcessor(
     }
 
     private fun extractPasskeyUserNotes(notes: String?): String {
-        if (notes.isNullOrBlank()) return ""
-        return notes.substringBefore("---").trim()
+        return takagi.ru.monica.bitwarden.mapper.PasskeyNotesCodec.decode(notes)
     }
 
     private fun parseBooleanText(value: String?): Boolean {

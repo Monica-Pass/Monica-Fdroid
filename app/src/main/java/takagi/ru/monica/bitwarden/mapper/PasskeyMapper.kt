@@ -28,9 +28,8 @@ class PasskeyMapper : BitwardenMapper<PasskeyEntry> {
                 .takeIf { it.isNotBlank() }
             ?: bitwardenCredentialId
             ?: item.credentialId
-        val counter = item.signCount
-            .coerceIn(0L, Int.MAX_VALUE.toLong())
-            .toString()
+        require(item.signCount in 0L..0xffffffffL) { "Invalid WebAuthn signature counter" }
+        val counter = item.signCount.toString()
 
         val fido2Credentials = if (canUseAsBitwardenKeyValue(item.privateKeyAlias) && item.rpId.isNotBlank()) {
             listOf(
@@ -57,7 +56,7 @@ class PasskeyMapper : BitwardenMapper<PasskeyEntry> {
         return CipherCreateRequest(
             type = 1, // Login
             name = "${item.rpName} [Passkey]",
-            notes = buildPasskeyNotes(item),
+            notes = if (fido2Credentials.isNullOrEmpty()) buildLegacyReferenceNotes(item) else item.notes,
             folderId = folderId,
             favorite = false,
             login = CipherLoginApiData(
@@ -120,7 +119,7 @@ class PasskeyMapper : BitwardenMapper<PasskeyEntry> {
             aaguid = "",
             signCount = fido2?.counter?.toLongOrNull() ?: 0,
             isBackedUp = false,
-            notes = cipher.notes?.substringBefore("---")?.trim() ?: "",
+            notes = PasskeyNotesCodec.decode(cipher.notes),
             boundPasswordId = null,
             bitwardenVaultId = vaultId,
             bitwardenCipherId = cipher.id,
@@ -163,16 +162,12 @@ class PasskeyMapper : BitwardenMapper<PasskeyEntry> {
         }
     }
     
-    /**
-     * 构建 Passkey 笔记（包含可恢复的元数据）
-     */
-    private fun buildPasskeyNotes(item: PasskeyEntry): String {
+    // Non-exportable legacy references still need their recovery metadata.
+    private fun buildLegacyReferenceNotes(item: PasskeyEntry): String {
         val userNotes = item.notes
-            .substringBefore("---")
-            .trim()
 
         return buildString {
-            if (userNotes.isNotBlank()) {
+            if (userNotes.isNotEmpty()) {
                 appendLine(userNotes)
             }
             appendLine()

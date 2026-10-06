@@ -1,0 +1,228 @@
+[
+  {
+    "edition": "main",
+    "tests": 77,
+    "passed": 72,
+    "existingFailures": {
+      "takagi.ru.monica.passkey.PasskeyRemarkAndNavigationGuardTest.authenticatorAndPasskeyShareOneDockDestinationWithBidirectionalControls": "java.lang.AssertionError",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.mdkWrapperRebuildHandlesInvalidatedAndUnrecoverableKeystoreKeys": "java.lang.AssertionError: Missing wrapper aliases must force a wrapper rebuild after password unlock.",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.emptyRuntimeMdkCacheCannotMaskReadableKeystoreWrapper": "java.lang.AssertionError: Correct-password unlock must repair historical empty password-wrapped MDK blobs.",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.pageSwitchHotPathsDoNotRunAuthOrBitwardenSyncWorkOnMainThread": "java.lang.AssertionError: Password editor load must move entry lookup, sibling scan, secret inspection, and custom fields off the main thread.",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.autofillPasswordSelectionReturnPathDoesNotBlockMainThread": "java.lang.AssertionError: OTP copy/notification side effects should use suspending IO reads instead of runBlocking on the selection path."
+    },
+    "baselineMatched": true,
+    "suites": [
+      {
+        "name": "takagi.ru.monica.bitwarden.mapper.PasskeyMapperInteropTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.bitwarden.mapper.PasskeyNotesCodecTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.keepass.KeePassDxPasskeyCodecTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyBackupPortabilityPolicyTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyBatchMoveExecutorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyCredentialDiscoveryPolicyTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyCredentialIdCodecTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyDiscoverabilityResolverTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyGetRequestPolicyTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyMoveReporterTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyRemarkAndNavigationGuardTest",
+        "tests": 7,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyUserVerificationGuardTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.repository.KeePassPasskeySyncMergeTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest",
+        "tests": 16,
+        "failures": 4,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  {
+    "edition": "fdroid",
+    "tests": 77,
+    "passed": 72,
+    "existingFailures": {
+      "takagi.ru.monica.passkey.PasskeyRemarkAndNavigationGuardTest.authenticatorAndPasskeyShareOneDockDestinationWithBidirectionalControls": "java.lang.AssertionError",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.mdkWrapperRebuildHandlesInvalidatedAndUnrecoverableKeystoreKeys": "java.lang.AssertionError: Missing wrapper aliases must force a wrapper rebuild after password unlock.",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.emptyRuntimeMdkCacheCannotMaskReadableKeystoreWrapper": "java.lang.AssertionError: Correct-password unlock must repair historical empty password-wrapped MDK blobs.",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.pageSwitchHotPathsDoNotRunAuthOrBitwardenSyncWorkOnMainThread": "java.lang.AssertionError: Password editor load must move entry lookup, sibling scan, secret inspection, and custom fields off the main thread.",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest.autofillPasswordSelectionReturnPathDoesNotBlockMainThread": "java.lang.AssertionError: OTP copy/notification side effects should use suspending IO reads instead of runBlocking on the selection path."
+    },
+    "baselineMatched": true,
+    "suites": [
+      {
+        "name": "takagi.ru.monica.bitwarden.mapper.PasskeyMapperInteropTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.bitwarden.mapper.PasskeyNotesCodecTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.keepass.KeePassDxPasskeyCodecTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyBackupPortabilityPolicyTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyBatchMoveExecutorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyCredentialDiscoveryPolicyTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyCredentialIdCodecTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyDiscoverabilityResolverTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyGetRequestPolicyTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyMoveReporterTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyRemarkAndNavigationGuardTest",
+        "tests": 7,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.passkey.PasskeyUserVerificationGuardTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.repository.KeePassPasskeySyncMergeTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest",
+        "tests": 16,
+        "failures": 4,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  }
+]

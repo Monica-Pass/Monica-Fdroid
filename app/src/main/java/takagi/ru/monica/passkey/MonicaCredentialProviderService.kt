@@ -259,44 +259,15 @@ class MonicaCredentialProviderService : CredentialProviderService() {
         
         try {
             val requestJson = option.requestJson
-            val json = JSONObject(requestJson)
-            
-            val rpId = json.optString("rpId", "")
-            Log.i(TAG, "Get passkeys for RP: $rpId")
-            
-            // 解析 allowCredentials 列表，并进行规范化
-            val allowCredentials = json.optJSONArray("allowCredentials")
-            val allowedCredentialIds = mutableSetOf<String>()
-            if (allowCredentials != null && allowCredentials.length() > 0) {
-                for (i in 0 until allowCredentials.length()) {
-                    val cred = allowCredentials.optJSONObject(i)
-                    val credId = cred?.optString("id") ?: continue
-                    if (credId.isNotBlank()) {
-                        normalizeCredentialId(credId)?.let { normalized ->
-                            allowedCredentialIds.add(normalized)
-                        }
-                    }
-                }
-                Log.d(TAG, "allowCredentials specified: ${allowedCredentialIds.size} credentials")
-            }
+            val request = PasskeyGetRequestPolicy.parse(requestJson)
+            val rpId = request.rpId
+            val allowedCredentialIds = request.allowedCredentialIds.orEmpty()
 
             warmUpDatabase()
             var filteredPasskeys = resolvePasskeys(
                 rpId = rpId,
-                allowedCredentialIds = allowedCredentialIds,
-                strictAllowCredentials = true
+                allowedCredentialIds = allowedCredentialIds
             )
-
-            // Some OEMs/request payloads can cause transient allowCredentials mismatch.
-            // Fall back to RP/discoverable query to avoid empty provider sheet.
-            if (filteredPasskeys.isEmpty() && allowedCredentialIds.isNotEmpty()) {
-                Log.w(TAG, "No strict allowCredentials match, fallback to RP/discoverable")
-                filteredPasskeys = resolvePasskeys(
-                    rpId = rpId,
-                    allowedCredentialIds = allowedCredentialIds,
-                    strictAllowCredentials = false
-                )
-            }
 
             // Right after app update, first provider call may race with db/cache readiness.
             if (filteredPasskeys.isEmpty() && isRecentlyUpdated()) {
@@ -304,8 +275,7 @@ class MonicaCredentialProviderService : CredentialProviderService() {
                 warmUpDatabase()
                 filteredPasskeys = resolvePasskeys(
                     rpId = rpId,
-                    allowedCredentialIds = allowedCredentialIds,
-                    strictAllowCredentials = false
+                    allowedCredentialIds = allowedCredentialIds
                 )
             }
             
@@ -327,7 +297,7 @@ class MonicaCredentialProviderService : CredentialProviderService() {
                 
                 val entry = PublicKeyCredentialEntry.Builder(
                     this,
-                    passkey.displayTitle(),
+                    passkey.authenticationTitle(),
                     pendingIntent,
                     option
                 )
@@ -357,8 +327,7 @@ class MonicaCredentialProviderService : CredentialProviderService() {
 
     private suspend fun resolvePasskeys(
         rpId: String,
-        allowedCredentialIds: Set<String>,
-        strictAllowCredentials: Boolean
+        allowedCredentialIds: Set<String>
     ): List<takagi.ru.monica.data.PasskeyEntry> {
         val normalizedRpId = PasskeyRpIdNormalizer.normalize(rpId)
 
@@ -379,7 +348,7 @@ class MonicaCredentialProviderService : CredentialProviderService() {
             return normalizedMatches
         }
 
-        val passkeys = if (allowedCredentialIds.isNotEmpty() && strictAllowCredentials) {
+        val passkeys = if (allowedCredentialIds.isNotEmpty()) {
             val candidates = if (rpId.isNotBlank()) {
                 rpIdCandidates()
             } else {

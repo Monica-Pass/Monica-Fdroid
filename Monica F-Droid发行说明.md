@@ -6,6 +6,8 @@
 
 - Android 客户端仅提供 Sky、Multi、Power 三档，暂不接入 Glitter；MDBX 底层格式能力保留。已有 Glitter 数据库保留文件与记录并提示暂不支持，不自动降档或转换。
 
+- 修复 Passkey 跨端标识与备注兼容；认证取消会真正退出，选择账户时不显示私人备注。
+
 - 移除拖拽导航栏，统一使用普通导航；保留标签排序、显示隐藏、FAB 和最近使用入口。
 
 - 新增 Shizuku 默认密码管理器入口（Android 14+），可从开发者设置和自动填充设置将 Monica 设为默认，并选择同步设置自动填充、保留其他凭据提供方或恢复上次配置；取代旧的 Passkey HyperOS 兼容开关。
@@ -15,6 +17,9 @@
 - 银行卡和证件照片支持导入时裁剪，并统一裁剪页操作样式。
 
 - 优化 MDBX 档位选择：星光缓慢闪烁且仅显示在已填充区域；滑块连续跟随手指，松手吸附最近档位，点击切档平滑过渡并提供跨档触感反馈，遵循减少动画和触感设置。
+
+- 保留 UUID、Base64URL 与 Bitwarden `b64.` 格式的原始凭据字节；允许列表无匹配时不再改用其他凭据，并在认证前再次校验所选账户与实际请求。
+- Bitwarden 原生 Passkey 备注保留完整正文、分隔线与空白，支持清空；旧引用条目仍保留可恢复的元数据，不改写既有私钥。
 
 - 原生数据库管理页支持直接新增登录信息、保留未知字段的编辑、删除及附件添加/移除；附件在内存中验证并预览文字或图片，不导出解密文件。
 
@@ -45,6 +50,8 @@
 
 - Android offers Sky, Multi and Power only; Glitter integration is deferred while the MDBX engine retains format support. Existing Glitter files and records are preserved with an unsupported-mode message, without automatic downgrade or conversion.
 
+- Fix Passkey ID and note compatibility across clients; cancellation exits authentication, and account selection keeps private notes hidden.
+
 - Remove draggable navigation and use the standard bar, retaining tab order/visibility, FAB and recent items.
 
 - Set Monica as the default password manager with Shizuku (Android 14+) from developer or autofill settings. Optionally set autofill, keep other credential providers, or restore the previous configuration. Replaces the old Passkey HyperOS compatibility toggle.
@@ -54,6 +61,9 @@
 - Crop bank-card and document photos during import, with consistent crop controls.
 
 - Improve the MDBX mode slider with twinkling stars only on the filled track, continuous finger tracking, nearest-mode snapping, smooth tap transitions and detent feedback; respect reduced-motion and haptic settings.
+
+- Preserve original credential bytes across UUID, Base64URL and Bitwarden `b64.` formats. Unmatched allow-lists no longer fall back to other credentials; authentication rechecks the selected account against the actual request.
+- Preserve native Bitwarden Passkey notes, separators, whitespace and explicit clearing. Legacy reference-only entries retain recovery metadata without replacing existing private keys.
 
 - The native manager supports direct login creation, edits that preserve unknown fields, deletion and attachment changes. Verify and preview text/image attachments in memory without exporting decrypted files.
 
