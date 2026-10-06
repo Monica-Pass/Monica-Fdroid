@@ -18,6 +18,8 @@ class MdbxRepositoryRouter(
     private val legacyRepository: MdbxRepository,
     private val rustRepository: MdbxRepository
 ) : MdbxRepository {
+    override suspend fun requireRoomMirrorAllowed(databaseId: Long) =
+        repositoryFor(databaseId).requireRoomMirrorAllowed(databaseId)
     // Stale/retired targets must roll back Room edits when the vault rejects a write.
     override suspend fun requiresStrictMutationConsistency(databaseId: Long): Boolean = true
 

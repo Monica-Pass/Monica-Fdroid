@@ -56,18 +56,32 @@ mod tests {
         assert_eq!(value["n"].to_string(), "123456789012345678901234567890");
         assert_eq!(value["f"].to_string(), "1.2345678901234567890123456789");
         assert_eq!(value["number"]["$serde_json::private::Number"], "123");
-        assert_eq!(value["raw"]["$serde_json::private::RawValue"], "{\"lost\":true}");
+        assert_eq!(
+            value["raw"]["$serde_json::private::RawValue"],
+            "{\"lost\":true}"
+        );
         assert!(value["nested"][0]["$serde_json::private::Number"].is_null());
         assert_eq!(value["nested"][0]["other"], false);
-        assert_eq!(value["escaped"]["$serde_json::private::Number"], "not a number");
-        assert_eq!(from_slice(&serde_json::to_vec(&value).unwrap()).unwrap(), value);
+        assert_eq!(
+            value["escaped"]["$serde_json::private::Number"],
+            "not a number"
+        );
+        assert_eq!(
+            from_slice(&serde_json::to_vec(&value).unwrap()).unwrap(),
+            value
+        );
     }
 
     #[test]
     fn accepts_all_json_shapes_and_rejects_invalid_or_deep_input() {
-        for input in ["null", "true", "false", "[]", "{}", "\"text\"", "-42", "1e400", "1.00"] {
+        for input in [
+            "null", "true", "false", "[]", "{}", "\"text\"", "-42", "1e400", "1.00",
+        ] {
             let value = from_str(input).unwrap();
-            assert_eq!(from_slice(&serde_json::to_vec(&value).unwrap()).unwrap(), value);
+            assert_eq!(
+                from_slice(&serde_json::to_vec(&value).unwrap()).unwrap(),
+                value
+            );
         }
         for input in ["", "{} trailing", "[1,]", "{\"x\":}", "NaN", "01"] {
             assert!(from_str(input).is_err(), "accepted invalid JSON");

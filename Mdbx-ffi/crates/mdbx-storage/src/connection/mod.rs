@@ -2,13 +2,22 @@ use rusqlite::{Connection, OpenFlags};
 use std::collections::{BTreeSet, HashMap};
 use std::fs::{self, OpenOptions};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use mdbx_core::model::{ExtensionCapabilityId, ExtensionId, ExtensionProfile, VaultSession};
+use mdbx_core::tiga::{DeviceContext, TigaMode};
 use mdbx_crypto::keyring::Keyring;
 
 use crate::error::{StorageError, StorageResult};
 use crate::extension_registry::{ExtensionRegistration, ExtensionRegistry};
 use crate::schema;
+
+#[cfg(test)]
+mod glitter_page_tests;
+#[cfg(test)]
+mod glitter_runtime_tests;
+mod summary_page_cache;
 
 /// 打开的 vault 数据库连接。
 ///
@@ -27,6 +36,12 @@ pub struct VaultConnection {
     pub(crate) active_key_epoch_id: Option<String>,
     pub(crate) epoch_keyrings: HashMap<String, Keyring>,
     pub(crate) active_session: Option<VaultSession>,
+    pub(crate) credential_use_epoch: uuid::Uuid,
+    pub(crate) metadata_cache: Mutex<crate::metadata_cache::MetadataCache>,
+    summary_pages: Mutex<summary_page_cache::SummaryPageCache>,
+    authenticated_device: Option<(String, DeviceContext, Instant)>,
+    glitter_auth_deadline: Option<Instant>,
+    glitter_runtime: bool,
     pub(crate) extension_capabilities: BTreeSet<ExtensionCapabilityId>,
     pub(crate) extension_registry: ExtensionRegistry,
 }
@@ -117,6 +132,12 @@ impl VaultConnection {
             active_key_epoch_id: None,
             epoch_keyrings: HashMap::new(),
             active_session: None,
+            credential_use_epoch: uuid::Uuid::new_v4(),
+            metadata_cache: Mutex::new(crate::metadata_cache::MetadataCache::default()),
+            summary_pages: Mutex::new(summary_page_cache::SummaryPageCache::default()),
+            authenticated_device: None,
+            glitter_auth_deadline: None,
+            glitter_runtime: false,
             extension_capabilities: BTreeSet::new(),
             extension_registry: ExtensionRegistry::default(),
         })
@@ -144,6 +165,12 @@ impl VaultConnection {
                 active_key_epoch_id: None,
                 epoch_keyrings: HashMap::new(),
                 active_session: None,
+                credential_use_epoch: uuid::Uuid::new_v4(),
+                metadata_cache: Mutex::new(crate::metadata_cache::MetadataCache::default()),
+                summary_pages: Mutex::new(summary_page_cache::SummaryPageCache::default()),
+                authenticated_device: None,
+                glitter_auth_deadline: None,
+                glitter_runtime: false,
                 extension_capabilities: BTreeSet::new(),
                 extension_registry: ExtensionRegistry::default(),
             })
@@ -169,6 +196,12 @@ impl VaultConnection {
             active_key_epoch_id: None,
             epoch_keyrings: HashMap::new(),
             active_session: None,
+            credential_use_epoch: uuid::Uuid::new_v4(),
+            metadata_cache: Mutex::new(crate::metadata_cache::MetadataCache::default()),
+            summary_pages: Mutex::new(summary_page_cache::SummaryPageCache::default()),
+            authenticated_device: None,
+            glitter_auth_deadline: None,
+            glitter_runtime: false,
             extension_capabilities: BTreeSet::new(),
             extension_registry: ExtensionRegistry::default(),
         })
@@ -409,6 +442,8 @@ impl VaultConnection {
     ///
     /// 在解锁成功后调用。此后所有 `_ct` 字段在写入时加密、读取时解密。
     pub fn attach_keyring(&mut self, keyring: Keyring) {
+        self.invalidate_local_acceleration();
+        self.credential_use_epoch = uuid::Uuid::new_v4();
         self.keyring = Some(keyring);
         self.active_key_epoch_id = None;
         self.epoch_keyrings.clear();
@@ -420,13 +455,206 @@ impl VaultConnection {
         active_key_epoch_id: String,
         epoch_keyrings: HashMap<String, Keyring>,
     ) {
+        self.invalidate_local_acceleration();
         self.keyring = Some(keyring);
+        self.credential_use_epoch = uuid::Uuid::new_v4();
         self.active_key_epoch_id = Some(active_key_epoch_id);
         self.epoch_keyrings = epoch_keyrings;
     }
 
     pub fn attach_session(&mut self, session: VaultSession) {
+        let previous_deadline = self
+            .active_session
+            .as_ref()
+            .filter(|previous| previous.session_id == session.session_id)
+            .and(self.glitter_auth_deadline);
+        self.invalidate_local_acceleration();
+        self.credential_use_epoch = uuid::Uuid::new_v4();
         self.active_session = Some(session);
+        // Only officially verified Glitter sessions receive the larger budget.
+        // This is a title cache, never a credential or policy-decision cache.
+        self.glitter_runtime |= self.active_key_epoch_id.is_some()
+            && crate::tiga::TigaService::get_global_default(self).ok() == Some(TigaMode::Glitter);
+        if self.glitter_runtime {
+            let now = chrono::Utc::now().timestamp();
+            let assurance = &self
+                .active_session
+                .as_ref()
+                .expect("session attached")
+                .assurance;
+            let age = now.saturating_sub(assurance.authenticated_at_unix_secs);
+            let lifetime = i64::from(TigaMode::Glitter.policy().session.max_lifetime_secs);
+            let deadline = (0..lifetime).contains(&age).then(|| {
+                let proposed = Instant::now() + Duration::from_secs((lifetime - age) as u64);
+                previous_deadline
+                    .map(|previous| previous.min(proposed))
+                    .unwrap_or(proposed)
+            });
+            self.glitter_auth_deadline = deadline;
+            self.metadata_cache
+                .get_mut()
+                .unwrap_or_else(|error| error.into_inner())
+                .configure(deadline);
+            self.summary_pages
+                .get_mut()
+                .unwrap_or_else(|error| error.into_inner())
+                .configure(deadline);
+        }
+    }
+
+    fn invalidate_local_acceleration(&mut self) {
+        self.authenticated_device = None;
+        self.glitter_auth_deadline = None;
+        self.metadata_cache
+            .get_mut()
+            .unwrap_or_else(|error| error.into_inner())
+            .configure(None);
+        self.summary_pages
+            .get_mut()
+            .unwrap_or_else(|error| error.into_inner())
+            .configure(None);
+    }
+
+    /// Bind optional platform capabilities to this exact authenticated session.
+    /// Stronger assertions remain the platform client's responsibility.
+    pub(crate) fn bind_authenticated_device_context(
+        &mut self,
+        device: DeviceContext,
+    ) -> StorageResult<()> {
+        let session = self.active_session.as_ref().ok_or_else(|| {
+            StorageError::Validation(
+                "device evidence requires an authenticated session".to_string(),
+            )
+        })?;
+        if self.active_key_epoch_id.is_none() {
+            return Err(StorageError::Validation(
+                "device evidence requires a verified keyring".to_string(),
+            ));
+        }
+        let policy = crate::tiga::TigaService::get_global_default(self)?.policy();
+        if self.glitter_runtime {
+            crate::unlock::UnlockService::validate_glitter_device(&device)?;
+        }
+        let now = chrono::Utc::now().timestamp();
+        if session.assurance.is_expired(&policy.session, now)
+            || device.assurance < policy.minimum_device_assurance
+            || session.assurance.factor_count() < policy.unlock.minimum_auth_factors
+            || (policy.unlock.security_key_required && !session.assurance.has_security_key())
+        {
+            return Err(StorageError::Validation(
+                "device evidence does not satisfy the active session policy".to_string(),
+            ));
+        }
+        let remaining = i64::from(policy.session.max_lifetime_secs)
+            - (now - session.assurance.authenticated_at_unix_secs);
+        let deadline = Instant::now() + Duration::from_secs(remaining as u64);
+        let deadline = self
+            .authenticated_device
+            .as_ref()
+            .filter(|(id, _, _)| id == &session.session_id)
+            .map(|(_, _, previous)| std::cmp::min(*previous, deadline))
+            .unwrap_or(deadline);
+        self.authenticated_device = Some((session.session_id.clone(), device, deadline));
+        Ok(())
+    }
+
+    /// All native facade access to a Glitter handle is bound to the original
+    /// password + key-file session, including legacy convenience APIs.
+    /// A denied handle stays closed until a new explicit credential operation.
+    pub(crate) fn check_runtime_authentication(&mut self) -> StorageResult<()> {
+        if !self.glitter_runtime {
+            return Ok(());
+        }
+        // The sticky identity belongs to this authenticated handle. A writer
+        // must not turn a hot Glitter handle into Sky by coherently stripping
+        // its on-disk marker/version while the old keys remain in memory.
+        if !matches!(crate::unlock::UnlockService::is_glitter(self), Ok(true)) {
+            self.clear_session();
+            return Err(StorageError::Validation(
+                "Glitter's authenticated format contract changed; unlock again".to_string(),
+            ));
+        }
+        let now = chrono::Utc::now().timestamp();
+        // Disclosure freshness must not become a blanket handle expiry.
+        let remaining = crate::tiga::TigaService::resolve_vault_policy(self)
+            .ok()
+            .and_then(|resolved| {
+                self.active_session.as_ref().and_then(|session| {
+                    let assurance = &session.assurance;
+                    (!assurance.is_expired(&resolved.policy.session, now)).then(|| {
+                        (i64::from(resolved.policy.session.max_lifetime_secs)
+                            - (now - assurance.authenticated_at_unix_secs))
+                            as u64
+                    })
+                })
+            })
+            .unwrap_or(0);
+        // Authenticated vault overrides may shorten, but never extend, the
+        // original monotonic lifetime. Invalid policy metadata fails closed.
+        if let Some(deadline) = self.glitter_auth_deadline.as_mut() {
+            *deadline = (*deadline).min(Instant::now() + Duration::from_secs(remaining));
+        }
+        let valid = remaining > 0
+            && self
+                .glitter_auth_deadline
+                .is_some_and(|deadline| Instant::now() < deadline)
+            && self.active_key_epoch_id.is_some()
+            && self.keyring.is_some()
+            && self.active_session.as_ref().is_some_and(|session| {
+                session.assurance.has_security_key() && session.assurance.factor_count() >= 2
+            });
+        if valid {
+            return Ok(());
+        }
+        self.clear_session();
+        Err(StorageError::Validation(
+            "Glitter requires an active password + key-file session".to_string(),
+        ))
+    }
+
+    /// Evidence is never inherited by another session, even when the same
+    /// credentials or session ID are used again after locking.
+    pub fn authenticated_device_context(&self) -> Option<&DeviceContext> {
+        let (id, device, deadline) = self.authenticated_device.as_ref()?;
+        let session = self.active_session.as_ref()?;
+        let now = chrono::Utc::now().timestamp();
+        let policy = TigaMode::Glitter.policy();
+        if &session.session_id != id
+            || Instant::now() >= *deadline
+            || session.assurance.is_expired(&policy.session, now)
+        {
+            return None;
+        }
+        Some(device)
+    }
+
+    pub fn metadata_cache_stats(&self) -> crate::metadata_cache::MetadataCacheStats {
+        let mut stats = self
+            .metadata_cache
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .stats();
+        let pages = self
+            .summary_pages
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .stats();
+        stats.hits = stats.hits.saturating_add(pages.hits);
+        stats.misses = stats.misses.saturating_add(pages.misses);
+        stats.entries += pages.entries;
+        stats.retained_bytes += pages.retained_bytes;
+        stats.byte_limit += pages.byte_limit;
+        stats
+    }
+
+    pub fn is_glitter_session(&self) -> bool {
+        self.glitter_runtime
+    }
+
+    pub(crate) fn require_persisted_glitter_authentication(&mut self) {
+        // A locked Glitter file must never enter the legacy ungated runtime.
+        self.glitter_runtime |=
+            crate::tiga::TigaService::get_global_default(self).ok() == Some(TigaMode::Glitter);
     }
 
     pub fn active_session(&self) -> Option<&VaultSession> {
@@ -488,6 +716,8 @@ impl VaultConnection {
     }
 
     pub fn clear_session(&mut self) {
+        self.invalidate_local_acceleration();
+        self.credential_use_epoch = uuid::Uuid::new_v4();
         self.active_session = None;
         self.keyring = None;
         self.active_key_epoch_id = None;

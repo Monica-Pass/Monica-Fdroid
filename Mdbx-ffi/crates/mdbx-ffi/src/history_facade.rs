@@ -57,7 +57,7 @@ use super::{MdbxFfiError, MdbxVault};
 #[uniffi::export]
 impl MdbxVault {
     pub fn list_branches(&self) -> Result<Vec<MdbxBranchInfo>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(BranchRepo::list(&conn)?
             .into_iter()
             .map(|branch| MdbxBranchInfo {
@@ -75,7 +75,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxCommitHistoryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = CommitHistoryRepo::list(&conn, page_size as usize, cursor.as_deref())?;
         Ok(commit_history_page_from_storage(page))
     }
@@ -84,7 +84,7 @@ impl MdbxVault {
         &self,
         commit_id: String,
     ) -> Result<Option<MdbxCommitHistoryItem>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(CommitHistoryRepo::get(&conn, &commit_id)?.map(commit_history_item_from_storage))
     }
 
@@ -93,7 +93,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxCommitHistoryPageV2, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = CommitHistoryRepo::list(&conn, page_size as usize, cursor.as_deref())?;
         Ok(commit_history_page_v2_from_storage(page))
     }
@@ -102,7 +102,7 @@ impl MdbxVault {
         &self,
         commit_id: String,
     ) -> Result<Option<MdbxCommitHistoryItemV2>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(CommitHistoryRepo::get(&conn, &commit_id)?.map(commit_history_item_v2_from_storage))
     }
 }

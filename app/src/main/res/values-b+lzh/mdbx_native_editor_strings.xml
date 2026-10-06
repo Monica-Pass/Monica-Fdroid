@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_add_login">增登入資料</string>
+    <string name="mdbx_native_username">用戶名</string>
+    <string name="mdbx_native_password">密碼</string>
+    <string name="mdbx_native_website">網站</string>
+    <string name="mdbx_native_notes">備註</string>
+    <string name="mdbx_native_json_description">他類條目以 JSON 編輯，當存其原欄位與結構。</string>
+    <string name="mdbx_native_add_attachment">增附件</string>
+    <string name="mdbx_native_attachment_limits">附件至多 16 件；新上傳合計不逾 16 MiB。文字、圖像可於記憶體中預覽。</string>
+    <string name="mdbx_native_attachment_failed">附件不可讀，或完整性檢驗未過。</string>
+    <string name="mdbx_native_attachment_verified">附件完整性已驗</string>
+    <string name="mdbx_native_attachment_no_preview">此類檔案不可於應用內預覽；此保護模式不許匯出已解密附件。</string>
+    <string name="mdbx_native_delete_confirm">刪此條目及其附件乎？</string>
+    <string name="mdbx_native_editable">所改直接寫入此加密資料庫。</string>
+    <string name="mdbx_native_app_locked">循應用常例解鎖 Monica，乃可續行。</string>
+    <string name="mdbx_client_mode_unsupported_title">Glitter is not supported yet</string>
+    <string name="mdbx_client_mode_unsupported">The Android client does not support Glitter yet. Choose Sky, Multi or Power. Existing database files and records are preserved without automatic downgrade or conversion. Use a client that supports Glitter to access them.</string>
+</resources>

@@ -309,7 +309,7 @@ internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallWithError(
         }
     }
 }
-// Initial value and increment amount for handles.
+// Initial value and increment amount for handles. 
 // These ensure that Kotlin-generated handles always have the lowest bit set
 private const val UNIFFI_HANDLEMAP_INITIAL = 1.toLong()
 private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
@@ -319,7 +319,7 @@ private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
 // This is used pass an opaque 64-bit handle representing a foreign object to the Rust code.
 internal class UniffiHandleMap<T: Any> {
     private val map = ConcurrentHashMap<Long, T>()
-    // Start
+    // Start 
     private val counter = java.util.concurrent.atomic.AtomicLong(UNIFFI_HANDLEMAP_INITIAL)
 
     val size: Int
@@ -678,6 +678,8 @@ external fun uniffi_mdbx_ffi_checksum_func_create_portable_backup(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_func_create_vault(
 ): Short
+external fun uniffi_mdbx_ffi_checksum_func_create_vault_with_password_security_key(
+): Short
 external fun uniffi_mdbx_ffi_checksum_func_create_vault_with_tiga_mode(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_func_inspect_vault_migration(
@@ -685,6 +687,8 @@ external fun uniffi_mdbx_ffi_checksum_func_inspect_vault_migration(
 external fun uniffi_mdbx_ffi_checksum_func_open_vault(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_func_open_vault_with_password_security_key(
+): Short
+external fun uniffi_mdbx_ffi_checksum_func_open_vault_with_password_security_key_and_device_context(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_func_open_vault_with_security_key(
 ): Short
@@ -964,6 +968,8 @@ external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_verify_content_manifest(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_verify_rollback_anchor(
 ): Short
+external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_metadata_cache_stats(
+): Short
 external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_create_automatic_snapshot(
 ): Short
 external fun uniffi_mdbx_ffi_checksum_method_mdbxvault_get_snapshot_lifecycle(
@@ -1119,522 +1125,528 @@ external fun uniffi_mdbx_ffi_checksum_method_mdbxsyncwiresession_resume(
 external fun ffi_mdbx_ffi_uniffi_contract_version(
 ): Int
 
-
+    
 }
 
 internal object UniffiLib {
-
+    
     // The Cleaner for the whole library
     internal val CLEANER: UniffiCleaner by lazy {
         UniffiCleaner.create()
     }
-
+    
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "mdbx_ffi"))
-
+        
     }
-    external fun uniffi_mdbx_ffi_fn_clone_mdbxvault(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+    external fun uniffi_mdbx_ffi_fn_clone_mdbxvault(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_free_mdbxvault(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_free_mdbxvault(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_attachment_with_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`request`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_attachment_with_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`request`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_attachment_with_external_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`request`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_attachment_with_external_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`request`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_attachment(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_attachment(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_attachment_batch(`ptr`: Long,`operationId`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_attachment_batch(`ptr`: Long,`operationId`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_attachment_batch_with_limits(`ptr`: Long,`operationId`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_attachment_batch_with_limits(`ptr`: Long,`operationId`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_attachment(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_attachment(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_attachments(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_attachments(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_attachments(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_attachments(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_attachment_content(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,`maxPlaintextBytes`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_attachment_content(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,`maxPlaintextBytes`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_rename_attachment(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,`fileName`: RustBuffer.ByValue,`mediaType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_rename_attachment(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,`fileName`: RustBuffer.ByValue,`mediaType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_replace_attachment_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`attachmentId`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_replace_attachment_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`attachmentId`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_replace_attachment_external_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`attachmentId`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_replace_attachment_external_content(`ptr`: Long,`operationId`: RustBuffer.ByValue,`attachmentId`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_attachment_integrity(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_attachment_integrity(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_attachment_summary(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_attachment_summary(`ptr`: Long,`attachmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_attachment_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_attachment_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_attachment_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_attachment_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_collection_summary(`ptr`: Long,`collectionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_collection_summary(`ptr`: Long,`collectionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_collection_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_collection_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_collection_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_collection_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unresolved_conflict_summaries(`ptr`: Long,`objectType`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unresolved_conflict_summaries(`ptr`: Long,`objectType`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unresolved_conflicts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unresolved_conflicts(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_attachment_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`merged`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_attachment_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`merged`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_conflict(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`choice`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_conflict(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`choice`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_entry_conflict_custom_payload(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_entry_conflict_custom_payload(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_object_label_assignment_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`deleted`: Byte,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_object_label_assignment_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`deleted`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_object_label_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,`deleted`: Byte,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_object_label_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,`deleted`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_object_relation_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`sourceObjectId`: RustBuffer.ByValue,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,`deleted`: Byte,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_object_relation_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`sourceObjectId`: RustBuffer.ByValue,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,`deleted`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_project_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`merged`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_project_conflict_custom(`ptr`: Long,`conflictId`: RustBuffer.ByValue,`merged`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_payload_migration_plan(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`sourceSchemaVersion`: Int,`targetSchemaVersion`: Int,`maxItems`: Int,`branchId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_payload_migration_plan(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`sourceSchemaVersion`: Int,`targetSchemaVersion`: Int,`maxItems`: Int,`branchId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_payload_migration_plan_with_device_context(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`sourceSchemaVersion`: Int,`targetSchemaVersion`: Int,`maxItems`: Int,`branchId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_payload_migration_plan_with_device_context(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`sourceSchemaVersion`: Int,`targetSchemaVersion`: Int,`maxItems`: Int,`branchId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_payload_migration(`ptr`: Long,`plan`: RustBuffer.ByValue,`outputs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_payload_migration(`ptr`: Long,`plan`: RustBuffer.ByValue,`outputs`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_payload_migration_with_device_context(`ptr`: Long,`plan`: RustBuffer.ByValue,`outputs`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_payload_migration_with_device_context(`ptr`: Long,`plan`: RustBuffer.ByValue,`outputs`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_collection_profile(`ptr`: Long,`collectionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_collection_profile(`ptr`: Long,`collectionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_extension_profile(`ptr`: Long,`extensionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_extension_profile(`ptr`: Long,`extensionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_extension_profiles(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_extension_profiles(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_register_extension_profile(`ptr`: Long,`profile`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_register_extension_profile(`ptr`: Long,`profile`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_replace_extension_profiles(`ptr`: Long,`profiles`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_replace_extension_profiles(`ptr`: Long,`profiles`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_set_collection_profile(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`collectionTypeId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,`allowedObjectTypeIds`: RustBuffer.ByValue,`requiredCapabilityIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_set_collection_profile(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`collectionTypeId`: RustBuffer.ByValue,`payload`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,`allowedObjectTypeIds`: RustBuffer.ByValue,`requiredCapabilityIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_set_extension_capabilities(`ptr`: Long,`capabilityIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_set_extension_capabilities(`ptr`: Long,`capabilityIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_unregister_extension_profile(`ptr`: Long,`extensionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_unregister_extension_profile(`ptr`: Long,`extensionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_commit_diff(`ptr`: Long,`commitId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_commit_diff(`ptr`: Long,`commitId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_revert_commit(`ptr`: Long,`commitId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_revert_commit(`ptr`: Long,`commitId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_commit_history(`ptr`: Long,`commitId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_commit_history(`ptr`: Long,`commitId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_commit_history_v2(`ptr`: Long,`commitId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_commit_history_v2(`ptr`: Long,`commitId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_branches(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_branches(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_commit_history(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_commit_history(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_commit_history_v2(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_commit_history_v2(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_compare_integrity_root_checkpoints(`ptr`: Long,`previous`: RustBuffer.ByValue,`candidate`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_compare_integrity_root_checkpoints(`ptr`: Long,`previous`: RustBuffer.ByValue,`candidate`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_integrity_root_checkpoint(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_integrity_root_checkpoint(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_enable_integrity_root(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_enable_integrity_root(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_integrity_root_status(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_integrity_root_status(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_rebuild_integrity_root(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_rebuild_integrity_root(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_integrity_root(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_integrity_root(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_integrity_root_checkpoint(`ptr`: Long,`checkpoint`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_integrity_root_checkpoint(`ptr`: Long,`checkpoint`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_apply_health_repair(`ptr`: Long,`planToken`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`decisions`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_apply_health_repair(`ptr`: Long,`planToken`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`decisions`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_backup(`ptr`: Long,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_backup(`ptr`: Long,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_diagnostics_summary(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_diagnostics_summary(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_evaluate_tombstone_purge_eligibility(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,`now`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_evaluate_tombstone_purge_eligibility(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,`now`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_find_permanent_purge_receipt_by_target(`ptr`: Long,`targetObjectType`: RustBuffer.ByValue,`targetObjectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_find_permanent_purge_receipt_by_target(`ptr`: Long,`targetObjectType`: RustBuffer.ByValue,`targetObjectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_find_permanent_purge_receipt_by_tombstone(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_find_permanent_purge_receipt_by_tombstone(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_find_tombstone_by_target(`ptr`: Long,`targetObjectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_find_tombstone_by_target(`ptr`: Long,`targetObjectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_health_check(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_health_check(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_info(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_info(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_plan_health_repair(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_plan_health_repair(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_purge_tombstone(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_purge_tombstone(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_schedule_tombstone_purge(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,`purgeEligibleAt`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_schedule_tombstone_purge(`ptr`: Long,`tombstoneId`: RustBuffer.ByValue,`purgeEligibleAt`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_assign_object_label(`ptr`: Long,`objectId`: RustBuffer.ByValue,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_assign_object_label(`ptr`: Long,`objectId`: RustBuffer.ByValue,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_object(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_object(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_object_label(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_object_label(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_object_relation(`ptr`: Long,`sourceObjectId`: RustBuffer.ByValue,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_object_relation(`ptr`: Long,`sourceObjectId`: RustBuffer.ByValue,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_project(`ptr`: Long,`title`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_project(`ptr`: Long,`title`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_object_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_object_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_label_summary(`ptr`: Long,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_label_summary(`ptr`: Long,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_relation_summary(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_relation_summary(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_summary(`ptr`: Long,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_object_summary(`ptr`: Long,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_all_deleted_object_summaries(`ptr`: Long,`objectTypeId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_all_deleted_object_summaries(`ptr`: Long,`objectTypeId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_entries(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_entries(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_object_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_deleted_object_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_entries(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_entries(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_assignment_summaries_by_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_assignment_summaries_by_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_assignment_summaries_by_object(`ptr`: Long,`objectId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_assignment_summaries_by_object(`ptr`: Long,`objectId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_assignments(`ptr`: Long,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_assignments(`ptr`: Long,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_label_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_labels(`ptr`: Long,`collectionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_labels(`ptr`: Long,`collectionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relation_summaries_from(`ptr`: Long,`sourceObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relation_summaries_from(`ptr`: Long,`sourceObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relation_summaries_to(`ptr`: Long,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relation_summaries_to(`ptr`: Long,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relations_from(`ptr`: Long,`sourceObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relations_from(`ptr`: Long,`sourceObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relations_to(`ptr`: Long,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_relations_to(`ptr`: Long,`targetObjectId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_object_summaries(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_objects(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_objects(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_move_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,`targetProjectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_move_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,`targetProjectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_remove_object_label_assignment(`ptr`: Long,`assignmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_remove_object_label_assignment(`ptr`: Long,`assignmentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_restore_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_restore_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object(`ptr`: Long,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object(`ptr`: Long,`objectId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label_with_device_context(`ptr`: Long,`labelId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label_with_device_context(`ptr`: Long,`labelId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label_with_device_context_and_limits(`ptr`: Long,`labelId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label_with_device_context_and_limits(`ptr`: Long,`labelId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label_with_limits(`ptr`: Long,`labelId`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_label_with_limits(`ptr`: Long,`labelId`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation_with_device_context(`ptr`: Long,`relationId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation_with_device_context(`ptr`: Long,`relationId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation_with_device_context_and_limits(`ptr`: Long,`relationId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation_with_device_context_and_limits(`ptr`: Long,`relationId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation_with_limits(`ptr`: Long,`relationId`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_relation_with_limits(`ptr`: Long,`relationId`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_with_device_context(`ptr`: Long,`objectId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_with_device_context(`ptr`: Long,`objectId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_with_device_context_and_limits(`ptr`: Long,`objectId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_with_device_context_and_limits(`ptr`: Long,`objectId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_with_limits(`ptr`: Long,`objectId`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reveal_object_with_limits(`ptr`: Long,`objectId`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_entry(`ptr`: Long,`projectId`: RustBuffer.ByValue,`entryId`: RustBuffer.ByValue,`entryType`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_object(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_object(`ptr`: Long,`collectionId`: RustBuffer.ByValue,`objectId`: RustBuffer.ByValue,`objectTypeId`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_object_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_object_label(`ptr`: Long,`labelId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_update_object_relation(`ptr`: Long,`relationId`: RustBuffer.ByValue,`relationKind`: RustBuffer.ByValue,`payloadJson`: RustBuffer.ByValue,`payloadSchemaVersion`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_active_session_info(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_active_session_info(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_assess_tiga_unlock_policy(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_assess_tiga_unlock_policy(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_authorize_tiga_operation(`ptr`: Long,`scope`: RustBuffer.ByValue,`operation`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_authorize_tiga_operation(`ptr`: Long,`scope`: RustBuffer.ByValue,`operation`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_content_manifest(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_content_manifest(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_rollback_anchor(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_rollback_anchor(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_security_audit_events(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_security_audit_events(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_security_audit_events_v2(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_security_audit_events_v2(`ptr`: Long,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unlock_methods(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_unlock_methods(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_session_remaining_secs(`ptr`: Long,`scope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_session_remaining_secs(`ptr`: Long,`scope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_remove_unlock_method(`ptr`: Long,`methodId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_remove_unlock_method(`ptr`: Long,`methodId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password(`ptr`: Long,`newPassword`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password(`ptr`: Long,`newPassword`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password_with_tiga_mode(`ptr`: Long,`newPassword`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password_with_tiga_mode(`ptr`: Long,`newPassword`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password_with_tiga_mode_and_device_context(`ptr`: Long,`newPassword`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password_with_tiga_mode_and_device_context(`ptr`: Long,`newPassword`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_tiga_policy(`ptr`: Long,`scope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_resolve_tiga_policy(`ptr`: Long,`scope`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_rotate_key_epoch(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_rotate_key_epoch(`ptr`: Long,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_set_tiga_profile(`ptr`: Long,`mode`: RustBuffer.ByValue,`weakeningReason`: RustBuffer.ByValue,`exceptionExpiresAtUnixSecs`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_set_tiga_profile(`ptr`: Long,`mode`: RustBuffer.ByValue,`weakeningReason`: RustBuffer.ByValue,`exceptionExpiresAtUnixSecs`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_setup_local_security_key_unlock(`ptr`: Long,`keyMaterial`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_setup_local_security_key_unlock(`ptr`: Long,`keyMaterial`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_setup_local_security_key_unlock_with_device_context(`ptr`: Long,`keyMaterial`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_setup_local_security_key_unlock_with_device_context(`ptr`: Long,`keyMaterial`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_setup_password_security_key_unlock(`ptr`: Long,`password`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_setup_password_security_key_unlock(`ptr`: Long,`password`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_content_manifest(`ptr`: Long,`token`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_content_manifest(`ptr`: Long,`token`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_rollback_anchor(`ptr`: Long,`token`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_verify_rollback_anchor(`ptr`: Long,`token`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_automatic_snapshot(`ptr`: Long,`retentionEligibleAt`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_metadata_cache_stats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_snapshot_lifecycle(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_automatic_snapshot(`ptr`: Long,`retentionEligibleAt`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_plan_automatic_snapshot_prune(`ptr`: Long,`keepLatest`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_snapshot_lifecycle(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_prune_automatic_snapshots(`ptr`: Long,`planToken`: RustBuffer.ByValue,`keepLatest`: Int,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_plan_automatic_snapshot_prune(`ptr`: Long,`keepLatest`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_manual_snapshot(`ptr`: Long,`displayName`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_prune_automatic_snapshots(`ptr`: Long,`planToken`: RustBuffer.ByValue,`keepLatest`: Int,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_snapshot(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_manual_snapshot(`ptr`: Long,`displayName`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_snapshot_structure_preview(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_delete_snapshot(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_managed_snapshots(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_snapshot_structure_preview(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_restore_snapshot(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_managed_snapshots(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_snapshot_summary(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_restore_snapshot(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,`device`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_snapshot_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_get_snapshot_summary(`ptr`: Long,`snapshotId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_abort_external_blob_transfer(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_snapshot_summaries(`ptr`: Long,`pageSize`: Int,`cursor`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_abort_external_blob_transfer(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_acquire_external_blob_lease(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,`nowUnixSecs`: Long,`ttlSecs`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_acquire_external_blob_lease(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,`nowUnixSecs`: Long,`ttlSecs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_apply_incremental_sync_segment(`ptr`: Long,`source`: RustBuffer.ByValue,`expectedBase`: RustBuffer.ByValue,`expectedResume`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_apply_incremental_sync_segment(`ptr`: Long,`source`: RustBuffer.ByValue,`expectedBase`: RustBuffer.ByValue,`expectedResume`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_apply_manual_sync_bundle(`ptr`: Long,`source`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_apply_manual_sync_bundle(`ptr`: Long,`source`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_incremental_sync_bootstrap(`ptr`: Long,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_create_incremental_sync_bootstrap(`ptr`: Long,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_export_incremental_sync_segment(`ptr`: Long,`destination`: RustBuffer.ByValue,`base`: RustBuffer.ByValue,`resume`: RustBuffer.ByValue,`pageSize`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_export_incremental_sync_segment(`ptr`: Long,`destination`: RustBuffer.ByValue,`base`: RustBuffer.ByValue,`resume`: RustBuffer.ByValue,`pageSize`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_export_manual_sync_bundle(`ptr`: Long,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_export_manual_sync_bundle(`ptr`: Long,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_has_external_blob(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_has_external_blob(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_incremental_sync_checkpoint(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_incremental_sync_checkpoint(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_inspect_incremental_sync_segment(`ptr`: Long,`source`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_inspect_incremental_sync_segment(`ptr`: Long,`source`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_external_blob_references(`ptr`: Long,`cursor`: RustBuffer.ByValue,`pageSize`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_list_external_blob_references(`ptr`: Long,`cursor`: RustBuffer.ByValue,`pageSize`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_external_blob_chunk(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,`offset`: Long,`maxBytes`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_read_external_blob_chunk(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,`offset`: Long,`maxBytes`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_release_external_blob_lease(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_release_external_blob_lease(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_renew_external_blob_lease(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,`nowUnixSecs`: Long,`ttlSecs`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_renew_external_blob_lease(`ptr`: Long,`blobId`: RustBuffer.ByValue,`ownerId`: RustBuffer.ByValue,`nowUnixSecs`: Long,`ttlSecs`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_run_metadata_benchmark(`ptr`: Long,`operationCount`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_run_metadata_benchmark(`ptr`: Long,`operationCount`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_write_external_blob_chunk(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,`offset`: Long,`ciphertext`: RustBuffer.ByValue,`finalize`: Byte,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_write_external_blob_chunk(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,`offset`: Long,`ciphertext`: RustBuffer.ByValue,`finalize`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation_on_branch(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation_on_branch(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation_on_branch_with_limits(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation_on_branch_with_limits(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation_with_limits(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_composite_write_operation_with_limits(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`attachmentCommands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation_on_branch(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation_on_branch(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation_on_branch_with_limits(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation_on_branch_with_limits(`ptr`: Long,`branchId`: RustBuffer.ByValue,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation_with_limits(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxvault_execute_write_operation_with_limits(`ptr`: Long,`operationId`: RustBuffer.ByValue,`operationKind`: RustBuffer.ByValue,`commands`: RustBuffer.ByValue,`limits`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_clone_mdbxblobsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_clone_mdbxblobsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_free_mdbxblobsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_free_mdbxblobsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_accept_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_accept_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_accept_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_accept_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_acknowledge_blob_chunk(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_acknowledge_blob_chunk(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_acknowledge_blob_manifest_page(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_acknowledge_blob_manifest_page(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_begin_blob_sync(`ptr`: Long,`namespaceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_begin_blob_sync(`ptr`: Long,`namespaceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_chunk_request(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,`maxBytes`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_chunk_request(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,`maxBytes`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_manifest_request(`ptr`: Long,`pageSize`: Int,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_manifest_request(`ptr`: Long,`pageSize`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_replication_is_negotiated(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_replication_is_negotiated(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_resume(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_resume(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_sync_phase(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_blob_sync_phase(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_hello(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_hello(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_restart_blob_transfer_after_abort(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_restart_blob_transfer_after_abort(`ptr`: Long,`blobId`: RustBuffer.ByValue,`totalSize`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_restore_blob_sync(`ptr`: Long,`resume`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_restore_blob_sync(`ptr`: Long,`resume`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_validate_blob_chunk_response(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_validate_blob_chunk_response(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_validate_blob_manifest_response(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_validate_blob_manifest_response(`ptr`: Long,`response`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_clone_mdbxintegrityrootsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_clone_mdbxintegrityrootsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_free_mdbxintegrityrootsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_free_mdbxintegrityrootsyncsession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_accept_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_accept_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_accept_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_accept_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_hello(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_hello(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_integrity_root_is_negotiated(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_integrity_root_is_negotiated(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
-external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_remote_integrity_root_checkpoint(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_remote_integrity_root_checkpoint(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_clone_mdbxsyncwiresession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_clone_mdbxsyncwiresession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_free_mdbxsyncwiresession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_free_mdbxsyncwiresession(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_chunk_request(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_chunk_request(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_chunk_response(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_chunk_response(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_manifest_page_request(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_manifest_page_request(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_manifest_page_response(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_blob_manifest_page_response(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_hello(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_hello(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_hello_ack(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_hello_ack(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_integrity_root_hello(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_integrity_root_hello(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_integrity_root_hello_ack(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_accept_integrity_root_hello_ack(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_acknowledge_inbound(`ptr`: Long,`sequence`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_acknowledge_inbound(`ptr`: Long,`sequence`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_discard_inbound(`ptr`: Long,`sequence`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_discard_inbound(`ptr`: Long,`sequence`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_chunk_request(`ptr`: Long,`request`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_chunk_request(`ptr`: Long,`request`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_chunk_response(`ptr`: Long,`response`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_chunk_response(`ptr`: Long,`response`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_manifest_page_request(`ptr`: Long,`request`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_manifest_page_request(`ptr`: Long,`request`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_manifest_page_response(`ptr`: Long,`response`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_blob_manifest_page_response(`ptr`: Long,`response`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_integrity_root_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_integrity_root_hello(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_integrity_root_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_encode_integrity_root_hello_ack(`ptr`: Long,`hello`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_pending_inbound_sequence(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_pending_inbound_sequence(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_restore_resume(`ptr`: Long,`resume`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_restore_resume(`ptr`: Long,`resume`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_resume(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_resume(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_attachment_batch_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_attachment_batch_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_attachment_content_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_attachment_content_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_attachment_presentation_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_attachment_presentation_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_mdbx_build_capability_manifest(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_mdbx_build_capability_manifest(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_presentation_metadata_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_presentation_metadata_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_conflict_summary_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_conflict_summary_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_commit_action_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_commit_action_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_inspect_vault_integrity_root(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_inspect_vault_integrity_root(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_object_disclosure_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_object_disclosure_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_object_metadata_disclosure_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_object_metadata_disclosure_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_mdbx_runtime_manifest(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_mdbx_runtime_manifest(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_snapshot_lifecycle_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_snapshot_lifecycle_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_snapshot_management_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_snapshot_management_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_snapshot_summary_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_snapshot_summary_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_create_blob_sync_session(`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_blob_sync_session(`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_create_integrity_root_sync_session(`deviceId`: RustBuffer.ByValue,`checkpoint`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_integrity_root_sync_session(`deviceId`: RustBuffer.ByValue,`checkpoint`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_create_sync_wire_session(`sessionId`: RustBuffer.ByValue,`maxPayloadBytes`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_sync_wire_session(`sessionId`: RustBuffer.ByValue,`maxPayloadBytes`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_default_sync_wire_payload_bytes(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_sync_wire_payload_bytes(uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_create_portable_backup(`sourcePath`: RustBuffer.ByValue,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_portable_backup(`sourcePath`: RustBuffer.ByValue,`destination`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_create_vault(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_vault(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_create_vault_with_tiga_mode(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_vault_with_password_security_key(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,`deviceContext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_inspect_vault_migration(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
-): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_open_vault(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_create_vault_with_tiga_mode(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_open_vault_with_password_security_key(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_inspect_vault_migration(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_mdbx_ffi_fn_func_open_vault(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_open_vault_with_security_key(`path`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_open_vault_with_password_security_key(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
-external fun uniffi_mdbx_ffi_fn_func_upgrade_vault(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_open_vault_with_password_security_key_and_device_context(`path`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,`deviceContext`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_mdbx_ffi_fn_func_open_vault_with_security_key(`path`: RustBuffer.ByValue,`keyMaterial`: RustBuffer.ByValue,`deviceId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_mdbx_ffi_fn_func_upgrade_vault(`path`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_composite_write_operation_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_composite_write_operation_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun uniffi_mdbx_ffi_fn_func_default_write_operation_limits(uniffi_out_err: UniffiRustCallStatus,
+external fun uniffi_mdbx_ffi_fn_func_default_write_operation_limits(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun ffi_mdbx_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun ffi_mdbx_ffi_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
-external fun ffi_mdbx_ffi_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
-external fun ffi_mdbx_ffi_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun ffi_mdbx_ffi_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1642,7 +1654,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_u8(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_u8(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun ffi_mdbx_ffi_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1650,7 +1662,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_i8(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_i8(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun ffi_mdbx_ffi_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1658,7 +1670,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_u16(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_u16(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Short
 external fun ffi_mdbx_ffi_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1666,7 +1678,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_i16(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_i16(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Short
 external fun ffi_mdbx_ffi_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1674,7 +1686,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_u32(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_u32(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 external fun ffi_mdbx_ffi_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1682,7 +1694,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_i32(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_i32(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 external fun ffi_mdbx_ffi_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1690,7 +1702,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_u64(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_u64(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun ffi_mdbx_ffi_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1698,7 +1710,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_i64(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_i64(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun ffi_mdbx_ffi_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1706,7 +1718,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_f32(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_f32(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Float
 external fun ffi_mdbx_ffi_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1714,7 +1726,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_f64(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_f64(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Double
 external fun ffi_mdbx_ffi_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1722,7 +1734,7 @@ external fun ffi_mdbx_ffi_rust_future_cancel_rust_buffer(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_rust_buffer(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun ffi_mdbx_ffi_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
 ): Unit
@@ -1730,10 +1742,10 @@ external fun ffi_mdbx_ffi_rust_future_cancel_void(`handle`: Long,
 ): Unit
 external fun ffi_mdbx_ffi_rust_future_free_void(`handle`: Long,
 ): Unit
-external fun ffi_mdbx_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus,
+external fun ffi_mdbx_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 
-
+    
 }
 
 private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
@@ -1807,6 +1819,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_mdbx_ffi_checksum_func_create_vault() != 53196.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_mdbx_ffi_checksum_func_create_vault_with_password_security_key() != 62942.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_mdbx_ffi_checksum_func_create_vault_with_tiga_mode() != 24508.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1817,6 +1832,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mdbx_ffi_checksum_func_open_vault_with_password_security_key() != 32410.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_mdbx_ffi_checksum_func_open_vault_with_password_security_key_and_device_context() != 28275.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_mdbx_ffi_checksum_func_open_vault_with_security_key() != 59481.toShort()) {
@@ -2236,6 +2254,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_mdbx_ffi_checksum_method_mdbxvault_verify_rollback_anchor() != 41276.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_mdbx_ffi_checksum_method_mdbxvault_metadata_cache_stats() != 27747.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_mdbx_ffi_checksum_method_mdbxvault_create_automatic_snapshot() != 40434.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2539,7 +2560,7 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
         }
     }
 
-/**
+/** 
  * Placeholder object used to signal that we're constructing an interface with a FFI handle.
  *
  * This is the first argument for interface constructors that input a raw handle. It exists is that
@@ -2550,7 +2571,7 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
  * */
 object UniffiWithHandle
 
-/**
+/** 
  * Used to instantiate an interface without an actual pointer, for fakes in tests, mostly.
  *
  * @suppress
@@ -2891,37 +2912,37 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
  * methods only after durable storage succeeds.
  */
 public interface MdbxBlobSyncSessionInterface {
-
+    
     fun `acceptHello`(`hello`: MdbxSyncHello): MdbxSyncHello
-
+    
     fun `acceptHelloAck`(`hello`: MdbxSyncHello)
-
+    
     fun `acknowledgeBlobChunk`(`response`: MdbxBlobChunkResponse)
-
+    
     fun `acknowledgeBlobManifestPage`(`response`: MdbxBlobManifestPageResponse)
-
+    
     fun `beginBlobSync`(`namespaceId`: kotlin.String)
-
+    
     fun `blobChunkRequest`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong, `maxBytes`: kotlin.UInt): MdbxBlobChunkRequest
-
+    
     fun `blobManifestRequest`(`pageSize`: kotlin.UInt): MdbxBlobManifestPageRequest
-
+    
     fun `blobReplicationIsNegotiated`(): kotlin.Boolean
-
+    
     fun `blobResume`(): MdbxBlobSyncResume?
-
+    
     fun `blobSyncPhase`(): MdbxBlobSyncPhase
-
+    
     fun `hello`(): MdbxSyncHello
-
+    
     fun `restartBlobTransferAfterAbort`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong)
-
+    
     fun `restoreBlobSync`(`resume`: MdbxBlobSyncResume)
-
+    
     fun `validateBlobChunkResponse`(`response`: MdbxBlobChunkResponse)
-
+    
     fun `validateBlobManifestResponse`(`response`: MdbxBlobManifestPageResponse)
-
+    
     companion object
 }
 
@@ -3026,7 +3047,7 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         }
     }
 
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptHello`(`hello`: MdbxSyncHello): MdbxSyncHello {
             return FfiConverterTypeMdbxSyncHello.lift(
     callWithHandle {
@@ -3038,11 +3059,11 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptHelloAck`(`hello`: MdbxSyncHello)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_accept_hello_ack(
@@ -3050,12 +3071,12 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterTypeMdbxSyncHello.lower(`hello`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acknowledgeBlobChunk`(`response`: MdbxBlobChunkResponse)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_acknowledge_blob_chunk(
@@ -3063,12 +3084,12 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterTypeMdbxBlobChunkResponse.lower(`response`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acknowledgeBlobManifestPage`(`response`: MdbxBlobManifestPageResponse)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_acknowledge_blob_manifest_page(
@@ -3076,12 +3097,12 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterTypeMdbxBlobManifestPageResponse.lower(`response`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `beginBlobSync`(`namespaceId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_begin_blob_sync(
@@ -3089,10 +3110,10 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterString.lower(`namespaceId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `blobChunkRequest`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong, `maxBytes`: kotlin.UInt): MdbxBlobChunkRequest {
             return FfiConverterTypeMdbxBlobChunkRequest.lift(
     callWithHandle {
@@ -3104,9 +3125,9 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `blobManifestRequest`(`pageSize`: kotlin.UInt): MdbxBlobManifestPageRequest {
             return FfiConverterTypeMdbxBlobManifestPageRequest.lift(
     callWithHandle {
@@ -3118,9 +3139,9 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `blobReplicationIsNegotiated`(): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -3132,9 +3153,9 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `blobResume`(): MdbxBlobSyncResume? {
             return FfiConverterOptionalTypeMdbxBlobSyncResume.lift(
     callWithHandle {
@@ -3146,9 +3167,9 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `blobSyncPhase`(): MdbxBlobSyncPhase {
             return FfiConverterTypeMdbxBlobSyncPhase.lift(
     callWithHandle {
@@ -3160,9 +3181,9 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `hello`(): MdbxSyncHello {
             return FfiConverterTypeMdbxSyncHello.lift(
     callWithHandle {
@@ -3174,11 +3195,11 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `restartBlobTransferAfterAbort`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_restart_blob_transfer_after_abort(
@@ -3186,12 +3207,12 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterString.lower(`blobId`),FfiConverterULong.lower(`totalSize`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `restoreBlobSync`(`resume`: MdbxBlobSyncResume)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_restore_blob_sync(
@@ -3199,12 +3220,12 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterTypeMdbxBlobSyncResume.lower(`resume`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `validateBlobChunkResponse`(`response`: MdbxBlobChunkResponse)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_validate_blob_chunk_response(
@@ -3212,12 +3233,12 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterTypeMdbxBlobChunkResponse.lower(`response`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `validateBlobManifestResponse`(`response`: MdbxBlobManifestPageResponse)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxblobsyncsession_validate_blob_manifest_response(
@@ -3225,21 +3246,21 @@ open class MdbxBlobSyncSession: Disposable, AutoCloseable, MdbxBlobSyncSessionIn
         FfiConverterTypeMdbxBlobManifestPageResponse.lower(`response`),_status)
 }
     }
+    
+    
+
+    
+
+    
 
 
-
-
-
-
-
-
-
-
+    
+    
     /**
      * @suppress
      */
     companion object
-
+    
 }
 
 
@@ -3367,17 +3388,17 @@ public object FfiConverterTypeMdbxBlobSyncSession: FfiConverter<MdbxBlobSyncSess
  * last verified remote checkpoint outside the vault and owns transport.
  */
 public interface MdbxIntegrityRootSyncSessionInterface {
-
+    
     fun `acceptHello`(`hello`: MdbxIntegrityRootSyncHello): MdbxIntegrityRootSyncHello
-
+    
     fun `acceptHelloAck`(`hello`: MdbxIntegrityRootSyncHello)
-
+    
     fun `hello`(): MdbxIntegrityRootSyncHello
-
+    
     fun `integrityRootIsNegotiated`(): kotlin.Boolean
-
+    
     fun `remoteIntegrityRootCheckpoint`(): MdbxAuthenticatedStateRootCheckpoint?
-
+    
     companion object
 }
 
@@ -3481,7 +3502,7 @@ open class MdbxIntegrityRootSyncSession: Disposable, AutoCloseable, MdbxIntegrit
         }
     }
 
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptHello`(`hello`: MdbxIntegrityRootSyncHello): MdbxIntegrityRootSyncHello {
             return FfiConverterTypeMdbxIntegrityRootSyncHello.lift(
     callWithHandle {
@@ -3493,11 +3514,11 @@ open class MdbxIntegrityRootSyncSession: Disposable, AutoCloseable, MdbxIntegrit
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptHelloAck`(`hello`: MdbxIntegrityRootSyncHello)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxintegrityrootsyncsession_accept_hello_ack(
@@ -3505,10 +3526,10 @@ open class MdbxIntegrityRootSyncSession: Disposable, AutoCloseable, MdbxIntegrit
         FfiConverterTypeMdbxIntegrityRootSyncHello.lower(`hello`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `hello`(): MdbxIntegrityRootSyncHello {
             return FfiConverterTypeMdbxIntegrityRootSyncHello.lift(
     callWithHandle {
@@ -3520,9 +3541,9 @@ open class MdbxIntegrityRootSyncSession: Disposable, AutoCloseable, MdbxIntegrit
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `integrityRootIsNegotiated`(): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -3534,9 +3555,9 @@ open class MdbxIntegrityRootSyncSession: Disposable, AutoCloseable, MdbxIntegrit
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `remoteIntegrityRootCheckpoint`(): MdbxAuthenticatedStateRootCheckpoint? {
             return FfiConverterOptionalTypeMdbxAuthenticatedStateRootCheckpoint.lift(
     callWithHandle {
@@ -3548,20 +3569,20 @@ open class MdbxIntegrityRootSyncSession: Disposable, AutoCloseable, MdbxIntegrit
     }
     )
     }
+    
+
+    
+
+    
 
 
-
-
-
-
-
-
-
+    
+    
     /**
      * @suppress
      */
     companion object
-
+    
 }
 
 
@@ -3685,49 +3706,49 @@ public object FfiConverterTypeMdbxIntegrityRootSyncSession: FfiConverter<MdbxInt
 
 
 public interface MdbxSyncWireSessionInterface {
-
+    
     fun `acceptBlobChunkRequest`(`bytes`: kotlin.ByteArray): MdbxSyncWireChunkRequest
-
+    
     fun `acceptBlobChunkResponse`(`bytes`: kotlin.ByteArray): MdbxSyncWireChunkResponse
-
+    
     fun `acceptBlobManifestPageRequest`(`bytes`: kotlin.ByteArray): MdbxSyncWireManifestPageRequest
-
+    
     fun `acceptBlobManifestPageResponse`(`bytes`: kotlin.ByteArray): MdbxSyncWireManifestPageResponse
-
+    
     fun `acceptHello`(`bytes`: kotlin.ByteArray): MdbxSyncWireHello
-
+    
     fun `acceptHelloAck`(`bytes`: kotlin.ByteArray): MdbxSyncWireHello
-
+    
     fun `acceptIntegrityRootHello`(`bytes`: kotlin.ByteArray): MdbxSyncWireIntegrityRootHello
-
+    
     fun `acceptIntegrityRootHelloAck`(`bytes`: kotlin.ByteArray): MdbxSyncWireIntegrityRootHello
-
+    
     fun `acknowledgeInbound`(`sequence`: kotlin.ULong)
-
+    
     fun `discardInbound`(`sequence`: kotlin.ULong)
-
+    
     fun `encodeBlobChunkRequest`(`request`: MdbxBlobChunkRequest, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeBlobChunkResponse`(`response`: MdbxBlobChunkResponse, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeBlobManifestPageRequest`(`request`: MdbxBlobManifestPageRequest, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeBlobManifestPageResponse`(`response`: MdbxBlobManifestPageResponse, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeHello`(`hello`: MdbxSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeHelloAck`(`hello`: MdbxSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeIntegrityRootHello`(`hello`: MdbxIntegrityRootSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `encodeIntegrityRootHelloAck`(`hello`: MdbxIntegrityRootSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray
-
+    
     fun `pendingInboundSequence`(): kotlin.ULong?
-
+    
     fun `restoreResume`(`resume`: MdbxSyncWireResume)
-
+    
     fun `resume`(): MdbxSyncWireResume
-
+    
     companion object
 }
 
@@ -3827,7 +3848,7 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
         }
     }
 
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptBlobChunkRequest`(`bytes`: kotlin.ByteArray): MdbxSyncWireChunkRequest {
             return FfiConverterTypeMdbxSyncWireChunkRequest.lift(
     callWithHandle {
@@ -3839,9 +3860,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptBlobChunkResponse`(`bytes`: kotlin.ByteArray): MdbxSyncWireChunkResponse {
             return FfiConverterTypeMdbxSyncWireChunkResponse.lift(
     callWithHandle {
@@ -3853,9 +3874,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptBlobManifestPageRequest`(`bytes`: kotlin.ByteArray): MdbxSyncWireManifestPageRequest {
             return FfiConverterTypeMdbxSyncWireManifestPageRequest.lift(
     callWithHandle {
@@ -3867,9 +3888,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptBlobManifestPageResponse`(`bytes`: kotlin.ByteArray): MdbxSyncWireManifestPageResponse {
             return FfiConverterTypeMdbxSyncWireManifestPageResponse.lift(
     callWithHandle {
@@ -3881,9 +3902,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptHello`(`bytes`: kotlin.ByteArray): MdbxSyncWireHello {
             return FfiConverterTypeMdbxSyncWireHello.lift(
     callWithHandle {
@@ -3895,9 +3916,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptHelloAck`(`bytes`: kotlin.ByteArray): MdbxSyncWireHello {
             return FfiConverterTypeMdbxSyncWireHello.lift(
     callWithHandle {
@@ -3909,9 +3930,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptIntegrityRootHello`(`bytes`: kotlin.ByteArray): MdbxSyncWireIntegrityRootHello {
             return FfiConverterTypeMdbxSyncWireIntegrityRootHello.lift(
     callWithHandle {
@@ -3923,9 +3944,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acceptIntegrityRootHelloAck`(`bytes`: kotlin.ByteArray): MdbxSyncWireIntegrityRootHello {
             return FfiConverterTypeMdbxSyncWireIntegrityRootHello.lift(
     callWithHandle {
@@ -3937,11 +3958,11 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acknowledgeInbound`(`sequence`: kotlin.ULong)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_acknowledge_inbound(
@@ -3949,12 +3970,12 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
         FfiConverterULong.lower(`sequence`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `discardInbound`(`sequence`: kotlin.ULong)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_discard_inbound(
@@ -3962,10 +3983,10 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
         FfiConverterULong.lower(`sequence`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeBlobChunkRequest`(`request`: MdbxBlobChunkRequest, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -3977,9 +3998,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeBlobChunkResponse`(`response`: MdbxBlobChunkResponse, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -3991,9 +4012,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeBlobManifestPageRequest`(`request`: MdbxBlobManifestPageRequest, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4005,9 +4026,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeBlobManifestPageResponse`(`response`: MdbxBlobManifestPageResponse, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4019,9 +4040,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeHello`(`hello`: MdbxSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4033,9 +4054,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeHelloAck`(`hello`: MdbxSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4047,9 +4068,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeIntegrityRootHello`(`hello`: MdbxIntegrityRootSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4061,9 +4082,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `encodeIntegrityRootHelloAck`(`hello`: MdbxIntegrityRootSyncHello, `inReplyTo`: kotlin.ULong?): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4075,9 +4096,9 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `pendingInboundSequence`(): kotlin.ULong? {
             return FfiConverterOptionalULong.lift(
     callWithHandle {
@@ -4089,11 +4110,11 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `restoreResume`(`resume`: MdbxSyncWireResume)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxsyncwiresession_restore_resume(
@@ -4101,10 +4122,10 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
         FfiConverterTypeMdbxSyncWireResume.lower(`resume`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resume`(): MdbxSyncWireResume {
             return FfiConverterTypeMdbxSyncWireResume.lift(
     callWithHandle {
@@ -4116,20 +4137,20 @@ open class MdbxSyncWireSession: Disposable, AutoCloseable, MdbxSyncWireSessionIn
     }
     )
     }
+    
+
+    
+
+    
 
 
-
-
-
-
-
-
-
+    
+    
     /**
      * @suppress
      */
     companion object
-
+    
 }
 
 
@@ -4253,9 +4274,9 @@ public object FfiConverterTypeMdbxSyncWireSession: FfiConverter<MdbxSyncWireSess
 
 
 public interface MdbxVaultInterface {
-
+    
     fun `createAttachmentWithContent`(`operationId`: kotlin.String, `request`: MdbxAttachmentCreateRequest, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult
-
+    
     /**
      * Store attachment ciphertext in the vault's content-addressed Blob sidecar.
      *
@@ -4263,34 +4284,34 @@ public interface MdbxVaultInterface {
      * maximum-size attachments do not inflate the delta payload.
      */
     fun `createAttachmentWithExternalContent`(`operationId`: kotlin.String, `request`: MdbxAttachmentCreateRequest, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult
-
+    
     fun `deleteAttachment`(`attachmentId`: kotlin.String)
-
+    
     fun `executeAttachmentBatch`(`operationId`: kotlin.String, `commands`: List<MdbxAttachmentBatchCommand>): MdbxAttachmentBatchResult
-
+    
     fun `executeAttachmentBatchWithLimits`(`operationId`: kotlin.String, `commands`: List<MdbxAttachmentBatchCommand>, `limits`: MdbxAttachmentBatchLimits): MdbxAttachmentBatchResult
-
+    
     fun `getAttachment`(`attachmentId`: kotlin.String): MdbxAttachmentRecord?
-
+    
     fun `listAttachments`(`projectId`: kotlin.String, `entryId`: kotlin.String?): List<MdbxAttachmentRecord>
-
+    
     fun `listDeletedAttachments`(): List<MdbxAttachmentRecord>
-
+    
     fun `readAttachmentContent`(`attachmentId`: kotlin.String, `maxPlaintextBytes`: kotlin.ULong): kotlin.ByteArray
-
+    
     fun `renameAttachment`(`attachmentId`: kotlin.String, `fileName`: kotlin.String, `mediaType`: kotlin.String?): MdbxAttachmentRecord
-
+    
     fun `replaceAttachmentContent`(`operationId`: kotlin.String, `attachmentId`: kotlin.String, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult
-
+    
     fun `replaceAttachmentExternalContent`(`operationId`: kotlin.String, `attachmentId`: kotlin.String, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult
-
+    
     fun `verifyAttachmentIntegrity`(`attachmentId`: kotlin.String): kotlin.Boolean
-
+    
     /**
      * Read one attachment's bounded display metadata, including a tombstone.
      */
     fun `getAttachmentSummary`(`attachmentId`: kotlin.String): MdbxAttachmentSummary?
-
+    
     /**
      * Page active attachment summaries for a Collection or one Object.
      *
@@ -4298,464 +4319,466 @@ public interface MdbxVaultInterface {
      * Object ID keeps the Collection/Object scope bound into the cursor.
      */
     fun `listAttachmentSummaries`(`collectionId`: kotlin.String, `objectId`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxAttachmentSummaryPage
-
+    
     /**
      * Page deleted attachment summaries without selecting chunk/blob payloads.
      */
     fun `listDeletedAttachmentSummaries`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxAttachmentSummaryPage
-
+    
     /**
      * Read one collection's bounded presentation metadata, including a tombstone.
      */
     fun `getCollectionSummary`(`collectionId`: kotlin.String): MdbxCollectionSummary?
-
+    
     /**
      * Page active collections without selecting collection or profile payloads.
      */
     fun `listCollectionSummaries`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxCollectionSummaryPage
-
+    
     /**
      * Page deleted collections without selecting collection or profile payloads.
      */
     fun `listDeletedCollectionSummaries`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxCollectionSummaryPage
-
+    
     /**
      * Page unresolved conflicts without selecting an unbounded conflict
      * payload. The optional object type is part of the opaque cursor query.
      */
     fun `listUnresolvedConflictSummaries`(`objectType`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxConflictSummaryPage
-
+    
     fun `listUnresolvedConflicts`(): List<MdbxConflictRecord>
-
+    
     fun `resolveAttachmentConflictCustom`(`conflictId`: kotlin.String, `merged`: MdbxAttachmentConflictMerge): MdbxConflictRecord
-
+    
     fun `resolveConflict`(`conflictId`: kotlin.String, `choice`: MdbxConflictChoice): MdbxConflictRecord
-
+    
     fun `resolveEntryConflictCustomPayload`(`conflictId`: kotlin.String, `payloadJson`: kotlin.String): MdbxConflictRecord
-
+    
     fun `resolveObjectLabelAssignmentConflictCustom`(`conflictId`: kotlin.String, `deleted`: kotlin.Boolean): MdbxConflictRecord
-
+    
     fun `resolveObjectLabelConflictCustom`(`conflictId`: kotlin.String, `name`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt, `deleted`: kotlin.Boolean): MdbxConflictRecord
-
+    
     fun `resolveObjectRelationConflictCustom`(`conflictId`: kotlin.String, `sourceObjectId`: kotlin.String, `targetObjectId`: kotlin.String, `relationKind`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt, `deleted`: kotlin.Boolean): MdbxConflictRecord
-
+    
     fun `resolveProjectConflictCustom`(`conflictId`: kotlin.String, `merged`: MdbxProjectConflictMerge): MdbxConflictRecord
-
+    
     /**
      * Build a bounded Adapter payload migration plan through the active vault
      * session and a conservative Standard device context. Tiga authorization
      * precedes loading or decrypting the returned source payload bytes.
      */
     fun `createPayloadMigrationPlan`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String, `sourceSchemaVersion`: kotlin.UInt, `targetSchemaVersion`: kotlin.UInt, `maxItems`: kotlin.UInt, `branchId`: kotlin.String?): MdbxPayloadMigrationPlan
-
+    
     /**
      * Build a migration plan with the caller's real device assurance. The
      * active session must satisfy the Collection's MigratePayload policy.
      */
     fun `createPayloadMigrationPlanWithDeviceContext`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String, `sourceSchemaVersion`: kotlin.UInt, `targetSchemaVersion`: kotlin.UInt, `maxItems`: kotlin.UInt, `branchId`: kotlin.String?, `device`: MdbxDeviceContext): MdbxPayloadMigrationPlan
-
+    
     /**
      * Apply Adapter-produced payloads as one Tiga-authorized, idempotent user
      * operation using the conservative Standard device context.
      */
     fun `executePayloadMigration`(`plan`: MdbxPayloadMigrationPlan, `outputs`: List<MdbxPayloadMigrationOutput>): MdbxPayloadMigrationExecution
-
+    
     /**
      * Reauthorize and apply a migration with the caller's real device
      * assurance. Binding checks, one commit, audit, and sync delta are atomic.
      */
     fun `executePayloadMigrationWithDeviceContext`(`plan`: MdbxPayloadMigrationPlan, `outputs`: List<MdbxPayloadMigrationOutput>, `device`: MdbxDeviceContext): MdbxPayloadMigrationExecution
-
+    
     fun `getCollectionProfile`(`collectionId`: kotlin.String): MdbxCollectionProfile?
-
+    
     fun `getExtensionProfile`(`extensionId`: kotlin.String): MdbxExtensionProfile?
-
+    
     fun `listExtensionProfiles`(): List<MdbxExtensionProfile>
-
+    
     fun `registerExtensionProfile`(`profile`: MdbxExtensionProfile): MdbxExtensionRegistration
-
+    
     fun `replaceExtensionProfiles`(`profiles`: List<MdbxExtensionProfile>)
-
+    
     fun `setCollectionProfile`(`collectionId`: kotlin.String, `collectionTypeId`: kotlin.String, `payload`: kotlin.ByteArray, `payloadSchemaVersion`: kotlin.UInt, `allowedObjectTypeIds`: List<kotlin.String>, `requiredCapabilityIds`: List<kotlin.String>): MdbxCollectionProfile
-
+    
     fun `setExtensionCapabilities`(`capabilityIds`: List<kotlin.String>)
-
+    
     fun `unregisterExtensionProfile`(`extensionId`: kotlin.String): MdbxExtensionProfile?
-
+    
     fun `listCommitDiff`(`commitId`: kotlin.String): List<MdbxCommitDiffItem>
-
+    
     fun `revertCommit`(`commitId`: kotlin.String, `operationId`: kotlin.String, `device`: MdbxDeviceContext): MdbxCommitRevertResult
-
+    
     fun `getCommitHistory`(`commitId`: kotlin.String): MdbxCommitHistoryItem?
-
+    
     fun `getCommitHistoryV2`(`commitId`: kotlin.String): MdbxCommitHistoryItemV2?
-
+    
     fun `listBranches`(): List<MdbxBranchInfo>
-
+    
     fun `listCommitHistory`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxCommitHistoryPage
-
+    
     fun `listCommitHistoryV2`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxCommitHistoryPageV2
-
+    
     fun `compareIntegrityRootCheckpoints`(`previous`: MdbxAuthenticatedStateRootCheckpoint, `candidate`: MdbxAuthenticatedStateRootCheckpoint): MdbxIntegrityRootCheckpointRelation
-
+    
     fun `createIntegrityRootCheckpoint`(): MdbxAuthenticatedStateRootCheckpoint
-
+    
     fun `enableIntegrityRoot`(): MdbxIntegrityRootStatus
-
+    
     fun `integrityRootStatus`(): MdbxIntegrityRootStatus
-
+    
     fun `rebuildIntegrityRoot`(): MdbxIntegrityRootStatus
-
+    
     fun `verifyIntegrityRoot`(): MdbxIntegrityRootVerification
-
+    
     fun `verifyIntegrityRootCheckpoint`(`checkpoint`: MdbxAuthenticatedStateRootCheckpoint): MdbxIntegrityRootVerification
-
+    
     fun `applyHealthRepair`(`planToken`: kotlin.String, `operationId`: kotlin.String, `decisions`: List<MdbxHealthRepairDecision>): MdbxHealthRepairApplyResult
-
+    
     fun `createBackup`(`destination`: kotlin.String): MdbxBackupInfo
-
+    
     fun `diagnosticsSummary`(): MdbxVaultDiagnosticsSummary
-
+    
     fun `evaluateTombstonePurgeEligibility`(`tombstoneId`: kotlin.String, `now`: kotlin.String): MdbxTombstonePurgeEligibility
-
+    
     fun `findPermanentPurgeReceiptByTarget`(`targetObjectType`: kotlin.String, `targetObjectId`: kotlin.String): MdbxPermanentPurgeReceipt?
-
+    
     fun `findPermanentPurgeReceiptByTombstone`(`tombstoneId`: kotlin.String): MdbxPermanentPurgeReceipt?
-
+    
     fun `findTombstoneByTarget`(`targetObjectId`: kotlin.String): MdbxTombstoneRecord?
-
+    
     fun `healthCheck`(): MdbxHealthCheckResult
-
+    
     fun `info`(): VaultInfo
-
+    
     fun `planHealthRepair`(): MdbxHealthRepairPlan
-
+    
     fun `purgeTombstone`(`tombstoneId`: kotlin.String, `device`: MdbxDeviceContext): MdbxPermanentPurgeReceipt
-
+    
     fun `scheduleTombstonePurge`(`tombstoneId`: kotlin.String, `purgeEligibleAt`: kotlin.String, `device`: MdbxDeviceContext): MdbxTombstonePurgeScheduleResult
-
+    
     fun `assignObjectLabel`(`objectId`: kotlin.String, `labelId`: kotlin.String): MdbxObjectLabelAssignmentRecord
-
+    
     fun `createEntry`(`projectId`: kotlin.String, `entryType`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String): EntryRecord
-
+    
     fun `createObject`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRecord
-
+    
     fun `createObjectLabel`(`collectionId`: kotlin.String, `name`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectLabelRecord
-
+    
     fun `createObjectRelation`(`sourceObjectId`: kotlin.String, `targetObjectId`: kotlin.String, `relationKind`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRelationRecord
-
+    
     fun `createProject`(`title`: kotlin.String): ProjectRecord
-
+    
     fun `deleteEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String)
-
+    
     fun `deleteObjectLabel`(`labelId`: kotlin.String)
-
+    
     fun `deleteObjectRelation`(`relationId`: kotlin.String)
-
+    
     /**
      * MDBX1-compatible complete-payload read. New clients should prefer
      * `get_object_summary` and an authorized disclosure method.
      */
     fun `getObject`(`collectionId`: kotlin.String, `objectId`: kotlin.String): MdbxObjectRecord?
-
+    
     /**
      * Read label presentation metadata without selecting or decrypting its payload.
      */
     fun `getObjectLabelSummary`(`labelId`: kotlin.String): MdbxObjectLabelSummary?
-
+    
     /**
      * MDBX1/MDBX2-compatible complete-payload read. New clients should use the summary and
      * explicit multi-scope disclosure methods.
      */
     fun `getObjectRelation`(`relationId`: kotlin.String): MdbxObjectRelationRecord?
-
+    
     /**
      * Read relation navigation metadata without selecting or decrypting its payload.
      */
     fun `getObjectRelationSummary`(`relationId`: kotlin.String): MdbxObjectRelationSummary?
-
+    
     /**
      * Read one object's presentation metadata without selecting or decrypting its payload.
      */
     fun `getObjectSummary`(`objectId`: kotlin.String): MdbxObjectSummary?
-
+    
     /**
      * List all deleted object presentation metadata without selecting or
      * decrypting object payloads.
      */
     fun `listAllDeletedObjectSummaries`(`objectTypeId`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectSummaryPage
-
+    
     fun `listDeletedEntries`(`projectId`: kotlin.String, `entryType`: kotlin.String?): List<EntryRecord>
-
+    
     /**
      * List deleted object presentation metadata for one Collection without
      * selecting or decrypting object payloads.
      */
     fun `listDeletedObjectSummaries`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectSummaryPage
-
+    
     fun `listEntries`(`projectId`: kotlin.String, `entryType`: kotlin.String?): List<EntryRecord>
-
+    
     fun `listObjectLabelAssignmentSummariesByLabel`(`labelId`: kotlin.String, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectLabelAssignmentSummaryPage
-
+    
     fun `listObjectLabelAssignmentSummariesByObject`(`objectId`: kotlin.String, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectLabelAssignmentSummaryPage
-
+    
     fun `listObjectLabelAssignments`(`objectId`: kotlin.String): List<MdbxObjectLabelAssignmentRecord>
-
+    
     fun `listObjectLabelSummaries`(`collectionId`: kotlin.String, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectLabelSummaryPage
-
+    
     /**
      * MDBX1/MDBX2-compatible complete-payload list. New clients should use label summaries and
      * explicit policy-aware disclosure.
      */
     fun `listObjectLabels`(`collectionId`: kotlin.String): List<MdbxObjectLabelRecord>
-
+    
     fun `listObjectRelationSummariesFrom`(`sourceObjectId`: kotlin.String, `relationKind`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectRelationSummaryPage
-
+    
     fun `listObjectRelationSummariesTo`(`targetObjectId`: kotlin.String, `relationKind`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectRelationSummaryPage
-
+    
     fun `listObjectRelationsFrom`(`sourceObjectId`: kotlin.String, `relationKind`: kotlin.String?): List<MdbxObjectRelationRecord>
-
+    
     fun `listObjectRelationsTo`(`targetObjectId`: kotlin.String, `relationKind`: kotlin.String?): List<MdbxObjectRelationRecord>
-
+    
     fun `listObjectSummaries`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectSummaryPage
-
+    
     /**
      * MDBX1-compatible complete-payload list. New collection screens should
      * use `list_object_summaries`.
      */
     fun `listObjects`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String?): List<MdbxObjectRecord>
-
+    
     fun `moveEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String, `targetProjectId`: kotlin.String): EntryRecord
-
+    
     fun `removeObjectLabelAssignment`(`assignmentId`: kotlin.String)
-
+    
     fun `restoreEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String): EntryRecord
-
+    
     /**
      * Reveal an object using a conservative Standard device profile.
      */
     fun `revealObject`(`objectId`: kotlin.String): MdbxObjectDisclosureResult
-
+    
     /**
      * Reveal a label payload only after its collection Project policy allows it.
      */
     fun `revealObjectLabel`(`labelId`: kotlin.String): MdbxObjectLabelDisclosureResult
-
+    
     fun `revealObjectLabelWithDeviceContext`(`labelId`: kotlin.String, `device`: MdbxDeviceContext): MdbxObjectLabelDisclosureResult
-
+    
     fun `revealObjectLabelWithDeviceContextAndLimits`(`labelId`: kotlin.String, `device`: MdbxDeviceContext, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectLabelDisclosureResult
-
+    
     fun `revealObjectLabelWithLimits`(`labelId`: kotlin.String, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectLabelDisclosureResult
-
+    
     /**
      * Reveal a relation payload only after both endpoint Entry policies allow it.
      */
     fun `revealObjectRelation`(`relationId`: kotlin.String): MdbxObjectRelationDisclosureResult
-
+    
     fun `revealObjectRelationWithDeviceContext`(`relationId`: kotlin.String, `device`: MdbxDeviceContext): MdbxObjectRelationDisclosureResult
-
+    
     fun `revealObjectRelationWithDeviceContextAndLimits`(`relationId`: kotlin.String, `device`: MdbxDeviceContext, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectRelationDisclosureResult
-
+    
     fun `revealObjectRelationWithLimits`(`relationId`: kotlin.String, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectRelationDisclosureResult
-
+    
     /**
      * Reveal an object through the active vault session and the supplied real device
      * capabilities. A non-allow Tiga decision returns `object = None` instead of plaintext.
      */
     fun `revealObjectWithDeviceContext`(`objectId`: kotlin.String, `device`: MdbxDeviceContext): MdbxObjectDisclosureResult
-
+    
     /**
      * Reveal through the active session with explicit device capabilities and payload limits.
      */
     fun `revealObjectWithDeviceContextAndLimits`(`objectId`: kotlin.String, `device`: MdbxDeviceContext, `limits`: MdbxObjectDisclosureLimits): MdbxObjectDisclosureResult
-
+    
     /**
      * Reveal with a conservative Standard device profile and an explicit bounded payload size.
      */
     fun `revealObjectWithLimits`(`objectId`: kotlin.String, `limits`: MdbxObjectDisclosureLimits): MdbxObjectDisclosureResult
-
+    
     fun `updateEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String, `entryType`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String): EntryRecord
-
+    
     fun `updateObject`(`collectionId`: kotlin.String, `objectId`: kotlin.String, `objectTypeId`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRecord
-
+    
     fun `updateObjectLabel`(`labelId`: kotlin.String, `name`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectLabelRecord
-
+    
     fun `updateObjectRelation`(`relationId`: kotlin.String, `relationKind`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRelationRecord
-
+    
     fun `activeSessionInfo`(): MdbxSessionInfo?
-
+    
     fun `assessTigaUnlockPolicy`(): MdbxTigaUnlockAssessment
-
+    
     fun `authorizeTigaOperation`(`scope`: MdbxTigaScope, `operation`: MdbxTigaOperation, `device`: MdbxDeviceContext): MdbxAuthorizationDecision
-
+    
     /**
      * Returns an opaque exact-state manifest for client-side persistence.
      */
     fun `createContentManifest`(): kotlin.ByteArray
-
+    
     /**
      * Returns an opaque token for the client to persist outside the vault.
      */
     fun `createRollbackAnchor`(): kotlin.ByteArray
-
+    
     fun `listSecurityAuditEvents`(`limit`: kotlin.UInt): List<MdbxSecurityAuditEvent>
-
+    
     fun `listSecurityAuditEventsV2`(`limit`: kotlin.UInt): List<MdbxSecurityAuditEventV2>
-
+    
     fun `listUnlockMethods`(): List<MdbxUnlockMethod>
-
+    
     /**
      * Remaining reuse window for a disclosure reader. This never authorizes
      * disclosure or renews the session; normal reveal APIs remain mandatory.
      */
     fun `readSessionRemainingSecs`(`scope`: MdbxTigaScope): kotlin.ULong
-
+    
     fun `removeUnlockMethod`(`methodId`: kotlin.String, `device`: MdbxDeviceContext)
-
+    
     fun `resetMasterPassword`(`newPassword`: kotlin.String)
-
+    
     fun `resetMasterPasswordWithTigaMode`(`newPassword`: kotlin.String, `mode`: MdbxTigaMode)
-
+    
     fun `resetMasterPasswordWithTigaModeAndDeviceContext`(`newPassword`: kotlin.String, `mode`: MdbxTigaMode, `device`: MdbxDeviceContext)
-
+    
     fun `resolveTigaPolicy`(`scope`: MdbxTigaScope): MdbxResolvedTigaPolicy
-
+    
     fun `rotateKeyEpoch`(`device`: MdbxDeviceContext): MdbxKeyEpochRotationResult
-
+    
     fun `setTigaProfile`(`mode`: MdbxTigaMode, `weakeningReason`: kotlin.String?, `exceptionExpiresAtUnixSecs`: kotlin.Long?, `device`: MdbxDeviceContext): MdbxResolvedTigaPolicy
-
+    
     fun `setupLocalSecurityKeyUnlock`(`keyMaterial`: kotlin.ByteArray)
-
+    
     fun `setupLocalSecurityKeyUnlockWithDeviceContext`(`keyMaterial`: kotlin.ByteArray, `device`: MdbxDeviceContext)
-
+    
     fun `setupPasswordSecurityKeyUnlock`(`password`: kotlin.String, `keyMaterial`: kotlin.ByteArray, `device`: MdbxDeviceContext)
-
+    
     /**
      * Verifies an exact-state manifest before the client trusts the vault.
      */
     fun `verifyContentManifest`(`token`: kotlin.ByteArray): MdbxVaultContentManifestVerification
-
+    
     /**
      * Verifies a previously persisted token before the client trusts the vault.
      */
     fun `verifyRollbackAnchor`(`token`: kotlin.ByteArray): MdbxRollbackAnchorVerification
-
+    
+    fun `metadataCacheStats`(): MdbxMetadataCacheStats
+    
     /**
      * Create an authenticated automatic snapshot through the TIGA
      * CreateSnapshot operation. The ciphertext payload is not returned.
      */
     fun `createAutomaticSnapshot`(`retentionEligibleAt`: kotlin.String, `device`: MdbxDeviceContext): MdbxSnapshotSummary
-
+    
     fun `getSnapshotLifecycle`(`snapshotId`: kotlin.String): MdbxSnapshotLifecycleSummary?
-
+    
     fun `planAutomaticSnapshotPrune`(`keepLatest`: kotlin.UInt): MdbxSnapshotPrunePlan
-
+    
     fun `pruneAutomaticSnapshots`(`planToken`: kotlin.String, `keepLatest`: kotlin.UInt, `device`: MdbxDeviceContext): MdbxSnapshotPruneResult
-
+    
     fun `createManualSnapshot`(`displayName`: kotlin.String, `device`: MdbxDeviceContext): MdbxManagedSnapshotSummary
-
+    
     fun `deleteSnapshot`(`snapshotId`: kotlin.String, `device`: MdbxDeviceContext): MdbxSnapshotDeleteResult
-
+    
     fun `getSnapshotStructurePreview`(`snapshotId`: kotlin.String): MdbxSnapshotStructurePreview
-
+    
     fun `listManagedSnapshots`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxManagedSnapshotPage
-
+    
     fun `restoreSnapshot`(`snapshotId`: kotlin.String, `device`: MdbxDeviceContext): MdbxSnapshotRestoreResult
-
+    
     /**
      * Read one snapshot's bounded metadata without loading its payload.
      */
     fun `getSnapshotSummary`(`snapshotId`: kotlin.String): MdbxSnapshotSummary?
-
+    
     /**
      * Page snapshot metadata without selecting or decrypting `snapshot_ct`.
      */
     fun `listSnapshotSummaries`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxSnapshotSummaryPage
-
+    
     fun `abortExternalBlobTransfer`(`blobId`: kotlin.String, `ownerId`: kotlin.String)
-
+    
     fun `acquireExternalBlobLease`(`blobId`: kotlin.String, `ownerId`: kotlin.String, `nowUnixSecs`: kotlin.Long, `ttlSecs`: kotlin.Long): MdbxExternalBlobLease
-
+    
     /**
      * Authenticate and atomically apply one immutable segment. The caller
      * advances its durable per-stream cursor only after this method returns.
      */
     fun `applyIncrementalSyncSegment`(`source`: kotlin.String, `expectedBase`: MdbxIncrementalSyncCheckpoint, `expectedResume`: MdbxIncrementalSyncResume?): MdbxIncrementalSyncApplyResult
-
+    
     /**
      * Authenticate and atomically apply one complete manual bundle. Complete
      * bundles are deliberately distinct from incremental transport segments:
      * callers do not construct or persist peer checkpoints for this path.
      */
     fun `applyManualSyncBundle`(`source`: kotlin.String): MdbxManualSyncApplyResult
-
+    
     /**
      * Create the complete bootstrap and its exact incremental starting point
      * while holding the vault session lock. Ordinary synchronization uses
      * immutable incremental segments after this one-time operation.
      */
     fun `createIncrementalSyncBootstrap`(`destination`: kotlin.String): MdbxIncrementalSyncBootstrapInfo
-
+    
     /**
      * Write one authenticated v8 segment to a new app-private file. The
      * destination is published atomically and is never overwritten.
      */
     fun `exportIncrementalSyncSegment`(`destination`: kotlin.String, `base`: MdbxIncrementalSyncCheckpoint, `resume`: MdbxIncrementalSyncResume?, `pageSize`: kotlin.UInt): MdbxIncrementalSyncSegmentInfo
-
+    
     /**
      * Export an authenticated complete bundle for explicit user-mediated
      * transfer. The destination is written through a sibling temporary file,
      * fsynced, and published without overwriting an existing file.
      */
     fun `exportManualSyncBundle`(`destination`: kotlin.String): MdbxManualSyncBundleInfo
-
+    
     fun `hasExternalBlob`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong): kotlin.Boolean
-
+    
     fun `incrementalSyncCheckpoint`(): MdbxIncrementalSyncCheckpoint
-
+    
     /**
      * Authenticate and inspect a pending segment without changing vault
      * state. This lets Android recover a durably written pending file after a
      * process restart instead of regenerating different bytes.
      */
     fun `inspectIncrementalSyncSegment`(`source`: kotlin.String): MdbxIncrementalSyncSegmentInfo
-
+    
     /**
      * Page only Blob IDs that are referenced by current objects or retained
      * snapshots. Orphans are intentionally excluded from remote publication.
      */
     fun `listExternalBlobReferences`(`cursor`: kotlin.String?, `pageSize`: kotlin.UInt): MdbxExternalBlobReferencePage
-
+    
     fun `readExternalBlobChunk`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong, `offset`: kotlin.ULong, `maxBytes`: kotlin.UInt): MdbxExternalBlobChunk
-
+    
     fun `releaseExternalBlobLease`(`blobId`: kotlin.String, `ownerId`: kotlin.String)
-
+    
     fun `renewExternalBlobLease`(`blobId`: kotlin.String, `ownerId`: kotlin.String, `nowUnixSecs`: kotlin.Long, `ttlSecs`: kotlin.Long): MdbxExternalBlobLease
-
+    
     /**
      * Append a bounded number of metadata-only commits to measure the real
      * unlocked engine path without creating user-visible objects.
      */
     fun `runMetadataBenchmark`(`operationCount`: kotlin.UInt): MdbxMetadataBenchmarkResult
-
+    
     fun `writeExternalBlobChunk`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong, `offset`: kotlin.ULong, `ciphertext`: kotlin.ByteArray, `finalize`: kotlin.Boolean)
-
+    
     fun `executeCompositeWriteOperation`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>): MdbxCompositeWriteOperationResult
-
+    
     fun `executeCompositeWriteOperationOnBranch`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>): MdbxCompositeWriteOperationResult
-
+    
     fun `executeCompositeWriteOperationOnBranchWithLimits`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>, `limits`: MdbxCompositeWriteOperationLimits): MdbxCompositeWriteOperationResult
-
+    
     fun `executeCompositeWriteOperationWithLimits`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>, `limits`: MdbxCompositeWriteOperationLimits): MdbxCompositeWriteOperationResult
-
+    
     fun `executeWriteOperation`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>): MdbxWriteOperationResult
-
+    
     fun `executeWriteOperationOnBranch`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>): MdbxWriteOperationResult
-
+    
     fun `executeWriteOperationOnBranchWithLimits`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `limits`: MdbxWriteOperationLimits): MdbxWriteOperationResult
-
+    
     fun `executeWriteOperationWithLimits`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `limits`: MdbxWriteOperationLimits): MdbxWriteOperationResult
-
+    
     companion object
 }
 
@@ -4855,7 +4878,7 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         }
     }
 
-
+    
     @Throws(MdbxFfiException::class)override fun `createAttachmentWithContent`(`operationId`: kotlin.String, `request`: MdbxAttachmentCreateRequest, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult {
             return FfiConverterTypeMdbxAttachmentWriteResult.lift(
     callWithHandle {
@@ -4867,9 +4890,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Store attachment ciphertext in the vault's content-addressed Blob sidecar.
      *
@@ -4887,11 +4910,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `deleteAttachment`(`attachmentId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_delete_attachment(
@@ -4899,10 +4922,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`attachmentId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeAttachmentBatch`(`operationId`: kotlin.String, `commands`: List<MdbxAttachmentBatchCommand>): MdbxAttachmentBatchResult {
             return FfiConverterTypeMdbxAttachmentBatchResult.lift(
     callWithHandle {
@@ -4914,9 +4937,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeAttachmentBatchWithLimits`(`operationId`: kotlin.String, `commands`: List<MdbxAttachmentBatchCommand>, `limits`: MdbxAttachmentBatchLimits): MdbxAttachmentBatchResult {
             return FfiConverterTypeMdbxAttachmentBatchResult.lift(
     callWithHandle {
@@ -4928,9 +4951,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getAttachment`(`attachmentId`: kotlin.String): MdbxAttachmentRecord? {
             return FfiConverterOptionalTypeMdbxAttachmentRecord.lift(
     callWithHandle {
@@ -4942,9 +4965,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listAttachments`(`projectId`: kotlin.String, `entryId`: kotlin.String?): List<MdbxAttachmentRecord> {
             return FfiConverterSequenceTypeMdbxAttachmentRecord.lift(
     callWithHandle {
@@ -4956,9 +4979,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listDeletedAttachments`(): List<MdbxAttachmentRecord> {
             return FfiConverterSequenceTypeMdbxAttachmentRecord.lift(
     callWithHandle {
@@ -4970,9 +4993,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `readAttachmentContent`(`attachmentId`: kotlin.String, `maxPlaintextBytes`: kotlin.ULong): kotlin.ByteArray {
             return FfiConverterByteArray.lift(
     callWithHandle {
@@ -4984,9 +5007,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `renameAttachment`(`attachmentId`: kotlin.String, `fileName`: kotlin.String, `mediaType`: kotlin.String?): MdbxAttachmentRecord {
             return FfiConverterTypeMdbxAttachmentRecord.lift(
     callWithHandle {
@@ -4998,9 +5021,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `replaceAttachmentContent`(`operationId`: kotlin.String, `attachmentId`: kotlin.String, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult {
             return FfiConverterTypeMdbxAttachmentWriteResult.lift(
     callWithHandle {
@@ -5012,9 +5035,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `replaceAttachmentExternalContent`(`operationId`: kotlin.String, `attachmentId`: kotlin.String, `content`: kotlin.ByteArray, `limits`: MdbxAttachmentContentLimits): MdbxAttachmentWriteResult {
             return FfiConverterTypeMdbxAttachmentWriteResult.lift(
     callWithHandle {
@@ -5026,9 +5049,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `verifyAttachmentIntegrity`(`attachmentId`: kotlin.String): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -5040,9 +5063,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Read one attachment's bounded display metadata, including a tombstone.
      */
@@ -5057,9 +5080,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page active attachment summaries for a Collection or one Object.
      *
@@ -5077,9 +5100,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page deleted attachment summaries without selecting chunk/blob payloads.
      */
@@ -5094,9 +5117,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Read one collection's bounded presentation metadata, including a tombstone.
      */
@@ -5111,9 +5134,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page active collections without selecting collection or profile payloads.
      */
@@ -5128,9 +5151,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page deleted collections without selecting collection or profile payloads.
      */
@@ -5145,9 +5168,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page unresolved conflicts without selecting an unbounded conflict
      * payload. The optional object type is part of the opaque cursor query.
@@ -5163,9 +5186,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listUnresolvedConflicts`(): List<MdbxConflictRecord> {
             return FfiConverterSequenceTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5177,9 +5200,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveAttachmentConflictCustom`(`conflictId`: kotlin.String, `merged`: MdbxAttachmentConflictMerge): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5191,9 +5214,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveConflict`(`conflictId`: kotlin.String, `choice`: MdbxConflictChoice): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5205,9 +5228,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveEntryConflictCustomPayload`(`conflictId`: kotlin.String, `payloadJson`: kotlin.String): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5219,9 +5242,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveObjectLabelAssignmentConflictCustom`(`conflictId`: kotlin.String, `deleted`: kotlin.Boolean): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5233,9 +5256,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveObjectLabelConflictCustom`(`conflictId`: kotlin.String, `name`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt, `deleted`: kotlin.Boolean): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5247,9 +5270,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveObjectRelationConflictCustom`(`conflictId`: kotlin.String, `sourceObjectId`: kotlin.String, `targetObjectId`: kotlin.String, `relationKind`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt, `deleted`: kotlin.Boolean): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5261,9 +5284,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveProjectConflictCustom`(`conflictId`: kotlin.String, `merged`: MdbxProjectConflictMerge): MdbxConflictRecord {
             return FfiConverterTypeMdbxConflictRecord.lift(
     callWithHandle {
@@ -5275,9 +5298,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Build a bounded Adapter payload migration plan through the active vault
      * session and a conservative Standard device context. Tiga authorization
@@ -5294,9 +5317,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Build a migration plan with the caller's real device assurance. The
      * active session must satisfy the Collection's MigratePayload policy.
@@ -5312,9 +5335,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Apply Adapter-produced payloads as one Tiga-authorized, idempotent user
      * operation using the conservative Standard device context.
@@ -5330,9 +5353,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reauthorize and apply a migration with the caller's real device
      * assurance. Binding checks, one commit, audit, and sync delta are atomic.
@@ -5348,9 +5371,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getCollectionProfile`(`collectionId`: kotlin.String): MdbxCollectionProfile? {
             return FfiConverterOptionalTypeMdbxCollectionProfile.lift(
     callWithHandle {
@@ -5362,9 +5385,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getExtensionProfile`(`extensionId`: kotlin.String): MdbxExtensionProfile? {
             return FfiConverterOptionalTypeMdbxExtensionProfile.lift(
     callWithHandle {
@@ -5376,9 +5399,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listExtensionProfiles`(): List<MdbxExtensionProfile> {
             return FfiConverterSequenceTypeMdbxExtensionProfile.lift(
     callWithHandle {
@@ -5390,9 +5413,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `registerExtensionProfile`(`profile`: MdbxExtensionProfile): MdbxExtensionRegistration {
             return FfiConverterTypeMdbxExtensionRegistration.lift(
     callWithHandle {
@@ -5404,11 +5427,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `replaceExtensionProfiles`(`profiles`: List<MdbxExtensionProfile>)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_replace_extension_profiles(
@@ -5416,10 +5439,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterSequenceTypeMdbxExtensionProfile.lower(`profiles`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `setCollectionProfile`(`collectionId`: kotlin.String, `collectionTypeId`: kotlin.String, `payload`: kotlin.ByteArray, `payloadSchemaVersion`: kotlin.UInt, `allowedObjectTypeIds`: List<kotlin.String>, `requiredCapabilityIds`: List<kotlin.String>): MdbxCollectionProfile {
             return FfiConverterTypeMdbxCollectionProfile.lift(
     callWithHandle {
@@ -5431,11 +5454,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `setExtensionCapabilities`(`capabilityIds`: List<kotlin.String>)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_set_extension_capabilities(
@@ -5443,10 +5466,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterSequenceString.lower(`capabilityIds`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `unregisterExtensionProfile`(`extensionId`: kotlin.String): MdbxExtensionProfile? {
             return FfiConverterOptionalTypeMdbxExtensionProfile.lift(
     callWithHandle {
@@ -5458,9 +5481,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listCommitDiff`(`commitId`: kotlin.String): List<MdbxCommitDiffItem> {
             return FfiConverterSequenceTypeMdbxCommitDiffItem.lift(
     callWithHandle {
@@ -5472,9 +5495,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revertCommit`(`commitId`: kotlin.String, `operationId`: kotlin.String, `device`: MdbxDeviceContext): MdbxCommitRevertResult {
             return FfiConverterTypeMdbxCommitRevertResult.lift(
     callWithHandle {
@@ -5486,9 +5509,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getCommitHistory`(`commitId`: kotlin.String): MdbxCommitHistoryItem? {
             return FfiConverterOptionalTypeMdbxCommitHistoryItem.lift(
     callWithHandle {
@@ -5500,9 +5523,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getCommitHistoryV2`(`commitId`: kotlin.String): MdbxCommitHistoryItemV2? {
             return FfiConverterOptionalTypeMdbxCommitHistoryItemV2.lift(
     callWithHandle {
@@ -5514,9 +5537,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listBranches`(): List<MdbxBranchInfo> {
             return FfiConverterSequenceTypeMdbxBranchInfo.lift(
     callWithHandle {
@@ -5528,9 +5551,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listCommitHistory`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxCommitHistoryPage {
             return FfiConverterTypeMdbxCommitHistoryPage.lift(
     callWithHandle {
@@ -5542,9 +5565,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listCommitHistoryV2`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxCommitHistoryPageV2 {
             return FfiConverterTypeMdbxCommitHistoryPageV2.lift(
     callWithHandle {
@@ -5556,9 +5579,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `compareIntegrityRootCheckpoints`(`previous`: MdbxAuthenticatedStateRootCheckpoint, `candidate`: MdbxAuthenticatedStateRootCheckpoint): MdbxIntegrityRootCheckpointRelation {
             return FfiConverterTypeMdbxIntegrityRootCheckpointRelation.lift(
     callWithHandle {
@@ -5570,9 +5593,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createIntegrityRootCheckpoint`(): MdbxAuthenticatedStateRootCheckpoint {
             return FfiConverterTypeMdbxAuthenticatedStateRootCheckpoint.lift(
     callWithHandle {
@@ -5584,9 +5607,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `enableIntegrityRoot`(): MdbxIntegrityRootStatus {
             return FfiConverterTypeMdbxIntegrityRootStatus.lift(
     callWithHandle {
@@ -5598,9 +5621,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `integrityRootStatus`(): MdbxIntegrityRootStatus {
             return FfiConverterTypeMdbxIntegrityRootStatus.lift(
     callWithHandle {
@@ -5612,9 +5635,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `rebuildIntegrityRoot`(): MdbxIntegrityRootStatus {
             return FfiConverterTypeMdbxIntegrityRootStatus.lift(
     callWithHandle {
@@ -5626,9 +5649,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `verifyIntegrityRoot`(): MdbxIntegrityRootVerification {
             return FfiConverterTypeMdbxIntegrityRootVerification.lift(
     callWithHandle {
@@ -5640,9 +5663,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `verifyIntegrityRootCheckpoint`(`checkpoint`: MdbxAuthenticatedStateRootCheckpoint): MdbxIntegrityRootVerification {
             return FfiConverterTypeMdbxIntegrityRootVerification.lift(
     callWithHandle {
@@ -5654,9 +5677,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `applyHealthRepair`(`planToken`: kotlin.String, `operationId`: kotlin.String, `decisions`: List<MdbxHealthRepairDecision>): MdbxHealthRepairApplyResult {
             return FfiConverterTypeMdbxHealthRepairApplyResult.lift(
     callWithHandle {
@@ -5668,9 +5691,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createBackup`(`destination`: kotlin.String): MdbxBackupInfo {
             return FfiConverterTypeMdbxBackupInfo.lift(
     callWithHandle {
@@ -5682,9 +5705,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `diagnosticsSummary`(): MdbxVaultDiagnosticsSummary {
             return FfiConverterTypeMdbxVaultDiagnosticsSummary.lift(
     callWithHandle {
@@ -5696,9 +5719,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `evaluateTombstonePurgeEligibility`(`tombstoneId`: kotlin.String, `now`: kotlin.String): MdbxTombstonePurgeEligibility {
             return FfiConverterTypeMdbxTombstonePurgeEligibility.lift(
     callWithHandle {
@@ -5710,9 +5733,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `findPermanentPurgeReceiptByTarget`(`targetObjectType`: kotlin.String, `targetObjectId`: kotlin.String): MdbxPermanentPurgeReceipt? {
             return FfiConverterOptionalTypeMdbxPermanentPurgeReceipt.lift(
     callWithHandle {
@@ -5724,9 +5747,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `findPermanentPurgeReceiptByTombstone`(`tombstoneId`: kotlin.String): MdbxPermanentPurgeReceipt? {
             return FfiConverterOptionalTypeMdbxPermanentPurgeReceipt.lift(
     callWithHandle {
@@ -5738,9 +5761,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `findTombstoneByTarget`(`targetObjectId`: kotlin.String): MdbxTombstoneRecord? {
             return FfiConverterOptionalTypeMdbxTombstoneRecord.lift(
     callWithHandle {
@@ -5752,9 +5775,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `healthCheck`(): MdbxHealthCheckResult {
             return FfiConverterTypeMdbxHealthCheckResult.lift(
     callWithHandle {
@@ -5766,7 +5789,7 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
-
+    
 
     override fun `info`(): VaultInfo {
             return FfiConverterTypeVaultInfo.lift(
@@ -5779,9 +5802,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `planHealthRepair`(): MdbxHealthRepairPlan {
             return FfiConverterTypeMdbxHealthRepairPlan.lift(
     callWithHandle {
@@ -5793,9 +5816,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `purgeTombstone`(`tombstoneId`: kotlin.String, `device`: MdbxDeviceContext): MdbxPermanentPurgeReceipt {
             return FfiConverterTypeMdbxPermanentPurgeReceipt.lift(
     callWithHandle {
@@ -5807,9 +5830,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `scheduleTombstonePurge`(`tombstoneId`: kotlin.String, `purgeEligibleAt`: kotlin.String, `device`: MdbxDeviceContext): MdbxTombstonePurgeScheduleResult {
             return FfiConverterTypeMdbxTombstonePurgeScheduleResult.lift(
     callWithHandle {
@@ -5821,9 +5844,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `assignObjectLabel`(`objectId`: kotlin.String, `labelId`: kotlin.String): MdbxObjectLabelAssignmentRecord {
             return FfiConverterTypeMdbxObjectLabelAssignmentRecord.lift(
     callWithHandle {
@@ -5835,9 +5858,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createEntry`(`projectId`: kotlin.String, `entryType`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String): EntryRecord {
             return FfiConverterTypeEntryRecord.lift(
     callWithHandle {
@@ -5849,9 +5872,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createObject`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRecord {
             return FfiConverterTypeMdbxObjectRecord.lift(
     callWithHandle {
@@ -5863,9 +5886,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createObjectLabel`(`collectionId`: kotlin.String, `name`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectLabelRecord {
             return FfiConverterTypeMdbxObjectLabelRecord.lift(
     callWithHandle {
@@ -5877,9 +5900,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createObjectRelation`(`sourceObjectId`: kotlin.String, `targetObjectId`: kotlin.String, `relationKind`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRelationRecord {
             return FfiConverterTypeMdbxObjectRelationRecord.lift(
     callWithHandle {
@@ -5891,9 +5914,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createProject`(`title`: kotlin.String): ProjectRecord {
             return FfiConverterTypeProjectRecord.lift(
     callWithHandle {
@@ -5905,11 +5928,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `deleteEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_delete_entry(
@@ -5917,12 +5940,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`projectId`),FfiConverterString.lower(`entryId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `deleteObjectLabel`(`labelId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_delete_object_label(
@@ -5930,12 +5953,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`labelId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `deleteObjectRelation`(`relationId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_delete_object_relation(
@@ -5943,10 +5966,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`relationId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     /**
      * MDBX1-compatible complete-payload read. New clients should prefer
      * `get_object_summary` and an authorized disclosure method.
@@ -5962,9 +5985,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Read label presentation metadata without selecting or decrypting its payload.
      */
@@ -5979,9 +6002,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * MDBX1/MDBX2-compatible complete-payload read. New clients should use the summary and
      * explicit multi-scope disclosure methods.
@@ -5997,9 +6020,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Read relation navigation metadata without selecting or decrypting its payload.
      */
@@ -6014,9 +6037,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Read one object's presentation metadata without selecting or decrypting its payload.
      */
@@ -6031,9 +6054,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * List all deleted object presentation metadata without selecting or
      * decrypting object payloads.
@@ -6049,9 +6072,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listDeletedEntries`(`projectId`: kotlin.String, `entryType`: kotlin.String?): List<EntryRecord> {
             return FfiConverterSequenceTypeEntryRecord.lift(
     callWithHandle {
@@ -6063,9 +6086,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * List deleted object presentation metadata for one Collection without
      * selecting or decrypting object payloads.
@@ -6081,9 +6104,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listEntries`(`projectId`: kotlin.String, `entryType`: kotlin.String?): List<EntryRecord> {
             return FfiConverterSequenceTypeEntryRecord.lift(
     callWithHandle {
@@ -6095,9 +6118,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectLabelAssignmentSummariesByLabel`(`labelId`: kotlin.String, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectLabelAssignmentSummaryPage {
             return FfiConverterTypeMdbxObjectLabelAssignmentSummaryPage.lift(
     callWithHandle {
@@ -6109,9 +6132,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectLabelAssignmentSummariesByObject`(`objectId`: kotlin.String, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectLabelAssignmentSummaryPage {
             return FfiConverterTypeMdbxObjectLabelAssignmentSummaryPage.lift(
     callWithHandle {
@@ -6123,9 +6146,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectLabelAssignments`(`objectId`: kotlin.String): List<MdbxObjectLabelAssignmentRecord> {
             return FfiConverterSequenceTypeMdbxObjectLabelAssignmentRecord.lift(
     callWithHandle {
@@ -6137,9 +6160,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectLabelSummaries`(`collectionId`: kotlin.String, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectLabelSummaryPage {
             return FfiConverterTypeMdbxObjectLabelSummaryPage.lift(
     callWithHandle {
@@ -6151,9 +6174,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * MDBX1/MDBX2-compatible complete-payload list. New clients should use label summaries and
      * explicit policy-aware disclosure.
@@ -6169,9 +6192,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectRelationSummariesFrom`(`sourceObjectId`: kotlin.String, `relationKind`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectRelationSummaryPage {
             return FfiConverterTypeMdbxObjectRelationSummaryPage.lift(
     callWithHandle {
@@ -6183,9 +6206,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectRelationSummariesTo`(`targetObjectId`: kotlin.String, `relationKind`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectRelationSummaryPage {
             return FfiConverterTypeMdbxObjectRelationSummaryPage.lift(
     callWithHandle {
@@ -6197,9 +6220,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectRelationsFrom`(`sourceObjectId`: kotlin.String, `relationKind`: kotlin.String?): List<MdbxObjectRelationRecord> {
             return FfiConverterSequenceTypeMdbxObjectRelationRecord.lift(
     callWithHandle {
@@ -6211,9 +6234,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectRelationsTo`(`targetObjectId`: kotlin.String, `relationKind`: kotlin.String?): List<MdbxObjectRelationRecord> {
             return FfiConverterSequenceTypeMdbxObjectRelationRecord.lift(
     callWithHandle {
@@ -6225,9 +6248,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listObjectSummaries`(`collectionId`: kotlin.String, `objectTypeId`: kotlin.String?, `pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxObjectSummaryPage {
             return FfiConverterTypeMdbxObjectSummaryPage.lift(
     callWithHandle {
@@ -6239,9 +6262,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * MDBX1-compatible complete-payload list. New collection screens should
      * use `list_object_summaries`.
@@ -6257,9 +6280,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `moveEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String, `targetProjectId`: kotlin.String): EntryRecord {
             return FfiConverterTypeEntryRecord.lift(
     callWithHandle {
@@ -6271,11 +6294,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `removeObjectLabelAssignment`(`assignmentId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_remove_object_label_assignment(
@@ -6283,10 +6306,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`assignmentId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `restoreEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String): EntryRecord {
             return FfiConverterTypeEntryRecord.lift(
     callWithHandle {
@@ -6298,9 +6321,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reveal an object using a conservative Standard device profile.
      */
@@ -6315,9 +6338,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reveal a label payload only after its collection Project policy allows it.
      */
@@ -6332,9 +6355,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revealObjectLabelWithDeviceContext`(`labelId`: kotlin.String, `device`: MdbxDeviceContext): MdbxObjectLabelDisclosureResult {
             return FfiConverterTypeMdbxObjectLabelDisclosureResult.lift(
     callWithHandle {
@@ -6346,9 +6369,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revealObjectLabelWithDeviceContextAndLimits`(`labelId`: kotlin.String, `device`: MdbxDeviceContext, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectLabelDisclosureResult {
             return FfiConverterTypeMdbxObjectLabelDisclosureResult.lift(
     callWithHandle {
@@ -6360,9 +6383,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revealObjectLabelWithLimits`(`labelId`: kotlin.String, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectLabelDisclosureResult {
             return FfiConverterTypeMdbxObjectLabelDisclosureResult.lift(
     callWithHandle {
@@ -6374,9 +6397,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reveal a relation payload only after both endpoint Entry policies allow it.
      */
@@ -6391,9 +6414,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revealObjectRelationWithDeviceContext`(`relationId`: kotlin.String, `device`: MdbxDeviceContext): MdbxObjectRelationDisclosureResult {
             return FfiConverterTypeMdbxObjectRelationDisclosureResult.lift(
     callWithHandle {
@@ -6405,9 +6428,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revealObjectRelationWithDeviceContextAndLimits`(`relationId`: kotlin.String, `device`: MdbxDeviceContext, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectRelationDisclosureResult {
             return FfiConverterTypeMdbxObjectRelationDisclosureResult.lift(
     callWithHandle {
@@ -6419,9 +6442,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `revealObjectRelationWithLimits`(`relationId`: kotlin.String, `limits`: MdbxObjectMetadataDisclosureLimits): MdbxObjectRelationDisclosureResult {
             return FfiConverterTypeMdbxObjectRelationDisclosureResult.lift(
     callWithHandle {
@@ -6433,9 +6456,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reveal an object through the active vault session and the supplied real device
      * capabilities. A non-allow Tiga decision returns `object = None` instead of plaintext.
@@ -6451,9 +6474,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reveal through the active session with explicit device capabilities and payload limits.
      */
@@ -6468,9 +6491,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Reveal with a conservative Standard device profile and an explicit bounded payload size.
      */
@@ -6485,9 +6508,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `updateEntry`(`projectId`: kotlin.String, `entryId`: kotlin.String, `entryType`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String): EntryRecord {
             return FfiConverterTypeEntryRecord.lift(
     callWithHandle {
@@ -6499,9 +6522,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `updateObject`(`collectionId`: kotlin.String, `objectId`: kotlin.String, `objectTypeId`: kotlin.String, `title`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRecord {
             return FfiConverterTypeMdbxObjectRecord.lift(
     callWithHandle {
@@ -6513,9 +6536,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `updateObjectLabel`(`labelId`: kotlin.String, `name`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectLabelRecord {
             return FfiConverterTypeMdbxObjectLabelRecord.lift(
     callWithHandle {
@@ -6527,9 +6550,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `updateObjectRelation`(`relationId`: kotlin.String, `relationKind`: kotlin.String, `payloadJson`: kotlin.String, `payloadSchemaVersion`: kotlin.UInt): MdbxObjectRelationRecord {
             return FfiConverterTypeMdbxObjectRelationRecord.lift(
     callWithHandle {
@@ -6541,9 +6564,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `activeSessionInfo`(): MdbxSessionInfo? {
             return FfiConverterOptionalTypeMdbxSessionInfo.lift(
     callWithHandle {
@@ -6555,9 +6578,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `assessTigaUnlockPolicy`(): MdbxTigaUnlockAssessment {
             return FfiConverterTypeMdbxTigaUnlockAssessment.lift(
     callWithHandle {
@@ -6569,9 +6592,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `authorizeTigaOperation`(`scope`: MdbxTigaScope, `operation`: MdbxTigaOperation, `device`: MdbxDeviceContext): MdbxAuthorizationDecision {
             return FfiConverterTypeMdbxAuthorizationDecision.lift(
     callWithHandle {
@@ -6583,9 +6606,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Returns an opaque exact-state manifest for client-side persistence.
      */
@@ -6600,9 +6623,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Returns an opaque token for the client to persist outside the vault.
      */
@@ -6617,9 +6640,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listSecurityAuditEvents`(`limit`: kotlin.UInt): List<MdbxSecurityAuditEvent> {
             return FfiConverterSequenceTypeMdbxSecurityAuditEvent.lift(
     callWithHandle {
@@ -6631,9 +6654,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listSecurityAuditEventsV2`(`limit`: kotlin.UInt): List<MdbxSecurityAuditEventV2> {
             return FfiConverterSequenceTypeMdbxSecurityAuditEventV2.lift(
     callWithHandle {
@@ -6645,9 +6668,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listUnlockMethods`(): List<MdbxUnlockMethod> {
             return FfiConverterSequenceTypeMdbxUnlockMethod.lift(
     callWithHandle {
@@ -6659,9 +6682,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Remaining reuse window for a disclosure reader. This never authorizes
      * disclosure or renews the session; normal reveal APIs remain mandatory.
@@ -6677,11 +6700,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `removeUnlockMethod`(`methodId`: kotlin.String, `device`: MdbxDeviceContext)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_remove_unlock_method(
@@ -6689,12 +6712,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`methodId`),FfiConverterTypeMdbxDeviceContext.lower(`device`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resetMasterPassword`(`newPassword`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password(
@@ -6702,12 +6725,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`newPassword`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resetMasterPasswordWithTigaMode`(`newPassword`: kotlin.String, `mode`: MdbxTigaMode)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password_with_tiga_mode(
@@ -6715,12 +6738,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`newPassword`),FfiConverterTypeMdbxTigaMode.lower(`mode`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resetMasterPasswordWithTigaModeAndDeviceContext`(`newPassword`: kotlin.String, `mode`: MdbxTigaMode, `device`: MdbxDeviceContext)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_reset_master_password_with_tiga_mode_and_device_context(
@@ -6728,10 +6751,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`newPassword`),FfiConverterTypeMdbxTigaMode.lower(`mode`),FfiConverterTypeMdbxDeviceContext.lower(`device`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `resolveTigaPolicy`(`scope`: MdbxTigaScope): MdbxResolvedTigaPolicy {
             return FfiConverterTypeMdbxResolvedTigaPolicy.lift(
     callWithHandle {
@@ -6743,9 +6766,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `rotateKeyEpoch`(`device`: MdbxDeviceContext): MdbxKeyEpochRotationResult {
             return FfiConverterTypeMdbxKeyEpochRotationResult.lift(
     callWithHandle {
@@ -6757,9 +6780,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `setTigaProfile`(`mode`: MdbxTigaMode, `weakeningReason`: kotlin.String?, `exceptionExpiresAtUnixSecs`: kotlin.Long?, `device`: MdbxDeviceContext): MdbxResolvedTigaPolicy {
             return FfiConverterTypeMdbxResolvedTigaPolicy.lift(
     callWithHandle {
@@ -6771,11 +6794,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `setupLocalSecurityKeyUnlock`(`keyMaterial`: kotlin.ByteArray)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_setup_local_security_key_unlock(
@@ -6783,12 +6806,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterByteArray.lower(`keyMaterial`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `setupLocalSecurityKeyUnlockWithDeviceContext`(`keyMaterial`: kotlin.ByteArray, `device`: MdbxDeviceContext)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_setup_local_security_key_unlock_with_device_context(
@@ -6796,12 +6819,12 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterByteArray.lower(`keyMaterial`),FfiConverterTypeMdbxDeviceContext.lower(`device`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `setupPasswordSecurityKeyUnlock`(`password`: kotlin.String, `keyMaterial`: kotlin.ByteArray, `device`: MdbxDeviceContext)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_setup_password_security_key_unlock(
@@ -6809,10 +6832,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`password`),FfiConverterByteArray.lower(`keyMaterial`),FfiConverterTypeMdbxDeviceContext.lower(`device`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     /**
      * Verifies an exact-state manifest before the client trusts the vault.
      */
@@ -6827,9 +6850,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Verifies a previously persisted token before the client trusts the vault.
      */
@@ -6844,9 +6867,23 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
+    
+    @Throws(MdbxFfiException::class)override fun `metadataCacheStats`(): MdbxMetadataCacheStats {
+            return FfiConverterTypeMdbxMetadataCacheStats.lift(
+    callWithHandle {
+    uniffiRustCallWithError(MdbxFfiException) { _status ->
+    UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_metadata_cache_stats(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
-
+    
     /**
      * Create an authenticated automatic snapshot through the TIGA
      * CreateSnapshot operation. The ciphertext payload is not returned.
@@ -6862,9 +6899,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getSnapshotLifecycle`(`snapshotId`: kotlin.String): MdbxSnapshotLifecycleSummary? {
             return FfiConverterOptionalTypeMdbxSnapshotLifecycleSummary.lift(
     callWithHandle {
@@ -6876,9 +6913,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `planAutomaticSnapshotPrune`(`keepLatest`: kotlin.UInt): MdbxSnapshotPrunePlan {
             return FfiConverterTypeMdbxSnapshotPrunePlan.lift(
     callWithHandle {
@@ -6890,9 +6927,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `pruneAutomaticSnapshots`(`planToken`: kotlin.String, `keepLatest`: kotlin.UInt, `device`: MdbxDeviceContext): MdbxSnapshotPruneResult {
             return FfiConverterTypeMdbxSnapshotPruneResult.lift(
     callWithHandle {
@@ -6904,9 +6941,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `createManualSnapshot`(`displayName`: kotlin.String, `device`: MdbxDeviceContext): MdbxManagedSnapshotSummary {
             return FfiConverterTypeMdbxManagedSnapshotSummary.lift(
     callWithHandle {
@@ -6918,9 +6955,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `deleteSnapshot`(`snapshotId`: kotlin.String, `device`: MdbxDeviceContext): MdbxSnapshotDeleteResult {
             return FfiConverterTypeMdbxSnapshotDeleteResult.lift(
     callWithHandle {
@@ -6932,9 +6969,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `getSnapshotStructurePreview`(`snapshotId`: kotlin.String): MdbxSnapshotStructurePreview {
             return FfiConverterTypeMdbxSnapshotStructurePreview.lift(
     callWithHandle {
@@ -6946,9 +6983,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `listManagedSnapshots`(`pageSize`: kotlin.UInt, `cursor`: kotlin.String?): MdbxManagedSnapshotPage {
             return FfiConverterTypeMdbxManagedSnapshotPage.lift(
     callWithHandle {
@@ -6960,9 +6997,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `restoreSnapshot`(`snapshotId`: kotlin.String, `device`: MdbxDeviceContext): MdbxSnapshotRestoreResult {
             return FfiConverterTypeMdbxSnapshotRestoreResult.lift(
     callWithHandle {
@@ -6974,9 +7011,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Read one snapshot's bounded metadata without loading its payload.
      */
@@ -6991,9 +7028,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page snapshot metadata without selecting or decrypting `snapshot_ct`.
      */
@@ -7008,11 +7045,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `abortExternalBlobTransfer`(`blobId`: kotlin.String, `ownerId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_abort_external_blob_transfer(
@@ -7020,10 +7057,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`blobId`),FfiConverterString.lower(`ownerId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `acquireExternalBlobLease`(`blobId`: kotlin.String, `ownerId`: kotlin.String, `nowUnixSecs`: kotlin.Long, `ttlSecs`: kotlin.Long): MdbxExternalBlobLease {
             return FfiConverterTypeMdbxExternalBlobLease.lift(
     callWithHandle {
@@ -7035,9 +7072,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Authenticate and atomically apply one immutable segment. The caller
      * advances its durable per-stream cursor only after this method returns.
@@ -7053,9 +7090,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Authenticate and atomically apply one complete manual bundle. Complete
      * bundles are deliberately distinct from incremental transport segments:
@@ -7072,9 +7109,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Create the complete bootstrap and its exact incremental starting point
      * while holding the vault session lock. Ordinary synchronization uses
@@ -7091,9 +7128,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Write one authenticated v8 segment to a new app-private file. The
      * destination is published atomically and is never overwritten.
@@ -7109,9 +7146,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Export an authenticated complete bundle for explicit user-mediated
      * transfer. The destination is written through a sibling temporary file,
@@ -7128,9 +7165,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `hasExternalBlob`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong): kotlin.Boolean {
             return FfiConverterBoolean.lift(
     callWithHandle {
@@ -7142,9 +7179,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `incrementalSyncCheckpoint`(): MdbxIncrementalSyncCheckpoint {
             return FfiConverterTypeMdbxIncrementalSyncCheckpoint.lift(
     callWithHandle {
@@ -7156,9 +7193,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Authenticate and inspect a pending segment without changing vault
      * state. This lets Android recover a durably written pending file after a
@@ -7175,9 +7212,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Page only Blob IDs that are referenced by current objects or retained
      * snapshots. Orphans are intentionally excluded from remote publication.
@@ -7193,9 +7230,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `readExternalBlobChunk`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong, `offset`: kotlin.ULong, `maxBytes`: kotlin.UInt): MdbxExternalBlobChunk {
             return FfiConverterTypeMdbxExternalBlobChunk.lift(
     callWithHandle {
@@ -7207,11 +7244,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `releaseExternalBlobLease`(`blobId`: kotlin.String, `ownerId`: kotlin.String)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_release_external_blob_lease(
@@ -7219,10 +7256,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`blobId`),FfiConverterString.lower(`ownerId`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `renewExternalBlobLease`(`blobId`: kotlin.String, `ownerId`: kotlin.String, `nowUnixSecs`: kotlin.Long, `ttlSecs`: kotlin.Long): MdbxExternalBlobLease {
             return FfiConverterTypeMdbxExternalBlobLease.lift(
     callWithHandle {
@@ -7234,9 +7271,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     /**
      * Append a bounded number of metadata-only commits to measure the real
      * unlocked engine path without creating user-visible objects.
@@ -7252,11 +7289,11 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `writeExternalBlobChunk`(`blobId`: kotlin.String, `totalSize`: kotlin.ULong, `offset`: kotlin.ULong, `ciphertext`: kotlin.ByteArray, `finalize`: kotlin.Boolean)
-        =
+        = 
     callWithHandle {
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_method_mdbxvault_write_external_blob_chunk(
@@ -7264,10 +7301,10 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
         FfiConverterString.lower(`blobId`),FfiConverterULong.lower(`totalSize`),FfiConverterULong.lower(`offset`),FfiConverterByteArray.lower(`ciphertext`),FfiConverterBoolean.lower(`finalize`),_status)
 }
     }
+    
+    
 
-
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeCompositeWriteOperation`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>): MdbxCompositeWriteOperationResult {
             return FfiConverterTypeMdbxCompositeWriteOperationResult.lift(
     callWithHandle {
@@ -7279,9 +7316,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeCompositeWriteOperationOnBranch`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>): MdbxCompositeWriteOperationResult {
             return FfiConverterTypeMdbxCompositeWriteOperationResult.lift(
     callWithHandle {
@@ -7293,9 +7330,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeCompositeWriteOperationOnBranchWithLimits`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>, `limits`: MdbxCompositeWriteOperationLimits): MdbxCompositeWriteOperationResult {
             return FfiConverterTypeMdbxCompositeWriteOperationResult.lift(
     callWithHandle {
@@ -7307,9 +7344,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeCompositeWriteOperationWithLimits`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `attachmentCommands`: List<MdbxAttachmentBatchCommand>, `limits`: MdbxCompositeWriteOperationLimits): MdbxCompositeWriteOperationResult {
             return FfiConverterTypeMdbxCompositeWriteOperationResult.lift(
     callWithHandle {
@@ -7321,9 +7358,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeWriteOperation`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>): MdbxWriteOperationResult {
             return FfiConverterTypeMdbxWriteOperationResult.lift(
     callWithHandle {
@@ -7335,9 +7372,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeWriteOperationOnBranch`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>): MdbxWriteOperationResult {
             return FfiConverterTypeMdbxWriteOperationResult.lift(
     callWithHandle {
@@ -7349,9 +7386,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeWriteOperationOnBranchWithLimits`(`branchId`: kotlin.String, `operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `limits`: MdbxWriteOperationLimits): MdbxWriteOperationResult {
             return FfiConverterTypeMdbxWriteOperationResult.lift(
     callWithHandle {
@@ -7363,9 +7400,9 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
 
-
-
+    
     @Throws(MdbxFfiException::class)override fun `executeWriteOperationWithLimits`(`operationId`: kotlin.String, `operationKind`: kotlin.String, `commands`: List<MdbxWriteCommand>, `limits`: MdbxWriteOperationLimits): MdbxWriteOperationResult {
             return FfiConverterTypeMdbxWriteOperationResult.lift(
     callWithHandle {
@@ -7377,20 +7414,20 @@ open class MdbxVault: Disposable, AutoCloseable, MdbxVaultInterface
     }
     )
     }
+    
+
+    
+
+    
 
 
-
-
-
-
-
-
-
+    
+    
     /**
      * @suppress
      */
     companion object
-
+    
 }
 
 
@@ -7421,23 +7458,23 @@ public object FfiConverterTypeMdbxVault: FfiConverter<MdbxVault, Long> {
 
 data class EntryRecord (
     var `entryId`: kotlin.String
-    ,
+    , 
     var `projectId`: kotlin.String
-    ,
+    , 
     var `entryType`: kotlin.String
-    ,
+    , 
     var `title`: kotlin.String
-    ,
+    , 
     var `payloadJson`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7479,19 +7516,19 @@ public object FfiConverterTypeEntryRecord: FfiConverterRustBuffer<EntryRecord> {
 
 data class MdbxAttachmentBatchLimits (
     var `maxCommands`: kotlin.ULong
-    ,
+    , 
     var `maxPlaintextBytesPerCommand`: kotlin.ULong
-    ,
+    , 
     var `maxPlaintextBytes`: kotlin.ULong
-    ,
+    , 
     var `chunkSize`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7527,17 +7564,17 @@ public object FfiConverterTypeMdbxAttachmentBatchLimits: FfiConverterRustBuffer<
 
 data class MdbxAttachmentBatchResult (
     var `attachments`: List<MdbxAttachmentRecord>
-    ,
+    , 
     var `commitId`: kotlin.String
-    ,
+    , 
     var `alreadyCommitted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7576,21 +7613,21 @@ public object FfiConverterTypeMdbxAttachmentBatchResult: FfiConverterRustBuffer<
  */
 data class MdbxAttachmentConflictMerge (
     var `projectId`: kotlin.String
-    ,
+    , 
     var `entryId`: kotlin.String?
-    ,
+    , 
     var `fileName`: kotlin.String
-    ,
+    , 
     var `mediaType`: kotlin.String?
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7629,15 +7666,15 @@ public object FfiConverterTypeMdbxAttachmentConflictMerge: FfiConverterRustBuffe
 
 data class MdbxAttachmentContentLimits (
     var `chunkSize`: kotlin.ULong
-    ,
+    , 
     var `maxPlaintextBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7667,21 +7704,21 @@ public object FfiConverterTypeMdbxAttachmentContentLimits: FfiConverterRustBuffe
 
 data class MdbxAttachmentCreateRequest (
     var `attachmentId`: kotlin.String
-    ,
+    , 
     var `projectId`: kotlin.String
-    ,
+    , 
     var `entryId`: kotlin.String?
-    ,
+    , 
     var `fileName`: kotlin.String
-    ,
+    , 
     var `mediaType`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7723,21 +7760,21 @@ public object FfiConverterTypeMdbxAttachmentCreateRequest: FfiConverterRustBuffe
  */
 data class MdbxAttachmentPresentationLimits (
     var `maxFileNameBytes`: kotlin.ULong
-    ,
+    , 
     var `maxMediaTypeBytes`: kotlin.ULong
-    ,
+    , 
     var `ciphertextEnvelopeAllowanceBytes`: kotlin.ULong
-    ,
+    , 
     var `maxPageSize`: kotlin.UInt
-    ,
+    , 
     var `maxCursorBytes`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7776,33 +7813,33 @@ public object FfiConverterTypeMdbxAttachmentPresentationLimits: FfiConverterRust
 
 data class MdbxAttachmentRecord (
     var `attachmentId`: kotlin.String
-    ,
+    , 
     var `projectId`: kotlin.String
-    ,
+    , 
     var `entryId`: kotlin.String?
-    ,
+    , 
     var `fileName`: kotlin.String
-    ,
+    , 
     var `mediaType`: kotlin.String?
-    ,
+    , 
     var `storageMode`: kotlin.String
-    ,
+    , 
     var `contentHash`: kotlin.String
-    ,
+    , 
     var `originalSize`: kotlin.ULong
-    ,
+    , 
     var `storedSize`: kotlin.ULong
-    ,
+    , 
     var `chunkCount`: kotlin.UInt
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7862,37 +7899,37 @@ public object FfiConverterTypeMdbxAttachmentRecord: FfiConverterRustBuffer<MdbxA
  */
 data class MdbxAttachmentSummary (
     var `attachmentId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String?
-    ,
+    , 
     var `fileName`: kotlin.String
-    ,
+    , 
     var `mediaType`: kotlin.String?
-    ,
+    , 
     var `storageMode`: kotlin.String
-    ,
+    , 
     var `contentHash`: kotlin.String
-    ,
+    , 
     var `originalSize`: kotlin.ULong
-    ,
+    , 
     var `storedSize`: kotlin.ULong
-    ,
+    , 
     var `chunkCount`: kotlin.UInt
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7955,15 +7992,15 @@ public object FfiConverterTypeMdbxAttachmentSummary: FfiConverterRustBuffer<Mdbx
 
 data class MdbxAttachmentSummaryPage (
     var `items`: List<MdbxAttachmentSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -7993,17 +8030,17 @@ public object FfiConverterTypeMdbxAttachmentSummaryPage: FfiConverterRustBuffer<
 
 data class MdbxAttachmentWriteResult (
     var `attachment`: MdbxAttachmentRecord
-    ,
+    , 
     var `commitId`: kotlin.String
-    ,
+    , 
     var `alreadyCommitted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8036,25 +8073,25 @@ public object FfiConverterTypeMdbxAttachmentWriteResult: FfiConverterRustBuffer<
 
 data class MdbxAuthenticatedStateRootCheckpoint (
     var `profile`: kotlin.String
-    ,
+    , 
     var `generation`: kotlin.ULong
-    ,
+    , 
     var `leafCount`: kotlin.ULong
-    ,
+    , 
     var `rootHash`: kotlin.ByteArray
-    ,
+    , 
     var `latestCommitSequence`: kotlin.ULong
-    ,
+    , 
     var `latestDeltaSequence`: kotlin.ULong
-    ,
+    , 
     var `authenticationTag`: kotlin.ByteArray
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8099,15 +8136,15 @@ public object FfiConverterTypeMdbxAuthenticatedStateRootCheckpoint: FfiConverter
 
 data class MdbxAuthorizationConstraint (
     var `kind`: MdbxAuthorizationConstraintKind
-    ,
+    , 
     var `seconds`: kotlin.UInt?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8137,19 +8174,19 @@ public object FfiConverterTypeMdbxAuthorizationConstraint: FfiConverterRustBuffe
 
 data class MdbxAuthorizationDecision (
     var `outcome`: MdbxAuthorizationOutcome
-    ,
+    , 
     var `reasons`: List<MdbxAuthorizationReason>
-    ,
+    , 
     var `constraints`: List<MdbxAuthorizationConstraint>
-    ,
+    , 
     var `auditRequired`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8185,19 +8222,19 @@ public object FfiConverterTypeMdbxAuthorizationDecision: FfiConverterRustBuffer<
 
 data class MdbxBackupInfo (
     var `vaultId`: kotlin.String
-    ,
+    , 
     var `formatVersion`: kotlin.String
-    ,
+    , 
     var `schemaVersion`: kotlin.UInt
-    ,
+    , 
     var `fileSizeBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8233,21 +8270,21 @@ public object FfiConverterTypeMdbxBackupInfo: FfiConverterRustBuffer<MdbxBackupI
 
 data class MdbxBlobChunkRequest (
     var `namespaceId`: kotlin.String
-    ,
+    , 
     var `blobId`: kotlin.String
-    ,
+    , 
     var `totalSize`: kotlin.ULong
-    ,
+    , 
     var `offset`: kotlin.ULong
-    ,
+    , 
     var `maxBytes`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8286,23 +8323,23 @@ public object FfiConverterTypeMdbxBlobChunkRequest: FfiConverterRustBuffer<MdbxB
 
 data class MdbxBlobChunkResponse (
     var `namespaceId`: kotlin.String
-    ,
+    , 
     var `blobId`: kotlin.String
-    ,
+    , 
     var `totalSize`: kotlin.ULong
-    ,
+    , 
     var `offset`: kotlin.ULong
-    ,
+    , 
     var `ciphertext`: kotlin.ByteArray
-    ,
+    , 
     var `isLast`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8344,17 +8381,17 @@ public object FfiConverterTypeMdbxBlobChunkResponse: FfiConverterRustBuffer<Mdbx
 
 data class MdbxBlobManifestEntry (
     var `blobId`: kotlin.String
-    ,
+    , 
     var `totalSize`: kotlin.ULong?
-    ,
+    , 
     var `state`: MdbxBlobManifestEntryState
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8387,19 +8424,19 @@ public object FfiConverterTypeMdbxBlobManifestEntry: FfiConverterRustBuffer<Mdbx
 
 data class MdbxBlobManifestPageRequest (
     var `namespaceId`: kotlin.String
-    ,
+    , 
     var `checkpoint`: kotlin.String?
-    ,
+    , 
     var `cursor`: kotlin.String?
-    ,
+    , 
     var `pageSize`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8435,19 +8472,19 @@ public object FfiConverterTypeMdbxBlobManifestPageRequest: FfiConverterRustBuffe
 
 data class MdbxBlobManifestPageResponse (
     var `namespaceId`: kotlin.String
-    ,
+    , 
     var `checkpoint`: kotlin.String
-    ,
+    , 
     var `items`: List<MdbxBlobManifestEntry>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8483,25 +8520,25 @@ public object FfiConverterTypeMdbxBlobManifestPageResponse: FfiConverterRustBuff
 
 data class MdbxBlobSyncResume (
     var `namespaceId`: kotlin.String
-    ,
+    , 
     var `manifestCheckpoint`: kotlin.String?
-    ,
+    , 
     var `manifestCursor`: kotlin.String?
-    ,
+    , 
     var `currentBlobId`: kotlin.String?
-    ,
+    , 
     var `totalSize`: kotlin.ULong
-    ,
+    , 
     var `nextDurableOffset`: kotlin.ULong
-    ,
+    , 
     var `manifestComplete`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8546,21 +8583,21 @@ public object FfiConverterTypeMdbxBlobSyncResume: FfiConverterRustBuffer<MdbxBlo
 
 data class MdbxBranchInfo (
     var `branchId`: kotlin.String
-    ,
+    , 
     var `branchName`: kotlin.String
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8599,29 +8636,29 @@ public object FfiConverterTypeMdbxBranchInfo: FfiConverterRustBuffer<MdbxBranchI
 
 data class MdbxBuildCapabilityManifest (
     var `profile`: kotlin.String
-    ,
+    , 
     var `engineVersion`: kotlin.String
-    ,
+    , 
     var `storageProfile`: kotlin.String
-    ,
+    , 
     var `enabledStorageCapabilityIds`: List<kotlin.String>
-    ,
+    , 
     var `disabledOptionalStorageCapabilityIds`: List<kotlin.String>
-    ,
+    , 
     var `syncProfile`: kotlin.String
-    ,
+    , 
     var `syncProtocolVersion`: kotlin.UInt
-    ,
+    , 
     var `enabledSyncCapabilityIds`: List<kotlin.String>
-    ,
+    , 
     var `disabledOptionalSyncCapabilityIds`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8672,31 +8709,31 @@ public object FfiConverterTypeMdbxBuildCapabilityManifest: FfiConverterRustBuffe
 
 data class MdbxCollectionProfile (
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `collectionTypeId`: kotlin.String
-    ,
+    , 
     var `payload`: kotlin.ByteArray
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `allowedObjectTypeIds`: List<kotlin.String>
-    ,
+    , 
     var `requiredCapabilityIds`: List<kotlin.String>
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `updatedAt`: kotlin.String
-    ,
+    , 
     var `createdByDeviceId`: kotlin.String
-    ,
+    , 
     var `updatedByDeviceId`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8753,35 +8790,35 @@ public object FfiConverterTypeMdbxCollectionProfile: FfiConverterRustBuffer<Mdbx
  */
 data class MdbxCollectionSummary (
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `title`: kotlin.String
-    ,
+    , 
     var `collectionTypeId`: kotlin.String?
-    ,
+    , 
     var `profileSchemaVersion`: kotlin.UInt?
-    ,
+    , 
     var `groupId`: kotlin.String?
-    ,
+    , 
     var `iconRef`: kotlin.String?
-    ,
+    , 
     var `favorite`: kotlin.Boolean
-    ,
+    , 
     var `archived`: kotlin.Boolean
-    ,
+    , 
     var `attachmentCount`: kotlin.UInt
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8841,15 +8878,15 @@ public object FfiConverterTypeMdbxCollectionSummary: FfiConverterRustBuffer<Mdbx
 
 data class MdbxCollectionSummaryPage (
     var `items`: List<MdbxCollectionSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8879,15 +8916,15 @@ public object FfiConverterTypeMdbxCollectionSummaryPage: FfiConverterRustBuffer<
 
 data class MdbxCommitActionLimits (
     var `maxDiffItems`: kotlin.UInt
-    ,
+    , 
     var `maxPreviewChars`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8917,19 +8954,19 @@ public object FfiConverterTypeMdbxCommitActionLimits: FfiConverterRustBuffer<Mdb
 
 data class MdbxCommitChange (
     var `objectType`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `action`: kotlin.String
-    ,
+    , 
     var `fields`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -8965,35 +9002,35 @@ public object FfiConverterTypeMdbxCommitChange: FfiConverterRustBuffer<MdbxCommi
 
 data class MdbxCommitDiffItem (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `objectType`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String?
-    ,
+    , 
     var `previousTitle`: kotlin.String?
-    ,
+    , 
     var `currentTitle`: kotlin.String?
-    ,
+    , 
     var `previousPayloadPreview`: kotlin.String?
-    ,
+    , 
     var `currentPayloadPreview`: kotlin.String?
-    ,
+    , 
     var `previousDeleted`: kotlin.Boolean?
-    ,
+    , 
     var `currentDeleted`: kotlin.Boolean
-    ,
+    , 
     var `changedFields`: List<kotlin.String>
-    ,
+    , 
     var `createdAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9053,37 +9090,37 @@ public object FfiConverterTypeMdbxCommitDiffItem: FfiConverterRustBuffer<MdbxCom
 
 data class MdbxCommitHistoryItem (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `deviceId`: kotlin.String
-    ,
+    , 
     var `localSeq`: kotlin.ULong
-    ,
+    , 
     var `commitKind`: kotlin.String
-    ,
+    , 
     var `changeScope`: kotlin.String
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `operationId`: kotlin.String?
-    ,
+    , 
     var `operationKind`: kotlin.String?
-    ,
+    , 
     var `branchName`: kotlin.String?
-    ,
+    , 
     var `message`: kotlin.String?
-    ,
+    , 
     var `changes`: List<MdbxCommitChange>
-    ,
+    , 
     var `parentIds`: List<kotlin.String>
-    ,
+    , 
     var `legacy`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9146,15 +9183,15 @@ public object FfiConverterTypeMdbxCommitHistoryItem: FfiConverterRustBuffer<Mdbx
 
 data class MdbxCommitHistoryItemV2 (
     var `item`: MdbxCommitHistoryItem
-    ,
+    , 
     var `branchId`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9184,15 +9221,15 @@ public object FfiConverterTypeMdbxCommitHistoryItemV2: FfiConverterRustBuffer<Md
 
 data class MdbxCommitHistoryPage (
     var `items`: List<MdbxCommitHistoryItem>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9222,15 +9259,15 @@ public object FfiConverterTypeMdbxCommitHistoryPage: FfiConverterRustBuffer<Mdbx
 
 data class MdbxCommitHistoryPageV2 (
     var `items`: List<MdbxCommitHistoryItemV2>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9260,15 +9297,15 @@ public object FfiConverterTypeMdbxCommitHistoryPageV2: FfiConverterRustBuffer<Md
 
 data class MdbxCommitRevertResult (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `revertedObjectCount`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9298,15 +9335,15 @@ public object FfiConverterTypeMdbxCommitRevertResult: FfiConverterRustBuffer<Mdb
 
 data class MdbxCompositeWriteOperationLimits (
     var `writeLimits`: MdbxWriteOperationLimits
-    ,
+    , 
     var `attachmentLimits`: MdbxAttachmentBatchLimits
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9336,15 +9373,15 @@ public object FfiConverterTypeMdbxCompositeWriteOperationLimits: FfiConverterRus
 
 data class MdbxCompositeWriteOperationResult (
     var `operation`: MdbxWriteOperationResult
-    ,
+    , 
     var `attachments`: List<MdbxAttachmentRecord>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9374,31 +9411,31 @@ public object FfiConverterTypeMdbxCompositeWriteOperationResult: FfiConverterRus
 
 data class MdbxConflictRecord (
     var `conflictId`: kotlin.String
-    ,
+    , 
     var `objectType`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `baseCommitId`: kotlin.String
-    ,
+    , 
     var `localCommitId`: kotlin.String
-    ,
+    , 
     var `incomingCommitId`: kotlin.String
-    ,
+    , 
     var `conflictingFields`: List<kotlin.String>
-    ,
+    , 
     var `resolution`: kotlin.String
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `resolvedAt`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9456,31 +9493,31 @@ public object FfiConverterTypeMdbxConflictRecord: FfiConverterRustBuffer<MdbxCon
  */
 data class MdbxConflictSummary (
     var `conflictId`: kotlin.String
-    ,
+    , 
     var `objectType`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `baseCommitId`: kotlin.String
-    ,
+    , 
     var `localCommitId`: kotlin.String
-    ,
+    , 
     var `incomingCommitId`: kotlin.String
-    ,
+    , 
     var `conflictingFields`: List<kotlin.String>
-    ,
+    , 
     var `resolution`: kotlin.String
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `resolvedAt`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9537,21 +9574,21 @@ public object FfiConverterTypeMdbxConflictSummary: FfiConverterRustBuffer<MdbxCo
  */
 data class MdbxConflictSummaryLimits (
     var `maxPageSize`: kotlin.UInt
-    ,
+    , 
     var `maxCursorBytes`: kotlin.UInt
-    ,
+    , 
     var `maxFieldsJsonBytes`: kotlin.ULong
-    ,
+    , 
     var `maxFieldCount`: kotlin.UInt
-    ,
+    , 
     var `maxFieldPathBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9590,15 +9627,15 @@ public object FfiConverterTypeMdbxConflictSummaryLimits: FfiConverterRustBuffer<
 
 data class MdbxConflictSummaryPage (
     var `items`: List<MdbxConflictSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9628,19 +9665,19 @@ public object FfiConverterTypeMdbxConflictSummaryPage: FfiConverterRustBuffer<Md
 
 data class MdbxDeviceContext (
     var `assurance`: MdbxDeviceAssurance
-    ,
+    , 
     var `secureClipboardAvailable`: kotlin.Boolean
-    ,
+    , 
     var `screenCaptureProtectionAvailable`: kotlin.Boolean
-    ,
+    , 
     var `secureTempFilesAvailable`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9676,31 +9713,31 @@ public object FfiConverterTypeMdbxDeviceContext: FfiConverterRustBuffer<MdbxDevi
 
 data class MdbxExtensionProfile (
     var `extensionId`: kotlin.String
-    ,
+    , 
     var `profileVersion`: kotlin.UInt
-    ,
+    , 
     var `collectionTypeIds`: List<kotlin.String>
-    ,
+    , 
     var `objectTypeIds`: List<kotlin.String>
-    ,
+    , 
     var `relationKindIds`: List<kotlin.String>
-    ,
+    , 
     var `capabilityIds`: List<kotlin.String>
-    ,
+    , 
     var `optionalIndexIds`: List<kotlin.String>
-    ,
+    , 
     var `importAdapterIds`: List<kotlin.String>
-    ,
+    , 
     var `exportAdapterIds`: List<kotlin.String>
-    ,
+    , 
     var `presentationHintIds`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9754,21 +9791,21 @@ public object FfiConverterTypeMdbxExtensionProfile: FfiConverterRustBuffer<MdbxE
 
 data class MdbxExternalBlobChunk (
     var `blobId`: kotlin.String
-    ,
+    , 
     var `totalSize`: kotlin.ULong
-    ,
+    , 
     var `offset`: kotlin.ULong
-    ,
+    , 
     var `ciphertext`: kotlin.ByteArray
-    ,
+    , 
     var `isLast`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9807,17 +9844,17 @@ public object FfiConverterTypeMdbxExternalBlobChunk: FfiConverterRustBuffer<Mdbx
 
 data class MdbxExternalBlobLease (
     var `blobId`: kotlin.String
-    ,
+    , 
     var `ownerId`: kotlin.String
-    ,
+    , 
     var `expiresAtUnixSecs`: kotlin.Long
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9850,17 +9887,17 @@ public object FfiConverterTypeMdbxExternalBlobLease: FfiConverterRustBuffer<Mdbx
 
 data class MdbxExternalBlobReference (
     var `blobId`: kotlin.String
-    ,
+    , 
     var `totalSize`: kotlin.ULong?
-    ,
+    , 
     var `state`: MdbxExternalBlobState
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9893,19 +9930,19 @@ public object FfiConverterTypeMdbxExternalBlobReference: FfiConverterRustBuffer<
 
 data class MdbxExternalBlobReferencePage (
     var `rawReferenceCount`: kotlin.ULong
-    ,
+    , 
     var `uniqueReferenceCount`: kotlin.ULong
-    ,
+    , 
     var `items`: List<MdbxExternalBlobReference>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9941,15 +9978,15 @@ public object FfiConverterTypeMdbxExternalBlobReferencePage: FfiConverterRustBuf
 
 data class MdbxHealthCheckResult (
     var `healthy`: kotlin.Boolean
-    ,
+    , 
     var `issues`: List<MdbxHealthIssue>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -9979,17 +10016,17 @@ public object FfiConverterTypeMdbxHealthCheckResult: FfiConverterRustBuffer<Mdbx
 
 data class MdbxHealthIssue (
     var `severity`: MdbxHealthIssueSeverity
-    ,
+    , 
     var `category`: kotlin.String
-    ,
+    , 
     var `description`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10022,23 +10059,23 @@ public object FfiConverterTypeMdbxHealthIssue: FfiConverterRustBuffer<MdbxHealth
 
 data class MdbxHealthRepairApplyResult (
     var `status`: MdbxHealthRepairStatus
-    ,
+    , 
     var `snapshotId`: kotlin.String?
-    ,
+    , 
     var `commitId`: kotlin.String?
-    ,
+    , 
     var `repairedCount`: kotlin.ULong
-    ,
+    , 
     var `alreadyCommitted`: kotlin.Boolean
-    ,
+    , 
     var `health`: MdbxHealthCheckResult
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10080,15 +10117,15 @@ public object FfiConverterTypeMdbxHealthRepairApplyResult: FfiConverterRustBuffe
 
 data class MdbxHealthRepairBlocker (
     var `category`: kotlin.String
-    ,
+    , 
     var `description`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10118,15 +10155,15 @@ public object FfiConverterTypeMdbxHealthRepairBlocker: FfiConverterRustBuffer<Md
 
 data class MdbxHealthRepairDecision (
     var `repairId`: kotlin.String
-    ,
+    , 
     var `choice`: MdbxHealthRepairChoice
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10156,21 +10193,21 @@ public object FfiConverterTypeMdbxHealthRepairDecision: FfiConverterRustBuffer<M
 
 data class MdbxHealthRepairItem (
     var `repairId`: kotlin.String
-    ,
+    , 
     var `kind`: MdbxHealthRepairItemKind
-    ,
+    , 
     var `objectType`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `tombstoneCount`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10209,21 +10246,21 @@ public object FfiConverterTypeMdbxHealthRepairItem: FfiConverterRustBuffer<MdbxH
 
 data class MdbxHealthRepairPlan (
     var `token`: kotlin.String
-    ,
+    , 
     var `automaticItems`: List<MdbxHealthRepairItem>
-    ,
+    , 
     var `conflictItems`: List<MdbxHealthRepairItem>
-    ,
+    , 
     var `blockers`: List<MdbxHealthRepairBlocker>
-    ,
+    , 
     var `canApply`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10262,23 +10299,23 @@ public object FfiConverterTypeMdbxHealthRepairPlan: FfiConverterRustBuffer<MdbxH
 
 data class MdbxIncrementalSyncApplyResult (
     var `result`: MdbxIncrementalSyncCheckpoint
-    ,
+    , 
     var `nextResume`: MdbxIncrementalSyncResume?
-    ,
+    , 
     var `appliedCommits`: kotlin.UInt
-    ,
+    , 
     var `skippedCommits`: kotlin.UInt
-    ,
+    , 
     var `conflictCount`: kotlin.UInt
-    ,
+    , 
     var `missingParentCount`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10320,15 +10357,15 @@ public object FfiConverterTypeMdbxIncrementalSyncApplyResult: FfiConverterRustBu
 
 data class MdbxIncrementalSyncBootstrapInfo (
     var `backup`: MdbxBackupInfo
-    ,
+    , 
     var `checkpoint`: MdbxIncrementalSyncCheckpoint
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10358,15 +10395,15 @@ public object FfiConverterTypeMdbxIncrementalSyncBootstrapInfo: FfiConverterRust
 
 data class MdbxIncrementalSyncCheckpoint (
     var `commitInventory`: kotlin.String
-    ,
+    , 
     var `deltaInventory`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10396,17 +10433,17 @@ public object FfiConverterTypeMdbxIncrementalSyncCheckpoint: FfiConverterRustBuf
 
 data class MdbxIncrementalSyncResume (
     var `transferId`: kotlin.String
-    ,
+    , 
     var `nextSegmentIndex`: kotlin.UInt
-    ,
+    , 
     var `previousSegmentSha256`: kotlin.ByteArray
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10439,35 +10476,35 @@ public object FfiConverterTypeMdbxIncrementalSyncResume: FfiConverterRustBuffer<
 
 data class MdbxIncrementalSyncSegmentInfo (
     var `vaultId`: kotlin.String
-    ,
+    , 
     var `sourceDeviceId`: kotlin.String
-    ,
+    , 
     var `transferId`: kotlin.String
-    ,
+    , 
     var `segmentIndex`: kotlin.UInt
-    ,
+    , 
     var `isLast`: kotlin.Boolean
-    ,
+    , 
     var `base`: MdbxIncrementalSyncCheckpoint
-    ,
+    , 
     var `result`: MdbxIncrementalSyncCheckpoint
-    ,
+    , 
     var `nextResume`: MdbxIncrementalSyncResume?
-    ,
+    , 
     var `commitCount`: kotlin.UInt
-    ,
+    , 
     var `deltaCount`: kotlin.UInt
-    ,
+    , 
     var `payloadSha256`: kotlin.ByteArray
-    ,
+    , 
     var `fileSizeBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10527,27 +10564,27 @@ public object FfiConverterTypeMdbxIncrementalSyncSegmentInfo: FfiConverterRustBu
 
 data class MdbxIntegrityRootStatus (
     var `profile`: kotlin.String?
-    ,
+    , 
     var `state`: MdbxIntegrityRootState
-    ,
+    , 
     var `authenticated`: kotlin.Boolean
-    ,
+    , 
     var `generation`: kotlin.ULong
-    ,
+    , 
     var `leafCount`: kotlin.ULong
-    ,
+    , 
     var `rootHash`: kotlin.ByteArray?
-    ,
+    , 
     var `latestCommitSequence`: kotlin.ULong
-    ,
+    , 
     var `latestDeltaSequence`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10599,23 +10636,23 @@ public object FfiConverterTypeMdbxIntegrityRootStatus: FfiConverterRustBuffer<Md
  */
 data class MdbxIntegrityRootSyncHello (
     var `deviceId`: kotlin.String
-    ,
+    , 
     var `protocolVersion`: kotlin.UInt
-    ,
+    , 
     var `heads`: List<MdbxSyncBranchHead>
-    ,
+    , 
     var `knownCommitIds`: List<kotlin.String>
-    ,
+    , 
     var `capabilities`: List<kotlin.String>
-    ,
+    , 
     var `authenticatedStateRoot`: MdbxAuthenticatedStateRootCheckpoint?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10657,23 +10694,23 @@ public object FfiConverterTypeMdbxIntegrityRootSyncHello: FfiConverterRustBuffer
 
 data class MdbxIntegrityRootVerification (
     var `profile`: kotlin.String
-    ,
+    , 
     var `generation`: kotlin.ULong
-    ,
+    , 
     var `leafCount`: kotlin.ULong
-    ,
+    , 
     var `rootHash`: kotlin.ByteArray
-    ,
+    , 
     var `latestCommitSequence`: kotlin.ULong
-    ,
+    , 
     var `latestDeltaSequence`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10715,19 +10752,19 @@ public object FfiConverterTypeMdbxIntegrityRootVerification: FfiConverterRustBuf
 
 data class MdbxKeyEpochRotationResult (
     var `previousEpochId`: kotlin.String
-    ,
+    , 
     var `activeEpochId`: kotlin.String
-    ,
+    , 
     var `commitId`: kotlin.String
-    ,
+    , 
     var `rotatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10763,15 +10800,15 @@ public object FfiConverterTypeMdbxKeyEpochRotationResult: FfiConverterRustBuffer
 
 data class MdbxManagedSnapshotPage (
     var `items`: List<MdbxManagedSnapshotSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10801,31 +10838,31 @@ public object FfiConverterTypeMdbxManagedSnapshotPage: FfiConverterRustBuffer<Md
 
 data class MdbxManagedSnapshotSummary (
     var `snapshotId`: kotlin.String
-    ,
+    , 
     var `baseCommitId`: kotlin.String
-    ,
+    , 
     var `name`: kotlin.String
-    ,
+    , 
     var `kind`: MdbxSnapshotKind
-    ,
+    , 
     var `isFull`: kotlin.Boolean
-    ,
+    , 
     var `payloadBytes`: kotlin.ULong
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `createdByDeviceId`: kotlin.String
-    ,
+    , 
     var `autoPrune`: kotlin.Boolean
-    ,
+    , 
     var `integrityOk`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10879,21 +10916,21 @@ public object FfiConverterTypeMdbxManagedSnapshotSummary: FfiConverterRustBuffer
 
 data class MdbxManualSyncApplyResult (
     var `bundle`: MdbxManualSyncBundleInfo
-    ,
+    , 
     var `appliedCommits`: kotlin.UInt
-    ,
+    , 
     var `skippedCommits`: kotlin.UInt
-    ,
+    , 
     var `conflictCount`: kotlin.UInt
-    ,
+    , 
     var `missingParentCount`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -10937,25 +10974,25 @@ public object FfiConverterTypeMdbxManualSyncApplyResult: FfiConverterRustBuffer<
  */
 data class MdbxManualSyncBundleInfo (
     var `vaultId`: kotlin.String
-    ,
+    , 
     var `sourceDeviceId`: kotlin.String
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `commitCount`: kotlin.UInt
-    ,
+    , 
     var `exportedAt`: kotlin.String
-    ,
+    , 
     var `payloadSha256`: kotlin.ByteArray
-    ,
+    , 
     var `fileSizeBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11000,15 +11037,15 @@ public object FfiConverterTypeMdbxManualSyncBundleInfo: FfiConverterRustBuffer<M
 
 data class MdbxMetadataBenchmarkResult (
     var `operationCount`: kotlin.UInt
-    ,
+    , 
     var `elapsedMs`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11036,31 +11073,87 @@ public object FfiConverterTypeMdbxMetadataBenchmarkResult: FfiConverterRustBuffe
 
 
 
+/**
+ * Aggregate measurements expose neither titles nor object identities.
+ */
+data class MdbxMetadataCacheStats (
+    var `hits`: kotlin.ULong
+    , 
+    var `misses`: kotlin.ULong
+    , 
+    var `entries`: kotlin.ULong
+    , 
+    var `retainedBytes`: kotlin.ULong
+    , 
+    var `byteLimit`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMdbxMetadataCacheStats: FfiConverterRustBuffer<MdbxMetadataCacheStats> {
+    override fun read(buf: ByteBuffer): MdbxMetadataCacheStats {
+        return MdbxMetadataCacheStats(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: MdbxMetadataCacheStats) = (
+            FfiConverterULong.allocationSize(value.`hits`) +
+            FfiConverterULong.allocationSize(value.`misses`) +
+            FfiConverterULong.allocationSize(value.`entries`) +
+            FfiConverterULong.allocationSize(value.`retainedBytes`) +
+            FfiConverterULong.allocationSize(value.`byteLimit`)
+    )
+
+    override fun write(value: MdbxMetadataCacheStats, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`hits`, buf)
+            FfiConverterULong.write(value.`misses`, buf)
+            FfiConverterULong.write(value.`entries`, buf)
+            FfiConverterULong.write(value.`retainedBytes`, buf)
+            FfiConverterULong.write(value.`byteLimit`, buf)
+    }
+}
+
+
+
 data class MdbxMigrationInfo (
     var `initialized`: kotlin.Boolean
-    ,
+    , 
     var `formatVersion`: kotlin.String?
-    ,
+    , 
     var `schemaVersion`: kotlin.UInt?
-    ,
+    , 
     var `minReaderVersion`: kotlin.String?
-    ,
+    , 
     var `minWriterVersion`: kotlin.String?
-    ,
+    , 
     var `requiresUpgrade`: kotlin.Boolean
-    ,
+    , 
     var `unknownCriticalExtensions`: kotlin.Boolean
-    ,
+    , 
     var `targetFormatVersion`: kotlin.String
-    ,
+    , 
     var `targetSchemaVersion`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11114,13 +11207,13 @@ public object FfiConverterTypeMdbxMigrationInfo: FfiConverterRustBuffer<MdbxMigr
  */
 data class MdbxObjectDisclosureLimits (
     var `maxPayloadBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11152,15 +11245,15 @@ public object FfiConverterTypeMdbxObjectDisclosureLimits: FfiConverterRustBuffer
  */
 data class MdbxObjectDisclosureResult (
     var `object`: MdbxObjectRecord?
-    ,
+    , 
     var `authorization`: MdbxAuthorizationDecision
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11190,19 +11283,19 @@ public object FfiConverterTypeMdbxObjectDisclosureResult: FfiConverterRustBuffer
 
 data class MdbxObjectLabelAssignmentRecord (
     var `assignmentId`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `labelId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11238,23 +11331,23 @@ public object FfiConverterTypeMdbxObjectLabelAssignmentRecord: FfiConverterRustB
 
 data class MdbxObjectLabelAssignmentSummary (
     var `assignmentId`: kotlin.String
-    ,
+    , 
     var `objectId`: kotlin.String
-    ,
+    , 
     var `labelId`: kotlin.String
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11296,15 +11389,15 @@ public object FfiConverterTypeMdbxObjectLabelAssignmentSummary: FfiConverterRust
 
 data class MdbxObjectLabelAssignmentSummaryPage (
     var `items`: List<MdbxObjectLabelAssignmentSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11337,15 +11430,15 @@ public object FfiConverterTypeMdbxObjectLabelAssignmentSummaryPage: FfiConverter
  */
 data class MdbxObjectLabelDisclosureResult (
     var `label`: MdbxObjectLabelRecord?
-    ,
+    , 
     var `projectAuthorization`: MdbxScopedAuthorizationDecision
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11375,23 +11468,23 @@ public object FfiConverterTypeMdbxObjectLabelDisclosureResult: FfiConverterRustB
 
 data class MdbxObjectLabelRecord (
     var `labelId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `name`: kotlin.String
-    ,
+    , 
     var `payloadJson`: kotlin.String
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11433,25 +11526,25 @@ public object FfiConverterTypeMdbxObjectLabelRecord: FfiConverterRustBuffer<Mdbx
 
 data class MdbxObjectLabelSummary (
     var `labelId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `name`: kotlin.String
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11496,15 +11589,15 @@ public object FfiConverterTypeMdbxObjectLabelSummary: FfiConverterRustBuffer<Mdb
 
 data class MdbxObjectLabelSummaryPage (
     var `items`: List<MdbxObjectLabelSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11537,13 +11630,13 @@ public object FfiConverterTypeMdbxObjectLabelSummaryPage: FfiConverterRustBuffer
  */
 data class MdbxObjectMetadataDisclosureLimits (
     var `maxPayloadBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11570,25 +11663,25 @@ public object FfiConverterTypeMdbxObjectMetadataDisclosureLimits: FfiConverterRu
 
 data class MdbxObjectRecord (
     var `objectId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `objectTypeId`: kotlin.String
-    ,
+    , 
     var `title`: kotlin.String
-    ,
+    , 
     var `payloadJson`: kotlin.String
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11636,17 +11729,17 @@ public object FfiConverterTypeMdbxObjectRecord: FfiConverterRustBuffer<MdbxObjec
  */
 data class MdbxObjectRelationDisclosureResult (
     var `relation`: MdbxObjectRelationRecord?
-    ,
+    , 
     var `sourceAuthorization`: MdbxScopedAuthorizationDecision
-    ,
+    , 
     var `targetAuthorization`: MdbxScopedAuthorizationDecision
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11679,25 +11772,25 @@ public object FfiConverterTypeMdbxObjectRelationDisclosureResult: FfiConverterRu
 
 data class MdbxObjectRelationRecord (
     var `relationId`: kotlin.String
-    ,
+    , 
     var `sourceObjectId`: kotlin.String
-    ,
+    , 
     var `targetObjectId`: kotlin.String
-    ,
+    , 
     var `relationKind`: kotlin.String
-    ,
+    , 
     var `payloadJson`: kotlin.String
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11742,27 +11835,27 @@ public object FfiConverterTypeMdbxObjectRelationRecord: FfiConverterRustBuffer<M
 
 data class MdbxObjectRelationSummary (
     var `relationId`: kotlin.String
-    ,
+    , 
     var `sourceObjectId`: kotlin.String
-    ,
+    , 
     var `targetObjectId`: kotlin.String
-    ,
+    , 
     var `relationKind`: kotlin.String
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11810,15 +11903,15 @@ public object FfiConverterTypeMdbxObjectRelationSummary: FfiConverterRustBuffer<
 
 data class MdbxObjectRelationSummaryPage (
     var `items`: List<MdbxObjectRelationSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11848,27 +11941,27 @@ public object FfiConverterTypeMdbxObjectRelationSummaryPage: FfiConverterRustBuf
 
 data class MdbxObjectSummary (
     var `objectId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `objectTypeId`: kotlin.String
-    ,
+    , 
     var `title`: kotlin.String
-    ,
+    , 
     var `payloadSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `headCommitId`: kotlin.String
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11916,15 +12009,15 @@ public object FfiConverterTypeMdbxObjectSummary: FfiConverterRustBuffer<MdbxObje
 
 data class MdbxObjectSummaryPage (
     var `items`: List<MdbxObjectSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11954,17 +12047,17 @@ public object FfiConverterTypeMdbxObjectSummaryPage: FfiConverterRustBuffer<Mdbx
 
 data class MdbxPayloadMigrationExecution (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `migratedCount`: kotlin.UInt
-    ,
+    , 
     var `alreadyCommitted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -11997,15 +12090,15 @@ public object FfiConverterTypeMdbxPayloadMigrationExecution: FfiConverterRustBuf
 
 data class MdbxPayloadMigrationOutput (
     var `objectId`: kotlin.String
-    ,
+    , 
     var `targetPayload`: kotlin.ByteArray
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12035,35 +12128,35 @@ public object FfiConverterTypeMdbxPayloadMigrationOutput: FfiConverterRustBuffer
 
 data class MdbxPayloadMigrationPlan (
     var `planId`: kotlin.String
-    ,
+    , 
     var `collectionId`: kotlin.String
-    ,
+    , 
     var `objectTypeId`: kotlin.String
-    ,
+    , 
     var `sourceSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `targetSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `branchId`: kotlin.String
-    ,
+    , 
     var `branchName`: kotlin.String
-    ,
+    , 
     var `branchHeadCommitId`: kotlin.String
-    ,
+    , 
     var `collectionProfileDigest`: kotlin.ByteArray?
-    ,
+    , 
     var `items`: List<MdbxPayloadMigrationPlanItem>
-    ,
+    , 
     var `remainingCount`: kotlin.ULong
-    ,
+    , 
     var `totalSourceBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12123,19 +12216,19 @@ public object FfiConverterTypeMdbxPayloadMigrationPlan: FfiConverterRustBuffer<M
 
 data class MdbxPayloadMigrationPlanItem (
     var `objectId`: kotlin.String
-    ,
+    , 
     var `objectHeadCommitId`: kotlin.String
-    ,
+    , 
     var `sourcePayloadDigest`: kotlin.ByteArray
-    ,
+    , 
     var `sourcePayload`: kotlin.ByteArray
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12171,33 +12264,33 @@ public object FfiConverterTypeMdbxPayloadMigrationPlanItem: FfiConverterRustBuff
 
 data class MdbxPermanentPurgeReceipt (
     var `purgeId`: kotlin.String
-    ,
+    , 
     var `tombstoneId`: kotlin.String
-    ,
+    , 
     var `targetObjectType`: kotlin.String
-    ,
+    , 
     var `targetObjectId`: kotlin.String
-    ,
+    , 
     var `deleteCommitId`: kotlin.String
-    ,
+    , 
     var `purgeCommitId`: kotlin.String
-    ,
+    , 
     var `deleteClock`: kotlin.String
-    ,
+    , 
     var `retentionEligibleAt`: kotlin.String
-    ,
+    , 
     var `purgedByDeviceId`: kotlin.String
-    ,
+    , 
     var `purgedAt`: kotlin.String
-    ,
+    , 
     var `integrityTag`: kotlin.ByteArray
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12257,21 +12350,21 @@ public object FfiConverterTypeMdbxPermanentPurgeReceipt: FfiConverterRustBuffer<
  */
 data class MdbxPresentationMetadataLimits (
     var `maxTitleBytes`: kotlin.ULong
-    ,
+    , 
     var `maxLabelNameBytes`: kotlin.ULong
-    ,
+    , 
     var `maxReferenceBytes`: kotlin.ULong
-    ,
+    , 
     var `maxCollectionSummaryPageSize`: kotlin.UInt
-    ,
+    , 
     var `maxCursorBytes`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12316,25 +12409,25 @@ public object FfiConverterTypeMdbxPresentationMetadataLimits: FfiConverterRustBu
  */
 data class MdbxProjectConflictMerge (
     var `title`: kotlin.String
-    ,
+    , 
     var `summary`: kotlin.String?
-    ,
+    , 
     var `groupId`: kotlin.String?
-    ,
+    , 
     var `iconRef`: kotlin.String?
-    ,
+    , 
     var `favorite`: kotlin.Boolean
-    ,
+    , 
     var `archived`: kotlin.Boolean
-    ,
+    , 
     var `deleted`: kotlin.Boolean
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12379,77 +12472,77 @@ public object FfiConverterTypeMdbxProjectConflictMerge: FfiConverterRustBuffer<M
 
 data class MdbxResolvedTigaPolicy (
     var `policyVersion`: kotlin.UInt
-    ,
+    , 
     var `profile`: MdbxTigaMode
-    ,
+    , 
     var `compliance`: MdbxPolicyCompliance
-    ,
+    , 
     var `exceptionId`: kotlin.String?
-    ,
+    , 
     var `warnings`: List<kotlin.String>
-    ,
+    , 
     var `portableUnlockAllowed`: kotlin.Boolean
-    ,
+    , 
     var `minimumAuthFactors`: kotlin.UInt
-    ,
+    , 
     var `securityKeyRequired`: kotlin.Boolean
-    ,
+    , 
     var `securityKeyRecommended`: kotlin.Boolean
-    ,
+    , 
     var `idleTimeoutSecs`: kotlin.UInt
-    ,
+    , 
     var `maxLifetimeSecs`: kotlin.UInt
-    ,
+    , 
     var `lockOnBackground`: kotlin.Boolean
-    ,
+    , 
     var `freshAuthWindowSecs`: kotlin.UInt
-    ,
+    , 
     var `revealRequiresFreshAuth`: kotlin.Boolean
-    ,
+    , 
     var `clipboardAllowed`: kotlin.Boolean
-    ,
+    , 
     var `clipboardTtlSecs`: kotlin.UInt
-    ,
+    , 
     var `copyRequiresFreshAuth`: kotlin.Boolean
-    ,
+    , 
     var `secureClipboardRequired`: kotlin.Boolean
-    ,
+    , 
     var `screenCaptureProtectionRequired`: kotlin.Boolean
-    ,
+    , 
     var `exportAllowed`: kotlin.Boolean
-    ,
+    , 
     var `printAllowed`: kotlin.Boolean
-    ,
+    , 
     var `egressRequiresFreshAuth`: kotlin.Boolean
-    ,
+    , 
     var `egressMinimumAuthFactors`: kotlin.UInt
-    ,
+    , 
     var `persistentPlaintextCacheAllowed`: kotlin.Boolean
-    ,
+    , 
     var `attachmentTempFilesAllowed`: kotlin.Boolean
-    ,
+    , 
     var `lockedCiphertextSyncAllowed`: kotlin.Boolean
-    ,
+    , 
     var `minimumRecoveryMethods`: kotlin.UInt
-    ,
+    , 
     var `portableRecoveryRequired`: kotlin.Boolean
-    ,
+    , 
     var `administrationRequiresFreshAuth`: kotlin.Boolean
-    ,
+    , 
     var `administrationMinimumAuthFactors`: kotlin.UInt
-    ,
+    , 
     var `auditDeletionAllowed`: kotlin.Boolean
-    ,
+    , 
     var `minimumDeviceAssurance`: MdbxDeviceAssurance
-    ,
+    , 
     var `auditLevel`: MdbxAuditLevel
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12572,21 +12665,21 @@ public object FfiConverterTypeMdbxResolvedTigaPolicy: FfiConverterRustBuffer<Mdb
 
 data class MdbxRollbackAnchorVerification (
     var `advanced`: kotlin.Boolean
-    ,
+    , 
     var `anchoredCommitInventorySeq`: kotlin.ULong
-    ,
+    , 
     var `currentCommitInventorySeq`: kotlin.ULong
-    ,
+    , 
     var `anchoredSyncDeltaBatchSeq`: kotlin.ULong?
-    ,
+    , 
     var `currentSyncDeltaBatchSeq`: kotlin.ULong?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12625,39 +12718,39 @@ public object FfiConverterTypeMdbxRollbackAnchorVerification: FfiConverterRustBu
 
 data class MdbxRuntimeManifest (
     var `profile`: kotlin.String
-    ,
+    , 
     var `runtimeName`: kotlin.String
-    ,
+    , 
     var `runtimeVersion`: kotlin.String
-    ,
+    , 
     var `implementationVersion`: kotlin.String
-    ,
+    , 
     var `buildProfile`: kotlin.String
-    ,
+    , 
     var `storageFormat`: kotlin.String
-    ,
+    , 
     var `currentSchemaVersion`: kotlin.UInt
-    ,
+    , 
     var `readableStorageFormats`: List<kotlin.String>
-    ,
+    , 
     var `writableStorageFormat`: kotlin.String
-    ,
+    , 
     var `ffiAbiProfile`: kotlin.String
-    ,
+    , 
     var `ffiNamespace`: kotlin.String
-    ,
+    , 
     var `nativeLibraryName`: kotlin.String
-    ,
+    , 
     var `androidSharedObjectName`: kotlin.String
-    ,
+    , 
     var `compatibilityProfile`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12726,15 +12819,15 @@ public object FfiConverterTypeMdbxRuntimeManifest: FfiConverterRustBuffer<MdbxRu
  */
 data class MdbxScopedAuthorizationDecision (
     var `scope`: MdbxTigaScope
-    ,
+    , 
     var `decision`: MdbxAuthorizationDecision
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12764,31 +12857,31 @@ public object FfiConverterTypeMdbxScopedAuthorizationDecision: FfiConverterRustB
 
 data class MdbxSecurityAuditEvent (
     var `eventId`: kotlin.String
-    ,
+    , 
     var `occurredAt`: kotlin.String
-    ,
+    , 
     var `operation`: MdbxTigaOperation
-    ,
+    , 
     var `outcome`: MdbxAuthorizationOutcome
-    ,
+    , 
     var `scope`: MdbxTigaScope
-    ,
+    , 
     var `sessionId`: kotlin.String?
-    ,
+    , 
     var `deviceId`: kotlin.String?
-    ,
+    , 
     var `reasons`: List<MdbxAuthorizationReason>
-    ,
+    , 
     var `constraints`: List<MdbxAuthorizationConstraint>
-    ,
+    , 
     var `exceptionId`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12847,39 +12940,39 @@ public object FfiConverterTypeMdbxSecurityAuditEvent: FfiConverterRustBuffer<Mdb
  */
 data class MdbxSecurityAuditEventV2 (
     var `eventId`: kotlin.String
-    ,
+    , 
     var `occurredAt`: kotlin.String
-    ,
+    , 
     var `operation`: MdbxTigaOperation
-    ,
+    , 
     var `outcome`: MdbxAuthorizationOutcome
-    ,
+    , 
     var `scope`: MdbxTigaScope
-    ,
+    , 
     var `sessionId`: kotlin.String?
-    ,
+    , 
     var `deviceId`: kotlin.String?
-    ,
+    , 
     var `reasons`: List<MdbxAuthorizationReason>
-    ,
+    , 
     var `constraints`: List<MdbxAuthorizationConstraint>
-    ,
+    , 
     var `exceptionId`: kotlin.String?
-    ,
+    , 
     var `operationId`: kotlin.String?
-    ,
+    , 
     var `commitId`: kotlin.String?
-    ,
+    , 
     var `policyVersion`: kotlin.UInt?
-    ,
+    , 
     var `policyFingerprint`: kotlin.ByteArray?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12945,19 +13038,19 @@ public object FfiConverterTypeMdbxSecurityAuditEventV2: FfiConverterRustBuffer<M
 
 data class MdbxSessionInfo (
     var `sessionId`: kotlin.String
-    ,
+    , 
     var `unlockMethod`: MdbxUnlockMethodType
-    ,
+    , 
     var `authenticatedAtUnixSecs`: kotlin.Long
-    ,
+    , 
     var `lastActivityAtUnixSecs`: kotlin.Long
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -12993,15 +13086,15 @@ public object FfiConverterTypeMdbxSessionInfo: FfiConverterRustBuffer<MdbxSessio
 
 data class MdbxSnapshotDeleteResult (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `snapshotId`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13031,19 +13124,19 @@ public object FfiConverterTypeMdbxSnapshotDeleteResult: FfiConverterRustBuffer<M
 
 data class MdbxSnapshotLifecycleLimits (
     var `maxMetadataTextBytes`: kotlin.UInt
-    ,
+    , 
     var `maxTimestampBytes`: kotlin.UInt
-    ,
+    , 
     var `maxPruneCandidates`: kotlin.UInt
-    ,
+    , 
     var `maxKeepLatest`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13079,17 +13172,17 @@ public object FfiConverterTypeMdbxSnapshotLifecycleLimits: FfiConverterRustBuffe
 
 data class MdbxSnapshotLifecycleSummary (
     var `snapshotId`: kotlin.String
-    ,
+    , 
     var `kind`: MdbxSnapshotKind
-    ,
+    , 
     var `retentionEligibleAt`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13122,13 +13215,13 @@ public object FfiConverterTypeMdbxSnapshotLifecycleSummary: FfiConverterRustBuff
 
 data class MdbxSnapshotManagementLimits (
     var `maxDisplayNameBytes`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13155,15 +13248,15 @@ public object FfiConverterTypeMdbxSnapshotManagementLimits: FfiConverterRustBuff
 
 data class MdbxSnapshotPruneCandidate (
     var `summary`: MdbxSnapshotSummary
-    ,
+    , 
     var `retentionEligibleAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13193,21 +13286,21 @@ public object FfiConverterTypeMdbxSnapshotPruneCandidate: FfiConverterRustBuffer
 
 data class MdbxSnapshotPrunePlan (
     var `planToken`: kotlin.String
-    ,
+    , 
     var `keepLatest`: kotlin.UInt
-    ,
+    , 
     var `candidates`: List<MdbxSnapshotPruneCandidate>
-    ,
+    , 
     var `hasMore`: kotlin.Boolean
-    ,
+    , 
     var `totalCiphertextBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13246,17 +13339,17 @@ public object FfiConverterTypeMdbxSnapshotPrunePlan: FfiConverterRustBuffer<Mdbx
 
 data class MdbxSnapshotPruneResult (
     var `planToken`: kotlin.String
-    ,
+    , 
     var `commitId`: kotlin.String
-    ,
+    , 
     var `deletedSnapshotIds`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13289,15 +13382,15 @@ public object FfiConverterTypeMdbxSnapshotPruneResult: FfiConverterRustBuffer<Md
 
 data class MdbxSnapshotRestoreResult (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `affectedObjectCount`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13327,27 +13420,27 @@ public object FfiConverterTypeMdbxSnapshotRestoreResult: FfiConverterRustBuffer<
 
 data class MdbxSnapshotStructureNode (
     var `id`: kotlin.String
-    ,
+    , 
     var `parentId`: kotlin.String?
-    ,
+    , 
     var `name`: kotlin.String
-    ,
+    , 
     var `nodeType`: kotlin.String
-    ,
+    , 
     var `path`: kotlin.String
-    ,
+    , 
     var `status`: kotlin.String
-    ,
+    , 
     var `childCount`: kotlin.UInt
-    ,
+    , 
     var `metadata`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13395,21 +13488,21 @@ public object FfiConverterTypeMdbxSnapshotStructureNode: FfiConverterRustBuffer<
 
 data class MdbxSnapshotStructurePreview (
     var `snapshotId`: kotlin.String
-    ,
+    , 
     var `currentNodes`: List<MdbxSnapshotStructureNode>
-    ,
+    , 
     var `snapshotNodes`: List<MdbxSnapshotStructureNode>
-    ,
+    , 
     var `currentItemCount`: kotlin.UInt
-    ,
+    , 
     var `snapshotItemCount`: kotlin.UInt
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13452,23 +13545,23 @@ public object FfiConverterTypeMdbxSnapshotStructurePreview: FfiConverterRustBuff
  */
 data class MdbxSnapshotSummary (
     var `snapshotId`: kotlin.String
-    ,
+    , 
     var `baseCommitId`: kotlin.String
-    ,
+    , 
     var `snapshotHash`: kotlin.String
-    ,
+    , 
     var `snapshotCiphertextBytes`: kotlin.ULong
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `createdByDeviceId`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13513,17 +13606,17 @@ public object FfiConverterTypeMdbxSnapshotSummary: FfiConverterRustBuffer<MdbxSn
  */
 data class MdbxSnapshotSummaryLimits (
     var `maxPageSize`: kotlin.UInt
-    ,
+    , 
     var `maxCursorBytes`: kotlin.UInt
-    ,
+    , 
     var `maxTextBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13556,15 +13649,15 @@ public object FfiConverterTypeMdbxSnapshotSummaryLimits: FfiConverterRustBuffer<
 
 data class MdbxSnapshotSummaryPage (
     var `items`: List<MdbxSnapshotSummary>
-    ,
+    , 
     var `nextCursor`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13594,17 +13687,17 @@ public object FfiConverterTypeMdbxSnapshotSummaryPage: FfiConverterRustBuffer<Md
 
 data class MdbxSyncBranchHead (
     var `branchId`: kotlin.String?
-    ,
+    , 
     var `branchName`: kotlin.String
-    ,
+    , 
     var `headCommitId`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13637,21 +13730,21 @@ public object FfiConverterTypeMdbxSyncBranchHead: FfiConverterRustBuffer<MdbxSyn
 
 data class MdbxSyncHello (
     var `deviceId`: kotlin.String
-    ,
+    , 
     var `protocolVersion`: kotlin.UInt
-    ,
+    , 
     var `heads`: List<MdbxSyncBranchHead>
-    ,
+    , 
     var `knownCommitIds`: List<kotlin.String>
-    ,
+    , 
     var `capabilities`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13690,17 +13783,17 @@ public object FfiConverterTypeMdbxSyncHello: FfiConverterRustBuffer<MdbxSyncHell
 
 data class MdbxSyncWireChunkRequest (
     var `sequence`: kotlin.ULong
-    ,
+    , 
     var `inReplyTo`: kotlin.ULong?
-    ,
+    , 
     var `request`: MdbxBlobChunkRequest
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13733,17 +13826,17 @@ public object FfiConverterTypeMdbxSyncWireChunkRequest: FfiConverterRustBuffer<M
 
 data class MdbxSyncWireChunkResponse (
     var `sequence`: kotlin.ULong
-    ,
+    , 
     var `inReplyTo`: kotlin.ULong?
-    ,
+    , 
     var `response`: MdbxBlobChunkResponse
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13776,17 +13869,17 @@ public object FfiConverterTypeMdbxSyncWireChunkResponse: FfiConverterRustBuffer<
 
 data class MdbxSyncWireHello (
     var `sequence`: kotlin.ULong
-    ,
+    , 
     var `inReplyTo`: kotlin.ULong?
-    ,
+    , 
     var `hello`: MdbxSyncHello
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13819,17 +13912,17 @@ public object FfiConverterTypeMdbxSyncWireHello: FfiConverterRustBuffer<MdbxSync
 
 data class MdbxSyncWireIntegrityRootHello (
     var `sequence`: kotlin.ULong
-    ,
+    , 
     var `inReplyTo`: kotlin.ULong?
-    ,
+    , 
     var `hello`: MdbxIntegrityRootSyncHello
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13862,17 +13955,17 @@ public object FfiConverterTypeMdbxSyncWireIntegrityRootHello: FfiConverterRustBu
 
 data class MdbxSyncWireManifestPageRequest (
     var `sequence`: kotlin.ULong
-    ,
+    , 
     var `inReplyTo`: kotlin.ULong?
-    ,
+    , 
     var `request`: MdbxBlobManifestPageRequest
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13905,17 +13998,17 @@ public object FfiConverterTypeMdbxSyncWireManifestPageRequest: FfiConverterRustB
 
 data class MdbxSyncWireManifestPageResponse (
     var `sequence`: kotlin.ULong
-    ,
+    , 
     var `inReplyTo`: kotlin.ULong?
-    ,
+    , 
     var `response`: MdbxBlobManifestPageResponse
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13948,17 +14041,17 @@ public object FfiConverterTypeMdbxSyncWireManifestPageResponse: FfiConverterRust
 
 data class MdbxSyncWireResume (
     var `sessionId`: kotlin.String
-    ,
+    , 
     var `nextOutboundSequence`: kotlin.ULong
-    ,
+    , 
     var `nextInboundSequence`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -13991,15 +14084,15 @@ public object FfiConverterTypeMdbxSyncWireResume: FfiConverterRustBuffer<MdbxSyn
 
 data class MdbxTigaScope (
     var `scopeType`: MdbxTigaScopeType
-    ,
+    , 
     var `scopeId`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14029,27 +14122,27 @@ public object FfiConverterTypeMdbxTigaScope: FfiConverterRustBuffer<MdbxTigaScop
 
 data class MdbxTigaUnlockAssessment (
     var `mode`: MdbxTigaMode
-    ,
+    , 
     var `configuredMethods`: List<MdbxUnlockMethodType>
-    ,
+    , 
     var `hasPortableUnlock`: kotlin.Boolean
-    ,
+    , 
     var `hasSecurityKeyUnlock`: kotlin.Boolean
-    ,
+    , 
     var `hasCombinedPasswordSecurityKey`: kotlin.Boolean
-    ,
+    , 
     var `hasRequiredCombinedStrength`: kotlin.Boolean
-    ,
+    , 
     var `satisfiesPolicy`: kotlin.Boolean
-    ,
+    , 
     var `warnings`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14097,23 +14190,23 @@ public object FfiConverterTypeMdbxTigaUnlockAssessment: FfiConverterRustBuffer<M
 
 data class MdbxTombstonePurgeBlocker (
     var `code`: kotlin.String
-    ,
+    , 
     var `deviceId`: kotlin.String?
-    ,
+    , 
     var `commitId`: kotlin.String?
-    ,
+    , 
     var `timestamp`: kotlin.String?
-    ,
+    , 
     var `dependentObjectType`: kotlin.String?
-    ,
+    , 
     var `dependentObjectCount`: kotlin.ULong?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14155,17 +14248,17 @@ public object FfiConverterTypeMdbxTombstonePurgeBlocker: FfiConverterRustBuffer<
 
 data class MdbxTombstonePurgeEligibility (
     var `tombstoneId`: kotlin.String
-    ,
+    , 
     var `eligible`: kotlin.Boolean
-    ,
+    , 
     var `blockers`: List<MdbxTombstonePurgeBlocker>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14198,17 +14291,17 @@ public object FfiConverterTypeMdbxTombstonePurgeEligibility: FfiConverterRustBuf
 
 data class MdbxTombstonePurgeScheduleResult (
     var `tombstoneId`: kotlin.String
-    ,
+    , 
     var `purgeEligibleAt`: kotlin.String
-    ,
+    , 
     var `commitId`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14241,27 +14334,27 @@ public object FfiConverterTypeMdbxTombstonePurgeScheduleResult: FfiConverterRust
 
 data class MdbxTombstoneRecord (
     var `tombstoneId`: kotlin.String
-    ,
+    , 
     var `targetObjectType`: kotlin.String
-    ,
+    , 
     var `targetObjectId`: kotlin.String
-    ,
+    , 
     var `deleteClock`: kotlin.String
-    ,
+    , 
     var `deletedByDeviceId`: kotlin.String
-    ,
+    , 
     var `deletedAt`: kotlin.String
-    ,
+    , 
     var `purgeEligibleAt`: kotlin.String?
-    ,
+    , 
     var `deleteCommitId`: kotlin.String?
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14309,19 +14402,19 @@ public object FfiConverterTypeMdbxTombstoneRecord: FfiConverterRustBuffer<MdbxTo
 
 data class MdbxUnlockMethod (
     var `methodId`: kotlin.String
-    ,
+    , 
     var `methodType`: MdbxUnlockMethodType
-    ,
+    , 
     var `createdAt`: kotlin.String
-    ,
+    , 
     var `updatedAt`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14357,17 +14450,17 @@ public object FfiConverterTypeMdbxUnlockMethod: FfiConverterRustBuffer<MdbxUnloc
 
 data class MdbxVaultContentManifestVerification (
     var `tableCount`: kotlin.ULong
-    ,
+    , 
     var `rowCount`: kotlin.ULong
-    ,
+    , 
     var `hashedBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14406,41 +14499,41 @@ public object FfiConverterTypeMdbxVaultContentManifestVerification: FfiConverter
  */
 data class MdbxVaultDiagnosticsSummary (
     var `commitCount`: kotlin.ULong
-    ,
+    , 
     var `tombstoneCount`: kotlin.ULong
-    ,
+    , 
     var `branchCount`: kotlin.ULong
-    ,
+    , 
     var `deviceCount`: kotlin.ULong
-    ,
+    , 
     var `snapshotCount`: kotlin.ULong
-    ,
+    , 
     var `unresolvedConflictCount`: kotlin.ULong
-    ,
+    , 
     var `projectCount`: kotlin.ULong
-    ,
+    , 
     var `deletedProjectCount`: kotlin.ULong
-    ,
+    , 
     var `entryCount`: kotlin.ULong
-    ,
+    , 
     var `deletedEntryCount`: kotlin.ULong
-    ,
+    , 
     var `attachmentCount`: kotlin.ULong
-    ,
+    , 
     var `deletedAttachmentCount`: kotlin.ULong
-    ,
+    , 
     var `externalAttachmentCount`: kotlin.ULong
-    ,
+    , 
     var `originalAttachmentBytes`: kotlin.ULong
-    ,
+    , 
     var `storedAttachmentBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14516,19 +14609,19 @@ public object FfiConverterTypeMdbxVaultDiagnosticsSummary: FfiConverterRustBuffe
  */
 data class MdbxWriteOperationLimits (
     var `maxCommands`: kotlin.ULong
-    ,
+    , 
     var `maxPayloadBytesPerCommand`: kotlin.ULong
-    ,
+    , 
     var `maxPayloadBytes`: kotlin.ULong
-    ,
+    , 
     var `maxIntentBytes`: kotlin.ULong
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14564,25 +14657,25 @@ public object FfiConverterTypeMdbxWriteOperationLimits: FfiConverterRustBuffer<M
 
 data class MdbxWriteOperationResult (
     var `commitId`: kotlin.String
-    ,
+    , 
     var `alreadyCommitted`: kotlin.Boolean
-    ,
+    , 
     var `projectIds`: List<kotlin.String>
-    ,
+    , 
     var `entryIds`: List<kotlin.String>
-    ,
+    , 
     var `relationIds`: List<kotlin.String>
-    ,
+    , 
     var `labelIds`: List<kotlin.String>
-    ,
+    , 
     var `labelAssignmentIds`: List<kotlin.String>
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14627,15 +14720,15 @@ public object FfiConverterTypeMdbxWriteOperationResult: FfiConverterRustBuffer<M
 
 data class ProjectRecord (
     var `projectId`: kotlin.String
-    ,
+    , 
     var `title`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14665,15 +14758,15 @@ public object FfiConverterTypeProjectRecord: FfiConverterRustBuffer<ProjectRecor
 
 data class VaultInfo (
     var `vaultId`: kotlin.String
-    ,
+    , 
     var `deviceId`: kotlin.String
-
+    
 ){
+    
 
+    
 
-
-
-
+    
     companion object
 }
 
@@ -14702,56 +14795,56 @@ public object FfiConverterTypeVaultInfo: FfiConverterRustBuffer<VaultInfo> {
 
 
 sealed class MdbxAttachmentBatchCommand {
-
+    
     data class Create(
-        val `attachmentId`: kotlin.String,
-        val `projectId`: kotlin.String,
-        val `entryId`: kotlin.String?,
-        val `fileName`: kotlin.String,
-        val `mediaType`: kotlin.String?,
+        val `attachmentId`: kotlin.String, 
+        val `projectId`: kotlin.String, 
+        val `entryId`: kotlin.String?, 
+        val `fileName`: kotlin.String, 
+        val `mediaType`: kotlin.String?, 
         val `content`: kotlin.ByteArray) : MdbxAttachmentBatchCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class Replace(
-        val `attachmentId`: kotlin.String,
+        val `attachmentId`: kotlin.String, 
         val `content`: kotlin.ByteArray) : MdbxAttachmentBatchCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class Rename(
-        val `attachmentId`: kotlin.String,
-        val `fileName`: kotlin.String,
+        val `attachmentId`: kotlin.String, 
+        val `fileName`: kotlin.String, 
         val `mediaType`: kotlin.String?) : MdbxAttachmentBatchCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class Delete(
         val `attachmentId`: kotlin.String) : MdbxAttachmentBatchCommand()
-
+        
     {
-
+        
 
         companion object
     }
+    
 
+    
 
-
-
-
-
+    
+    
 
 
     companion object
@@ -14866,12 +14959,12 @@ public object FfiConverterTypeMdbxAttachmentBatchCommand : FfiConverterRustBuffe
 
 
 enum class MdbxAuditLevel {
-
+    
     SECURITY_CHANGES,
     SENSITIVE_OPERATIONS,
     ALL_DECISIONS;
 
-
+    
 
 
     companion object
@@ -14883,9 +14976,9 @@ enum class MdbxAuditLevel {
  */
 public object FfiConverterTypeMdbxAuditLevel: FfiConverterRustBuffer<MdbxAuditLevel> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxAuditLevel.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -14903,14 +14996,14 @@ public object FfiConverterTypeMdbxAuditLevel: FfiConverterRustBuffer<MdbxAuditLe
 
 
 enum class MdbxAuthorizationConstraintKind {
-
+    
     CLEAR_CLIPBOARD_AFTER_SECONDS,
     EXCLUDE_CLIPBOARD_HISTORY,
     PREVENT_SCREEN_CAPTURE,
     NO_PLAINTEXT_PERSISTENCE,
     USE_SECURE_TEMPORARY_FILES;
 
-
+    
 
 
     companion object
@@ -14922,9 +15015,9 @@ enum class MdbxAuthorizationConstraintKind {
  */
 public object FfiConverterTypeMdbxAuthorizationConstraintKind: FfiConverterRustBuffer<MdbxAuthorizationConstraintKind> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxAuthorizationConstraintKind.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -14942,14 +15035,14 @@ public object FfiConverterTypeMdbxAuthorizationConstraintKind: FfiConverterRustB
 
 
 enum class MdbxAuthorizationOutcome {
-
+    
     ALLOW,
     ALLOW_WITH_CONSTRAINTS,
     REQUIRE_FRESH_AUTHENTICATION,
     REQUIRE_ADDITIONAL_FACTOR,
     DENY;
 
-
+    
 
 
     companion object
@@ -14961,9 +15054,9 @@ enum class MdbxAuthorizationOutcome {
  */
 public object FfiConverterTypeMdbxAuthorizationOutcome: FfiConverterRustBuffer<MdbxAuthorizationOutcome> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxAuthorizationOutcome.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -14981,7 +15074,7 @@ public object FfiConverterTypeMdbxAuthorizationOutcome: FfiConverterRustBuffer<M
 
 
 enum class MdbxAuthorizationReason {
-
+    
     SESSION_MISSING,
     SESSION_EXPIRED,
     AUTHENTICATION_STALE,
@@ -14994,7 +15087,7 @@ enum class MdbxAuthorizationReason {
     POLICY_WEAKENING_NOT_AUTHORIZED,
     POLICY_EXCEPTION_INVALID;
 
-
+    
 
 
     companion object
@@ -15006,9 +15099,9 @@ enum class MdbxAuthorizationReason {
  */
 public object FfiConverterTypeMdbxAuthorizationReason: FfiConverterRustBuffer<MdbxAuthorizationReason> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxAuthorizationReason.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15026,12 +15119,12 @@ public object FfiConverterTypeMdbxAuthorizationReason: FfiConverterRustBuffer<Md
 
 
 enum class MdbxBlobManifestEntryState {
-
+    
     AVAILABLE,
     SOURCE_MISSING,
     SOURCE_SIZE_INVALID;
 
-
+    
 
 
     companion object
@@ -15043,9 +15136,9 @@ enum class MdbxBlobManifestEntryState {
  */
 public object FfiConverterTypeMdbxBlobManifestEntryState: FfiConverterRustBuffer<MdbxBlobManifestEntryState> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxBlobManifestEntryState.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15063,7 +15156,7 @@ public object FfiConverterTypeMdbxBlobManifestEntryState: FfiConverterRustBuffer
 
 
 enum class MdbxBlobSyncPhase {
-
+    
     DISABLED,
     IDLE,
     MANIFEST,
@@ -15072,7 +15165,7 @@ enum class MdbxBlobSyncPhase {
     AWAITING_CHUNK_ACKNOWLEDGEMENT,
     COMPLETE;
 
-
+    
 
 
     companion object
@@ -15084,9 +15177,9 @@ enum class MdbxBlobSyncPhase {
  */
 public object FfiConverterTypeMdbxBlobSyncPhase: FfiConverterRustBuffer<MdbxBlobSyncPhase> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxBlobSyncPhase.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15104,11 +15197,11 @@ public object FfiConverterTypeMdbxBlobSyncPhase: FfiConverterRustBuffer<MdbxBlob
 
 
 enum class MdbxConflictChoice {
-
+    
     LOCAL_WINS,
     INCOMING_WINS;
 
-
+    
 
 
     companion object
@@ -15120,9 +15213,9 @@ enum class MdbxConflictChoice {
  */
 public object FfiConverterTypeMdbxConflictChoice: FfiConverterRustBuffer<MdbxConflictChoice> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxConflictChoice.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15140,12 +15233,12 @@ public object FfiConverterTypeMdbxConflictChoice: FfiConverterRustBuffer<MdbxCon
 
 
 enum class MdbxDeviceAssurance {
-
+    
     UNKNOWN,
     STANDARD,
     TRUSTED_HARDWARE;
 
-
+    
 
 
     companion object
@@ -15157,9 +15250,9 @@ enum class MdbxDeviceAssurance {
  */
 public object FfiConverterTypeMdbxDeviceAssurance: FfiConverterRustBuffer<MdbxDeviceAssurance> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxDeviceAssurance.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15177,11 +15270,11 @@ public object FfiConverterTypeMdbxDeviceAssurance: FfiConverterRustBuffer<MdbxDe
 
 
 enum class MdbxExtensionRegistration {
-
+    
     REGISTERED,
     ALREADY_REGISTERED;
 
-
+    
 
 
     companion object
@@ -15193,9 +15286,9 @@ enum class MdbxExtensionRegistration {
  */
 public object FfiConverterTypeMdbxExtensionRegistration: FfiConverterRustBuffer<MdbxExtensionRegistration> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxExtensionRegistration.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15213,12 +15306,12 @@ public object FfiConverterTypeMdbxExtensionRegistration: FfiConverterRustBuffer<
 
 
 enum class MdbxExternalBlobState {
-
+    
     AVAILABLE,
     MISSING,
     SIZE_MISMATCH;
 
-
+    
 
 
     companion object
@@ -15230,9 +15323,9 @@ enum class MdbxExternalBlobState {
  */
 public object FfiConverterTypeMdbxExternalBlobState: FfiConverterRustBuffer<MdbxExternalBlobState> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxExternalBlobState.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15251,110 +15344,110 @@ public object FfiConverterTypeMdbxExternalBlobState: FfiConverterRustBuffer<Mdbx
 
 
 sealed class MdbxFfiException: kotlin.Exception() {
-
+    
     class Storage(
-
+        
         val `detail`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "detail=${ `detail` }"
     }
-
+    
     class Serialization(
-
+        
         val `detail`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "detail=${ `detail` }"
     }
-
+    
     class SyncProtocol(
-
+        
         val `detail`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "detail=${ `detail` }"
     }
-
+    
     class InvalidEntryType(
-
+        
         val `entryType`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "entryType=${ `entryType` }"
     }
-
+    
     class InvalidObjectTypeId(
-
+        
         val `objectTypeId`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "objectTypeId=${ `objectTypeId` }"
     }
-
+    
     class InvalidRelationKind(
-
+        
         val `relationKind`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "relationKind=${ `relationKind` }"
     }
-
+    
     class InvalidCollectionTypeId(
-
+        
         val `collectionTypeId`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "collectionTypeId=${ `collectionTypeId` }"
     }
-
+    
     class InvalidExtensionCapabilityId(
-
+        
         val `capabilityId`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "capabilityId=${ `capabilityId` }"
     }
-
+    
     class LockPoisoned(
         ) : MdbxFfiException() {
         override val message
             get() = ""
     }
-
+    
     class InvalidConflictObjectType(
-
+        
         val `objectType`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "objectType=${ `objectType` }"
     }
-
+    
     class InvalidExtensionId(
-
+        
         val `extensionId`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "extensionId=${ `extensionId` }"
     }
-
+    
     class InvalidExtensionFeatureId(
-
+        
         val `featureId`: kotlin.String
         ) : MdbxFfiException() {
         override val message
             get() = "featureId=${ `featureId` }"
     }
+    
 
-
-
+    
 
 
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<MdbxFfiException> {
         override fun lift(error_buf: RustBuffer.ByValue): MdbxFfiException = FfiConverterTypeMdbxFfiError.lift(error_buf)
     }
 
-
+    
 }
 
 /**
@@ -15362,7 +15455,7 @@ sealed class MdbxFfiException: kotlin.Exception() {
  */
 public object FfiConverterTypeMdbxFfiError : FfiConverterRustBuffer<MdbxFfiException> {
     override fun read(buf: ByteBuffer): MdbxFfiException {
-
+        
 
         return when(buf.getInt()) {
             1 -> MdbxFfiException.Storage(
@@ -15537,13 +15630,13 @@ public object FfiConverterTypeMdbxFfiError : FfiConverterRustBuffer<MdbxFfiExcep
 
 
 enum class MdbxHealthIssueSeverity {
-
+    
     INFO,
     WARNING,
     ERROR,
     CRITICAL;
 
-
+    
 
 
     companion object
@@ -15555,9 +15648,9 @@ enum class MdbxHealthIssueSeverity {
  */
 public object FfiConverterTypeMdbxHealthIssueSeverity: FfiConverterRustBuffer<MdbxHealthIssueSeverity> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxHealthIssueSeverity.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15575,12 +15668,12 @@ public object FfiConverterTypeMdbxHealthIssueSeverity: FfiConverterRustBuffer<Md
 
 
 enum class MdbxHealthRepairChoice {
-
+    
     KEEP_CONTENT,
     DELETE_OBJECT,
     CANCEL;
 
-
+    
 
 
     companion object
@@ -15592,9 +15685,9 @@ enum class MdbxHealthRepairChoice {
  */
 public object FfiConverterTypeMdbxHealthRepairChoice: FfiConverterRustBuffer<MdbxHealthRepairChoice> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxHealthRepairChoice.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15612,12 +15705,12 @@ public object FfiConverterTypeMdbxHealthRepairChoice: FfiConverterRustBuffer<Mdb
 
 
 enum class MdbxHealthRepairItemKind {
-
+    
     MISSING_TOMBSTONE,
     DUPLICATE_TOMBSTONES,
     ACTIVE_OBJECT_TOMBSTONE_CONFLICT;
 
-
+    
 
 
     companion object
@@ -15629,9 +15722,9 @@ enum class MdbxHealthRepairItemKind {
  */
 public object FfiConverterTypeMdbxHealthRepairItemKind: FfiConverterRustBuffer<MdbxHealthRepairItemKind> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxHealthRepairItemKind.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15649,12 +15742,12 @@ public object FfiConverterTypeMdbxHealthRepairItemKind: FfiConverterRustBuffer<M
 
 
 enum class MdbxHealthRepairStatus {
-
+    
     APPLIED,
     CANCELLED,
     NO_CHANGES;
 
-
+    
 
 
     companion object
@@ -15666,9 +15759,9 @@ enum class MdbxHealthRepairStatus {
  */
 public object FfiConverterTypeMdbxHealthRepairStatus: FfiConverterRustBuffer<MdbxHealthRepairStatus> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxHealthRepairStatus.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15686,11 +15779,11 @@ public object FfiConverterTypeMdbxHealthRepairStatus: FfiConverterRustBuffer<Mdb
 
 
 enum class MdbxIntegrityRootCheckpointRelation {
-
+    
     UNCHANGED,
     ADVANCED;
 
-
+    
 
 
     companion object
@@ -15702,9 +15795,9 @@ enum class MdbxIntegrityRootCheckpointRelation {
  */
 public object FfiConverterTypeMdbxIntegrityRootCheckpointRelation: FfiConverterRustBuffer<MdbxIntegrityRootCheckpointRelation> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxIntegrityRootCheckpointRelation.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15722,14 +15815,14 @@ public object FfiConverterTypeMdbxIntegrityRootCheckpointRelation: FfiConverterR
 
 
 enum class MdbxIntegrityRootState {
-
+    
     DISABLED,
     PENDING,
     BUILDING,
     ESTABLISHED,
     STALE;
 
-
+    
 
 
     companion object
@@ -15741,9 +15834,9 @@ enum class MdbxIntegrityRootState {
  */
 public object FfiConverterTypeMdbxIntegrityRootState: FfiConverterRustBuffer<MdbxIntegrityRootState> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxIntegrityRootState.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15761,12 +15854,12 @@ public object FfiConverterTypeMdbxIntegrityRootState: FfiConverterRustBuffer<Mdb
 
 
 enum class MdbxPolicyCompliance {
-
+    
     COMPLIANT,
     EXCEPTION,
     REMEDIATION_REQUIRED;
 
-
+    
 
 
     companion object
@@ -15778,9 +15871,9 @@ enum class MdbxPolicyCompliance {
  */
 public object FfiConverterTypeMdbxPolicyCompliance: FfiConverterRustBuffer<MdbxPolicyCompliance> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxPolicyCompliance.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15798,11 +15891,11 @@ public object FfiConverterTypeMdbxPolicyCompliance: FfiConverterRustBuffer<MdbxP
 
 
 enum class MdbxSnapshotKind {
-
+    
     MANUAL,
     AUTOMATIC;
 
-
+    
 
 
     companion object
@@ -15814,9 +15907,9 @@ enum class MdbxSnapshotKind {
  */
 public object FfiConverterTypeMdbxSnapshotKind: FfiConverterRustBuffer<MdbxSnapshotKind> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxSnapshotKind.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15834,12 +15927,13 @@ public object FfiConverterTypeMdbxSnapshotKind: FfiConverterRustBuffer<MdbxSnaps
 
 
 enum class MdbxTigaMode {
-
+    
     SKY,
     MULTI,
-    POWER;
+    POWER,
+    GLITTER;
 
-
+    
 
 
     companion object
@@ -15851,9 +15945,9 @@ enum class MdbxTigaMode {
  */
 public object FfiConverterTypeMdbxTigaMode: FfiConverterRustBuffer<MdbxTigaMode> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxTigaMode.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15871,7 +15965,7 @@ public object FfiConverterTypeMdbxTigaMode: FfiConverterRustBuffer<MdbxTigaMode>
 
 
 enum class MdbxTigaOperation {
-
+    
     REVEAL_SECRET,
     COPY_SECRET,
     EXPORT_DATA,
@@ -15892,7 +15986,7 @@ enum class MdbxTigaOperation {
     CREATE_PLAINTEXT_CACHE,
     MIGRATE_PAYLOAD;
 
-
+    
 
 
     companion object
@@ -15904,9 +15998,9 @@ enum class MdbxTigaOperation {
  */
 public object FfiConverterTypeMdbxTigaOperation: FfiConverterRustBuffer<MdbxTigaOperation> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxTigaOperation.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15924,13 +16018,13 @@ public object FfiConverterTypeMdbxTigaOperation: FfiConverterRustBuffer<MdbxTiga
 
 
 enum class MdbxTigaScopeType {
-
+    
     VAULT,
     PROJECT,
     ENTRY,
     ATTACHMENT;
 
-
+    
 
 
     companion object
@@ -15942,9 +16036,9 @@ enum class MdbxTigaScopeType {
  */
 public object FfiConverterTypeMdbxTigaScopeType: FfiConverterRustBuffer<MdbxTigaScopeType> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxTigaScopeType.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15962,13 +16056,13 @@ public object FfiConverterTypeMdbxTigaScopeType: FfiConverterRustBuffer<MdbxTiga
 
 
 enum class MdbxUnlockMethodType {
-
+    
     PIN,
     PASSWORD,
     SECURITY_KEY,
     PASSWORD_SECURITY_KEY;
 
-
+    
 
 
     companion object
@@ -15980,9 +16074,9 @@ enum class MdbxUnlockMethodType {
  */
 public object FfiConverterTypeMdbxUnlockMethodType: FfiConverterRustBuffer<MdbxUnlockMethodType> {
     override fun read(buf: ByteBuffer) = try {
-
+        
         MdbxUnlockMethodType.entries[buf.getInt() - 1]
-
+        
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
@@ -15999,218 +16093,218 @@ public object FfiConverterTypeMdbxUnlockMethodType: FfiConverterRustBuffer<MdbxU
 
 
 sealed class MdbxWriteCommand {
-
+    
     data class CreateProject(
-        val `projectId`: kotlin.String,
+        val `projectId`: kotlin.String, 
         val `title`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class CreateProjectWithParent(
-        val `projectId`: kotlin.String,
-        val `title`: kotlin.String,
+        val `projectId`: kotlin.String, 
+        val `title`: kotlin.String, 
         val `parentProjectId`: kotlin.String?) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class RenameProject(
-        val `projectId`: kotlin.String,
+        val `projectId`: kotlin.String, 
         val `title`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class MoveProject(
-        val `projectId`: kotlin.String,
+        val `projectId`: kotlin.String, 
         val `parentProjectId`: kotlin.String?) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class DeleteProject(
         val `projectId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class RestoreProject(
-        val `projectId`: kotlin.String,
+        val `projectId`: kotlin.String, 
         val `parentProjectId`: kotlin.String?) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class CreateEntry(
-        val `entryId`: kotlin.String,
-        val `projectId`: kotlin.String,
-        val `entryType`: kotlin.String,
-        val `title`: kotlin.String,
+        val `entryId`: kotlin.String, 
+        val `projectId`: kotlin.String, 
+        val `entryType`: kotlin.String, 
+        val `title`: kotlin.String, 
         val `payloadJson`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class UpdateEntry(
-        val `entryId`: kotlin.String,
-        val `projectId`: kotlin.String,
-        val `entryType`: kotlin.String,
-        val `title`: kotlin.String,
+        val `entryId`: kotlin.String, 
+        val `projectId`: kotlin.String, 
+        val `entryType`: kotlin.String, 
+        val `title`: kotlin.String, 
         val `payloadJson`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class DeleteEntry(
-        val `entryId`: kotlin.String,
+        val `entryId`: kotlin.String, 
         val `projectId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class RestoreEntry(
-        val `entryId`: kotlin.String,
+        val `entryId`: kotlin.String, 
         val `projectId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class MoveEntry(
-        val `entryId`: kotlin.String,
-        val `projectId`: kotlin.String,
+        val `entryId`: kotlin.String, 
+        val `projectId`: kotlin.String, 
         val `targetProjectId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class CreateObjectRelation(
-        val `relationId`: kotlin.String,
-        val `sourceObjectId`: kotlin.String,
-        val `targetObjectId`: kotlin.String,
-        val `relationKind`: kotlin.String,
-        val `payloadJson`: kotlin.String,
+        val `relationId`: kotlin.String, 
+        val `sourceObjectId`: kotlin.String, 
+        val `targetObjectId`: kotlin.String, 
+        val `relationKind`: kotlin.String, 
+        val `payloadJson`: kotlin.String, 
         val `payloadSchemaVersion`: kotlin.UInt) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class UpdateObjectRelation(
-        val `relationId`: kotlin.String,
-        val `relationKind`: kotlin.String,
-        val `payloadJson`: kotlin.String,
+        val `relationId`: kotlin.String, 
+        val `relationKind`: kotlin.String, 
+        val `payloadJson`: kotlin.String, 
         val `payloadSchemaVersion`: kotlin.UInt) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class DeleteObjectRelation(
         val `relationId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class CreateObjectLabel(
-        val `labelId`: kotlin.String,
-        val `collectionId`: kotlin.String,
-        val `name`: kotlin.String,
-        val `payloadJson`: kotlin.String,
+        val `labelId`: kotlin.String, 
+        val `collectionId`: kotlin.String, 
+        val `name`: kotlin.String, 
+        val `payloadJson`: kotlin.String, 
         val `payloadSchemaVersion`: kotlin.UInt) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class UpdateObjectLabel(
-        val `labelId`: kotlin.String,
-        val `name`: kotlin.String,
-        val `payloadJson`: kotlin.String,
+        val `labelId`: kotlin.String, 
+        val `name`: kotlin.String, 
+        val `payloadJson`: kotlin.String, 
         val `payloadSchemaVersion`: kotlin.UInt) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class DeleteObjectLabel(
         val `labelId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class AssignObjectLabel(
-        val `assignmentId`: kotlin.String,
-        val `objectId`: kotlin.String,
+        val `assignmentId`: kotlin.String, 
+        val `objectId`: kotlin.String, 
         val `labelId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
-
+    
     data class RemoveObjectLabelAssignment(
         val `assignmentId`: kotlin.String) : MdbxWriteCommand()
-
+        
     {
-
+        
 
         companion object
     }
+    
 
+    
 
-
-
-
-
+    
+    
 
 
     companion object
@@ -18697,32 +18791,32 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxAttachmentBatchLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_attachment_batch_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultAttachmentContentLimits`(): MdbxAttachmentContentLimits {
             return FfiConverterTypeMdbxAttachmentContentLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_attachment_content_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultAttachmentPresentationLimits`(): MdbxAttachmentPresentationLimits {
             return FfiConverterTypeMdbxAttachmentPresentationLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_attachment_presentation_limits(
-
+    
         _status)
 }
     )
     }
-
+    
 
         /**
          * Describes the modules compiled into this library without opening a vault.
@@ -18731,42 +18825,42 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxBuildCapabilityManifest.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_mdbx_build_capability_manifest(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultPresentationMetadataLimits`(): MdbxPresentationMetadataLimits {
             return FfiConverterTypeMdbxPresentationMetadataLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_presentation_metadata_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultConflictSummaryLimits`(): MdbxConflictSummaryLimits {
             return FfiConverterTypeMdbxConflictSummaryLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_conflict_summary_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultCommitActionLimits`(): MdbxCommitActionLimits {
             return FfiConverterTypeMdbxCommitActionLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_commit_action_limits(
-
+    
         _status)
 }
     )
     }
-
+    
 
         /**
          * Reads integrity-root metadata without unlocking, migrating, or opening the
@@ -18776,32 +18870,32 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxIntegrityRootStatus.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_inspect_vault_integrity_root(
-
+    
         FfiConverterString.lower(`path`),_status)
 }
     )
     }
-
+    
  fun `defaultObjectDisclosureLimits`(): MdbxObjectDisclosureLimits {
             return FfiConverterTypeMdbxObjectDisclosureLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_object_disclosure_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultObjectMetadataDisclosureLimits`(): MdbxObjectMetadataDisclosureLimits {
             return FfiConverterTypeMdbxObjectMetadataDisclosureLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_object_metadata_disclosure_limits(
-
+    
         _status)
 }
     )
     }
-
+    
 
         /**
          * Describes the MDBX3 runtime identity without opening or modifying a vault.
@@ -18810,85 +18904,85 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxRuntimeManifest.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_mdbx_runtime_manifest(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultSnapshotLifecycleLimits`(): MdbxSnapshotLifecycleLimits {
             return FfiConverterTypeMdbxSnapshotLifecycleLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_snapshot_lifecycle_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultSnapshotManagementLimits`(): MdbxSnapshotManagementLimits {
             return FfiConverterTypeMdbxSnapshotManagementLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_snapshot_management_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultSnapshotSummaryLimits`(): MdbxSnapshotSummaryLimits {
             return FfiConverterTypeMdbxSnapshotSummaryLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_snapshot_summary_limits(
-
+    
         _status)
 }
     )
     }
-
+    
 
     @Throws(MdbxFfiException::class) fun `createBlobSyncSession`(`deviceId`: kotlin.String): MdbxBlobSyncSession {
             return FfiConverterTypeMdbxBlobSyncSession.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_create_blob_sync_session(
-
+    
         FfiConverterString.lower(`deviceId`),_status)
 }
     )
     }
-
+    
 
     @Throws(MdbxFfiException::class) fun `createIntegrityRootSyncSession`(`deviceId`: kotlin.String, `checkpoint`: MdbxAuthenticatedStateRootCheckpoint): MdbxIntegrityRootSyncSession {
             return FfiConverterTypeMdbxIntegrityRootSyncSession.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_create_integrity_root_sync_session(
-
+    
         FfiConverterString.lower(`deviceId`),FfiConverterTypeMdbxAuthenticatedStateRootCheckpoint.lower(`checkpoint`),_status)
 }
     )
     }
-
+    
 
     @Throws(MdbxFfiException::class) fun `createSyncWireSession`(`sessionId`: kotlin.String, `maxPayloadBytes`: kotlin.ULong): MdbxSyncWireSession {
             return FfiConverterTypeMdbxSyncWireSession.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_create_sync_wire_session(
-
+    
         FfiConverterString.lower(`sessionId`),FfiConverterULong.lower(`maxPayloadBytes`),_status)
 }
     )
     }
-
+    
  fun `defaultSyncWirePayloadBytes`(): kotlin.ULong {
             return FfiConverterULong.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_sync_wire_payload_bytes(
-
+    
         _status)
 }
     )
     }
-
+    
 
         /**
          * Create a verified portable backup without writable open, unlock, or
@@ -18898,34 +18992,49 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxBackupInfo.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_create_portable_backup(
-
+    
         FfiConverterString.lower(`sourcePath`),FfiConverterString.lower(`destination`),_status)
 }
     )
     }
-
+    
 
     @Throws(MdbxFfiException::class) fun `createVault`(`path`: kotlin.String, `password`: kotlin.String, `deviceId`: kotlin.String): MdbxVault {
             return FfiConverterTypeMdbxVault.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_create_vault(
-
+    
         FfiConverterString.lower(`path`),FfiConverterString.lower(`password`),FfiConverterString.lower(`deviceId`),_status)
 }
     )
     }
+    
 
+        /**
+         * Create atomically with only a combined wrapper. Standard portable clients
+         * need no hardware authentication; capability assertions must remain truthful.
+         */
+    @Throws(MdbxFfiException::class) fun `createVaultWithPasswordSecurityKey`(`path`: kotlin.String, `password`: kotlin.String, `keyMaterial`: kotlin.ByteArray, `deviceId`: kotlin.String, `mode`: MdbxTigaMode, `deviceContext`: MdbxDeviceContext): MdbxVault {
+            return FfiConverterTypeMdbxVault.lift(
+    uniffiRustCallWithError(MdbxFfiException) { _status ->
+    UniffiLib.uniffi_mdbx_ffi_fn_func_create_vault_with_password_security_key(
+    
+        FfiConverterString.lower(`path`),FfiConverterString.lower(`password`),FfiConverterByteArray.lower(`keyMaterial`),FfiConverterString.lower(`deviceId`),FfiConverterTypeMdbxTigaMode.lower(`mode`),FfiConverterTypeMdbxDeviceContext.lower(`deviceContext`),_status)
+}
+    )
+    }
+    
 
     @Throws(MdbxFfiException::class) fun `createVaultWithTigaMode`(`path`: kotlin.String, `password`: kotlin.String, `deviceId`: kotlin.String, `mode`: MdbxTigaMode): MdbxVault {
             return FfiConverterTypeMdbxVault.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_create_vault_with_tiga_mode(
-
+    
         FfiConverterString.lower(`path`),FfiConverterString.lower(`password`),FfiConverterString.lower(`deviceId`),FfiConverterTypeMdbxTigaMode.lower(`mode`),_status)
 }
     )
     }
-
+    
 
         /**
          * Read migration metadata without opening the vault for writing.
@@ -18934,45 +19043,56 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxMigrationInfo.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_inspect_vault_migration(
-
+    
         FfiConverterString.lower(`path`),_status)
 }
     )
     }
-
+    
 
     @Throws(MdbxFfiException::class) fun `openVault`(`path`: kotlin.String, `password`: kotlin.String, `deviceId`: kotlin.String): MdbxVault {
             return FfiConverterTypeMdbxVault.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_open_vault(
-
+    
         FfiConverterString.lower(`path`),FfiConverterString.lower(`password`),FfiConverterString.lower(`deviceId`),_status)
 }
     )
     }
-
+    
 
     @Throws(MdbxFfiException::class) fun `openVaultWithPasswordSecurityKey`(`path`: kotlin.String, `password`: kotlin.String, `keyMaterial`: kotlin.ByteArray, `deviceId`: kotlin.String): MdbxVault {
             return FfiConverterTypeMdbxVault.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_open_vault_with_password_security_key(
-
+    
         FfiConverterString.lower(`path`),FfiConverterString.lower(`password`),FfiConverterByteArray.lower(`keyMaterial`),FfiConverterString.lower(`deviceId`),_status)
 }
     )
     }
+    
 
+    @Throws(MdbxFfiException::class) fun `openVaultWithPasswordSecurityKeyAndDeviceContext`(`path`: kotlin.String, `password`: kotlin.String, `keyMaterial`: kotlin.ByteArray, `deviceId`: kotlin.String, `deviceContext`: MdbxDeviceContext): MdbxVault {
+            return FfiConverterTypeMdbxVault.lift(
+    uniffiRustCallWithError(MdbxFfiException) { _status ->
+    UniffiLib.uniffi_mdbx_ffi_fn_func_open_vault_with_password_security_key_and_device_context(
+    
+        FfiConverterString.lower(`path`),FfiConverterString.lower(`password`),FfiConverterByteArray.lower(`keyMaterial`),FfiConverterString.lower(`deviceId`),FfiConverterTypeMdbxDeviceContext.lower(`deviceContext`),_status)
+}
+    )
+    }
+    
 
     @Throws(MdbxFfiException::class) fun `openVaultWithSecurityKey`(`path`: kotlin.String, `keyMaterial`: kotlin.ByteArray, `deviceId`: kotlin.String): MdbxVault {
             return FfiConverterTypeMdbxVault.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_open_vault_with_security_key(
-
+    
         FfiConverterString.lower(`path`),FfiConverterByteArray.lower(`keyMaterial`),FfiConverterString.lower(`deviceId`),_status)
 }
     )
     }
-
+    
 
         /**
          * Explicitly run the storage-core migration after the client has inspected,
@@ -18983,28 +19103,31 @@ public object FfiConverterSequenceTypeMdbxWriteCommand: FfiConverterRustBuffer<L
             return FfiConverterTypeMdbxMigrationInfo.lift(
     uniffiRustCallWithError(MdbxFfiException) { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_upgrade_vault(
-
+    
         FfiConverterString.lower(`path`),_status)
 }
     )
     }
-
+    
  fun `defaultCompositeWriteOperationLimits`(): MdbxCompositeWriteOperationLimits {
             return FfiConverterTypeMdbxCompositeWriteOperationLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_composite_write_operation_limits(
-
+    
         _status)
 }
     )
     }
-
+    
  fun `defaultWriteOperationLimits`(): MdbxWriteOperationLimits {
             return FfiConverterTypeMdbxWriteOperationLimits.lift(
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_mdbx_ffi_fn_func_default_write_operation_limits(
-
+    
         _status)
 }
     )
     }
+    
+
+

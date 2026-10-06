@@ -78,7 +78,8 @@ internal fun mdbxUnknownFields(payload: String): List<Pair<String, String>> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MdbxUnknownEntryContent(title: String, type: String, payload: String?, failed: Boolean, onBack: () -> Unit,
-    notice: String = stringResource(R.string.mdbx_unknown_read_only), metadataContent: @Composable () -> Unit = {}) {
+    notice: String = stringResource(R.string.mdbx_unknown_read_only), allowSelection: Boolean = true,
+    metadataContent: @Composable () -> Unit = {}) {
     val fields = remember(payload) { payload?.let(::mdbxUnknownFields).orEmpty() }
     val visible = remember(payload) { mutableStateMapOf<Int, Boolean>() }
     Scaffold(topBar = {
@@ -112,7 +113,10 @@ internal fun MdbxUnknownEntryContent(title: String, type: String, payload: Strin
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)) {
                         Column(Modifier.weight(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(label, style = MaterialTheme.typography.labelLarge)
-                            if (visible[index] == true) SelectionContainer { Text(value, Modifier.testTag("mdbx-field-value-$index")) }
+                            if (visible[index] == true) {
+                                if (allowSelection) SelectionContainer { Text(value, Modifier.testTag("mdbx-field-value-$index")) }
+                                else Text(value, Modifier.testTag("mdbx-field-value-$index"))
+                            }
                             else Text("••••••••", Modifier.testTag("mdbx-field-hidden-$index"))
                         }
                         IconButton(onClick = { visible[index] = visible[index] != true },

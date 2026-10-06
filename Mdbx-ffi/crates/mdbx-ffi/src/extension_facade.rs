@@ -30,9 +30,9 @@ pub enum MdbxExtensionRegistration {
 use mdbx_storage::tiga_policy::TigaAuthorizationContext;
 
 use super::{
-    conservative_ffi_device_context, parse_object_type_id, parse_relation_kind, unix_now,
-    MdbxCollectionProfile, MdbxDeviceContext, MdbxFfiError, MdbxPayloadMigrationExecution,
-    MdbxPayloadMigrationOutput, MdbxPayloadMigrationPlan, MdbxVault,
+    parse_object_type_id, parse_relation_kind, unix_now, MdbxCollectionProfile, MdbxDeviceContext,
+    MdbxFfiError, MdbxPayloadMigrationExecution, MdbxPayloadMigrationOutput,
+    MdbxPayloadMigrationPlan, MdbxVault,
 };
 
 #[uniffi::export]
@@ -42,7 +42,7 @@ impl MdbxVault {
         profile: MdbxExtensionProfile,
     ) -> Result<MdbxExtensionRegistration, MdbxFfiError> {
         let profile = extension_profile_into_core(profile)?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(registration_from_core(
             conn.register_extension_profile(profile)?,
         ))
@@ -56,7 +56,7 @@ impl MdbxVault {
             .into_iter()
             .map(extension_profile_into_core)
             .collect::<Result<Vec<_>, _>>()?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         conn.replace_extension_profiles(profiles)?;
         Ok(())
     }
@@ -66,7 +66,7 @@ impl MdbxVault {
         extension_id: String,
     ) -> Result<Option<MdbxExtensionProfile>, MdbxFfiError> {
         let extension_id = parse_extension_id(&extension_id)?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(conn
             .extension_profile(&extension_id)
             .cloned()
@@ -74,7 +74,7 @@ impl MdbxVault {
     }
 
     pub fn list_extension_profiles(&self) -> Result<Vec<MdbxExtensionProfile>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(conn
             .extension_profiles()
             .into_iter()
@@ -87,7 +87,7 @@ impl MdbxVault {
         extension_id: String,
     ) -> Result<Option<MdbxExtensionProfile>, MdbxFfiError> {
         let extension_id = parse_extension_id(&extension_id)?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(conn
             .unregister_extension_profile(&extension_id)
             .map(extension_profile_from_core))
@@ -101,7 +101,7 @@ impl MdbxVault {
             .iter()
             .map(|capability_id| parse_extension_capability_id(capability_id))
             .collect::<Result<Vec<_>, _>>()?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         conn.set_extension_capabilities(capabilities);
         Ok(())
     }
@@ -110,7 +110,7 @@ impl MdbxVault {
         &self,
         collection_id: String,
     ) -> Result<Option<MdbxCollectionProfile>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(
             CollectionProfileRepo::get_by_collection_id(&conn, &collection_id)?
                 .map(collection_profile_from_core),
@@ -134,7 +134,7 @@ impl MdbxVault {
             .iter()
             .map(|capability_id| parse_extension_capability_id(capability_id))
             .collect::<Result<Vec<_>, _>>()?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let ctx = CommitContext::new(self.device_id.clone());
         let profile = CollectionProfileRepo::set(
             &conn,
@@ -170,7 +170,7 @@ impl MdbxVault {
             target_schema_version,
             max_items,
             branch_id,
-            conservative_ffi_device_context(),
+            self.default_device_context()?,
         )
     }
 
@@ -187,7 +187,10 @@ impl MdbxVault {
         branch_id: Option<String>,
         device: MdbxDeviceContext,
     ) -> Result<MdbxPayloadMigrationPlan, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        // The legacy plan authorizes its collection, then returns every source
+        // payload. It does not enforce stricter individual object overrides.
+        super::object_facade::reject_legacy_glitter_payload_access(&conn)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let context = TigaAuthorizationContext {
@@ -221,7 +224,7 @@ impl MdbxVault {
         self.execute_payload_migration_with_device_context(
             plan,
             outputs,
-            conservative_ffi_device_context(),
+            self.default_device_context()?,
         )
     }
 
@@ -233,7 +236,7 @@ impl MdbxVault {
         outputs: Vec<MdbxPayloadMigrationOutput>,
         device: MdbxDeviceContext,
     ) -> Result<MdbxPayloadMigrationExecution, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let plan = plan.into_core()?;
         let outputs = outputs
             .into_iter()

@@ -70,21 +70,27 @@ val MdbxEngineType.capabilities: Set<MdbxCapability>
         )
     }
 
-fun LocalMdbxDatabase.supports(capability: MdbxCapability): Boolean =
-    capability in engineTypeEnum.capabilities
+/** Keep prerelease Glitter records identifiable without opening or downgrading them. */
+val LocalMdbxDatabase.isUnsupportedGlitter: Boolean
+    get() = tigaModeEnum == MdbxTigaMode.GLITTER || encryptedPassword?.startsWith("glitter-hw:") == true
 
-/** Legacy records remain visible to the manager solely for upgrading or removal. */
+fun LocalMdbxDatabase.supports(capability: MdbxCapability): Boolean =
+    isUsable && capability in engineTypeEnum.capabilities
+
+/** Unsupported records remain visible in management without exposing vault contents. */
 val LocalMdbxDatabase.isUsable: Boolean
-    get() = engineTypeEnum == MdbxEngineType.RUST_MDBX2
+    get() = engineTypeEnum == MdbxEngineType.RUST_MDBX2 && !isUnsupportedGlitter
 
 // Hide retired projections from normal lists and credential suggestions without
 // deleting their cached contents. Migration reads the original vault separately.
 internal const val MDBX_AVAILABLE_ENTRY_FILTER =
     "(mdbx_database_id IS NULL OR mdbx_database_id IN " +
-        "(SELECT id FROM local_mdbx_databases WHERE engine_type = 'RUST_MDBX2' COLLATE NOCASE))"
+        "(SELECT id FROM local_mdbx_databases WHERE engine_type = 'RUST_MDBX2' COLLATE NOCASE " +
+        "AND tiga_mode != 'GLITTER' COLLATE NOCASE AND " +
+        "(encrypted_password IS NULL OR encrypted_password NOT LIKE 'glitter-hw:%')))"
 
 /**
- * Tiga three-mode security model for MDBX vaults.
+ * Tiga security modes for MDBX vaults.
  *
  * Controls Argon2id KDF parameters (ops_limit / mem_limit / parallelism):
  *   POWER: 10 / 262144 KiB (256 MiB) / 4 — maximum brute-force resistance
@@ -94,7 +100,9 @@ internal const val MDBX_AVAILABLE_ENTRY_FILTER =
 enum class MdbxTigaMode(val label: String, val memoryMb: Int, val description: String) {
     POWER("Power", 256, "Maximum security, 256MB Argon2id"),
     MULTI("Multi", 64, "Balanced security, 64MB Argon2id (Recommended)"),
-    SKY("Sky", 8, "Fast mode, 8MB Argon2id");
+    SKY("Sky", 8, "Fast mode, 8MB Argon2id"),
+    // Format compatibility only; never offered by Android creation forms.
+    GLITTER("Glitter", 512, "Not supported by the Android client");
 
     companion object {
         fun fromName(name: String): MdbxTigaMode =

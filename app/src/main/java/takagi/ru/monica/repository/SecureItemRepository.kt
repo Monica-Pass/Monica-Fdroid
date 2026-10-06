@@ -204,6 +204,7 @@ class SecureItemRepository(
     }
 
     suspend fun insertItems(items: List<SecureItem>): List<Long> {
+        items.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { mdbxRepository?.requireRoomMirrorAllowed(it) }
         if (items.isEmpty()) return emptyList()
         require(items.all { it.id == 0L }) { "Batch insert only accepts new secure items" }
 
@@ -233,6 +234,7 @@ class SecureItemRepository(
     }
     
     suspend fun insertItem(item: SecureItem): Long {
+        item.mdbxDatabaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         return commitRoomThenMirror(
             roomCommit = {
                 val id = secureItemDao.insertItem(item)
@@ -256,6 +258,7 @@ class SecureItemRepository(
     }
     
     suspend fun updateItem(item: SecureItem) {
+        item.mdbxDatabaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         val existingItem = if (item.id != 0L) secureItemDao.getItemById(item.id) else null
         val normalizedItem = BitwardenMutationStateHelper.normalizeSecureItemUpdate(existingItem, item)
         commitMirrorThenRoom(
@@ -283,6 +286,7 @@ class SecureItemRepository(
     }
 
     suspend fun updateItems(items: List<SecureItem>) {
+        items.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { mdbxRepository?.requireRoomMirrorAllowed(it) }
         if (items.isEmpty()) return
         require(items.all { it.id > 0L }) { "Batch update requires persisted secure items" }
         require(items.map(SecureItem::id).distinct().size == items.size) {

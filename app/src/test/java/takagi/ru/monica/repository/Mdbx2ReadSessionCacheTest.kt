@@ -1,6 +1,7 @@
 package takagi.ru.monica.repository
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -11,12 +12,43 @@ import org.junit.Test
 class Mdbx2ReadSessionCacheTest {
     private class Session { var closed = false }
 
+    @Test fun successfulWriteRetainsItsUpdatedRevisionUntilInvalidation() = runTest {
+        val session = Session()
+        val cache = Mdbx2ReadSessionCache<String, Session>(backgroundScope,
+            { testScheduler.currentTime }, { it.closed = true })
+        cache.use(1, "revision", { true }, { session }, { "revision" }) { }
+        cache.use(1, "revision", { true }, { error("Do not repeat unlock") }, { "written" }) {
+            assertSame(session, it)
+            assertFalse(it.closed)
+        }
+        assertFalse(session.closed)
+        cache.use(1, "written", { true }, { error("Do not repeat unlock after writing") }, { "written" }) { assertSame(session, it) }
+        cache.clear()
+        assertTrue(session.closed)
+    }
+
+    @Test fun backgroundDuringSuspendedWriteCannotRetainTheBorrowedHandle() = runTest {
+        val session = Session()
+        val resume = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val cache = Mdbx2ReadSessionCache<String, Session>(backgroundScope,
+            { testScheduler.currentTime }, { it.closed = true })
+        val job = backgroundScope.launch {
+            cache.use(1, "revision", { true }, { session }, { "written" }) { resume.await() }
+        }
+        runCurrent()
+        cache.clear()
+        assertFalse("Do not close an in-flight native operation", session.closed)
+        resume.complete(Unit)
+        job.join()
+        assertTrue(session.closed)
+    }
+
     @Test fun listAndDetailShareAnUnlockButNoReadResultIsCached() = runTest {
         var opens = 0
         var reads = 0
         val cache = Mdbx2ReadSessionCache<String, Session>(backgroundScope,
             { testScheduler.currentTime }, { it.closed = true })
-        fun read() = cache.use(1, "revision", { true }, { opens++; Session() }, { "revision" }) {
+        suspend fun read() = cache.use(1, "revision", { true }, { opens++; Session() }, { "revision" }) {
             assertFalse(it.closed)
             ++reads
         }
@@ -30,7 +62,7 @@ class Mdbx2ReadSessionCacheTest {
         val opened = mutableListOf<Session>()
         val cache = Mdbx2ReadSessionCache<String, Session>(backgroundScope,
             { testScheduler.currentTime }, { it.closed = true })
-        fun read(revision: String) = cache.use(1, revision, { true },
+        suspend fun read(revision: String) = cache.use(1, revision, { true },
             { Session().also(opened::add) }, { revision }) { assertFalse(it.closed) }
         read("original")
         read("replacement-file")
@@ -111,7 +143,7 @@ class Mdbx2ReadSessionCacheTest {
         val cache = Mdbx2ReadSessionCache<String, Session>(backgroundScope,
             { testScheduler.currentTime }, { it.closed = true })
         val deadline = 60_000L
-        fun read(open: () -> Session) = cache.use(1, "revision", { true }, open, { "revision" },
+        suspend fun read(open: () -> Session) = cache.use(1, "revision", { true }, open, { "revision" },
             remainingLifetimeMillis = { deadline - testScheduler.currentTime }) { assertFalse(it.closed) }
         read { session }
         runCurrent()
@@ -130,7 +162,7 @@ class Mdbx2ReadSessionCacheTest {
         var opens = 0
         val cache = Mdbx2ReadSessionCache<String, Session>(backgroundScope,
             { testScheduler.currentTime }, { it.closed = true })
-        fun read() = cache.use(1, "revision", { true }, { if (++opens == 1) first else second },
+        suspend fun read() = cache.use(1, "revision", { true }, { if (++opens == 1) first else second },
             { "revision" }, remainingLifetimeMillis = {
                 if (stricterScope && it === first) 0L else 60_000L
             }) { assertFalse(it.closed); it }

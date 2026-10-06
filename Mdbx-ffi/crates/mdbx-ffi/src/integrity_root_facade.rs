@@ -144,29 +144,29 @@ pub fn inspect_vault_integrity_root(path: String) -> Result<MdbxIntegrityRootSta
 #[uniffi::export]
 impl MdbxVault {
     pub fn integrity_root_status(&self) -> Result<MdbxIntegrityRootStatus, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::status(&conn)?.into())
     }
 
     pub fn enable_integrity_root(&self) -> Result<MdbxIntegrityRootStatus, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::enable(&conn)?.into())
     }
 
     pub fn verify_integrity_root(&self) -> Result<MdbxIntegrityRootVerification, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::verify(&conn)?.into())
     }
 
     pub fn rebuild_integrity_root(&self) -> Result<MdbxIntegrityRootStatus, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::rebuild(&conn)?.into())
     }
 
     pub fn create_integrity_root_checkpoint(
         &self,
     ) -> Result<MdbxAuthenticatedStateRootCheckpoint, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::issue_checkpoint(&conn)?.into())
     }
 
@@ -175,7 +175,7 @@ impl MdbxVault {
         checkpoint: MdbxAuthenticatedStateRootCheckpoint,
     ) -> Result<MdbxIntegrityRootVerification, MdbxFfiError> {
         let checkpoint = checkpoint.into_core()?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::verify_checkpoint(&conn, &checkpoint)?.into())
     }
 
@@ -186,7 +186,7 @@ impl MdbxVault {
     ) -> Result<MdbxIntegrityRootCheckpointRelation, MdbxFfiError> {
         let previous = previous.into_core()?;
         let candidate = candidate.into_core()?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(IntegrityRootService::compare_checkpoints(&conn, &previous, &candidate)?.into())
     }
 }

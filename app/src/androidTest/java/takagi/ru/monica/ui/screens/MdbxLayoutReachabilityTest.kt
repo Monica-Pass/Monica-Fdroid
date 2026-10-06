@@ -235,7 +235,7 @@ class MdbxLayoutReachabilityTest {
     }
 
     @Test
-    fun realManagerRoutesAllSixCreateOpenActionsToTheirStorageSource() {
+    fun realManagerRoutesFourSupportedActionsAndDoesNotExposeOneDrive() {
         Fixture().use { fixture ->
             show(shell = false) {
                 MdbxManagerScreen(
@@ -245,7 +245,8 @@ class MdbxLayoutReachabilityTest {
                     onNavigateToOneDriveCreate = { events += "onedrive:create" }, onNavigateToOneDriveOpen = { events += "onedrive:open" }
                 )
             }
-            listOf(label(R.string.mdbx_ui_local_databases), "WebDAV", "OneDrive").forEach { title ->
+            compose.onNodeWithText("OneDrive").assertDoesNotExist()
+            listOf(label(R.string.mdbx_ui_local_databases), "WebDAV").forEach { title ->
                 compose.onNodeWithText(title).performClick()
                 compose.onAllNodesWithTag("mdbx_open_database").assertCountEquals(1)
                 compose.onAllNodesWithTag("mdbx_create_database").assertCountEquals(1)
@@ -253,7 +254,8 @@ class MdbxLayoutReachabilityTest {
                 compose.onNodeWithTag("mdbx_create_database").assertIsDisplayed().performClick()
                 compose.onNodeWithContentDescription(label(R.string.back)).performClick()
             }
-            compose.runOnIdle { assertEquals(listOf("local:open", "local:create", "webdav:open", "webdav:create", "onedrive:open", "onedrive:create"), events) }
+            compose.onNodeWithText("OneDrive").assertDoesNotExist()
+            compose.runOnIdle { assertEquals(listOf("local:open", "local:create", "webdav:open", "webdav:create"), events) }
         }
     }
 
@@ -327,10 +329,15 @@ class MdbxLayoutReachabilityTest {
                 // Remote creation settings are gated on WebDAV connection / OneDrive sign-in.
                 // This fixture is deliberately offline; only local creation exposes the slider.
                 if (index % 2 == 0) compose.onNodeWithText(label(R.string.mdbx_ui_database_options)).assertDoesNotExist()
+                if (index % 2 == 1) {
+                    compose.onNodeWithTag("tiga_selector").assertDoesNotExist()
+                    compose.onNodeWithTag("glitter_open_option").assertDoesNotExist()
+                }
                 if (index == 0) {
                     compose.onNodeWithTag("tiga_selector").performScrollTo().assertIsDisplayed()
+                    compose.onNodeWithTag("tiga_mode_GLITTER").assertDoesNotExist()
                     compose.onNodeWithText(label(R.string.mdbx_ui_database_options)).assertDoesNotExist()
-                    MdbxTigaMode.entries.forEach { mode ->
+                    mdbxTigaModesForCreation().forEach { mode ->
                         compose.onNodeWithTag("tiga_mode_${mode.name}").performClick()
                         compose.onNodeWithTag("tiga_selected_mode").assertTextEquals(mode.label)
                         capture("tiga-create-$index-${mode.name}.png")
@@ -345,6 +352,51 @@ class MdbxLayoutReachabilityTest {
                 assertEquals(before, action.fetchSemanticsNode().boundsInRoot)
                 capture("mdbx-form-$index-dark-large-text.png")
             }
+        }
+    }
+
+    @Test
+    fun remoteGlitterIsUnavailableWhileSkyMultiPowerRemainSelectable() {
+        val selected = mutableStateOf(MdbxTigaMode.MULTI)
+        show(shell = false) {
+            MdbxTigaModeSelector(selected.value, { selected.value = it })
+        }
+        compose.onNodeWithTag("tiga_mode_GLITTER").assertDoesNotExist()
+        listOf(MdbxTigaMode.SKY, MdbxTigaMode.MULTI, MdbxTigaMode.POWER).forEach { mode ->
+            compose.onNodeWithTag("tiga_mode_${mode.name}").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("tiga_selected_mode").assertTextEquals(mode.label)
+        }
+        compose.onNodeWithTag("tiga_slider").performSemanticsAction(SemanticsActions.SetProgress) { it(3f) }
+        compose.runOnIdle { assertEquals(MdbxTigaMode.POWER, selected.value) }
+        compose.onNodeWithTag("tiga_mode_GLITTER").assertDoesNotExist()
+        capture("glitter-remote-three-modes.png")
+    }
+
+    @Test
+    fun oldGlitterCreationTargetShowsUnavailableInsteadOfIndependentEditor() {
+        Fixture().use { fixture ->
+            fixture.insert(databases.first().copy(tigaMode = MdbxTigaMode.GLITTER.name))
+            show(shell = false) {
+                MdbxPasswordCreationRoute(listOf(takagi.ru.monica.data.model.StorageTarget.Mdbx(databases.first().id)),
+                    fixture.model, onBack = {})
+            }
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("mdbx_creation_unavailable").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(label(R.string.mdbx_client_mode_unsupported)).assertIsDisplayed()
+            compose.onNodeWithTag("native_editor_save").assertDoesNotExist()
+            capture("glitter-client-unsupported-target.png")
+        }
+    }
+
+    @Test
+    fun staleModeMetadataCannotDisableTheGlitterEnvelopeGate() {
+        Fixture().use { fixture ->
+            fixture.insert(databases.first().copy(tigaMode = MdbxTigaMode.MULTI.name,
+                encryptedPassword = "glitter-hw:v1:stale-metadata-fixture"))
+            show(shell = false) { MdbxNativeManagerScreen(databases.first().id, "Glitter fixture", fixture.model) {} }
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("mdbx_mode_unsupported").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("mdbx_mode_unsupported").assertIsDisplayed()
+            compose.onNodeWithTag("glitter_unlock").assertDoesNotExist()
+            compose.onNodeWithText(label(R.string.mdbx_native_failed)).assertDoesNotExist()
         }
     }
 

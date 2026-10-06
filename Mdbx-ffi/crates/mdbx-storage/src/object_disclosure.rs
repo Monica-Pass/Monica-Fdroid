@@ -61,6 +61,31 @@ pub struct DisclosedObject {
 pub struct ObjectDisclosureService;
 
 impl ObjectDisclosureService {
+    /// Disclose to a trusted credential broker under an explicitly approved, in-memory lease.
+    /// This is not a user-visible reveal/export permission. The caller must constrain outbound
+    /// use to the lease audience and must never return plaintext to the requesting AI client.
+    pub fn use_with_lease_and_limits(
+        conn: &VaultConnection,
+        lease: &crate::tiga_policy::CredentialUseLease,
+        audience: &str,
+        device: &DeviceContext,
+        now_unix_secs: i64,
+        limits: ObjectDisclosureLimits,
+    ) -> StorageResult<DisclosedObject> {
+        let (object, authorization) = TigaService::execute_credential_use(
+            conn,
+            lease,
+            audience,
+            device,
+            now_unix_secs,
+            || Self::read_active_object(conn, lease.object_id(), limits),
+        )?;
+        Ok(DisclosedObject {
+            object,
+            authorization,
+        })
+    }
+
     /// Authorize `RevealSecret`, decrypt the object, and audit the successful decision in one
     /// storage transaction. Denied decisions are audited without reading encrypted object fields.
     pub fn reveal_authorized(

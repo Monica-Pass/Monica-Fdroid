@@ -43,6 +43,7 @@ fun MdbxLocalOpenScreen(
     var keyFileError by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
 
+
     val passwordRequired = unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD_AND_KEY_FILE
     val keyFileRequired = unlockMethod == MdbxUnlockMethod.KEY_FILE ||
@@ -122,18 +123,21 @@ fun MdbxLocalOpenScreen(
 
                 Button(
                     onClick = {
-                        selectedUri?.let { uri ->
-                            submitted = true
-                            viewModel.importLocalVault(
-                                sourceUri = uri,
-                                name = null,
-                                masterPassword = masterPassword,
-                                unlockMethod = unlockMethod,
-                                keyFile = keyFile,
-                                tigaMode = MdbxTigaMode.MULTI,
-                                description = null
-                            )
+                        val submit: () -> Unit = submit@ {
+                            selectedUri?.let { uri ->
+                                submitted = true
+                                viewModel.importLocalVault(
+                                    sourceUri = uri,
+                                    name = null,
+                                    masterPassword = masterPassword,
+                                    unlockMethod = unlockMethod,
+                                    keyFile = keyFile,
+                                    tigaMode = MdbxTigaMode.MULTI,
+                                    description = null
+                                )
+                            }
                         }
+                        submit()
                     },
                     enabled = isFormValid,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)

@@ -65,6 +65,7 @@ internal class Mdbx2VaultSessionExecutor(
         tigaMode: MdbxTigaMode,
         credential: MdbxVaultCredential
     ): File = withContext(Dispatchers.IO) {
+        MdbxClientModePolicy.requireSupported(appContext, tigaMode)
         Mdbx2NativeRuntime.ensureLoaded()
         // Native setup consumes the byte arrays synchronously, but callers may
         // still need their key-file selection after creation (for example to
@@ -200,14 +201,15 @@ internal class Mdbx2VaultSessionExecutor(
                 val database = requireDatabase(databaseId)
                 val file = resolveLocalFile(database)
                 if (!file.isFile) throw Mdbx2ErrorMapper.fileMissing()
-                val current = Mdbx2NativeReadSessions.read(database, file,
-                    open = { openVaultForRead(database, file) }) { vault ->
+                val readCheckpoint: (MdbxVault) -> MdbxSyncCheckpointState = { vault ->
                     require(vault.info().vaultId == report.vaultId) {
                         "MDBX2 vault identity changed before synchronization completed"
                     }
                     val checkpoint = vault.incrementalSyncCheckpoint()
                     MdbxSyncCheckpointState(checkpoint.commitInventory, checkpoint.deltaInventory)
                 }
+                val current = Mdbx2NativeReadSessions.read(database, file,
+                    open = { openVaultForRead(database, file) }, block = readCheckpoint)
                 val status = when {
                     report.conflicts > 0 -> MdbxSyncStatus.CONFLICT
                     report.blockedStreams > 0 -> MdbxSyncStatus.REMOTE_CHANGED
@@ -250,17 +252,11 @@ internal class Mdbx2VaultSessionExecutor(
         uniffi.mdbx_ffi.inspectVaultMigration(file.absolutePath).formatVersion
     }
 
-    suspend fun validatePasswordVaultFile(file: File, password: String) = withContext(Dispatchers.IO) {
-        Mdbx2NativeRuntime.ensureLoaded()
-        val vault = openVault(
-            path = file.absolutePath,
-            password = normalizePassword(password),
-            deviceId = deviceId
-        )
-        vault.close()
+    suspend fun validatePasswordVaultFile(file: File, password: String) {
+        validateVaultFile(file, MdbxVaultCredential(MdbxUnlockMethod.MASTER_PASSWORD, password))
     }
 
-    suspend fun validateVaultFile(file: File, credential: MdbxVaultCredential) =
+    suspend fun validateVaultFile(file: File, credential: MdbxVaultCredential): MdbxTigaMode =
         withContext(Dispatchers.IO) {
             Mdbx2NativeRuntime.ensureLoaded()
             val workingCredential = credential.copy(
@@ -269,7 +265,9 @@ internal class Mdbx2VaultSessionExecutor(
             )
             try {
                 val vault = openVaultWithCredential(file, workingCredential)
-                vault.close()
+                try {
+                    MdbxTigaMode.valueOf(vault.resolveTigaPolicy(MdbxTigaScope(MdbxTigaScopeType.VAULT, null)).profile.name)
+                } finally { vault.close() }
             } finally {
                 workingCredential.keyFileBytes?.fill(0)
                 workingCredential.deviceKeyBytes?.fill(0)
@@ -327,25 +325,19 @@ internal class Mdbx2VaultSessionExecutor(
     ): T = withContext(Dispatchers.IO) {
         Mdbx2NativeRuntime.ensureLoaded()
         vaultLocks.getOrPut(databaseId) { Mutex() }.withLock {
-            // Includes sync/restore operations: their blocks may change the vault even when
-            // they do not use the normal mutation publication path.
-            Mdbx2NativeReadSessions.invalidate(databaseId)
             val database = requireDatabase(databaseId)
             val file = resolveLocalFile(database)
             if (!file.isFile) throw Mdbx2ErrorMapper.fileMissing()
-            val vault = openVaultForRead(database, file)
-            // A mutation block may find nothing to change (identical tags, an
-            // empty prune plan, already-deleted entries). Rust commits identify
-            // actual writes; disclosure audit deltas alone are not user edits.
             var changed = false
-            val result = try {
+            val operation: suspend (MdbxVault) -> T = { vault ->
                 val before = if (mutating) vault.incrementalSyncCheckpoint().commitInventory else null
                 block(database, vault).also {
                     changed = mutating && before != vault.incrementalSyncCheckpoint().commitInventory
                 }
-            } finally {
-                vault.close()
             }
+            Mdbx2NativeReadSessions.invalidate(databaseId)
+            val vault = openVaultForRead(database, file)
+            val result = try { operation(vault) } finally { vault.close() }
             if (changed) finalizeMutation(database, file)
             result
         }
@@ -377,6 +369,7 @@ internal class Mdbx2VaultSessionExecutor(
         database: LocalMdbxDatabase,
         file: File
     ): MdbxVault {
+        MdbxClientModePolicy.requireSupported(appContext, database)
         val credential = credentialForDatabase(database)
         return try {
             openVaultWithCredential(file, credential)
@@ -390,6 +383,7 @@ internal class Mdbx2VaultSessionExecutor(
         file: File,
         credential: MdbxVaultCredential
     ): MdbxVault {
+        MdbxClientModePolicy.requireSupportedFile(appContext, file)
         validateCredential(credential)
         val password = credential.password?.let(::normalizePassword).orEmpty()
         val keyMaterial = credential.keyFileBytes ?: credential.deviceKeyBytes
@@ -443,27 +437,10 @@ internal class Mdbx2VaultSessionExecutor(
                 IllegalStateException("MDBX key file URI is missing")
             )
         val bytes = appContext.contentResolver.openInputStream(Uri.parse(uriString))?.use { input ->
-            val output = java.io.ByteArrayOutputStream()
-            val buffer = ByteArray(KEY_FILE_BUFFER_BYTES)
-            var total = 0
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                total += count
-                if (total > MAX_KEY_FILE_BYTES) {
-                    throw IllegalArgumentException("MDBX key file is too large")
-                }
-                output.write(buffer, 0, count)
-            }
-            output.toByteArray()
+            input.readMdbxKeyFileBytes(database.keyFileFingerprint)
         } ?: throw Mdbx2ErrorMapper.credentialUnavailable(
             IllegalStateException("MDBX key file cannot be read")
         )
-        database.keyFileFingerprint?.takeIf { it.isNotBlank() }?.let { expected ->
-            check(MdbxVaultCrypto.fingerprint(bytes).equals(expected, ignoreCase = true)) {
-                "MDBX key file fingerprint does not match"
-            }
-        }
         return bytes
     }
 
@@ -522,7 +499,7 @@ internal class Mdbx2VaultSessionExecutor(
         secureTempFilesAvailable = true
     )
 
-    private suspend fun finalizeMutation(database: LocalMdbxDatabase, file: File) {
+    private suspend fun finalizeMutation(database: LocalMdbxDatabase, file: File, localVault: MdbxVault? = null) {
         when (database.sourceTypeEnum) {
             MdbxSourceType.LOCAL_INTERNAL -> databaseDao.updateSyncStatus(
                 database.id,
@@ -535,17 +512,19 @@ internal class Mdbx2VaultSessionExecutor(
                     takagi.ru.monica.data.MdbxSyncStatus.PENDING_UPLOAD.name,
                     null
                 )
-                publishExternal(database, file)
+                publishExternal(database, file, localVault)
             }
             MdbxSourceType.REMOTE_WEBDAV,
             MdbxSourceType.REMOTE_ONEDRIVE -> {
                 databaseDao.updateSyncStatus(database.id, MdbxSyncStatus.PENDING_UPLOAD.name, null)
+                // Scheduling failure must not turn a committed local edit into a failed save.
+                // Startup/unlock recovery scans the durable pending status again.
                 runCatching { takagi.ru.monica.workers.MdbxAutoSyncWorker.enqueue(appContext, database.id) }
             }
         }
     }
 
-    private suspend fun publishExternal(database: LocalMdbxDatabase, file: File) {
+    private suspend fun publishExternal(database: LocalMdbxDatabase, file: File, localVault: MdbxVault? = null) {
         try {
             val publication = externalStorage.publishWithMerge(
                 database = database,
@@ -554,7 +533,8 @@ internal class Mdbx2VaultSessionExecutor(
                 mergeExternalRevision(
                     database = database,
                     workingCopy = file,
-                    stagedRemote = stagedRemote
+                    stagedRemote = stagedRemote,
+                    borrowedLocalVault = localVault
                 )
             }
             if (publication.conflictCount > 0) {
@@ -584,9 +564,10 @@ internal class Mdbx2VaultSessionExecutor(
     private fun mergeExternalRevision(
         database: LocalMdbxDatabase,
         workingCopy: File,
-        stagedRemote: File
+        stagedRemote: File,
+        borrowedLocalVault: MdbxVault? = null
     ): Int {
-        val localVault = openVaultForDatabase(database, workingCopy)
+        val localVault = borrowedLocalVault ?: openVaultForDatabase(database, workingCopy)
         var conflictCount = 0
         try {
             val remoteVault = openVaultForDatabase(database, stagedRemote)
@@ -621,7 +602,7 @@ internal class Mdbx2VaultSessionExecutor(
                 remoteVault.close()
             }
         } finally {
-            runCatching { localVault.close() }
+            if (borrowedLocalVault == null) runCatching { localVault.close() }
         }
         return conflictCount
     }
@@ -635,6 +616,7 @@ internal class Mdbx2VaultSessionExecutor(
         if (database.sourceTypeEnum !in SUPPORTED_SOURCE_TYPES) {
             throw Mdbx2ErrorMapper.unsupportedSource()
         }
+        MdbxClientModePolicy.requireSupported(appContext, database)
         return database
     }
 
@@ -653,7 +635,8 @@ internal class Mdbx2VaultSessionExecutor(
         val artifacts = listOf(
             file,
             File("${file.absolutePath}-wal"),
-            File("${file.absolutePath}-shm")
+            File("${file.absolutePath}-shm"),
+            File("${file.absolutePath}-journal")
         )
         val deletionResults = artifacts.map { artifact ->
             !artifact.exists() || artifact.delete()
@@ -667,8 +650,6 @@ internal class Mdbx2VaultSessionExecutor(
         private const val PREFERENCES_NAME = "mdbx2_vault_sessions"
         private const val DEVICE_ID_KEY = "device_id"
         private const val MDBX2_DIRECTORY = "mdbx2"
-        private const val MAX_KEY_FILE_BYTES = 1024 * 1024
-        private const val KEY_FILE_BUFFER_BYTES = 16 * 1024
         internal const val ROOT_PROJECT_TITLE = ".monica-root"
         private val SUPPORTED_SOURCE_TYPES = setOf(
             MdbxSourceType.LOCAL_INTERNAL,
@@ -693,4 +674,5 @@ private fun MdbxTigaMode.toRustMode(): RustTigaMode = when (this) {
     MdbxTigaMode.SKY -> RustTigaMode.SKY
     MdbxTigaMode.MULTI -> RustTigaMode.MULTI
     MdbxTigaMode.POWER -> RustTigaMode.POWER
+    MdbxTigaMode.GLITTER -> RustTigaMode.GLITTER
 }

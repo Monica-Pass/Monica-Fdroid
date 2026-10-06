@@ -141,7 +141,7 @@ class MdbxNativeBrowserUiTest {
                 website = "https://example.invalid", mdbxDatabaseId = id))
             val original = repository.nativeBrowser(id).objects.values.single()
             val before = repository.nativeObject(id, original.id)
-            compose.setContent { if (show) MaterialTheme { MdbxNativeManagerScreen(id, "Synthetic manager", vm, {}) } }
+            compose.setContent { if (show) MaterialTheme { MdbxNativeManagerScreen(id, "Synthetic manager", vm, onBack = {}) } }
             compose.waitUntil(30_000) { compose.onAllNodesWithTag("mdbx-row-native-${original.id}").fetchSemanticsNodes().size == 1 }
             compose.onNodeWithText(context.getString(R.string.keepass_native_create_group)).performClick()
             compose.onNode(hasSetTextAction()).performTextInput("Synthetic folder")

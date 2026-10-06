@@ -1910,6 +1910,7 @@ fun SimpleMainScreen(
                         bankCardViewModel = bankCardViewModel,
                         noteViewModel = noteViewModel,
                         localKeePassViewModel = localKeePassViewModel,
+                        mdbxViewModel = mdbxViewModel,
                         passwordNewItemDefaults = pendingInlinePasswordAddStorageDefaults
                             ?: passwordNewItemDefaults,
                         mdbxDatabases = mdbxDatabases,

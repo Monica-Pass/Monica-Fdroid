@@ -3,6 +3,7 @@ pub enum MdbxTigaMode {
     Sky,
     Multi,
     Power,
+    Glitter,
 }
 
 impl From<MdbxTigaMode> for TigaMode {
@@ -11,6 +12,7 @@ impl From<MdbxTigaMode> for TigaMode {
             MdbxTigaMode::Sky => TigaMode::Sky,
             MdbxTigaMode::Multi => TigaMode::Multi,
             MdbxTigaMode::Power => TigaMode::Power,
+            MdbxTigaMode::Glitter => TigaMode::Glitter,
         }
     }
 }
@@ -21,6 +23,7 @@ impl From<TigaMode> for MdbxTigaMode {
             TigaMode::Sky => Self::Sky,
             TigaMode::Multi => Self::Multi,
             TigaMode::Power => Self::Power,
+            TigaMode::Glitter => Self::Glitter,
         }
     }
 }
@@ -703,7 +706,7 @@ pub(crate) fn unix_now() -> i64 {
 impl MdbxVault {
     /// Returns an opaque token for the client to persist outside the vault.
     pub fn create_rollback_anchor(&self) -> Result<Vec<u8>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(RollbackAnchorService::issue(&conn)?)
     }
 
@@ -712,13 +715,13 @@ impl MdbxVault {
         &self,
         token: Vec<u8>,
     ) -> Result<MdbxRollbackAnchorVerification, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(RollbackAnchorService::verify(&conn, &token)?.into())
     }
 
     /// Returns an opaque exact-state manifest for client-side persistence.
     pub fn create_content_manifest(&self) -> Result<Vec<u8>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(VaultContentManifestService::issue(&conn)?)
     }
 
@@ -727,7 +730,7 @@ impl MdbxVault {
         &self,
         token: Vec<u8>,
     ) -> Result<MdbxVaultContentManifestVerification, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(VaultContentManifestService::verify(&conn, &token)?.into())
     }
 
@@ -735,7 +738,7 @@ impl MdbxVault {
         &self,
         scope: MdbxTigaScope,
     ) -> Result<MdbxResolvedTigaPolicy, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let resolved = match scope.into_core()? {
             TigaScope::Vault => TigaService::resolve_vault_policy(&conn)?,
             TigaScope::Project { project_id } => {
@@ -757,7 +760,7 @@ impl MdbxVault {
         operation: MdbxTigaOperation,
         device: MdbxDeviceContext,
     ) -> Result<MdbxAuthorizationDecision, MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let scope = scope.into_core()?;
         let device = device.into_core(&self.device_id);
         let decision = TigaService::authorize_operation_with_active_session(
@@ -771,7 +774,7 @@ impl MdbxVault {
     }
 
     pub fn active_session_info(&self) -> Result<Option<MdbxSessionInfo>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(conn.active_session().map(|session| MdbxSessionInfo {
             session_id: session.session_id.clone(),
             unlock_method: session.unlock_method.into(),
@@ -783,7 +786,7 @@ impl MdbxVault {
     /// Remaining reuse window for a disclosure reader. This never authorizes
     /// disclosure or renews the session; normal reveal APIs remain mandatory.
     pub fn read_session_remaining_secs(&self, scope: MdbxTigaScope) -> Result<u64, MdbxFfiError> {
-        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(MdbxFfiError::from)?;
         Ok(TigaService::read_session_remaining_secs(
             &conn,
             &scope.into_core()?,
@@ -792,7 +795,7 @@ impl MdbxVault {
     }
 
     pub fn list_unlock_methods(&self) -> Result<Vec<MdbxUnlockMethod>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(UnlockService::list_methods(&conn)?
             .into_iter()
             .map(|method| MdbxUnlockMethod {
@@ -808,7 +811,7 @@ impl MdbxVault {
         &self,
         device: MdbxDeviceContext,
     ) -> Result<MdbxKeyEpochRotationResult, MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());
@@ -825,7 +828,7 @@ impl MdbxVault {
     }
 
     pub fn assess_tiga_unlock_policy(&self) -> Result<MdbxTigaUnlockAssessment, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let mode = TigaService::get_global_default(&conn)?;
         Ok(UnlockService::assess_tiga_unlock_policy(&conn, mode)?.into())
     }
@@ -834,7 +837,7 @@ impl MdbxVault {
         &self,
         limit: u32,
     ) -> Result<Vec<MdbxSecurityAuditEvent>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(
             TigaService::list_security_audit_events(&conn, limit as usize)?
                 .into_iter()
@@ -847,7 +850,7 @@ impl MdbxVault {
         &self,
         limit: u32,
     ) -> Result<Vec<MdbxSecurityAuditEventV2>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(
             TigaService::list_security_audit_events(&conn, limit as usize)?
                 .into_iter()
@@ -863,7 +866,7 @@ impl MdbxVault {
         exception_expires_at_unix_secs: Option<i64>,
         device: MdbxDeviceContext,
     ) -> Result<MdbxResolvedTigaPolicy, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let target_mode: TigaMode = mode.into();
         let current_mode = TigaService::get_global_default(&conn)?;
         let exception = if target_mode < current_mode {
@@ -918,7 +921,7 @@ impl MdbxVault {
         key_material: Vec<u8>,
         device: MdbxDeviceContext,
     ) -> Result<(), MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let key_material = Zeroizing::new(key_material);
         let session = conn.active_session().cloned().ok_or_else(|| {
             MdbxFfiError::from(StorageError::Validation(
@@ -944,7 +947,7 @@ impl MdbxVault {
         key_material: Vec<u8>,
         device: MdbxDeviceContext,
     ) -> Result<(), MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let password = Zeroizing::new(password);
         let key_material = Zeroizing::new(key_material);
         let session = conn.active_session().cloned().ok_or_else(|| {
@@ -973,7 +976,7 @@ impl MdbxVault {
         method_id: String,
         device: MdbxDeviceContext,
     ) -> Result<(), MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned().ok_or_else(|| {
             MdbxFfiError::from(StorageError::Validation(
                 "removing an unlock method requires an active unlock session".to_string(),
@@ -1014,7 +1017,7 @@ impl MdbxVault {
         mode: MdbxTigaMode,
         device: MdbxDeviceContext,
     ) -> Result<(), MdbxFfiError> {
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let new_password = Zeroizing::new(new_password);
         let session = conn.active_session().cloned().ok_or_else(|| {
             MdbxFfiError::from(StorageError::Validation(

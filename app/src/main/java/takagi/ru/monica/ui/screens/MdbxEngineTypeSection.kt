@@ -118,6 +118,7 @@ fun MdbxEngineTypeSection(
                         Text(
                             stringResource(
                                 when (selectedTigaMode) {
+                                    MdbxTigaMode.GLITTER -> R.string.mdbx_client_mode_unsupported
                                     MdbxTigaMode.POWER -> R.string.mdbx_tiga_power_desc
                                     MdbxTigaMode.MULTI -> R.string.mdbx_tiga_multi_desc
                                     MdbxTigaMode.SKY -> R.string.mdbx_tiga_sky_desc
@@ -127,11 +128,11 @@ fun MdbxEngineTypeSection(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                            MdbxTigaMode.entries.forEachIndexed { index, mode ->
+                            mdbxTigaModesForCreation().forEachIndexed { index, mode ->
                                 SegmentedButton(
                                     selected = selectedTigaMode == mode,
                                     onClick = { onTigaModeChange(mode) },
-                                    shape = SegmentedButtonDefaults.itemShape(index, MdbxTigaMode.entries.size)
+                                    shape = SegmentedButtonDefaults.itemShape(index, mdbxTigaModesForCreation().size)
                                 ) {
                                     Text(mode.label)
                                 }

@@ -71,8 +71,9 @@ class Mdbx2IdleSyncStatusInstrumentedTest {
         }
     }
 
-    @Test fun detailsAndRepositoryRestartDoNotBecomeEditsInAnyTigaMode() = runBlocking {
-        for (mode in MdbxTigaMode.entries) withFixture(mode) { fixture ->
+    @Test fun detailsAndRepositoryRestartDoNotBecomeEditsInLegacyTigaModes() = runBlocking {
+        // Exercise all three profiles supported by the Android client.
+        for (mode in listOf(MdbxTigaMode.MULTI, MdbxTigaMode.SKY, MdbxTigaMode.POWER)) withFixture(mode) { fixture ->
             val payload = """{"schema":"monica.gateway.credential.v1","provider":"gitlab","api_base":"https://example.invalid/api/","token":"synthetic-token"}"""
             val token = fixture.repository.saveNativeApiToken(fixture.id, null, "Synthetic token", payload)
             fixture.synced()

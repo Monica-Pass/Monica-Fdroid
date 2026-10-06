@@ -155,6 +155,26 @@ impl ObjectSummaryRepo {
         let cursor = cursor
             .map(|value| parse_cursor(value, query, collection_id, object_type_value))
             .transpose()?;
+        // Validate every query/cursor before cache lookup; never retain an
+        // authorization decision. Only Glitter's live session enables reuse.
+        let stamp = conn.summary_page_stamp()?;
+        let cache_key = stamp
+            .map(|_| {
+                serde_json::to_string(&(
+                    query,
+                    collection_id,
+                    object_type_value,
+                    page_size,
+                    &cursor,
+                ))
+                .map_err(|error| StorageError::Validation(error.to_string()))
+            })
+            .transpose()?;
+        if let (Some(stamp), Some(key)) = (stamp, cache_key.as_deref()) {
+            if let Some(page) = conn.cached_summary_page(key, stamp) {
+                return Ok(page);
+            }
+        }
         let deleted = !matches!(query, ObjectSummaryQuery::CollectionActive);
         let collection_filter = if collection_id.is_some() {
             "AND project_id = ?2"
@@ -192,6 +212,9 @@ impl ObjectSummaryRepo {
         for row in rows.take(page_size + 1) {
             raw_items.push(row?);
         }
+        // Release the statement's implicit read snapshot before taking the
+        // post-read data_version stamp (the last SQLITE_ROW can keep it alive).
+        drop(stmt);
         let has_next = raw_items.len() > page_size;
         if has_next {
             raw_items.pop();
@@ -208,7 +231,11 @@ impl ObjectSummaryRepo {
             .into_iter()
             .map(|row| decode_summary(conn, row))
             .collect::<StorageResult<Vec<_>>>()?;
-        Ok(ObjectSummaryPage { items, next_cursor })
+        let page = ObjectSummaryPage { items, next_cursor };
+        if let (Some(stamp), Some(key)) = (stamp, cache_key) {
+            conn.cache_summary_page(key, stamp, &page)?;
+        }
+        Ok(page)
     }
 }
 

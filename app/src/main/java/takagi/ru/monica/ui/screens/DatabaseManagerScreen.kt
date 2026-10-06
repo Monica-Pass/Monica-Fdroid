@@ -83,6 +83,8 @@ internal fun DatabaseManagerScreen(initialDatabaseKey: String?, mdbxViewModel: M
     onManageDatabase: (ImportDestination) -> Unit = {},
     onNativeEntry: (takagi.ru.monica.keepass.KeePassNativeResolvedRoute) -> Unit = {}) {
     val context = LocalContext.current
+    val mdbxDatabases by mdbxViewModel.allDatabases.collectAsState()
+    val mdbxDatabasesLoaded by mdbxViewModel.allDatabasesLoaded.collectAsState()
     val repo = remember { DatabaseManagerRepository(context) }
     val left = rememberSaveable(saver = DatabaseManagerPane.Saver) { DatabaseManagerPane(initialDatabaseKey) }
     val right = rememberSaveable(saver = DatabaseManagerPane.Saver) { DatabaseManagerPane() }
@@ -114,10 +116,14 @@ internal fun DatabaseManagerScreen(initialDatabaseKey: String?, mdbxViewModel: M
         }
     }
     listOf(left, right).forEach { pane ->
-        LaunchedEffect(pane.databaseKey, revision, foreground, unlocked) {
+        LaunchedEffect(pane.databaseKey, revision, foreground, unlocked, mdbxDatabases, mdbxDatabasesLoaded) {
             pane.snapshot = null
             if (!foreground || !unlocked) return@LaunchedEffect
             val location = pane.location ?: return@LaunchedEffect
+            if (location.database.mdbxId != null && (!mdbxDatabasesLoaded || mdbxDatabases.any {
+                it.id == location.database.mdbxId && (it.tigaModeEnum == takagi.ru.monica.data.MdbxTigaMode.GLITTER ||
+                    takagi.ru.monica.repository.MdbxClientModePolicy.isEnvelope(it.encryptedPassword))
+            })) return@LaunchedEffect
             pane.loading = true; pane.error = null
             try { pane.snapshot = repo.browse(location) }
             catch (cancelled: CancellationException) { throw cancelled }
@@ -141,6 +147,10 @@ internal fun DatabaseManagerScreen(initialDatabaseKey: String?, mdbxViewModel: M
         }
     }
     val current = if (active == 0) left else right
+    val glitterDatabase = mdbxDatabases.firstOrNull {
+        it.id == current.location?.database?.mdbxId && (it.tigaModeEnum == takagi.ru.monica.data.MdbxTigaMode.GLITTER ||
+            takagi.ru.monica.repository.MdbxClientModePolicy.isEnvelope(it.encryptedPassword))
+    }
     // Browsing the destination must not discard the opposite pane's transfer selection.
     val transferSource = if (databaseManagerSourcePane(active, left.selected.size, right.selected.size, twoPanes) == 0) left else right
     val transferTarget = if (transferSource === left) right else left
@@ -154,6 +164,12 @@ internal fun DatabaseManagerScreen(initialDatabaseKey: String?, mdbxViewModel: M
             current.databaseKey != null -> current.navigate(null)
             else -> onBack()
         }
+    }
+    if (glitterDatabase != null) {
+        MdbxUnsupportedModePage(glitterDatabase.name) {
+            current.navigate(null)
+        }
+        return
     }
     BackHandler { if (detail != null) detail = null else back() }
     detail?.let { (location, row) ->

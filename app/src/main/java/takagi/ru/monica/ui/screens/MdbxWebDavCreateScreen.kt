@@ -62,10 +62,8 @@ fun MdbxWebDavCreateScreen(
     val passwordRequired = selectedEngine == MdbxEngineType.RUST_MDBX2 ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD_AND_KEY_FILE
-    val keyFileRequired = selectedEngine == MdbxEngineType.KOTLIN_MDBX1 &&
-        (unlockMethod == MdbxUnlockMethod.KEY_FILE ||
+    val keyFileRequired = unlockMethod == MdbxUnlockMethod.KEY_FILE ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD_AND_KEY_FILE
-        )
 
     val normalizedMasterPassword = remember(masterPassword) {
         Normalizer.normalize(masterPassword, Normalizer.Form.NFC)
@@ -158,24 +156,29 @@ fun MdbxWebDavCreateScreen(
                             normalizedMasterPassword == normalizedConfirmPassword
                         )) &&
                     (!keyFileRequired || keyFile != null) &&
-                    operationState !is MdbxViewModel.OperationState.Loading
+                    operationState !is MdbxViewModel.OperationState.Loading &&
+                    selectedTigaMode != MdbxTigaMode.GLITTER
 
                 Button(
                     onClick = {
-                        submitted = true
-                        viewModel.createWebDavVault(
-                            name = vaultName,
-                            masterPassword = masterPassword,
-                            unlockMethod = unlockMethod,
-                            keyFile = keyFile,
-                            tigaMode = selectedTigaMode,
-                            serverUrl = serverUrl,
-                            username = username,
-                            webDavPassword = webDavPassword,
-                            remoteDirectoryPath = remoteDirectory.ifBlank { null },
-                            description = null,
-                            engineType = selectedEngine
-                        )
+                        val submit: () -> Unit = submit@ {
+                            requireMdbxTigaCreationMode(selectedTigaMode)
+                            submitted = true
+                            viewModel.createWebDavVault(
+                                name = vaultName,
+                                masterPassword = masterPassword,
+                                unlockMethod = unlockMethod,
+                                keyFile = keyFile,
+                                tigaMode = selectedTigaMode,
+                                serverUrl = serverUrl,
+                                username = username,
+                                webDavPassword = webDavPassword,
+                                remoteDirectoryPath = remoteDirectory.ifBlank { null },
+                                description = null,
+                                engineType = selectedEngine
+                            )
+                        }
+                        submit()
                     },
                     enabled = isFormValid,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
@@ -264,7 +267,10 @@ fun MdbxWebDavCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    MdbxTigaModeSelector(selectedTigaMode, { selectedTigaMode = it })
+                    MdbxTigaModeSelector(selectedTigaMode, {
+                        selectedTigaMode = it
+                        if (selectedEngine == MdbxEngineType.RUST_MDBX2) unlockMethod = MdbxUnlockMethod.MASTER_PASSWORD
+                    })
 
                     MdbxCard(
                         modifier = Modifier.fillMaxWidth(),

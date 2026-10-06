@@ -67,7 +67,7 @@ class MdbxAutoSyncWorker(context: Context, params: WorkerParameters) : Coroutine
         private val schedulerScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
         private val schedulerMutex = kotlinx.coroutines.sync.Mutex()
         internal fun eligible(row: LocalMdbxDatabase) = row.isUsable &&
-            row.engineTypeEnum == MdbxEngineType.RUST_MDBX2 && row.isRemoteSource()
+            row.supports(MdbxCapability.REMOTE_SYNC) && row.isRemoteSource()
 
         fun enqueue(context: Context, id: Long, pull: Boolean = false) {
             val app = context.applicationContext
@@ -77,6 +77,9 @@ class MdbxAutoSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             schedulerScope.launch {
               try { schedulerMutex.withLock {
                 if (!preferences.isEnabled(id) || (pull && !preferences.isPollDue(id))) return@withLock
+                val row = PasswordDatabase.getDatabase(app).localMdbxDatabaseDao().getDatabaseById(id)
+                    ?: return@withLock
+                if (!eligible(row)) return@withLock
                 val work = WorkManager.getInstance(app)
                 val active = work.getWorkInfosForUniqueWork("mdbx-auto-$id").get().filter { !it.state.isFinished }
                 // An enqueued successor will read all edits already committed before this call.

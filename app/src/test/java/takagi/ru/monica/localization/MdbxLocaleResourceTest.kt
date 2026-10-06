@@ -9,12 +9,34 @@ import org.junit.Test
 
 class MdbxLocaleResourceTest {
     @Test
+    fun nativeEditorStringsCoverEveryAdvertisedTranslation() {
+        val resources = generateSequence(File(System.getProperty("user.dir") ?: ".")) {
+            it.parentFile
+        }.map { File(it, "app/src/main/res") }.first { it.isDirectory }
+        val english = readStrings(File(resources, "values/mdbx_native_editor_strings.xml"))
+        listOf("values-zh", "values-b+zh+Hant", "values-b+lzh", "values-vi", "values-ja",
+            "values-ru", "values-ko", "values-de", "values-es", "values-fr", "values-pl",
+            "values-it").forEach { locale ->
+            val translated = readStrings(File(resources, "$locale/mdbx_native_editor_strings.xml"))
+            assertEquals("$locale native editor keys", english.keys, translated.keys)
+            english.forEach { (key, source) ->
+                val target = translated.getValue(key)
+                assertTrue("$locale/$key is empty", target.isNotBlank())
+                assertEquals("$locale/$key arguments", placeholders(source), placeholders(target))
+                assertEquals("$locale/$key numeric limits",
+                    Regex("""\d+""").findAll(source).map { it.value }.sorted().toList(),
+                    Regex("""\d+""").findAll(target).map { it.value }.sorted().toList())
+            }
+        }
+    }
+
+    @Test
     fun mdbxAndGroupingTranslationsHaveMatchingKeysAndFormatArguments() {
         val resources = generateSequence(File(System.getProperty("user.dir") ?: ".")) {
             it.parentFile
         }.map { File(it, "app/src/main/res") }.first { it.isDirectory }
 
-        listOf("mdbx_manager_strings.xml", "page_adjustment_strings.xml").forEach { name ->
+        listOf("mdbx_manager_strings.xml", "page_adjustment_strings.xml", "mdbx_native_editor_strings.xml").forEach { name ->
             val english = readStrings(File(resources, "values/$name"))
             listOf("zh", "ru").forEach { language ->
                 val translated = readStrings(File(resources, "values-$language/$name"))

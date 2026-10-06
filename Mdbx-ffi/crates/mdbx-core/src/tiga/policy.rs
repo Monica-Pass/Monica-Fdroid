@@ -5,6 +5,73 @@ use super::TigaMode;
 use crate::model::UnlockMethodType;
 
 pub const TIGA_POLICY_VERSION: u32 = 2;
+/// Version 2 profiles remain frozen; Glitter is a separately gated contract.
+pub const GLITTER_POLICY_VERSION: u32 = 3;
+
+#[cfg(test)]
+#[test]
+fn glitter_policy_is_portable_with_power_egress_and_no_weak_exceptions() {
+    let glitter = TigaMode::Glitter.policy();
+    let mut power = TigaMode::Power.policy();
+    assert_eq!(power.policy_version, 2);
+    power.profile = TigaMode::Glitter;
+    power.policy_version = 3;
+    power.unlock.portable_unlock_allowed = true;
+    power.session = TigaMode::Multi.policy().session;
+    power.recovery = TigaMode::Multi.policy().recovery;
+    power.minimum_device_assurance = DeviceAssurance::Standard;
+    power.disclosure.screen_capture_protection_required = false;
+    power.disclosure.secure_clipboard_required = false;
+    assert_eq!(glitter, power);
+    assert_eq!("glitter".parse::<TigaMode>().unwrap(), TigaMode::Glitter);
+    for weak in [
+        TigaPolicyOverride {
+            profile: Some(TigaMode::Sky),
+            ..Default::default()
+        },
+        TigaPolicyOverride {
+            minimum_auth_factors: Some(1),
+            ..Default::default()
+        },
+        TigaPolicyOverride {
+            security_key_required: Some(false),
+            ..Default::default()
+        },
+        TigaPolicyOverride {
+            idle_timeout_secs: Some(601),
+            ..Default::default()
+        },
+        TigaPolicyOverride {
+            export_allowed: Some(true),
+            ..Default::default()
+        },
+    ] {
+        let exception = PolicyException {
+            exception_id: "test".into(),
+            target: TigaScope::Vault,
+            approved_override: weak.clone(),
+            reason: "explicit test".into(),
+            expires_at_unix_secs: None,
+        };
+        assert!(TigaPolicyResolver::resolve(
+            &glitter,
+            TigaScope::Vault,
+            &weak,
+            Some(&exception),
+            0
+        )
+        .is_err());
+        assert!(TigaPolicyResolver::resolve_legacy(&glitter, &weak).is_err());
+    }
+    assert!(TigaPolicyResolver::resolve(
+        &TigaMode::Multi.policy(),
+        TigaScope::Vault,
+        &TigaPolicyOverride::for_vault_profile(TigaMode::Glitter),
+        None,
+        0
+    )
+    .is_err());
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -94,6 +161,20 @@ pub struct TigaPolicy {
 impl TigaMode {
     pub fn policy(self) -> TigaPolicy {
         match self {
+            Self::Glitter => {
+                let mut policy = Self::Power.policy();
+                policy.profile = Self::Glitter;
+                policy.policy_version = GLITTER_POLICY_VERSION;
+                // Device capabilities may strengthen a client but are not
+                // additional unlock factors for portable password + key files.
+                policy.unlock.portable_unlock_allowed = true;
+                policy.session = Self::Multi.policy().session;
+                policy.recovery = Self::Multi.policy().recovery;
+                policy.minimum_device_assurance = DeviceAssurance::Standard;
+                policy.disclosure.screen_capture_protection_required = false;
+                policy.disclosure.secure_clipboard_required = false;
+                policy
+            }
             Self::Sky => TigaPolicy {
                 policy_version: TIGA_POLICY_VERSION,
                 profile: self,
@@ -728,6 +809,19 @@ fn apply_override(
         policy_override.minimum_device_assurance
     );
     set!(policy.audit_level, policy_override.audit_level);
+    if parent.profile == TigaMode::Glitter || parent.policy_version == GLITTER_POLICY_VERSION {
+        if policy.profile != TigaMode::Glitter
+            || !weakened_fields(&TigaMode::Glitter.policy(), &policy).is_empty()
+        {
+            return Err(PolicyResolutionError::InvalidOverride(
+                "Glitter security floor cannot be weakened, including by exception".to_string(),
+            ));
+        }
+    } else if policy.profile == TigaMode::Glitter {
+        return Err(PolicyResolutionError::InvalidOverride(
+            "Glitter requires a newly created Glitter vault".to_string(),
+        ));
+    }
 
     if policy.unlock.minimum_auth_factors == 0
         || policy.egress.minimum_auth_factors == 0

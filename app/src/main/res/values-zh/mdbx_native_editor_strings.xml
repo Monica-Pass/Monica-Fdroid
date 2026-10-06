@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_add_login">新增登录信息</string>
+    <string name="mdbx_native_username">用户名</string>
+    <string name="mdbx_native_password">密码</string>
+    <string name="mdbx_native_website">网站</string>
+    <string name="mdbx_native_notes">备注</string>
+    <string name="mdbx_native_json_description">其他条目类型使用 JSON 编辑，请保留原有字段和结构。</string>
+    <string name="mdbx_native_add_attachment">添加附件</string>
+    <string name="mdbx_native_attachment_limits">最多 16 个附件；本次上传总量不超过 16 MiB。文字与图片仅在内存中预览。</string>
+    <string name="mdbx_native_attachment_failed">无法读取附件，或附件完整性验证失败。</string>
+    <string name="mdbx_native_attachment_verified">附件完整性已验证</string>
+    <string name="mdbx_native_attachment_no_preview">此文件类型暂不支持应用内预览；当前保护模式不提供解密附件导出。</string>
+    <string name="mdbx_native_delete_confirm">删除此条目及其附件？</string>
+    <string name="mdbx_native_editable">更改直接写入此加密数据库。</string>
+    <string name="mdbx_native_app_locked">请通过 Monica 的正常应用解锁流程后继续。</string>
+    <string name="mdbx_client_mode_unsupported_title">暂不支持 Glitter</string>
+    <string name="mdbx_client_mode_unsupported">Android 客户端暂未接入 Glitter。请选择 Sky、Multi 或 Power。已有数据库文件和记录会保留，不会自动降档或转换，请使用支持 Glitter 的客户端访问。</string>
+</resources>

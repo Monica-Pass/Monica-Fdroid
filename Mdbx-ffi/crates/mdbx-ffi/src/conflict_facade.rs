@@ -106,7 +106,7 @@ pub fn default_conflict_summary_limits() -> MdbxConflictSummaryLimits {
 #[uniffi::export]
 impl MdbxVault {
     pub fn list_unresolved_conflicts(&self) -> Result<Vec<MdbxConflictRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(ConflictRepo::list_unresolved(&conn)?
             .iter()
             .map(conflict_record)
@@ -122,7 +122,7 @@ impl MdbxVault {
         cursor: Option<String>,
     ) -> Result<MdbxConflictSummaryPage, MdbxFfiError> {
         let object_type = parse_optional_conflict_object_type(object_type)?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = ConflictSummaryRepo::list_unresolved_summaries(
             &conn,
             object_type.as_ref(),
@@ -137,7 +137,7 @@ impl MdbxVault {
         conflict_id: String,
         choice: MdbxConflictChoice,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let conflict = ConflictRepo::get_by_id(&conn, &conflict_id)?
             .ok_or_else(|| StorageError::NotFound(conflict_id.clone()))?;
         let ctx = CommitContext::new(self.device_id.clone());
@@ -175,7 +175,7 @@ impl MdbxVault {
         conflict_id: String,
         payload_json: String,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let resolved = ConflictRepo::resolve_entry_custom_payload(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -190,7 +190,7 @@ impl MdbxVault {
         conflict_id: String,
         merged: MdbxProjectConflictMerge,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let conflict = ConflictRepo::get_by_id(&conn, &conflict_id)?
             .ok_or_else(|| StorageError::NotFound(conflict_id.clone()))?;
         if conflict.object_type != ConflictObjectType::Project {
@@ -222,7 +222,7 @@ impl MdbxVault {
         conflict_id: String,
         merged: MdbxAttachmentConflictMerge,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let conflict = ConflictRepo::get_by_id(&conn, &conflict_id)?
             .ok_or_else(|| StorageError::NotFound(conflict_id.clone()))?;
         if conflict.object_type != ConflictObjectType::Attachment {
@@ -258,7 +258,7 @@ impl MdbxVault {
         payload_schema_version: u32,
         deleted: bool,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let conflict = ConflictRepo::get_by_id(&conn, &conflict_id)?
             .ok_or_else(|| StorageError::NotFound(conflict_id.clone()))?;
         let mut merged = ObjectRelationRepo::get_by_id(&conn, &conflict.object_id)?
@@ -286,7 +286,7 @@ impl MdbxVault {
         payload_schema_version: u32,
         deleted: bool,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let conflict = ConflictRepo::get_by_id(&conn, &conflict_id)?
             .ok_or_else(|| StorageError::NotFound(conflict_id.clone()))?;
         let mut merged = ObjectLabelRepo::get_by_id(&conn, &conflict.object_id)?
@@ -309,7 +309,7 @@ impl MdbxVault {
         conflict_id: String,
         deleted: bool,
     ) -> Result<MdbxConflictRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let conflict = ConflictRepo::get_by_id(&conn, &conflict_id)?
             .ok_or_else(|| StorageError::NotFound(conflict_id.clone()))?;
         let mut merged = ObjectLabelAssignmentRepo::get_by_id(&conn, &conflict.object_id)?

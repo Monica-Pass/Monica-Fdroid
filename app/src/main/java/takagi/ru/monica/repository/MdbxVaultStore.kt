@@ -4300,6 +4300,7 @@ class MdbxVaultStore(
 
     private fun automaticSnapshotRetention(dbInfo: LocalMdbxDatabase): Int =
         when (MdbxTigaMode.fromName(dbInfo.tigaMode)) {
+            MdbxTigaMode.GLITTER -> error("Glitter requires the native MDBX engine")
             MdbxTigaMode.POWER -> 10
             MdbxTigaMode.MULTI -> 20
             MdbxTigaMode.SKY -> 30

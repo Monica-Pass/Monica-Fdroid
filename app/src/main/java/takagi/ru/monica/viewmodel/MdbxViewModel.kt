@@ -45,11 +45,13 @@ import takagi.ru.monica.data.MdbxRemoteSource
 import takagi.ru.monica.data.MdbxRemoteSourceDao
 import takagi.ru.monica.data.MdbxEngineType
 import takagi.ru.monica.data.isUsable
+import takagi.ru.monica.data.isUnsupportedGlitter
 import takagi.ru.monica.data.MdbxSourceType
 import takagi.ru.monica.data.MdbxStorageLocation
 import takagi.ru.monica.data.MdbxSyncStatus
 import takagi.ru.monica.data.MdbxSyncStateStore
 import takagi.ru.monica.data.MdbxTigaMode
+import takagi.ru.monica.repository.MdbxClientModePolicy
 import takagi.ru.monica.data.MdbxUnlockMethod
 import takagi.ru.monica.data.resolvedActiveFilePath
 import takagi.ru.monica.data.supports
@@ -85,10 +87,12 @@ import takagi.ru.monica.repository.MdbxStructurePreview
 import takagi.ru.monica.repository.MdbxSyncBundle
 import takagi.ru.monica.repository.MdbxVaultCredential
 import takagi.ru.monica.repository.MdbxVaultCrypto
+import takagi.ru.monica.repository.readMdbxKeyFileBytes
 import takagi.ru.monica.repository.MdbxVaultDiagnostics
 import takagi.ru.monica.repository.MdbxVaultStore
 import takagi.ru.monica.repository.Mdbx2Repository
 import takagi.ru.monica.repository.Mdbx2RemoteSyncCoordinator
+import takagi.ru.monica.repository.Mdbx2RemoteSyncReport
 import takagi.ru.monica.repository.Mdbx2RepositorySyncSessionProvider
 import takagi.ru.monica.repository.Mdbx2VaultSessionExecutor
 import takagi.ru.monica.repository.MdbxMigrationLifecycle
@@ -409,6 +413,17 @@ class MdbxViewModel(
         }
     }
 
+    internal suspend fun saveNativeObject(databaseId: Long, original: takagi.ru.monica.repository.MdbxNativeObjectDetail?,
+        title: String, type: String, payload: String, uploads: List<takagi.ru.monica.data.NativeApiTokenUpload> = emptyList(),
+        removedAttachmentIds: Set<String> = emptySet(), targetCollectionId: String? = null): String =
+        mdbx2Repository.saveNativeObject(databaseId, original, title, type, payload, uploads, removedAttachmentIds, targetCollectionId)
+
+    internal suspend fun deleteNativeObject(databaseId: Long, original: takagi.ru.monica.repository.MdbxNativeObjectDetail) =
+        mdbx2Repository.deleteNativeObject(databaseId, original)
+
+    internal suspend fun readNativeAttachment(databaseId: Long, original: takagi.ru.monica.repository.MdbxNativeObjectDetail, attachmentId: String): ByteArray =
+        mdbx2Repository.readNativeAttachment(databaseId, original, attachmentId)
+
     fun forgetActiveMdbxDatabaseIf(databaseId: Long) {
         if (_activeMdbxDatabaseId.value == databaseId) {
             _activeMdbxDatabaseId.value = null
@@ -511,7 +526,7 @@ class MdbxViewModel(
                         Intent.FLAG_GRANT_READ_URI_PERMISSION
                     )
                 }
-                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readMdbxKeyFileBytes() }
                     ?: throw IllegalArgumentException("Unable to read selected MDBX key file")
                 MdbxKeyFileSelection(
                     uri = uri.toString(),
@@ -586,6 +601,7 @@ class MdbxViewModel(
                         keyFile = keyFile,
                         deviceKeyBytes = deviceKeyBytes
                     )
+                    MdbxClientModePolicy.requireSupported(getApplication(), tigaMode)
                     val encryptedCredential = when {
                         engineType == MdbxEngineType.RUST_MDBX2 &&
                             unlockMethod == MdbxUnlockMethod.DEVICE_KEY ->
@@ -1094,6 +1110,8 @@ class MdbxViewModel(
                     createMdbx2WebDavVault(
                         name = name,
                         masterPassword = masterPassword,
+                        unlockMethod = unlockMethod,
+                        keyFile = keyFile,
                         tigaMode = tigaMode,
                         serverUrl = serverUrl,
                         username = username,
@@ -1136,6 +1154,8 @@ class MdbxViewModel(
                         connectToMdbx2WebDavVault(
                             name = displayName,
                             masterPassword = masterPassword,
+                            unlockMethod = unlockMethod,
+                            keyFile = keyFile,
                             serverUrl = serverUrl,
                             username = username,
                             webDavPassword = webDavPassword,
@@ -1426,6 +1446,8 @@ class MdbxViewModel(
     private suspend fun createMdbx2WebDavVault(
         name: String,
         masterPassword: String,
+        unlockMethod: MdbxUnlockMethod,
+        keyFile: MdbxKeyFileSelection?,
         tigaMode: MdbxTigaMode,
         serverUrl: String,
         username: String,
@@ -1433,6 +1455,9 @@ class MdbxViewModel(
         remoteDirectoryPath: String?,
         description: String?
     ) {
+        require(tigaMode != MdbxTigaMode.GLITTER) {
+            strings.get(R.string.mdbx_client_mode_unsupported)
+        }
         require(masterPassword.isNotBlank()) { "MDBX2 requires a master password" }
         val normalizedDir = WebDavKeePassFileSource.normalizeOptionalRemotePath(remoteDirectoryPath)
         val displayName = name.trim().ifBlank { throw IllegalArgumentException("Vault name cannot be empty") }
@@ -1446,7 +1471,9 @@ class MdbxViewModel(
         )
         val transport = WebDavMdbxRemoteTransport(serverUrl, username, webDavPassword, strings = strings)
         transport.testConnection()
-        val localVaultFile = mdbx2Repository.createInitializedVaultFile(tigaMode, masterPassword)
+        val credential = buildCredential(unlockMethod, masterPassword, keyFile)
+        val encryptedMasterPassword = protectMdbxCredential(tigaMode, credential)
+        val localVaultFile = mdbx2Repository.createInitializedVaultFile(tigaMode, credential)
         val sourceId = remoteSourceDao.insertSource(
             MdbxRemoteSource(
                 displayName = displayName,
@@ -1456,9 +1483,6 @@ class MdbxViewModel(
                 usernameEncrypted = securityManager.encryptData(username),
                 passwordEncrypted = securityManager.encryptData(webDavPassword)
             )
-        )
-        val encryptedMasterPassword = securityManager.encryptData(
-            Mdbx2VaultSessionExecutor.normalizePassword(masterPassword)
         )
         val databaseId = databaseDao.insertDatabase(
             LocalMdbxDatabase(
@@ -1470,7 +1494,10 @@ class MdbxViewModel(
                 engineType = MdbxEngineType.RUST_MDBX2.name,
                 tigaMode = tigaMode.name,
                 encryptedPassword = encryptedMasterPassword,
-                unlockMethod = MdbxUnlockMethod.MASTER_PASSWORD.storedValue,
+                unlockMethod = unlockMethod.storedValue,
+                keyFileName = keyFile?.name,
+                keyFileUri = keyFile?.uri,
+                keyFileFingerprint = keyFile?.fingerprint,
                 kdfProfile = "argon2id",
                 description = description,
                 workingCopyPath = localVaultFile.absolutePath,
@@ -1480,9 +1507,10 @@ class MdbxViewModel(
             )
         )
         try {
-            mdbx2RemoteSyncCoordinator.publishBootstrap(databaseId, remotePath, transport)
+            val bootstrap = mdbx2RemoteSyncCoordinator.publishBootstrap(databaseId, remotePath, transport)
             importEntriesFromVault(databaseId)
-            databaseDao.updateSyncStatus(databaseId, MdbxSyncStatus.IN_SYNC.name, null)
+            mdbx2Repository.completeRemoteSync(databaseId, Mdbx2RemoteSyncReport(
+                vaultId = bootstrap.vaultId, publishedCheckpoint = bootstrap.checkpoint))
         } catch (error: Throwable) {
             cleanupFailedMdbx2RemoteDatabase(databaseId, sourceId, localVaultFile)
             throw error
@@ -1492,6 +1520,8 @@ class MdbxViewModel(
     private suspend fun connectToMdbx2WebDavVault(
         name: String,
         masterPassword: String,
+        unlockMethod: MdbxUnlockMethod,
+        keyFile: MdbxKeyFileSelection?,
         serverUrl: String,
         username: String,
         webDavPassword: String,
@@ -1507,7 +1537,11 @@ class MdbxViewModel(
             File(context.filesDir, "mdbx2").also { check(it.exists() || it.mkdirs()) },
             "remote_${UUID.randomUUID()}.mdbx"
         )
-        mdbx2RemoteSyncCoordinator.downloadBootstrapTo(normalizedRemotePath, transport, localVaultFile)
+        val credential = buildCredential(unlockMethod, masterPassword, keyFile)
+        val detectedMode = mdbx2Repository.downloadRemoteVaultFile(localVaultFile, credential) { destination ->
+            mdbx2RemoteSyncCoordinator.downloadBootstrapTo(normalizedRemotePath, transport, destination)
+        }
+        val protectedCredential = protectMdbxCredential(detectedMode, credential)
         val sourceId = remoteSourceDao.insertSource(
             MdbxRemoteSource(
                 displayName = displayName,
@@ -1526,10 +1560,12 @@ class MdbxViewModel(
                 sourceType = MdbxSourceType.REMOTE_WEBDAV.name,
                 sourceId = sourceId,
                 engineType = MdbxEngineType.RUST_MDBX2.name,
-                encryptedPassword = securityManager.encryptData(
-                    Mdbx2VaultSessionExecutor.normalizePassword(masterPassword)
-                ),
-                unlockMethod = MdbxUnlockMethod.MASTER_PASSWORD.storedValue,
+                tigaMode = detectedMode.name,
+                encryptedPassword = protectedCredential,
+                unlockMethod = unlockMethod.storedValue,
+                keyFileName = keyFile?.name,
+                keyFileUri = keyFile?.uri,
+                keyFileFingerprint = keyFile?.fingerprint,
                 kdfProfile = "argon2id",
                 description = description,
                 workingCopyPath = localVaultFile.absolutePath,
@@ -1544,9 +1580,9 @@ class MdbxViewModel(
             // the bootstrap cursor.
             mdbx2Repository.withVaultForSync(databaseId) { _, vault -> vault.info() }
             mdbx2RemoteSyncCoordinator.registerDownloadedBootstrap(databaseId, normalizedRemotePath)
-            mdbx2RemoteSyncCoordinator.synchronize(databaseId, normalizedRemotePath, transport)
+            val report = mdbx2RemoteSyncCoordinator.synchronize(databaseId, normalizedRemotePath, transport)
             importEntriesFromVault(databaseId)
-            databaseDao.updateSyncStatus(databaseId, MdbxSyncStatus.IN_SYNC.name, null)
+            mdbx2Repository.completeRemoteSync(databaseId, report)
         } catch (error: Throwable) {
             cleanupFailedMdbx2RemoteDatabase(databaseId, sourceId, localVaultFile)
             throw error
@@ -1561,6 +1597,9 @@ class MdbxViewModel(
         directoryPath: String?,
         description: String?
     ) {
+        require(tigaMode != MdbxTigaMode.GLITTER) {
+            strings.get(R.string.mdbx_client_mode_unsupported)
+        }
         require(masterPassword.isNotBlank()) { "MDBX2 requires a master password" }
         val normalizedDir = OneDriveKeePassFileSource.normalizeOptionalRemotePath(directoryPath)
         val displayName = name.trim().ifBlank { throw IllegalArgumentException("Vault name cannot be empty") }
@@ -1605,9 +1644,10 @@ class MdbxViewModel(
             )
         )
         try {
-            mdbx2RemoteSyncCoordinator.publishBootstrap(databaseId, remotePath, transport)
+            val bootstrap = mdbx2RemoteSyncCoordinator.publishBootstrap(databaseId, remotePath, transport)
             importEntriesFromVault(databaseId)
-            databaseDao.updateSyncStatus(databaseId, MdbxSyncStatus.IN_SYNC.name, null)
+            mdbx2Repository.completeRemoteSync(databaseId, Mdbx2RemoteSyncReport(
+                vaultId = bootstrap.vaultId, publishedCheckpoint = bootstrap.checkpoint))
         } catch (error: Throwable) {
             cleanupFailedMdbx2RemoteDatabase(databaseId, sourceId, localVaultFile)
             throw error
@@ -1666,9 +1706,9 @@ class MdbxViewModel(
         try {
             mdbx2Repository.withVaultForSync(databaseId) { _, vault -> vault.info() }
             mdbx2RemoteSyncCoordinator.registerDownloadedBootstrap(databaseId, normalizedRemotePath)
-            mdbx2RemoteSyncCoordinator.synchronize(databaseId, normalizedRemotePath, transport)
+            val report = mdbx2RemoteSyncCoordinator.synchronize(databaseId, normalizedRemotePath, transport)
             importEntriesFromVault(databaseId)
-            databaseDao.updateSyncStatus(databaseId, MdbxSyncStatus.IN_SYNC.name, null)
+            mdbx2Repository.completeRemoteSync(databaseId, report)
         } catch (error: Throwable) {
             cleanupFailedMdbx2RemoteDatabase(databaseId, sourceId, localVaultFile)
             throw error
@@ -1680,6 +1720,7 @@ class MdbxViewModel(
         sourceId: Long,
         localVaultFile: File
     ) {
+        // Remote Glitter is rejected before binding; failures here belong to supported modes.
         runCatching { mdbx2RemoteSyncCoordinator.clearLocalState(databaseId) }
         runCatching { databaseDao.deleteDatabaseById(databaseId) }
         runCatching { remoteSourceDao.deleteSourceById(sourceId) }
@@ -1858,6 +1899,9 @@ class MdbxViewModel(
             return SyncTaskAwaitResult.Skipped("missing_vault")
         }
         if (!database.isUsable) return SyncTaskAwaitResult.Skipped("mdbx1_upgrade_required")
+        if (database.isRemoteSource() && !database.supports(MdbxCapability.REMOTE_SYNC)) {
+            return SyncTaskAwaitResult.Skipped("glitter_local_only")
+        }
 
         val detail = "operation=$operationName source=${database.sourceType} status=${database.lastSyncStatus} throttleMs=$throttleMs"
         SyncDiagnostics.queued(taskId, targetLog, triggerLog, detail)
@@ -2423,7 +2467,8 @@ class MdbxViewModel(
     ): Boolean {
         if (database.supports(capability)) return true
         _operationState.value = OperationState.Error(
-            if (!database.isUsable) strings.get(R.string.mdbx_legacy_unavailable_description)
+            if (database.isUnsupportedGlitter) strings.get(R.string.mdbx_client_mode_unsupported)
+            else if (!database.isUsable) strings.get(R.string.mdbx_legacy_unavailable_description)
             else "$action is not available for ${database.engineTypeEnum.name} vaults"
         )
         return false
@@ -3123,7 +3168,7 @@ class MdbxViewModel(
             withContext(Dispatchers.IO) {
                 val database = databaseDao.getDatabaseById(databaseId)
                 if (database?.isUsable != true) {
-                    _operationState.value = OperationState.Error(strings.get(R.string.mdbx_legacy_unavailable_description))
+                    _operationState.value = OperationState.Error(strings.get(if (database?.isUnsupportedGlitter == true) R.string.mdbx_client_mode_unsupported else R.string.mdbx_legacy_unavailable_description))
                     return@withContext
                 }
                 databaseDao.clearDefaultDatabase()
@@ -3187,12 +3232,10 @@ class MdbxViewModel(
             "A device-key MDBX2 vault must be opened on its original device"
         }
         val credential = buildCredential(unlockMethod, masterPassword, keyFile)
-        mdbx2Repository.validateVaultFile(workingCopy, credential)
-        val encryptedPassword = credential.password
-            ?.let(::normalizeMdbxPassword)
-            ?.let(securityManager::encryptData)
         var databaseId: Long? = null
         try {
+            val detectedMode = mdbx2Repository.validateVaultFile(workingCopy, credential)
+            val encryptedPassword = protectMdbxCredential(detectedMode, credential)
             databaseId = databaseDao.insertDatabase(
                 LocalMdbxDatabase(
                     name = displayName,
@@ -3201,7 +3244,7 @@ class MdbxViewModel(
                     sourceType = MdbxSourceType.LOCAL_EXTERNAL.name,
                     sourceId = null,
                     engineType = MdbxEngineType.RUST_MDBX2.name,
-                    tigaMode = tigaMode.name,
+                    tigaMode = detectedMode.name,
                     encryptedPassword = encryptedPassword,
                     unlockMethod = unlockMethod.storedValue,
                     kdfProfile = "argon2id-mdbx2",
@@ -3331,6 +3374,14 @@ class MdbxViewModel(
         APPLY_REMOTE_STATE
     }
 
+    private fun protectMdbxCredential(
+        mode: MdbxTigaMode,
+        credential: MdbxVaultCredential,
+    ): String? {
+        MdbxClientModePolicy.requireSupported(getApplication(), mode)
+        return credential.password?.let(::normalizeMdbxPassword)?.let(securityManager::encryptData)
+    }
+
     private suspend fun importEntriesFromVault(
         databaseId: Long,
         orphanPolicy: MdbxImportOrphanPolicy = MdbxImportOrphanPolicy.RESCUE_LOCAL_ACTIVE
@@ -3338,6 +3389,9 @@ class MdbxViewModel(
         invalidateMdbxViewCaches(databaseId)
         val database = databaseDao.getDatabaseById(databaseId)
             ?: throw IllegalStateException("Vault not found")
+        // Unsupported prerelease vaults must not create ordinary app replicas.
+        if (database.tigaModeEnum == MdbxTigaMode.GLITTER ||
+            MdbxClientModePolicy.isEnvelope(database.encryptedPassword)) return@withContext
         var entries: List<MdbxStoredVaultEntry> = emptyList()
         val readMs = measureTimeMillis {
             if (database.engineTypeEnum == MdbxEngineType.RUST_MDBX2 &&
@@ -4516,6 +4570,7 @@ class MdbxViewModel(
     }
 
     private suspend fun synchronizeMdbx2Remote(database: LocalMdbxDatabase) {
+        mdbx2Repository.requireRemoteSyncInfo(database.id)
         val source = database.sourceId?.let { remoteSourceDao.getSourceById(it) }
             ?: throw IllegalStateException("MDBX2 remote source not found")
         val remotePath = source.remotePath.takeIf { it.isNotBlank() }
@@ -4539,6 +4594,9 @@ class MdbxViewModel(
         database: LocalMdbxDatabase,
         source: MdbxRemoteSource
     ): MdbxRemoteTransport {
+        require(database.supports(MdbxCapability.REMOTE_SYNC)) {
+            strings.get(R.string.mdbx_client_mode_unsupported)
+        }
         val remotePath = MdbxRemoteSyncPaths.normalizePath(source.remotePath)
         require(remotePath.isNotBlank()) { "MDBX2 remote path missing" }
         return when (database.sourceTypeEnum) {

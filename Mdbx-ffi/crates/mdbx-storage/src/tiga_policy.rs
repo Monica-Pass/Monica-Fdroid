@@ -21,6 +21,8 @@ use crate::repo::project::ProjectRepo;
 use crate::tiga::{bump_clock, current_device_head, TigaService};
 
 const STATUS_COMPLIANT: &str = "compliant";
+mod credential_use;
+pub use credential_use::CredentialUseLease;
 const STATUS_EXCEPTION: &str = "exception";
 const STATUS_REMEDIATION: &str = "remediation-required";
 
@@ -366,7 +368,10 @@ impl TigaService {
             )
             .map_err(StorageError::Database)
             .and_then(|(policy_version, status)| {
-                if policy_version != TIGA_POLICY_VERSION {
+                let expected = if crate::unlock::UnlockService::is_glitter(conn)? {
+                    mdbx_core::tiga::GLITTER_POLICY_VERSION
+                } else { TIGA_POLICY_VERSION };
+                if policy_version != expected {
                     return Err(StorageError::Validation(format!(
                         "unsupported Tiga policy version {policy_version}; expected {TIGA_POLICY_VERSION}"
                     )));
@@ -380,6 +385,16 @@ impl TigaService {
 
     pub fn resolve_vault_policy(conn: &VaultConnection) -> StorageResult<ResolvedTigaPolicy> {
         let base = Self::get_global_default(conn)?.policy();
+        // Recheck at operation-policy resolution too: the runtime's earlier
+        // access check must never allow a later read of a downgraded base.
+        if conn.is_glitter_session()
+            && (base.profile != mdbx_core::tiga::TigaMode::Glitter
+                || !crate::unlock::UnlockService::is_glitter(conn)?)
+        {
+            return Err(StorageError::Validation(
+                "a live Glitter session cannot adopt a different format policy".to_string(),
+            ));
+        }
         let resolved = ResolvedTigaPolicy {
             policy: base,
             compliance: Self::get_policy_state(conn)?.compliance,
@@ -553,6 +568,7 @@ impl TigaService {
         let mut resolved = resolve_scope_policy(conn, scope)?;
         if operation == TigaOperation::ChangeUnlockMethods
             && resolved.compliance == PolicyCompliance::RemediationRequired
+            && !crate::unlock::UnlockService::is_glitter(conn)?
         {
             resolved.policy.unlock.minimum_auth_factors = 1;
             resolved.policy.unlock.security_key_required = false;
@@ -987,7 +1003,7 @@ impl TigaService {
                 "UPDATE vault_meta SET tiga_policy_version = ?1,
                  tiga_compliance_status = ?2",
                 params![
-                    TIGA_POLICY_VERSION,
+                    resolved.policy.policy_version,
                     compliance_storage_value(resolved.compliance)
                 ],
             )?;

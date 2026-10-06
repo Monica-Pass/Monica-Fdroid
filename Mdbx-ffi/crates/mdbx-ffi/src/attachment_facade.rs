@@ -116,7 +116,7 @@ use mdbx_storage::runtime::VaultRuntime;
 use mdbx_storage::tiga_policy::TigaAuthorizationContext;
 use sha2::{Digest, Sha256};
 
-use super::{conservative_ffi_device_context, unix_now, validate_uuid, MdbxFfiError, MdbxVault};
+use super::{unix_now, validate_uuid, MdbxFfiError, MdbxVault};
 
 pub(crate) struct AttachmentContentOperation<'a> {
     pub(crate) operation_id: String,
@@ -160,7 +160,7 @@ where
         }],
     )
     .with_intent_hash(intent_hash);
-    let conn = runtime.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
+    let conn = runtime.write().map_err(MdbxFfiError::from)?;
     let ctx = CommitContext::new(device_id.to_string());
     let execution = ctx.run_operation(&conn, operation, |scoped| action(&conn, scoped))?;
     let (attachment, commit_id, already_committed) = match execution {
@@ -477,7 +477,7 @@ pub(crate) fn execute_attachment_batch_operation(
         attachment_batch_changes(&commands),
     )
     .with_intent_hash(intent_hash);
-    let conn = runtime.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
+    let conn = runtime.write().map_err(MdbxFfiError::from)?;
     let ctx = CommitContext::new(device_id.to_string());
     let ids_for_action = attachment_ids.clone();
     let execution = ctx.run_operation(&conn, operation, |scoped| {
@@ -784,7 +784,7 @@ impl MdbxVault {
         &self,
         attachment_id: String,
     ) -> Result<Option<MdbxAttachmentRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         AttachmentRepo::get_by_id(&conn, &attachment_id)?
             .as_ref()
             .map(attachment_record_from_core)
@@ -796,7 +796,7 @@ impl MdbxVault {
         project_id: String,
         entry_id: Option<String>,
     ) -> Result<Vec<MdbxAttachmentRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let attachments = match entry_id.as_deref() {
             Some(entry_id) => AttachmentRepo::list_by_entry(&conn, entry_id)?
                 .into_iter()
@@ -811,7 +811,7 @@ impl MdbxVault {
     }
 
     pub fn list_deleted_attachments(&self) -> Result<Vec<MdbxAttachmentRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         AttachmentRepo::list_deleted(&conn)?
             .iter()
             .map(attachment_record_from_core)
@@ -830,7 +830,7 @@ impl MdbxVault {
             )
             .into());
         }
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let updated = AttachmentRepo::rename(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -842,7 +842,7 @@ impl MdbxVault {
     }
 
     pub fn delete_attachment(&self, attachment_id: String) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         AttachmentRepo::soft_delete(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -1191,7 +1191,7 @@ impl MdbxVault {
         max_plaintext_bytes: u64,
     ) -> Result<Vec<u8>, MdbxFfiError> {
         let max_plaintext_bytes = validate_attachment_read_limit(max_plaintext_bytes)?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let attachment = AttachmentRepo::get_by_id(&conn, &attachment_id)?
             .ok_or_else(|| StorageError::NotFound(attachment_id.clone()))?;
         if attachment.stored_size > max_plaintext_bytes as u64 {
@@ -1203,7 +1203,8 @@ impl MdbxVault {
             .into());
         }
         let session = conn.active_session().cloned();
-        let device = conservative_ffi_device_context().into_core(&self.device_id);
+        let device = super::session_facade::bound_or_conservative_device_context(&conn)
+            .into_core(&self.device_id);
         AttachmentRepo::authorize_plaintext_access(
             &conn,
             &attachment_id,
@@ -1248,7 +1249,7 @@ impl MdbxVault {
     }
 
     pub fn verify_attachment_integrity(&self, attachment_id: String) -> Result<bool, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let attachment = AttachmentRepo::get_by_id(&conn, &attachment_id)?
             .ok_or_else(|| StorageError::NotFound(attachment_id.clone()))?;
         Ok(match attachment.storage_mode {

@@ -18,8 +18,18 @@ use crate::tiga_policy::TigaAuthorizationContext;
 
 /// AEAD 包装 vault 密钥时使用的 AAD。
 const VAULT_KEY_WRAP_AAD: &[u8] = b"mdbx-vault-key-wrap";
+// A stripped/reinitialized header must never turn a Glitter wrapper into a
+// legacy unlock path. This domain is authenticated by the wrapper itself.
+const GLITTER_VAULT_KEY_WRAP_AAD: &[u8] = b"mdbx-vault-key-wrap:glitter-v1";
 const ACTIVE_KEY_EPOCH_AAD: &[u8] = b"mdbx-active-key-epoch-wrap";
 const ACTIVE_KEY_EPOCH_PROFILE_ID: &str = "mdbx-active-key-epoch-v1";
+const GLITTER_MAX_UNLOCK_METHODS: usize = 8;
+const GLITTER_MAX_KDF_PARAMS_BYTES: usize = 4096;
+const GLITTER_MAX_WRAPPED_KEY_BYTES: usize = 256;
+
+#[cfg(test)]
+#[path = "glitter_tests.rs"]
+mod glitter_tests;
 
 /// 保管库解锁服务。
 ///
@@ -53,6 +63,70 @@ pub struct TigaUnlockAssessment {
 }
 
 impl UnlockService {
+    /// Format-level invariant, independent of mutable policy overrides.
+    pub fn is_glitter(conn: &VaultConnection) -> StorageResult<bool> {
+        let (mode, extensions, version): (String, String, u32) = conn.inner().query_row(
+            "SELECT default_tiga_mode, critical_extensions, tiga_policy_version FROM vault_meta",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )?;
+        let marked = crate::migration::has_critical_extension(
+            &extensions,
+            crate::migration::GLITTER_EXTENSION,
+        )?;
+        if marked != (mode == "glitter")
+            || (marked && version != mdbx_core::tiga::GLITTER_POLICY_VERSION)
+            || (!marked && version == mdbx_core::tiga::GLITTER_POLICY_VERSION)
+        {
+            return Err(StorageError::Validation(
+                "unsupported Tiga policy version or inconsistent Glitter format contract".into(),
+            ));
+        }
+        Ok(marked)
+    }
+
+    /// Ordinary portable clients are supported. Explicitly unknown contexts
+    /// fail closed; no hardware or capture capability is required.
+    pub fn validate_glitter_device(device: &mdbx_core::tiga::DeviceContext) -> StorageResult<()> {
+        if device.assurance < mdbx_core::tiga::DeviceAssurance::Standard {
+            return Err(StorageError::Validation(
+                "Glitter requires a Standard or stronger client context".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    fn validate_glitter_path(
+        conn: &VaultConnection,
+        method: UnlockMethodType,
+        mode: Option<TigaMode>,
+    ) -> StorageResult<()> {
+        if Self::is_glitter(conn)? {
+            if method != UnlockMethodType::PasswordSecurityKey
+                || mode.is_some_and(|mode| mode != TigaMode::Glitter)
+            {
+                return Err(StorageError::Validation(
+                    "Glitter permits only full-strength password + security key wrappers".into(),
+                ));
+            }
+            for slot in Self::list_methods(conn)? {
+                let params = KdfParams::from_json_bytes(&slot.kdf_params_ct)
+                    .map_err(StorageError::Validation)?;
+                if slot.method_type != UnlockMethodType::PasswordSecurityKey
+                    || !params.is_supported_glitter_v1()
+                {
+                    return Err(StorageError::Validation(
+                        "Glitter contains a weak or unsupported unlock wrapper".into(),
+                    ));
+                }
+            }
+        } else if mode == Some(TigaMode::Glitter) {
+            return Err(StorageError::Validation(
+                "Glitter requires a newly created Glitter vault".into(),
+            ));
+        }
+        Ok(())
+    }
     // -----------------------------------------------------------------------
     // SETUP — 配置解锁方式
     // -----------------------------------------------------------------------
@@ -66,6 +140,7 @@ impl UnlockService {
     }
 
     fn setup_pin_raw(conn: &mut VaultConnection, pin: &str) -> StorageResult<UnlockMethod> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Pin, None)?;
         Self::validate_pin(pin)?;
 
         let normalized = pin.trim();
@@ -122,6 +197,7 @@ impl UnlockService {
         password: &str,
         mode: TigaMode,
     ) -> StorageResult<UnlockMethod> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Password, Some(mode))?;
         Self::validate_password(password)?;
 
         let normalized = Self::normalize_unicode(password);
@@ -162,6 +238,7 @@ impl UnlockService {
         conn: &mut VaultConnection,
         key_data: &[u8],
     ) -> StorageResult<UnlockMethod> {
+        Self::validate_glitter_path(conn, UnlockMethodType::SecurityKey, None)?;
         if key_data.is_empty() {
             return Err(StorageError::Validation(
                 "security key data must not be empty".to_string(),
@@ -203,8 +280,34 @@ impl UnlockService {
         key_data: &[u8],
         mode: TigaMode,
     ) -> StorageResult<UnlockMethod> {
+        Self::setup_password_security_key_with_device_context(
+            conn,
+            password,
+            key_data,
+            mode,
+            &mdbx_core::tiga::DeviceContext {
+                assurance: mdbx_core::tiga::DeviceAssurance::Standard,
+                ..Default::default()
+            },
+        )
+    }
+
+    pub fn setup_password_security_key_with_device_context(
+        conn: &mut VaultConnection,
+        password: &str,
+        key_data: &[u8],
+        mode: TigaMode,
+        device: &mdbx_core::tiga::DeviceContext,
+    ) -> StorageResult<UnlockMethod> {
+        if Self::is_glitter(conn)? {
+            Self::validate_glitter_device(device)?;
+        }
         Self::ensure_bootstrap_available(conn)?;
-        Self::setup_password_security_key_raw(conn, password, key_data, mode)
+        let method = Self::setup_password_security_key_raw(conn, password, key_data, mode)?;
+        if Self::is_glitter(conn)? {
+            conn.bind_authenticated_device_context(device.clone())?;
+        }
+        Ok(method)
     }
 
     fn setup_password_security_key_raw(
@@ -213,10 +316,24 @@ impl UnlockService {
         key_data: &[u8],
         mode: TigaMode,
     ) -> StorageResult<UnlockMethod> {
+        Self::validate_glitter_path(conn, UnlockMethodType::PasswordSecurityKey, Some(mode))?;
+        let preserve_session = mode == TigaMode::Glitter && conn.active_session().is_some();
+        if mode == TigaMode::Glitter
+            && Self::list_methods(conn)?.len() >= GLITTER_MAX_UNLOCK_METHODS
+        {
+            return Err(StorageError::Validation(
+                "Glitter supports at most eight combined unlock wrappers".into(),
+            ));
+        }
+        if Self::is_glitter(conn)? && key_data.len() < 32 {
+            return Err(StorageError::Validation(
+                "Glitter security-key material must contain at least 32 bytes".into(),
+            ));
+        }
         Self::validate_password(password)?;
         Self::validate_security_key_data(key_data)?;
 
-        let normalized = Self::normalize_unicode(password);
+        let normalized = Zeroizing::new(Self::normalize_unicode(password));
         let combined = Zeroizing::new(Self::combine_password_and_security_key(
             normalized.as_bytes(),
             key_data,
@@ -228,10 +345,21 @@ impl UnlockService {
         let unlock_key = Self::derive_key(combined.as_slice(), &kdf_params)?;
 
         let vault_key = Self::get_or_generate_vault_key(conn)?;
-        let wrapped = Self::wrap_vault_key(unlock_key.as_slice(), vault_key.as_slice())?;
+        let wrapped = if mode == TigaMode::Glitter {
+            aead::encrypt(
+                unlock_key.as_slice(),
+                vault_key.as_slice(),
+                GLITTER_VAULT_KEY_WRAP_AAD,
+            )
+            .map_err(StorageError::Crypto)?
+        } else {
+            Self::wrap_vault_key(unlock_key.as_slice(), vault_key.as_slice())?
+        };
         let active_epoch_wrapped = Self::wrap_active_key_epoch(vault_key.as_slice())?;
 
-        Self::attach_verified_keyring(conn, vault_key.as_slice())?;
+        if !preserve_session {
+            Self::attach_verified_keyring(conn, vault_key.as_slice())?;
+        }
 
         let method = Self::store_method(
             conn,
@@ -240,7 +368,11 @@ impl UnlockService {
             &wrapped,
             &active_epoch_wrapped,
         )?;
-        Self::create_and_attach_session(conn, UnlockMethodType::PasswordSecurityKey)?;
+        // Enrolling a backup wrapper is administration, not a fresh credential
+        // authentication. Preserve the original session and its monotonic bound.
+        if !preserve_session {
+            Self::create_and_attach_session(conn, UnlockMethodType::PasswordSecurityKey)?;
+        }
         Self::refresh_tiga_compliance(conn)?;
         Ok(method)
     }
@@ -298,14 +430,21 @@ impl UnlockService {
         mode: TigaMode,
         context: TigaAuthorizationContext<'_>,
     ) -> StorageResult<UnlockMethod> {
-        TigaService::execute_authorized_mut(
+        if Self::is_glitter(conn)? {
+            Self::validate_glitter_device(context.device)?;
+        }
+        let result = TigaService::execute_authorized_mut(
             conn,
             &TigaScope::Vault,
             TigaOperation::ChangeUnlockMethods,
             context,
             |conn| Self::setup_password_security_key_raw(conn, password, key_data, mode),
         )
-        .map(|(method, _)| method)
+        .map(|(method, _)| method)?;
+        if Self::is_glitter(conn)? {
+            conn.bind_authenticated_device_context(context.device.clone())?;
+        }
+        Ok(result)
     }
 
     // -----------------------------------------------------------------------
@@ -314,6 +453,7 @@ impl UnlockService {
 
     /// 使用 PIN 解锁 vault。
     pub fn unlock_with_pin(conn: &mut VaultConnection, pin: &str) -> StorageResult<VaultSession> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Pin, None)?;
         let method = Self::find_method_by_type(conn, UnlockMethodType::Pin)?.ok_or_else(|| {
             StorageError::Validation("no PIN unlock method configured".to_string())
         })?;
@@ -336,6 +476,7 @@ impl UnlockService {
         conn: &mut VaultConnection,
         password: &str,
     ) -> StorageResult<VaultSession> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Password, None)?;
         let method =
             Self::find_method_by_type(conn, UnlockMethodType::Password)?.ok_or_else(|| {
                 StorageError::Validation("no password unlock method configured".to_string())
@@ -359,6 +500,7 @@ impl UnlockService {
         conn: &mut VaultConnection,
         key_data: &[u8],
     ) -> StorageResult<VaultSession> {
+        Self::validate_glitter_path(conn, UnlockMethodType::SecurityKey, None)?;
         let method =
             Self::find_method_by_type(conn, UnlockMethodType::SecurityKey)?.ok_or_else(|| {
                 StorageError::Validation("no security key unlock method configured".to_string())
@@ -382,29 +524,111 @@ impl UnlockService {
         password: &str,
         key_data: &[u8],
     ) -> StorageResult<VaultSession> {
-        let method = Self::find_method_by_type(conn, UnlockMethodType::PasswordSecurityKey)?
-            .ok_or_else(|| {
-                StorageError::Validation(
-                    "no password + security key unlock method configured".to_string(),
-                )
-            })?;
+        Self::unlock_with_password_security_key_and_device_context(
+            conn,
+            password,
+            key_data,
+            &mdbx_core::tiga::DeviceContext {
+                assurance: mdbx_core::tiga::DeviceAssurance::Standard,
+                ..Default::default()
+            },
+        )
+    }
 
+    pub fn unlock_with_password_security_key_and_device_context(
+        conn: &mut VaultConnection,
+        password: &str,
+        key_data: &[u8],
+        device: &mdbx_core::tiga::DeviceContext,
+    ) -> StorageResult<VaultSession> {
+        let glitter = Self::is_glitter(conn)?;
+        Self::validate_glitter_path(conn, UnlockMethodType::PasswordSecurityKey, None)?;
+        if glitter {
+            Self::validate_glitter_device(device)?;
+            Self::validate_password(password)?;
+            if key_data.len() < 32 {
+                return Err(StorageError::Validation(
+                    "Glitter security-key material must contain at least 32 bytes".into(),
+                ));
+            }
+        }
         Self::validate_security_key_data(key_data)?;
-        let normalized = Self::normalize_unicode(password);
+        let normalized = Zeroizing::new(Self::normalize_unicode(password));
         let combined = Zeroizing::new(Self::combine_password_and_security_key(
             normalized.as_bytes(),
             key_data,
         ));
-        let kdf_params = KdfParams::from_json_bytes(&method.kdf_params_ct)
-            .map_err(|e| StorageError::SchemaCreation(format!("invalid KDF params: {}", e)))?;
-        let unlock_key = Self::derive_key(combined.as_slice(), &kdf_params)?;
-
-        let vault_key =
-            Self::unwrap_vault_key(unlock_key.as_slice(), &method.wrapped_vault_key_ct)?;
+        let methods = if glitter {
+            // Keep the original format classification. A concurrent metadata
+            // rewrite must not redirect this unlock to the unbounded legacy reader.
+            let methods = Self::list_glitter_methods_bounded(conn)?;
+            // Check every slot in this exact snapshot before the first KDF,
+            // even if path validation saw an older SQLite version.
+            for method in &methods {
+                let params = KdfParams::from_json_bytes(&method.kdf_params_ct)
+                    .map_err(StorageError::Validation)?;
+                if method.method_type != UnlockMethodType::PasswordSecurityKey
+                    || !params.is_supported_glitter_v1()
+                {
+                    return Err(StorageError::Validation(
+                        "Glitter contains a weak or unsupported unlock wrapper".into(),
+                    ));
+                }
+            }
+            methods
+        } else {
+            vec![
+                Self::find_method_by_type(conn, UnlockMethodType::PasswordSecurityKey)?
+                    .ok_or_else(|| {
+                        StorageError::Validation(
+                            "no password + security key unlock method configured".to_string(),
+                        )
+                    })?,
+            ]
+        };
+        let mut unlocked_key = None;
+        let mut last_error = None;
+        for method in methods {
+            let kdf_params = KdfParams::from_json_bytes(&method.kdf_params_ct)
+                .map_err(|e| StorageError::SchemaCreation(format!("invalid KDF params: {}", e)))?;
+            // Recheck the exact values from the bounded snapshot actually used
+            // for derivation; a writer may have changed them after path validation.
+            if glitter && !kdf_params.is_supported_glitter_v1() {
+                return Err(StorageError::Validation(
+                    "Glitter contains a weak or unsupported unlock wrapper".into(),
+                ));
+            }
+            let unlock_key = Self::derive_key(combined.as_slice(), &kdf_params)?;
+            let aad = if glitter {
+                GLITTER_VAULT_KEY_WRAP_AAD
+            } else {
+                VAULT_KEY_WRAP_AAD
+            };
+            match Self::unwrap_vault_key_with_aad(
+                unlock_key.as_slice(),
+                &method.wrapped_vault_key_ct,
+                aad,
+            ) {
+                Ok(key) => {
+                    unlocked_key = Some(key);
+                    break;
+                }
+                Err(error) => last_error = Some(error),
+            }
+        }
+        let vault_key = unlocked_key.ok_or_else(|| {
+            last_error.unwrap_or_else(|| {
+                StorageError::Validation("no combined unlock wrapper available".into())
+            })
+        })?;
 
         Self::attach_verified_keyring(conn, vault_key.as_slice())?;
 
-        Self::create_and_attach_session(conn, UnlockMethodType::PasswordSecurityKey)
+        let session = Self::create_and_attach_session(conn, UnlockMethodType::PasswordSecurityKey)?;
+        if glitter {
+            conn.bind_authenticated_device_context(device.clone())?;
+        }
+        Ok(session)
     }
 
     // -----------------------------------------------------------------------
@@ -419,6 +643,7 @@ impl UnlockService {
         old_pin: &str,
         new_pin: &str,
     ) -> StorageResult<()> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Pin, None)?;
         // 用旧凭据解包 vault_key
         let method = Self::find_method_by_type(conn, UnlockMethodType::Pin)?
             .ok_or_else(|| StorageError::Validation("no PIN configured".to_string()))?;
@@ -478,6 +703,7 @@ impl UnlockService {
         old_password: &str,
         new_password: &str,
     ) -> StorageResult<()> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Password, None)?;
         let method = Self::find_method_by_type(conn, UnlockMethodType::Password)?
             .ok_or_else(|| StorageError::Validation("no password configured".to_string()))?;
 
@@ -536,6 +762,7 @@ impl UnlockService {
         new_password: &str,
         mode: TigaMode,
     ) -> StorageResult<()> {
+        Self::validate_glitter_path(conn, UnlockMethodType::Password, Some(mode))?;
         Self::find_method_by_type(conn, UnlockMethodType::Password)?
             .ok_or_else(|| StorageError::Validation("no password configured".to_string()))?;
 
@@ -592,6 +819,48 @@ impl UnlockService {
 
     /// 列出所有已配置的解锁方式。
     pub fn list_methods(conn: &VaultConnection) -> StorageResult<Vec<UnlockMethod>> {
+        if Self::is_glitter(conn)? {
+            return Self::list_glitter_methods_bounded(conn);
+        }
+        Self::list_methods_unchecked(conn)
+    }
+
+    /// Validate sizes before materializing unauthenticated columns. The size
+    /// check and SELECT share a read snapshot, so a concurrent writer cannot
+    /// replace a checked row with an oversized allocation between the queries.
+    fn list_glitter_methods_bounded(conn: &VaultConnection) -> StorageResult<Vec<UnlockMethod>> {
+        conn.with_read_transaction(|| {
+            let count: usize = conn.inner().query_row(
+                "SELECT COUNT(*) FROM (SELECT 1 FROM unlock_methods LIMIT ?1)",
+                [(GLITTER_MAX_UNLOCK_METHODS + 1) as i64], |row| row.get(0),
+            )?;
+            if count > GLITTER_MAX_UNLOCK_METHODS {
+                return Err(StorageError::Validation(
+                    "Glitter supports at most eight combined unlock wrappers".into(),
+                ));
+            }
+            let oversized: bool = conn.inner().query_row(
+                "SELECT EXISTS(SELECT 1 FROM unlock_methods WHERE
+                    length(kdf_params_ct) > ?1 OR length(wrapped_vault_key_ct) > ?2
+                    OR length(CAST(method_id AS BLOB)) > 256
+                    OR length(CAST(kdf_profile_id AS BLOB)) > 256
+                    OR length(CAST(created_at AS BLOB)) > 128
+                    OR length(CAST(updated_at AS BLOB)) > 128
+                    OR length(CAST(method_type AS BLOB)) > 32
+                    OR method_type NOT IN ('pin','password','security_key','password_security_key'))",
+                rusqlite::params![GLITTER_MAX_KDF_PARAMS_BYTES as i64, GLITTER_MAX_WRAPPED_KEY_BYTES as i64],
+                |row| row.get(0),
+            )?;
+            if oversized {
+                return Err(StorageError::Validation(
+                    "Glitter unlock metadata exceeds supported allocation limits".into(),
+                ));
+            }
+            Self::list_methods_unchecked(conn)
+        })
+    }
+
+    fn list_methods_unchecked(conn: &VaultConnection) -> StorageResult<Vec<UnlockMethod>> {
         let mut stmt = conn
             .inner()
             .prepare(
@@ -637,7 +906,11 @@ impl UnlockService {
         conn: &VaultConnection,
         mode: TigaMode,
     ) -> StorageResult<TigaUnlockAssessment> {
-        let methods = Self::list_methods(conn)?;
+        let methods = if mode == TigaMode::Glitter {
+            Self::list_glitter_methods_bounded(conn)?
+        } else {
+            Self::list_methods(conn)?
+        };
         let configured_methods: Vec<UnlockMethodType> =
             methods.iter().map(|m| m.method_type).collect();
         let has_portable_unlock = configured_methods.iter().any(|m| m.is_portable());
@@ -648,13 +921,17 @@ impl UnlockService {
         let has_required_combined_strength = methods.iter().any(|m| {
             m.method_type.is_combined_password_security_key()
                 && KdfParams::from_json_bytes(&m.kdf_params_ct)
-                    .map(|params| params.infer_tiga_mode() >= mode)
+                    .map(|params| {
+                        params.meets_mode_strength(mode)
+                            && params.salt.len() >= 16
+                            && (mode != TigaMode::Glitter || params.is_supported_glitter_v1())
+                    })
                     .unwrap_or(false)
         });
         let policy = mode.unlock_policy();
 
         let mut warnings = Vec::new();
-        if !methods.is_empty() && !has_portable_unlock && mode != TigaMode::Power {
+        if !methods.is_empty() && !has_portable_unlock && mode < TigaMode::Power {
             warnings.push(
                 "cloud-synced vault has no portable unlock method; another device will need security-key material".to_string(),
             );
@@ -687,6 +964,13 @@ impl UnlockService {
 
         let satisfies_policy = if methods.is_empty() {
             false
+        } else if mode == TigaMode::Glitter {
+            methods.iter().all(|method| {
+                method.method_type == UnlockMethodType::PasswordSecurityKey
+                    && KdfParams::from_json_bytes(&method.kdf_params_ct)
+                        .map(|params| params.is_supported_glitter_v1())
+                        .unwrap_or(false)
+            })
         } else if policy.requires_combined_password_security_key {
             has_required_combined_strength && !has_portable_unlock
         } else {
@@ -1070,7 +1354,15 @@ impl UnlockService {
 
     /// 用 unlock_key 解包得到 vault_key。
     fn unwrap_vault_key(unlock_key: &[u8], wrapped: &[u8]) -> StorageResult<Zeroizing<Vec<u8>>> {
-        aead::decrypt(unlock_key, wrapped, VAULT_KEY_WRAP_AAD)
+        Self::unwrap_vault_key_with_aad(unlock_key, wrapped, VAULT_KEY_WRAP_AAD)
+    }
+
+    fn unwrap_vault_key_with_aad(
+        unlock_key: &[u8],
+        wrapped: &[u8],
+        aad: &[u8],
+    ) -> StorageResult<Zeroizing<Vec<u8>>> {
+        aead::decrypt(unlock_key, wrapped, aad)
             .map(Zeroizing::new)
             .map_err(|e| match e {
                 mdbx_crypto::error::CryptoError::AuthenticationFailed => {
@@ -1220,6 +1512,11 @@ impl UnlockService {
         conn: &VaultConnection,
         method_type: UnlockMethodType,
     ) -> StorageResult<Option<UnlockMethod>> {
+        if Self::is_glitter(conn)? {
+            return Ok(Self::list_glitter_methods_bounded(conn)?
+                .into_iter()
+                .find(|method| method.method_type == method_type));
+        }
         let result = conn.inner().query_row(
             "SELECT method_id, method_type, kdf_profile_id, kdf_params_ct,
                         wrapped_vault_key_ct, created_at, updated_at

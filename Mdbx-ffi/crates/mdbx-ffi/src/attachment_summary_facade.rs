@@ -106,7 +106,7 @@ impl MdbxVault {
         &self,
         attachment_id: String,
     ) -> Result<Option<MdbxAttachmentSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         AttachmentSummaryRepo::get(&conn, &attachment_id)?
             .map(attachment_summary_from_core)
             .transpose()
@@ -123,7 +123,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxAttachmentSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = match object_id.as_deref() {
             Some(object_id) => AttachmentSummaryRepo::list_by_object(
                 &conn,
@@ -148,7 +148,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxAttachmentSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         attachment_summary_page_from_core(AttachmentSummaryRepo::list_deleted(
             &conn,
             page_size as usize,

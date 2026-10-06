@@ -416,17 +416,17 @@ impl MdbxVault {
     }
 
     pub fn create_backup(&self, destination: String) -> Result<MdbxBackupInfo, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(BackupService::create_portable_copy(&conn, Path::new(&destination))?.into())
     }
 
     pub fn health_check(&self) -> Result<MdbxHealthCheckResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(RecoveryVerifier::full_health_check(&conn)?.into())
     }
 
     pub fn plan_health_repair(&self) -> Result<MdbxHealthRepairPlan, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(HealthRepairService::plan(&conn)?.into())
     }
 
@@ -436,7 +436,7 @@ impl MdbxVault {
         operation_id: String,
         decisions: Vec<MdbxHealthRepairDecision>,
     ) -> Result<MdbxHealthRepairApplyResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let ctx = CommitContext::new(self.device_id.clone());
         let decisions = decisions
             .into_iter()
@@ -449,7 +449,7 @@ impl MdbxVault {
     }
 
     pub fn diagnostics_summary(&self) -> Result<MdbxVaultDiagnosticsSummary, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let values = conn.diagnostics_summary()?;
         Ok(MdbxVaultDiagnosticsSummary {
             commit_count: values.commit_count,
@@ -475,7 +475,7 @@ impl MdbxVault {
         tombstone_id: String,
         now: String,
     ) -> Result<MdbxTombstonePurgeEligibility, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(TombstoneRepo::evaluate_purge_eligibility(&conn, &tombstone_id, &now)?.into())
     }
 
@@ -483,7 +483,7 @@ impl MdbxVault {
         &self,
         target_object_id: String,
     ) -> Result<Option<MdbxTombstoneRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(TombstoneRepo::find_by_target(&conn, &target_object_id)?.map(Into::into))
     }
 
@@ -491,7 +491,7 @@ impl MdbxVault {
         &self,
         tombstone_id: String,
     ) -> Result<Option<MdbxPermanentPurgeReceipt>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(TombstoneRepo::find_purge_receipt_by_tombstone(&conn, &tombstone_id)?.map(Into::into))
     }
 
@@ -500,7 +500,7 @@ impl MdbxVault {
         target_object_type: String,
         target_object_id: String,
     ) -> Result<Option<MdbxPermanentPurgeReceipt>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(TombstoneRepo::find_purge_receipt_by_target(
             &conn,
             &target_object_type,
@@ -515,7 +515,7 @@ impl MdbxVault {
         purge_eligible_at: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxTombstonePurgeScheduleResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());
@@ -538,7 +538,7 @@ impl MdbxVault {
         tombstone_id: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxPermanentPurgeReceipt, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());

@@ -4,6 +4,23 @@ pub struct ProjectRecord {
     pub title: String,
 }
 
+/// Complete-payload compatibility APIs have no per-object disclosure decision.
+/// Glitter clients must use summaries and the explicit authorized reveal path.
+pub(crate) fn reject_legacy_glitter_payload_access(
+    conn: &mdbx_storage::connection::VaultConnection,
+) -> Result<(), MdbxFfiError> {
+    if conn.is_glitter_session() || mdbx_storage::unlock::UnlockService::is_glitter(conn)? {
+        return Err(StorageError::Validation(
+            "Glitter requires object summaries and explicit policy-authorized reveal; legacy complete-payload access is disabled".into(),
+        ).into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "glitter_legacy_tests.rs"]
+mod glitter_legacy_tests;
+
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct MdbxCollectionProfile {
     pub collection_id: String,
@@ -314,8 +331,8 @@ use mdbx_storage::repo::{
 };
 
 use super::{
-    conservative_ffi_device_context, unix_now, MdbxAuthorizationDecision, MdbxDeviceContext,
-    MdbxFfiError, MdbxScopedAuthorizationDecision, MdbxVault,
+    unix_now, MdbxAuthorizationDecision, MdbxDeviceContext, MdbxFfiError,
+    MdbxScopedAuthorizationDecision, MdbxVault,
 };
 
 pub(crate) fn entry_for_project(
@@ -580,7 +597,7 @@ fn object_label_assignment_summary_from_core(
 #[uniffi::export]
 impl MdbxVault {
     pub fn create_project(&self, title: String) -> Result<ProjectRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let ctx = CommitContext::new(self.device_id.clone());
         let project = ProjectRepo::create(&conn, &ctx, &title, None, None)?;
         Ok(ProjectRecord {
@@ -596,7 +613,7 @@ impl MdbxVault {
         title: String,
         payload_json: String,
     ) -> Result<EntryRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let ctx = CommitContext::new(self.device_id.clone());
         let payload = parse_payload_json(&payload_json)?;
         let entry = EntryRepo::create(
@@ -618,7 +635,7 @@ impl MdbxVault {
         payload_json: String,
         payload_schema_version: u32,
     ) -> Result<MdbxObjectRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let ctx = CommitContext::new(self.device_id.clone());
         let payload = parse_payload_json(&payload_json)?;
         let object = EntryRepo::create_with_payload_schema_version(
@@ -638,7 +655,7 @@ impl MdbxVault {
         &self,
         object_id: String,
     ) -> Result<Option<MdbxObjectSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(ObjectSummaryRepo::get(&conn, &object_id)?.map(object_summary_from_core))
     }
 
@@ -658,7 +675,7 @@ impl MdbxVault {
     ) -> Result<MdbxObjectDisclosureResult, MdbxFfiError> {
         self.reveal_object_with_device_context_and_limits(
             object_id,
-            conservative_ffi_device_context(),
+            self.default_device_context()?,
             limits,
         )
     }
@@ -685,7 +702,7 @@ impl MdbxVault {
         limits: MdbxObjectDisclosureLimits,
     ) -> Result<MdbxObjectDisclosureResult, MdbxFfiError> {
         let limits = object_disclosure_limits(limits)?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let device = device.into_core(&self.device_id);
         object_disclosure_result(
             ObjectDisclosureService::reveal_with_active_session_and_limits(
@@ -705,7 +722,8 @@ impl MdbxVault {
         collection_id: String,
         object_id: String,
     ) -> Result<Option<MdbxObjectRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let Some(object) = EntryRepo::get_by_id(&conn, &object_id)? else {
             return Ok(None);
         };
@@ -722,7 +740,8 @@ impl MdbxVault {
         collection_id: String,
         object_type_id: Option<String>,
     ) -> Result<Vec<MdbxObjectRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let object_type_id = parse_optional_object_type_id(object_type_id)?;
         let objects = match object_type_id {
             Some(object_type_id) => {
@@ -740,7 +759,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let object_type_id = parse_optional_object_type_id(object_type_id)?;
         let page = ObjectSummaryRepo::list(
             &conn,
@@ -768,7 +787,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let object_type_id = parse_optional_object_type_id(object_type_id)?;
         let page = ObjectSummaryRepo::list_deleted_by_collection(
             &conn,
@@ -795,7 +814,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let object_type_id = parse_optional_object_type_id(object_type_id)?;
         let page = ObjectSummaryRepo::list_deleted_all(
             &conn,
@@ -822,7 +841,7 @@ impl MdbxVault {
         payload_json: String,
         payload_schema_version: u32,
     ) -> Result<MdbxObjectRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let expected_type = parse_object_type_id(&object_type_id)?;
         let mut object = entry_for_project(&conn, &collection_id, &object_id)?;
         if object.deleted {
@@ -857,7 +876,7 @@ impl MdbxVault {
         payload_json: String,
         payload_schema_version: u32,
     ) -> Result<MdbxObjectRelationRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let ctx = CommitContext::new(self.device_id.clone());
         let relation = ObjectRelationRepo::create(
             &conn,
@@ -878,7 +897,7 @@ impl MdbxVault {
         &self,
         relation_id: String,
     ) -> Result<Option<MdbxObjectRelationSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(
             ObjectMetadataSummaryRepo::get_relation(&conn, &relation_id)?
                 .map(object_relation_summary_from_core),
@@ -903,7 +922,7 @@ impl MdbxVault {
     ) -> Result<MdbxObjectRelationDisclosureResult, MdbxFfiError> {
         self.reveal_object_relation_with_device_context_and_limits(
             relation_id,
-            conservative_ffi_device_context(),
+            self.default_device_context()?,
             limits,
         )
     }
@@ -927,7 +946,7 @@ impl MdbxVault {
         limits: MdbxObjectMetadataDisclosureLimits,
     ) -> Result<MdbxObjectRelationDisclosureResult, MdbxFfiError> {
         let limits = object_metadata_disclosure_limits(limits)?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let device = device.into_core(&self.device_id);
         object_relation_disclosure_result(
             ObjectMetadataDisclosureService::reveal_relation_with_active_session_and_limits(
@@ -946,7 +965,8 @@ impl MdbxVault {
         &self,
         relation_id: String,
     ) -> Result<Option<MdbxObjectRelationRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         ObjectRelationRepo::get_by_id(&conn, &relation_id)?
             .as_ref()
             .map(object_relation_record)
@@ -958,7 +978,8 @@ impl MdbxVault {
         source_object_id: String,
         relation_kind: Option<String>,
     ) -> Result<Vec<MdbxObjectRelationRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let kind = relation_kind
             .as_deref()
             .map(parse_relation_kind)
@@ -976,7 +997,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectRelationSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let kind = relation_kind
             .as_deref()
             .map(parse_relation_kind)
@@ -1003,7 +1024,8 @@ impl MdbxVault {
         target_object_id: String,
         relation_kind: Option<String>,
     ) -> Result<Vec<MdbxObjectRelationRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let kind = relation_kind
             .as_deref()
             .map(parse_relation_kind)
@@ -1021,7 +1043,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectRelationSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let kind = relation_kind
             .as_deref()
             .map(parse_relation_kind)
@@ -1050,7 +1072,7 @@ impl MdbxVault {
         payload_json: String,
         payload_schema_version: u32,
     ) -> Result<MdbxObjectRelationRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let mut relation = ObjectRelationRepo::get_by_id(&conn, &relation_id)?
             .ok_or_else(|| StorageError::NotFound(relation_id.clone()))?;
         relation.relation_kind = parse_relation_kind(&relation_kind)?;
@@ -1061,7 +1083,7 @@ impl MdbxVault {
     }
 
     pub fn delete_object_relation(&self, relation_id: String) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         ObjectRelationRepo::soft_delete(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -1077,7 +1099,7 @@ impl MdbxVault {
         payload_json: String,
         payload_schema_version: u32,
     ) -> Result<MdbxObjectLabelRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let label = ObjectLabelRepo::create(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -1092,7 +1114,7 @@ impl MdbxVault {
         &self,
         label_id: String,
     ) -> Result<Option<MdbxObjectLabelSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         ObjectMetadataSummaryRepo::get_label(&conn, &label_id)?
             .map(object_label_summary_from_core)
             .transpose()
@@ -1113,7 +1135,7 @@ impl MdbxVault {
     ) -> Result<MdbxObjectLabelDisclosureResult, MdbxFfiError> {
         self.reveal_object_label_with_device_context_and_limits(
             label_id,
-            conservative_ffi_device_context(),
+            self.default_device_context()?,
             limits,
         )
     }
@@ -1137,7 +1159,7 @@ impl MdbxVault {
         limits: MdbxObjectMetadataDisclosureLimits,
     ) -> Result<MdbxObjectLabelDisclosureResult, MdbxFfiError> {
         let limits = object_metadata_disclosure_limits(limits)?;
-        let mut conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let device = device.into_core(&self.device_id);
         object_label_disclosure_result(
             ObjectMetadataDisclosureService::reveal_label_with_active_session_and_limits(
@@ -1156,7 +1178,8 @@ impl MdbxVault {
         &self,
         collection_id: String,
     ) -> Result<Vec<MdbxObjectLabelRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         ObjectLabelRepo::list_by_collection(&conn, &collection_id)?
             .iter()
             .map(object_label_record)
@@ -1169,7 +1192,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectLabelSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = ObjectMetadataSummaryRepo::list_labels(
             &conn,
             &collection_id,
@@ -1193,7 +1216,7 @@ impl MdbxVault {
         payload_json: String,
         payload_schema_version: u32,
     ) -> Result<MdbxObjectLabelRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let mut label = ObjectLabelRepo::get_by_id(&conn, &label_id)?
             .ok_or_else(|| StorageError::NotFound(label_id.clone()))?;
         label.name_ct = name.into_bytes();
@@ -1207,7 +1230,7 @@ impl MdbxVault {
     }
 
     pub fn delete_object_label(&self, label_id: String) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         ObjectLabelRepo::soft_delete(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -1221,7 +1244,7 @@ impl MdbxVault {
         object_id: String,
         label_id: String,
     ) -> Result<MdbxObjectLabelAssignmentRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(object_label_assignment_record(
             &ObjectLabelAssignmentRepo::create(
                 &conn,
@@ -1235,7 +1258,7 @@ impl MdbxVault {
         &self,
         object_id: String,
     ) -> Result<Vec<MdbxObjectLabelAssignmentRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(
             ObjectLabelAssignmentRepo::list_by_object(&conn, &object_id)?
                 .iter()
@@ -1250,7 +1273,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectLabelAssignmentSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = ObjectMetadataSummaryRepo::list_assignments_by_object(
             &conn,
             &object_id,
@@ -1273,7 +1296,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxObjectLabelAssignmentSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = ObjectMetadataSummaryRepo::list_assignments_by_label(
             &conn,
             &label_id,
@@ -1294,7 +1317,7 @@ impl MdbxVault {
         &self,
         assignment_id: String,
     ) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         ObjectLabelAssignmentRepo::soft_delete(
             &conn,
             &CommitContext::new(self.device_id.clone()),
@@ -1308,7 +1331,8 @@ impl MdbxVault {
         project_id: String,
         entry_type: Option<String>,
     ) -> Result<Vec<EntryRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let entry_type = parse_optional_entry_type(entry_type)?;
         let entries = match entry_type {
             Some(entry_type) => {
@@ -1324,7 +1348,8 @@ impl MdbxVault {
         project_id: String,
         entry_type: Option<String>,
     ) -> Result<Vec<EntryRecord>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let entry_type = parse_optional_entry_type(entry_type)?;
         let entries = match entry_type {
             Some(entry_type) => {
@@ -1343,7 +1368,7 @@ impl MdbxVault {
         title: String,
         payload_json: String,
     ) -> Result<EntryRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let expected_type = parse_entry_type(&entry_type)?;
         let mut entry = entry_for_project(&conn, &project_id, &entry_id)?;
         if entry.deleted {
@@ -1370,7 +1395,7 @@ impl MdbxVault {
     }
 
     pub fn delete_entry(&self, project_id: String, entry_id: String) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let entry = entry_for_project(&conn, &project_id, &entry_id)?;
         if entry.deleted {
             return Err(StorageError::ConstraintViolation(format!(
@@ -1390,7 +1415,8 @@ impl MdbxVault {
         project_id: String,
         entry_id: String,
     ) -> Result<EntryRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let entry = entry_for_project(&conn, &project_id, &entry_id)?;
         if !entry.deleted {
             return Err(StorageError::ConstraintViolation(format!(
@@ -1411,7 +1437,8 @@ impl MdbxVault {
         entry_id: String,
         target_project_id: String,
     ) -> Result<EntryRecord, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        reject_legacy_glitter_payload_access(&conn)?;
         let entry = entry_for_project(&conn, &project_id, &entry_id)?;
         if entry.deleted {
             return Err(StorageError::ConstraintViolation(format!(

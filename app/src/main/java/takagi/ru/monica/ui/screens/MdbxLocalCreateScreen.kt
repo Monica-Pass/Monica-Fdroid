@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -51,7 +52,6 @@ fun MdbxLocalCreateScreen(
     var useCustomDirectory by remember { mutableStateOf(false) }
     var customDirectoryUri by remember { mutableStateOf<Uri?>(null) }
     var submitted by remember { mutableStateOf(false) }
-
     val passwordRequired = unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD_AND_KEY_FILE
     val keyFileRequired = unlockMethod == MdbxUnlockMethod.KEY_FILE ||
@@ -138,20 +138,23 @@ fun MdbxLocalCreateScreen(
 
                 Button(
                     onClick = {
-                        submitted = true
-                        MdbxDiagLogger.append(
-                            "[MDBX][MdbxLocalCreateScreen] submitClicked name=${vaultName.trim().ifBlank { "<blank>" }} useCustomDirectory=$useCustomDirectory hasCustomUri=${customDirectoryUri != null} unlock=${unlockMethod.name} passwordRequired=$passwordRequired keyFileRequired=$keyFileRequired hasKeyFile=${keyFile != null} formValid=$isFormValid"
-                        )
-                        viewModel.createLocalVault(
-                            name = vaultName,
-                            masterPassword = masterPassword,
-                            unlockMethod = unlockMethod,
-                            keyFile = keyFile,
-                            tigaMode = selectedTigaMode,
-                            description = null,
-                            customDirectoryUri = if (useCustomDirectory) customDirectoryUri else null,
-                            engineType = selectedEngine
-                        )
+                        val submit: () -> Unit = submit@ {
+                            submitted = true
+                            MdbxDiagLogger.append(
+                                "[MDBX][MdbxLocalCreateScreen] submitClicked name=${vaultName.trim().ifBlank { "<blank>" }} useCustomDirectory=$useCustomDirectory hasCustomUri=${customDirectoryUri != null} unlock=${unlockMethod.name} passwordRequired=$passwordRequired keyFileRequired=$keyFileRequired hasKeyFile=${keyFile != null} formValid=$isFormValid"
+                            )
+                            viewModel.createLocalVault(
+                                name = vaultName,
+                                masterPassword = masterPassword,
+                                unlockMethod = unlockMethod,
+                                keyFile = keyFile,
+                                tigaMode = selectedTigaMode,
+                                description = null,
+                                customDirectoryUri = if (useCustomDirectory) customDirectoryUri else null,
+                                engineType = selectedEngine
+                            )
+                        }
+                        submit()
                     },
                     enabled = isFormValid,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
@@ -218,6 +221,7 @@ fun MdbxLocalCreateScreen(
                             trailingContent = {
                                 Switch(
                                     checked = useCustomDirectory,
+                                    modifier = Modifier.testTag("mdbx_external_directory"),
                                     onCheckedChange = { useCustomDirectory = it }
                                 )
                             },

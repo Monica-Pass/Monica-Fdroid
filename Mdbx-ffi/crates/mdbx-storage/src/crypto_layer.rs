@@ -8,7 +8,7 @@ const FIELD_EPOCH_MAGIC: &[u8; 8] = b"MDBXFE2\0";
 const FIELD_EPOCH_HEADER_LEN: usize = FIELD_EPOCH_MAGIC.len() + 2;
 const FIELD_EPOCH_AAD_DOMAIN: &[u8] = b"mdbx-field-epoch-aad-v1";
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FieldKeyPurpose {
     Record,
     Attachment,
@@ -77,7 +77,21 @@ pub(crate) fn decrypt_field(
         return Ok(ciphertext.to_vec());
     };
 
-    if ciphertext.starts_with(FIELD_EPOCH_MAGIC) {
+    let cacheable = purpose == FieldKeyPurpose::Metadata
+        && field_name == "title"
+        && matches!(object_type, "project" | "entry");
+    if cacheable {
+        if let Some(title) = conn
+            .metadata_cache
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .get(object_type, object_id, field_name, ciphertext)
+        {
+            return Ok(title);
+        }
+    }
+
+    let plaintext = if ciphertext.starts_with(FIELD_EPOCH_MAGIC) {
         let (key_epoch_id, inner) = decode_epoch_envelope(ciphertext)?;
         let epoch_keyring = conn.keyring_for_epoch(key_epoch_id).ok_or_else(|| {
             StorageError::Validation(format!(
@@ -86,13 +100,20 @@ pub(crate) fn decrypt_field(
             ))
         })?;
         let aad = build_epoch_aad(key_epoch_id, object_type, object_id, field_name);
-        return mdbx_crypto::aead::decrypt(purpose.subkey(epoch_keyring), inner, &aad)
-            .map_err(StorageError::Crypto);
+        mdbx_crypto::aead::decrypt(purpose.subkey(epoch_keyring), inner, &aad)
+            .map_err(StorageError::Crypto)?
+    } else {
+        let aad = build_legacy_aad(object_type, object_id, field_name);
+        mdbx_crypto::aead::decrypt(purpose.subkey(legacy_keyring), ciphertext, &aad)
+            .map_err(StorageError::Crypto)?
+    };
+    if cacheable {
+        conn.metadata_cache
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .insert(object_type, object_id, field_name, ciphertext, &plaintext);
     }
-
-    let aad = build_legacy_aad(object_type, object_id, field_name);
-    mdbx_crypto::aead::decrypt(purpose.subkey(legacy_keyring), ciphertext, &aad)
-        .map_err(StorageError::Crypto)
+    Ok(plaintext)
 }
 
 fn encode_epoch_envelope(key_epoch_id: &str, inner: &[u8]) -> StorageResult<Vec<u8>> {
@@ -299,6 +320,142 @@ mod tests {
             .unwrap(),
             b"legacy mode"
         );
+    }
+
+    #[test]
+    fn title_cache_never_accepts_modified_ciphertext_or_other_aad() {
+        let conn = setup_unlocked();
+        conn.metadata_cache.lock().unwrap().configure(Some(
+            std::time::Instant::now() + std::time::Duration::from_secs(60),
+        ));
+        let ciphertext = encrypt_epoch_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            b"verified title",
+            "entry",
+            "a",
+            "title",
+        );
+        for _ in 0..2 {
+            assert_eq!(
+                decrypt_field(
+                    &conn,
+                    FieldKeyPurpose::Metadata,
+                    &ciphertext,
+                    "entry",
+                    "a",
+                    "title"
+                )
+                .unwrap(),
+                b"verified title"
+            );
+        }
+        assert_eq!(conn.metadata_cache_stats().hits, 1);
+        let mut corrupted = ciphertext.clone();
+        *corrupted.last_mut().unwrap() ^= 1;
+        assert!(decrypt_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            &corrupted,
+            "entry",
+            "a",
+            "title"
+        )
+        .is_err());
+        assert!(decrypt_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            &ciphertext,
+            "entry",
+            "b",
+            "title"
+        )
+        .is_err());
+        assert!(decrypt_field(
+            &conn,
+            FieldKeyPurpose::Record,
+            &ciphertext,
+            "entry",
+            "a",
+            "title"
+        )
+        .is_err());
+        assert!(decrypt_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            &ciphertext,
+            "project",
+            "a",
+            "title"
+        )
+        .is_err());
+        assert_eq!(conn.metadata_cache_stats().hits, 1);
+    }
+
+    #[test]
+    fn title_cache_tracks_current_rows_and_is_wiped_with_session() {
+        let mut conn = setup_unlocked();
+        conn.metadata_cache.lock().unwrap().configure(Some(
+            std::time::Instant::now() + std::time::Duration::from_secs(60),
+        ));
+        let ciphertext = encrypt_epoch_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            b"old title",
+            "entry",
+            "a",
+            "title",
+        );
+        decrypt_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            &ciphertext,
+            "entry",
+            "a",
+            "title",
+        )
+        .unwrap();
+        let updated = encrypt_epoch_field(
+            &conn,
+            FieldKeyPurpose::Metadata,
+            b"new title",
+            "entry",
+            "a",
+            "title",
+        );
+        assert_eq!(
+            decrypt_field(
+                &conn,
+                FieldKeyPurpose::Metadata,
+                &updated,
+                "entry",
+                "a",
+                "title"
+            )
+            .unwrap(),
+            b"new title"
+        );
+        let payload = encrypt_epoch_field(
+            &conn,
+            FieldKeyPurpose::Record,
+            b"never cache this secret",
+            "entry",
+            "a",
+            "payload",
+        );
+        decrypt_field(
+            &conn,
+            FieldKeyPurpose::Record,
+            &payload,
+            "entry",
+            "a",
+            "payload",
+        )
+        .unwrap();
+        assert_eq!(conn.metadata_cache_stats().entries, 1);
+        conn.clear_session();
+        assert_eq!(conn.metadata_cache_stats().entries, 0);
+        assert_eq!(conn.metadata_cache_stats().retained_bytes, 0);
     }
 
     #[test]

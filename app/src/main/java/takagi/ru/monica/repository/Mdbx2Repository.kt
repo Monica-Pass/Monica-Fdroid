@@ -37,6 +37,7 @@ import takagi.ru.monica.data.MdbxSyncStateSnapshot
 import takagi.ru.monica.data.MdbxSyncStateStore
 import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.capabilities
+import takagi.ru.monica.data.supports
 import takagi.ru.monica.data.isRemoteSource
 import takagi.ru.monica.data.PasskeyEntry
 import takagi.ru.monica.data.PasswordEntry
@@ -94,6 +95,11 @@ class Mdbx2Repository(
 
     override suspend fun requiresStrictMutationConsistency(databaseId: Long): Boolean = true
 
+    override suspend fun requireRoomMirrorAllowed(databaseId: Long) {
+        val database = databaseDao.getDatabaseById(databaseId) ?: error("MDBX database not found")
+        requireMdbxAppReplicaAllowed(database)
+    }
+
     suspend fun createInitializedVaultFile(
         tigaMode: MdbxTigaMode,
         password: String
@@ -127,9 +133,61 @@ class Mdbx2Repository(
         sessions.validatePasswordVaultFile(file, password)
     }
 
-    internal suspend fun validateVaultFile(file: File, credential: MdbxVaultCredential) {
+    internal suspend fun validateVaultFile(file: File, credential: MdbxVaultCredential): MdbxTigaMode =
         sessions.validateVaultFile(file, credential)
+
+    /** Authenticated native policy, not the editable Room mode label, is authoritative. */
+    internal suspend fun requireRemoteSyncInfo(databaseId: Long): uniffi.mdbx_ffi.VaultInfo {
+        val database = databaseDao.getDatabaseById(databaseId) ?: error("MDBX database not found")
+        require(database.tigaModeEnum != MdbxTigaMode.GLITTER &&
+            !takagi.ru.monica.repository.MdbxClientModePolicy.isEnvelope(database.encryptedPassword)) {
+            "Glitter is not supported by the Android client."
+        }
+        return sessions.withNativeReadVault(databaseId) { _, vault ->
+            requireMdbxRemoteVaultAllowed(vault)
+            vault.info()
+        }
     }
+
+    internal suspend fun validateRemoteVaultFile(file: File, credential: MdbxVaultCredential): MdbxTigaMode {
+        val mode = validateVaultFile(file, credential)
+        require(mode != MdbxTigaMode.GLITTER) {
+            "Glitter is not supported by the Android client."
+        }
+        return mode
+    }
+
+    /** An unknown remote file is only staging data until its authenticated policy is accepted. */
+    internal suspend fun downloadRemoteVaultFile(
+        file: File,
+        credential: MdbxVaultCredential,
+        download: suspend (File) -> Unit
+    ): MdbxTigaMode {
+        require(sessions.isOwnedVaultFile(file) && !file.exists()) {
+            "Remote bootstrap requires a new app-owned temporary file"
+        }
+        return try {
+            download(file)
+            validateRemoteVaultFile(file, credential)
+        } catch (error: Throwable) {
+            withContext(kotlinx.coroutines.NonCancellable) {
+                check(deleteOwnedVaultFile(file)) { "Cannot clean up rejected remote bootstrap" }
+            }
+            throw error
+        }
+    }
+
+    internal suspend fun saveNativeObject(databaseId: Long, original: MdbxNativeObjectDetail?, title: String, type: String,
+        payload: String, uploads: List<NativeApiTokenUpload> = emptyList(), removedAttachmentIds: Set<String> = emptySet(), targetCollectionId: String? = null): String =
+        sessions.withMutatingVault(databaseId) { _, vault -> saveMdbxNativeObject(vault, original, title, type, payload, uploads, removedAttachmentIds, targetCollectionId) }
+
+    internal suspend fun deleteNativeObject(databaseId: Long, original: MdbxNativeObjectDetail) =
+        sessions.withMutatingVault(databaseId) { _, vault -> deleteMdbxNativeObject(vault, original) }
+
+    internal suspend fun readNativeAttachment(databaseId: Long, original: MdbxNativeObjectDetail, attachmentId: String): ByteArray =
+        sessions.withNativeReadVault(databaseId, MdbxTigaScope(MdbxTigaScopeType.ENTRY, original.summary.id)) { _, vault ->
+            readMdbxNativeAttachment(vault, original, attachmentId)
+        }
 
     internal suspend fun refreshExternalWorkingCopy(databaseId: Long) {
         sessions.refreshExternalWorkingCopy(databaseId)
@@ -150,7 +208,9 @@ class Mdbx2Repository(
 
     /** Read native objects directly; no Room password projection or type conversion. */
     suspend fun listNativeApiTokens(databaseId: Long): List<NativeApiTokenSummary> =
-        sessions.withNativeReadVault(databaseId) { _, vault ->
+        sessions.withNativeReadVault(databaseId) { database, vault ->
+            if (database.tigaModeEnum == MdbxTigaMode.GLITTER ||
+                takagi.ru.monica.repository.MdbxClientModePolicy.isEnvelope(database.encryptedPassword)) return@withNativeReadVault emptyList()
             val collections = vault.listAllProjects()
             val rootCollectionId = Mdbx2VaultSessionExecutor.rootProjectId(vault.info().vaultId)
             val byId = collections.associateBy { it.collectionId }
@@ -180,7 +240,8 @@ class Mdbx2Repository(
 
     suspend fun readNativeApiToken(summary: NativeApiTokenSummary): NativeApiToken =
         sessions.withNativeReadVault(summary.databaseId,
-            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, summary.entryId)) { _, vault ->
+            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, summary.entryId)) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             val entry = vault.revealObjectWithLimits(summary.entryId,
                 uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(ApiTokenPayload.MAX_BYTES.toULong())).`object`
                 ?: error("Native token disclosure was not authorized")
@@ -194,7 +255,8 @@ class Mdbx2Repository(
     /** Detail/editor navigation reads one object, not every token in the database. */
     suspend fun readNativeApiToken(databaseId: Long, entryId: String): NativeApiToken =
         sessions.withNativeReadVault(databaseId,
-            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, entryId)) { _, vault ->
+            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, entryId)) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             val entry = vault.revealObjectWithLimits(entryId,
                 uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(ApiTokenPayload.MAX_BYTES.toULong())).`object`
                 ?: error("Native token disclosure was not authorized")
@@ -225,6 +287,7 @@ class Mdbx2Repository(
         uploads: List<NativeApiTokenUpload> = emptyList(),
         removedAttachmentIds: Set<String> = emptySet(),
     ): NativeApiTokenSummary {
+        requireRoomMirrorAllowed(databaseId)
         require(ApiTokenPayload.isValidStorageName(title))
         require(ApiTokenPayload.isValidForStorage(payload)) { "Invalid native token payload" }
         require(ApiTokenMetadata.isValid(metadata)) { "Invalid token custom fields" }
@@ -349,6 +412,7 @@ class Mdbx2Repository(
 
     suspend fun deleteNativeApiToken(original: NativeApiToken) {
         val summary = original.summary
+        requireRoomMirrorAllowed(summary.databaseId)
         sessions.withMutatingVault(summary.databaseId) { _, vault ->
             val current = vault.revealObjectWithLimits(summary.entryId,
                 uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(ApiTokenPayload.MAX_BYTES.toULong())).`object`
@@ -401,7 +465,8 @@ class Mdbx2Repository(
 
     suspend fun readNativeApiTokenAttachment(token: NativeApiToken, attachmentId: String): ByteArray =
         sessions.withNativeReadVault(token.summary.databaseId,
-            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, token.summary.entryId)) { _, vault ->
+            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, token.summary.entryId)) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             val entry = vault.revealObjectWithLimits(token.summary.entryId,
                 uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(ApiTokenPayload.MAX_BYTES.toULong())).`object`
                 ?: error("Native token disclosure was not authorized")
@@ -417,12 +482,14 @@ class Mdbx2Repository(
         sessions.withNativeReadVault(databaseId) { _, vault -> readMdbxNativeBrowser(vault) }
 
     internal suspend fun managerCapture(databaseId: Long, id: String): MdbxManagerObject =
-        sessions.withNativeReadVault(databaseId, MdbxTigaScope(MdbxTigaScopeType.ENTRY, id)) { _, vault ->
+        sessions.withNativeReadVault(databaseId, MdbxTigaScope(MdbxTigaScopeType.ENTRY, id)) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             captureMdbxManagerObject(vault, id)
         }
 
     internal suspend fun managerCopy(databaseId: Long, value: MdbxManagerObject, folder: String?, groups: MutableMap<String, String> = mutableMapOf()): String =
-        sessions.withMutatingVault(databaseId) { _, vault ->
+        sessions.withMutatingVault(databaseId) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             try { copyMdbxManagerObject(vault, value, folder, groups) }
             finally { markPendingUpload(databaseId) }
         }
@@ -491,7 +558,8 @@ class Mdbx2Repository(
 
     internal suspend fun readUnknownEntry(databaseId: Long, entryId: String): MdbxStoredVaultEntry =
         sessions.withNativeReadVault(databaseId,
-            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, entryId)) { _, vault ->
+            uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.ENTRY, entryId)) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             val record = vault.revealObjectWithLimits(entryId,
                 uniffi.mdbx_ffi.MdbxObjectDisclosureLimits(4uL * 1024uL * 1024uL)).`object`
                 ?: error("MDBX object disclosure was not authorized")
@@ -500,7 +568,8 @@ class Mdbx2Repository(
         }
 
     override suspend fun readStoredEntries(databaseId: Long): List<MdbxStoredVaultEntry> =
-        sessions.withNativeReadVault(databaseId) { _, vault ->
+        sessions.withNativeReadVault(databaseId) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             buildList {
                 vault.listAllProjects().forEach { project ->
                     vault.listEntries(project.collectionId, null).forEach { entry ->
@@ -514,7 +583,8 @@ class Mdbx2Repository(
         }
 
     override suspend fun readStoredAttachments(databaseId: Long): List<MdbxStoredAttachment> =
-        sessions.withVault(databaseId) { _, vault ->
+        sessions.withVault(databaseId) { database, vault ->
+            requireMdbxAppReplicaAllowed(database)
             val logicalEntryIds = vault.listAllProjects()
                 .flatMap { project ->
                     vault.listEntries(project.collectionId, null) +
@@ -865,15 +935,22 @@ class Mdbx2Repository(
     }
 
     override suspend fun upsertPassword(entry: PasswordEntry) {
+        entry.mdbxDatabaseId?.let { requireRoomMirrorAllowed(it) }
         passwordMutation(entry)?.let { upsertMutations(listOf(it)) }
     }
 
     override suspend fun upsertPasswords(entries: List<PasswordEntry>) {
+        entries.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { requireRoomMirrorAllowed(it) }
         upsertMutations(entries.mapNotNull { passwordMutation(it) })
     }
 
     /** Repair only values this installation can authenticate, preserving the complete native payload. */
     internal suspend fun repairReadablePasswordCiphertexts(databaseId: Long): Int {
+        val database = databaseDao.getDatabaseById(databaseId) ?: error("MDBX database not found")
+        // This legacy app-ciphertext repair scans plaintext payloads. Glitter has no
+        // app replica and must never enter that path, even before a sync or while locked.
+        if (database.tigaModeEnum == MdbxTigaMode.GLITTER ||
+            takagi.ru.monica.repository.MdbxClientModePolicy.isEnvelope(database.encryptedPassword)) return 0
         val candidates = readStoredEntries(databaseId).filter { !it.deleted && it.entryType == "login" }
         var repaired = 0
         for (stored in candidates) {
@@ -909,6 +986,7 @@ class Mdbx2Repository(
         passkeys: List<PasskeyEntry>,
         onCommitted: (Set<String>) -> Unit,
     ) {
+        requireRoomMirrorAllowed(databaseId)
         require(passwords.all { it.mdbxDatabaseId == databaseId } &&
             secureItems.all { it.mdbxDatabaseId == databaseId } && passkeys.all { it.mdbxDatabaseId == databaseId })
         if (passwords.isEmpty() && secureItems.isEmpty() && passkeys.isEmpty()) return
@@ -957,10 +1035,12 @@ class Mdbx2Repository(
     }
 
     override suspend fun upsertSecureItem(item: SecureItem) {
+        item.mdbxDatabaseId?.let { requireRoomMirrorAllowed(it) }
         secureItemMutation(item)?.let { upsertMutations(listOf(it)) }
     }
 
     override suspend fun upsertSecureItems(items: List<SecureItem>) {
+        items.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { requireRoomMirrorAllowed(it) }
         upsertMutations(items.mapNotNull { secureItemMutation(it) })
     }
 
@@ -975,10 +1055,12 @@ class Mdbx2Repository(
     }
 
     override suspend fun upsertPasskey(passkey: PasskeyEntry) {
+        passkey.mdbxDatabaseId?.let { requireRoomMirrorAllowed(it) }
         passkeyMutation(passkey)?.let { upsertMutations(listOf(it)) }
     }
 
     override suspend fun upsertPasskeys(passkeys: List<PasskeyEntry>) {
+        passkeys.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { requireRoomMirrorAllowed(it) }
         upsertMutations(passkeys.mapNotNull { passkeyMutation(it) })
     }
 
@@ -1056,7 +1138,7 @@ class Mdbx2Repository(
                 currentDeviceId = vault.info().deviceId,
                 formatVersion = "MDBX2",
                 releaseLabel = "Rust MDBX2",
-                capabilityFlags = database.engineTypeEnum.capabilities
+                capabilityFlags = database.engineTypeEnum.capabilities.filter(database::supports).toSet()
                     .joinToString(separator = ",") { capability ->
                         capability.name.lowercase().replace('_', '-')
                     },

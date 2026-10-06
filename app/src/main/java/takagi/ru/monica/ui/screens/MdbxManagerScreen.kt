@@ -95,6 +95,7 @@ import takagi.ru.monica.data.LocalMdbxDatabase
 import takagi.ru.monica.data.MdbxCapability
 import takagi.ru.monica.data.MdbxEngineType
 import takagi.ru.monica.data.isUsable
+import takagi.ru.monica.data.isUnsupportedGlitter
 import takagi.ru.monica.data.MdbxSourceType
 import takagi.ru.monica.data.MdbxTigaMode
 import takagi.ru.monica.data.MdbxSyncStatus
@@ -509,7 +510,7 @@ fun MdbxManagerScreen(
                                 null
                             },
                             onSetDefault = { viewModel.setAsDefault(db.id) },
-                            onDelete = { showDeleteDialog = db }
+                            onDelete = { showDeleteDialog = db },
                         )
                     } ?: EmptyMdbxState(
                         onCreateClick = {
@@ -530,7 +531,7 @@ fun MdbxManagerScreen(
                 }
                 is MdbxManagerPage.Native -> {
                     Box(Modifier.consumeWindowInsets(padding)) {
-                        MdbxNativeManagerScreen(current.databaseId, displayedDatabase?.name ?: "MDBX", viewModel, goBack)
+                        MdbxNativeManagerScreen(current.databaseId, displayedDatabase?.name ?: "MDBX", viewModel, onBack = goBack)
                     }
                 }
                 is MdbxManagerPage.Conflict -> {
@@ -1307,7 +1308,7 @@ internal fun MdbxVaultDetailPage(
     onMigrate: (() -> Unit)?,
     onSetDefault: () -> Unit,
     onDelete: () -> Unit,
-    onShowNative: (() -> Unit)? = null
+    onShowNative: (() -> Unit)? = null,
 ) {
     val strings = rememberScreenStrings()
     val context = LocalContext.current
@@ -1417,8 +1418,8 @@ internal fun MdbxLegacyUnavailablePage(
         item {
             MdbxDetailHeroCard(
                 icon = Icons.Default.Warning,
-                title = strings.get(R.string.mdbx_legacy_unavailable_title),
-                subtitle = strings.get(R.string.mdbx_legacy_unavailable_description),
+                title = strings.get(if (database.isUnsupportedGlitter) R.string.mdbx_client_mode_unsupported_title else R.string.mdbx_legacy_unavailable_title),
+                subtitle = strings.get(if (database.isUnsupportedGlitter) R.string.mdbx_client_mode_unsupported else R.string.mdbx_legacy_unavailable_description),
                 warning = true
             )
         }
@@ -1433,7 +1434,7 @@ internal fun MdbxLegacyUnavailablePage(
                 }
             })
         }
-        if (database.isRemoteSource()) {
+        if (database.isRemoteSource() && !database.isUnsupportedGlitter) {
             item {
                 Text(strings.get(R.string.mdbx_legacy_remote_copy_warning),
                     style = MaterialTheme.typography.bodyMedium,
@@ -2470,6 +2471,7 @@ private fun MdbxVaultTile(
     val warning = conflictCount > 0 || healthIssueCount > 0 || diagnostics?.isReadable == false ||
         status == MdbxSyncStatus.FAILED.name || status == MdbxSyncStatus.CONFLICT.name || !database.isUsable
     val statusText = when {
+        database.isUnsupportedGlitter -> strings.get(R.string.mdbx_client_mode_unsupported_title)
         !database.isUsable -> strings.get(R.string.mdbx_legacy_unavailable_badge)
         conflictCount > 0 -> strings.get(R.string.mdbx_ui_conflict_count_badge, conflictCount)
         healthIssueCount > 0 -> strings.get(R.string.mdbx_ui_health_count_badge, healthIssueCount)

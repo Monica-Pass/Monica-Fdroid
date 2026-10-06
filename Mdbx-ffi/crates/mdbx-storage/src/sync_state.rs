@@ -168,13 +168,17 @@ impl<'de> Deserialize<'de> for SyncStatePayload {
             tombstone_acknowledgements: take(&mut fields, "tombstone_acknowledgements", false)?,
             purge_receipts: take(&mut fields, "purge_receipts", false)?,
             branches: take(&mut fields, "branches", true)?,
-            extensions: fields.into_iter().map(|(key, raw)| {
-                mdbx_core::json::from_str(raw.get()).map(|value| (key, value)).map_err(D::Error::custom)
-            }).collect::<Result<_, _>>()?,
+            extensions: fields
+                .into_iter()
+                .map(|(key, raw)| {
+                    mdbx_core::json::from_str(raw.get())
+                        .map(|value| (key, value))
+                        .map_err(D::Error::custom)
+                })
+                .collect::<Result<_, _>>()?,
         })
     }
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct KeyEpochState {
@@ -1534,13 +1538,19 @@ mod tests {
         let (conn, _) = setup();
         let mut state = collect_sync_state(&conn).unwrap();
         let literal = mdbx_core::json::from_str(r#"{"$serde_json::private::Number":"123","nested":{"$serde_json::private::RawValue":"null"},"n":123456789012345678901234567890,"f":1.2345678901234567890123456789}"#).unwrap();
-        state.extensions.insert("com.example.future".into(), literal.clone());
+        state
+            .extensions
+            .insert("com.example.future".into(), literal.clone());
         let encoded = serialize_state_bounded(&state, SyncStateLimits::default()).unwrap();
         let decoded: SyncStatePayload = serde_json::from_slice(&encoded).unwrap();
         assert_eq!(decoded.extensions["com.example.future"], literal);
         let reencoded = serialize_state_bounded(&decoded, SyncStateLimits::default()).unwrap();
         assert_eq!(encoded, reencoded);
-        let duplicate = String::from_utf8(encoded.clone()).unwrap().replacen("{", "{\"format\":\"duplicate\",", 1);
+        let duplicate = String::from_utf8(encoded.clone()).unwrap().replacen(
+            "{",
+            "{\"format\":\"duplicate\",",
+            1,
+        );
         assert!(serde_json::from_str::<SyncStatePayload>(&duplicate).is_err());
     }
 

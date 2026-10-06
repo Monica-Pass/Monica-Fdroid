@@ -702,29 +702,29 @@ pub struct MdbxIntegrityRootSyncSession {
 #[uniffi::export]
 impl MdbxSyncWireSession {
     pub fn resume(&self) -> Result<MdbxSyncWireResume, MdbxFfiError> {
-        let wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         Ok(wire.resume().clone().into())
     }
 
     pub fn restore_resume(&self, resume: MdbxSyncWireResume) -> Result<(), MdbxFfiError> {
-        let mut wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         *wire = SyncWireSession::restore(resume.into_core())?;
         Ok(())
     }
 
     pub fn pending_inbound_sequence(&self) -> Result<Option<u64>, MdbxFfiError> {
-        let wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         Ok(wire.pending_inbound_sequence())
     }
 
     pub fn acknowledge_inbound(&self, sequence: u64) -> Result<(), MdbxFfiError> {
-        let mut wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         wire.acknowledge_inbound(sequence)?;
         Ok(())
     }
 
     pub fn discard_inbound(&self, sequence: u64) -> Result<(), MdbxFfiError> {
-        let mut wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         wire.discard_inbound(sequence)?;
         Ok(())
     }
@@ -935,17 +935,17 @@ impl MdbxSyncWireSession {
         message: SyncMessage,
         in_reply_to: Option<u64>,
     ) -> Result<Vec<u8>, MdbxFfiError> {
-        let mut wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         Ok(wire.encode_outbound(message, in_reply_to, self.limits)?)
     }
 
     fn accept(&self, bytes: Vec<u8>) -> Result<SyncWireFrame, MdbxFfiError> {
-        let mut wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         Ok(wire.accept_inbound_bytes(&bytes, self.limits)?)
     }
 
     fn reject_wrong_message<T>(&self, sequence: u64, expected: &str) -> Result<T, MdbxFfiError> {
-        let mut wire = self.wire.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut wire = self.wire.lock().map_err(MdbxFfiError::from)?;
         wire.discard_inbound(sequence)?;
         Err(MdbxFfiError::SyncProtocol {
             message: format!("expected {expected} message in sync wire frame"),
@@ -956,10 +956,7 @@ impl MdbxSyncWireSession {
 #[uniffi::export]
 impl MdbxIntegrityRootSyncSession {
     pub fn hello(&self) -> Result<MdbxIntegrityRootSyncHello, MdbxFfiError> {
-        let negotiator = self
-            .negotiator
-            .lock()
-            .map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let negotiator = self.negotiator.lock().map_err(MdbxFfiError::from)?;
         Ok(negotiator.local_hello()?.into())
     }
 
@@ -968,38 +965,26 @@ impl MdbxIntegrityRootSyncSession {
         hello: MdbxIntegrityRootSyncHello,
     ) -> Result<MdbxIntegrityRootSyncHello, MdbxFfiError> {
         let hello = hello.into_request()?;
-        let mut negotiator = self
-            .negotiator
-            .lock()
-            .map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut negotiator = self.negotiator.lock().map_err(MdbxFfiError::from)?;
         Ok(negotiator.on_hello(&hello)?.into())
     }
 
     pub fn accept_hello_ack(&self, hello: MdbxIntegrityRootSyncHello) -> Result<(), MdbxFfiError> {
         let hello = hello.into_response()?;
-        let mut negotiator = self
-            .negotiator
-            .lock()
-            .map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut negotiator = self.negotiator.lock().map_err(MdbxFfiError::from)?;
         negotiator.on_hello_ack(&hello)?;
         Ok(())
     }
 
     pub fn integrity_root_is_negotiated(&self) -> Result<bool, MdbxFfiError> {
-        let negotiator = self
-            .negotiator
-            .lock()
-            .map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let negotiator = self.negotiator.lock().map_err(MdbxFfiError::from)?;
         Ok(negotiator.authenticated_state_root_is_negotiated())
     }
 
     pub fn remote_integrity_root_checkpoint(
         &self,
     ) -> Result<Option<MdbxAuthenticatedStateRootCheckpoint>, MdbxFfiError> {
-        let negotiator = self
-            .negotiator
-            .lock()
-            .map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let negotiator = self.negotiator.lock().map_err(MdbxFfiError::from)?;
         Ok(negotiator
             .remote_authenticated_state_root()
             .cloned()
@@ -1010,45 +995,45 @@ impl MdbxIntegrityRootSyncSession {
 #[uniffi::export]
 impl MdbxBlobSyncSession {
     pub fn hello(&self) -> Result<MdbxSyncHello, MdbxFfiError> {
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client.hello()?.into())
     }
 
     pub fn accept_hello(&self, hello: MdbxSyncHello) -> Result<MdbxSyncHello, MdbxFfiError> {
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client.on_hello(&hello.into_request())?.into())
     }
 
     pub fn accept_hello_ack(&self, hello: MdbxSyncHello) -> Result<(), MdbxFfiError> {
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.on_hello_ack(&hello.into_response())?;
         Ok(())
     }
 
     pub fn blob_replication_is_negotiated(&self) -> Result<bool, MdbxFfiError> {
-        let client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client.blob_replication_is_negotiated())
     }
 
     pub fn begin_blob_sync(&self, namespace_id: String) -> Result<(), MdbxFfiError> {
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.begin_blob_sync(namespace_id)?;
         Ok(())
     }
 
     pub fn restore_blob_sync(&self, resume: MdbxBlobSyncResume) -> Result<(), MdbxFfiError> {
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.restore_blob_sync(resume.into())?;
         Ok(())
     }
 
     pub fn blob_resume(&self) -> Result<Option<MdbxBlobSyncResume>, MdbxFfiError> {
-        let client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client.blob_resume().cloned().map(Into::into))
     }
 
     pub fn blob_sync_phase(&self) -> Result<MdbxBlobSyncPhase, MdbxFfiError> {
-        let client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client.blob_sync_phase().into())
     }
 
@@ -1059,7 +1044,7 @@ impl MdbxBlobSyncSession {
         let page_size = usize::try_from(page_size).map_err(|_| MdbxFfiError::SyncProtocol {
             message: "Blob manifest page size cannot be represented locally".to_string(),
         })?;
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client.blob_manifest_request(page_size)?.into())
     }
 
@@ -1068,7 +1053,7 @@ impl MdbxBlobSyncSession {
         response: MdbxBlobManifestPageResponse,
     ) -> Result<(), MdbxFfiError> {
         let response: BlobManifestPageResponse = response.into();
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.validate_blob_manifest_response(&response)?;
         Ok(())
     }
@@ -1078,7 +1063,7 @@ impl MdbxBlobSyncSession {
         response: MdbxBlobManifestPageResponse,
     ) -> Result<(), MdbxFfiError> {
         let response: BlobManifestPageResponse = response.into();
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.acknowledge_blob_manifest_page(&response)?;
         Ok(())
     }
@@ -1092,7 +1077,7 @@ impl MdbxBlobSyncSession {
         let max_bytes = usize::try_from(max_bytes).map_err(|_| MdbxFfiError::SyncProtocol {
             message: "Blob chunk size cannot be represented locally".to_string(),
         })?;
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         Ok(client
             .blob_chunk_request(blob_id, total_size, max_bytes)?
             .into())
@@ -1103,7 +1088,7 @@ impl MdbxBlobSyncSession {
         response: MdbxBlobChunkResponse,
     ) -> Result<(), MdbxFfiError> {
         let response: BlobChunkResponse = response.into();
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.validate_blob_chunk_response(&response)?;
         Ok(())
     }
@@ -1113,7 +1098,7 @@ impl MdbxBlobSyncSession {
         response: MdbxBlobChunkResponse,
     ) -> Result<(), MdbxFfiError> {
         let response: BlobChunkResponse = response.into();
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.acknowledge_blob_chunk(&response)?;
         Ok(())
     }
@@ -1123,7 +1108,7 @@ impl MdbxBlobSyncSession {
         blob_id: String,
         total_size: u64,
     ) -> Result<(), MdbxFfiError> {
-        let mut client = self.client.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut client = self.client.lock().map_err(MdbxFfiError::from)?;
         client.restart_blob_transfer_after_abort(&blob_id, total_size)?;
         Ok(())
     }
@@ -1138,7 +1123,7 @@ impl MdbxVault {
         &self,
         destination: String,
     ) -> Result<MdbxIncrementalSyncBootstrapInfo, MdbxFfiError> {
-        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(MdbxFfiError::from)?;
         let backup = BackupService::create_portable_copy(&conn, Path::new(&destination))?;
         let checkpoint = PeerSyncService::current_checkpoint(&conn)?;
         Ok(MdbxIncrementalSyncBootstrapInfo {
@@ -1150,7 +1135,7 @@ impl MdbxVault {
     pub fn incremental_sync_checkpoint(
         &self,
     ) -> Result<MdbxIncrementalSyncCheckpoint, MdbxFfiError> {
-        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(MdbxFfiError::from)?;
         Ok(PeerSyncService::current_checkpoint(&conn)?.into())
     }
 
@@ -1166,7 +1151,7 @@ impl MdbxVault {
             .parent()
             .filter(|path| !path.as_os_str().is_empty())
             .unwrap_or_else(|| Path::new("."));
-        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(MdbxFfiError::from)?;
         let bundle = PeerSyncService::export_complete_bundle(&conn, &self.device_id)?;
         let integrity_key = sync_integrity_key(&conn)?;
         let mut temporary = NamedTempFile::new_in(parent).map_err(StorageError::from)?;
@@ -1189,7 +1174,7 @@ impl MdbxVault {
         &self,
         source: String,
     ) -> Result<MdbxManualSyncApplyResult, MdbxFfiError> {
-        let mut conn = self.conn.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.write().map_err(MdbxFfiError::from)?;
         let (bundle, info) = read_manual_bundle(&conn, Path::new(&source))?;
         if bundle.vault_id != self.vault_id {
             return Err(StorageError::ConstraintViolation(format!(
@@ -1225,7 +1210,7 @@ impl MdbxVault {
             ))
             .into());
         }
-        let conn = self.conn.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.write().map_err(MdbxFfiError::from)?;
         if conn.keyring().is_none() {
             return Err(StorageError::Validation(
                 "metadata benchmark requires an unlocked vault".to_string(),
@@ -1284,7 +1269,7 @@ impl MdbxVault {
             .parent()
             .filter(|path| !path.as_os_str().is_empty())
             .unwrap_or_else(|| Path::new("."));
-        let conn = self.conn.read().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.read().map_err(MdbxFfiError::from)?;
         let bundle = PeerSyncService::export_incremental_segment(
             &conn,
             &self.device_id,
@@ -1323,7 +1308,7 @@ impl MdbxVault {
         &self,
         source: String,
     ) -> Result<MdbxIncrementalSyncSegmentInfo, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let (bundle, file_size_bytes) = read_incremental_segment(&conn, Path::new(&source))?;
         segment_info(&bundle, file_size_bytes)
     }
@@ -1340,7 +1325,7 @@ impl MdbxVault {
         let expected_resume = expected_resume
             .map(MdbxIncrementalSyncResume::into_core)
             .transpose()?;
-        let mut conn = self.conn.write().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let mut conn = self.conn.write().map_err(MdbxFfiError::from)?;
         let (bundle, _) = read_incremental_segment(&conn, Path::new(&source))?;
         let applied = PeerSyncService::apply_incremental_segment(
             &mut conn,
@@ -1379,7 +1364,7 @@ impl MdbxVault {
             ))
             .into());
         }
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let references = collect_external_blob_references(&conn, BlobLifecycleLimits::default())?;
         let blob_store = vault_blob_store(&conn)?;
         let mut items = Vec::with_capacity(page_size.saturating_add(1));
@@ -1422,7 +1407,7 @@ impl MdbxVault {
         total_size: u64,
     ) -> Result<bool, MdbxFfiError> {
         validate_blob_id(&blob_id)?;
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         Ok(matches!(
             external_blob_state(&blob_store, &blob_id, total_size)?,
@@ -1447,7 +1432,7 @@ impl MdbxVault {
             ))
             .into());
         }
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         if external_blob_state(&blob_store, &blob_id, total_size)?
             != MdbxExternalBlobState::Available
@@ -1491,7 +1476,7 @@ impl MdbxVault {
             ))
             .into());
         }
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         blob_store.write_chunk(&blob_id, total_size, offset, &ciphertext, finalize)?;
         Ok(())
@@ -1504,7 +1489,7 @@ impl MdbxVault {
         now_unix_secs: i64,
         ttl_secs: i64,
     ) -> Result<MdbxExternalBlobLease, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         let lease = blob_store.acquire_lease(&blob_id, &owner_id, now_unix_secs, ttl_secs)?;
         Ok(MdbxExternalBlobLease {
@@ -1521,7 +1506,7 @@ impl MdbxVault {
         now_unix_secs: i64,
         ttl_secs: i64,
     ) -> Result<MdbxExternalBlobLease, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         let lease = blob_store.renew_lease(&blob_id, &owner_id, now_unix_secs, ttl_secs)?;
         Ok(MdbxExternalBlobLease {
@@ -1536,7 +1521,7 @@ impl MdbxVault {
         blob_id: String,
         owner_id: String,
     ) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         blob_store.release_lease(&blob_id, &owner_id)?;
         Ok(())
@@ -1547,7 +1532,7 @@ impl MdbxVault {
         blob_id: String,
         owner_id: String,
     ) -> Result<(), MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let blob_store = vault_blob_store(&conn)?;
         blob_store.abort_transfer(&blob_id, &owner_id)?;
         blob_store.release_lease(&blob_id, &owner_id)?;

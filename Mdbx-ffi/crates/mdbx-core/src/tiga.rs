@@ -17,6 +17,8 @@ pub enum TigaMode {
     Multi,
     /// 最高防护 — 增强暴力破解阻力
     Power,
+    /// 闪耀形态 — 高资源、便携密钥文件与不可降级的组合认证。
+    Glitter,
 }
 
 /// Tiga 对 vault 解锁方式的策略描述。
@@ -62,6 +64,7 @@ impl std::fmt::Display for TigaMode {
             TigaMode::Sky => write!(f, "sky"),
             TigaMode::Multi => write!(f, "multi"),
             TigaMode::Power => write!(f, "power"),
+            TigaMode::Glitter => write!(f, "glitter"),
         }
     }
 }
@@ -74,6 +77,7 @@ impl std::str::FromStr for TigaMode {
             "sky" => Ok(TigaMode::Sky),
             "multi" => Ok(TigaMode::Multi),
             "power" => Ok(TigaMode::Power),
+            "glitter" => Ok(TigaMode::Glitter),
             _ => Err(format!("unknown TigaMode: {}", s)),
         }
     }

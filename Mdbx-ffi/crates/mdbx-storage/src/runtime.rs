@@ -39,7 +39,21 @@ pub struct ReaderLease {
 
 /// A lock failure at the runtime boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RuntimeLockPoisoned;
+pub enum RuntimeLockPoisoned {
+    Poisoned,
+    AuthenticationRequired,
+}
+
+impl From<RuntimeLockPoisoned> for StorageError {
+    fn from(error: RuntimeLockPoisoned) -> Self {
+        match error {
+            RuntimeLockPoisoned::Poisoned => Self::RuntimeLockPoisoned,
+            RuntimeLockPoisoned::AuthenticationRequired => Self::Validation(
+                "Glitter requires an active password + key-file session".to_string(),
+            ),
+        }
+    }
+}
 
 /// Compatibility guard used by existing FFI facade code while ownership moves
 /// into `VaultRuntime`.
@@ -52,7 +66,8 @@ pub struct VaultRuntimeGuard<'a> {
 
 impl VaultRuntime {
     /// Take ownership of an already initialized/open connection.
-    pub fn from_connection(connection: VaultConnection) -> Self {
+    pub fn from_connection(mut connection: VaultConnection) -> Self {
+        connection.require_persisted_glitter_authentication();
         Self {
             state: Arc::new(RuntimeState {
                 connection: Mutex::new(connection),
@@ -75,11 +90,15 @@ impl VaultRuntime {
     }
 
     fn access(&self) -> Result<VaultRuntimeGuard<'_>, RuntimeLockPoisoned> {
-        let guard = self
+        let mut guard = self
             .state
             .connection
             .lock()
-            .map_err(|_| RuntimeLockPoisoned)?;
+            .map_err(|_| RuntimeLockPoisoned::Poisoned)?;
+        if guard.check_runtime_authentication().is_err() {
+            self.state.reader_generation.fetch_add(1, Ordering::AcqRel);
+            return Err(RuntimeLockPoisoned::AuthenticationRequired);
+        }
         let initial_total_changes = sqlite_total_changes(&guard);
         Ok(VaultRuntimeGuard {
             guard,
@@ -100,7 +119,7 @@ impl VaultRuntime {
         &self,
         f: impl FnOnce(&VaultConnection) -> StorageResult<T>,
     ) -> StorageResult<T> {
-        let guard = self.read().map_err(|_| StorageError::RuntimeLockPoisoned)?;
+        let guard = self.read().map_err(StorageError::from)?;
         f(&guard)
     }
 
@@ -109,9 +128,7 @@ impl VaultRuntime {
         &self,
         f: impl FnOnce(&mut VaultConnection) -> StorageResult<T>,
     ) -> StorageResult<T> {
-        let mut guard = self
-            .write()
-            .map_err(|_| StorageError::RuntimeLockPoisoned)?;
+        let mut guard = self.write().map_err(StorageError::from)?;
         f(&mut guard)
     }
 

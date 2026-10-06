@@ -147,7 +147,6 @@ import takagi.ru.monica.ui.components.PasswordEntryPickerBottomSheet
 import takagi.ru.monica.ui.components.PasswordCredentialPickerSheet
 import takagi.ru.monica.ui.components.PasswordCredentialEditorBar
 import takagi.ru.monica.ui.components.PasswordStrengthIndicator
-import takagi.ru.monica.ui.components.buildMultiStorageTarget
 import takagi.ru.monica.ui.components.keepassBlockReasonLabel
 import takagi.ru.monica.ui.components.SimpleIconPickerBottomSheet
 import takagi.ru.monica.ui.icons.MonicaIcons
@@ -328,6 +327,17 @@ fun AddEditPasswordScreen(
         }
     }
     if (sessionRevoked) return
+    val creationFilter by viewModel.categoryFilter.collectAsState()
+    val inheritedCreationTargets = takagi.ru.monica.ui.components.LocalTemplateTargets.current
+    val creationTargets = remember(passwordId, initialStorageExplicit, initialCategoryId,
+        initialKeePassDatabaseId, initialKeePassGroupPath, initialMdbxDatabaseId, initialMdbxFolderId,
+        initialBitwardenVaultId, initialBitwardenFolderId, inheritedCreationTargets) {
+        passwordCreationTargets(creationFilter, inheritedCreationTargets, initialStorageExplicit,
+            initialCategoryId, initialKeePassDatabaseId, initialKeePassGroupPath, initialMdbxDatabaseId,
+            initialMdbxFolderId, initialBitwardenVaultId, initialBitwardenFolderId)
+    }
+    if ((passwordId == null || passwordId <= 0) && MdbxPasswordCreationRoute(
+            creationTargets, localMdbxViewModel, onNavigateBack)) return
     key(passwordId, selectedTemplate) {
     PasswordEntryEditor(
         viewModel = viewModel,
@@ -357,6 +367,7 @@ fun AddEditPasswordScreen(
         onSwitchToWifi = onSwitchToWifi,
         onSwitchToSshKey = onSwitchToSshKey,
         onNavigateBack = onNavigateBack,
+        creationTargets = creationTargets,
         onSwitchToGpg = { selectedTemplate = "GPG_KEY" },
         onSwitchToApiKey = { selectedTemplate = "API_KEY" }
     )
@@ -392,6 +403,7 @@ private fun PasswordEntryEditor(
     onSwitchToApiToken: ((StorageTarget.Mdbx?) -> Unit)? = null,
     onSwitchToWifi: ((Long?) -> Unit)? = null,
     onSwitchToSshKey: ((Long?) -> Unit)? = null,
+    creationTargets: List<StorageTarget>,
     onSwitchToGpg: () -> Unit,
     onSwitchToApiKey: (StorageTarget) -> Unit,
     onNavigateBack: () -> Unit
@@ -616,13 +628,6 @@ private fun PasswordEntryEditor(
     var bitwardenFolderId by rememberSaveable { mutableStateOf<String?>(null) }
     val bitwardenRepository = remember { BitwardenRepository.getInstance(context) }
     val bitwardenVaults by bitwardenRepository.getAllVaultsFlow().collectAsState(initial = emptyList())
-    val hasExplicitInitialStorage = initialStorageExplicit || initialCategoryId != null ||
-        initialKeePassDatabaseId != null ||
-        initialKeePassGroupPath != null ||
-        initialMdbxDatabaseId != null ||
-        initialMdbxFolderId != null ||
-        initialBitwardenVaultId != null ||
-        initialBitwardenFolderId != null
     val selectedStorageTargets = remember { mutableStateListOf<StorageTarget>() }
     var existingReplicaTargetKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
     var currentReplicaGroupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -3151,61 +3156,12 @@ private fun PasswordEntryEditor(
         )
     }
 
-    val inheritedTemplateTargets = takagi.ru.monica.ui.components.LocalTemplateTargets.current
-    var templateTargetsInitialized by remember { mutableStateOf(false) }
-    LaunchedEffect(
-        isEditing,
-        currentFilter,
-        hasExplicitInitialStorage,
-        initialCategoryId,
-        initialStorageExplicit,
-        initialKeePassDatabaseId,
-        initialKeePassGroupPath,
-        initialMdbxDatabaseId,
-        initialMdbxFolderId,
-        initialBitwardenVaultId,
-        initialBitwardenFolderId
-    ) {
-        if (isEditing) return@LaunchedEffect
-        if (templateTargetsInitialized) return@LaunchedEffect
-        templateTargetsInitialized = true
-        if (!inheritedTemplateTargets.isNullOrEmpty()) {
-            setSelectedStorageTargets(inheritedTemplateTargets)
-            return@LaunchedEffect
+    LaunchedEffect(isEditing, creationTargets) {
+        if (!isEditing) {
+            existingReplicaTargetKeys = emptySet()
+            currentReplicaGroupId = null
+            setSelectedStorageTargets(creationTargets)
         }
-        existingReplicaTargetKeys = emptySet()
-        currentReplicaGroupId = null
-        if (hasExplicitInitialStorage) {
-            setSelectedStorageTargets(
-                listOf(
-                    buildMultiStorageTarget(
-                        categoryId = initialCategoryId,
-                        keepassDatabaseId = initialKeePassDatabaseId,
-                        keepassGroupPath = initialKeePassGroupPath,
-                        mdbxDatabaseId = initialMdbxDatabaseId,
-                        mdbxFolderId = initialMdbxFolderId,
-                        bitwardenVaultId = initialBitwardenVaultId,
-                        bitwardenFolderId = initialBitwardenFolderId
-                    )
-                )
-            )
-            return@LaunchedEffect
-        }
-        val defaultTarget = when (val filter = currentFilter) {
-            is CategoryFilter.Custom -> StorageTarget.MonicaLocal(filter.categoryId)
-            is CategoryFilter.KeePassDatabase -> StorageTarget.KeePass(filter.databaseId, null)
-            is CategoryFilter.KeePassGroupFilter -> StorageTarget.KeePass(filter.databaseId, filter.groupPath)
-            is CategoryFilter.KeePassDatabaseStarred -> StorageTarget.KeePass(filter.databaseId, null)
-            is CategoryFilter.KeePassDatabaseUncategorized -> StorageTarget.KeePass(filter.databaseId, null)
-            is CategoryFilter.MdbxDatabase -> StorageTarget.Mdbx(filter.databaseId)
-            is CategoryFilter.MdbxFolderFilter -> StorageTarget.Mdbx(filter.databaseId, filter.folderId)
-            is CategoryFilter.BitwardenVault -> StorageTarget.Bitwarden(filter.vaultId, null)
-            is CategoryFilter.BitwardenFolderFilter -> StorageTarget.Bitwarden(filter.vaultId, filter.folderId)
-            is CategoryFilter.BitwardenVaultStarred -> StorageTarget.Bitwarden(filter.vaultId, null)
-            is CategoryFilter.BitwardenVaultUncategorized -> StorageTarget.Bitwarden(filter.vaultId, null)
-            else -> StorageTarget.MonicaLocal(null)
-        }
-        setSelectedStorageTargets(listOf(defaultTarget))
     }
 
     val topBarTitle = stringResource(

@@ -19,6 +19,7 @@ pub mod import;
 pub mod init;
 pub mod integrity_root;
 pub mod key_epoch;
+pub mod metadata_cache;
 pub mod migration;
 pub mod object_disclosure;
 pub mod object_metadata_disclosure;

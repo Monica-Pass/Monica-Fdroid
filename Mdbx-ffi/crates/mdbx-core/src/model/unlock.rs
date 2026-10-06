@@ -116,6 +116,7 @@ impl KdfParams {
     /// Sky   → 快速轻便  (8 MiB, 1 iterations, 1 parallelism)
     pub fn for_password_with_mode(mode: TigaMode) -> Self {
         let (ops_limit, mem_limit_kib, parallelism) = match mode {
+            TigaMode::Glitter => (10, 524288, 4),
             TigaMode::Power => (10, 262144, 4),
             TigaMode::Multi => (3, 65536, 2),
             TigaMode::Sky => (1, 8192, 1),
@@ -146,16 +147,44 @@ impl KdfParams {
         serde_json::to_vec(self).unwrap_or_default()
     }
 
-    /// 从当前参数推断 Tiga 模式。
-    /// 根据 `mem_limit_kib` 匹配最接近的预设。
+    /// Infer a profile for legacy password rewrapping, not authorization.
+    /// Glitter requires all parameters; legacy modes retain their historical
+    /// memory-based mapping. Use `meets_mode_strength` for security decisions.
     pub fn infer_tiga_mode(&self) -> TigaMode {
-        if self.mem_limit_kib >= 200_000 {
+        if self.meets_mode_strength(TigaMode::Glitter) {
+            TigaMode::Glitter
+        } else if self.mem_limit_kib >= 200_000 {
             TigaMode::Power
         } else if self.mem_limit_kib >= 50_000 {
             TigaMode::Multi
         } else {
             TigaMode::Sky
         }
+    }
+
+    /// Validate every security-relevant parameter; memory alone is not a KDF
+    /// strength proof. Salt length is checked separately for stored wrappers.
+    pub fn meets_mode_strength(&self, mode: TigaMode) -> bool {
+        let required = Self::for_password_with_mode(mode);
+        self.algorithm == "argon2id"
+            && self.ops_limit >= required.ops_limit
+            && self.mem_limit_kib >= required.mem_limit_kib
+            && self.parallelism >= required.parallelism
+            && self.output_len == required.output_len
+    }
+
+    /// Glitter-v1's supported resource budget, not merely a strength floor.
+    /// Imported parameters are unauthenticated until after derivation, so
+    /// accepting arbitrarily "stronger" values permits memory/CPU exhaustion.
+    /// Future budgets require an explicit new version rather than silent growth.
+    pub fn is_supported_glitter_v1(&self) -> bool {
+        let supported = Self::for_password_with_mode(TigaMode::Glitter);
+        self.algorithm == supported.algorithm
+            && self.ops_limit == supported.ops_limit
+            && self.mem_limit_kib == supported.mem_limit_kib
+            && self.parallelism == supported.parallelism
+            && self.output_len == supported.output_len
+            && (16..=64).contains(&self.salt.len())
     }
 
     pub fn from_json_bytes(data: &[u8]) -> Result<Self, String> {
@@ -166,6 +195,75 @@ impl KdfParams {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn glitter_v1_supported_budget_is_exact_and_separate_from_strength() {
+        let mut supported = KdfParams::for_password_with_mode(TigaMode::Glitter);
+        for length in [16, 32, 64] {
+            supported.salt = vec![5; length];
+            assert!(supported.is_supported_glitter_v1());
+        }
+        for field in ["memory", "iterations", "parallelism", "output", "salt"] {
+            let mut excessive = supported.clone();
+            match field {
+                "memory" => excessive.mem_limit_kib = u32::MAX,
+                "iterations" => excessive.ops_limit = u32::MAX,
+                "parallelism" => excessive.parallelism = u32::MAX,
+                "output" => excessive.output_len = u32::MAX,
+                _ => excessive.salt = vec![5; 65],
+            }
+            assert!(!excessive.is_supported_glitter_v1(), "{field}");
+            if field != "output" {
+                assert!(excessive.meets_mode_strength(TigaMode::Glitter));
+            }
+        }
+        for length in [0, 15] {
+            supported.salt = vec![5; length];
+            assert!(!supported.is_supported_glitter_v1());
+        }
+        for mode in [TigaMode::Sky, TigaMode::Multi, TigaMode::Power] {
+            let mut stronger = KdfParams::for_password_with_mode(mode);
+            stronger.mem_limit_kib *= 2;
+            stronger.ops_limit += 1;
+            assert!(
+                stronger.meets_mode_strength(mode),
+                "legacy strength remains a floor"
+            );
+        }
+    }
+
+    #[test]
+    fn glitter_kdf_checks_every_parameter_and_keeps_legacy_presets() {
+        let strong = KdfParams::for_password_with_mode(TigaMode::Glitter);
+        assert_eq!(
+            (strong.mem_limit_kib, strong.ops_limit, strong.parallelism),
+            (524288, 10, 4)
+        );
+        assert!(strong.meets_mode_strength(TigaMode::Glitter));
+        for field in ["algorithm", "memory", "iterations", "parallelism", "output"] {
+            let mut weak = strong.clone();
+            match field {
+                "algorithm" => weak.algorithm = "argon2i".into(),
+                "memory" => weak.mem_limit_kib = 262144,
+                "iterations" => weak.ops_limit = 1,
+                "parallelism" => weak.parallelism = 1,
+                _ => weak.output_len = 16,
+            }
+            assert!(!weak.meets_mode_strength(TigaMode::Glitter), "{field}");
+            assert_ne!(weak.infer_tiga_mode(), TigaMode::Glitter, "{field}");
+        }
+        for (mode, memory, ops, lanes) in [
+            (TigaMode::Sky, 8192, 1, 1),
+            (TigaMode::Multi, 65536, 3, 2),
+            (TigaMode::Power, 262144, 10, 4),
+        ] {
+            let params = KdfParams::for_password_with_mode(mode);
+            assert_eq!(
+                (params.mem_limit_kib, params.ops_limit, params.parallelism),
+                (memory, ops, lanes)
+            );
+        }
+    }
 
     #[test]
     fn unlock_method_type_roundtrips_combined_security_key() {

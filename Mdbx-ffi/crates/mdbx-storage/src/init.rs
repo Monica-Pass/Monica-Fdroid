@@ -49,6 +49,30 @@ pub fn initialize_vault(
     conn: &VaultConnection,
     params: &VaultInitParams,
 ) -> StorageResult<VaultInitResult> {
+    initialize_vault_with_device_context(
+        conn,
+        params,
+        &mdbx_core::tiga::DeviceContext {
+            assurance: mdbx_core::tiga::DeviceAssurance::Standard,
+            ..Default::default()
+        },
+    )
+}
+
+/// Capabilities are optional platform assertions, never discovered here.
+/// Standard clients can create portable Glitter vaults without hardware binding.
+pub fn initialize_vault_with_device_context(
+    conn: &VaultConnection,
+    params: &VaultInitParams,
+    device: &mdbx_core::tiga::DeviceContext,
+) -> StorageResult<VaultInitResult> {
+    let mode: mdbx_core::tiga::TigaMode = params
+        .default_tiga_mode
+        .parse()
+        .map_err(StorageError::Validation)?;
+    if mode == mdbx_core::tiga::TigaMode::Glitter {
+        crate::unlock::UnlockService::validate_glitter_device(device)?;
+    }
     let db = conn.inner();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -83,6 +107,17 @@ pub fn initialize_vault(
                 FORMAT_V1,
             ],
         )?;
+
+        if mode == mdbx_core::tiga::TigaMode::Glitter {
+            db.execute(
+                "UPDATE vault_meta SET critical_extensions = ?1, tiga_policy_version = ?2",
+                rusqlite::params![
+                    serde_json::to_string(&[crate::migration::GLITTER_EXTENSION])
+                        .map_err(|e| StorageError::Validation(e.to_string()))?,
+                    mdbx_core::tiga::GLITTER_POLICY_VERSION,
+                ],
+            )?;
+        }
 
         // 2. genesis commit
         // local_seq = 0，没有 parent

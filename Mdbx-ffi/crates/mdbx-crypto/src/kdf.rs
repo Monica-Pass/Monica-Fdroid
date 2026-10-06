@@ -15,6 +15,15 @@ pub struct Argon2Params {
 }
 
 impl Argon2Params {
+    /// Glitter retains Power's iteration cost and doubles its memory budget.
+    pub fn glitter() -> Self {
+        Self {
+            memory_kib: 524288,
+            iterations: 10,
+            parallelism: 4,
+            output_len: 32,
+        }
+    }
     /// Power 模式 — 最高防护。
     /// 高内存 + 高迭代，最大限度抵御离线暴力破解。
     pub fn power() -> Self {

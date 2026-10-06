@@ -76,13 +76,11 @@ fun MdbxWebDavOpenScreen(
     var selectedEngine by remember { mutableStateOf(MdbxEngineType.RUST_MDBX2) }
     var submitted by remember { mutableStateOf(false) }
 
-    val passwordRequired = selectedEngine == MdbxEngineType.RUST_MDBX2 ||
-        unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD ||
+
+    val passwordRequired = unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD_AND_KEY_FILE
-    val keyFileRequired = selectedEngine == MdbxEngineType.KOTLIN_MDBX1 &&
-        (unlockMethod == MdbxUnlockMethod.KEY_FILE ||
+    val keyFileRequired = unlockMethod == MdbxUnlockMethod.KEY_FILE ||
         unlockMethod == MdbxUnlockMethod.MASTER_PASSWORD_AND_KEY_FILE
-        )
 
     val normalizedMasterPassword = remember(masterPassword) {
         Normalizer.normalize(masterPassword, Normalizer.Form.NFC)
@@ -198,21 +196,24 @@ fun MdbxWebDavOpenScreen(
 
                 Button(
                     onClick = {
-                        selectedWebDavFile?.let { file ->
-                            submitted = true
-                            viewModel.connectToExistingWebDavVault(
-                                masterPassword = masterPassword,
-                                unlockMethod = unlockMethod,
-                                keyFile = keyFile,
-                                tigaMode = MdbxTigaMode.MULTI,
-                                serverUrl = serverUrl,
-                                username = username,
-                                webDavPassword = webDavPassword,
-                                remoteFilePath = file.path,
-                                description = null,
-                                engineType = selectedEngine
-                            )
+                        val submit: () -> Unit = submit@ {
+                            selectedWebDavFile?.let { file ->
+                                submitted = true
+                                viewModel.connectToExistingWebDavVault(
+                                    masterPassword = masterPassword,
+                                    unlockMethod = unlockMethod,
+                                    keyFile = keyFile,
+                                    tigaMode = MdbxTigaMode.MULTI,
+                                    serverUrl = serverUrl,
+                                    username = username,
+                                    webDavPassword = webDavPassword,
+                                    remoteFilePath = file.path,
+                                    description = null,
+                                    engineType = selectedEngine
+                                )
+                            }
                         }
+                        submit()
                     },
                     enabled = isFormValid,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
@@ -499,21 +500,20 @@ fun MdbxWebDavOpenScreen(
                                 onConfirmPasswordChange = { confirmPassword = it },
                                 passwordRequired = passwordRequired
                             )
-                            if (selectedEngine == MdbxEngineType.KOTLIN_MDBX1) {
-                                MdbxUnlockMethodSection(
-                                    unlockMethod = unlockMethod,
-                                    onUnlockMethodChange = { unlockMethod = it },
-                                    embedded = true
-                                )
-                                MdbxKeyFileSection(
-                                    keyFile = keyFile,
-                                    keyFileError = keyFileError,
-                                    keyFileRequired = keyFileRequired,
-                                    onPickKeyFile = { keyFilePickerLauncher.launch(arrayOf("*/*")) },
-                                    onGenerateKeyFile = { keyFileCreateLauncher.launch("monica-mdbx.key") },
-                                    embedded = true
-                                )
-                            }
+                            MdbxUnlockMethodSection(
+                                unlockMethod = unlockMethod,
+                                onUnlockMethodChange = { unlockMethod = it },
+                                embedded = true
+                            )
+                            MdbxKeyFileSection(
+                                keyFile = keyFile,
+                                keyFileError = keyFileError,
+                                keyFileRequired = keyFileRequired,
+                                onPickKeyFile = { keyFilePickerLauncher.launch(arrayOf("*/*")) },
+                                onGenerateKeyFile = { keyFileCreateLauncher.launch("monica-mdbx.key") },
+                                embedded = true
+                            )
+
                         }
                     }
                 }

@@ -1,6 +1,9 @@
 package takagi.ru.monica.utils
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.view.Window
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -10,23 +13,52 @@ import androidx.compose.ui.platform.LocalContext
  * 防截屏工具类
  */
 object ScreenshotProtectionUtil {
+    private data class ForcedProtection(var owners: Int, var ordinaryEnabled: Boolean)
+    private val forcedWindows = java.util.WeakHashMap<Window, ForcedProtection>()
+    private const val FLAG = WindowManager.LayoutParams.FLAG_SECURE
+
+    /** Main-thread ownership shared with the ordinary app setting. */
+    fun acquireForcedProtection(window: Window) {
+        val protection = forcedWindows[window]
+        if (protection == null) {
+            forcedWindows[window] = ForcedProtection(1, window.attributes.flags and FLAG != 0)
+        } else protection.owners++
+        window.addFlags(FLAG)
+    }
+
+    fun releaseForcedProtection(window: Window) {
+        val protection = forcedWindows[window] ?: return
+        if (--protection.owners == 0) {
+            forcedWindows.remove(window)
+            if (protection.ordinaryEnabled) window.addFlags(FLAG) else window.clearFlags(FLAG)
+        }
+    }
     
     /**
      * 启用防截屏保护
      */
     fun enableScreenshotProtection(activity: Activity) {
-        activity.window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        forcedWindows[activity.window]?.ordinaryEnabled = true
+        activity.window.addFlags(FLAG)
     }
     
     /**
      * 禁用防截屏保护
      */
     fun disableScreenshotProtection(activity: Activity) {
-        activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        val forced = forcedWindows[activity.window]
+        if (forced == null) activity.window.clearFlags(FLAG)
+        else {
+            forced.ordinaryEnabled = false
+            activity.window.addFlags(FLAG)
+        }
     }
+}
+
+private tailrec fun Context.screenshotActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> if (baseContext !== this) baseContext.screenshotActivity() else null
+    else -> null
 }
 
 /**
@@ -38,8 +70,8 @@ fun ScreenshotProtection(
 ) {
     val context = LocalContext.current
     
-    DisposableEffect(enabled) {
-        val activity = context as? Activity
+    DisposableEffect(context, enabled) {
+        val activity = context.screenshotActivity()
         if (activity != null) {
             if (enabled) {
                 ScreenshotProtectionUtil.enableScreenshotProtection(activity)

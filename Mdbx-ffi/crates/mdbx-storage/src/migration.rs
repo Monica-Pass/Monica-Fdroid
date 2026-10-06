@@ -30,9 +30,11 @@ pub const MIGRATION_VAULT_HEADER_AUTH: &str = "mdbx-2-vault-header-auth-v1";
 pub const FIELD_KEY_EPOCHS_EXTENSION: &str = "field-key-epochs-v1";
 pub const SNAPSHOT_RECORD_AUTH_EXTENSION: &str = "snapshot-record-auth-v1";
 pub const AUTHENTICATED_STATE_ROOT_EXTENSION: &str = "authenticated-state-root-v1";
+pub const GLITTER_EXTENSION: &str = "tiga-glitter-v1";
 pub const MIGRATION_SNAPSHOT_LIFECYCLE: &str = "mdbx-2-snapshot-lifecycle-v1";
 
 const SUPPORTED_CRITICAL_EXTENSIONS: &[&str] = &[
+    GLITTER_EXTENSION,
     FIELD_KEY_EPOCHS_EXTENSION,
     SNAPSHOT_RECORD_AUTH_EXTENSION,
     AUTHENTICATED_STATE_ROOT_EXTENSION,
@@ -643,6 +645,11 @@ fn insert_legacy_policy_exception(
 }
 
 fn legacy_unlock_configuration_complies(conn: &Connection, mode: TigaMode) -> StorageResult<bool> {
+    // A legacy migration cannot install Glitter; do not read untrusted wrapper
+    // blobs at all for that unsupported target.
+    if mode == TigaMode::Glitter {
+        return Ok(false);
+    }
     let mut stmt = conn.prepare("SELECT method_type, kdf_params_ct FROM unlock_methods")?;
     let rows = stmt.query_map([], |row| {
         Ok((row.get::<_, String>(0)?, row.get::<_, Vec<u8>>(1)?))
@@ -659,7 +666,7 @@ fn legacy_unlock_configuration_complies(conn: &Connection, mode: TigaMode) -> St
         has_portable |= method_type.is_portable();
         if method_type.is_combined_password_security_key() {
             has_strong_combined |= KdfParams::from_json_bytes(&kdf_params)
-                .map(|params| params.infer_tiga_mode() >= mode)
+                .map(|params| params.meets_mode_strength(mode) && params.salt.len() >= 16)
                 .unwrap_or(false);
         }
     }
@@ -668,6 +675,7 @@ fn legacy_unlock_configuration_complies(conn: &Connection, mode: TigaMode) -> St
     }
     Ok(match mode {
         TigaMode::Power => has_strong_combined && !has_portable,
+        TigaMode::Glitter => false, // Glitter cannot be installed by legacy migration.
         TigaMode::Multi | TigaMode::Sky => has_portable,
     })
 }
@@ -762,10 +770,24 @@ fn validate_current_schema(conn: &Connection) -> StorageResult<()> {
             "unsupported MDBX-2 schema version {schema_version}; expected {CURRENT_SCHEMA_VERSION}"
         )));
     }
-    if policy_version != i64::from(TIGA_POLICY_VERSION) {
+    let glitter = has_critical_extension(&critical_extensions, GLITTER_EXTENSION)?;
+    let expected_policy_version = if glitter {
+        mdbx_core::tiga::GLITTER_POLICY_VERSION
+    } else {
+        TIGA_POLICY_VERSION
+    };
+    if policy_version != i64::from(expected_policy_version) {
         return Err(StorageError::Validation(format!(
-            "unsupported Tiga policy version {policy_version}; expected {TIGA_POLICY_VERSION}"
+            "unsupported Tiga policy version {policy_version}; expected {expected_policy_version}"
         )));
+    }
+    let mode: String = conn.query_row("SELECT default_tiga_mode FROM vault_meta", [], |row| {
+        row.get(0)
+    })?;
+    if glitter != (mode == "glitter") {
+        return Err(StorageError::Validation(
+            "Glitter profile and critical extension disagree".into(),
+        ));
     }
     Ok(())
 }
@@ -928,6 +950,26 @@ fn is_legacy_fts_readonly_integrity_issue(result: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn glitter_critical_extension_is_unknown_to_previous_reader_allowlist() {
+        let encoded = merge_critical_extension("", GLITTER_EXTENSION).unwrap();
+        assert!(!has_unknown_critical_extensions(&encoded));
+        // Exact pre-Glitter allowlist and rejection predicate. Previous readers
+        // run this check before any schema upgrade or writable vault open.
+        let previous_supported = [
+            FIELD_KEY_EPOCHS_EXTENSION,
+            SNAPSHOT_RECORD_AUTH_EXTENSION,
+            AUTHENTICATED_STATE_ROOT_EXTENSION,
+        ];
+        assert!(parse_critical_extensions(&encoded)
+            .unwrap()
+            .iter()
+            .any(|extension| !previous_supported.contains(&extension.as_str())));
+        assert!(has_unknown_critical_extensions(
+            "[\"tiga-glitter-v1\",\"future-vault\"]"
+        ));
+    }
     use crate::connection::VaultConnection;
     use crate::schema;
 

@@ -42,6 +42,7 @@ internal class DatabaseManagerRepository(context: Context) {
     suspend fun browse(location: DatabaseManagerLocation): DatabaseManagerSnapshot = withContext(Dispatchers.IO) {
         check(SessionManager.isUnlocked.value)
         val source = location.database
+        if (source.kind == ImportDestinationKind.MDBX) mdbx.requireRoomMirrorAllowed(source.databaseId)
         val title = stores().firstOrNull { it.key == source }?.title ?: error("Database unavailable")
         when (source.kind) {
             ImportDestinationKind.MDBX -> mdbx.nativeBrowser(source.databaseId).let {
@@ -79,6 +80,7 @@ internal class DatabaseManagerRepository(context: Context) {
 
     suspend fun createFolder(location: DatabaseManagerLocation, name: String): String = withContext(Dispatchers.IO) {
         check(SessionManager.isUnlocked.value) { "The vault is locked." }
+        if (location.database.kind == ImportDestinationKind.MDBX) mdbx.requireRoomMirrorAllowed(location.database.databaseId)
         require(name.isNotBlank() && name.length <= 512)
         when (location.database.kind) {
             ImportDestinationKind.MDBX -> mdbx.createFolder(location.database.databaseId, name, location.folderId).folderId
@@ -98,6 +100,7 @@ internal class DatabaseManagerRepository(context: Context) {
 
     suspend fun rename(location: DatabaseManagerLocation, row: MdbxStructureNode, name: String) = withContext(Dispatchers.IO) {
         check(SessionManager.isUnlocked.value) { "The vault is locked." }
+        if (location.database.kind == ImportDestinationKind.MDBX) mdbx.requireRoomMirrorAllowed(location.database.databaseId)
         require(name.isNotBlank() && name.length <= 512)
         val id = location.database.databaseId
         when (location.database.kind) {

@@ -48,7 +48,10 @@ impl MdbxVault {
         &self,
         commit_id: String,
     ) -> Result<Vec<MdbxCommitDiffItem>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
+        // This legacy preview decrypts historical object payloads and cannot
+        // express their individual disclosure decisions.
+        super::object_facade::reject_legacy_glitter_payload_access(&conn)?;
         Ok(HistoryActionRepo::list_commit_diff(&conn, &commit_id)?
             .into_iter()
             .map(Into::into)
@@ -61,7 +64,7 @@ impl MdbxVault {
         operation_id: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxCommitRevertResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());

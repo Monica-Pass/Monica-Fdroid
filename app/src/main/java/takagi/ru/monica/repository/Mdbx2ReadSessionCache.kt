@@ -21,14 +21,14 @@ internal class Mdbx2ReadSessionCache<K : Any, V : Any>(
     private val idle = linkedMapOf<Long, Entry<K, V>>()
     private var generation = 0L
 
-    fun <T> use(
+    suspend fun <T> use(
         databaseId: Long,
         key: K,
         canRetain: () -> Boolean,
         open: () -> V,
         keyAfterRead: () -> K?,
         remainingLifetimeMillis: ((V) -> Long)? = null,
-        read: (V) -> T,
+        read: suspend (V) -> T,
     ): T {
         val (startedGeneration, cached) = synchronized(monitor) {
             generation to idle.remove(databaseId)

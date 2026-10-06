@@ -237,6 +237,7 @@ object MdbxVaultCrypto {
     }
 
     private fun iterationsFor(tigaMode: MdbxTigaMode): Int = when (tigaMode) {
+        MdbxTigaMode.GLITTER -> error("Glitter requires the native MDBX engine")
         MdbxTigaMode.POWER -> 360_000
         MdbxTigaMode.MULTI -> 210_000
         MdbxTigaMode.SKY -> 90_000

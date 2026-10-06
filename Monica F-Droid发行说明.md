@@ -4,7 +4,7 @@
 
 ## 中文
 
-### 简要
+- Android 客户端仅提供 Sky、Multi、Power 三档，暂不接入 Glitter；MDBX 底层格式能力保留。已有 Glitter 数据库保留文件与记录并提示暂不支持，不自动降档或转换。
 
 - 移除拖拽导航栏，统一使用普通导航；保留标签排序、显示隐藏、FAB 和最近使用入口。
 
@@ -14,7 +14,9 @@
 
 - 银行卡和证件照片支持导入时裁剪，并统一裁剪页操作样式。
 
-### 详细
+- 优化 MDBX 档位选择：星光缓慢闪烁且仅显示在已填充区域；滑块连续跟随手指，松手吸附最近档位，点击切档平滑过渡并提供跨档触感反馈，遵循减少动画和触感设置。
+
+- 原生数据库管理页支持直接新增登录信息、保留未知字段的编辑、删除及附件添加/移除；附件在内存中验证并预览文字或图片，不导出解密文件。
 
 - 整理 Android 版 README 与多语言说明，移除浏览器插件安装、技术栈和其他平台状态说明，明确 Android 应用及手机浏览器的自动填充范围。
 
@@ -41,7 +43,7 @@
 
 ## English
 
-### Summary
+- Android offers Sky, Multi and Power only; Glitter integration is deferred while the MDBX engine retains format support. Existing Glitter files and records are preserved with an unsupported-mode message, without automatic downgrade or conversion.
 
 - Remove draggable navigation and use the standard bar, retaining tab order/visibility, FAB and recent items.
 
@@ -51,7 +53,9 @@
 
 - Crop bank-card and document photos during import, with consistent crop controls.
 
-### Details
+- Improve the MDBX mode slider with twinkling stars only on the filled track, continuous finger tracking, nearest-mode snapping, smooth tap transitions and detent feedback; respect reduced-motion and haptic settings.
+
+- The native manager supports direct login creation, edits that preserve unknown fields, deletion and attachment changes. Verify and preview text/image attachments in memory without exporting decrypted files.
 
 - Scope the README and its translations to Android; remove extension installation, browser tooling and other-platform status notes, and clarify autofill in Android apps and mobile browsers.
 

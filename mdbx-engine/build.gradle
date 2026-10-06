@@ -32,14 +32,14 @@ android {
 
 // ==== F-Droid: build the verified MDBX3-compatible runtime from Rust source ====
 // Source: https://github.com/Monica-Pass/Mdbx (MIT)
-// Pinned commit: 90005c8c608c952093a4522ffa507a562e2e39a4 (MDBX3 preview runtime)
-// Read-session and bounded sync-delta overlays are applied in the vendored sources.
-// See MDBX3_SOURCE_PROVENANCE.json for exact source and patch hashes.
+// Base commit: 5cf8af697727095654884e0a76bec6ca12d0ce6b with the Glitter source overlay.
+// Previously shipped read-session, sync-delta and lossless JSON fixes are retained.
+// GLITTER_SOURCE_MANIFEST.json pins every vendored build input and the exact patch.
 // Resolve order: -PmdbxRustSrc=<path> > MDBX_RUST_SRC env > <rootDir>/Mdbx-ffi
 def mdbxRustSourceDir = (project.findProperty('mdbxRustSrc')
         ?: System.getenv('MDBX_RUST_SRC')
         ?: new File(rootDir, 'Mdbx-ffi').absolutePath) as String
-def mdbxRustCommit = '90005c8c608c952093a4522ffa507a562e2e39a4'
+def mdbxRustCommit = '5cf8af697727095654884e0a76bec6ca12d0ce6b+glitter-overlay'
 
 tasks.register('buildMdbxFfiFromSource') {
     group = 'build'
@@ -55,12 +55,13 @@ tasks.register('buildMdbxFfiFromSource') {
         if (!new File(sourceDir, 'Cargo.toml').isFile()) {
             throw new GradleException(
                 "MDBX Rust sources not found at ${sourceDir}. " +
-                "Clone https://github.com/Monica-Pass/Mdbx and checkout ${mdbxRustCommit}, " +
-                "or set -PmdbxRustSrc=<path> / MDBX_RUST_SRC env."
+                "Restore the vendored Mdbx-ffi source matching GLITTER_SOURCE_MANIFEST.json, " +
+                "or set -PmdbxRustSrc=<matching-source-path> / MDBX_RUST_SRC env."
             )
         }
         def command = ['cargo', 'ndk',
                        '-t', 'arm64-v8a', '-t', 'armeabi-v7a', '-t', 'x86_64',
+                       '-P', '26',
                        '-o', outputDir.absolutePath,
                        'build', '--locked', '--profile', 'mdbx3-release', '-p', 'mdbx-ffi']
         println "Building libmdbx_ffi.so from ${sourceDir} (cargo ndk)"

@@ -79,9 +79,9 @@ internal class Mdbx2RemoteSyncCoordinator(
         remoteVaultPath: String,
         transport: MdbxRemoteTransport
     ): Mdbx2RemoteBootstrapResult = lock(databaseId) {
-        transport.testConnection()
-        ensureLocalDirectories()
         sessions.withSession(databaseId) { engine ->
+            transport.testConnection()
+            ensureLocalDirectories()
             val bootstrapFile = File(
                 rootDirectory,
                 "bootstrap-$databaseId-${UUID.randomUUID()}.mdbx"
@@ -164,9 +164,9 @@ internal class Mdbx2RemoteSyncCoordinator(
         remoteVaultPath: String,
         transport: MdbxRemoteTransport
     ): Mdbx2RemoteSyncReport = lock(databaseId) {
-        transport.testConnection()
-        ensureLocalDirectories()
         sessions.withSession(databaseId) { engine ->
+            transport.testConnection()
+            ensureLocalDirectories()
             var state = stateStore.read(databaseId)
             require(state.vaultId == engine.vaultId) {
                 "MDBX2 remote sync state belongs to another vault"

@@ -17,6 +17,8 @@ import takagi.ru.monica.data.SecureItem
  * and ViewModel code do not grow their own MDBX table behavior.
  */
 interface MdbxRepository {
+    /** Call before committing a persistent app replica of database secrets. */
+    suspend fun requireRoomMirrorAllowed(databaseId: Long) = Unit
     suspend fun requiresStrictMutationConsistency(databaseId: Long): Boolean = false
 
     suspend fun readStoredEntries(databaseId: Long): List<MdbxStoredVaultEntry>

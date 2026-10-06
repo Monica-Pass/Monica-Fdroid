@@ -42,6 +42,7 @@ internal object Mdbx2ErrorMapper {
     )
 
     fun openFailure(cause: Throwable): Mdbx2OperationException {
+        if (cause is Mdbx2OperationException) return cause
         val detail = (cause as? MdbxFfiException.Storage)
             ?.detail
             .orEmpty()

@@ -130,6 +130,7 @@ class PasskeyRepository(
      * 保存 Passkey（插入或更新）
      */
     suspend fun savePasskey(passkey: PasskeyEntry) {
+        passkey.mdbxDatabaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         val protected = protectPrivateKeyForRoom(passkey)
         try {
             commitMirrorThenRoom(
@@ -147,6 +148,7 @@ class PasskeyRepository(
      * 批量保存 Passkeys
      */
     suspend fun saveAllPasskeys(passkeys: List<PasskeyEntry>) {
+        passkeys.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { mdbxRepository?.requireRoomMirrorAllowed(it) }
         val protected = passkeys.map(::protectPrivateKeyForRoom)
         try {
             commitMirrorThenRoom(
@@ -164,6 +166,7 @@ class PasskeyRepository(
      * 更新 Passkey
      */
     suspend fun updatePasskey(passkey: PasskeyEntry) {
+        passkey.mdbxDatabaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         val existing = resolveExistingPasskey(passkey)
         val normalized = if (existing == null) {
             passkey

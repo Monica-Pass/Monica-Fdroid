@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_add_login">ログイン情報を追加</string>
+    <string name="mdbx_native_username">ユーザー名</string>
+    <string name="mdbx_native_password">パスワード</string>
+    <string name="mdbx_native_website">ウェブサイト</string>
+    <string name="mdbx_native_notes">メモ</string>
+    <string name="mdbx_native_json_description">他の種類の項目は JSON として編集します。元のフィールドと構造を保持してください。</string>
+    <string name="mdbx_native_add_attachment">添付ファイルを追加</string>
+    <string name="mdbx_native_attachment_limits">添付ファイルは最大 16 個、新規アップロードの合計は最大 16 MiB です。テキストと画像はメモリ内でプレビューできます。</string>
+    <string name="mdbx_native_attachment_failed">この添付ファイルを読み取れないか、整合性チェックに失敗しました。</string>
+    <string name="mdbx_native_attachment_verified">添付ファイルの整合性を確認しました</string>
+    <string name="mdbx_native_attachment_no_preview">この種類のファイルはアプリ内でプレビューできません。この保護モードでは、復号した添付ファイルをエクスポートできません。</string>
+    <string name="mdbx_native_delete_confirm">この項目と添付ファイルを削除しますか？</string>
+    <string name="mdbx_native_editable">変更はこの暗号化データベースに直接書き込まれます。</string>
+    <string name="mdbx_native_app_locked">通常のアプリ操作で Monica のロックを解除して続行してください。</string>
+    <string name="mdbx_client_mode_unsupported_title">Glitter is not supported yet</string>
+    <string name="mdbx_client_mode_unsupported">The Android client does not support Glitter yet. Choose Sky, Multi or Power. Existing database files and records are preserved without automatic downgrade or conversion. Use a client that supports Glitter to access them.</string>
+</resources>

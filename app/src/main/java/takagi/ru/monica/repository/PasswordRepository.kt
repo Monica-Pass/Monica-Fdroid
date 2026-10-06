@@ -191,6 +191,7 @@ class PasswordRepository(
     }
 
     suspend fun updateMdbxDatabaseForPasswords(ids: List<Long>, databaseId: Long?, folderId: String? = null) {
+        databaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         passwordEntryDao.getPasswordsByIds(ids).forEach(MdbxUnknownEntry::requireEditable)
         if (ids.isEmpty()) return
         val existingEntries = passwordEntryDao.getPasswordsByIds(ids)
@@ -268,6 +269,7 @@ class PasswordRepository(
     }
     
     suspend fun insertPasswordEntry(entry: PasswordEntry): Long {
+        entry.mdbxDatabaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         MdbxUnknownEntry.requireEditable(entry)
         val normalizedEntry = BitwardenMutationStateHelper.normalizePasswordInsert(entry)
         return commitRoomThenMirror(
@@ -297,6 +299,7 @@ class PasswordRepository(
     }
 
     suspend fun insertPasswordEntries(entries: List<PasswordEntry>): List<Long> {
+        entries.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { mdbxRepository?.requireRoomMirrorAllowed(it) }
         entries.forEach(MdbxUnknownEntry::requireEditable)
         if (entries.isEmpty()) return emptyList()
         val normalizedEntries = entries.map(BitwardenMutationStateHelper::normalizePasswordInsert)
@@ -335,6 +338,7 @@ class PasswordRepository(
     }
     
     suspend fun updatePasswordEntry(entry: PasswordEntry) {
+        entry.mdbxDatabaseId?.let { mdbxRepository?.requireRoomMirrorAllowed(it) }
         MdbxUnknownEntry.requireEditable(entry)
         passwordEntryDao.getPasswordEntryById(entry.id)?.let(MdbxUnknownEntry::requireEditable)
         val existingEntry = if (entry.id != 0L) passwordEntryDao.getPasswordEntryById(entry.id) else null
@@ -371,6 +375,7 @@ class PasswordRepository(
     }
 
     suspend fun updatePasswordEntries(entries: List<PasswordEntry>) {
+        entries.mapNotNull { it.mdbxDatabaseId }.distinct().forEach { mdbxRepository?.requireRoomMirrorAllowed(it) }
         entries.forEach(MdbxUnknownEntry::requireEditable)
         passwordEntryDao.getPasswordsByIds(entries.map { it.id }).forEach(MdbxUnknownEntry::requireEditable)
         if (entries.isEmpty()) return

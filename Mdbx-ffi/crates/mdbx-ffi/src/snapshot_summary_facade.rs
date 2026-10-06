@@ -48,7 +48,7 @@ impl MdbxVault {
         &self,
         snapshot_id: String,
     ) -> Result<Option<MdbxSnapshotSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(SnapshotSummaryRepo::get(&conn, &snapshot_id)?.map(snapshot_summary_from_core))
     }
 
@@ -58,7 +58,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxSnapshotSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(snapshot_summary_page_from_core(SnapshotSummaryRepo::list(
             &conn,
             page_size as usize,

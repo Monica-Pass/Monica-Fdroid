@@ -1,4 +1,5 @@
-Standard navigation; keep tab customization and old backups. Remove old settings and HyperOS Passkey bypass; keep biometric/password fallback.
-Crop card/document photos. MDBX2 per-vault auto sync, queued saves, retries; recover missing attachments and animate sync icon. Fix WebDAV 503/429 retries. Animate database expansion.
-Shizuku default password manager in developer/autofill settings (Android 14+); keep other providers and restore settings.
-Fix wallet drag overlap and delayed reordering.
+Sky/Multi/Power only in Android; MDBX retains Glitter support, existing vaults unchanged.
+Tiga: twinkling fill, drag/snap, haptics.
+Remove draggable navigation/HyperOS bypass; keep tabs/FAB/recents/backups/password/biometrics.
+Crop card photos. MDBX2 auto sync/retry, attachments/spinner, WebDAV 503/429 fixes.
+Shizuku (14+): retain providers/restore. Fix wallet/list motion.

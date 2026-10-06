@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_add_login">Add login</string>
+    <string name="mdbx_native_username">Username</string>
+    <string name="mdbx_native_password">Password</string>
+    <string name="mdbx_native_website">Website</string>
+    <string name="mdbx_native_notes">Notes</string>
+    <string name="mdbx_native_json_description">Other entry types are edited as JSON. Keep their original fields and schema.</string>
+    <string name="mdbx_native_add_attachment">Add attachments</string>
+    <string name="mdbx_native_attachment_limits">Up to 16 attachments; new uploads total at most 16 MiB. Text and images can be previewed in memory.</string>
+    <string name="mdbx_native_attachment_failed">Cannot read this attachment or its integrity check failed.</string>
+    <string name="mdbx_native_attachment_verified">Attachment integrity verified</string>
+    <string name="mdbx_native_attachment_no_preview">This file type has no in-app preview. Exporting decrypted attachments is unavailable in this protection mode.</string>
+    <string name="mdbx_native_delete_confirm">Delete this entry and its attachments?</string>
+    <string name="mdbx_native_editable">Changes are written directly to this encrypted database.</string>
+    <string name="mdbx_native_app_locked">Unlock Monica through the normal app flow to continue.</string>
+    <string name="mdbx_client_mode_unsupported_title">Glitter is not supported yet</string>
+    <string name="mdbx_client_mode_unsupported">The Android client does not support Glitter yet. Choose Sky, Multi or Power. Existing database files and records are preserved without automatic downgrade or conversion. Use a client that supports Glitter to access them.</string>
+</resources>

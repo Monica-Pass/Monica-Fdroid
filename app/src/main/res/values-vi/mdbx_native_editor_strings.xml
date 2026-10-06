@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mdbx_native_add_login">Thêm thông tin đăng nhập</string>
+    <string name="mdbx_native_username">Tên người dùng</string>
+    <string name="mdbx_native_password">Mật khẩu</string>
+    <string name="mdbx_native_website">Trang web</string>
+    <string name="mdbx_native_notes">Ghi chú</string>
+    <string name="mdbx_native_json_description">Các loại mục khác được chỉnh sửa dưới dạng JSON. Giữ nguyên các trường và cấu trúc ban đầu.</string>
+    <string name="mdbx_native_add_attachment">Thêm tệp đính kèm</string>
+    <string name="mdbx_native_attachment_limits">Tối đa 16 tệp đính kèm; tổng dung lượng tải lên mới không quá 16 MiB. Có thể xem trước văn bản và hình ảnh trong bộ nhớ.</string>
+    <string name="mdbx_native_attachment_failed">Không thể đọc tệp đính kèm này hoặc kiểm tra tính toàn vẹn thất bại.</string>
+    <string name="mdbx_native_attachment_verified">Đã xác minh tính toàn vẹn của tệp đính kèm</string>
+    <string name="mdbx_native_attachment_no_preview">Loại tệp này không hỗ trợ xem trước trong ứng dụng. Chế độ bảo vệ này không cho phép xuất tệp đính kèm đã giải mã.</string>
+    <string name="mdbx_native_delete_confirm">Xóa mục này và các tệp đính kèm?</string>
+    <string name="mdbx_native_editable">Thay đổi được ghi trực tiếp vào cơ sở dữ liệu đã mã hóa này.</string>
+    <string name="mdbx_native_app_locked">Mở khóa Monica theo quy trình thông thường của ứng dụng để tiếp tục.</string>
+    <string name="mdbx_client_mode_unsupported_title">Glitter is not supported yet</string>
+    <string name="mdbx_client_mode_unsupported">The Android client does not support Glitter yet. Choose Sky, Multi or Power. Existing database files and records are preserved without automatic downgrade or conversion. Use a client that supports Glitter to access them.</string>
+</resources>

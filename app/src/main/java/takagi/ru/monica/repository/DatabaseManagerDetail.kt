@@ -5,7 +5,10 @@ import org.json.JSONObject
 import takagi.ru.monica.credentialexchange.ImportDestinationKind
 
 internal suspend fun managerDetailPayload(repo: DatabaseManagerRepository, location: DatabaseManagerLocation, row: MdbxStructureNode): String {
-    if (location.database.kind == ImportDestinationKind.MDBX) return repo.mdbx.nativeObject(location.database.databaseId, row.id).payload
+    if (location.database.kind == ImportDestinationKind.MDBX) {
+        repo.mdbx.requireRoomMirrorAllowed(location.database.databaseId)
+        return repo.mdbx.nativeObject(location.database.databaseId, row.id).payload
+    }
     val id = row.id.substringAfter(':').toLong()
     return when (row.id.substringBefore(':')) {
         "password" -> {

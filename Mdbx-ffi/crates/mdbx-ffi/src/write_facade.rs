@@ -431,7 +431,7 @@ pub(crate) fn execute_write_operation_for_branch(
     }
     let prepared = OperationCoordinator::prepare(request)?;
 
-    let conn = vault.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+    let conn = vault.conn.lock().map_err(MdbxFfiError::from)?;
     let ctx = CommitContext::new(vault.device_id.clone());
     let outcome = OperationCoordinator::execute_prepared(&conn, &ctx, &prepared)?;
     Ok(write_operation_result(
@@ -518,7 +518,7 @@ pub(crate) fn execute_composite_write_operation(
         operation = operation.with_branch_id(branch_id);
     }
 
-    let conn = vault.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+    let conn = vault.conn.lock().map_err(MdbxFfiError::from)?;
     let ctx = CommitContext::new(vault.device_id.clone());
     let ids_for_action = attachment_ids.clone();
     let execution = ctx.run_operation(&conn, operation, |scoped| {

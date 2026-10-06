@@ -42,6 +42,15 @@ impl TigaService {
         ctx: &CommitContext,
         mode: TigaMode,
     ) -> StorageResult<String> {
+        let current = Self::get_global_default(conn)?;
+        if mode != current
+            && (mode == TigaMode::Glitter || crate::unlock::UnlockService::is_glitter(conn)?)
+        {
+            return Err(StorageError::Validation(
+                "Glitter requires a new vault; in-place conversion or downgrade is not supported"
+                    .into(),
+            ));
+        }
         conn.with_immediate_transaction(|| {
             let now = chrono::Utc::now().to_rfc3339();
             let commit_id = ctx.create_commit(

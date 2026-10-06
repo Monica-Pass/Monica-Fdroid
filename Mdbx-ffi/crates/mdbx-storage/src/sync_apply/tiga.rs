@@ -19,11 +19,16 @@ pub(super) fn apply_tiga_vault_state(
     conn: &VaultConnection,
     incoming: &TigaVaultStateRow,
 ) -> StorageResult<()> {
-    if incoming.policy_version > mdbx_core::tiga::TIGA_POLICY_VERSION {
+    let glitter = crate::unlock::UnlockService::is_glitter(conn)?;
+    let expected_version = if glitter {
+        mdbx_core::tiga::GLITTER_POLICY_VERSION
+    } else {
+        mdbx_core::tiga::TIGA_POLICY_VERSION
+    };
+    if incoming.policy_version > expected_version {
         return Err(StorageError::Validation(format!(
             "unsupported incoming Tiga policy version {}; expected {}",
-            incoming.policy_version,
-            mdbx_core::tiga::TIGA_POLICY_VERSION
+            incoming.policy_version, expected_version
         )));
     }
     let local: TigaVaultStateRow = conn.inner().query_row(
@@ -47,6 +52,14 @@ pub(super) fn apply_tiga_vault_state(
         .default_tiga_mode
         .parse()
         .map_err(StorageError::Validation)?;
+    if (glitter
+        && (incoming_mode != TigaMode::Glitter || incoming.policy_version != expected_version))
+        || (!glitter && incoming_mode == TigaMode::Glitter)
+    {
+        return Err(StorageError::Validation(
+            "sync cannot convert or downgrade a Glitter vault".into(),
+        ));
+    }
     let mode = std::cmp::max(local_mode, incoming_mode).to_string();
     let compliance =
         stricter_compliance_status(&local.compliance_status, &incoming.compliance_status)?;
@@ -156,6 +169,21 @@ pub(super) fn apply_tiga_policy_overrides(
     for incoming in incoming_rows {
         let incoming_policy: TigaPolicyOverride = serde_json::from_str(&incoming.policy_json)
             .map_err(|e| StorageError::Validation(format!("invalid incoming Tiga policy: {e}")))?;
+        let glitter = crate::unlock::UnlockService::is_glitter(conn)?;
+        if glitter {
+            mdbx_core::tiga::TigaPolicyResolver::resolve(
+                &TigaMode::Glitter.policy(),
+                tiga_scope_from_parts(&incoming.scope_type, &incoming.scope_id)?,
+                &incoming_policy,
+                None,
+                0,
+            )
+            .map_err(|error| StorageError::Validation(error.to_string()))?;
+        } else if incoming_policy.profile == Some(TigaMode::Glitter) {
+            return Err(StorageError::Validation(
+                "Glitter requires a newly created Glitter vault".into(),
+            ));
+        }
         verify_optional_integrity_tag(
             conn,
             b"tiga-policy-override",
@@ -362,6 +390,68 @@ fn stricter_compliance_status<'a>(a: &'a str, b: &'a str) -> StorageResult<&'a s
     let b_rank =
         rank(b).ok_or_else(|| StorageError::Validation(format!("invalid Tiga status: {b}")))?;
     Ok(if a_rank >= b_rank { a } else { b })
+}
+
+#[cfg(test)]
+#[test]
+fn glitter_sync_preserves_format_floor_and_rejects_weak_overrides() {
+    let conn = VaultConnection::open_in_memory().unwrap();
+    crate::init::initialize_vault_with_device_context(
+        &conn,
+        &crate::init::VaultInitParams {
+            default_tiga_mode: "glitter".into(),
+            ..Default::default()
+        },
+        &mdbx_core::tiga::DeviceContext {
+            assurance: mdbx_core::tiga::DeviceAssurance::TrustedHardware,
+            screen_capture_protection_available: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let mut incoming = TigaVaultStateRow {
+        default_tiga_mode: "glitter".into(),
+        policy_version: 3,
+        compliance_status: "compliant".into(),
+        updated_at: "test".into(),
+    };
+    apply_tiga_vault_state(&conn, &incoming).unwrap();
+    incoming.default_tiga_mode = "power".into();
+    assert!(apply_tiga_vault_state(&conn, &incoming).is_err());
+    incoming.default_tiga_mode = "glitter".into();
+    incoming.policy_version = 2;
+    assert!(apply_tiga_vault_state(&conn, &incoming).is_err());
+    for policy in [
+        TigaPolicyOverride {
+            minimum_auth_factors: Some(1),
+            ..Default::default()
+        },
+        TigaPolicyOverride {
+            profile: Some(TigaMode::Sky),
+            ..Default::default()
+        },
+    ] {
+        let row = TigaPolicyOverrideRow {
+            scope_type: "vault".into(),
+            scope_id: "".into(),
+            policy_json: serde_json::to_string(&policy).unwrap(),
+            exception_id: Some("untrusted-exception".into()),
+            updated_at: "test".into(),
+            updated_by_device_id: "test".into(),
+            integrity_tag: None,
+        };
+        assert!(apply_tiga_policy_overrides(&conn, &[row]).is_err());
+    }
+    assert_eq!(
+        conn.inner()
+            .query_row("SELECT count(*) FROM tiga_policy_overrides", [], |row| row
+                .get::<_, u32>(
+                0
+            ))
+            .unwrap(),
+        0
+    );
+    assert!(crate::unlock::UnlockService::is_glitter(&conn).unwrap());
 }
 
 fn earliest_present(a: Option<String>, b: Option<String>) -> Option<String> {

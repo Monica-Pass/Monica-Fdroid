@@ -24,7 +24,7 @@ internal class Mdbx2RepositorySyncSessionProvider(
         databaseId: Long,
         block: suspend (Mdbx2SyncEngine) -> T
     ): T {
-        val info = repository.withReadVaultForSync(databaseId) { _, vault -> vault.info() }
+        val info = repository.requireRemoteSyncInfo(databaseId)
         // A sync session identifies the vault; it does not borrow its lock across network I/O.
         return block(NativeMdbx2SyncEngine(repository, databaseId, info.vaultId, info.deviceId))
     }
@@ -139,6 +139,7 @@ private class NativeMdbx2SyncEngine(
     override val deviceId: String
 ) : Mdbx2SyncEngine {
     private fun checkIdentity(vault: MdbxVault) {
+        requireMdbxRemoteVaultAllowed(vault)
         val info = vault.info()
         require(info.vaultId == vaultId && info.deviceId == deviceId) {
             "MDBX2 vault identity changed during synchronization"
@@ -265,6 +266,14 @@ private class NativeMdbx2SyncEngine(
         private val MISSING_PARENTS_DETAIL = Regex(
             "validation error: incremental segment is missing ([1-9][0-9]*) commit parent\\(s\\)"
         )
+    }
+}
+
+internal fun requireMdbxRemoteVaultAllowed(vault: MdbxVault) {
+    val policy = vault.resolveTigaPolicy(
+        uniffi.mdbx_ffi.MdbxTigaScope(uniffi.mdbx_ffi.MdbxTigaScopeType.VAULT, null))
+    require(policy.profile != uniffi.mdbx_ffi.MdbxTigaMode.GLITTER) {
+        "Glitter is not supported by the Android client."
     }
 }
 

@@ -88,7 +88,7 @@ impl MdbxVault {
         &self,
         snapshot_id: String,
     ) -> Result<Option<MdbxSnapshotLifecycleSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(SnapshotLifecycleRepo::get(&conn, &snapshot_id)?.map(Into::into))
     }
 
@@ -99,7 +99,7 @@ impl MdbxVault {
         retention_eligible_at: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxSnapshotSummary, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());
@@ -126,7 +126,7 @@ impl MdbxVault {
         &self,
         keep_latest: u32,
     ) -> Result<MdbxSnapshotPrunePlan, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(snapshot_prune_plan_from_core(
             SnapshotLifecycleRepo::plan_automatic_prune(&conn, keep_latest as usize, unix_now())?,
         ))
@@ -138,7 +138,7 @@ impl MdbxVault {
         keep_latest: u32,
         device: MdbxDeviceContext,
     ) -> Result<MdbxSnapshotPruneResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());

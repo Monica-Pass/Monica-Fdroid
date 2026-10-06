@@ -38,19 +38,23 @@ internal object Mdbx2NativeReadSessions {
     }
     private val cache by cacheHolder
 
-    fun <T> read(
+    suspend fun <T> read(
         database: LocalMdbxDatabase,
         file: File,
         open: () -> MdbxVault,
         scope: MdbxTigaScope = MdbxTigaScope(MdbxTigaScopeType.VAULT, null),
-        block: (MdbxVault) -> T,
+        block: suspend (MdbxVault) -> T,
     ): T {
         fun stamp(target: File): FileStamp? = if (!target.isFile) null else {
             val attributes = Files.readAttributes(target.toPath(), BasicFileAttributes::class.java)
             FileStamp(attributes.fileKey()?.toString(), attributes.size(), attributes.lastModifiedTime())
         }
         fun key() = Key(file.canonicalPath, checkNotNull(stamp(file)), stamp(File("${file.absolutePath}-wal")),
-            database.lastSyncedAt, database.encryptedPassword, database.unlockMethod,
+            // A local publication updates transport timestamps without replacing the working
+            // file. Its identity/WAL revision and credentials still validate this connection.
+            database.lastSyncedAt.takeIf { database.sourceTypeEnum !in setOf(
+                takagi.ru.monica.data.MdbxSourceType.LOCAL_INTERNAL, takagi.ru.monica.data.MdbxSourceType.LOCAL_EXTERNAL) },
+            database.encryptedPassword, database.unlockMethod,
             database.keyFileUri, database.keyFileFingerprint)
 
         val initial = key()

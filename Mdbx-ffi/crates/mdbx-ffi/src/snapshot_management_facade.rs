@@ -80,7 +80,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxManagedSnapshotPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let page = SnapshotSummaryRepo::list(&conn, page_size as usize, cursor.as_deref())?;
         let items = page
             .items
@@ -98,7 +98,7 @@ impl MdbxVault {
         display_name: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxManagedSnapshotSummary, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());
@@ -122,7 +122,7 @@ impl MdbxVault {
         snapshot_id: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxSnapshotDeleteResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());
@@ -144,7 +144,7 @@ impl MdbxVault {
         snapshot_id: String,
         device: MdbxDeviceContext,
     ) -> Result<MdbxSnapshotRestoreResult, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         let session = conn.active_session().cloned();
         let device = device.into_core(&self.device_id);
         let ctx = CommitContext::new(self.device_id.clone());
@@ -165,7 +165,7 @@ impl MdbxVault {
         &self,
         snapshot_id: String,
     ) -> Result<MdbxSnapshotStructurePreview, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(SnapshotRepo::get_structure_preview(&conn, &snapshot_id)?.into())
     }
 }

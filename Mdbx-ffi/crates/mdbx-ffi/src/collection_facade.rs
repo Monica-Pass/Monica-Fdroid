@@ -88,7 +88,7 @@ impl MdbxVault {
         &self,
         collection_id: String,
     ) -> Result<Option<MdbxCollectionSummary>, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(CollectionSummaryRepo::get(&conn, &collection_id)?.map(collection_summary_from_core))
     }
 
@@ -98,7 +98,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxCollectionSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(collection_summary_page_from_core(
             CollectionSummaryRepo::list_active(&conn, page_size as usize, cursor.as_deref())?,
         ))
@@ -110,7 +110,7 @@ impl MdbxVault {
         page_size: u32,
         cursor: Option<String>,
     ) -> Result<MdbxCollectionSummaryPage, MdbxFfiError> {
-        let conn = self.conn.lock().map_err(|_| MdbxFfiError::LockPoisoned)?;
+        let conn = self.conn.lock().map_err(MdbxFfiError::from)?;
         Ok(collection_summary_page_from_core(
             CollectionSummaryRepo::list_deleted(&conn, page_size as usize, cursor.as_deref())?,
         ))
