@@ -1,6 +1,6 @@
 # Monica for Android (F-Droid) 1.0.317
 
-> 未发布 / Unreleased
+> 发布日期 / Released: 2026-10-06
 
 ## 中文
 
@@ -46,6 +46,10 @@
 
 - 修复 WebDAV 条件上传的 503／429 分类，保留等待时间和写入条件后再重试。
 
+验证：F-Droid Release 构建通过。此前 MDBX 与档位回归的 10 项 JVM、32 项模拟器测试通过；本轮 Passkey 相关 77 项 JVM 测试中 72 项通过，5 项已有源码守卫失败已在提交前基线复现，详见[验证记录](https://github.com/Monica-Pass/Monica-Fdroid/blob/v1.0.317/docs/verification/PASSKEY-COMPATIBILITY-20261006.md)。本轮未复测 Android 14 真机凭据面板与生物识别硬件交互。
+
+F-Droid 将从正式标签自行构建、签名和分发，GitHub 发布后仍需等待其构建与索引队列。
+
 ## English
 
 - Android offers Sky, Multi and Power only; Glitter integration is deferred while the MDBX engine retains format support. Existing Glitter files and records are preserved with an unsupported-mode message, without automatic downgrade or conversion.
@@ -89,3 +93,7 @@
 - The crop screen uses consistent rotation, flip, reset and confirmation controls.
 
 - WebDAV conditional uploads preserve 503/429 retry delays and write preconditions when retrying.
+
+Validation: the F-Droid Release build passes. Earlier MDBX/mode regression checks passed 10 JVM and 32 emulator tests. The focused Passkey JVM run passed 72 of 77 tests; the same five existing source-guard failures reproduce against the previous commit. See the [verification record](https://github.com/Monica-Pass/Monica-Fdroid/blob/v1.0.317/docs/verification/PASSKEY-COMPATIBILITY-20261006.md). Android 14 device credential-panel and biometric hardware flows were not rerun in this release check.
+
+F-Droid builds, signs and distributes the package from the release tag on its own schedule; publication on GitHub does not make the F-Droid update immediately available.
