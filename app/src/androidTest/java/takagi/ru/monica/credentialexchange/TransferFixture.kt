@@ -239,6 +239,19 @@ internal class TransferFixture {
                     attachmentUploads[request.path!!.substringAfterLast('/')] = request.body.readByteArray()
                     MockResponse().setResponseCode(200)
                 }
+                request.method == "GET" && request.path.orEmpty().startsWith("/blobs/") ->
+                    attachmentUploads[request.path!!.substringAfterLast('/')]?.let {
+                        MockResponse().setBody(okio.Buffer().write(it)).setHeader("Content-Type", "application/octet-stream")
+                    } ?: MockResponse().setResponseCode(404)
+                request.method == "GET" && request.path.orEmpty().contains("/attachment/") -> {
+                    val id = request.path!!.substringAfterLast('/')
+                    attachmentCreates.firstOrNull { it.optString("id") == id && it.optString("cipherId") == request.path!!.split('/')[2] }
+                        ?.let { metadata ->
+                            MockResponse().setBody(JSONObject(metadata.toString())
+                                .put("url", request.requestUrl!!.resolve("/blobs/$id").toString())
+                                .put("size", metadata.optString("fileSize")).toString())
+                        } ?: MockResponse().setResponseCode(404)
+                }
                 request.method == "GET" && request.path.orEmpty().startsWith("/ciphers/") ->
                     created.firstOrNull { it.optString("id") == request.path!!.substringAfterLast('/') }
                         ?.let { MockResponse().setBody(it.toString()) } ?: MockResponse().setResponseCode(404)

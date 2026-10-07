@@ -136,6 +136,7 @@ data class PageAdjustmentSettingsSnapshot(
     val securityAnalysisAutoEnabled: Boolean = false,
     val passwordDetailSecurityAnalysisEnabled: Boolean = true,
     val steamMiniProfileBackgroundEnabled: Boolean = false,
+    val autofillKeepUnlocked: Boolean = false,
     val autofillAuthRequired: Boolean = true,
     val iconCardsEnabled: Boolean = true,
     val appLauncherIcon: String = takagi.ru.monica.data.AppLauncherIcon.MODERN.name,
@@ -266,6 +267,7 @@ class SettingsManager(private val context: Context) {
             booleanPreferencesKey("steam_mini_profile_background_enabled")
         private val NOTE_GRID_LAYOUT_KEY = booleanPreferencesKey("note_grid_layout") // 笔记网格布局
         private val NOTE_CODE_BLOCK_COLLAPSE_MODE_KEY = stringPreferencesKey("note_code_block_collapse_mode") // 笔记代码块折叠模式
+        private val AUTOFILL_KEEP_UNLOCKED_KEY = booleanPreferencesKey("autofill_keep_unlocked")
         private val AUTOFILL_AUTH_REQUIRED_KEY = booleanPreferencesKey("autofill_auth_required") // 自动填充验证
         
         // 密码页面字段可见性
@@ -708,6 +710,7 @@ class SettingsManager(private val context: Context) {
                         ?: NoteCodeBlockCollapseMode.BALANCED.name
                 )
             }.getOrDefault(NoteCodeBlockCollapseMode.BALANCED),
+            autofillKeepUnlocked = preferences[AUTOFILL_KEEP_UNLOCKED_KEY] ?: false,
             autofillAuthRequired = preferences[AUTOFILL_AUTH_REQUIRED_KEY] ?: true,
             passwordFieldVisibility = takagi.ru.monica.data.PasswordFieldVisibility(
                 securityVerification = preferences[FIELD_SECURITY_VERIFICATION_KEY] ?: true,
@@ -1313,7 +1316,14 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun updateAutofillKeepUnlocked(enabled: Boolean) {
+        takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.clear()
+        dataStore.edit { it[AUTOFILL_KEEP_UNLOCKED_KEY] = enabled }
+        takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.clear()
+    }
+
     suspend fun updateAutofillAuthRequired(required: Boolean) {
+        takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.clear()
         dataStore.edit { preferences ->
             preferences[AUTOFILL_AUTH_REQUIRED_KEY] = required
         }
@@ -1402,6 +1412,7 @@ class SettingsManager(private val context: Context) {
             securityAnalysisAutoEnabled = settings.securityAnalysisAutoEnabled,
             passwordDetailSecurityAnalysisEnabled = settings.passwordDetailSecurityAnalysisEnabled,
             steamMiniProfileBackgroundEnabled = settings.steamMiniProfileBackgroundEnabled,
+            autofillKeepUnlocked = settings.autofillKeepUnlocked,
             autofillAuthRequired = settings.autofillAuthRequired,
             iconCardsEnabled = settings.iconCardsEnabled,
             appLauncherIcon = settings.appLauncherIcon.name,
@@ -1426,6 +1437,7 @@ class SettingsManager(private val context: Context) {
     }
 
     suspend fun importPageAdjustmentSettings(snapshot: PageAdjustmentSettingsSnapshot) {
+        takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.clear()
         val parsedQuickFilterItems = PasswordListQuickFilterItem.sanitizeOrder(
             snapshot.passwordListQuickFilterItems.mapNotNull { value ->
                 runCatching { PasswordListQuickFilterItem.valueOf(value.trim()) }.getOrNull()
@@ -1590,6 +1602,7 @@ class SettingsManager(private val context: Context) {
                 snapshot.passwordDetailSecurityAnalysisEnabled
             preferences[STEAM_MINI_PROFILE_BACKGROUND_ENABLED_KEY] =
                 snapshot.steamMiniProfileBackgroundEnabled
+            preferences[AUTOFILL_KEEP_UNLOCKED_KEY] = snapshot.autofillKeepUnlocked
             preferences[AUTOFILL_AUTH_REQUIRED_KEY] = snapshot.autofillAuthRequired
             preferences[ICON_CARDS_ENABLED_KEY] = snapshot.iconCardsEnabled
             val parsedAppLauncherIcon = runCatching {
@@ -1619,6 +1632,7 @@ class SettingsManager(private val context: Context) {
             preferences[FIELD_ADDRESS_INFO_KEY] = snapshot.passwordFieldVisibility.addressInfo
             preferences[FIELD_PAYMENT_INFO_KEY] = snapshot.passwordFieldVisibility.paymentInfo
         }
+        takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.clear()
         val appliedIcon = runCatching {
             AppLauncherIcon.valueOf(snapshot.appLauncherIcon.trim())
         }.getOrDefault(AppLauncherIcon.MODERN)

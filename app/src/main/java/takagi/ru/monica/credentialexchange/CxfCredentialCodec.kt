@@ -10,7 +10,10 @@ object CxfCredentialCodec {
     private const val MAX_ITEMS = 50_000
     private val json = Json { ignoreUnknownKeys = true }
 
-    enum class SkipReason { UNSUPPORTED_CREDENTIAL, INVALID_CREDENTIAL, PASSKEY_EXTENSION, PRIVATE_KEY, NONZERO_COUNTER }
+    enum class SkipReason {
+        UNSUPPORTED_CREDENTIAL, UNSUPPORTED_TOTP, INVALID_CREDENTIAL,
+        PASSKEY_EXTENSION, PASSKEY_PRF, PASSKEY_BLOB, PASSKEY_PAYMENT, PRIVATE_KEY, NONZERO_COUNTER
+    }
 
     data class Login(val username: String, val password: String) {
         override fun toString() = "Login(<redacted>)"
@@ -103,10 +106,9 @@ object CxfCredentialCodec {
                         "note" -> credential.editableValue("content", "string")?.let(notes::add)
                         "passkey" -> {
                             // Losing an hmac-secret / PRF seed can make encrypted RP data unrecoverable.
-                            val extensions = credential["fido2Extensions"] as? JsonObject
-                            if (credential["fido2Extensions"] != null &&
-                                (extensions == null || extensions.isNotEmpty())) {
-                                skip(SkipReason.PASSKEY_EXTENSION)
+                            val extensionSkip = passkeyExtensionSkipReason(credential["fido2Extensions"])
+                            if (extensionSkip != null) {
+                                skip(extensionSkip)
                                 continue
                             }
                             try {
@@ -134,6 +136,7 @@ object CxfCredentialCodec {
                                 skip(SkipReason.INVALID_CREDENTIAL)
                             }
                         }
+                        "totp" -> skip(SkipReason.UNSUPPORTED_TOTP)
                         else -> skip(SkipReason.UNSUPPORTED_CREDENTIAL)
                     }
                 }
@@ -228,6 +231,25 @@ object CxfCredentialCodec {
             }
         }
     }.toString()
+
+    private fun passkeyExtensionSkipReason(value: JsonElement?): SkipReason? {
+        // Some exporters explicitly serialize absent optional values as null. They carry no state.
+        if (value == null || value == JsonNull) return null
+        val extensions = value as? JsonObject ?: return SkipReason.PASSKEY_EXTENSION
+        fun hasState(name: String) = extensions[name]?.let { it != JsonNull } == true
+        // Never strip PRF seeds or blob data: a signing-only import can lose RP functionality.
+        if (hasState("hmacCredentials")) return SkipReason.PASSKEY_PRF
+        if (hasState("credBlob") || hasState("largeBlob")) return SkipReason.PASSKEY_BLOB
+        if (hasState("payments")) {
+            val payments = extensions["payments"] as? JsonPrimitive
+            if (payments?.isString != false || payments.booleanOrNull == null) return SkipReason.PASSKEY_EXTENSION
+            if (payments.booleanOrNull == true) return SkipReason.PASSKEY_PAYMENT
+        }
+        if (extensions.keys.any { it !in setOf("hmacCredentials", "credBlob", "largeBlob", "payments") }) {
+            return SkipReason.PASSKEY_EXTENSION
+        }
+        return null
+    }
 
     fun base64Url(bytes: ByteArray): String = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
 

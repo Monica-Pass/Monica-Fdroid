@@ -1,6 +1,14 @@
 package takagi.ru.monica.autofill_ng.auth
 
 import android.os.SystemClock
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.PowerManager
+import androidx.core.content.ContextCompat
+import takagi.ru.monica.security.SecurityManager
 import java.net.URI
 import java.util.Locale
 
@@ -57,48 +65,102 @@ class AutofillSessionGrantStore(
 ) {
     private data class Grant(
         val context: AutofillGrantContext,
-        val expiresAtMillis: Long,
+        val grantedAtMillis: Long,
     )
 
     @Volatile
     private var activeGrant: Grant? = null
 
+    @Synchronized
     fun grant(context: AutofillGrantContext) {
+        if (context.packageName.isBlank()) {
+            clear()
+            return
+        }
         val now = elapsedRealtime()
         activeGrant = Grant(
             context = context.grantScope(),
-            expiresAtMillis = now + ttlMillis,
+            grantedAtMillis = now,
         )
     }
 
+    @Synchronized
     fun isGranted(context: AutofillGrantContext): Boolean {
         val grant = activeGrant ?: return false
-        if (elapsedRealtime() >= grant.expiresAtMillis) {
+        val age = elapsedRealtime() - grant.grantedAtMillis
+        if (age < 0 || age >= ttlMillis) {
             clear()
             return false
         }
         return grant.context == context.grantScope()
     }
 
+    @Synchronized
     fun clear() {
         activeGrant = null
     }
 
     companion object {
-        const val DEFAULT_TTL_MILLIS = 30_000L
+        const val DEFAULT_TTL_MILLIS = 120_000L
     }
 }
 
 private fun AutofillGrantContext.grantScope(): AutofillGrantContext =
-    normalized().copy(fieldSignatureKey = null)
+    // Activities and fields can change between the username and password steps.
+    // Authorization stays limited to the same app and exact normalized web host.
+    normalized().copy(interactionIdentifier = null, fieldSignatureKey = null)
 
+/** Process-only autofill authorization. Never unlocks the main app or the IME session. */
 object AutofillSessionGrants {
     private val store = AutofillSessionGrantStore()
+    private var appContext: Context? = null
 
-    fun grant(context: AutofillGrantContext) = store.grant(context)
+    @Synchronized
+    fun initialize(context: Context) {
+        if (appContext != null) return
+        val application = context.applicationContext
+        ContextCompat.registerReceiver(
+            application,
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                        clear()
+                        AutofillUnlockRequests.clear()
+                    }
+                }
+            },
+            IntentFilter(Intent.ACTION_SCREEN_OFF),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        appContext = application
+    }
 
-    fun isGranted(context: AutofillGrantContext): Boolean = store.isGranted(context)
+    private fun deviceIsUnlocked(): Boolean {
+        val context = appContext ?: return false
+        return context.getSystemService(PowerManager::class.java)?.isInteractive == true &&
+            context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == false
+    }
 
+    @Synchronized
+    fun grant(context: AutofillGrantContext, enabled: Boolean = false) {
+        val application = appContext ?: return
+        takagi.ru.monica.security.MainTaskSessionGuard.revokeIfTaskRemoved(application)
+        if (enabled && deviceIsUnlocked() && SecurityManager.hasRuntimeUnlockCache()) store.grant(context)
+        else clear()
+    }
+
+    @Synchronized
+    fun isGranted(context: AutofillGrantContext): Boolean {
+        val application = appContext ?: return false
+        if (takagi.ru.monica.security.MainTaskSessionGuard.revokeIfTaskRemoved(application)) return false
+        if (!deviceIsUnlocked() || !SecurityManager.hasRuntimeUnlockCache()) {
+            clear()
+            return false
+        }
+        return store.isGranted(context)
+    }
+
+    @Synchronized
     fun clear() = store.clear()
 }
 

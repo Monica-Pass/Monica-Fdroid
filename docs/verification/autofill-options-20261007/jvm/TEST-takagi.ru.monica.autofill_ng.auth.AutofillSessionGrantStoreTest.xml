@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-07T11:03:13" hostname="JOYIN" time="0.03">
+  <properties/>
+  <testcase name="processRestartAndClockRollbackRequireNewVerification" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.009"/>
+  <testcase name="onlyOneTargetIsGrantedAndEmptyTargetsFailClosed" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.013"/>
+  <testcase name="grantIsLimitedToAppAndHostButSurvivesDynamicFieldChanges" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.001"/>
+  <testcase name="explicitReauthenticationStartsANewWindow" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.0"/>
+  <testcase name="lockedVaultRequiresOneResponseUnlockUnlessGrantIsActive" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.001"/>
+  <testcase name="requestUriFactoryDoesNotTreatAndroidAppPackageAsWebDomain" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.001"/>
+  <testcase name="disabledAuthenticationAlwaysUsesExistingDirectFillMode" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.0"/>
+  <testcase name="defaultWindowIsExactlyTwoMinutesAndReadsNeverRenewIt" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.005"/>
+  <testcase name="grantExpiresUsingMonotonicTimeAndCanBeCleared" classname="takagi.ru.monica.autofill_ng.auth.AutofillSessionGrantStoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

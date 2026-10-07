@@ -5,7 +5,8 @@ import takagi.ru.monica.keepass.KeePassFieldRole
 
 internal fun isImeCustomFieldName(name: String): Boolean {
     val title = name.trim()
-    if (title.isEmpty() || title.startsWith("monica.", ignoreCase = true)) return false
+    if (title.isEmpty() || title.startsWith("monica.", ignoreCase = true) ||
+        takagi.ru.monica.data.model.CredentialExchangeMetadata.ownsField(title)) return false
     if (title.startsWith("Monica", ignoreCase = true) && KeePassFieldRegistry.isMonicaOwned(title)) return false
     // Ordinary user labels such as Email, PIN or Password remain valid custom fields.
     return KeePassFieldRegistry.roleOf(title) !in setOf(

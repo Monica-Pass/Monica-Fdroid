@@ -85,6 +85,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.ui.components.OutlinedTextField
+import takagi.ru.monica.ui.components.SuggestedOutlinedTextField
+import takagi.ru.monica.data.CommonSuggestionField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -886,7 +888,8 @@ fun AddEditDocumentScreen(
                     }
 
                     // Issuing Authority
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.ISSUED_BY,
                         value = issuedBy,
                         onValueChange = { issuedBy = it },
                         label = { Text(stringResource(R.string.issuing_authority)) },

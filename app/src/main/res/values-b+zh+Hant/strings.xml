@@ -4352,4 +4352,6 @@
     <string name="local_recovery_failed">未能完成復原。請檢查主密碼後重試；如果仍失敗，請保留應用程式資料並複製診斷資訊。</string>
     <string name="local_recovery_limits">復原仍需保留資料庫和附件檔案。尚未轉換的舊資料、硬體專用通行金鑰可能仍需要原裝置金鑰。</string>
     <string name="local_recovery_save_failed">無法安全儲存主密碼，原有資料已保留。</string>
+    <string name="autofill_keep_unlocked">保持解鎖兩分鐘</string>
+    <string name="autofill_keep_unlocked_desc">僅在同一應用程式及網站內重用驗證。關閉此項、鎖定螢幕或從最近任務中清除 Monica 後失效，不會解鎖主應用程式。</string>
 </resources>

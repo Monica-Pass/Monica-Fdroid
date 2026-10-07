@@ -55,7 +55,10 @@ class FilledDataBuilderNg(
         // “永不过期”允许会话跨进程生命周期恢复，但显式锁定仍必须立即生效。
         // 因此始终同时检查会话状态和可用密钥材料，不能仅凭 Keystore 材料可读
         // 就绕过 SessionManager。
-        val isVaultLocked = !securityManager.canAccessVaultNowStrict(context, autoLockMinutes)
+        // A verified request or scoped grant already authorized this response.
+        // Consulting the unrelated main-app timer here could clear its freshly unlocked key.
+        val isVaultLocked = requireAuthentication &&
+            !securityManager.canAccessVaultNowStrict(context, autoLockMinutes)
         val maxCipherInlineSuggestionsCount = (request.maxInlineSuggestionsCount - 1)
             .coerceAtMost(MAX_INLINE_SUGGESTION_COUNT)
 

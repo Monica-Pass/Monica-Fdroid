@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface PasswordEntryDao {
+    /** Metadata projection for common-field suggestions; never select password material. */
+    @Query("SELECT id, website, keepassDatabaseId, bitwarden_vault_id AS bitwardenVaultId, mdbx_database_id AS mdbxDatabaseId FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0")
+    fun observeCommonSuggestionOwners(): Flow<List<CommonSuggestionOwner>>
+
     @Transaction
     @Query("SELECT $WALLET_PASSWORD_COLUMNS FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0 AND (creditCardNumber != '' OR creditCardHolder != '' OR addressLine != '' OR city != '' OR state != '' OR zipCode != '' OR country != '' OR EXISTS(SELECT 1 FROM custom_fields WHERE entry_id = password_entries.id AND title IN ('monica.content.wallet.bank_card','monica.content.wallet.document','monica.content.wallet.address')))")
     suspend fun getWalletPasswordRows(): List<WalletPasswordRow>

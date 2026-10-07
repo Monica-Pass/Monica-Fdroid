@@ -82,6 +82,7 @@ internal class DedupAttachmentSupport(private val context: Context, private val 
     }
 
     suspend fun copy(refs: List<DedupAttachmentRef>, target: AttachmentOwner) {
+        if (refs.isEmpty()) return
         check(refs.all { it.readable }) { "Source attachment is unavailable" }
         val rows = refs.map { ref -> checkNotNull(db.attachmentDao().getById(ref.attachmentId)) }
         for ((owner, group) in rows.groupBy { checkNotNull(it.owner) }) {

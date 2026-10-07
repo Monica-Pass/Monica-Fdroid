@@ -1,0 +1,11 @@
+{
+  "oldProxy": ":0",
+  "edition": "Fdroid",
+  "classes": "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153BackgroundAndConfigurationKeepMainSessionButPickerCannotRefreshIt",
+  "testHash": "BB9F4B17E4076923CD3095DF60DF7FB28352132C7217E8C59E0DCA01D29E8C39",
+  "oldUser": "0",
+  "skipInstall": false,
+  "tests": 1,
+  "completed": true,
+  "appHash": "AACD49A15AAD1EC1440822FBC1AF9F41E198E45830D692F087E897A9B6DCAB3E"
+}

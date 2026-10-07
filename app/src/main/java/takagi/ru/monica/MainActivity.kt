@@ -392,6 +392,11 @@ class MainActivity : BaseMonicaActivity() {
         if (secureStartupReady) takagi.ru.monica.autofill_ng.protection.AutofillProtection.restoreIfEnabled(this)
     }
 
+    override fun onDestroy() {
+        takagi.ru.monica.security.MainTaskSessionGuard.onMainTaskDestroyed(this)
+        super.onDestroy()
+    }
+
     override fun onStop() {
         super.onStop()
         takagi.ru.monica.repository.Mdbx2NativeReadSessions.updateForeground(false)
@@ -399,6 +404,7 @@ class MainActivity : BaseMonicaActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        takagi.ru.monica.security.MainTaskSessionGuard.onMainTaskCreated(this)
         super.onCreate(savedInstanceState) // BaseMonicaActivity 已调用 enableEdgeToEdge()
         handleExternalTotpIntent(intent)
         takagi.ru.monica.transfer.DataTaskNavigation.receive(this, intent)
@@ -875,6 +881,16 @@ fun MonicaContent(
     onPermissionRequested: (String, (Boolean) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
+    val clearDataViewModel: takagi.ru.monica.viewmodel.ClearDataViewModel = viewModel {
+        val clearData = takagi.ru.monica.data.ClearDataUseCase(
+            repository, secureItemRepository, passwordHistoryManager::clearHistory,
+        )
+        takagi.ru.monica.viewmodel.ClearDataViewModel(clearData::execute)
+    }
+    val clearDataProgress by clearDataViewModel.progress.collectAsState()
+    clearDataProgress?.let { progress ->
+        takagi.ru.monica.ui.components.ClearDataProgressSheet(progress, clearDataViewModel::dismiss)
+    }
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val settings by settingsViewModel.settings.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -1441,59 +1457,10 @@ fun MonicaContent(
                         launchSingleTop = true
                     }
                 },
-                onClearAllData = { clearPasswords: Boolean, clearTotp: Boolean, clearNotes: Boolean, clearDocuments: Boolean, clearBankCards: Boolean, clearGeneratorHistory: Boolean ->
-                    // 清空所有数据
-                    android.util.Log.d(
-                        "MainActivity",
-                        "onClearAllData called with options: passwords=$clearPasswords, totp=$clearTotp, notes=$clearNotes, documents=$clearDocuments, bankCards=$clearBankCards, generatorHistory=$clearGeneratorHistory"
-                    )
-                    scope.launch {
-                        try {
-                            // 根据选项清空PasswordEntry表
-                            if (clearPasswords) {
-                                val passwords = repository.getAllPasswordEntries().first()
-                                android.util.Log.d("MainActivity", "Found ${passwords.size} passwords to delete")
-                                passwords.forEach { repository.deletePasswordEntry(it) }
-                            }
-                            
-                            // 根据选项清空SecureItem表
-                            if (clearTotp || clearDocuments || clearBankCards || clearNotes) {
-                                val items = secureItemRepository.getAllItems().first()
-                                android.util.Log.d("MainActivity", "Found ${items.size} secure items to delete")
-                                items.forEach { item ->
-                                    val shouldDelete = when (item.itemType) {
-                                        ItemType.TOTP -> clearTotp
-                                        ItemType.DOCUMENT -> clearDocuments
-                                        ItemType.BANK_CARD -> clearBankCards
-                                        ItemType.NOTE -> clearNotes
-                                        else -> false
-                                    }
-                                    if (shouldDelete) {
-                                        secureItemRepository.deleteItem(item)
-                                    }
-                                }
-                            }
-
-                            if (clearGeneratorHistory) {
-                                passwordHistoryManager.clearHistory()
-                            }
-                            
-                            // 显示成功消息
-                            android.widget.Toast.makeText(
-                                navController.context,
-                                navController.context.getString(R.string.legacy_ui_data_cleared),
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                            android.util.Log.d("MainActivity", "All selected data cleared successfully")
-                        } catch (e: Exception) {
-                            android.util.Log.e("MainActivity", "Failed to clear data", e)
-                            android.widget.Toast.makeText(
-                                navController.context,
-                                navController.context.getString(R.string.legacy_ui_clear_failed, e.message),
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
+                onClearAllData = { passwords, totp, notes, documents, bankCards, history ->
+                    clearDataViewModel.start(takagi.ru.monica.data.ClearDataSelection(
+                        passwords, totp, notes, documents, bankCards, history,
+                    ))
                 },
                 initialTab = tab
             )
@@ -3011,59 +2978,10 @@ fun MonicaContent(
                         launchSingleTop = true
                     }
                 },
-                onClearAllData = { clearPasswords: Boolean, clearTotp: Boolean, clearNotes: Boolean, clearDocuments: Boolean, clearBankCards: Boolean, clearGeneratorHistory: Boolean ->
-                    // 清空所有数据
-                    android.util.Log.d(
-                        "MainActivity",
-                        "onClearAllData called with options: passwords=$clearPasswords, totp=$clearTotp, notes=$clearNotes, documents=$clearDocuments, bankCards=$clearBankCards, generatorHistory=$clearGeneratorHistory"
-                    )
-                    scope.launch {
-                        try {
-                            // 根据选项清空PasswordEntry表
-                            if (clearPasswords) {
-                                val passwords = repository.getAllPasswordEntries().first()
-                                android.util.Log.d("MainActivity", "Found ${passwords.size} passwords to delete")
-                                passwords.forEach { repository.deletePasswordEntry(it) }
-                            }
-                            
-                            // 根据选项清空SecureItem表
-                            if (clearTotp || clearDocuments || clearBankCards || clearNotes) {
-                                val items = secureItemRepository.getAllItems().first()
-                                android.util.Log.d("MainActivity", "Found ${items.size} secure items to delete")
-                                items.forEach { item ->
-                                    val shouldDelete = when (item.itemType) {
-                                        ItemType.TOTP -> clearTotp
-                                        ItemType.DOCUMENT -> clearDocuments
-                                        ItemType.BANK_CARD -> clearBankCards
-                                        ItemType.NOTE -> clearNotes
-                                        else -> false
-                                    }
-                                    if (shouldDelete) {
-                                        secureItemRepository.deleteItem(item)
-                                    }
-                                }
-                            }
-
-                            if (clearGeneratorHistory) {
-                                passwordHistoryManager.clearHistory()
-                            }
-                            
-                            // 显示成功消息
-                            android.widget.Toast.makeText(
-                                navController.context,
-                                navController.context.getString(R.string.legacy_ui_data_cleared),
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                            android.util.Log.d("MainActivity", "All selected data cleared successfully")
-                        } catch (e: Exception) {
-                            android.util.Log.e("MainActivity", "Failed to clear data", e)
-                            android.widget.Toast.makeText(
-                                navController.context,
-                                navController.context.getString(R.string.legacy_ui_clear_failed, e.message),
-                                android.widget.Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
+                onClearAllData = { passwords, totp, notes, documents, bankCards, history ->
+                    clearDataViewModel.start(takagi.ru.monica.data.ClearDataSelection(
+                        passwords, totp, notes, documents, bankCards, history,
+                    ))
                 }
             )
             }
@@ -4006,6 +3924,7 @@ fun MonicaContent(
                         bitwardenVaultDao = database.bitwardenVaultDao(),
                         securityManager = securityManager,
                         strings = strings,
+                        database = database,
                         attachmentSupport = takagi.ru.monica.data.dedup.DedupAttachmentSupport(context.applicationContext, database)
                     ),
                     strings = strings

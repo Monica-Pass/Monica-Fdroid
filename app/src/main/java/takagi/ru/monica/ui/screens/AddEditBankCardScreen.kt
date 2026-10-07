@@ -97,6 +97,8 @@ import takagi.ru.monica.viewmodel.BankCardViewModel
 import takagi.ru.monica.viewmodel.LocalKeePassViewModel
 import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.ui.components.OutlinedTextField
+import takagi.ru.monica.ui.components.SuggestedOutlinedTextField
+import takagi.ru.monica.data.CommonSuggestionField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -798,7 +800,8 @@ fun AddEditBankCardScreen(
 
 
                     // Bank Name
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.BANK_NAME,
                         value = bankName,
                         onValueChange = { bankName = it },
                         label = { Text(stringResource(R.string.bank_name)) },

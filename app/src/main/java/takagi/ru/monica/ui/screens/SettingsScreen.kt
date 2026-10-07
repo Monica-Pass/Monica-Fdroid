@@ -1349,7 +1349,11 @@ fun SettingsScreen(
         var clearBankCards by remember { mutableStateOf(true) }
         var clearGeneratorHistory by remember { mutableStateOf(true) }
         
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        var verifying by remember { mutableStateOf(false) }
+        val sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+            confirmValueChange = { !verifying || it != SheetValue.Hidden },
+        )
         fun dismissClearDataSheet(afterDismiss: (() -> Unit)? = null) {
             coroutineScope.launch {
                 if (sheetState.isVisible) {
@@ -1362,7 +1366,7 @@ fun SettingsScreen(
         }
         
         ModalBottomSheet(
-            onDismissRequest = { dismissClearDataSheet() },
+            onDismissRequest = { if (!verifying) dismissClearDataSheet() },
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp
@@ -1379,16 +1383,32 @@ fun SettingsScreen(
                 } },
                 password = clearDataPasswordInput, onPassword = { clearDataPasswordInput = it },
                 verificationRequired = !settings.disablePasswordVerification,
-                onCancel = { dismissClearDataSheet() },
+                verifying = verifying,
+                onCancel = { if (!verifying) dismissClearDataSheet() },
                 onConfirm = {
-                    coroutineScope.launch {
-                        val securityManager = takagi.ru.monica.security.SecurityManager(context)
-                        if (settings.disablePasswordVerification || securityManager.verifyMasterPassword(clearDataPasswordInput)) {
-                            dismissClearDataSheet {
-                                onClearAllData(clearPasswords, clearTotp, clearNotes, clearDocuments, clearBankCards, clearGeneratorHistory)
-                                Toast.makeText(context, context.getString(R.string.clearing_data), Toast.LENGTH_SHORT).show()
+                    if (!verifying) {
+                        verifying = true
+                        val passwordToVerify = clearDataPasswordInput
+                        coroutineScope.launch {
+                            val verified = try {
+                                settings.disablePasswordVerification || kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    takagi.ru.monica.security.SecurityManager(context.applicationContext)
+                                        .verifyMasterPassword(passwordToVerify)
+                                }
+                            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                false
                             }
-                        } else Toast.makeText(context, context.getString(R.string.password_incorrect), Toast.LENGTH_SHORT).show()
+                            if (verified) {
+                                showClearDataDialog = false
+                                clearDataPasswordInput = ""
+                                onClearAllData(clearPasswords, clearTotp, clearNotes, clearDocuments, clearBankCards, clearGeneratorHistory)
+                            } else {
+                                verifying = false
+                                Toast.makeText(context, context.getString(R.string.password_incorrect), Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 })
         }

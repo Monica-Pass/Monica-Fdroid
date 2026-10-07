@@ -72,6 +72,8 @@ class AutofillUnlockActivity : AppCompatActivity() {
             if (DeveloperVerificationPolicy.bypassesIdentityVerification(settings)) {
                 securityManager.unlockVaultForDeveloperBypass(settings.autoLockMinutes)
                 completeUnlock(authenticationVerified = false)
+            } else if (settings.autofillKeepUnlocked && AutofillSessionGrants.isGranted(pendingRequest.grantContext)) {
+                completeUnlock(authenticationVerified = false)
             } else if (!settings.autofillAuthRequired) {
                 completeUnlock(authenticationVerified = false)
             } else if (settings.biometricEnabled && biometricAuthHelper.isBiometricAvailable()) {
@@ -188,7 +190,9 @@ class AutofillUnlockActivity : AppCompatActivity() {
         if (rejectBlockedRequest(pendingRequest.request)) return
 
         if (authenticationVerified) {
-            AutofillSessionGrants.grant(pendingRequest.grantContext)
+            val settings = settingsManager.settingsFlow.first()
+            AutofillSessionGrants.grant(pendingRequest.grantContext,
+                enabled = settings.autofillKeepUnlocked && settings.autofillAuthRequired)
         }
 
         resultPublished = true

@@ -44,7 +44,7 @@ class DedupMergeInstrumentedTest {
             PasswordRepository(db.passwordEntryDao()), SecureItemRepository(db.secureItemDao()),
             PasskeyRepository(db.passkeyDao()), CustomFieldRepository(db.customFieldDao()),
             db.localKeePassDatabaseDao(), db.localMdbxDatabaseDao(), db.bitwardenVaultDao(),
-            security, AppLocaleStringResolver(context)
+            security, AppLocaleStringResolver(context), db
         )
     }
 

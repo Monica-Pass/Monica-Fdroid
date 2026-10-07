@@ -82,14 +82,55 @@ class CxfCredentialCodecTest {
         invalid.forEach { assertTrue(runCatching { CxfCredentialCodec.decode(JsonObject(it).toString()) }.isFailure) }
     }
 
+    @Test fun absentExtensionDataAndDisabledPaymentsKeepTheOriginalPasskey() {
+        val pair = ecKey()
+        val original = keyCredential(pair)
+        for (extensions in listOf("{}", "null", """{"payments":false}""",
+            """{"payments":null,"hmacCredentials":null,"credBlob":null,"largeBlob":null}""")) {
+            val input = JsonObject(original + ("fido2Extensions" to Json.parseToJsonElement(extensions)))
+            val decoded = decodeCredentials(input.toString())
+            assertEquals(extensions, 1, decoded.passkeyCount)
+            assertEquals(extensions, 0, decoded.skippedCount)
+            val restored = decoded.items.single().passkeys.single()
+            assertEquals(original["credentialId"]!!.jsonPrimitive.content, restored.credentialId)
+            assertArrayEquals(pair.private.encoded, Base64.getUrlDecoder().decode(restored.key))
+            val roundTrip = CxfCredentialCodec.decode(CxfCredentialCodec.encode(decoded.items, "test", types))
+            assertEquals(restored, roundTrip.items.single().passkeys.single())
+        }
+    }
+
     @Test fun prfOrOtherUnimplementedExtensionsNeverLoseTheirSeedSilently() {
-        for (extensions in listOf("""{"hmacCredentials":[{"credWithUV":"AQID"}]}""", "[]", "null")) {
+        val reasons = mapOf(
+            """{"hmacCredentials":{"algorithm":"hmac-sha256","credWithUV":"AQID"}}""" to CxfCredentialCodec.SkipReason.PASSKEY_PRF,
+            """{"credBlob":"AQID"}""" to CxfCredentialCodec.SkipReason.PASSKEY_BLOB,
+            """{"largeBlob":"AQID","payments":false}""" to CxfCredentialCodec.SkipReason.PASSKEY_BLOB,
+            """{"credBlob":""}""" to CxfCredentialCodec.SkipReason.PASSKEY_BLOB,
+            """{"payments":true}""" to CxfCredentialCodec.SkipReason.PASSKEY_PAYMENT,
+            """{"payments":"false"}""" to CxfCredentialCodec.SkipReason.PASSKEY_EXTENSION,
+            """{"payments":0}""" to CxfCredentialCodec.SkipReason.PASSKEY_EXTENSION,
+            """{"future":null}""" to CxfCredentialCodec.SkipReason.PASSKEY_EXTENSION,
+            "[]" to CxfCredentialCodec.SkipReason.PASSKEY_EXTENSION,
+        )
+        for ((extensions, reason) in reasons) {
             val key = keyCredential(ecKey()).toMutableMap()
             key["fido2Extensions"] = Json.parseToJsonElement(extensions)
             val decoded = decodeCredentials(JsonObject(key).toString())
-            assertEquals(0, decoded.passkeyCount)
-            assertEquals(1, decoded.skipped[CxfCredentialCodec.SkipReason.PASSKEY_EXTENSION])
+            assertEquals(extensions, 0, decoded.passkeyCount)
+            assertEquals(extensions, mapOf(reason to 1), decoded.skipped)
         }
+    }
+
+    @Test fun mixedCredentialReasonsDoNotDropValidCredentialsOrCountThemAsPasskeys() {
+        val good = keyCredential(ecKey())
+        val blocked = JsonObject(good + ("fido2Extensions" to buildJsonObject { put("largeBlob", "AQID") }))
+        val decoded = decodeCredentials("$good,$blocked,{\"type\":\"totp\"},{\"type\":\"credit-card\"}," +
+            """{"type":"basic-auth","username":{"fieldType":"string","value":"Alice"}}""")
+        assertEquals(1, decoded.passwordCount)
+        assertEquals(1, decoded.passkeyCount)
+        assertEquals(3, decoded.skippedCount)
+        assertEquals(mapOf(CxfCredentialCodec.SkipReason.PASSKEY_BLOB to 1,
+            CxfCredentialCodec.SkipReason.UNSUPPORTED_TOTP to 1,
+            CxfCredentialCodec.SkipReason.UNSUPPORTED_CREDENTIAL to 1), decoded.skipped)
     }
 
     @Test fun rpIdAndOpaqueIdsAreNotReplacedByTitlesOrUrls() {

@@ -45,7 +45,7 @@ class DedupPasskeyInstrumentedTest {
         db.bitwardenVaultDao().insert(BitwardenVault(id = 1, email = "synthetic@example.invalid"))
         service = DedupMergeService(PasswordRepository(db.passwordEntryDao()), SecureItemRepository(db.secureItemDao()),
             repository, CustomFieldRepository(db.customFieldDao()), db.localKeePassDatabaseDao(),
-            db.localMdbxDatabaseDao(), db.bitwardenVaultDao(), security, AppLocaleStringResolver(context))
+            db.localMdbxDatabaseDao(), db.bitwardenVaultDao(), security, AppLocaleStringResolver(context), db)
     }
 
     @After fun tearDown() = runBlocking {

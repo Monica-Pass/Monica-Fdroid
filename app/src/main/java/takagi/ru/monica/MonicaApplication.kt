@@ -49,6 +49,7 @@ class MonicaApplication : Application() {
         super.onCreate()
 
         SessionManager.attachAppContext(this)
+        takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.initialize(this)
 
         // Security invariant: an app update must invalidate the previous runtime
         // session before any activity is allowed to restore it. Keep this sync.

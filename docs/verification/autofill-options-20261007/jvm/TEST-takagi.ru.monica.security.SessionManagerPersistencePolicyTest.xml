@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-07T11:03:14" hostname="JOYIN" time="0.001">
+  <properties/>
+  <testcase name="neverExpireFailsClosedAfterDeviceRestart" classname="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" time="0.001"/>
+  <testcase name="finiteSessionUsesTheMoreConservativeClockDelta" classname="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" time="0.0"/>
+  <testcase name="activityPersistenceIsLimitedToOneWritePerWindow" classname="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" time="0.0"/>
+  <testcase name="activityTimestampUpdatesAtMostOncePerSecond" classname="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" time="0.0"/>
+  <testcase name="finiteSessionFailsClosedAfterDeviceRestartOrClockRollback" classname="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" time="0.0"/>
+  <testcase name="neverExpireHasNoTimeLimitWithinCurrentTaskAndProcess" classname="takagi.ru.monica.security.SessionManagerPersistencePolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

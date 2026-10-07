@@ -7,10 +7,11 @@ import java.security.MessageDigest
 import java.util.Base64
 import kotlinx.serialization.json.*
 import takagi.ru.monica.data.LinkedAppBinding
+import takagi.ru.monica.data.model.CredentialExchangeMetadata
 
 /** Preserve the signed application scope when translating CXF into native custom fields. */
 internal object CxfAndroidAppScope {
-    const val FIELD_NAME = "CXF Android apps"
+    const val FIELD_NAME = CredentialExchangeMetadata.ANDROID_APPS
 
     fun restore(value: String?): JsonArray = value?.let {
         runCatching { Json.parseToJsonElement(it) as? JsonArray }.getOrNull()

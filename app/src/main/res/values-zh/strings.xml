@@ -4666,4 +4666,6 @@
     <string name="local_recovery_failed">未能完成恢复。请检查主密码后重试；如果仍失败，请保留应用数据并复制诊断信息。</string>
     <string name="local_recovery_limits">恢复仍需保留数据库和附件文件。尚未转换的旧数据、硬件专用通行密钥可能仍需要原设备密钥。</string>
     <string name="local_recovery_save_failed">无法安全保存主密码，原有数据已保留。</string>
+    <string name="autofill_keep_unlocked">保持解锁两分钟</string>
+    <string name="autofill_keep_unlocked_desc">仅在同一应用及网站内复用验证。关闭此项、锁屏或从最近任务中清理 Monica 后失效，不会解锁主应用。</string>
 </resources>

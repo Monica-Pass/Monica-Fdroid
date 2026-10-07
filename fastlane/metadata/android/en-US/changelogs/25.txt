@@ -1,0 +1,6 @@
+Optional 2-minute autofill access, off by default; screen-off, disabling it or clearing Monica revokes it. Main app stays independently locked.
+Add saved-value suggestions for bank details, labels, URLs and issuing authorities.
+Speed up Clear data with progress and batched deletion.
+Speed up deduplication with rollback and cancellation.
+Hide imported app metadata while preserving it through edits and re-export.
+CLI defers Glitter; existing vaults stay unchanged.

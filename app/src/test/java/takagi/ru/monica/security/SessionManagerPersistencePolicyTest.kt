@@ -51,7 +51,7 @@ class SessionManagerPersistencePolicyTest {
     }
 
     @Test
-    fun neverExpireSurvivesAppProcessRestartWithinTheSameBoot() {
+    fun neverExpireHasNoTimeLimitWithinCurrentTaskAndProcess() {
         assertTrue(
             isPersistedSessionWithinTimeout(
                 autoLockMinutes = -1,

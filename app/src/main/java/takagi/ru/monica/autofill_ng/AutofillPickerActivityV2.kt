@@ -127,6 +127,8 @@ import takagi.ru.monica.ui.screens.AddEditDocumentScreen
 import takagi.ru.monica.ui.screens.AddEditPasswordInitialDraft
 import takagi.ru.monica.ui.screens.AddEditPasswordScreen
 import takagi.ru.monica.security.SessionManager
+import takagi.ru.monica.autofill_ng.auth.AutofillGrantContext
+import takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants
 import takagi.ru.monica.util.TotpGenerator
 import takagi.ru.monica.util.PasswordGenerator
 import takagi.ru.monica.utils.AppLauncherIconManager
@@ -475,14 +477,17 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
             )
         }
         
-        // 主应用已解锁时可直接进入；否则在自动填充页内复用同款验证界面，
-        // 但验证结果仅用于本次自动填充，不回写主应用共享会话。
+        // Reuse only this target's autofill grant; do not write the main app session.
         val startupSettings = cachedSettings ?: runBlocking { localSettingsManager.settingsFlow.first() }
         val developerBypass = DeveloperVerificationPolicy.bypassesIdentityVerification(startupSettings)
         if (developerBypass) {
             securityManager.unlockVaultForDeveloperBypass(startupSettings.autoLockMinutes)
         }
-        val canOpenPicker = developerBypass || securityManager.canRestoreMainAppSession(
+        val grantContext = AutofillGrantContext(
+            args.applicationId.orEmpty(), args.webDomain, args.interactionIdentifier, args.fieldSignatureKey,
+        )
+        val grantActive = startupSettings.autofillKeepUnlocked && AutofillSessionGrants.isGranted(grantContext)
+        val canOpenPicker = developerBypass || grantActive || securityManager.canRestoreMainAppSession(
             applicationContext,
             startupSettings.autoLockMinutes
         )
@@ -523,7 +528,7 @@ class AutofillPickerActivityV2 : BaseMonicaActivity() {
                     generatorPreferences = generatorPreferences,
                     canSkipVerification = canOpenPicker,
                     requireAuthentication = settings.autofillAuthRequired &&
-                        DeveloperVerificationPolicy.requiresIdentityVerification(settings),
+                        DeveloperVerificationPolicy.requiresIdentityVerification(settings) && !grantActive,
                     biometricEnabled = settings.biometricEnabled,
                     autoLockMinutes = settings.autoLockMinutes,
                     iconCardsEnabled = settings.iconCardsEnabled,
@@ -1834,7 +1839,14 @@ private fun AutofillPickerContent(
                 persistVaultUnlockToSession = false,
                 onVerifyPassword = { input -> securityManager.unlockVaultWithPassword(input) },
                 onSuccess = {
-                    isAuthenticated = true
+                    coroutineScope.launch {
+                        val latest = takagi.ru.monica.utils.SettingsManager(context).settingsFlow.first()
+                        AutofillSessionGrants.grant(AutofillGrantContext(
+                            args.applicationId.orEmpty(), args.webDomain,
+                            args.interactionIdentifier, args.fieldSignatureKey,
+                        ), enabled = latest.autofillKeepUnlocked && latest.autofillAuthRequired)
+                        isAuthenticated = true
+                    }
                 }
             )
         }

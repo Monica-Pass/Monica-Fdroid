@@ -175,7 +175,8 @@ class MonicaAutofillServiceNg : AutofillService() {
         PasswordDatabase.getDatabase(applicationContext).invalidationTracker.removeObserver(otpBindingObserver)
         otpBindingCache.invalidate()
         matcher.clear()
-        AutofillSessionGrants.clear()
+        // Android may unbind/recreate this service between login steps.
+        // The process-owned grant expires independently of the service lifecycle.
         if (screenOffReceiverRegistered) {
             runCatching { unregisterReceiver(screenOffReceiver) }
             screenOffReceiverRegistered = false
@@ -692,8 +693,9 @@ class MonicaAutofillServiceNg : AutofillService() {
             interactionIdentifier = primaryInteractionIdentifier,
             fieldSignatureKey = fieldSignatureKey,
         )
-        val grantActive = autofillAuthRequired && AutofillSessionGrants.isGranted(grantContext)
-        if (!autofillAuthRequired) {
+        val grantActive = autofillAuthRequired && currentSettings.autofillKeepUnlocked &&
+            AutofillSessionGrants.isGranted(grantContext)
+        if (!autofillAuthRequired || !currentSettings.autofillKeepUnlocked) {
             AutofillSessionGrants.clear()
         }
         val effectiveAuthenticationRequired = autofillAuthRequired && !grantActive
@@ -1512,7 +1514,8 @@ class MonicaAutofillServiceNg : AutofillService() {
 
     override fun onDisconnected() {
         matcher.clear()
-        AutofillSessionGrants.clear()
+        // Android may unbind/recreate this service between login steps.
+        // The process-owned grant expires independently of the service lifecycle.
         passwordMemoryByPackage.clear()
         super.onDisconnected()
         AutofillLogger.i("AF", "Service disconnected")

@@ -112,7 +112,8 @@ fun EntryOptionalFields(specs: List<EntrySupplementalSpec>, values: Map<String, 
                             Text(stringResource(label))
                         }
                     } } }, confirmButton = { TextButton(onClick = { choosing = false }) { Text(stringResource(R.string.cancel)) } })
-            } else OutlinedTextField(values[spec.key].orEmpty(), { onValue(spec, it) },
+            } else SuggestedOutlinedTextField(values[spec.key].orEmpty(), { onValue(spec, it) },
+                suggestionField = if (spec.protected) null else takagi.ru.monica.data.CommonSuggestionField.forSupplementalKey(spec.key),
                 label = { Text(title) }, entryContentStyle = true,
                 visualTransformation = if (spec.protected && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
                 trailingIcon = if (spec.protected) {{ IconButton(onClick = { revealed = !revealed },

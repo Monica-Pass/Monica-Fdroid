@@ -19,6 +19,7 @@ import takagi.ru.monica.data.LocalKeePassDatabaseDao
 import takagi.ru.monica.data.LocalMdbxDatabaseDao
 import takagi.ru.monica.data.PasskeyEntry
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.data.PasswordDatabase
 import takagi.ru.monica.data.PasswordOwnership
 import takagi.ru.monica.data.PasskeyOwnership
 import takagi.ru.monica.data.SecureItemOwnership
@@ -54,6 +55,7 @@ internal class DedupMergeService(
     private val bitwardenVaultDao: BitwardenVaultDao,
     private val securityManager: SecurityManager,
     private val strings: StringResolver,
+    database: PasswordDatabase,
     private val attachmentSupport: DedupAttachmentSupport? = null
 ) : DedupMergeOperations {
     private val json = Json { ignoreUnknownKeys = true }
@@ -63,6 +65,7 @@ internal class DedupMergeService(
             secureItemRepository = secureItemRepository,
             customFieldRepository = customFieldRepository,
             passkeyRepository = passkeyRepository,
+            database = database,
             attachmentSupport = attachmentSupport
         ),
         strings = strings
@@ -72,6 +75,12 @@ internal class DedupMergeService(
         val entries = passwordRepository.getAllPasswordEntries().first()
         val secureItems = secureItemRepository.getAllItems().first()
         val passkeys = passkeyRepository.getAllPasskeysSync()
+        return getSourceOptions(entries, secureItems, passkeys)
+    }
+
+    private suspend fun getSourceOptions(
+        entries: List<PasswordEntry>, secureItems: List<SecureItem>, passkeys: List<PasskeyEntry>
+    ): List<DedupMergeSourceOption> {
         val keepassDatabases = localKeePassDatabaseDao.getAllDatabasesSync()
         val mdbxDatabases = localMdbxDatabaseDao.getAvailableDatabasesSnapshot()
         val bitwardenVaults = bitwardenVaultDao.getAllVaults()
@@ -174,14 +183,14 @@ internal class DedupMergeService(
         target: DedupMergeTarget?,
         conflictPolicy: DedupConflictPolicy
     ): DedupMergePlan {
-        val sourceOptions = getSourceOptions()
+        val allEntries = passwordRepository.getAllPasswordEntries().first()
+        val allSecureItems = secureItemRepository.getAllItems().first()
+        val allPasskeys = passkeyRepository.getAllPasskeysSync()
+        val sourceOptions = getSourceOptions(allEntries, allSecureItems, allPasskeys)
         val selectedOptions = sourceOptions.filter { it.key in selectedSourceKeys }
         if (selectedOptions.isEmpty() || target == null || target.sourceKey() in selectedSourceKeys) {
             return DedupMergePlan(selectedSources = selectedOptions, target = target, conflictPolicy = conflictPolicy)
         }
-        val allEntries = passwordRepository.getAllPasswordEntries().first()
-        val allSecureItems = secureItemRepository.getAllItems().first()
-        val allPasskeys = passkeyRepository.getAllPasskeysSync()
         val targetSourceKey = target?.sourceKey()
         val sourceEntries = allEntries.filter { sourceKeyOf(it) in selectedSourceKeys }
         val sourceSecureItems = allSecureItems.filter { sourceKeyOf(it) in selectedSourceKeys }
@@ -342,7 +351,9 @@ internal class DedupMergeService(
         require(target.sourceKey() !in plan.selectedSources.map { it.key }.toSet()) {
             strings.get(R.string.dedup_merge_target_cannot_be_source)
         }
-        require(getTargetOptions().any { it.sourceKey == target.sourceKey() }) {
+        require(target == DedupMergeTarget.MonicaLocal ||
+            (target is DedupMergeTarget.MdbxDatabase &&
+                localMdbxDatabaseDao.getAvailableDatabasesSnapshot().any { it.id == target.databaseId })) {
             strings.get(R.string.dedup_merge_need_target)
         }
         val freshPlan = buildPlan(

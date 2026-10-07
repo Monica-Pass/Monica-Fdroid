@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.data.model.CredentialExchangeMetadata
+
 import takagi.ru.monica.ui.components.DetailSectionLayout
 import takagi.ru.monica.ui.components.DetailGroupItem
 import takagi.ru.monica.ui.components.entryGroupShape
@@ -291,7 +293,7 @@ fun PasswordDetailScreen(
                 it.title == MONICA_MANUAL_STACK_GROUP_FIELD_TITLE ||
                     it.title == MONICA_NO_STACK_FIELD_TITLE
             }
-            .filterNot { it.title == ProjectCredentialGroup.FIELD || it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) }
+            .filterNot { CredentialExchangeMetadata.ownsField(it.title) || it.title == ProjectCredentialGroup.FIELD || it.title == MONICA_USERNAME_ALIAS_META_FIELD_TITLE || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) }
             .filterNot {
                 settings.separateUsernameAccountEnabled &&
                     (it.title == MONICA_USERNAME_ALIAS_FIELD_TITLE ||

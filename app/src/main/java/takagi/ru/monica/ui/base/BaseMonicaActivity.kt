@@ -93,7 +93,7 @@ abstract class BaseMonicaActivity : FragmentActivity() {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        SessionManager.refreshSession()
+        if (shouldEnforceSharedSessionLock()) SessionManager.refreshSession()
     }
 
     override fun onStop() {

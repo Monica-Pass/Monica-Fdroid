@@ -120,9 +120,12 @@ class SecurityManager(private val context: Context) {
 
         private val compatDataKeyLock = Any()
 
+        fun hasRuntimeUnlockCache(): Boolean = processCachedMdk?.isNotEmpty() == true
+
         fun clearRuntimeUnlockCache() {
             processCachedMdk = null
             cachedCompatDataKey = null
+            takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants.clear()
             takagi.ru.monica.repository.Mdbx2NativeReadSessions.clear()
         }
     }
@@ -217,7 +220,7 @@ class SecurityManager(private val context: Context) {
     }
 
     fun isVaultRuntimeUnlocked(): Boolean {
-        return processCachedMdk?.isNotEmpty() == true
+        return hasRuntimeUnlockCache()
     }
 
     /**

@@ -22,7 +22,7 @@ import takagi.ru.monica.R
 @Composable
 internal fun ClearDataSheetContent(selected: List<Boolean>, onSelection: (Int, Boolean) -> Unit,
     password: String, onPassword: (String) -> Unit, verificationRequired: Boolean,
-    onCancel: () -> Unit, onConfirm: () -> Unit) {
+    onCancel: () -> Unit, onConfirm: () -> Unit, verifying: Boolean = false) {
     val labels = listOf(R.string.data_type_passwords, R.string.data_type_totp, R.string.data_type_notes,
         R.string.data_type_documents, R.string.data_type_bank_cards, R.string.data_type_generator_history)
     Column(Modifier.fillMaxWidth().heightIn(max = LocalConfiguration.current.screenHeightDp.dp * .86f)
@@ -39,7 +39,7 @@ internal fun ClearDataSheetContent(selected: List<Boolean>, onSelection: (Int, B
             SettingsPanelGroup(stringResource(R.string.select_data_types_to_clear)) {
                 labels.forEachIndexed { index, label ->
                     Row(Modifier.settingsPanelSurface().testTag("clear_data_type_$index")
-                        .toggleable(selected[index], role = Role.Checkbox) { onSelection(index, it) }
+                        .toggleable(selected[index], enabled = !verifying, role = Role.Checkbox) { onSelection(index, it) }
                         .heightIn(min = 52.dp).padding(start = 16.dp, end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(label), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
@@ -49,16 +49,16 @@ internal fun ClearDataSheetContent(selected: List<Boolean>, onSelection: (Int, B
             }
             if (verificationRequired) androidx.compose.material3.OutlinedTextField(password, onPassword,
                 label = { Text(stringResource(R.string.enter_master_password_to_confirm)) },
-                visualTransformation = PasswordVisualTransformation(), singleLine = true,
+                visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !verifying,
                 modifier = Modifier.fillMaxWidth().testTag("clear_data_password"))
         }
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).testTag("clear_data_actions"),
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onCancel, Modifier.weight(1f)) { Text(stringResource(R.string.cancel)) }
+            OutlinedButton(onCancel, Modifier.weight(1f), enabled = !verifying) { Text(stringResource(R.string.cancel)) }
             Button(onConfirm, Modifier.weight(1f).testTag("clear_data_confirm"),
-                enabled = selected.any { it } && (!verificationRequired || password.isNotEmpty()),
+                enabled = !verifying && selected.any { it } && (!verificationRequired || password.isNotEmpty()),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(if (verifying) R.string.clear_data_verifying else R.string.confirm))
             }
         }
     }

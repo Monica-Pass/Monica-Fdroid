@@ -25,6 +25,7 @@ data class ImportResultSummary(
     val skipped: Int,
     val failed: Int,
     val queuedToBitwarden: Boolean,
+    val skippedDuringDecode: Map<CxfCredentialCodec.SkipReason, Int> = emptyMap(),
 )
 
 class TargetedImportCoordinator(
@@ -70,7 +71,7 @@ class TargetedImportCoordinator(
         // Wrap them before entering the legacy backup reader, which also accepts encrypted values.
         return apply(content.copy(passwords = content.passwords.map {
             it.copy(password = security.encryptData(it.password))
-        }), destination, decoded.skippedCount, progress = progress)
+        }), destination, decoded.skippedCount, progress = progress).copy(skippedDuringDecode = decoded.skipped)
     }
 
     companion object {

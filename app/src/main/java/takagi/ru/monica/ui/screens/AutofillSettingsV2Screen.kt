@@ -594,6 +594,17 @@ fun AutofillSettingsV2Screen(
                         scope.launch { settingsManager.updateAutofillAuthRequired(enabled) }
                     },
                 )
+                if (autofillAuthRequired) {
+                    SwitchSettingItem(
+                        icon = Icons.Outlined.Lock,
+                        title = stringResource(R.string.autofill_keep_unlocked),
+                        subtitle = stringResource(R.string.autofill_keep_unlocked_desc),
+                        checked = appSettings.autofillKeepUnlocked,
+                        onCheckedChange = { enabled ->
+                            scope.launch { settingsManager.updateAutofillKeepUnlocked(enabled) }
+                        },
+                    )
+                }
                 SwitchSettingItem(
                     icon = Icons.Outlined.Link,
                     title = stringResource(R.string.autofill_v2_strict_match),

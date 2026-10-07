@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="clear_data_completed">Clearing complete</string>
+    <string name="clear_data_failed">Could not clear all selected data</string>
+    <string name="clear_data_preparing">Counting selected entries…</string>
+    <string name="clear_data_passwords">Clearing passwords…</string>
+    <string name="clear_data_totp">Clearing authenticators…</string>
+    <string name="clear_data_notes">Clearing notes…</string>
+    <string name="clear_data_documents">Clearing documents…</string>
+    <string name="clear_data_bank_cards">Clearing bank cards…</string>
+    <string name="clear_data_generator_history">Clearing password generation history…</string>
+    <string name="clear_data_count">Cleared %1$d / %2$d entries</string>
+    <string name="clear_data_wait">Please wait for this operation to finish.</string>
+    <string name="clear_data_completed_hint">The selected data has been cleared.</string>
+    <string name="clear_data_failed_hint">Clearing stopped. Entries already cleared will not be restored. Check your database connection and try again.</string>
+    <string name="clear_data_verifying">Verifying…</string>
+</resources>

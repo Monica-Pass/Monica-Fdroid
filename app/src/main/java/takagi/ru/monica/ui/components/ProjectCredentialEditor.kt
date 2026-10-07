@@ -47,7 +47,8 @@ fun ProjectCredentialEditor(group: ProjectCredentialGroup.Group,
         }
         CompositionLocalProvider(LocalFilledEntryForm provides true) {
             if (options) {
-                OutlinedTextField(group.label, { onChange(group.copy(label = it)) }, saveTextState = false,
+                SuggestedOutlinedTextField(group.label, { onChange(group.copy(label = it)) }, saveTextState = false,
+                    suggestionField = takagi.ru.monica.data.CommonSuggestionField.CREDENTIAL_LABEL,
                     label = { Text(stringResource(R.string.project_credential_label)) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(4.dp))
             }
             OutlinedTextField(group.username, { onChange(group.copy(username = it)) }, saveTextState = false,

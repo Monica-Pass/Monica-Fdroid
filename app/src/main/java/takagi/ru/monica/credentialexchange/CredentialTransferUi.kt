@@ -105,12 +105,14 @@ fun TransferSummary(summary: ImportResultSummary) {
             Text(stringResource(R.string.exchange_result, summary.imported, summary.skipped, summary.failed))
             if (summary.failed > 0) Text(stringResource(R.string.exchange_import_partial), style = MaterialTheme.typography.bodySmall)
             if (summary.queuedToBitwarden) Text(stringResource(R.string.exchange_pending), style = MaterialTheme.typography.bodySmall)
+            TransferSkippedReasons(summary.skippedDuringDecode)
         }
     }
 }
 
 @Composable
-fun TransferCredentialCounts(passwords: Int, passkeys: Int, skipped: Int, exporting: Boolean = false) {
+fun TransferCredentialCounts(passwords: Int, passkeys: Int, skipped: Int, exporting: Boolean = false,
+    skippedReasons: Map<CxfCredentialCodec.SkipReason, Int> = emptyMap()) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.exchange_password_count, passwords), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.exchange_passkey_count, passkeys), style = MaterialTheme.typography.titleMedium)
@@ -118,5 +120,37 @@ fun TransferCredentialCounts(passwords: Int, passkeys: Int, skipped: Int, export
             stringResource(if (exporting) R.string.exchange_export_skipped else R.string.exchange_skipped_count, skipped),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (!exporting) TransferSkippedReasons(skippedReasons)
+    }
+}
+
+@Composable
+private fun TransferSkippedReasons(reasons: Map<CxfCredentialCodec.SkipReason, Int>) {
+    val rows = CxfCredentialCodec.SkipReason.entries.filter { (reasons[it] ?: 0) > 0 }
+    if (rows.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(stringResource(R.string.exchange_skip_reasons), style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(vertical = 8.dp))
+        rows.forEachIndexed { index, reason ->
+            val label = when (reason) {
+                CxfCredentialCodec.SkipReason.UNSUPPORTED_CREDENTIAL -> R.string.exchange_skip_unsupported
+                CxfCredentialCodec.SkipReason.UNSUPPORTED_TOTP -> R.string.exchange_skip_totp
+                CxfCredentialCodec.SkipReason.INVALID_CREDENTIAL -> R.string.exchange_skip_invalid
+                CxfCredentialCodec.SkipReason.PASSKEY_EXTENSION -> R.string.exchange_skip_extension
+                CxfCredentialCodec.SkipReason.PASSKEY_PRF -> R.string.exchange_skip_prf
+                CxfCredentialCodec.SkipReason.PASSKEY_BLOB -> R.string.exchange_skip_blob
+                CxfCredentialCodec.SkipReason.PASSKEY_PAYMENT -> R.string.exchange_skip_payment
+                CxfCredentialCodec.SkipReason.PRIVATE_KEY -> R.string.exchange_skip_private_key
+                CxfCredentialCodec.SkipReason.NONZERO_COUNTER -> R.string.exchange_skip_counter
+            }
+            Surface(shape = RoundedCornerShape(topStart = if (index == 0) 20.dp else 4.dp,
+                topEnd = if (index == 0) 20.dp else 4.dp,
+                bottomStart = if (index == rows.lastIndex) 20.dp else 4.dp,
+                bottomEnd = if (index == rows.lastIndex) 20.dp else 4.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(label, reasons.getValue(reason)), style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(14.dp))
+            }
+        }
     }
 }

@@ -1,0 +1,11 @@
+{
+  "oldUser": "0",
+  "tests": 1,
+  "classes": "takagi.ru.monica.security.SessionProcessBoundaryInstrumentedTest#newProcessStartsLockedEvenWithUnlimitedTimeout",
+  "oldProxy": ":0",
+  "edition": "Fdroid",
+  "skipInstall": true,
+  "testHash": "C12D91F543DFEA64B51629F1E14E9CF3C37DDB78A142B7A997D3CAA13AEA1E07",
+  "appHash": "AACD49A15AAD1EC1440822FBC1AF9F41E198E45830D692F087E897A9B6DCAB3E",
+  "completed": true
+}

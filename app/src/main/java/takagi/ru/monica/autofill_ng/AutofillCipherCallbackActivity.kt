@@ -1,5 +1,7 @@
 package takagi.ru.monica.autofill_ng
 
+import takagi.ru.monica.autofill_ng.auth.AutofillGrantContext
+import takagi.ru.monica.autofill_ng.auth.AutofillSessionGrants
 import takagi.ru.monica.utils.LocaleHelper
 import takagi.ru.monica.utils.StartupLanguageCache
 import android.app.Activity
@@ -96,6 +98,11 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
     private var biometricPromptShown = false
     private var resultPublished = false
 
+    private fun grantContext() = AutofillGrantContext(
+        callbackArgs?.applicationId.orEmpty(), callbackArgs?.webDomain,
+        callbackArgs?.interactionIdentifier, callbackArgs?.fieldSignatureKey,
+    )
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.setLocale(newBase, StartupLanguageCache.read(newBase)))
     }
@@ -148,6 +155,10 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
                 completeCipherAutofill()
                 return@launch
             }
+            if (settings.autofillKeepUnlocked && AutofillSessionGrants.isGranted(grantContext())) {
+                completeCipherAutofill()
+                return@launch
+            }
             val biometricEnabled = settings.biometricEnabled
             val biometricAvailable = biometricAuthHelper.isBiometricAvailable()
             AutofillLogger.i(
@@ -182,7 +193,7 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
                 onSuccess = {
                     AutofillLogger.i("CALLBACK", "Biometric prompt succeeded")
                     if (securityManager.unlockVaultWithBiometric()) {
-                        lifecycleScope.launch { completeCipherAutofill() }
+                        lifecycleScope.launch { completeCipherAutofill(authenticationVerified = true) }
                     } else {
                         AutofillLogger.w("CALLBACK", "Biometric unlock failed, falling back to password")
                         showPasswordAuthentication()
@@ -225,7 +236,7 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
                 incorrectError = getString(R.string.password_incorrect),
                 verifyPassword = { input -> securityManager.unlockVaultWithPassword(input) },
                 onSuccess = {
-                    lifecycleScope.launch { completeCipherAutofill() }
+                    lifecycleScope.launch { completeCipherAutofill(authenticationVerified = true) }
                 },
                 onCancel = { cancelAndFinish("authentication_cancelled") },
             )
@@ -242,7 +253,7 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
         return true
     }
 
-    private suspend fun completeCipherAutofill() {
+    private suspend fun completeCipherAutofill(authenticationVerified: Boolean = false) {
         if (resultPublished || rejectBlockedRequest()) return
         val callbackArgs = callbackArgs ?: run {
             cancelAndFinish("missing_args")
@@ -321,6 +332,12 @@ class AutofillCipherCallbackActivity : AppCompatActivity() {
             rememberLearnedFieldSignature(callbackArgs.fieldSignatureKey)
         }
         if (rejectBlockedRequest()) return
+
+        if (authenticationVerified) {
+            val settings = settingsManager.settingsFlow.first()
+            AutofillSessionGrants.grant(grantContext(),
+                enabled = settings.autofillKeepUnlocked && settings.autofillAuthRequired)
+        }
 
         AutofillLogger.i(
             "CALLBACK",

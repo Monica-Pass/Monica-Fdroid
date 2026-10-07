@@ -1,0 +1,73 @@
+{
+  "jvm": 26,
+  "device": 23,
+  "outcomes": {
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153ManualLockRevokesEvenIfKeyIsLoadedAgain": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#cancellingVerificationLeavesTheFormEmptyAndAllowsRetry": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153WrongPasswordDoesNotGrantAccessAndCanRetry": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153PickerVerificationAndRecreationGrantFollowingSystemFill": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153RemovingRealMainTaskRevokesBothSessions": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153TwoStepsSurviveOldTimeoutAndServiceRebind": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153TurningOffAndOnDoesNotRestoreGrant": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#verifiedFillReturnsToTheOriginalForm": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153BackgroundAndConfigurationKeepMainSessionButPickerCannotRefreshIt": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#systemAutofillWithoutVerificationStillWorksAfterSessionLock": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153GrantDoesNotAuthorizeAnotherWebsite": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153RetentionDisabledRequiresVerificationForNextStep": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153RealTwoMinuteExpiryRequiresAuthenticationAgain": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153DatasetVerificationGrantsFollowingSystemFill": 0,
+    "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153ScreenOffRevokesAcrossServiceLifetime": 0,
+    "takagi.ru.monica.autofill_ng.AutofillBlockedRequestInstrumentedTest#markingAFieldReturnsAReplacementInsteadOfCancelingAuthentication": 0,
+    "takagi.ru.monica.autofill_ng.AutofillBlockedRequestInstrumentedTest#cachedUnlockIsRejectedBeforeVerification": 0,
+    "takagi.ru.monica.autofill_ng.AutofillBlockedRequestInstrumentedTest#cachedDatasetIsRejectedWithVerificationEnabledOrDisabled": 0,
+    "takagi.ru.monica.autofill_ng.AutofillBlockedRequestInstrumentedTest#blockingOneSignatureDoesNotBlockAnotherField": 0,
+    "takagi.ru.monica.autofill_ng.AutofillRetentionSettingsUiTest#switchDefaultsOffPersistsOnRecreationAndFitsSmallLargeFontScreen": 0,
+    "takagi.ru.monica.utils.AutofillRetentionBackupTest#oldBackupDefaultsOffAndNewBackupRoundTripsExplicitChoice": 0,
+    "takagi.ru.monica.security.SessionProcessBoundaryInstrumentedTest#prepareUnlockedProcess": 0,
+    "takagi.ru.monica.security.SessionProcessBoundaryInstrumentedTest#newProcessStartsLockedEvenWithUnlimitedTimeout": 0
+  },
+  "runs": [
+    {
+      "classes": "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153TwoStepsSurviveOldTimeoutAndServiceRebind,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153RealTwoMinuteExpiryRequiresAuthenticationAgain,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153ManualLockRevokesEvenIfKeyIsLoadedAgain,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153ScreenOffRevokesAcrossServiceLifetime,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153PickerVerificationAndRecreationGrantFollowingSystemFill,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153DatasetVerificationGrantsFollowingSystemFill,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153GrantDoesNotAuthorizeAnotherWebsite,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#verifiedFillReturnsToTheOriginalForm,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#cancellingVerificationLeavesTheFormEmptyAndAllowsRetry,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#systemAutofillWithoutVerificationStillWorksAfterSessionLock,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153WrongPasswordDoesNotGrantAccessAndCanRetry,takagi.ru.monica.autofill_ng.AutofillBlockedRequestInstrumentedTest,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153RetentionDisabledRequiresVerificationForNextStep,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153TurningOffAndOnDoesNotRestoreGrant,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153RemovingRealMainTaskRevokesBothSessions,takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153BackgroundAndConfigurationKeepMainSessionButPickerCannotRefreshIt,takagi.ru.monica.autofill_ng.AutofillRetentionSettingsUiTest,takagi.ru.monica.utils.AutofillRetentionBackupTest",
+      "completed": false,
+      "appHash": "AACD49A15AAD1EC1440822FBC1AF9F41E198E45830D692F087E897A9B6DCAB3E",
+      "oldProxy": ":0",
+      "testHash": "75B2AD680B1454123BF36411B070AA7C6CAD1194462ADCBB2C3AC410C8676814",
+      "edition": "Fdroid",
+      "oldUser": "0"
+    },
+    {
+      "oldProxy": ":0",
+      "edition": "Fdroid",
+      "classes": "takagi.ru.monica.autofill_ng.AutofillFlowInstrumentedTest#issue153BackgroundAndConfigurationKeepMainSessionButPickerCannotRefreshIt",
+      "testHash": "BB9F4B17E4076923CD3095DF60DF7FB28352132C7217E8C59E0DCA01D29E8C39",
+      "oldUser": "0",
+      "skipInstall": false,
+      "tests": 1,
+      "completed": true,
+      "appHash": "AACD49A15AAD1EC1440822FBC1AF9F41E198E45830D692F087E897A9B6DCAB3E"
+    },
+    {
+      "oldUser": "0",
+      "tests": 1,
+      "classes": "takagi.ru.monica.security.SessionProcessBoundaryInstrumentedTest#prepareUnlockedProcess",
+      "oldProxy": ":0",
+      "edition": "Fdroid",
+      "skipInstall": true,
+      "testHash": "C12D91F543DFEA64B51629F1E14E9CF3C37DDB78A142B7A997D3CAA13AEA1E07",
+      "appHash": "AACD49A15AAD1EC1440822FBC1AF9F41E198E45830D692F087E897A9B6DCAB3E",
+      "completed": true
+    },
+    {
+      "oldUser": "0",
+      "tests": 1,
+      "classes": "takagi.ru.monica.security.SessionProcessBoundaryInstrumentedTest#newProcessStartsLockedEvenWithUnlimitedTimeout",
+      "oldProxy": ":0",
+      "edition": "Fdroid",
+      "skipInstall": true,
+      "testHash": "C12D91F543DFEA64B51629F1E14E9CF3C37DDB78A142B7A997D3CAA13AEA1E07",
+      "appHash": "AACD49A15AAD1EC1440822FBC1AF9F41E198E45830D692F087E897A9B6DCAB3E",
+      "completed": true
+    }
+  ]
+}

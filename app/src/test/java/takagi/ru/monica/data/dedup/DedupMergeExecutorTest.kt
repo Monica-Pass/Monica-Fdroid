@@ -8,6 +8,7 @@ import org.junit.Test
 import takagi.ru.monica.R
 import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.PasswordEntry
+import takagi.ru.monica.data.PasskeyEntry
 import takagi.ru.monica.data.SecureItem
 import takagi.ru.monica.utils.StringResolver
 
@@ -105,6 +106,42 @@ class DedupMergeExecutorTest {
         assertEquals(listOf("Unbenanntes Passwort", "Notiz"), progress.map { it.currentLabel })
         assertEquals("My database", result.targetLabel)
         assertEquals(1, result.insertedSecureItems)
+    }
+
+    @Test
+    fun fileAndPrivateKeyWritesStayOutsideRetriableRoomTransactions() = runBlocking {
+        var inTransaction = false
+        val observed = mutableListOf<Pair<String, Boolean>>()
+        val writer = object : DedupMergeWriter {
+            override suspend fun writeLocalBatch(block: suspend () -> Unit): Boolean {
+                inTransaction = true
+                try { block() } finally { inTransaction = false }
+                return true
+            }
+            override suspend fun writePassword(resolved: DedupResolvedPassword) {
+                observed += resolved.entry.title to inTransaction
+            }
+            override suspend fun writeSecureItem(resolved: DedupResolvedSecureItem) {
+                observed += resolved.item.title to inTransaction
+            }
+            override suspend fun writePasskey(resolved: DedupResolvedPasskey) {
+                observed += "Passkey" to inTransaction
+            }
+        }
+        val attached = password("Attachment").copy(attachments = listOf(DedupAttachmentRef(1, "hash")))
+        val mdbx = password("MDBX").let { it.copy(entry = it.entry.copy(mdbxDatabaseId = 1)) }
+        val photo = note("Photo").let { it.copy(item = it.item.copy(imagePaths = "[\"synthetic.jpg\"]")) }
+        val key = DedupResolvedPasskey("key", PasskeyEntry(credentialId = "id", rpId = "example.invalid",
+            rpName = "Example", userId = "user", userName = "User", userDisplayName = "User",
+            publicKey = "synthetic", privateKeyAlias = "synthetic"), listOf(1), listOf("Source"), "Source")
+
+        val result = DedupMergeExecutor(writer, strings).execute(
+            listOf(password("Local"), attached, mdbx), listOf(note("Note"), photo),
+            0, 0, 0, "Target", passkeys = listOf(key))
+
+        assertEquals(6, result.insertedItems)
+        assertEquals(listOf("Local" to true, "Attachment" to false, "MDBX" to false,
+            "Note" to true, "Photo" to false, "Passkey" to false), observed)
     }
 
     private fun password(title: String) = DedupResolvedPassword(

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.autofill_ng.AutofillResponseUnlockRegressionGuardTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-07T11:03:13" hostname="JOYIN" time="0.026">
+  <properties/>
+  <testcase name="pendingUnlockRequestCachesOnlyCredentialIds" classname="takagi.ru.monica.autofill_ng.AutofillResponseUnlockRegressionGuardTest" time="0.016"/>
+  <testcase name="screenOffClearsTemporaryAutofillGrant" classname="takagi.ru.monica.autofill_ng.AutofillResponseUnlockRegressionGuardTest" time="0.006"/>
+  <testcase name="lockedAutofillUsesResponseAuthenticationAndReturnsFullResponse" classname="takagi.ru.monica.autofill_ng.AutofillResponseUnlockRegressionGuardTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

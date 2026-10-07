@@ -98,8 +98,10 @@ class AutofillFlowInstrumentedTest {
         check(security.unlockVaultWithPassword(MASTER_PASSWORD)) {
             "This user has another vault. Use the dedicated empty test user; never reset it here."
         }
+        settings.updateAutofillKeepUnlocked(false)
         settings.updateAutofillAuthRequired(false)
         settings.updateBiometricEnabled(false)
+        settings.updateScreenshotProtectionEnabled(false)
         settings.updateAutoLockMinutes(5)
         preferences.setAutofillEnabled(true)
         preferences.setPasswordSuggestionEnabled(false)
@@ -133,8 +135,10 @@ class AutofillFlowInstrumentedTest {
         insertedValidatorIds.chunked(500).forEach { PasswordDatabase.getDatabase(context).secureItemDao().deleteItemsByIds(it) }
         insertedIds.forEach { dao.deletePasswordEntryById(it) }
         oldSettings?.let {
+            settings.updateAutofillKeepUnlocked(it.autofillKeepUnlocked)
             settings.updateAutofillAuthRequired(it.autofillAuthRequired)
             settings.updateBiometricEnabled(it.biometricEnabled)
+            settings.updateScreenshotProtectionEnabled(it.screenshotProtectionEnabled)
             settings.updateAutoLockMinutes(it.autoLockMinutes)
             AutofillSessionGrants.clear()
         }
@@ -519,6 +523,281 @@ class AutofillFlowInstrumentedTest {
         tap(waitNode { it.text?.toString()?.equals("Request autofill", ignoreCase = true) == true })
         tap(waitNode { it.text?.toString() == NATIVE_TITLE })
         expectStatus("user=OK password=ABSENT")
+    }
+
+    private fun issue153Context() = takagi.ru.monica.autofill_ng.auth.AutofillGrantContext(
+        fixturePackage, null, null, null,
+    )
+
+    private suspend fun issue153UnlockFirstStep(keepUnlocked: Boolean = true) {
+        settings.updateAutofillKeepUnlocked(keepUnlocked)
+        settings.updateAutofillAuthRequired(true)
+        settings.updateAutoLockMinutes(0)
+        SessionManager.markLocked()
+        open("step")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        verifyAndSelectCredential()
+        expectStatus("user=OK password=ABSENT")
+        assertEquals(keepUnlocked, AutofillSessionGrants.isGranted(issue153Context()))
+        assertFalse("Autofill must not unlock the main application", SessionManager.isUnlocked.value)
+        assertFalse("Autofill must not authorize the IME", takagi.ru.monica.security.SecondarySessionManager.isUnlocked.value)
+    }
+
+    @Test fun issue153TwoStepsSurviveOldTimeoutAndServiceRebind() = runBlocking {
+        issue153UnlockFirstStep()
+        // Allow Android to unbind its idle autofill service; exceed the old 30s grant.
+        delay(32_000)
+        assertTrue(AutofillSessionGrants.isGranted(issue153Context()))
+        tap(waitNode { it.text?.toString()?.equals("Next step", ignoreCase = true) == true })
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=ABSENT password=OK")
+        // A new activity and autofill session must reuse the same scope too.
+        open("username")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=OK password=ABSENT")
+        issue153Screenshot("two-step-filled")
+    }
+
+    @Test fun issue153RealTwoMinuteExpiryRequiresAuthenticationAgain() = runBlocking {
+        issue153UnlockFirstStep()
+        delay(120_100)
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+        open("password")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+        issue153Screenshot("expired-verification")
+        verifyAndSelectCredential()
+        expectStatus("user=ABSENT password=OK")
+    }
+
+    @Test fun issue153ManualLockRevokesEvenIfKeyIsLoadedAgain() = runBlocking {
+        issue153UnlockFirstStep()
+        SessionManager.markLocked()
+        check(security.unlockVaultWithPassword(MASTER_PASSWORD))
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+        open("password")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        verifyAndSelectCredential()
+        expectStatus("user=ABSENT password=OK")
+    }
+
+    @Test fun issue153ScreenOffRevokesAcrossServiceLifetime() = runBlocking {
+        issue153UnlockFirstStep()
+        val user = android.os.Process.myUid() / 100000
+        shell("cmd autofill destroy sessions --user $user")
+        try {
+            shell("input keyevent KEYCODE_SLEEP")
+            delay(1500)
+            assertFalse(context.getSystemService(android.os.PowerManager::class.java).isInteractive)
+            // Do not query the grant while asleep: the receiver itself must revoke it.
+        } finally {
+            shell("input keyevent KEYCODE_WAKEUP")
+            shell("wm dismiss-keyguard")
+        }
+        delay(500)
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+        open("password")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        verifyAndSelectCredential()
+        expectStatus("user=ABSENT password=OK")
+    }
+
+    @Test fun issue153PickerVerificationAndRecreationGrantFollowingSystemFill() = runBlocking {
+        settings.updateAutofillKeepUnlocked(true)
+        settings.updateAutofillAuthRequired(true)
+        settings.updateAutoLockMinutes(0)
+        SessionManager.markLocked()
+        val intent = AutofillPickerActivityV2.getIntent(context, AutofillPickerActivityV2.Args(applicationId = fixturePackage))
+        androidx.test.core.app.ActivityScenario.launch<AutofillPickerActivityV2>(intent).use { scenario ->
+            val field = waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+            assertTrue(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, MASTER_PASSWORD)
+            }))
+            tap(waitNode { it.text?.toString() == context.getString(R.string.unlock) })
+            waitNode { it.text?.toString() == NATIVE_TITLE }
+            assertTrue(AutofillSessionGrants.isGranted(issue153Context()))
+            scenario.recreate()
+            waitNode { it.text?.toString() == NATIVE_TITLE }
+            assertFalse(SessionManager.isUnlocked.value)
+            issue153Screenshot("picker-recreated")
+        }
+        open("password")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=ABSENT password=OK")
+    }
+
+    @Test fun issue153DatasetVerificationGrantsFollowingSystemFill() = runBlocking {
+        settings.updateAutofillKeepUnlocked(true)
+        settings.updateAutofillAuthRequired(true)
+        settings.updateAutoLockMinutes(0)
+        SessionManager.markLocked()
+        val id = android.widget.EditText(context).autofillId
+        val intent = AutofillCipherCallbackActivity.getIntent(context, AutofillCipherCallbackActivity.Args(
+            passwordId = insertedIds.first(), applicationId = fixturePackage,
+            autofillIds = arrayListOf(id), autofillHints = arrayListOf("USERNAME"), requireAuthentication = true,
+        ))
+        androidx.test.core.app.ActivityScenario.launchActivityForResult<AutofillCipherCallbackActivity>(intent).use { scenario ->
+            val field = waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+            assertTrue(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, MASTER_PASSWORD)
+            }))
+            tap(waitNode { it.text?.toString() == context.getString(R.string.confirm) })
+            val result = scenario.result
+            assertEquals(android.app.Activity.RESULT_OK, result.resultCode)
+            @Suppress("DEPRECATION")
+            val dataset = result.resultData.getParcelableExtra<android.service.autofill.Dataset>(android.view.autofill.AutofillManager.EXTRA_AUTHENTICATION_RESULT)
+            assertNotNull(dataset)
+            assertTrue(AutofillSessionGrants.isGranted(issue153Context()))
+            assertFalse(SessionManager.isUnlocked.value)
+        }
+        open("password")
+        fillFromSystem(NATIVE_TITLE)
+        expectStatus("user=ABSENT password=OK")
+    }
+
+    @Test fun issue153GrantDoesNotAuthorizeAnotherWebsite() = runBlocking {
+        issue153UnlockFirstStep()
+        open("web")
+        focusFirstField(web = true)
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+        tap(waitNode { it.text?.toString() == context.getString(R.string.cancel) })
+        expectStatus("user=EMPTY password=EMPTY")
+    }
+
+    @Test fun issue153WrongPasswordDoesNotGrantAccessAndCanRetry() = runBlocking {
+        settings.updateAutofillKeepUnlocked(true)
+        settings.updateAutofillAuthRequired(true)
+        SessionManager.markLocked()
+        open("step")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        val field = waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+        assertTrue(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "incorrect-test-password")
+        }))
+        tap(waitNode { it.text?.toString() == context.getString(R.string.confirm) })
+        waitNode { it.text?.toString() == context.getString(R.string.password_incorrect) }
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+        assertFalse(SessionManager.isUnlocked.value)
+        verifyAndSelectCredential()
+        expectStatus("user=OK password=ABSENT")
+    }
+
+    @Test fun issue153RetentionDisabledRequiresVerificationForNextStep() = runBlocking {
+        assertFalse(AppSettings().autofillKeepUnlocked)
+        issue153UnlockFirstStep(keepUnlocked = false)
+        open("password")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        verifyAndSelectCredential()
+        expectStatus("user=ABSENT password=OK")
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+    }
+
+    @Test fun issue153TurningOffAndOnDoesNotRestoreGrant() = runBlocking {
+        issue153UnlockFirstStep()
+        settings.updateAutofillKeepUnlocked(false)
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+        settings.updateAutofillKeepUnlocked(true)
+        assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+        open("password")
+        focusFirstField()
+        tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+        verifyAndSelectCredential()
+        expectStatus("user=ABSENT password=OK")
+    }
+
+    private fun mainLogin() {
+        val field = waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+        assertTrue(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, MASTER_PASSWORD)
+        }))
+        tap(waitNode { it.text?.toString() == context.getString(R.string.unlock) })
+        val deadline = SystemClock.elapsedRealtime() + 15000
+        while (!SessionManager.isUnlocked.value && SystemClock.elapsedRealtime() < deadline) Thread.sleep(50)
+        assertTrue("Main app password must unlock the real main screen", SessionManager.isUnlocked.value)
+    }
+
+    @Test fun issue153RemovingRealMainTaskRevokesBothSessions() = runBlocking {
+        settings.updateAutoLockMinutes(-1)
+        settings.updateAutofillAuthRequired(true)
+        settings.updateAutofillKeepUnlocked(true)
+        val main = androidx.test.core.app.ActivityScenario.launch<takagi.ru.monica.MainActivity>(
+            Intent(context, takagi.ru.monica.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        try {
+            mainLogin()
+            var taskId = -1
+            main.onActivity { taskId = it.taskId }
+            issue153UnlockFirstStep()
+            // Keep main unlock unlimited to prove removal, rather than a timeout, revokes it.
+            settings.updateAutoLockMinutes(-1)
+            SessionManager.updateAutoLockTimeout(-1)
+            SessionManager.markUnlocked()
+            val manager = context.getSystemService(android.app.ActivityManager::class.java)
+            val task = manager.appTasks.single { it.taskInfo.taskId == taskId }
+            task.finishAndRemoveTask()
+            delay(1000)
+            assertFalse(manager.appTasks.any { it.taskInfo.taskId == taskId })
+            assertFalse(AutofillSessionGrants.isGranted(issue153Context()))
+            assertFalse(SessionManager.canSkipVerification(context))
+            open("password")
+            focusFirstField()
+            tap(waitNode { it.text?.toString() == context.getString(R.string.autofill_unlock_monica) })
+            verifyAndSelectCredential()
+            expectStatus("user=ABSENT password=OK")
+            androidx.test.core.app.ActivityScenario.launch<takagi.ru.monica.MainActivity>(
+                Intent(context, takagi.ru.monica.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)).use {
+                waitNode { it.isEditable && it.packageName?.toString() == context.packageName }
+                assertFalse(SessionManager.isUnlocked.value)
+                issue153Screenshot("main-requires-password-after-removal")
+                mainLogin()
+            }
+        } finally { main.close() }
+    }
+
+    @Test fun issue153BackgroundAndConfigurationKeepMainSessionButPickerCannotRefreshIt() = runBlocking {
+        settings.updateAutoLockMinutes(5)
+        androidx.test.core.app.ActivityScenario.launch<takagi.ru.monica.MainActivity>(
+            Intent(context, takagi.ru.monica.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)).use { main ->
+            mainLogin()
+            var mainTaskId = -1
+            main.onActivity { mainTaskId = it.taskId }
+            main.recreate()
+            assertTrue(SessionManager.canSkipVerification(context))
+            open("username")
+            assertTrue(SessionManager.canSkipVerification(context))
+            // A real picker activity is configured to use its separate authorization.
+            val intent = AutofillPickerActivityV2.getIntent(context, AutofillPickerActivityV2.Args(applicationId = fixturePackage))
+                // ActivityScenario defaults to CLEAR_TASK. Use a separate task so this
+                // background-switch test does not accidentally remove the real main task.
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            androidx.test.core.app.ActivityScenario.launch<AutofillPickerActivityV2>(intent).use { picker ->
+                waitNode { it.text?.toString() == NATIVE_TITLE }
+                val field = SessionManager::class.java.getDeclaredField("unlockElapsedTimestamp").apply { isAccessible = true }
+                val before = field.getLong(SessionManager)
+                delay(1100)
+                picker.onActivity { it.onUserInteraction() }
+                assertEquals("Picker touch must not extend main session", before, field.getLong(SessionManager))
+            }
+            context.getSystemService(android.app.ActivityManager::class.java).appTasks
+                .single { it.taskInfo.taskId == mainTaskId }.moveToFront()
+            val deadline = SystemClock.elapsedRealtime() + 10000
+            while (main.state != androidx.lifecycle.Lifecycle.State.RESUMED && SystemClock.elapsedRealtime() < deadline) delay(50)
+            assertEquals(androidx.lifecycle.Lifecycle.State.RESUMED, main.state)
+            assertTrue(SessionManager.canSkipVerification(context))
+        }
+    }
+
+    private fun issue153Screenshot(name: String) {
+        val screenshot = requireNotNull(ui.takeScreenshot())
+        val dir = java.io.File(context.filesDir, "issue-153-screens").apply { mkdirs() }
+        java.io.File(dir, "$name.png").outputStream().use { screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        screenshot.recycle()
     }
 
     @Test fun verifiedFillReturnsToTheOriginalForm() = runBlocking {

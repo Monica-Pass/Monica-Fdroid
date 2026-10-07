@@ -477,6 +477,7 @@ private data class PageAdjustmentSettingsBackupEntry(
     val securityAnalysisAutoEnabled: Boolean = false,
     val passwordDetailSecurityAnalysisEnabled: Boolean = true,
     val steamMiniProfileBackgroundEnabled: Boolean = false,
+    val autofillKeepUnlocked: Boolean = false,
     val autofillAuthRequired: Boolean = true,
     val iconCardsEnabled: Boolean = true,
     val appLauncherIcon: String = "MODERN",
@@ -821,6 +822,7 @@ class WebDavHelper(
             securityAnalysisAutoEnabled = securityAnalysisAutoEnabled,
             passwordDetailSecurityAnalysisEnabled = passwordDetailSecurityAnalysisEnabled,
             steamMiniProfileBackgroundEnabled = steamMiniProfileBackgroundEnabled,
+            autofillKeepUnlocked = autofillKeepUnlocked,
             autofillAuthRequired = autofillAuthRequired,
             iconCardsEnabled = iconCardsEnabled,
             appLauncherIcon = appLauncherIcon,
@@ -4205,6 +4207,7 @@ class WebDavHelper(
                                                     pageAdjustmentBackup.passwordDetailSecurityAnalysisEnabled,
                                                 steamMiniProfileBackgroundEnabled =
                                                     pageAdjustmentBackup.steamMiniProfileBackgroundEnabled,
+                                                autofillKeepUnlocked = pageAdjustmentBackup.autofillKeepUnlocked,
                                                 autofillAuthRequired =
                                                     pageAdjustmentBackup.autofillAuthRequired,
                                                 iconCardsEnabled = pageAdjustmentBackup.iconCardsEnabled,

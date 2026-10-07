@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.security.SecondarySessionImmediateLockRegressionGuardTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-07T11:03:14" hostname="JOYIN" time="0.013">
+  <properties/>
+  <testcase name="imeUnlockSerializesBiometricAndPasswordSurfaces" classname="takagi.ru.monica.security.SecondarySessionImmediateLockRegressionGuardTest" time="0.002"/>
+  <testcase name="mainSessionExpiryDoesNotClearSecondarySessionDuringSkipCheck" classname="takagi.ru.monica.security.SecondarySessionImmediateLockRegressionGuardTest" time="0.001"/>
+  <testcase name="immediateAutoLockKeepsShortSecondaryWindow" classname="takagi.ru.monica.security.SecondarySessionImmediateLockRegressionGuardTest" time="0.001"/>
+  <testcase name="secondaryVaultAccessChecksSecondarySessionBeforeSharedSession" classname="takagi.ru.monica.security.SecondarySessionImmediateLockRegressionGuardTest" time="0.007"/>
+  <testcase name="imeUnlockUsesDedicatedSingleTaskSurface" classname="takagi.ru.monica.security.SecondarySessionImmediateLockRegressionGuardTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

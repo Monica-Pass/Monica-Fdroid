@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface CustomFieldDao {
+    @Query("SELECT * FROM custom_fields WHERE title IN (:titles) ORDER BY entry_id, sort_order, id")
+    fun observeCommonSuggestionFields(titles: List<String>): Flow<List<CustomField>>
+
     @Query("SELECT * FROM custom_fields WHERE entry_id IN (SELECT id FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0) AND title IN ('monica.content.wallet.bank_card','monica.content.wallet.document','monica.content.wallet.address') ORDER BY entry_id, sort_order, id")
     suspend fun getWalletFields(): List<CustomField>
 

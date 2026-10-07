@@ -34,8 +34,7 @@ internal fun shouldPersistSessionRefresh(
  * Returns the conservative age of a persisted session, or `null` when either
  * clock moved backwards or the persisted timestamps are incomplete.
  *
- * `elapsedRealtime` detects device reboot while wall time lets the session
- * survive a normal app-process restart. Using the larger delta fails closed if
+ * `elapsedRealtime` detects clock continuity. Using the larger delta fails closed if
  * the wall clock jumps forward.
  */
 internal fun persistedSessionAgeMillisOrNull(
@@ -64,8 +63,8 @@ internal fun isPersistedSessionWithinTimeout(
         unlockWallTime = unlockWallTime,
         nowWallTime = nowWallTime,
     ) ?: return false
-    // Product semantics: "never expire" survives an app-process restart in
-    // the same boot, but a device reboot or invalid clock continuity fails closed.
+    // No time limit within the current process/task. Process and task boundaries
+    // are enforced separately before a session can be restored.
     if (autoLockMinutes == -1) return true
     if (autoLockMinutes <= 0) return false
     return ageMillis < autoLockMinutes.toLong() * MILLIS_PER_MINUTE
@@ -74,8 +73,8 @@ internal fun isPersistedSessionWithinTimeout(
 /**
  * 会话管理器 - 统一管理应用解锁状态。
  *
- * “永不过期”会话允许在同一次开机期间的应用进程重启后恢复，直到用户主动锁定
- * Monica；设备重启、时钟回拨或时间戳损坏时均按过期处理。
+ * 解锁仅在当前进程与主应用任务中有效。切换应用时遵循自动锁定时长；
+ * 进程重启、清理主应用任务或主动锁定均撤销会话。
  */
 object SessionManager {
     private const val TAG = "SessionManager"
@@ -99,9 +98,12 @@ object SessionManager {
         get() = appContext?.applicationContext
             ?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /** Inject the application context so the session can survive process restart. */
+    /** A new process always starts locked, including the legacy persisted session. */
     fun attachAppContext(context: Context) {
+        if (appContext != null) return
         appContext = context.applicationContext
+        MainTaskSessionGuard.initialize(context)
+        markLocked()
     }
 
     private fun persistedStateEditor(): SharedPreferences.Editor? = prefs?.edit()?.apply {
@@ -171,15 +173,14 @@ object SessionManager {
     fun updateAutoLockTimeout(minutes: Int) {
         if (autoLockMinutes == minutes) return
         autoLockMinutes = minutes
-        // The persisted unlock state may not have been restored yet during a
-        // cold start. Update only this field so a valid restorable session is
-        // never replaced by the default in-memory locked state.
+        // Updating a timeout must not overwrite the current unlock state.
         prefs?.edit()?.putInt(KEY_AUTO_LOCK, minutes)?.apply()
         android.util.Log.d(TAG, "Auto-lock timeout updated to $minutes minutes")
     }
 
     fun canSkipVerification(context: Context): Boolean {
-        appContext = context.applicationContext
+        attachAppContext(context)
+        if (MainTaskSessionGuard.revokeIfTaskRemoved(context)) return false
         restorePersistedState()
 
         if (!_isUnlocked.value) {

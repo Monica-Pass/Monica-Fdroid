@@ -7,7 +7,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.platform.app.InstrumentationRegistry
+import takagi.ru.monica.suggestions.CommonInfoTestActivity
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -15,9 +18,14 @@ import takagi.ru.monica.ui.components.EntryOptionalFields
 import takagi.ru.monica.ui.components.EntrySupplementalSpecs
 
 class EntryOptionalFieldsTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<CommonInfoTestActivity>()
+    private fun show(content: @Composable () -> Unit) {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync { CommonInfoTestActivity.content = content }
+        compose.waitForIdle()
+    }
+    @After fun resetContent() = show { }
     @Test fun newCardDoesNotOfferDuplicateBrandOrNickname() {
-        compose.setContent { MaterialTheme { EntryOptionalFields(EntrySupplementalSpecs.payment, emptyMap()) { _, _ -> } } }
+        show { MaterialTheme { EntryOptionalFields(EntrySupplementalSpecs.payment, emptyMap()) { _, _ -> } } }
         compose.onNodeWithTag("entry_extra_brand").assertDoesNotExist()
         compose.onNodeWithTag("entry_extra_nickname").assertDoesNotExist()
         compose.onNodeWithTag("entry_extra_add").performClick()
@@ -27,7 +35,7 @@ class EntryOptionalFieldsTest {
     }
     @Test fun existingLegacyValuesRemainEditableAndPinIsProtected() {
         var values by mutableStateOf(mapOf("brand" to "VISA", "nickname" to "Legacy card", "pin" to "8642"))
-        compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+        show { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
             EntryOptionalFields(EntrySupplementalSpecs.payment, values) { spec, value -> values = values + (spec.key to value) }
         } } }
         compose.onNodeWithTag("entry_extra_nickname").performScrollTo().performTextReplacement("Travel")

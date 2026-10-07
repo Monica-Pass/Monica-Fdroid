@@ -1,5 +1,7 @@
 package takagi.ru.monica.ui.screens
 
+import takagi.ru.monica.data.model.CredentialExchangeMetadata
+
 import takagi.ru.monica.data.passwordProjectKey
 import takagi.ru.monica.data.model.ProjectCredentialGroup
 import takagi.ru.monica.ui.components.ProjectCredentialEditor
@@ -196,6 +198,8 @@ import takagi.ru.monica.ui.model.plainValueOrEmpty
 import java.io.File
 import java.util.Locale
 import takagi.ru.monica.ui.components.OutlinedTextField
+import takagi.ru.monica.ui.components.SuggestedOutlinedTextField
+import takagi.ru.monica.data.CommonSuggestionField
 
 private const val MONICA_USERNAME_ALIAS_FIELD_TITLE = "__monica_username_alias"
 private const val MONICA_USERNAME_ALIAS_META_FIELD_TITLE = "__monica_username_alias_meta"
@@ -1926,7 +1930,7 @@ private fun PasswordEntryEditor(
             PasswordContentSection.PAYMENT -> shouldShowPaymentInfo()
             PasswordContentSection.CONTACT -> false
             PasswordContentSection.ADDRESS -> shouldShowAddressInfo() || shouldShowPersonalInfo() || copiedContent(EmbeddedWalletContent.Kind.ADDRESS) != null
-            PasswordContentSection.CUSTOM_FIELDS -> section.name in requestedContentSections || contentExtraFields.any { it.title != ProjectCredentialGroup.FIELD && it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
+            PasswordContentSection.CUSTOM_FIELDS -> section.name in requestedContentSections || contentExtraFields.any { it.title != ProjectCredentialGroup.FIELD && it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && !CredentialExchangeMetadata.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
             PasswordContentSection.ATTACHMENTS -> section.name in requestedContentSections || existingContentAttachments.isNotEmpty() || credentialAttachmentDrafts.any { it.isNotEmpty() }
         } }
     }
@@ -1956,7 +1960,7 @@ private fun PasswordEntryEditor(
             PasswordContentSection.PAYMENT -> if (isMultiCredentialMode) {
                 activeCredentialMetadata.creditCardNumber = ""; activeCredentialMetadata.creditCardHolder = ""; activeCredentialMetadata.creditCardExpiry = ""; activeCredentialMetadata.creditCardCVV = ""
             } else { creditCardNumber = ""; creditCardHolder = ""; creditCardExpiry = ""; creditCardCVV = "" }
-            PasswordContentSection.CUSTOM_FIELDS -> contentExtraFields.removeAll { it.title != ProjectCredentialGroup.FIELD && it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
+            PasswordContentSection.CUSTOM_FIELDS -> contentExtraFields.removeAll { it.title != ProjectCredentialGroup.FIELD && it.title != EntryContentFields.ORDER && !EmbeddedWalletContent.isMetadata(it.title) && !PasswordContentBlocks.owns(it.title) && !takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) && !CredentialExchangeMetadata.ownsField(it.title) && EntrySupplementalSpecs.spec(it.title) == null }
             PasswordContentSection.ATTACHMENTS -> credentialAttachmentDrafts.getOrNull(if (isMultiCredentialMode) selectedCredentialEditorIndex else 0)?.clear()
         }
         contentExtraFields.removeAll { field -> EntrySupplementalSpecs.forSection(section.name).any { EntryContentFields.key(section.name, it.key) == field.title } }
@@ -3646,8 +3650,9 @@ private fun PasswordEntryEditor(
 
                         templateDraft?.let { draft ->
                             if (draft.type == "API_KEY" || draft.type == "GPG_KEY") {
-                                OutlinedTextField(website,
+                                SuggestedOutlinedTextField(website,
                                     { replaceWebsiteUrlsFromRaw(it) }, saveTextState = false,
+                                    suggestionField = CommonSuggestionField.WEBSITE,
                                     label = { Text(stringResource(R.string.website_url)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
                                     shape = RoundedCornerShape(if (contentMode) 24.dp else 12.dp),
@@ -3749,7 +3754,8 @@ private fun PasswordEntryEditor(
                             websiteUrls.forEachIndexed { index, url ->
                                 key("website_url_$index") {
                                     var urlMenuExpanded by remember { mutableStateOf(false) }
-                                    OutlinedTextField(
+                                    SuggestedOutlinedTextField(
+                                        suggestionField = CommonSuggestionField.WEBSITE,
                                         value = url,
                                         onValueChange = { value ->
                                             websiteUrls[index] = value
@@ -4431,7 +4437,7 @@ private fun PasswordEntryEditor(
                     PasswordContentSection.CUSTOM_FIELDS -> {
             if (contentMode) {
                 val fields = if (isMultiCredentialMode && showCredentialEditorContent) activeCredentialMetadata.credentialCustomFields else customFields
-                val visibleFields = fields.filterNot { it.title == ProjectCredentialGroup.FIELD || it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
+                val visibleFields = fields.filterNot { it.title == ProjectCredentialGroup.FIELD || it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || CredentialExchangeMetadata.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
                 if (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || visibleFields.isNotEmpty()) contentItem("content_custom_fields") {
                     takagi.ru.monica.ui.components.EntryContentPanel(PasswordContentSection.CUSTOM_FIELDS,
                         visibleFields.joinToString(" · ") { it.title }, editingContentSection == "CUSTOM_FIELDS",
@@ -4444,14 +4450,14 @@ private fun PasswordEntryEditor(
                             }
                         }
                         takagi.ru.monica.ui.components.EntryContentFieldButton(visibleFields) { updated ->
-                            val managed = fields.filter { it.title == ProjectCredentialGroup.FIELD || it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
+                            val managed = fields.filter { it.title == ProjectCredentialGroup.FIELD || it.title == EntryContentFields.ORDER || EmbeddedWalletContent.isMetadata(it.title) || PasswordContentBlocks.owns(it.title) || takagi.ru.monica.data.model.TemplateCredentialDraft.ownsField(it.title) || CredentialExchangeMetadata.ownsField(it.title) || EntrySupplementalSpecs.spec(it.title) != null }
                             fields.clear(); fields.addAll(managed + updated)
                         }
                     }
                 }
             } else {
             if (!isBarcodeMode && showCommonEditorContent &&
-                (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || customFields.isNotEmpty())) {
+                (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || customFields.any { !CredentialExchangeMetadata.ownsField(it.title) })) {
                 // 自定义字段区域标题 (带添加按钮)
                 item {
                     if (contentMode) {
@@ -4477,7 +4483,7 @@ private fun PasswordEntryEditor(
                 // 自定义字段编辑卡片 (独立卡片样式)
                 items(customFields.size, key = { "custom_field_${customFields[it].id}" }) { index ->
                     val field = customFields[index]
-                    if (field.title != EntryContentFields.ORDER && EntrySupplementalSpecs.spec(field.title) == null) CustomFieldEditCard(
+                    if (!CredentialExchangeMetadata.ownsField(field.title) && field.title != EntryContentFields.ORDER && EntrySupplementalSpecs.spec(field.title) == null) CustomFieldEditCard(
                         groupShape = if (contentMode) takagi.ru.monica.ui.components.entryGroupShape(index, customFields.size) else null,
                         index = index,
                         field = field,
@@ -4493,7 +4499,7 @@ private fun PasswordEntryEditor(
             }
 
             if (!isBarcodeMode && isMultiCredentialMode && showCredentialEditorContent &&
-                (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || activeCredentialMetadata.credentialCustomFields.isNotEmpty())) {
+                (contentSectionEnabled(PasswordContentSection.CUSTOM_FIELDS, true) || activeCredentialMetadata.credentialCustomFields.any { !CredentialExchangeMetadata.ownsField(it.title) })) {
                 item {
                     if (contentMode) {
                         takagi.ru.monica.ui.components.EntryContentFieldButton(activeCredentialMetadata.credentialCustomFields.toList()) { updated ->
@@ -4519,7 +4525,7 @@ private fun PasswordEntryEditor(
 
                 items(activeCredentialMetadata.credentialCustomFields.size) { index ->
                     val field = activeCredentialMetadata.credentialCustomFields[index]
-                    if (field.title != EntryContentFields.ORDER && EntrySupplementalSpecs.spec(field.title) == null) CustomFieldEditCard(
+                    if (!CredentialExchangeMetadata.ownsField(field.title) && field.title != EntryContentFields.ORDER && EntrySupplementalSpecs.spec(field.title) == null) CustomFieldEditCard(
                         groupShape = if (contentMode) takagi.ru.monica.ui.components.entryGroupShape(index, activeCredentialMetadata.credentialCustomFields.size) else null,
                         index = index,
                         field = field,

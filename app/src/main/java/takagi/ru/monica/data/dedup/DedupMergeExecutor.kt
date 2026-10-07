@@ -1,5 +1,6 @@
 package takagi.ru.monica.data.dedup
 
+import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
@@ -8,6 +9,8 @@ import takagi.ru.monica.R
 import takagi.ru.monica.attachments.LegacyImageAttachmentSupport
 import takagi.ru.monica.attachments.model.AttachmentOwner
 import takagi.ru.monica.attachments.model.AttachmentError
+import takagi.ru.monica.data.PasswordDatabase
+import takagi.ru.monica.data.isLocalOnlyItem
 import takagi.ru.monica.repository.CustomFieldRepository
 import takagi.ru.monica.repository.PasswordRepository
 import takagi.ru.monica.repository.PasskeyRepository
@@ -19,6 +22,9 @@ internal interface DedupMergeWriter {
     suspend fun writePassword(resolved: DedupResolvedPassword)
     suspend fun writeSecureItem(resolved: DedupResolvedSecureItem)
     suspend fun writePasskey(resolved: DedupResolvedPasskey)
+
+    /** True only after commit; false means the block was not run. A failure must roll it all back. */
+    suspend fun writeLocalBatch(block: suspend () -> Unit): Boolean = false
 }
 
 internal class RepositoryDedupMergeWriter(
@@ -26,8 +32,14 @@ internal class RepositoryDedupMergeWriter(
     private val secureItemRepository: SecureItemRepository,
     private val customFieldRepository: CustomFieldRepository,
     private val passkeyRepository: PasskeyRepository,
+    private val database: PasswordDatabase,
     private val attachmentSupport: DedupAttachmentSupport? = null
 ) : DedupMergeWriter {
+    override suspend fun writeLocalBatch(block: suspend () -> Unit): Boolean {
+        database.withTransaction { block() }
+        return true
+    }
+
     override suspend fun writePassword(resolved: DedupResolvedPassword) {
         var insertedId: Long? = null
         try {
@@ -50,7 +62,9 @@ internal class RepositoryDedupMergeWriter(
             val rollbackFailure = insertedId?.let { id ->
                 runCatching {
                     withContext(NonCancellable) {
-                        attachmentSupport?.rollback(AttachmentOwner.password(id))
+                        if (resolved.attachments.isNotEmpty()) {
+                            attachmentSupport?.rollback(AttachmentOwner.password(id))
+                        }
                         passwordRepository.deletePasswordEntryById(id)
                     }
                 }.exceptionOrNull()
@@ -69,12 +83,14 @@ internal class RepositoryDedupMergeWriter(
             val id = secureItemRepository.insertItem(item)
             insertedId = id
             attachmentSupport?.copy(resolved.attachments, AttachmentOwner.secureItem(id))
-            attachmentSupport?.persistImages(item.copy(id = id))
+            if (item.mdbxDatabaseId != null) attachmentSupport?.persistImages(item.copy(id = id))
         } catch (error: Exception) {
             val failure = runCatching {
                 withContext(NonCancellable) {
                     insertedId?.let { id ->
-                        attachmentSupport?.rollback(AttachmentOwner.secureItem(id))
+                        if (resolved.attachments.isNotEmpty() || resolved.item.mdbxDatabaseId != null) {
+                            attachmentSupport?.rollback(AttachmentOwner.secureItem(id))
+                        }
                         secureItemRepository.deleteItemById(id)
                     }
                     images?.let { attachmentSupport?.images?.rollback(it) }
@@ -108,63 +124,78 @@ internal class DedupMergeExecutor(
     ): DedupMergeExecutionResult {
         val totalItems = passwords.size + secureItems.size + passkeys.size
         var completedItems = 0
-        var insertedPasswords = 0
-        var insertedSecureItems = 0
-        var insertedPasskeys = 0
         val failures = mutableListOf<DedupMergeFailure>()
 
-        passwords.forEach { resolved ->
-            coroutineContext.ensureActive()
-            val label = resolved.entry.title.ifBlank { resolved.entry.username.ifBlank { strings.get(R.string.dedup_merge_untitled_password) } }
-            try {
-                writer.writePassword(resolved)
-                insertedPasswords++
-            } catch (throwable: Exception) {
-                if (throwable is CancellationException) throw throwable
-                failures += DedupMergeFailure(
-                    kind = DedupMergeItemKind.PASSWORD,
-                    label = label,
-                    reason = failureReason(throwable)
-                )
-            } finally {
-                completedItems++
-                onProgress(DedupMergeExecutionProgress(completedItems, totalItems, label))
+        suspend fun <T> writeItems(
+            items: List<T>,
+            kind: DedupMergeItemKind,
+            canBatch: (T) -> Boolean,
+            labelOf: (T) -> String,
+            write: suspend (T) -> Unit
+        ): Int {
+            var inserted = 0
+            var index = 0
+            while (index < items.size) {
+                coroutineContext.ensureActive()
+                var end = index + 1
+                val local = canBatch(items[index])
+                if (local) {
+                    while (end < items.size && end - index < LOCAL_BATCH_SIZE && canBatch(items[end])) end++
+                }
+                val batch = items.subList(index, end)
+                // Only Room-only writes may be retried after an atomic rollback. Files and
+                // private-key storage have their own per-item compensation paths.
+                val committed = if (local) {
+                    try {
+                        writer.writeLocalBatch {
+                            for (item in batch) {
+                                coroutineContext.ensureActive()
+                                write(item)
+                            }
+                            coroutineContext.ensureActive()
+                        }
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        false
+                    }
+                } else false
+                if (committed) {
+                    inserted += batch.size
+                    completedItems += batch.size
+                    onProgress(DedupMergeExecutionProgress(completedItems, totalItems, labelOf(batch.last())))
+                } else {
+                    // A failed transaction has committed nothing. Retry individually so
+                    // one invalid entry does not prevent the rest from being merged.
+                    for (item in batch) {
+                        coroutineContext.ensureActive()
+                        val label = labelOf(item)
+                        try {
+                            write(item)
+                            inserted++
+                        } catch (error: Exception) {
+                            if (error is CancellationException) throw error
+                            failures += DedupMergeFailure(kind, label, failureReason(error))
+                        }
+                        completedItems++
+                        onProgress(DedupMergeExecutionProgress(completedItems, totalItems, label))
+                    }
+                }
+                index = end
             }
+            return inserted
         }
 
-        secureItems.forEach { resolved ->
-            coroutineContext.ensureActive()
-            val label = resolved.item.title.ifBlank { resolved.item.itemType.dedupLabel(strings) }
-            try {
-                writer.writeSecureItem(resolved)
-                insertedSecureItems++
-            } catch (throwable: Exception) {
-                if (throwable is CancellationException) throw throwable
-                failures += DedupMergeFailure(
-                    kind = DedupMergeItemKind.SECURE_ITEM,
-                    label = label,
-                    reason = failureReason(throwable)
-                )
-            } finally {
-                completedItems++
-                onProgress(DedupMergeExecutionProgress(completedItems, totalItems, label))
-            }
-        }
-
-        passkeys.forEach { resolved ->
-            coroutineContext.ensureActive()
-            val label = resolved.entry.displayTitle()
-            try {
-                writer.writePasskey(resolved)
-                insertedPasskeys++
-            } catch (throwable: Exception) {
-                if (throwable is CancellationException) throw throwable
-                failures += DedupMergeFailure(DedupMergeItemKind.PASSKEY, label, failureReason(throwable))
-            } finally {
-                completedItems++
-                onProgress(DedupMergeExecutionProgress(completedItems, totalItems, label))
-            }
-        }
+        val insertedPasswords = writeItems(passwords, DedupMergeItemKind.PASSWORD,
+            canBatch = { it.entry.id == 0L && it.entry.isLocalOnlyEntry() && it.attachments.isEmpty() },
+            labelOf = { it.entry.title.ifBlank { it.entry.username.ifBlank { strings.get(R.string.dedup_merge_untitled_password) } } },
+            write = writer::writePassword)
+        val insertedSecureItems = writeItems(secureItems, DedupMergeItemKind.SECURE_ITEM,
+            canBatch = { it.item.id == 0L && it.item.isLocalOnlyItem() && it.attachments.isEmpty() &&
+                runCatching { LegacyImageAttachmentSupport.paths(it.item.imagePaths).all(String::isBlank) }.getOrDefault(false) },
+            labelOf = { it.item.title.ifBlank { it.item.itemType.dedupLabel(strings) } },
+            write = writer::writeSecureItem)
+        val insertedPasskeys = writeItems(passkeys, DedupMergeItemKind.PASSKEY,
+            canBatch = { false }, labelOf = { it.entry.displayTitle() }, write = writer::writePasskey)
 
         return DedupMergeExecutionResult(
             insertedPasswords = insertedPasswords,
@@ -180,6 +211,10 @@ internal class DedupMergeExecutor(
             targetLabel = targetLabel,
             failures = failures
         )
+    }
+
+    private companion object {
+        const val LOCAL_BATCH_SIZE = 100
     }
 
     private fun failureReason(throwable: Throwable): String {
