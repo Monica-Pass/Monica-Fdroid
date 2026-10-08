@@ -1694,6 +1694,7 @@
     <string name="delete_backup_confirm">Are you sure you want to delete backup:\n%s?</string>
     <string name="backup_deleted">Backup deleted</string>
     <string name="delete_failed">Delete failed: %s</string>
+    <string name="keepass_delete_failed_reload">Could not finish deleting from KDBX. Reload the database and check the file or its write access before retrying.</string>
     <string name="refresh">Refresh</string>
     
     <!-- WebDAV Encryption -->

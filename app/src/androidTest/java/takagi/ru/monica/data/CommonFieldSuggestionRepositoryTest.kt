@@ -37,7 +37,7 @@ class CommonFieldSuggestionRepositoryTest {
         assertEquals(listOf("00123"), values(CommonSuggestionField.BRANCH_CODE, "00"))
         assertEquals(listOf("400-000-0000"), values(CommonSuggestionField.CUSTOMER_SERVICE_PHONE, "400"))
         assertEquals(listOf("Example Authority"), values(CommonSuggestionField.ISSUED_BY, "Exam"))
-        for (field in CommonSuggestionField.entries) assertTrue(values(field, "synthetic").isEmpty())
+        for (field in CommonSuggestionField.entries) assertTrue(values(field, "synthetic-card").isEmpty())
         assertTrue(values(CommonSuggestionField.BANK_NAME, "never-suggest").isEmpty())
     }
 
@@ -92,5 +92,50 @@ class CommonFieldSuggestionRepositoryTest {
             unlocked.value = false
             awaitValues(emptyList())
         } finally { job.cancelAndJoin() }
+    }
+
+    @Test fun sharedNamesAndAddressesReadEverySupportedStorageShape() = runBlocking {
+        db.secureItemDao().insertItem(SecureItem(itemType = ItemType.BANK_CARD, title = "Synthetic card",
+            itemData = security.encryptData(CardWalletDataCodec.encodeBankCardData(card().copy(cardholderName = "Example Card")))))
+        db.secureItemDao().insertItem(SecureItem(itemType = ItemType.DOCUMENT, title = "Synthetic identity",
+            itemData = security.encryptData(CardWalletDataCodec.encodeDocumentData(DocumentData(DocumentType.PASSPORT,
+                "private-number", "Example Document", issuedBy = "Example Authority", address1 = "Example Street", postalCode = "00123")))))
+        db.secureItemDao().insertItem(SecureItem(itemType = ItemType.BILLING_ADDRESS, title = "Synthetic address",
+            itemData = security.encryptData(CardWalletDataCodec.encodeBillingAddressData(BillingAddressData(fullName = "Example Billing", city = "Example City")))))
+        assertEquals(setOf("Example Card", "Example Document", "Example Billing"), values(CommonSuggestionField.FULL_NAME, "Example").toSet())
+        assertEquals(listOf("Example Street"), values(CommonSuggestionField.STREET, "Example"))
+        assertEquals(listOf("00123"), values(CommonSuggestionField.POSTAL_CODE, "00"))
+        assertEquals(listOf("Example City"), values(CommonSuggestionField.CITY, "Example"))
+        val id = db.passwordEntryDao().insert(PasswordEntry(title = "Legacy", username = "", password = "private-password", website = "",
+            creditCardHolder = "Legacy Name", addressLine = "Legacy Street", city = "Legacy City"))
+        val snapshot = EmbeddedWalletContent.create(SecureItem(itemType = ItemType.BILLING_ADDRESS, title = "Embedded",
+            itemData = CardWalletDataCodec.encodeBillingAddressData(BillingAddressData(fullName = "Embedded Name", city = "Embedded City"))))
+        db.customFieldDao().insertAll(listOf(CustomField(entryId = id, title = EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.ADDRESS), value = security.encryptData(snapshot.encode())),
+            CustomField(entryId = id, title = EntryContentFields.key("CONTACT", "fullName"), value = security.encryptData("Contact Name"))))
+        assertEquals(setOf("Legacy Name", "Embedded Name", "Contact Name"), values(CommonSuggestionField.FULL_NAME, "Name").toSet())
+        assertEquals(listOf("Legacy Street"), values(CommonSuggestionField.STREET, "Legacy"))
+        assertEquals(listOf("Embedded City"), values(CommonSuggestionField.CITY, "Embedded"))
+        for (field in CommonSuggestionField.entries) assertTrue(values(field, "private-").isEmpty())
+    }
+
+    @Test fun nameSourcesExcludeDeletedLockedMissingAndAmbiguousOwners() = runBlocking {
+        val vaultId = db.bitwardenVaultDao().insert(BitwardenVault(email = "test@example.invalid", isLocked = true))
+        val item = SecureItem(itemType = ItemType.BILLING_ADDRESS, title = "Synthetic",
+            itemData = security.encryptData(CardWalletDataCodec.encodeBillingAddressData(BillingAddressData(fullName = "Hidden Name", city = "Hidden City"))))
+        for (row in listOf(item.copy(isDeleted = true), item.copy(bitwardenVaultId = vaultId),
+            item.copy(keepassDatabaseId = 999), item.copy(mdbxDatabaseId = 999), item.copy(bitwardenVaultId = vaultId, keepassDatabaseId = 999))) db.secureItemDao().insertItem(row)
+        assertTrue(values(CommonSuggestionField.FULL_NAME, "Hidden").isEmpty())
+        assertTrue(values(CommonSuggestionField.CITY, "Hidden").isEmpty())
+        db.secureItemDao().insertItem(item.copy(itemData = "damaged-json"))
+        assertTrue(values(CommonSuggestionField.FULL_NAME, "Hidden").isEmpty())
+    }
+
+    @Test fun explicitCommonTemplatesAreAvailableOnlyDuringUnlockedSession() = runBlocking {
+        val source = CommonFieldSuggestionRepository(db, security::decryptDataIfMonicaCiphertext, unlocked,
+            nameTemplates = flowOf(listOf("Template Name")), billingTemplate = flowOf(BillingAddress(streetAddress = "Template Street")))
+        assertEquals("Template Name", source.observe(CommonSuggestionField.FULL_NAME).first().match("Template").single().value)
+        assertEquals("Template Street", source.observe(CommonSuggestionField.STREET).first().match("Template").single().value)
+        unlocked.value = false
+        assertTrue(source.observe(CommonSuggestionField.FULL_NAME).first().match("Template").isEmpty())
     }
 }

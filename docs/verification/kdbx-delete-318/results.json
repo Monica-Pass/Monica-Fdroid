@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-08",
+  "version": "1.0.318",
+  "avd": "Monica_Issue136_API_32",
+  "api": 32,
+  "abi": "x86_64",
+  "fixture": {
+    "entries": 300,
+    "kdf": "Argon2d",
+    "iterations": 8,
+    "memoryMiB": 32,
+    "parallelism": 2
+  },
+  "main": {
+    "device": {
+      "testHash": "48FA47918FA35D8181AA7589F91FA48B638966B57939C096D3B18B0EDB058804",
+      "classes": "takagi.ru.monica.keepass.KeePassDeleteInvestigationTest,takagi.ru.monica.keepass.KeePassVaultDeleteUiTest",
+      "tests": 9.0,
+      "processIsolation": "one instrumentation process per class",
+      "appHash": "B614721132EE3BAB3221230FC5603352661E2C440C85366495D53E38F87CCDA4",
+      "oldUser": "0",
+      "completed": true,
+      "oldProxy": ":0",
+      "edition": "Main"
+    },
+    "keepassUnitTests": 238,
+    "keepassUnitFailures": 0,
+    "expandedUnitTests": 303,
+    "expandedUnitFailures": 6,
+    "baselineSourceGuardTests": 6,
+    "baselineSourceGuardFailures": 6
+  },
+  "timingMs": {
+    "beforeBatch300": 8916,
+    "afterBatch300": 876,
+    "beforeVault40File": 25819,
+    "afterSelection40IncludingColdRead": 1516
+  },
+  "nativeSaves": {
+    "beforeBatch300": 8,
+    "afterBatch300": 1,
+    "beforeVault40": 40,
+    "afterSelection40": 1
+  },
+  "fdroid": {
+    "device": {
+      "testHash": "B39ED456249EAAA13CFE68E71A7B582A0FC12FC53D021B032C8502D74CA2DCA8",
+      "edition": "Fdroid",
+      "oldProxy": ":0",
+      "classes": "takagi.ru.monica.keepass.KeePassDeleteInvestigationTest,takagi.ru.monica.keepass.KeePassVaultDeleteUiTest",
+      "oldUser": "0",
+      "appHash": "1550A6B79E7B9BA5BA8A7C6E1AFE3FB2E6EACA2A9E221CB5498F621C1F031D80",
+      "processIsolation": "one instrumentation process per class",
+      "tests": 9.0,
+      "completed": true
+    },
+    "keepassUnitTests": 238,
+    "keepassUnitFailures": 0,
+    "expandedUnitTests": 303,
+    "expandedUnitFailures": 6,
+    "initialCombinedUiRun": "Activity setup failed; final runs isolate each test class in a fresh instrumentation process",
+    "batch300Ms": 921
+  }
+}

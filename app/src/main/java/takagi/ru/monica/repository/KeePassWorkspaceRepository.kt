@@ -72,6 +72,12 @@ class KeePassWorkspaceRepository(
         return service.openNativeSession(databaseId)
     }
 
+    internal suspend fun applyCurrentProjection(
+        databaseId: Long,
+        revisionToken: String,
+        apply: suspend () -> Unit
+    ): Boolean = service.applyCurrentProjection(databaseId, revisionToken, apply)
+
     internal suspend fun openNativeBrowser(databaseId: Long): Result<KeePassNativeBrowserSnapshot> {
         return service.openNativeBrowser(databaseId)
     }

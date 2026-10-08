@@ -9,7 +9,7 @@ class KeePassPasswordDeleteExecutor(
 ) {
     suspend fun deleteBatch(entries: List<PasswordEntry>, useRecycleBin: Boolean): Boolean {
         if (entries.isEmpty()) return true
-        val keepassBridge = bridge ?: return true
+        val keepassBridge = bridge ?: return entries.none { it.keepassDatabaseId != null }
 
         return entries
             .groupBy { it.keepassDatabaseId }
@@ -29,7 +29,7 @@ class KeePassPasswordDeleteExecutor(
 
     suspend fun delete(entry: PasswordEntry, useRecycleBin: Boolean): Boolean {
         val databaseId = entry.keepassDatabaseId ?: return true
-        val keepassBridge = bridge ?: return true
+        val keepassBridge = bridge ?: return false
 
         if (KeePassDeletePolicy.allowPermanentFallback(useRecycleBin)) {
             return runDirectDelete(keepassBridge, databaseId, entry)

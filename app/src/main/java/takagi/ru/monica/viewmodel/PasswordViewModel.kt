@@ -344,7 +344,6 @@ class PasswordViewModel internal constructor(
         private const val MONICA_KEEPASS_ARCHIVE_ROOT_GROUP_NAME = ".Monica"
         private const val MONICA_KEEPASS_ARCHIVE_GROUP_NAME = "Archive"
         private const val PASSWORD_HISTORY_LIMIT = 10
-        private const val KEEPASS_BATCH_DELETE_CHUNK_SIZE = 40
     }
 
     enum class ManualStackMode {
@@ -1629,34 +1628,25 @@ class PasswordViewModel internal constructor(
                 SyncDiagnostics.skipped(taskId, target, trigger, "native_revision_unchanged", startedAt)
                 return
             }
-            val snapshot = bridge
-                .loadLegacyWorkspace(databaseId, allowedSecureItemTypes = setOf(ItemType.TOTP))
-                .getOrNull()
-                ?: run {
-                    SyncDiagnostics.skipped(taskId, target, trigger, "workspace_unavailable", startedAt)
+            repeat(2) {
+                val snapshot = bridge
+                    .loadLegacyWorkspace(databaseId, allowedSecureItemTypes = setOf(ItemType.TOTP))
+                    .getOrNull()
+                    ?: run {
+                        SyncDiagnostics.skipped(taskId, target, trigger, "workspace_unavailable", startedAt)
+                        return
+                    }
+                if (applyKeePassWorkspaceSnapshot(
+                        databaseId, snapshot, passwordDecision.needsRefresh, totpDecision.needsRefresh
+                    )) {
+                    SyncDiagnostics.success(
+                        taskId = taskId, target = target, trigger = trigger, startedAt = startedAt,
+                        detail = "passwords=${snapshot.passwords.size} secureItems=${snapshot.secureItems.size}"
+                    )
                     return
                 }
-            val indexedKinds = mutableSetOf<takagi.ru.monica.keepass.KeePassProjectionKind>()
-            if (passwordDecision.needsRefresh) {
-                upsertKeePassEntries(databaseId, snapshot.passwords)
-                indexedKinds += takagi.ru.monica.keepass.KeePassProjectionKind.PASSWORD
             }
-            if (totpDecision.needsRefresh) {
-                syncKeePassTotpEntries(databaseId, snapshot.secureItems)
-                indexedKinds += takagi.ru.monica.keepass.KeePassProjectionKind.TOTP
-            }
-            bridge.markLegacyProjectionIndexed(
-                databaseId = databaseId,
-                revisionToken = snapshot.sessionRevision ?: passwordDecision.revisionToken,
-                kinds = indexedKinds
-            )
-            SyncDiagnostics.success(
-                taskId = taskId,
-                target = target,
-                trigger = trigger,
-                startedAt = startedAt,
-                detail = "passwords=${snapshot.passwords.size} secureItems=${snapshot.secureItems.size}"
-            )
+            SyncDiagnostics.skipped(taskId, target, trigger, "native_revision_changed", startedAt)
         } catch (error: Exception) {
             SyncDiagnostics.failed(taskId, target, trigger, startedAt, error)
             Log.w("PasswordViewModel", "KeePass sync failed for databaseId=$databaseId", error)
@@ -1689,7 +1679,31 @@ class PasswordViewModel internal constructor(
         syncKeePassDatabase(databaseId, forceRefresh = forceRefresh)
     }
 
-    private suspend fun upsertKeePassEntries(databaseId: Long, entries: List<KeePassEntryData>) {
+    internal suspend fun applyKeePassWorkspaceSnapshot(
+        databaseId: Long,
+        snapshot: takagi.ru.monica.utils.KeePassWorkspaceSnapshot,
+        refreshPasswords: Boolean,
+        refreshTotp: Boolean
+    ): Boolean {
+        val bridge = keepassBridge ?: return false
+        val revision = snapshot.sessionRevision ?: return false
+        return bridge.applyCurrentLegacyProjection(databaseId, revision) {
+            val kinds = mutableSetOf<takagi.ru.monica.keepass.KeePassProjectionKind>()
+            if (refreshPasswords) {
+                upsertKeePassEntries(databaseId, snapshot.passwords)
+                kinds += takagi.ru.monica.keepass.KeePassProjectionKind.PASSWORD
+            }
+            if (refreshTotp) {
+                syncKeePassTotpEntries(databaseId, snapshot.secureItems)
+                kinds += takagi.ru.monica.keepass.KeePassProjectionKind.TOTP
+            }
+            bridge.markLegacyProjectionIndexed(databaseId, revision, kinds)
+        }
+    }
+
+    private suspend fun upsertKeePassEntries(databaseId: Long, entries: List<KeePassEntryData>) =
+        withContext(Dispatchers.IO) {
+        repository.applyKeePassProjection {
         val incomingEntries = entries.filter { shouldImportKeePassPasswordEntry(it) }
         val activeBefore = repository.getPasswordEntriesByKeePassDatabaseSync(databaseId).size
         val recycleIncomingCount = incomingEntries.count { it.isInRecycleBin }
@@ -1839,6 +1853,8 @@ class PasswordViewModel internal constructor(
                 "incomingRecycle=$recycleIncomingCount, staleRemoved=$staleCount, " +
                 "activeBefore=$activeBefore, activeAfter=$activeAfter"
         )
+    }
+
     }
 
     private fun PasswordEntry.matchesKeePassImport(
@@ -3460,12 +3476,10 @@ class PasswordViewModel internal constructor(
                 return@launch
             }
               
-            if (trashEnabled) {
-                moveEntryToTrash(
-                    entry = entry,
-                    keepassId = keepassId,
-                    commandPolicy = commandPolicy
-                )
+            if (keepassId != null) {
+                deletePasswordEntriesBatch(listOf(entry))
+            } else if (trashEnabled) {
+                moveEntryToTrashLocalOnly(entry, commandPolicy)
             } else {
                 permanentlyDeleteEntry(entry)
             }
@@ -3542,49 +3556,24 @@ class PasswordViewModel internal constructor(
             .groupBy { it.first.keepassDatabaseId }
             .values
             .forEach { groupedEntries ->
-                groupedEntries
-                    .chunked(KEEPASS_BATCH_DELETE_CHUNK_SIZE)
-                    .forEach { chunk ->
-                        val chunkEntries = chunk.map { it.first }
-                        val remoteDeleted = keepassPasswordDeleteExecutor.deleteBatch(
-                            entries = chunkEntries,
-                            useRecycleBin = trashEnabled
-                        )
-                        if (!remoteDeleted) {
-                            showKeePassWritePermissionError()
-                            Log.e(
-                                "PasswordViewModel",
-                                "KeePass batch delete failed: trash=$trashEnabled, ids=${chunkEntries.map { it.id }}"
-                            )
-                            // 批量路径失败时退回逐条删除，尽可能提升成功率并输出真实进度。
-                            val singleDeletedTargets = mutableListOf<
-                                Pair<PasswordEntry, takagi.ru.monica.domain.provider.PasswordCommandPolicy>
-                            >()
-                            chunk.forEach { (entry, commandPolicy) ->
-                                val singleDeleted = keepassPasswordDeleteExecutor.delete(
-                                    entry = entry,
-                                    useRecycleBin = trashEnabled
-                                )
-                                if (singleDeleted) {
-                                    singleDeletedTargets += entry to commandPolicy
-                                }
-                            }
-                            if (singleDeletedTargets.isNotEmpty()) {
-                                deletedCount += applyLocalDeleteBatch(singleDeletedTargets, trashEnabled)
-                            }
-                            repeat(chunk.size) {
-                                processedCount++
-                                onProgress?.invoke(processedCount, totalCount)
-                            }
-                            return@forEach
-                        }
-
-                        deletedCount += applyLocalDeleteBatch(chunk, trashEnabled)
-                        repeat(chunk.size) {
-                            processedCount++
-                            onProgress?.invoke(processedCount, totalCount)
-                        }
+                // KDBX saves always encode the whole database. Splitting into rows/chunks
+                // repeats the expensive KDF and exposes partially updated lists.
+                val remoteDeleted = keepassPasswordDeleteExecutor.deleteBatch(
+                    entries = groupedEntries.map { it.first },
+                    useRecycleBin = trashEnabled
+                )
+                if (remoteDeleted) {
+                    deletedCount += withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+                        applyLocalDeleteBatch(groupedEntries, trashEnabled)
                     }
+                } else {
+                    appContext?.let {
+                        Toast.makeText(it, R.string.keepass_delete_failed_reload, Toast.LENGTH_LONG).show()
+                    }
+                    Log.e("PasswordViewModel", "KeePass batch delete failed; preserved local rows")
+                }
+                processedCount += groupedEntries.size
+                onProgress?.invoke(processedCount, totalCount)
             }
 
         return deletedCount
@@ -3668,18 +3657,6 @@ class PasswordViewModel internal constructor(
         return originalEntries.size
     }
 
-    private suspend fun moveEntryToTrash(
-        entry: PasswordEntry,
-        keepassId: Long?,
-        commandPolicy: takagi.ru.monica.domain.provider.PasswordCommandPolicy
-    ) {
-        moveEntryToTrashLocalOnly(entry, commandPolicy)
-
-        if (keepassId != null) {
-            syncKeePassTrashDelete(entry)
-        }
-    }
-
     private suspend fun moveEntryToTrashLocalOnly(
         entry: PasswordEntry,
         commandPolicy: takagi.ru.monica.domain.provider.PasswordCommandPolicy
@@ -3698,24 +3675,6 @@ class PasswordViewModel internal constructor(
             detail = "移入回收站"
         )
         Log.i("PasswordViewModel", "Delete moved to trash: id=${entry.id}")
-    }
-
-    private fun syncKeePassTrashDelete(entry: PasswordEntry) {
-        viewModelScope.launch keepassDeleteSync@{
-            if (keepassPasswordDeleteExecutor.delete(entry, useRecycleBin = true)) {
-                Log.i("PasswordViewModel", "KeePass trash delete synced: id=${entry.id}")
-                return@keepassDeleteSync
-            }
-
-            Log.e("PasswordViewModel", "KeePass trash delete failed, reverting local trash state: id=${entry.id}")
-            showKeePassWritePermissionError()
-            repository.updatePasswordEntry(
-                passwordCommandStateFactory.createTrashRevertedEntry(
-                    entry = entry,
-                    now = Date()
-                )
-            )
-        }
     }
 
     private suspend fun permanentlyDeleteEntry(entry: PasswordEntry) {

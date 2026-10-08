@@ -48,15 +48,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
+import takagi.ru.monica.data.CommonSuggestionField
+import takagi.ru.monica.data.CommonFieldSuggestionIndex
+import takagi.ru.monica.data.CommonFieldCandidate
 import takagi.ru.monica.R
 import takagi.ru.monica.data.CommonAccountPreferences
 import takagi.ru.monica.data.CommonAccountTemplate
-import takagi.ru.monica.data.ItemType
 import takagi.ru.monica.data.PasswordDatabase
-import takagi.ru.monica.data.SecureItem
-import takagi.ru.monica.data.model.CardWalletDataCodec
-import takagi.ru.monica.data.model.displayFullName
-import takagi.ru.monica.security.SecurityManager
 import java.util.Locale
 
 enum class CommonNameSuggestionSource {
@@ -84,12 +82,6 @@ data class CommonNameSuggestionState(
     }
 }
 
-private data class CommonNameAggregate(
-    val name: String,
-    var count: Int = 0,
-    val sources: LinkedHashSet<String> = linkedSetOf()
-)
-
 @Composable
 fun rememberCommonNameSuggestionState(
     database: PasswordDatabase,
@@ -97,26 +89,22 @@ fun rememberCommonNameSuggestionState(
 ): CommonNameSuggestionState {
     val context = LocalContext.current
     val preferences = remember(context) { CommonAccountPreferences(context) }
-    val securityManager = remember(context) { SecurityManager(context.applicationContext) }
+    val source = rememberCommonFieldSuggestionSource(database)
     val templates by preferences.templatesFlow.collectAsState(initial = emptyList())
-    val secureItemFlow = remember(database, includeAnalyzedItems) {
-        if (includeAnalyzedItems) {
-            database.secureItemDao().getAllItems()
-        } else {
-            flowOf(emptyList())
-        }
+    val suggestionFlow = remember(source, includeAnalyzedItems) {
+        if (includeAnalyzedItems) source.observe(CommonSuggestionField.FULL_NAME)
+        else flowOf(CommonFieldSuggestionIndex(emptyList(), CommonSuggestionField.FULL_NAME))
     }
-    val secureItems by secureItemFlow.collectAsState(initial = emptyList())
+    val index by suggestionFlow.collectAsState(initial = CommonFieldSuggestionIndex(emptyList(), CommonSuggestionField.FULL_NAME))
     val localizedNameType = stringResource(R.string.common_account_type_name)
     val analyzedLabel = stringResource(R.string.common_name_fill_from_analysis)
 
-    return remember(templates, secureItems, localizedNameType, analyzedLabel, securityManager) {
+    return remember(templates, index, localizedNameType, analyzedLabel) {
         buildCommonNameSuggestionState(
             templates = templates,
-            secureItems = secureItems,
+            candidates = index.candidates,
             localizedNameType = localizedNameType,
-            analyzedLabel = analyzedLabel,
-            decryptIfNeeded = securityManager::decryptDataIfMonicaCiphertext
+            analyzedLabel = analyzedLabel
         )
     }
 }
@@ -367,10 +355,9 @@ private fun CommonNameSuggestionCard(
 
 private fun buildCommonNameSuggestionState(
     templates: List<CommonAccountTemplate>,
-    secureItems: List<SecureItem>,
+    candidates: List<CommonFieldCandidate>,
     localizedNameType: String,
-    analyzedLabel: String,
-    decryptIfNeeded: ((String) -> String)? = null
+    analyzedLabel: String
 ): CommonNameSuggestionState {
     val templateSuggestions = templates
         .asSequence()
@@ -393,42 +380,10 @@ private fun buildCommonNameSuggestionState(
         .map { normalizeCommonNameKey(it.name) }
         .toSet()
 
-    val analyzedAggregates = linkedMapOf<String, CommonNameAggregate>()
-    secureItems.asSequence()
-        .filterNot { it.isDeleted }
-        .forEach { item ->
-            val extractedName = extractCommonName(item, decryptIfNeeded)
-            if (extractedName.isBlank()) return@forEach
-
-            val normalizedName = normalizeCommonNameValue(extractedName)
-            val key = normalizeCommonNameKey(normalizedName)
-            if (key.isEmpty()) return@forEach
-
-            val aggregate = analyzedAggregates.getOrPut(key) {
-                CommonNameAggregate(name = normalizedName)
-            }
-            aggregate.count += 1
-            item.title.trim().takeIf { it.isNotBlank() }?.let(aggregate.sources::add)
-        }
-
-    val analyzedSuggestions = analyzedAggregates.values
-        .asSequence()
-        .filterNot { templateKeys.contains(normalizeCommonNameKey(it.name)) }
-        .sortedWith(
-            compareByDescending<CommonNameAggregate> { it.count }
-                .thenBy { it.name.lowercase(Locale.ROOT) }
-        )
-        .map { aggregate ->
-            CommonNameSuggestion(
-                id = "analyzed_${normalizeCommonNameKey(aggregate.name)}",
-                name = aggregate.name,
-                supportingText = aggregate.sources
-                    .take(2)
-                    .joinToString(" · ")
-                    .ifBlank { analyzedLabel },
-                source = CommonNameSuggestionSource.ANALYZED
-            )
-        }
+    val analyzedSuggestions = candidates.asSequence()
+        .filterNot { normalizeCommonNameKey(it.value) in templateKeys }
+        .sortedWith(compareByDescending<CommonFieldCandidate> { it.uses }.thenBy { it.value })
+        .map { CommonNameSuggestion("analyzed_${normalizeCommonNameKey(it.value)}", it.value, analyzedLabel, CommonNameSuggestionSource.ANALYZED) }
         .toList()
 
     return CommonNameSuggestionState(
@@ -442,23 +397,6 @@ private fun isCommonNameTemplateType(rawType: String, localizedNameType: String)
     return normalized == localizedNameType.lowercase(Locale.ROOT) ||
         normalized == "name" ||
         normalized == "姓名"
-}
-
-private fun extractCommonName(
-    item: SecureItem,
-    decryptIfNeeded: ((String) -> String)? = null
-): String {
-    return when (item.itemType) {
-        ItemType.BANK_CARD -> CardWalletDataCodec.parseBankCardData(
-            raw = item.itemData,
-            decryptIfNeeded = decryptIfNeeded
-        )?.cardholderName.orEmpty()
-        ItemType.DOCUMENT -> CardWalletDataCodec.parseDocumentData(
-            raw = item.itemData,
-            decryptIfNeeded = decryptIfNeeded
-        )?.displayFullName().orEmpty()
-        else -> ""
-    }
 }
 
 private fun normalizeCommonNameValue(rawName: String): String {

@@ -52,9 +52,14 @@ fun EntryContentStylePicker(enabled: Boolean, onChange: (Boolean) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EntryContentFieldButton(fields: List<CustomFieldDraft>, onFieldsChange: (List<CustomFieldDraft>) -> Unit) {
+fun EntryContentFieldButton(fields: List<CustomFieldDraft>, onFieldsChange: (List<CustomFieldDraft>) -> Unit) =
+    EntryContentFieldButton(fields, onFieldsChange, Modifier)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EntryContentFieldButton(fields: List<CustomFieldDraft>, onFieldsChange: (List<CustomFieldDraft>) -> Unit, modifier: Modifier) {
     var showMenu by remember { mutableStateOf(false) }
-    FilledTonalButton(onClick = { showMenu = true }, modifier = Modifier.testTag("entry_content_add")) {
+    FilledTonalButton(onClick = { showMenu = true }, modifier = modifier.testTag("entry_content_add")) {
         Icon(Icons.Default.Add, null, Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
         Text(stringResource(R.string.password_content_add))

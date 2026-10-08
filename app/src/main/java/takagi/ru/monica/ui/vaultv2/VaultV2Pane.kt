@@ -4321,14 +4321,32 @@ fun VaultV2Pane(
 				}) else null,
 				onDelete = if (showOverview && overviewSelection.module == VaultOverviewModule.ITEMS) null else ({
 					// 先弹确认对话框，不直接删除
-					showDeleteConfirmDialog = true
+					if (quickStatusDeleteState?.phase != takagi.ru.monica.ui.password.PasswordBatchDeletePhase.RUNNING) {
+						showDeleteConfirmDialog = true
+					}
 				}),
 			)
 
 			// 删除二次确认对话框（带指纹/密码验证）
 			if (showDeleteConfirmDialog) {
 				val doDelete = {
-					selectedItems.forEach { item ->
+                    val selection = selectedItems.toList()
+                    val passwords = selection.filter { it.type == VaultV2ItemType.PASSWORD && it.nativeToken == null }
+                        .mapNotNull { it.passwordEntry }.distinctBy { it.id }
+                    scope.launch {
+                        if (passwords.isNotEmpty()) {
+                            var completed = false
+                            try {
+                                val deleted = passwordViewModel.deletePasswordEntriesBatch(passwords) { processed, total ->
+                                    PasswordBatchDeleteProgressTracker.update(processed, total)
+                                }
+                                PasswordBatchDeleteProgressTracker.complete(deleted)
+                                completed = true
+                            } finally {
+                                if (!completed) PasswordBatchDeleteProgressTracker.clear()
+                            }
+                        }
+					selection.forEach { item ->
 						when (item.type) {
 							VaultV2ItemType.PASSWORD -> {
 								if (item.nativeToken != null) scope.launch {
@@ -4337,7 +4355,7 @@ fun VaultV2Pane(
                                         aggregateStackRepository.clearManualStack(listOf(item.key))
                                     } catch (cancelled: CancellationException) { throw cancelled }
                                     catch (_: Exception) { Toast.makeText(context, R.string.api_token_load_error, Toast.LENGTH_LONG).show() }
-                                } else item.passwordEntry?.let(passwordViewModel::deletePasswordEntry)
+                                }
 							}
 							VaultV2ItemType.AUTHENTICATOR -> {
 								item.totpItem?.let { totp ->
@@ -4363,7 +4381,8 @@ fun VaultV2Pane(
 							}
 						}
 					}
-					selectedKeys.clear()
+					selectedKeys.removeAll(selection.map { it.key }.toSet())
+                    }
 				}
 				takagi.ru.monica.ui.common.dialog.DeleteConfirmDialog(
 					itemTitle = stringResource(R.string.selected_items, selectedCount),

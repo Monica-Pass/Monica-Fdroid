@@ -1,6 +1,7 @@
-Optional 2-minute autofill access, off by default; screen-off, disabling it or clearing Monica revokes it. Main app stays independently locked.
-Add saved-value suggestions for bank details, labels, URLs and issuing authorities.
-Speed up Clear data with progress and batched deletion.
-Speed up deduplication with rollback and cancellation.
-Hide imported app metadata while preserving it through edits and re-export.
-CLI defers Glitter; existing vaults stay unchanged.
+Optional 2-minute autofill, off by default; revoked on lock/task removal; separate main-app lock.
+Suggestions: bank details, labels, URLs, issuers, names, addresses.
+Clear data progress; faster deduplication with rollback/cancel.
+Preserve hidden app metadata; CLI defers Glitter.
+Compact M3E wallet editors with saved drag order.
+Retry startup reads without reset; improve diagnostics.
+KDBX bulk delete saves once, updates lists together, and guards stale snapshots and concurrent saves.

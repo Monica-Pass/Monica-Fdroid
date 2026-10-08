@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -90,41 +91,50 @@ fun EntryOptionalFields(specs: List<EntrySupplementalSpec>, values: Map<String, 
     var added by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var picker by remember { mutableStateOf(false) }
     val visible = specs.filter { it.key in added || !values[it.key].isNullOrEmpty() }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        visible.forEach { spec ->
-            var revealed by remember(spec.key) { mutableStateOf(false) }
-            val title = if (spec.label != 0) stringResource(spec.label) else spec.literal
-            val choices = when (spec.key) {
-                "cardType" -> listOf("CREDIT" to R.string.credit_card, "DEBIT" to R.string.debit_card, "PREPAID" to R.string.prepaid_card)
-                "documentType" -> listOf("ID_CARD" to R.string.id_card, "PASSPORT" to R.string.passport,
-                    "DRIVER_LICENSE" to R.string.drivers_license, "SOCIAL_SECURITY" to R.string.social_security_card, "OTHER" to R.string.other_document)
-                else -> emptyList()
-            }
-            var choosing by remember { mutableStateOf(false) }
-            if (choices.isNotEmpty()) {
-                OutlinedButton(onClick = { choosing = true }, modifier = Modifier.fillMaxWidth().testTag("entry_extra_${spec.key}")) {
-                    Text(title + ": " + (choices.firstOrNull { it.first == values[spec.key] }?.let { stringResource(it.second) }
-                        ?: values[spec.key].orEmpty()))
-                }
-                if (choosing) AlertDialog(onDismissRequest = { choosing = false }, title = { Text(title) },
-                    text = { Column { choices.forEach { (key, label) ->
-                        TextButton(onClick = { onValue(spec, key); choosing = false }, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(label))
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CompositionLocalProvider(LocalFilledEntryForm provides true, LocalTemplateFieldShape provides true) {
+            Column(Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                visible.forEach { spec ->
+                    key(spec.key) {
+                        var revealed by remember(spec.key) { mutableStateOf(false) }
+                        val title = if (spec.label != 0) stringResource(spec.label) else spec.literal
+                        val choices = when (spec.key) {
+                            "cardType" -> listOf("CREDIT" to R.string.credit_card, "DEBIT" to R.string.debit_card, "PREPAID" to R.string.prepaid_card)
+                            "documentType" -> listOf("ID_CARD" to R.string.id_card, "PASSPORT" to R.string.passport,
+                                "DRIVER_LICENSE" to R.string.drivers_license, "SOCIAL_SECURITY" to R.string.social_security_card, "OTHER" to R.string.other_document)
+                            else -> emptyList()
                         }
-                    } } }, confirmButton = { TextButton(onClick = { choosing = false }) { Text(stringResource(R.string.cancel)) } })
-            } else SuggestedOutlinedTextField(values[spec.key].orEmpty(), { onValue(spec, it) },
-                suggestionField = if (spec.protected) null else takagi.ru.monica.data.CommonSuggestionField.forSupplementalKey(spec.key),
-                label = { Text(title) }, entryContentStyle = true,
-                visualTransformation = if (spec.protected && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
-                trailingIcon = if (spec.protected) {{ IconButton(onClick = { revealed = !revealed },
-                    modifier = Modifier.testTag("entry_extra_reveal_${spec.key}")) {
-                    Icon(if (revealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        stringResource(if (revealed) R.string.hide_password else R.string.show_password))
-                } }} else null,
-                modifier = Modifier.fillMaxWidth().testTag("entry_extra_${spec.key}"))
+                        var choosing by remember { mutableStateOf(false) }
+                        if (choices.isNotEmpty()) {
+                            OutlinedButton(onClick = { choosing = true }, modifier = Modifier.fillMaxWidth().testTag("entry_extra_${spec.key}")) {
+                                Text(title + ": " + (choices.firstOrNull { it.first == values[spec.key] }?.let { stringResource(it.second) }
+                                    ?: values[spec.key].orEmpty()))
+                            }
+                            if (choosing) AlertDialog(onDismissRequest = { choosing = false }, title = { Text(title) },
+                                text = { Column { choices.forEach { (key, label) ->
+                                    TextButton(onClick = { onValue(spec, key); choosing = false }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(stringResource(label))
+                                    }
+                                } } }, confirmButton = { TextButton(onClick = { choosing = false }) { Text(stringResource(R.string.cancel)) } })
+                        } else SuggestedOutlinedTextField(values[spec.key].orEmpty(), { onValue(spec, it) },
+                            suggestionField = if (spec.protected) null else takagi.ru.monica.data.CommonSuggestionField.forSupplementalKey(spec.key),
+                            label = { Text(title) }, entryContentStyle = true, singleLine = spec.key != "additionalInfo",
+                            keyboardOptions = if (spec.protected) androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = if (spec.key == "pin") androidx.compose.ui.text.input.KeyboardType.NumberPassword else androidx.compose.ui.text.input.KeyboardType.Password,
+                                autoCorrectEnabled = false) else androidx.compose.foundation.text.KeyboardOptions.Default,
+                            visualTransformation = if (spec.protected && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
+                            trailingIcon = if (spec.protected) {{ IconButton(onClick = { revealed = !revealed },
+                                modifier = Modifier.testTag("entry_extra_reveal_${spec.key}")) {
+                                Icon(if (revealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    stringResource(if (revealed) R.string.hide_password else R.string.show_password))
+                            } }} else null,
+                            modifier = Modifier.fillMaxWidth().testTag("entry_extra_${spec.key}"))
+                    }
+                }
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            FilledTonalButton(onClick = { picker = true }, modifier = Modifier.testTag("entry_extra_add")) {
+            FilledTonalButton(onClick = { picker = true }, modifier = Modifier.fillMaxWidth().testTag("entry_extra_add")) {
                 Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.keepass_native_add_field))

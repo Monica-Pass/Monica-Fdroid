@@ -16,6 +16,8 @@ class CommonFieldSuggestionRepository(
     private val database: PasswordDatabase,
     private val decrypt: (String) -> String,
     private val unlocked: StateFlow<Boolean> = SessionManager.isUnlocked,
+    private val nameTemplates: Flow<List<String>> = flowOf(emptyList()),
+    private val billingTemplate: Flow<takagi.ru.monica.data.model.BillingAddress> = flowOf(takagi.ru.monica.data.model.BillingAddress()),
 ) : CommonFieldSuggestionSource {
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observe(field: CommonSuggestionField): Flow<CommonFieldSuggestionIndex> = unlocked.flatMapLatest { open ->
@@ -35,22 +37,21 @@ class CommonFieldSuggestionRepository(
             bitwarden.filterNot { it.isLocked }.forEach { add("bitwarden:${it.id}") }
             mdbx.forEach { add("mdbx:${it.id}") }
         } }
-        val items = when (field) {
-            CommonSuggestionField.BANK_NAME, CommonSuggestionField.BRANCH_CODE, CommonSuggestionField.CUSTOMER_SERVICE_PHONE ->
-                database.secureItemDao().getItemsByType(ItemType.BANK_CARD)
-            CommonSuggestionField.ISSUED_BY -> database.secureItemDao().getItemsByType(ItemType.DOCUMENT)
-            else -> flowOf(emptyList())
-        }
+        val itemFlows = field.walletKinds().map { database.secureItemDao().getItemsByType(it.itemType) }
+        val items = if (itemFlows.isEmpty()) flowOf(emptyList()) else combine(itemFlows) { it.flatMap { rows -> rows } }
+        val templates = if (field == CommonSuggestionField.FULL_NAME) nameTemplates else billingTemplate.map { listOfNotNull(field.addressValue(it)) }
         val metadata = if (field.metadataTitles().isEmpty()) flowOf(emptyList()) else
             database.customFieldDao().observeCommonSuggestionFields(field.metadataTitles())
-        return combine(sources, database.passwordEntryDao().observeCommonSuggestionOwners(), items, metadata) { access, owners, secureItems, fields ->
+        return combine(sources, database.passwordEntryDao().observeCommonSuggestionOwners(), items, metadata, templates) { access, owners, secureItems, fields, names ->
             val readableOwners = owners.filter {
                 commonSuggestionSourceAccessible(it.keepassDatabaseId, it.bitwardenVaultId, it.mdbxDatabaseId, access)
             }.associateBy { it.id }
             val values = buildList {
+                addAll(names)
+                readableOwners.values.forEach { owner -> field.ownerValue(owner)?.let { plaintext(it) }?.let(::add) }
                 if (field == CommonSuggestionField.WEBSITE) readableOwners.values.forEach { addAll(PasswordWebsiteCodec.parse(it.website)) }
                 secureItems.filter { !it.isDeleted && commonSuggestionSourceAccessible(it.keepassDatabaseId, it.bitwardenVaultId, it.mdbxDatabaseId, access) }
-                    .forEach { item -> plaintext(item.itemData)?.let { field.walletValue(it) }?.let(::add) }
+                    .forEach { item -> plaintext(item.itemData)?.let { field.walletValue(it, item.itemType) }?.let(::add) }
                 fields.filter { it.entryId in readableOwners }.forEach { item ->
                     plaintext(item.value)?.let { field.metadataValue(item.title, it) }?.let(::add)
                 }

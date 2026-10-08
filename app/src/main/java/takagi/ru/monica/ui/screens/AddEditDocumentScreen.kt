@@ -7,12 +7,10 @@ import android.graphics.Bitmap
 import takagi.ru.monica.ui.components.MonicaExposedChoiceMenu
 import takagi.ru.monica.ui.components.MonicaMenuChoice
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -68,7 +66,6 @@ import takagi.ru.monica.data.model.withStorageTargetSelected
 import takagi.ru.monica.data.model.withoutStorageTarget
 import takagi.ru.monica.keepass.KeePassSecureItemPhotoAttachments
 import takagi.ru.monica.ui.components.CommonNameSuggestionSheet
-import takagi.ru.monica.ui.components.CustomFieldEditorSection
 import takagi.ru.monica.ui.components.DualPhotoPicker
 import takagi.ru.monica.ui.components.MultiStorageTargetPickerBottomSheet
 import takagi.ru.monica.ui.components.MultiStorageTargetSelectorCard
@@ -164,6 +161,7 @@ fun AddEditDocumentScreen(
     var documentType by rememberSaveable { mutableStateOf(DocumentType.ID_CARD) }
     var notes by rememberSaveable { mutableStateOf("") }
     val editorSections = rememberItemEditorSections()
+    var editorSectionOrder by rememberSaveable(documentId) { mutableStateOf(emptyList<String>()) }
     var isFavorite by rememberSaveable { mutableStateOf(false) }
     var showDocumentTypeMenu by remember { mutableStateOf(false) }
     var customFields by rememberSaveable(stateSaver = takagi.ru.monica.ui.components.EntryFieldDraftSaver) { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
@@ -412,6 +410,7 @@ fun AddEditDocumentScreen(
                     passportNumber = data.passportNumber
                     licenseNumber = data.licenseNumber
                     additionalInfo = data.additionalInfo
+                    if (editorSectionOrder.isEmpty()) editorSectionOrder = data.editorSectionOrder
                     customFields = embeddedEditor?.customFields ?: CardWalletDataCodec.customFieldsToDrafts(data.customFields)
                     documentType = data.documentType
                 }
@@ -455,6 +454,7 @@ fun AddEditDocumentScreen(
             notes = ""
             isFavorite = false
             customFields = emptyList()
+            editorSectionOrder = emptyList()
             frontImageFileName = null
             backImageFileName = null
         }
@@ -542,6 +542,7 @@ fun AddEditDocumentScreen(
             passportNumber = passportNumber,
             licenseNumber = licenseNumber,
             customFields = CardWalletDataCodec.draftsToCustomFields(customFields),
+            editorSectionOrder = editorSectionOrder,
             cardFace = cardFaceEditor.config
         )
 
@@ -703,6 +704,116 @@ fun AddEditDocumentScreen(
         onSaveActionChanged?.invoke(save)
         onToggleFavoriteActionChanged?.invoke(toggleFavoriteAction)
     }
+    val contentItems = listOf(
+        WalletEditorSection("identity", R.string.document_identity_extended_title, Icons.Default.Badge, editorSections.visible("identity", listOf(titlePrefix, firstName, middleName, lastName, company, username, email, phone).any { it.isNotBlank() })) {
+            InfoCard(title = stringResource(R.string.document_identity_extended_title)) {
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    OutlinedTextField(value = titlePrefix, onValueChange = { titlePrefix = it }, label = { Text(stringResource(R.string.document_title_prefix_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.FIRST_NAME, value = firstName, onValueChange = { firstName = it }, label = { Text(stringResource(R.string.document_first_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                }
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.MIDDLE_NAME, value = middleName, onValueChange = { middleName = it }, label = { Text(stringResource(R.string.document_middle_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.LAST_NAME, value = lastName, onValueChange = { lastName = it }, label = { Text(stringResource(R.string.document_last_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                }
+                OutlinedTextField(value = company, onValueChange = { company = it }, label = { Text(stringResource(R.string.document_company_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text(stringResource(R.string.username)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(stringResource(R.string.document_phone_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), shape = RoundedCornerShape(12.dp))
+
+            }
+        },
+        WalletEditorSection("address", R.string.document_address_extra_title, Icons.Default.Home, editorSections.visible("address", listOf(address1, address2, address3, city, stateProvince, postalCode, country, passportNumber, licenseNumber, ssn, additionalInfo).any { it.isNotBlank() })) {
+            InfoCard(title = stringResource(R.string.document_address_extra_title)) {
+                SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.STREET, value = address1, onValueChange = { address1 = it }, label = { Text(stringResource(R.string.document_address_line_1)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.APARTMENT, value = address2, onValueChange = { address2 = it }, label = { Text(stringResource(R.string.document_address_line_2)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.ADDRESS_LINE_3, value = address3, onValueChange = { address3 = it }, label = { Text(stringResource(R.string.document_address_line_3)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.CITY, value = city, onValueChange = { city = it }, label = { Text(stringResource(R.string.city)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.REGION, value = stateProvince, onValueChange = { stateProvince = it }, label = { Text(stringResource(R.string.state)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                }
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.POSTAL_CODE, value = postalCode, onValueChange = { postalCode = it }, label = { Text(stringResource(R.string.postal_code)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                    SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.COUNTRY, value = country, onValueChange = { country = it }, label = { Text(stringResource(R.string.country)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                }
+                OutlinedTextField(value = passportNumber, onValueChange = { passportNumber = it }, label = { Text(stringResource(R.string.document_passport_number_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = licenseNumber, onValueChange = { licenseNumber = it }, label = { Text(stringResource(R.string.document_license_number_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = ssn, onValueChange = { ssn = it }, label = { Text(stringResource(R.string.document_ssn_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
+                OutlinedTextField(value = additionalInfo, onValueChange = { additionalInfo = it }, label = { Text(stringResource(R.string.document_additional_info_label)) }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4, shape = RoundedCornerShape(12.dp))
+
+            }
+        },
+        WalletEditorSection("custom", R.string.custom_field_title, Icons.Default.TextFields, editorSections.visible("custom", customFields.isNotEmpty())) {
+            WalletCustomFields(customFields) { customFields = it }
+        },
+        WalletEditorSection("photos", R.string.section_photos, Icons.Default.PhotoCamera, editorSections.visible("photos", frontImageFileName != null || backImageFileName != null)) {
+            InfoCard(title = stringResource(R.string.section_photos)) {
+                DualPhotoPicker(
+                    frontImageFileName = frontImageFileName,
+                    backImageFileName = backImageFileName,
+                    onFrontImageSelected = { fileName -> frontImageFileName = fileName },
+                    onFrontImageRemoved = { frontImageFileName = null },
+                    onBackImageSelected = { fileName -> backImageFileName = fileName },
+                    onBackImageRemoved = { backImageFileName = null },
+                    frontLabel = stringResource(R.string.document_photo_front, when (documentType) {
+                        DocumentType.ID_CARD -> stringResource(R.string.id_card)
+                        DocumentType.PASSPORT -> stringResource(R.string.passport)
+                        DocumentType.DRIVER_LICENSE -> stringResource(R.string.drivers_license)
+                        DocumentType.SOCIAL_SECURITY -> stringResource(R.string.social_security_card)
+                        DocumentType.OTHER -> stringResource(R.string.other_document)
+                    }),
+                    backLabel = stringResource(R.string.document_photo_back, when (documentType) {
+                        DocumentType.ID_CARD -> stringResource(R.string.id_card)
+                        DocumentType.PASSPORT -> stringResource(R.string.passport)
+                        DocumentType.DRIVER_LICENSE -> stringResource(R.string.drivers_license)
+                        DocumentType.SOCIAL_SECURITY -> stringResource(R.string.social_security_card)
+                        DocumentType.OTHER -> stringResource(R.string.other_document)
+                    }),
+                    imageLoader = embeddedImageLoader,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        WalletEditorSection("attachments", R.string.attachments, Icons.Default.AttachFile, editorSections.visible("attachments", existingDocumentItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null)) {
+            val draftAttachmentTarget = selectedStorageTargets.firstOrNull()
+            embeddedAttachmentsContent?.invoke()
+            AttachmentsEditSection(
+                owner = existingDocumentItem?.let { AttachmentOwner.secureItem(it.id) },
+                isPlusActivated = appSettings.isPlusActivated,
+                attachmentSource = when {
+                    existingDocumentItem?.bitwardenVaultId != null -> AttachmentSource.BITWARDEN
+                    existingDocumentItem?.keepassDatabaseId != null -> AttachmentSource.KEEPASS
+                    documentId == null && draftAttachmentTarget is StorageTarget.KeePass -> AttachmentSource.KEEPASS
+                    else -> AttachmentSource.LOCAL
+                },
+                bitwardenContext = attachmentBitwardenContext,
+                bitwardenPremium = attachmentBitwardenVault?.let {
+                    BitwardenVaultPremiumStore.isPremium(context, it.id)
+                } ?: true,
+                keepassContext = attachmentKeePassContext,
+                pendingDrafts = if (documentId == null) pendingAttachmentDrafts else null,
+                hideManagedCardFaces = true,
+                excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.DOCUMENT) +
+                    listOfNotNull(cardFaceEditor.config?.imageAttachmentName, cardFaceEditor.originalConfig?.imageAttachmentName)
+            )
+        },
+        WalletEditorSection("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank())) {
+            InfoCard(title = stringResource(R.string.section_notes)) {
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.notes)) },
+                    placeholder = { Text(stringResource(R.string.notes_placeholder)) },
+                    leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp),
+                    minLines = 3,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+    )
     val screenContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         if (!isExistingDocumentReady) {
             DocumentEditLoadingPlaceholder(
@@ -710,15 +821,12 @@ fun AddEditDocumentScreen(
                 paddingValues = paddingValues
             )
         } else {
-            Column(
-                modifier = modifier
-                    .fillMaxSize().testTag(if (embeddedDraft == null) "document_item_editor" else "embedded_document_editor")
-                    .padding(paddingValues)
-                    .imePadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            WalletEditorContent(
+                sections = editorSections, items = contentItems, order = editorSectionOrder,
+                onOrder = { editorSectionOrder = it }, enabled = !isSaving,
+                modifier = modifier.fillMaxSize().testTag(if (embeddedDraft == null) "document_item_editor" else "embedded_document_editor")
+                    .padding(paddingValues).consumeWindowInsets(paddingValues).imePadding(),
+                primary = {
                 if (embeddedDraft == null) MultiStorageTargetSelectorCard(
                     selectedTargets = selectedStorageTargets,
                     existingTargetKeys = existingReplicaTargetKeys,
@@ -836,7 +944,8 @@ fun AddEditDocumentScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.FULL_NAME,
                         value = fullName,
                         onValueChange = { fullName = it },
                         label = { Text(stringResource(R.string.full_name)) },
@@ -916,133 +1025,17 @@ fun AddEditDocumentScreen(
                 }
             }
 
-            ItemEditorOptionalSection(editorSections, "identity", listOf(titlePrefix, firstName, middleName, lastName, company, username, email, phone).any { it.isNotBlank() }) {
-                InfoCard(title = stringResource(R.string.document_identity_extended_title)) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    OutlinedTextField(value = titlePrefix, onValueChange = { titlePrefix = it }, label = { Text(stringResource(R.string.document_title_prefix_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text(stringResource(R.string.document_first_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                }
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    OutlinedTextField(value = middleName, onValueChange = { middleName = it }, label = { Text(stringResource(R.string.document_middle_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text(stringResource(R.string.document_last_name_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                }
-                OutlinedTextField(value = company, onValueChange = { company = it }, label = { Text(stringResource(R.string.document_company_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text(stringResource(R.string.username)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text(stringResource(R.string.document_phone_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), shape = RoundedCornerShape(12.dp))
 
-                }
-            }
-
-            ItemEditorOptionalSection(editorSections, "address", listOf(address1, address2, address3, city, stateProvince, postalCode, country, passportNumber, licenseNumber, ssn, additionalInfo).any { it.isNotBlank() }) {
-                InfoCard(title = stringResource(R.string.document_address_extra_title)) {
-                OutlinedTextField(value = address1, onValueChange = { address1 = it }, label = { Text(stringResource(R.string.document_address_line_1)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = address2, onValueChange = { address2 = it }, label = { Text(stringResource(R.string.document_address_line_2)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = address3, onValueChange = { address3 = it }, label = { Text(stringResource(R.string.document_address_line_3)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    OutlinedTextField(value = city, onValueChange = { city = it }, label = { Text(stringResource(R.string.city)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = stateProvince, onValueChange = { stateProvince = it }, label = { Text(stringResource(R.string.state)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                }
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    OutlinedTextField(value = postalCode, onValueChange = { postalCode = it }, label = { Text(stringResource(R.string.postal_code)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                    OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text(stringResource(R.string.country)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                }
-                OutlinedTextField(value = passportNumber, onValueChange = { passportNumber = it }, label = { Text(stringResource(R.string.document_passport_number_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = licenseNumber, onValueChange = { licenseNumber = it }, label = { Text(stringResource(R.string.document_license_number_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = ssn, onValueChange = { ssn = it }, label = { Text(stringResource(R.string.document_ssn_label)) }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp))
-                OutlinedTextField(value = additionalInfo, onValueChange = { additionalInfo = it }, label = { Text(stringResource(R.string.document_additional_info_label)) }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4, shape = RoundedCornerShape(12.dp))
-
-                }
-            }
-
-            ItemEditorOptionalSection(editorSections, "custom", customFields.isNotEmpty()) {
-                CustomFieldEditorSection(fields = customFields, onFieldsChange = { customFields = it },
-                    modifier = Modifier.fillMaxWidth(), contentStyle = true, showAddButton = false)
-            }
-
-            // Photos InfoCard
-            ItemEditorOptionalSection(editorSections, "photos", frontImageFileName != null || backImageFileName != null) {
-InfoCard(title = stringResource(R.string.section_photos)) {
-                DualPhotoPicker(
-                    frontImageFileName = frontImageFileName,
-                    backImageFileName = backImageFileName,
-                    onFrontImageSelected = { fileName -> frontImageFileName = fileName },
-                    onFrontImageRemoved = { frontImageFileName = null },
-                    onBackImageSelected = { fileName -> backImageFileName = fileName },
-                    onBackImageRemoved = { backImageFileName = null },
-                    frontLabel = stringResource(R.string.document_photo_front, when (documentType) {
-                        DocumentType.ID_CARD -> stringResource(R.string.id_card)
-                        DocumentType.PASSPORT -> stringResource(R.string.passport)
-                        DocumentType.DRIVER_LICENSE -> stringResource(R.string.drivers_license)
-                        DocumentType.SOCIAL_SECURITY -> stringResource(R.string.social_security_card)
-                        DocumentType.OTHER -> stringResource(R.string.other_document)
-                    }),
-                    backLabel = stringResource(R.string.document_photo_back, when (documentType) {
-                        DocumentType.ID_CARD -> stringResource(R.string.id_card)
-                        DocumentType.PASSPORT -> stringResource(R.string.passport)
-                        DocumentType.DRIVER_LICENSE -> stringResource(R.string.drivers_license)
-                        DocumentType.SOCIAL_SECURITY -> stringResource(R.string.social_security_card)
-                        DocumentType.OTHER -> stringResource(R.string.other_document)
-                    }),
-                    imageLoader = embeddedImageLoader,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            }
-
-            ItemEditorOptionalSection(editorSections, "attachments", existingDocumentItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null) {
-            val draftAttachmentTarget = selectedStorageTargets.firstOrNull()
-            embeddedAttachmentsContent?.invoke()
-            AttachmentsEditSection(
-                owner = existingDocumentItem?.let { AttachmentOwner.secureItem(it.id) },
-                isPlusActivated = appSettings.isPlusActivated,
-                attachmentSource = when {
-                    existingDocumentItem?.bitwardenVaultId != null -> AttachmentSource.BITWARDEN
-                    existingDocumentItem?.keepassDatabaseId != null -> AttachmentSource.KEEPASS
-                    documentId == null && draftAttachmentTarget is StorageTarget.KeePass -> AttachmentSource.KEEPASS
-                    else -> AttachmentSource.LOCAL
                 },
-                bitwardenContext = attachmentBitwardenContext,
-                bitwardenPremium = attachmentBitwardenVault?.let {
-                    BitwardenVaultPremiumStore.isPremium(context, it.id)
-                } ?: true,
-                keepassContext = attachmentKeePassContext,
-                pendingDrafts = if (documentId == null) pendingAttachmentDrafts else null,
-                hideManagedCardFaces = true,
-                excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.DOCUMENT) +
-                    listOfNotNull(cardFaceEditor.config?.imageAttachmentName, cardFaceEditor.originalConfig?.imageAttachmentName)
-            )
-            }
-
-            // Notes InfoCard
-            ItemEditorOptionalSection(editorSections, "notes", notes.isNotBlank()) {
-InfoCard(title = stringResource(R.string.section_notes)) {
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text(stringResource(R.string.notes)) },
-                    placeholder = { Text(stringResource(R.string.notes_placeholder)) },
-                    leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
-                    minLines = 3,
-                    maxLines = 5,
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-            }
-            ItemEditorAddContent(editorSections, options = listOf(
+                addContent = { ItemEditorAddContent(editorSections, options = listOf(
                     ItemEditorContentOption("identity", R.string.document_identity_extended_title, Icons.Default.Badge, editorSections.visible("identity", listOf(titlePrefix, firstName, middleName, lastName, company, username, email, phone).any { it.isNotBlank() })),
                     ItemEditorContentOption("address", R.string.document_address_extra_title, Icons.Default.Home, editorSections.visible("address", listOf(address1, address2, address3, city, stateProvince, postalCode, country, passportNumber, licenseNumber, ssn, additionalInfo).any { it.isNotBlank() })),
                     ItemEditorContentOption("photos", R.string.section_photos, Icons.Default.PhotoCamera, editorSections.visible("photos", frontImageFileName != null || backImageFileName != null)),
                     ItemEditorContentOption("attachments", R.string.attachments, Icons.Default.AttachFile, editorSections.visible("attachments", existingDocumentItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null)),
                     ItemEditorContentOption("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank()))
                 ), fields = customFields, onFieldsChange = { customFields = it },
-                enabled = !isSaving)
-            Spacer(Modifier.height(96.dp))
-
-        }
+                enabled = !isSaving) },
+            )
     }
     }
 
@@ -1150,10 +1143,6 @@ InfoCard(title = stringResource(R.string.section_notes)) {
             onDismiss = { showCommonNamePicker = false },
             onSelectName = { selectedName ->
                 fullName = selectedName
-                val splitName = splitDocumentSuggestedName(selectedName)
-                firstName = splitName.firstName
-                middleName = splitName.middleName
-                lastName = splitName.lastName
                 showCommonNamePicker = false
             },
             onSaveCurrentName = { currentName ->
@@ -1254,41 +1243,12 @@ private fun LoadingPlaceholderBar(
     )
 }
 
-private data class SuggestedDocumentNameParts(
-    val firstName: String = "",
-    val middleName: String = "",
-    val lastName: String = ""
-)
-
-private fun splitDocumentSuggestedName(fullName: String): SuggestedDocumentNameParts {
-    val normalizedName = fullName.trim()
-    if (normalizedName.isBlank()) return SuggestedDocumentNameParts()
-
-    val parts = normalizedName
-        .split(Regex("[\\s·•・]+"))
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
-
-    return when {
-        parts.size >= 3 -> SuggestedDocumentNameParts(
-            firstName = parts.first(),
-            middleName = parts.subList(1, parts.lastIndex).joinToString(" "),
-            lastName = parts.last()
-        )
-        parts.size == 2 -> SuggestedDocumentNameParts(
-            firstName = parts.first(),
-            lastName = parts.last()
-        )
-        else -> SuggestedDocumentNameParts()
-    }
-}
-
 @Composable
 private fun InfoCard(
     title: String,
     content: @Composable () -> Unit
 ) {
     CompositionLocalProvider(LocalEntryContentStyle provides true) {
-        TemplateFormSection(title) { content() }
+        TemplateFormSection(if (LocalWalletContentEditor.current) "" else title) { content() }
     }
 }

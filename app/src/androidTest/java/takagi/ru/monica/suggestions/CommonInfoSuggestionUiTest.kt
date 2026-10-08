@@ -36,6 +36,9 @@ import takagi.ru.monica.ui.components.*
 import takagi.ru.monica.ui.screens.AddEditBankCardScreen
 import takagi.ru.monica.ui.screens.AddEditDocumentScreen
 import takagi.ru.monica.ui.screens.AddEditPasswordScreen
+import takagi.ru.monica.ui.screens.AddEditBillingAddressScreen
+import takagi.ru.monica.viewmodel.BillingAddressViewModel
+import takagi.ru.monica.data.model.*
 import takagi.ru.monica.utils.AppLocaleStringResolver
 import takagi.ru.monica.viewmodel.BankCardViewModel
 import takagi.ru.monica.viewmodel.DocumentViewModel
@@ -49,7 +52,13 @@ class CommonInfoSuggestionUiTest {
     private var wasUnlocked = false
     private val examples = mapOf(CommonSuggestionField.BANK_NAME to "Example Bank", CommonSuggestionField.BRANCH_CODE to "00123",
         CommonSuggestionField.CUSTOMER_SERVICE_PHONE to "400-000-0000", CommonSuggestionField.CREDENTIAL_LABEL to "Example Work",
-        CommonSuggestionField.WEBSITE to "https://example.invalid/Account", CommonSuggestionField.ISSUED_BY to "Example Authority")
+        CommonSuggestionField.WEBSITE to "https://example.invalid/Account", CommonSuggestionField.ISSUED_BY to "Example Authority",
+        CommonSuggestionField.FULL_NAME to "Example Name", CommonSuggestionField.FIRST_NAME to "Example First",
+        CommonSuggestionField.MIDDLE_NAME to "Example Middle", CommonSuggestionField.LAST_NAME to "Example Last",
+        CommonSuggestionField.STREET to "Example Street", CommonSuggestionField.APARTMENT to "Example Unit",
+        CommonSuggestionField.ADDRESS_LINE_3 to "Example Third", CommonSuggestionField.CITY to "Example City",
+        CommonSuggestionField.REGION to "Example Region", CommonSuggestionField.POSTAL_CODE to "00123",
+        CommonSuggestionField.COUNTRY to "Example Country")
     private val source = CommonFieldSuggestionSource { field -> flowOf(CommonFieldSuggestionIndex(listOf(examples.getValue(field)), field)) }
 
     @Before fun unlock() { wasUnlocked = SessionManager.isUnlocked.value; SessionManager.markUnlocked() }
@@ -90,7 +99,7 @@ class CommonInfoSuggestionUiTest {
         }
     }
 
-    @Test fun allSixFieldsFillOnlyOnTapAndKeepTypingAtSmallWidthAndLargeFont() {
+    @Test fun allSupportedFieldsFillOnlyOnTapAndKeepTypingAtSmallWidthAndLargeFont() {
         var current by mutableStateOf(CommonSuggestionField.BANK_NAME)
         var text by mutableStateOf("")
         show {
@@ -149,13 +158,15 @@ class CommonInfoSuggestionUiTest {
         val document = DocumentViewModel(repository, strings = AppLocaleStringResolver(context))
         try {
             show { AddEditBankCardScreen(bank, onNavigateBack = {}) }
-            compose.onNode(hasText(context.getString(R.string.bank_name)) and hasSetTextAction()).performScrollTo().performClick().performTextInput("Exa")
+            compose.onNodeWithTag("bank_item_editor").performScrollToNode(hasText(context.getString(R.string.bank_name)) and hasSetTextAction())
+            compose.onNode(hasText(context.getString(R.string.bank_name)) and hasSetTextAction()).performClick().performTextInput("Exa")
             waitSuggestion(CommonSuggestionField.BANK_NAME, hasSaveButton = true)
             capture("bank-editor")
             compose.onNodeWithTag("common_suggestion_bankName_0").performClick()
             compose.onNode(hasText(context.getString(R.string.bank_name)) and hasSetTextAction()).assertTextContains("Example Bank")
             show { AddEditDocumentScreen(document, onNavigateBack = {}) }
-            compose.onNode(hasText(context.getString(R.string.issuing_authority)) and hasSetTextAction()).performScrollTo().performClick().performTextInput("Exa")
+            compose.onNodeWithTag("document_item_editor").performScrollToNode(hasText(context.getString(R.string.issuing_authority)) and hasSetTextAction())
+            compose.onNode(hasText(context.getString(R.string.issuing_authority)) and hasSetTextAction()).performClick().performTextInput("Exa")
             waitSuggestion(CommonSuggestionField.ISSUED_BY, hasSaveButton = true)
             capture("document-editor")
             compose.onNodeWithTag("common_suggestion_issuedBy_0").performClick()
@@ -213,5 +224,70 @@ class CommonInfoSuggestionUiTest {
             assertEquals("preserved-user", entry.username)
             assertEquals("preserved-password", security.decryptDataIfMonicaCiphertext(entry.password))
         } finally { show { }; model.viewModelScope.cancel(); db.close() }
+    }
+
+    @Test fun holderAndDocumentNamesUseTheSameInlineSuggestions() {
+        val db = Room.inMemoryDatabaseBuilder(context, PasswordDatabase::class.java).build()
+        val repository = SecureItemRepository(db.secureItemDao(), decryptSensitiveValue = security::decryptDataIfMonicaCiphertext)
+        val bank = BankCardViewModel(repository, strings = AppLocaleStringResolver(context))
+        val document = DocumentViewModel(repository, strings = AppLocaleStringResolver(context))
+        try {
+            show { AddEditBankCardScreen(bank, onNavigateBack = {}) }
+            compose.onNodeWithTag("bank_item_editor").performScrollToNode(hasTestTag("entry_payment_holder"))
+            compose.onNodeWithTag("entry_payment_holder").performClick().performTextInput("Exam")
+            waitSuggestion(CommonSuggestionField.FULL_NAME, hasSaveButton = true)
+            capture("holder-name")
+            compose.onNodeWithTag("common_suggestion_fullName_0").performClick()
+            compose.onNodeWithTag("entry_payment_holder").assertTextContains("Example Name")
+            val draft = EmbeddedWalletContent.create(SecureItem(itemType = ItemType.DOCUMENT, title = "Synthetic",
+                itemData = CardWalletDataCodec.encodeDocumentData(DocumentData(DocumentType.PASSPORT, "unchanged-id", "Before",
+                    firstName = "PreservedFirst", middleName = "PreservedMiddle", lastName = "PreservedLast"))))
+            var saved: takagi.ru.monica.attachments.EmbeddedWalletEditorResult? = null
+            show { AddEditDocumentScreen(document, onNavigateBack = {}, embeddedDraft = draft, onEmbeddedSave = { saved = it }) }
+            val nameField = hasText(context.getString(R.string.full_name)) and hasSetTextAction()
+            compose.onNodeWithTag("embedded_document_editor").performScrollToNode(nameField)
+            compose.onNode(nameField).performClick().performTextReplacement("Exam")
+            waitSuggestion(CommonSuggestionField.FULL_NAME, hasSaveButton = true)
+            compose.onNodeWithTag("common_suggestion_fullName_0").performClick()
+            capture("document-name")
+            compose.onNodeWithTag("document_editor_save").performClick()
+            compose.waitUntil(15000) { saved != null }
+            val data = CardWalletDataCodec.parseDocumentData(saved!!.snapshot.itemData.toString())!!
+            assertEquals("Example Name", data.fullName)
+            assertEquals("PreservedFirst", data.firstName)
+            assertEquals("PreservedMiddle", data.middleName)
+            assertEquals("PreservedLast", data.lastName)
+            assertEquals("unchanged-id", data.documentNumber)
+        } finally { show {}; bank.viewModelScope.cancel(); document.viewModelScope.cancel(); db.close() }
+    }
+
+    @Test fun billingNameAndStreetPersistWithoutChangingOtherAddressParts() {
+        val db = Room.inMemoryDatabaseBuilder(context, PasswordDatabase::class.java).build()
+        val repository = SecureItemRepository(db.secureItemDao(), decryptSensitiveValue = security::decryptDataIfMonicaCiphertext)
+        val model = BillingAddressViewModel(repository, security)
+        val initial = BillingAddressData(fullName = "Before", streetAddress = "Old Street", city = "Unchanged City", postalCode = "00100", company = "Unchanged Company")
+        val draft = EmbeddedWalletContent.create(SecureItem(itemType = ItemType.BILLING_ADDRESS, title = "Synthetic Billing",
+            itemData = CardWalletDataCodec.encodeBillingAddressData(initial)))
+        var saved: takagi.ru.monica.attachments.EmbeddedWalletEditorResult? = null
+        try {
+            show { AddEditBillingAddressScreen(model, onNavigateBack = {}, embeddedDraft = draft, onEmbeddedSave = { saved = it }) }
+            for ((label, field) in listOf(R.string.full_name to CommonSuggestionField.FULL_NAME, R.string.street_address to CommonSuggestionField.STREET)) {
+                val matcher = hasText(context.getString(label)) and hasSetTextAction()
+                compose.onNodeWithTag("billing_item_editor").performScrollToNode(matcher)
+                compose.onNode(matcher).performClick().performTextReplacement("Exam")
+                waitSuggestion(field, hasSaveButton = true)
+                capture("billing-${field.key}")
+                compose.onNodeWithTag("common_suggestion_${field.key}_0").performClick()
+            }
+            compose.onNodeWithContentDescription(context.getString(R.string.save)).performClick()
+            compose.waitUntil(15000) { saved != null }
+            val data = CardWalletDataCodec.parseBillingAddressData(saved!!.snapshot.itemData.toString())!!
+            assertEquals(initial.copy(fullName = "Example Name", streetAddress = "Example Street"), data)
+            val reopened = saved!!.snapshot
+            show {}
+            show { AddEditBillingAddressScreen(model, onNavigateBack = {}, embeddedDraft = reopened, onEmbeddedSave = {}) }
+            compose.onNodeWithTag("billing_item_editor").performScrollToNode(hasText("Example Name") and hasSetTextAction())
+            compose.onNode(hasText("Example Name") and hasSetTextAction()).assertExists()
+        } finally { show {}; model.viewModelScope.cancel(); db.close() }
     }
 }

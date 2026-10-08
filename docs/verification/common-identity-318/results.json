@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-08",
+  "version": "1.0.318",
+  "unitTestsPerEdition": 13,
+  "deviceTestsPerEdition": 14,
+  "device": "Monica_Issue136_API_32 / API32 x86_64 / user10",
+  "records": [
+    {
+      "tests": 14.0,
+      "appHash": "C9392359EF190C8AC2BE90E641A36E7B0F517C94C5FC44FD6CE9091577B4726F",
+      "oldUser": "0",
+      "edition": "Main",
+      "oldProxy": ":0",
+      "processIsolation": "one instrumentation process per class",
+      "completed": true,
+      "testHash": "03D6A39490331842DCB8659A6FD77D45437A1C61D4DFCB45DC9E3A0D5B160938",
+      "classes": "takagi.ru.monica.data.CommonFieldSuggestionRepositoryTest,takagi.ru.monica.suggestions.CommonInfoSuggestionUiTest"
+    },
+    {
+      "testHash": "EFD2A70F922076B8D487ADD0BD49F303E8A1BE7D9CA06AD8C049AD13ECBABA3F",
+      "appHash": "83C777B760055C31A9B061E245CC73BA4B5AC44352755338BFC04DAC231F4049",
+      "tests": 14.0,
+      "oldUser": "0",
+      "completed": true,
+      "processIsolation": "one instrumentation process per class",
+      "edition": "Fdroid",
+      "classes": "takagi.ru.monica.data.CommonFieldSuggestionRepositoryTest,takagi.ru.monica.suggestions.CommonInfoSuggestionUiTest",
+      "oldProxy": ":0"
+    }
+  ],
+  "additionalGuard": {
+    "test": "BiometricUnlockRegressionGuardTest.pageSwitchHotPathsDoNotRunAuthOrBitwardenSyncWorkOnMainThread",
+    "result": "existing failure at line 804 on password editor source assertion",
+    "baselineCommit": "97a9ce9e606d10c6d0aa112179639dfba6378c9f",
+    "baselineReproduced": true
+  },
+  "files": [
+    {
+      "file": "app/src/test/java/takagi/ru/monica/data/CommonFieldSuggestionsTest.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "3b03c24bf5be38347b460dc623e055d0d81603e613d9f171bf512226a8e1c3ac",
+      "fdroidSha256": "3b03c24bf5be38347b460dc623e055d0d81603e613d9f171bf512226a8e1c3ac"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/data/CommonFieldSuggestions.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "beadd9eecf294eee6dd1787a433e71219a0864b3712f0532881678005cc29dcf",
+      "fdroidSha256": "beadd9eecf294eee6dd1787a433e71219a0864b3712f0532881678005cc29dcf"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/data/PasswordEntryDao.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "576d8a2a963e949db03749feab76e5531166c22f6463c8f574b067b5bd6e6754",
+      "fdroidSha256": "576d8a2a963e949db03749feab76e5531166c22f6463c8f574b067b5bd6e6754"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/repository/CommonFieldSuggestionRepository.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "6b1747ae5f70a711a65f6a2997e9ef3069679492039633e0dbe22a3b5592d1bb",
+      "fdroidSha256": "6b1747ae5f70a711a65f6a2997e9ef3069679492039633e0dbe22a3b5592d1bb"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/components/CommonNameSuggestionSheet.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "fa3423d742bab69eecc263bddfcc222c183152e5a88f9b57a2f50c8b12c95345",
+      "fdroidSha256": "fa3423d742bab69eecc263bddfcc222c183152e5a88f9b57a2f50c8b12c95345"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/components/EntryAddressFields.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "ded7bedb759074c87fd557bd2bed6658ff5c92274aa3e6bcc1862cc7d83f1115",
+      "fdroidSha256": "ded7bedb759074c87fd557bd2bed6658ff5c92274aa3e6bcc1862cc7d83f1115"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/components/EntryPaymentFields.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "2cf7184bc4131a3fe98b3676fd68608ec8f6ae57cb23967668ec964ceaa82143",
+      "fdroidSha256": "2cf7184bc4131a3fe98b3676fd68608ec8f6ae57cb23967668ec964ceaa82143"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/components/SuggestedOutlinedTextField.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "a0d8f895cd40a99ac7eff807595237727e7587ff4df996e9a43ead49c4f7c1b8",
+      "fdroidSha256": "a0d8f895cd40a99ac7eff807595237727e7587ff4df996e9a43ead49c4f7c1b8"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "39826a0626769c58b0b7ff8973ee8f62a2c6b651414c99bfc2a5ae9b2bf00f5e",
+      "fdroidSha256": "39826a0626769c58b0b7ff8973ee8f62a2c6b651414c99bfc2a5ae9b2bf00f5e"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBillingAddressScreen.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "e6cb9c4ad8dcb9b8a35d283af048b2f9769e003365863108ddc56e0a773968eb",
+      "fdroidSha256": "e6cb9c4ad8dcb9b8a35d283af048b2f9769e003365863108ddc56e0a773968eb"
+    },
+    {
+      "file": "app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "8b64719f4cb5b618b23779e4c13522e09022a912b0a0d9f763cd148380e54587",
+      "fdroidSha256": "8b64719f4cb5b618b23779e4c13522e09022a912b0a0d9f763cd148380e54587"
+    },
+    {
+      "file": "app/src/androidTest/java/takagi/ru/monica/data/CommonFieldSuggestionRepositoryTest.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "f1df3a71ee02edcb185124f6f98a0e7c1f048f7623cabdb7e48740a235dd9014",
+      "fdroidSha256": "f1df3a71ee02edcb185124f6f98a0e7c1f048f7623cabdb7e48740a235dd9014"
+    },
+    {
+      "file": "app/src/androidTest/java/takagi/ru/monica/suggestions/CommonInfoSuggestionUiTest.kt",
+      "identicalAcrossEditions": true,
+      "mainSha256": "566b232dc4cb15d30489b45ff2351622d8e6c026249e30a0d96e63e9973304d7",
+      "fdroidSha256": "566b232dc4cb15d30489b45ff2351622d8e6c026249e30a0d96e63e9973304d7"
+    },
+    {
+      "file": "app/src/test/java/takagi/ru/monica/security/BiometricUnlockRegressionGuardTest.kt",
+      "identicalAcrossEditions": false,
+      "mainSha256": "2f851a3f652e3904ca7607d94bd89e40da66628c876d9a67bb7cec2663b63e26",
+      "fdroidSha256": "6dcc4c92dbc1b93a44cc19ec589ef9290b9c538cdeb059c87756ab467aa2bc52"
+    }
+  ]
+}

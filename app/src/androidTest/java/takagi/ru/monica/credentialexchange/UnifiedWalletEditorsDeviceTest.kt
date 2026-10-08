@@ -56,9 +56,11 @@ class UnifiedWalletEditorsDeviceTest {
     }
 
     private fun text(id: Int) = fixture.context.getString(id)
-    private fun add(key: String, lazy: Boolean = false) {
+    private fun add(key: String, lazy: Boolean = false, wallet: String? = null) {
+        closeWalletContent()
         androidx.test.espresso.Espresso.closeSoftKeyboard()
-        if (lazy) compose.onNodeWithTag("totp_item_editor").performScrollToNode(hasTestTag("item_editor_add_content"))
+        if (wallet != null) compose.onNodeWithTag(wallet).performScrollToNode(hasTestTag("item_editor_add_content"))
+        else if (lazy) compose.onNodeWithTag("totp_item_editor").performScrollToNode(hasTestTag("item_editor_add_content"))
         else compose.onNodeWithTag("item_editor_add_content").performScrollTo()
         compose.onNodeWithTag("item_editor_add_content").performClick()
         capture("add-content-$key")
@@ -68,7 +70,16 @@ class UnifiedWalletEditorsDeviceTest {
     private fun input(id: Int, value: String) {
         compose.onNode(hasText(text(id)) and hasSetTextAction()).performScrollTo().performTextReplacement(value)
     }
+    private fun closeWalletContent() {
+        if (compose.onAllNodesWithTag("wallet_detail_done").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithTag("wallet_detail_done").performClick()
+        }
+    }
+    private fun walletScroll(root: String, tag: String) {
+        compose.onNodeWithTag(root).performScrollToNode(hasTestTag(tag))
+    }
     private fun save() {
+        closeWalletContent()
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithContentDescription(text(R.string.save)).performClick()
     }
@@ -152,16 +163,22 @@ class UnifiedWalletEditorsDeviceTest {
                 initialMdbxDatabaseId = target.databaseId, onNavigateBack = { closed = true }) }
         } } }
         compose.onNodeWithTag("item_editor_title").performTextInput(fixture.prefix)
-        compose.onNodeWithTag("entry_payment_number").performScrollTo().performTextInput("4242424242424242")
-        compose.onNodeWithTag("entry_payment_holder").performScrollTo().performTextInput("SYNTHETIC HOLDER")
+        walletScroll("bank_item_editor", "entry_payment_number")
+        compose.onNodeWithTag("entry_payment_number").performTextInput("4242424242424242")
+        walletScroll("bank_item_editor", "entry_payment_holder")
+        compose.onNodeWithTag("entry_payment_holder").performTextInput("SYNTHETIC HOLDER")
         androidx.test.espresso.Espresso.closeSoftKeyboard()
-        compose.onNodeWithTag("item_editor_title").performScrollTo()
+        walletScroll("bank_item_editor", "item_editor_title")
         capture("bank-light")
-        add("custom_hidden")
-        input(R.string.custom_field_name_placeholder, "Recovery")
+        add("custom_hidden", wallet = "bank_item_editor")
+        compose.onNodeWithTag("wallet_custom_name_0").performTextInput("Recovery")
         input(R.string.custom_field_value, "Synthetic secret")
-        add("notes")
+        add("notes", wallet = "bank_item_editor")
         input(R.string.notes, "Bank notes")
+        closeWalletContent()
+        compose.onNodeWithTag("bank_item_editor").performScrollToIndex(1)
+        compose.onNodeWithTag("wallet_actions_notes").performClick()
+        compose.onNodeWithText(text(R.string.move_up)).performClick()
         save()
         compose.waitUntil(30000) { closed }
         val item = runBlocking { fixture.db.secureItemDao().getAllItems().first().single { it.title == fixture.prefix } }
@@ -169,15 +186,23 @@ class UnifiedWalletEditorsDeviceTest {
         val data = requireNotNull(CardWalletDataCodec.parseBankCardData(item.itemData, fixture.security::decryptDataIfMonicaCiphertext))
         assertEquals("Synthetic secret", data.customFields.single().value)
         assertTrue(data.customFields.single().isProtected())
+        assertEquals(listOf("notes", "custom"), data.editorSectionOrder)
         assertEquals("Bank notes", item.notes)
         runBlocking {
             Mdbx2NativeReadSessions.clear()
-            assertTrue(fixture.mdbx.readStoredEntries(target.databaseId).any { !it.deleted && it.payloadJson.contains("Synthetic secret") })
+            assertTrue(fixture.mdbx.readStoredEntries(target.databaseId).any {
+                !it.deleted && it.payloadJson.contains("Synthetic secret") && it.payloadJson.contains("editorSectionOrder")
+            })
         }
         compose.runOnIdle { reopenId = item.id }
-        compose.waitUntil(15000) { compose.onAllNodesWithText("Recovery").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Recovery").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("item_editor_section_notes").performScrollTo().assertIsDisplayed()
+        compose.waitUntil(15000) { compose.onAllNodesWithTag("bank_item_editor").fetchSemanticsNodes().isNotEmpty() }
+        walletScroll("bank_item_editor", "wallet_content_custom")
+        compose.onNodeWithTag("wallet_content_custom").performClick()
+        compose.onNodeWithText("Recovery").assertIsDisplayed()
+        closeWalletContent()
+        walletScroll("bank_item_editor", "wallet_content_notes")
+        compose.onNodeWithTag("wallet_content_notes").performClick()
+        compose.onNodeWithText("Bank notes").assertIsDisplayed()
     }
 
     @Test fun documentEditKeepsRareFieldsAndAddsNotes() {
@@ -193,8 +218,10 @@ class UnifiedWalletEditorsDeviceTest {
         } } }
         compose.waitUntil(15000) { compose.onAllNodesWithText("TEST-12345").fetchSemanticsNodes().isNotEmpty() }
         capture("document-light")
+        walletScroll("document_item_editor", "wallet_content_address")
+        compose.onNodeWithTag("wallet_content_address").performClick()
         compose.onNodeWithText("Third address line").performScrollTo().assertIsDisplayed()
-        add("notes")
+        add("notes", wallet = "document_item_editor")
         input(R.string.notes, "Document notes")
         save()
         compose.waitUntil(30000) { closed }

@@ -2308,7 +2308,7 @@ class MultiPasswordSaveRegressionGuardTest {
             batchDeleteBody.contains("val localTargets = mutableListOf<") &&
                 batchDeleteBody.contains("localTargets += entry to commandPolicy") &&
                 batchDeleteBody.contains("applyLocalDeleteBatch(localTargets, trashEnabled)") &&
-                batchDeleteBody.contains("deletedCount += applyLocalDeleteBatch(chunk, trashEnabled)") &&
+                batchDeleteBody.contains("applyLocalDeleteBatch(groupedEntries, trashEnabled)") &&
                 !batchDeleteBody.contains("moveEntryToTrashLocalOnly(entry, commandPolicy)") &&
                 !batchDeleteBody.contains("permanentlyDeleteEntryLocalOnly(entry)")
         )

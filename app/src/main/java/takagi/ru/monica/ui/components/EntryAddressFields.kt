@@ -31,7 +31,14 @@ fun EntryAddressFields(
 
 @Composable
 private fun EntryAddressField(value: String, onChange: (String) -> Unit, label: Int, tag: String) {
-    OutlinedTextField(value = value, onValueChange = onChange, label = { Text(stringResource(label)) },
+    SuggestedOutlinedTextField(value = value, onValueChange = onChange, label = { Text(stringResource(label)) },
+        suggestionField = when (tag) {
+            "street" -> takagi.ru.monica.data.CommonSuggestionField.STREET
+            "city" -> takagi.ru.monica.data.CommonSuggestionField.CITY
+            "region" -> takagi.ru.monica.data.CommonSuggestionField.REGION
+            "postal" -> takagi.ru.monica.data.CommonSuggestionField.POSTAL_CODE
+            else -> takagi.ru.monica.data.CommonSuggestionField.COUNTRY
+        },
         singleLine = true, shape = RoundedCornerShape(12.dp), entryContentStyle = true,
         modifier = Modifier.fillMaxWidth().testTag("entry_address_$tag"))
 }

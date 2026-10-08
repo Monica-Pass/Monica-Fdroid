@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PasswordEntryDao {
     /** Metadata projection for common-field suggestions; never select password material. */
-    @Query("SELECT id, website, keepassDatabaseId, bitwarden_vault_id AS bitwardenVaultId, mdbx_database_id AS mdbxDatabaseId FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0")
+    @Query("SELECT id, website, creditCardHolder, addressLine, city, state, zipCode, country, keepassDatabaseId, bitwarden_vault_id AS bitwardenVaultId, mdbx_database_id AS mdbxDatabaseId FROM password_entries WHERE $MDBX_AVAILABLE_ENTRY_FILTER AND isDeleted = 0 AND isArchived = 0")
     fun observeCommonSuggestionOwners(): Flow<List<CommonSuggestionOwner>>
 
     @Transaction
@@ -166,6 +166,12 @@ interface PasswordEntryDao {
 
     @Update
     suspend fun updatePasswordEntries(entries: List<PasswordEntry>)
+
+    /** Publish a native KDBX snapshot as one list change, including its custom fields. */
+    @Transaction
+    suspend fun applyKeePassProjection(block: suspend () -> Unit) {
+        block()
+    }
     
     @Delete
     suspend fun deletePasswordEntry(entry: PasswordEntry)

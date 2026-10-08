@@ -9,8 +9,128 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.UUID
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancelAndJoin
 
 class SecureStartupInstrumentedTest {
+    /** Inject a provider read failure at the real startup boundary, using fixture storage only. */
+    private class ReadFaultContext(
+        base: Context,
+        private var failuresLeft: Int,
+        private val failOnRead: Int,
+        private val onFault: () -> Unit = {}
+    ) : ContextWrapper(base) {
+        @Volatile
+        var failures = 0
+            private set
+        private var reads = 0
+        override fun getApplicationContext(): Context = this
+        override fun getSharedPreferences(name: String, mode: Int): SharedPreferences {
+            val original = super.getSharedPreferences(name, mode)
+            if (name != SecurePreferencesStore.MONICA) return original
+            return object : SharedPreferences by original {
+                override fun getAll(): MutableMap<String, *> {
+                    if (++reads >= failOnRead && failuresLeft > 0) {
+                        failuresLeft--
+                        failures++
+                        onFault()
+                        throw java.security.ProviderException("synthetic-secret-provider-detail")
+                    }
+                    return original.all
+                }
+            }
+        }
+    }
+
+    @Test fun transientPreflightFailureIsRetriedWithoutChangingCiphertextOrUnlocking() = kotlinx.coroutines.runBlocking {
+        Fixture().use { f ->
+            f.create()
+            val original = f.raw.all.toMap()
+            val fault = ReadFaultContext(f.context, failuresLeft = 1, failOnRead = 2)
+            SessionManager.markLocked()
+            assertTrue(SecureStorageStartup.prepareWithRetry(fault) is SecureStartupResult.Ready)
+            assertEquals(1, fault.failures)
+            assertEquals(original, f.raw.all)
+            assertFalse(SessionManager.isUnlocked.value)
+            assertFalse(SecurityManager.hasRuntimeUnlockCache())
+        }
+    }
+
+    @Test fun persistentReadFailureStopsAfterThreeAttemptsAndKeepsStorage() = kotlinx.coroutines.runBlocking {
+        Fixture().use { f ->
+            f.create()
+            val original = f.raw.all.toMap()
+            val fault = ReadFaultContext(f.context, failuresLeft = 100, failOnRead = 2)
+            val result = SecureStorageStartup.prepareWithRetry(fault) as SecureStartupResult.Blocked
+            assertEquals("UNREADABLE_SECURE_STORAGE", result.failure.reason)
+            assertEquals(3, fault.failures)
+            assertEquals(3, result.attempts)
+            assertFalse(SecureStorageStartup.readyForMaintenance)
+            assertEquals(original, f.raw.all)
+        }
+    }
+
+    @Test fun missingKeysetIsNotAutomaticallyRetriedOrRebuilt() = kotlinx.coroutines.runBlocking {
+        Fixture().use { f ->
+            f.create()
+            assertTrue(f.raw.edit().remove("__androidx_security_crypto_encrypted_prefs_value_keyset__").commit())
+            val damaged = f.raw.all.toMap()
+            val result = SecureStorageStartup.prepareWithRetry(f.context) as SecureStartupResult.Blocked
+            assertEquals("INCOMPLETE_KEYSET", result.failure.reason)
+            assertEquals(1, result.attempts)
+            assertEquals(damaged, f.raw.all)
+            assertFalse(SecureStorageStartup.readyForMaintenance)
+        }
+    }
+
+    @Test fun diagnosticIdentifiesReadPhaseWithoutExceptionMessages() {
+        Fixture().use { f ->
+            f.create()
+            val fault = ReadFaultContext(f.context, failuresLeft = 1, failOnRead = 3)
+            val result = SecureStorageStartup.prepare(fault) as SecureStartupResult.Blocked
+            assertEquals(SecureStoragePhase.VALUE_READ, result.failure.phase)
+            val diagnostic = SecureStorageStartup.diagnostic(result.failure, attempts = 3)
+            assertTrue(diagnostic.contains("Phase: VALUE_READ"))
+            assertTrue(diagnostic.contains("Attempts: 3"))
+            assertTrue(diagnostic.contains("ProviderException"))
+            assertFalse(diagnostic.contains("synthetic-secret-provider-detail"))
+        }
+    }
+
+    @Test fun cancelledStartupDoesNotPerformAnotherRead() = kotlinx.coroutines.runBlocking {
+        Fixture().use { f ->
+            f.create()
+            val entered = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val releaseRead = java.util.concurrent.CountDownLatch(1)
+            val fault = ReadFaultContext(f.context, failuresLeft = 100, failOnRead = 2, onFault = {
+                entered.complete(Unit)
+                check(releaseRead.await(10, java.util.concurrent.TimeUnit.SECONDS))
+            })
+            val job = launch { SecureStorageStartup.prepareWithRetry(fault) }
+            try {
+                kotlinx.coroutines.withTimeout(10_000) { entered.await() }
+                job.cancel()
+            } finally {
+                releaseRead.countDown()
+                job.cancelAndJoin()
+            }
+            assertEquals(1, fault.failures)
+            assertFalse(SecureStorageStartup.readyForMaintenance)
+        }
+    }
+
+    @Test fun preliminaryStoreReadFailureAlsoFailsClosedInsteadOfEscapingStartup() {
+        Fixture().use { f ->
+            f.create()
+            val original = f.raw.all.toMap()
+            val fault = ReadFaultContext(f.context, failuresLeft = 1, failOnRead = 1)
+            val result = SecureStorageStartup.prepare(fault) as SecureStartupResult.Blocked
+            assertEquals("UNREADABLE_SECURE_STORAGE", result.failure.reason)
+            assertFalse(SecureStorageStartup.readyForMaintenance)
+            assertEquals(original, f.raw.all)
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val base = InstrumentationRegistry.getInstrumentation().targetContext
         val prefix = "startup-fixture-${UUID.randomUUID()}-"

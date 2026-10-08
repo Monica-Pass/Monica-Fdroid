@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.map
 import takagi.ru.monica.data.*
 import takagi.ru.monica.repository.CommonFieldSuggestionRepository
 import takagi.ru.monica.repository.CommonFieldSuggestionSource
@@ -37,6 +38,21 @@ import takagi.ru.monica.security.SessionManager
 import takagi.ru.monica.ui.rememberUiSecurityManager
 
 internal val LocalCommonFieldSuggestionSource = staticCompositionLocalOf<CommonFieldSuggestionSource?> { null }
+
+/** One source for inline completion and the explicit common-name picker. */
+@Composable
+internal fun rememberCommonFieldSuggestionSource(database: PasswordDatabase? = null): CommonFieldSuggestionSource {
+    val context = LocalContext.current.applicationContext
+    val security = rememberUiSecurityManager()
+    val override = LocalCommonFieldSuggestionSource.current
+    val nameType = androidx.compose.ui.res.stringResource(takagi.ru.monica.R.string.common_account_type_name)
+    return remember(context, security, override, database, nameType) { override ?: CommonFieldSuggestionRepository(
+        database ?: PasswordDatabase.getDatabase(context), security::decryptDataIfMonicaCiphertext,
+        nameTemplates = CommonAccountPreferences(context, security).templatesFlow.map { templates ->
+            templates.filter { it.type.trim().equals("name", true) || it.type.trim() == "姓名" || it.type.trim() == nameType }
+                .map { it.content }
+        }, billingTemplate = CommonAccountPreferences(context, security).billingAddress) }
+}
 
 /** The normal form control plus non-modal suggestions; focus and IME stay with the input. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -46,6 +62,7 @@ fun SuggestedOutlinedTextField(
     onValueChange: (String) -> Unit,
     suggestionField: CommonSuggestionField?,
     modifier: Modifier = Modifier,
+    containerModifier: Modifier = Modifier,
     label: (@Composable () -> Unit)? = null,
     placeholder: (@Composable () -> Unit)? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
@@ -69,7 +86,7 @@ fun SuggestedOutlinedTextField(
         if (fieldValue.text != value) fieldValue = TextFieldValue(value, TextRange(
             fieldValue.selection.start.coerceIn(0, value.length), fieldValue.selection.end.coerceIn(0, value.length)))
     }
-    Column(Modifier.fillMaxWidth()) {
+    Column(containerModifier.fillMaxWidth()) {
         OutlinedTextField(fieldValue, { next ->
             val changed = next.text != fieldValue.text
             fieldValue = next
@@ -82,11 +99,7 @@ fun SuggestedOutlinedTextField(
         if (suggestionField != null && enabled && focused && value.isNotBlank() && accepted != value) {
             val unlocked by SessionManager.isUnlocked.collectAsStateWithLifecycle()
             if (unlocked) {
-                val context = LocalContext.current.applicationContext
-                val security = rememberUiSecurityManager()
-                val override = LocalCommonFieldSuggestionSource.current
-                val source = remember(context, security, override) { override ?: CommonFieldSuggestionRepository(
-                    PasswordDatabase.getDatabase(context), security::decryptDataIfMonicaCiphertext) }
+                val source = rememberCommonFieldSuggestionSource()
                 val flow = remember(source, suggestionField) { source.observe(suggestionField) }
                 val index by flow.collectAsStateWithLifecycle(initialValue = CommonFieldSuggestionIndex(emptyList(), suggestionField))
                 var matches by remember(index, value) { mutableStateOf(emptyList<CommonFieldCandidate>()) }

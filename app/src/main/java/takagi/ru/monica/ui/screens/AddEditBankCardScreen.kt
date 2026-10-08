@@ -10,10 +10,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -74,7 +72,6 @@ import takagi.ru.monica.ui.components.CommonNameSuggestion
 import takagi.ru.monica.ui.components.CommonNameSuggestionState
 import takagi.ru.monica.ui.components.CommonNameSuggestionSource
 import takagi.ru.monica.ui.components.CommonNameSuggestionSheet
-import takagi.ru.monica.ui.components.CustomFieldEditorSection
 import takagi.ru.monica.ui.components.DualPhotoPicker
 import takagi.ru.monica.ui.components.MultiStorageTargetPickerBottomSheet
 import takagi.ru.monica.ui.components.MultiStorageTargetSelectorCard
@@ -170,6 +167,7 @@ fun AddEditBankCardScreen(
     var customerServicePhone by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
     val editorSections = rememberItemEditorSections()
+    var editorSectionOrder by rememberSaveable(cardId) { mutableStateOf(emptyList<String>()) }
     var isFavorite by rememberSaveable { mutableStateOf(false) }
     var showCardTypeMenu by remember { mutableStateOf(false) }
     var showCardNumber by remember { mutableStateOf(false) }
@@ -178,7 +176,6 @@ fun AddEditBankCardScreen(
     var isCardholderNameFocused by remember { mutableStateOf(false) }
     var hasBillingAddress by remember { mutableStateOf(false) }
     var billingAddress by remember { mutableStateOf(BillingAddress()) }
-    var showBillingAddressDialog by remember { mutableStateOf(false) }
     var customFields by rememberSaveable(stateSaver = takagi.ru.monica.ui.components.EntryFieldDraftSaver) { mutableStateOf<List<CustomFieldDraft>>(emptyList()) }
     var cardFaceConfig by remember { mutableStateOf<CardFaceConfig?>(null) }
     var originalCardFaceConfig by remember { mutableStateOf<CardFaceConfig?>(null) }
@@ -432,6 +429,7 @@ fun AddEditBankCardScreen(
                     branchCode = data.branchCode
                     currency = data.currency
                     customerServicePhone = data.customerServicePhone
+                    if (editorSectionOrder.isEmpty()) editorSectionOrder = data.editorSectionOrder
                     customFields = CardWalletDataCodec.customFieldsToDrafts(data.customFields)
                     cardFaceConfig = data.cardFace
                     originalCardFaceConfig = data.cardFace
@@ -478,6 +476,7 @@ fun AddEditBankCardScreen(
             hasBillingAddress = false
             billingAddress = BillingAddress()
             customFields = emptyList()
+            editorSectionOrder = emptyList()
             cardFaceConfig = null
             originalCardFaceConfig = null
             pendingCardFaceBytes?.fill(0)
@@ -575,6 +574,7 @@ fun AddEditBankCardScreen(
             currency = currency,
             customerServicePhone = customerServicePhone,
             customFields = CardWalletDataCodec.draftsToCustomFields(customFields),
+            editorSectionOrder = editorSectionOrder,
             cardFace = cardFaceConfig
         )
     }
@@ -736,6 +736,131 @@ fun AddEditBankCardScreen(
         onSaveActionChanged?.invoke(save)
         onToggleFavoriteActionChanged?.invoke(toggleFavoriteAction)
     }
+    val contentItems = listOf(
+        WalletEditorSection("billing", R.string.billing_address, Icons.Default.Home, editorSections.visible("billing", hasBillingAddress)) {
+            TemplateFormSection("") {
+                SuggestedOutlinedTextField(billingAddress.streetAddress, { billingAddress = billingAddress.copy(streetAddress = it); hasBillingAddress = !billingAddress.isEmpty() }, suggestionField = CommonSuggestionField.STREET,
+                    label = { Text(stringResource(R.string.street_address)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("wallet_billing_streetAddress"))
+                SuggestedOutlinedTextField(billingAddress.apartment, { billingAddress = billingAddress.copy(apartment = it); hasBillingAddress = !billingAddress.isEmpty() }, suggestionField = CommonSuggestionField.APARTMENT,
+                    label = { Text(stringResource(R.string.apartment)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("wallet_billing_apartment"))
+                SuggestedOutlinedTextField(billingAddress.city, { billingAddress = billingAddress.copy(city = it); hasBillingAddress = !billingAddress.isEmpty() }, suggestionField = CommonSuggestionField.CITY,
+                    label = { Text(stringResource(R.string.city)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("wallet_billing_city"))
+                SuggestedOutlinedTextField(billingAddress.stateProvince, { billingAddress = billingAddress.copy(stateProvince = it); hasBillingAddress = !billingAddress.isEmpty() }, suggestionField = CommonSuggestionField.REGION,
+                    label = { Text(stringResource(R.string.state_province)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("wallet_billing_stateProvince"))
+                SuggestedOutlinedTextField(billingAddress.postalCode, { billingAddress = billingAddress.copy(postalCode = it); hasBillingAddress = !billingAddress.isEmpty() }, suggestionField = CommonSuggestionField.POSTAL_CODE,
+                    label = { Text(stringResource(R.string.postal_code)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("wallet_billing_postalCode"))
+                SuggestedOutlinedTextField(billingAddress.country, { billingAddress = billingAddress.copy(country = it); hasBillingAddress = !billingAddress.isEmpty() }, suggestionField = CommonSuggestionField.COUNTRY,
+                    label = { Text(stringResource(R.string.country)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("wallet_billing_country"))
+            }
+            if (hasCommonBillingAddress) WalletEditorAction(stringResource(R.string.common_account_billing_use_saved), Icons.Default.AccountCircle, 0, 1) {
+                billingAddress = commonBillingAddress
+                hasBillingAddress = true
+            }
+            if (hasBillingAddress) WalletEditorAction(stringResource(R.string.remove_billing_address), Icons.Default.Delete, 0, 1) {
+                billingAddress = BillingAddress()
+                hasBillingAddress = false
+            }
+        },
+        WalletEditorSection("extended", R.string.extended_fields_title, Icons.Default.Tune, editorSections.visible("extended", listOf(brand, nickname, validFromMonth, validFromYear, pin, iban, swiftBic, routingNumber, accountNumber, branchCode, currency, customerServicePhone).any { it.isNotBlank() })) {
+            InfoCard(title = stringResource(R.string.extended_fields_title)) {
+                takagi.ru.monica.ui.components.EntryOptionalFields(
+                    specs = takagi.ru.monica.ui.components.EntrySupplementalSpecs.payment.filterNot {
+                        it.key in setOf("bankName", "cardType", "billingAddress")
+                    },
+                    values = mapOf(
+                        "brand" to brand,
+                        "nickname" to nickname,
+                        "validFromMonth" to validFromMonth,
+                        "validFromYear" to validFromYear,
+                        "pin" to pin,
+                        "iban" to iban,
+                        "swiftBic" to swiftBic,
+                        "routingNumber" to routingNumber,
+                        "accountNumber" to accountNumber,
+                        "branchCode" to branchCode,
+                        "currency" to currency,
+                        "customerServicePhone" to customerServicePhone
+                    ),
+                    onValue = { spec, value -> when (spec.key) {
+                        "brand" -> brand = value
+                        "nickname" -> nickname = value
+                        "validFromMonth" -> validFromMonth = value
+                        "validFromYear" -> validFromYear = value
+                        "pin" -> pin = value
+                        "iban" -> iban = value
+                        "swiftBic" -> swiftBic = value
+                        "routingNumber" -> routingNumber = value
+                        "accountNumber" -> accountNumber = value
+                        "branchCode" -> branchCode = value
+                        "currency" -> currency = value
+                        "customerServicePhone" -> customerServicePhone = value
+                    } },
+                )
+            }
+        },
+        WalletEditorSection("custom", R.string.custom_field_title, Icons.Default.TextFields, editorSections.visible("custom", customFields.isNotEmpty())) {
+            WalletCustomFields(customFields) { customFields = it }
+        },
+        WalletEditorSection("photos", R.string.section_photos, Icons.Default.PhotoCamera, editorSections.visible("photos", frontImageFileName != null || backImageFileName != null)) {
+            InfoCard(title = stringResource(R.string.section_photos)) {
+                DualPhotoPicker(
+                    frontImageFileName = frontImageFileName,
+                    backImageFileName = backImageFileName,
+                    onFrontImageSelected = { fileName -> frontImageFileName = fileName },
+                    onFrontImageRemoved = { frontImageFileName = null },
+                    onBackImageSelected = { fileName -> backImageFileName = fileName },
+                    onBackImageRemoved = { backImageFileName = null },
+                    frontLabel = stringResource(R.string.bank_card_photo_front_label),
+                    backLabel = stringResource(R.string.bank_card_photo_back_label),
+                    imageLoader = embeddedImageLoader,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        WalletEditorSection("attachments", R.string.attachments, Icons.Default.AttachFile, editorSections.visible("attachments", existingCardItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null)) {
+            val draftAttachmentTarget = selectedStorageTargets.firstOrNull()
+            embeddedAttachmentsContent?.invoke()
+            AttachmentsEditSection(
+                owner = existingCardItem?.let { AttachmentOwner.secureItem(it.id) },
+                isPlusActivated = appSettings.isPlusActivated,
+                attachmentSource = when {
+                    existingCardItem?.bitwardenVaultId != null -> AttachmentSource.BITWARDEN
+                    existingCardItem?.keepassDatabaseId != null -> AttachmentSource.KEEPASS
+                    cardId == null && draftAttachmentTarget is StorageTarget.KeePass -> AttachmentSource.KEEPASS
+                    else -> AttachmentSource.LOCAL
+                },
+                bitwardenContext = attachmentBitwardenContext,
+                bitwardenPremium = attachmentBitwardenVault?.let {
+                    BitwardenVaultPremiumStore.isPremium(context, it.id)
+                } ?: true,
+                keepassContext = attachmentKeePassContext,
+                pendingDrafts = if (cardId == null) pendingAttachmentDrafts else null,
+                hideManagedCardFaces = true,
+                excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.BANK_CARD) +
+                    listOfNotNull(
+                        cardFaceConfig?.imageAttachmentName,
+                        originalCardFaceConfig?.imageAttachmentName
+                    )
+            )
+        },
+        WalletEditorSection("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank())) {
+            InfoCard(title = stringResource(R.string.section_notes)) {
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.notes)) },
+                    placeholder = { Text(stringResource(R.string.notes_placeholder)) },
+                    leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp),
+                    minLines = 3,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+    )
     val screenContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         if (!isExistingCardReady) {
             BankCardEditLoadingPlaceholder(
@@ -743,16 +868,12 @@ fun AddEditBankCardScreen(
                 paddingValues = paddingValues
             )
         } else {
-            Column(
-                modifier = modifier
-                    .testTag("bank_item_editor").then(if (embeddedDraft != null) Modifier.testTag("embedded_bank_editor") else Modifier)
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .imePadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            WalletEditorContent(
+                sections = editorSections, items = contentItems, order = editorSectionOrder,
+                onOrder = { editorSectionOrder = it }, enabled = !isSaving,
+                modifier = modifier.fillMaxSize().testTag(if (embeddedDraft == null) "bank_item_editor" else "embedded_bank_editor")
+                    .padding(paddingValues).consumeWindowInsets(paddingValues).imePadding(),
+                primary = {
                 if (embeddedDraft == null) MultiStorageTargetSelectorCard(
                     selectedTargets = selectedStorageTargets,
                     existingTargetKeys = existingReplicaTargetKeys,
@@ -868,242 +989,17 @@ run {
                 }
             }
 
-            // Billing Address Card
-            ItemEditorOptionalSection(editorSections, "billing", hasBillingAddress) {
-InfoCard(title = stringResource(R.string.billing_address)) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (hasBillingAddress && !billingAddress.isEmpty()) {
-                        Text(
-                            text = billingAddress.formatForDisplay(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { showBillingAddressDialog = true },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = stringResource(R.string.edit)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.edit_billing_address))
-                            }
-
-                            TextButton(
-                                onClick = {
-                                    billingAddress = BillingAddress()
-                                    hasBillingAddress = false
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.billing_address_removed),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.delete)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(stringResource(R.string.remove_billing_address))
-                            }
-                        }
-
-                        if (hasCommonBillingAddress) {
-                            OutlinedButton(
-                                onClick = {
-                                    billingAddress = commonBillingAddress
-                                    hasBillingAddress = true
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.common_account_billing_filled),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = null
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.common_account_billing_use_saved))
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = stringResource(R.string.billing_address_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        OutlinedButton(
-                            onClick = { showBillingAddressDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = stringResource(R.string.add_billing_address)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.add_billing_address))
-                        }
-
-                        if (hasCommonBillingAddress) {
-                            OutlinedButton(
-                                onClick = {
-                                    billingAddress = commonBillingAddress
-                                    hasBillingAddress = true
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.common_account_billing_filled),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = null
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.common_account_billing_use_saved))
-                            }
-                        }
-                    }
-                }
-            }
-            }
-
-            ItemEditorOptionalSection(editorSections, "extended", listOf(brand, nickname, validFromMonth, validFromYear, pin, iban, swiftBic, routingNumber, accountNumber, branchCode, currency, customerServicePhone).any { it.isNotBlank() }) {
-InfoCard(title = stringResource(R.string.extended_fields_title)) {
-                takagi.ru.monica.ui.components.EntryOptionalFields(
-                    specs = takagi.ru.monica.ui.components.EntrySupplementalSpecs.payment.filterNot {
-                        it.key in setOf("bankName", "cardType", "billingAddress")
-                    },
-                    values = mapOf(
-                        "brand" to brand,
-                        "nickname" to nickname,
-                        "validFromMonth" to validFromMonth,
-                        "validFromYear" to validFromYear,
-                        "pin" to pin,
-                        "iban" to iban,
-                        "swiftBic" to swiftBic,
-                        "routingNumber" to routingNumber,
-                        "accountNumber" to accountNumber,
-                        "branchCode" to branchCode,
-                        "currency" to currency,
-                        "customerServicePhone" to customerServicePhone
-                    ),
-                    onValue = { spec, value -> when (spec.key) {
-                        "brand" -> brand = value
-                        "nickname" -> nickname = value
-                        "validFromMonth" -> validFromMonth = value
-                        "validFromYear" -> validFromYear = value
-                        "pin" -> pin = value
-                        "iban" -> iban = value
-                        "swiftBic" -> swiftBic = value
-                        "routingNumber" -> routingNumber = value
-                        "accountNumber" -> accountNumber = value
-                        "branchCode" -> branchCode = value
-                        "currency" -> currency = value
-                        "customerServicePhone" -> customerServicePhone = value
-                    } },
-                )
-            }
-            }
-
-            ItemEditorOptionalSection(editorSections, "custom", customFields.isNotEmpty()) {
-                CustomFieldEditorSection(fields = customFields, onFieldsChange = { customFields = it },
-                    modifier = Modifier.fillMaxWidth(), contentStyle = true, showAddButton = false)
-            }
-
-            // Photos Card
-            ItemEditorOptionalSection(editorSections, "photos", frontImageFileName != null || backImageFileName != null) {
-InfoCard(title = stringResource(R.string.section_photos)) {
-                DualPhotoPicker(
-                    frontImageFileName = frontImageFileName,
-                    backImageFileName = backImageFileName,
-                    onFrontImageSelected = { fileName -> frontImageFileName = fileName },
-                    onFrontImageRemoved = { frontImageFileName = null },
-                    onBackImageSelected = { fileName -> backImageFileName = fileName },
-                    onBackImageRemoved = { backImageFileName = null },
-                    frontLabel = stringResource(R.string.bank_card_photo_front_label),
-                    backLabel = stringResource(R.string.bank_card_photo_back_label),
-                    imageLoader = embeddedImageLoader,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            }
-
-            ItemEditorOptionalSection(editorSections, "attachments", existingCardItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null) {
-            val draftAttachmentTarget = selectedStorageTargets.firstOrNull()
-            embeddedAttachmentsContent?.invoke()
-            AttachmentsEditSection(
-                owner = existingCardItem?.let { AttachmentOwner.secureItem(it.id) },
-                isPlusActivated = appSettings.isPlusActivated,
-                attachmentSource = when {
-                    existingCardItem?.bitwardenVaultId != null -> AttachmentSource.BITWARDEN
-                    existingCardItem?.keepassDatabaseId != null -> AttachmentSource.KEEPASS
-                    cardId == null && draftAttachmentTarget is StorageTarget.KeePass -> AttachmentSource.KEEPASS
-                    else -> AttachmentSource.LOCAL
                 },
-                bitwardenContext = attachmentBitwardenContext,
-                bitwardenPremium = attachmentBitwardenVault?.let {
-                    BitwardenVaultPremiumStore.isPremium(context, it.id)
-                } ?: true,
-                keepassContext = attachmentKeePassContext,
-                pendingDrafts = if (cardId == null) pendingAttachmentDrafts else null,
-                hideManagedCardFaces = true,
-                excludedFileNames = KeePassSecureItemPhotoAttachments.managedFileNames(ItemType.BANK_CARD) +
-                    listOfNotNull(
-                        cardFaceConfig?.imageAttachmentName,
-                        originalCardFaceConfig?.imageAttachmentName
-                    )
-            )
-            }
-
-            // Notes Card
-            ItemEditorOptionalSection(editorSections, "notes", notes.isNotBlank()) {
-InfoCard(title = stringResource(R.string.section_notes)) {
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text(stringResource(R.string.notes)) },
-                    placeholder = { Text(stringResource(R.string.notes_placeholder)) },
-                    leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
-                    minLines = 3,
-                    maxLines = 5,
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
-            }
-            ItemEditorAddContent(editorSections, options = listOf(
+                addContent = { ItemEditorAddContent(editorSections, options = listOf(
                     ItemEditorContentOption("billing", R.string.billing_address, Icons.Default.Home, editorSections.visible("billing", hasBillingAddress)),
                     ItemEditorContentOption("extended", R.string.extended_fields_title, Icons.Default.Tune, editorSections.visible("extended", listOf(brand, nickname, validFromMonth, validFromYear, pin, iban, swiftBic, routingNumber, accountNumber, branchCode, currency, customerServicePhone).any { it.isNotBlank() })),
                     ItemEditorContentOption("photos", R.string.section_photos, Icons.Default.PhotoCamera, editorSections.visible("photos", frontImageFileName != null || backImageFileName != null)),
                     ItemEditorContentOption("attachments", R.string.attachments, Icons.Default.AttachFile, editorSections.visible("attachments", existingCardItem != null || pendingAttachmentDrafts.isNotEmpty() || embeddedAttachmentsContent != null)),
                     ItemEditorContentOption("notes", R.string.notes, Icons.Default.Notes, editorSections.visible("notes", notes.isNotBlank()))
                 ), fields = customFields, onFieldsChange = { customFields = it },
-                enabled = !isSaving)
-            Spacer(Modifier.height(96.dp))
-
-        }
+                enabled = !isSaving) },
+            )
     }
     }
 
@@ -1259,121 +1155,7 @@ InfoCard(title = stringResource(R.string.section_notes)) {
         onSelectedTargetsChange = ::setSelectedStorageTargets
     )
 
-    if (showBillingAddressDialog) {
-        var streetAddress by remember { mutableStateOf(billingAddress.streetAddress) }
-        var apartment by remember { mutableStateOf(billingAddress.apartment) }
-        var city by remember { mutableStateOf(billingAddress.city) }
-        var stateProvince by remember { mutableStateOf(billingAddress.stateProvince) }
-        var postalCode by remember { mutableStateOf(billingAddress.postalCode) }
-        var country by remember { mutableStateOf(billingAddress.country) }
 
-        AlertDialog(
-            onDismissRequest = { showBillingAddressDialog = false },
-            title = { Text(stringResource(R.string.billing_address)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (hasCommonBillingAddress) {
-                        OutlinedButton(
-                            onClick = {
-                                streetAddress = commonBillingAddress.streetAddress
-                                apartment = commonBillingAddress.apartment
-                                city = commonBillingAddress.city
-                                stateProvince = commonBillingAddress.stateProvince
-                                postalCode = commonBillingAddress.postalCode
-                                country = commonBillingAddress.country
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = null
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.common_account_billing_use_saved))
-                        }
-                    }
-                    OutlinedTextField(
-                        value = streetAddress,
-                        onValueChange = { streetAddress = it },
-                        label = { Text(stringResource(R.string.street_address)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = apartment,
-                        onValueChange = { apartment = it },
-                        label = { Text(stringResource(R.string.apartment)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = city,
-                        onValueChange = { city = it },
-                        label = { Text(stringResource(R.string.city)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = stateProvince,
-                        onValueChange = { stateProvince = it },
-                        label = { Text(stringResource(R.string.state_province)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = postalCode,
-                        onValueChange = { postalCode = it },
-                        label = { Text(stringResource(R.string.postal_code)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = country,
-                        onValueChange = { country = it },
-                        label = { Text(stringResource(R.string.country)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val updatedAddress = BillingAddress(
-                            streetAddress = streetAddress.trim(),
-                            apartment = apartment.trim(),
-                            city = city.trim(),
-                            stateProvince = stateProvince.trim(),
-                            postalCode = postalCode.trim(),
-                            country = country.trim()
-                        )
-                        val hasAddress = !updatedAddress.isEmpty()
-                        billingAddress = updatedAddress
-                        hasBillingAddress = hasAddress
-                        showBillingAddressDialog = false
-                        val message = if (hasAddress) {
-                            R.string.billing_address_saved
-                        } else {
-                            R.string.billing_address_removed
-                        }
-                        Toast.makeText(
-                            context,
-                            context.getString(message),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                ) {
-                    Text(stringResource(R.string.save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBillingAddressDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
 }
 
 private fun parseSecureItemImagePaths(imagePaths: String): Pair<String?, String?> {
@@ -1454,7 +1236,7 @@ private fun InfoCard(
     content: @Composable () -> Unit
 ) {
     CompositionLocalProvider(LocalEntryContentStyle provides true) {
-        TemplateFormSection(title) { content() }
+        TemplateFormSection(if (LocalWalletContentEditor.current) "" else title) { content() }
     }
 }
 

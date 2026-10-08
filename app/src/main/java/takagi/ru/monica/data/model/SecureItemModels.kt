@@ -77,7 +77,9 @@ data class BankCardData(
     val customerServicePhone: String = "",
     val customFields: List<SecureCustomField> = emptyList(),
     /** Monica-managed visual card face. Null keeps the legacy card layout unchanged. */
-    val cardFace: CardFaceConfig? = null
+    val cardFace: CardFaceConfig? = null,
+    /** Presentation only; absent on older entries. */
+    val editorSectionOrder: List<String> = emptyList()
 )
 
 @Serializable
@@ -330,7 +332,9 @@ data class DocumentData(
     val licenseNumber: String = "",
     val customFields: List<SecureCustomField> = emptyList(),
     /** Optional visual card face. The image itself is stored as an encrypted attachment. */
-    val cardFace: CardFaceConfig? = null
+    val cardFace: CardFaceConfig? = null,
+    /** Presentation only; absent on older entries. */
+    val editorSectionOrder: List<String> = emptyList()
 )
 
 enum class DocumentType {

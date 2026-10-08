@@ -403,7 +403,7 @@ class MainActivity : BaseMonicaActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splash = installSplashScreen()
         takagi.ru.monica.security.MainTaskSessionGuard.onMainTaskCreated(this)
         super.onCreate(savedInstanceState) // BaseMonicaActivity 已调用 enableEdgeToEdge()
         handleExternalTotpIntent(intent)
@@ -411,12 +411,22 @@ class MainActivity : BaseMonicaActivity() {
 
         // 注意：enableEdgeToEdge() 已在基类调用，这里不再重复
 
-        // Initialize dependencies
-        val securityManager = when (val startup = takagi.ru.monica.security.SecureStorageStartup.prepare(this)) {
+        // Keep the existing splash while secure storage opens off the UI thread.
+        var startupPending = true
+        splash.setKeepOnScreenCondition { startupPending }
+        lifecycleScope.launch {
+            val startup = takagi.ru.monica.security.SecureStorageStartup.prepareWithRetry(this@MainActivity)
+            startupPending = false
+            completeSecureStartup(startup)
+        }
+    }
+
+    private fun completeSecureStartup(startup: takagi.ru.monica.security.SecureStartupResult) {
+        val securityManager = when (startup) {
             is takagi.ru.monica.security.SecureStartupResult.Ready -> startup.manager
             is takagi.ru.monica.security.SecureStartupResult.Blocked -> {
                 Log.w(TAG, "Secure storage startup blocked: ${startup.failure.reason}")
-                val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure)
+                val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure, startup.attempts)
                 val recovery = takagi.ru.monica.security.LocalVaultRecovery(this)
                 val canRecover = recovery.available()
                 window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
@@ -441,6 +451,10 @@ class MainActivity : BaseMonicaActivity() {
             }
         }
         secureStartupReady = true
+        // Async initialization may finish after onStart has already run.
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            takagi.ru.monica.autofill_ng.protection.AutofillProtection.restoreIfEnabled(this)
+        }
         val database = PasswordDatabase.getDatabase(this)
         val mdbxRepository: MdbxRepository = MdbxRepositoryFactory.create(
             context = applicationContext,

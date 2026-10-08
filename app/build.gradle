@@ -77,7 +77,7 @@ android {
         buildConfigField 'String', 'BUILD_TIME', '""'
         buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.318"'
         buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.318"'
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"24"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"25"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }

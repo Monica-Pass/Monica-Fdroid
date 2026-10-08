@@ -1,0 +1,24 @@
+[
+  {
+    "testHash": "03D6A39490331842DCB8659A6FD77D45437A1C61D4DFCB45DC9E3A0D5B160938",
+    "completed": true,
+    "edition": "Main",
+    "oldUser": "0",
+    "classes": "takagi.ru.monica.security.SecureStartupInstrumentedTest",
+    "tests": 16.0,
+    "appHash": "C9392359EF190C8AC2BE90E641A36E7B0F517C94C5FC44FD6CE9091577B4726F",
+    "processIsolation": "one instrumentation process per class",
+    "oldProxy": ":0"
+  },
+  {
+    "classes": "takagi.ru.monica.security.SecureStartupInstrumentedTest",
+    "appHash": "83C777B760055C31A9B061E245CC73BA4B5AC44352755338BFC04DAC231F4049",
+    "completed": true,
+    "oldUser": "0",
+    "tests": 16.0,
+    "testHash": "EFD2A70F922076B8D487ADD0BD49F303E8A1BE7D9CA06AD8C049AD13ECBABA3F",
+    "edition": "Fdroid",
+    "processIsolation": "one instrumentation process per class",
+    "oldProxy": ":0"
+  }
+]

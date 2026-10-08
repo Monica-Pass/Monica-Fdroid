@@ -416,6 +416,9 @@ class PasswordRepository(
         )
     }
 
+    internal suspend fun applyKeePassProjection(block: suspend () -> Unit) =
+        passwordEntryDao.applyKeePassProjection(block)
+
     suspend fun updatePasswordUpdatedAt(id: Long, updatedAt: java.util.Date) {
         passwordEntryDao.updateUpdatedAt(id, updatedAt)
     }

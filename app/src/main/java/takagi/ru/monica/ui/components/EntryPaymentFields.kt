@@ -35,6 +35,15 @@ fun EntryPaymentFields(
 @Composable
 private fun PaymentField(value: String, onChange: (String) -> Unit, label: Int, tag: String,
     secret: Boolean, numeric: Boolean, onPick: (() -> Unit)? = null) {
+    if (tag == "holder") {
+        SuggestedOutlinedTextField(value, onChange, takagi.ru.monica.data.CommonSuggestionField.FULL_NAME,
+            label = { Text(stringResource(label)) }, singleLine = true, entryContentStyle = true,
+            trailingIcon = if (onPick != null) {{ IconButton(onClick = onPick) {
+                Icon(Icons.Default.PersonAdd, stringResource(R.string.common_name_fill_title))
+            } }} else null,
+            shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().testTag("entry_payment_$tag"))
+        return
+    }
     var visible by remember { mutableStateOf(false) }
     OutlinedTextField(value = value, onValueChange = onChange,
         label = { Text(stringResource(label)) }, singleLine = true, entryContentStyle = true,

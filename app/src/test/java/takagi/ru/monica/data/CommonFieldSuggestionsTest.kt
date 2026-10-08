@@ -71,4 +71,51 @@ class CommonFieldSuggestionsTest {
         val metadata = ProjectCredentialGroup.rows(listOf(ProjectCredentialGroup.Group(label = "Work"))).first().metadata
         assertEquals("Work", CommonSuggestionField.CREDENTIAL_LABEL.metadataValue(ProjectCredentialGroup.FIELD, metadata.raw.toString()))
     }
+
+    @Test fun fullNamesJoinCardDocumentAndBillingWithoutInventingNameParts() {
+        val card = CardWalletDataCodec.encodeBankCardData(BankCardData("secret-number", "林晓", "01", "2030"))
+        val doc = CardWalletDataCodec.encodeDocumentData(DocumentData(DocumentType.PASSPORT, "secret-id", "Lin Xiao",
+            firstName = "Xiao", middleName = "Mei", lastName = "Lin"))
+        val address = CardWalletDataCodec.encodeBillingAddressData(BillingAddressData(fullName = "林晓"))
+        assertEquals("林晓", CommonSuggestionField.FULL_NAME.walletValue(card, ItemType.BANK_CARD))
+        assertEquals("Lin Xiao", CommonSuggestionField.FULL_NAME.walletValue(doc, ItemType.DOCUMENT))
+        assertEquals("林晓", CommonSuggestionField.FULL_NAME.walletValue(address, ItemType.BILLING_ADDRESS))
+        assertNull(CommonSuggestionField.FIRST_NAME.walletValue(card, ItemType.BANK_CARD))
+        assertEquals("Xiao", CommonSuggestionField.FIRST_NAME.walletValue(doc, ItemType.DOCUMENT))
+        assertEquals("Mei", CommonSuggestionField.MIDDLE_NAME.walletValue(doc, ItemType.DOCUMENT))
+        assertEquals("Lin", CommonSuggestionField.LAST_NAME.walletValue(doc, ItemType.DOCUMENT))
+    }
+
+    @Test fun addressPartsStaySeparateAndPreservePostalCodeFormatting() {
+        val billing = BillingAddress("示例路18号", "2-301", "示例市", "示例省", "00123", "中国")
+        val card = CardWalletDataCodec.encodeBankCardData(BankCardData("secret", "Name", "01", "2030",
+            billingAddress = CardWalletDataCodec.encodeBillingAddress(billing)))
+        assertEquals("示例路18号", CommonSuggestionField.STREET.walletValue(card))
+        assertEquals("2-301", CommonSuggestionField.APARTMENT.walletValue(card))
+        assertEquals("00123", CommonSuggestionField.POSTAL_CODE.walletValue(card))
+        assertEquals("示例市", CommonSuggestionField.CITY.walletValue(card))
+        assertEquals("示例省", CommonSuggestionField.REGION.walletValue(card))
+        assertEquals("中国", CommonSuggestionField.COUNTRY.walletValue(card))
+        assertNull(CommonSuggestionField.ADDRESS_LINE_3.walletValue(card, ItemType.BANK_CARD))
+    }
+
+    @Test fun embeddedKindsMustMatchTheirMetadataTitle() {
+        val snapshot = EmbeddedWalletContent.create(SecureItem(itemType = ItemType.BILLING_ADDRESS, title = "Billing",
+            itemData = CardWalletDataCodec.encodeBillingAddressData(BillingAddressData(fullName = "Example Name", city = "Example City"))))
+        val title = EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.ADDRESS)
+        assertEquals("Example Name", CommonSuggestionField.FULL_NAME.metadataValue(title, snapshot.encode()))
+        assertEquals("Example City", CommonSuggestionField.CITY.metadataValue(title, snapshot.encode()))
+        assertNull(CommonSuggestionField.FULL_NAME.metadataValue(EmbeddedWalletContent.fieldName(EmbeddedWalletContent.Kind.DOCUMENT), snapshot.encode()))
+        assertNull(CommonSuggestionField.FULL_NAME.metadataValue("password", "Example secret"))
+    }
+
+    @Test fun legacyContactAndAddressNamesShareOnlyFullNameSuggestions() {
+        for (section in listOf("CONTACT", "ADDRESS")) {
+            val title = EntryContentFields.key(section, "fullName")
+            assertEquals("Example Name", CommonSuggestionField.FULL_NAME.metadataValue(title, "Example Name"))
+            assertNull(CommonSuggestionField.FIRST_NAME.metadataValue(title, "Example Name"))
+        }
+        assertEquals(CommonSuggestionField.FULL_NAME, CommonSuggestionField.forSupplementalKey("fullName"))
+        assertEquals(CommonSuggestionField.APARTMENT, CommonSuggestionField.forSupplementalKey("apartment"))
+    }
 }

@@ -835,7 +835,7 @@ class BiometricUnlockRegressionGuardTest {
             "Card-wallet common-name analysis must stay lazy so add-page navigation animations are not blocked by full SecureItem scans.",
             commonNameSuggestionSheetSource.contains("includeAnalyzedItems: Boolean = true") &&
                 commonNameSuggestionSheetSource.contains("if (includeAnalyzedItems)") &&
-                commonNameSuggestionSheetSource.contains("flowOf(emptyList())") &&
+                commonNameSuggestionSheetSource.contains("flowOf(CommonFieldSuggestionIndex(emptyList(), CommonSuggestionField.FULL_NAME))") &&
                 addEditBankCardScreenSource.contains("includeAnalyzedItems = shouldLoadCommonNameAnalysis || showCommonNamePicker") &&
                 addEditDocumentScreenSource.contains("includeAnalyzedItems = shouldLoadCommonNameAnalysis || showCommonNamePicker")
         )

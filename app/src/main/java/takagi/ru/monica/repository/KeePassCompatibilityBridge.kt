@@ -68,6 +68,12 @@ class KeePassCompatibilityBridge(
         kinds: Set<KeePassProjectionKind>
     ) = workspaceRepository.markProjectionIndexed(databaseId, revisionToken, kinds)
 
+    internal suspend fun applyCurrentLegacyProjection(
+        databaseId: Long,
+        revisionToken: String,
+        apply: suspend () -> Unit
+    ): Boolean = workspaceRepository.applyCurrentProjection(databaseId, revisionToken, apply)
+
     internal suspend fun openNativeBrowser(databaseId: Long) =
         workspaceRepository.openNativeBrowser(databaseId)
 

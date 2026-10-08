@@ -1451,6 +1451,32 @@ class KeePassKdbxService(
         }
     }
 
+    /** A snapshot must not update Room after a newer native mutation has committed. */
+    internal suspend fun applyCurrentProjection(
+        databaseId: Long,
+        revisionToken: String,
+        apply: suspend () -> Unit
+    ): Boolean = withContext(Dispatchers.IO) {
+        withDatabaseMutationLocks(listOf(databaseId)) {
+            val loaded = loadDatabase(databaseId)
+            if (loaded.nativeSession.value.revisionToken != revisionToken) {
+                return@withDatabaseMutationLocks false
+            }
+            // External document providers have no reliable mtime signature. Check the file,
+            // too, so the 60-second session cache cannot publish another process's old data.
+            if (loaded.database.resolvedActiveStorageLocation() == KeePassStorageLocation.EXTERNAL) {
+                val current = openExternalInputStream(Uri.parse(loaded.database.resolvedActiveFilePath()))
+                    ?.use(KeePassSourceSafety::revisionOf)
+                if (current != loaded.sourceRevision) {
+                    invalidateLoadedDatabaseCache(databaseId)
+                    return@withDatabaseMutationLocks false
+                }
+            }
+            apply()
+            true
+        }
+    }
+
     suspend fun loadWorkspace(
         databaseId: Long,
         includeRecycleBinGroups: Boolean = false,
@@ -3813,6 +3839,9 @@ class KeePassKdbxService(
                         matchesPasswordEntry(entry, target, resolutionContext)
                     }
                 )
+                check(deleteResult.changedCount == entries.size) {
+                    "KeePass delete selection changed; reload the database before retrying"
+                }
                 MutationPlan(
                     updatedDatabase = deleteResult.database,
                     result = deleteResult.changedCount,
@@ -3849,6 +3878,9 @@ class KeePassKdbxService(
                         matchesPasswordEntry(entry, target, resolutionContext)
                     }
                 )
+                check(moveResult.changedCount == entries.size) {
+                    "KeePass delete selection changed; reload the database before retrying"
+                }
                 MutationPlan(
                     updatedDatabase = moveResult.database,
                     result = moveResult.changedCount,
@@ -8732,8 +8764,16 @@ class KeePassKdbxService(
         val recoveryCopy = openExternalInputStream(uri)?.use { input ->
             recoveryStore.create(database.id, input)
         } ?: throw IOException(strings.get(R.string.storage_error_recovery_copy))
+        KeePassSourceSafety.requireUnchanged(
+            expectedRevision = originalRevision,
+            currentRevision = KeePassSourceSafety.revisionOf(recoveryCopy.file),
+            sourceLabel = uri.toString(),
+            strings = strings,
+        )
+        var writeCompleted = false
         try {
             writeExternalFile(uri, encodedFile)
+            writeCompleted = true
             val writtenRevision = openExternalInputStream(uri)?.use(KeePassSourceSafety::revisionOf)
                 ?: throw IOException(strings.get(R.string.storage_error_verify_database))
             if (writtenRevision != targetRevision) {
@@ -8744,6 +8784,12 @@ class KeePassKdbxService(
             }
             recoveryStore.prune(database.id)
         } catch (e: Exception) {
+            // A complete write followed by different/unreadable contents may be another
+            // application's save. Never overwrite it with our older recovery copy.
+            if (writeCompleted) {
+                Log.e(TAG, "External KeePass verification failed; preserved current file and recovery copy", e)
+                throw normalizeError(e)
+            }
             val restored = runCatching {
                 writeExternalFile(uri, recoveryCopy.file)
                 val restoredRevision = openExternalInputStream(uri)?.use(KeePassSourceSafety::revisionOf)

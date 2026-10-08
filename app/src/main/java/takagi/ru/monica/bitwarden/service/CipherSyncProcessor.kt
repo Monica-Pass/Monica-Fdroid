@@ -1118,6 +1118,7 @@ class CipherSyncProcessor(
             branchCode = fieldMap.valueByNames("Branch Code", "monica_branch_code"),
             currency = fieldMap.valueByNames("Currency", "monica_currency"),
             customerServicePhone = fieldMap.valueByNames("Customer Service Phone", "monica_customer_service_phone"),
+            editorSectionOrder = existingCardData?.editorSectionOrder.orEmpty(),
             customFields = decryptedFields.toCardCustomFields(),
             cardFace = CardWalletDataCodec.parseCardFaceConfig(
                 fieldMap.valueByNames(CARD_FACE_FIELD_NAME, "monica_card_face")
@@ -1258,6 +1259,9 @@ class CipherSyncProcessor(
             username = decryptString(identity.username, symmetricKey) ?: "",
             passportNumber = passportNumber,
             licenseNumber = licenseNumber,
+            editorSectionOrder = existing?.let {
+                CardWalletDataCodec.parseDocumentData(it.itemData, securityManager::decryptData)?.editorSectionOrder
+            }.orEmpty(),
             customFields = decryptedFields.toDocumentCustomFields(),
             cardFace = CardWalletDataCodec.parseCardFaceConfig(
                 customFieldMap.valueByNames(CARD_FACE_FIELD_NAME, "monica_card_face")

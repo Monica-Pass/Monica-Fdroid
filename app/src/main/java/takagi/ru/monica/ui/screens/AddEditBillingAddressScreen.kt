@@ -79,6 +79,8 @@ import takagi.ru.monica.ui.components.CustomFieldEditorSection
 import takagi.ru.monica.ui.components.MultiStorageTargetPickerBottomSheet
 import takagi.ru.monica.ui.components.MultiStorageTargetSelectorCard
 import takagi.ru.monica.ui.components.*
+import takagi.ru.monica.ui.components.SuggestedOutlinedTextField
+import takagi.ru.monica.data.CommonSuggestionField
 import takagi.ru.monica.ui.components.OutlinedTextField
 import takagi.ru.monica.viewmodel.BillingAddressViewModel
 
@@ -344,7 +346,8 @@ fun AddEditBillingAddressScreen(
 
             InfoCard(title = stringResource(R.string.billing_address)) {
 
-                OutlinedTextField(
+                SuggestedOutlinedTextField(
+                    suggestionField = CommonSuggestionField.FULL_NAME,
                     value = fullName,
                     onValueChange = { fullName = it },
                     label = { Text(stringResource(R.string.full_name)) },
@@ -372,7 +375,7 @@ fun AddEditBillingAddressScreen(
                         onRegion = { stateProvince = it }, onPostalCode = { postalCode = it },
                         onCountry = { country = it },
                         additionalStreet = {
-                            OutlinedTextField(value = apartment, onValueChange = { apartment = it },
+                            SuggestedOutlinedTextField(suggestionField = CommonSuggestionField.APARTMENT, value = apartment, onValueChange = { apartment = it },
                                 label = { Text(stringResource(R.string.apartment)) },
                                 modifier = Modifier.fillMaxWidth(), singleLine = true,
                                 shape = RoundedCornerShape(12.dp))
@@ -380,7 +383,8 @@ fun AddEditBillingAddressScreen(
                     )
                 } else {
 
-                OutlinedTextField(
+                SuggestedOutlinedTextField(
+                    suggestionField = CommonSuggestionField.STREET,
                     value = streetAddress,
                     onValueChange = { streetAddress = it },
                     label = { Text(stringResource(R.string.street_address)) },
@@ -388,7 +392,8 @@ fun AddEditBillingAddressScreen(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
                 )
-                OutlinedTextField(
+                SuggestedOutlinedTextField(
+                    suggestionField = CommonSuggestionField.APARTMENT,
                     value = apartment,
                     onValueChange = { apartment = it },
                     label = { Text(stringResource(R.string.apartment)) },
@@ -400,19 +405,21 @@ fun AddEditBillingAddressScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.CITY,
                         value = city,
                         onValueChange = { city = it },
                         label = { Text(stringResource(R.string.city)) },
-                        modifier = Modifier.weight(1f),
+                        containerModifier = Modifier.weight(1f), modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.REGION,
                         value = stateProvince,
                         onValueChange = { stateProvince = it },
                         label = { Text(stringResource(R.string.state_province)) },
-                        modifier = Modifier.weight(1f),
+                        containerModifier = Modifier.weight(1f), modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -421,19 +428,21 @@ fun AddEditBillingAddressScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.POSTAL_CODE,
                         value = postalCode,
                         onValueChange = { postalCode = it },
                         label = { Text(stringResource(R.string.postal_code)) },
-                        modifier = Modifier.weight(1f),
+                        containerModifier = Modifier.weight(1f), modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
-                    OutlinedTextField(
+                    SuggestedOutlinedTextField(
+                        suggestionField = CommonSuggestionField.COUNTRY,
                         value = country,
                         onValueChange = { country = it },
                         label = { Text(stringResource(R.string.country)) },
-                        modifier = Modifier.weight(1f),
+                        containerModifier = Modifier.weight(1f), modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )

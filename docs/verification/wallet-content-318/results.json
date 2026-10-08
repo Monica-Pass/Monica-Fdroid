@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-07",
+  "avd": "Monica_Issue136_API_32",
+  "api": 32,
+  "smallScreen": {
+    "pixels": "640x1280",
+    "densityDpi": 320,
+    "fontScale": 1.7
+  },
+  "editions": {
+    "Main": {
+      "build": "passed",
+      "jvm": [
+        {
+          "name": "takagi.ru.monica.data.model.CardWalletDataCodecTest",
+          "tests": "9",
+          "failures": "0",
+          "errors": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.WalletEditorOrderTest",
+          "tests": "4",
+          "failures": "0",
+          "errors": "0"
+        }
+      ],
+      "device": {
+        "normal": {
+          "classes": "takagi.ru.monica.ui.WalletContentEditorTest",
+          "tests": 3,
+          "completed": true,
+          "appHash": "E4E6968D9A6E051247DF6D85CE978AA09B74DFDBB8FE2FC67A08B6E0BCEAE902",
+          "testHash": "01EF6B9BA99BEFBF14BFDDA57A6CEC7AF3F0DDC09E82F95A8C38A1AC2AC328EC"
+        },
+        "small": {
+          "classes": "takagi.ru.monica.ui.WalletContentEditorTest#smallDarkLargeTextEditorUsesConnectedFieldsAndKeepsEmptyAddedFields",
+          "tests": 1,
+          "completed": true,
+          "appHash": "E4E6968D9A6E051247DF6D85CE978AA09B74DFDBB8FE2FC67A08B6E0BCEAE902",
+          "testHash": "94469E6BA3B18967C671E81FFFD4B8D20199B8C103C92338BFB705456BB3074B"
+        }
+      }
+    },
+    "Fdroid": {
+      "build": "passed",
+      "jvm": [
+        {
+          "name": "takagi.ru.monica.data.model.CardWalletDataCodecTest",
+          "tests": "9",
+          "failures": "0",
+          "errors": "0"
+        },
+        {
+          "name": "takagi.ru.monica.data.model.WalletEditorOrderTest",
+          "tests": "4",
+          "failures": "0",
+          "errors": "0"
+        }
+      ],
+      "device": {
+        "normal": {
+          "classes": "takagi.ru.monica.ui.WalletContentEditorTest,takagi.ru.monica.ui.EntryOptionalFieldsTest,takagi.ru.monica.suggestions.CommonInfoSuggestionUiTest,takagi.ru.monica.credentialexchange.UnifiedWalletEditorsDeviceTest#bankNewHiddenFieldAndNotesSurviveMdbxFileAndEditorReopen,takagi.ru.monica.credentialexchange.UnifiedWalletEditorsDeviceTest#documentEditKeepsRareFieldsAndAddsNotes",
+          "tests": 12,
+          "completed": true,
+          "appHash": "B29925F0278F881435489E615502B59F32803442C3F112410C8A7F78854FE229",
+          "testHash": "C2950B8084F1AAB129955697F40EA416045AA2EFC7ED7E458BD5D2DFE28A9B73"
+        },
+        "small": {
+          "classes": "takagi.ru.monica.ui.WalletContentEditorTest#smallDarkLargeTextEditorUsesConnectedFieldsAndKeepsEmptyAddedFields",
+          "tests": 1,
+          "completed": true,
+          "appHash": "B29925F0278F881435489E615502B59F32803442C3F112410C8A7F78854FE229",
+          "testHash": "F9FCCF54CA4F309D74B150FC3F65BD4F2F08B74F4C149E7135F46BA570FB7528"
+        }
+      }
+    }
+  },
+  "sourceSha256": {
+    "app/src/androidTest/java/takagi/ru/monica/credentialexchange/UnifiedWalletEditorsDeviceTest.kt": "100ce9ea62f9204c731dea35356e29c3c7fc01a9ab31b176ff6be5e733c40215",
+    "app/src/androidTest/java/takagi/ru/monica/suggestions/CommonInfoSuggestionUiTest.kt": "c0941ae21312278c17ebb397c659e1be409217a579f617dbaac8f4d18c268e4f",
+    "app/src/androidTest/java/takagi/ru/monica/ui/WalletContentEditorTest.kt": "ef2171b52a8a3ec5545991fc0b81b83320b7f715127e2c4d1885571f8550a505",
+    "app/src/main/java/takagi/ru/monica/bitwarden/service/CipherSyncProcessor.kt": "a59f1a18531cc0287c87362213a77bd048b58ff38da666ab21fa77989700bc6a",
+    "app/src/main/java/takagi/ru/monica/data/model/SecureItemModels.kt": "212e591881776d2759ac1d212204f2a790222a094419ee48559e0b537b169940",
+    "app/src/main/java/takagi/ru/monica/data/model/WalletEditorOrder.kt": "c7410ef399910229f6b38afc76a5685c65c6193dd798f17e92f3386cdae7f29c",
+    "app/src/main/java/takagi/ru/monica/ui/components/EntryContentStyle.kt": "df3fa9ae56c518642b24c279679781bde627941c72326924c943d8242da26d8f",
+    "app/src/main/java/takagi/ru/monica/ui/components/EntrySupplementalFields.kt": "d2649cefc1955512f88eb6231b99caa6f73229094f5e91453945c3cd016bafbf",
+    "app/src/main/java/takagi/ru/monica/ui/components/WalletEditorContent.kt": "93e0a523b91e129a5d4b4c6673974c0efb00850ef2e251f3d902f563e01411a5",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditBankCardScreen.kt": "b911aac889dba06aa0b26b848277d296738d04ae6116943c45c240d785ae22ee",
+    "app/src/main/java/takagi/ru/monica/ui/screens/AddEditDocumentScreen.kt": "67933da77c715712792446e428d94e0ce557ea21953fb9e6c99b9af3eae11fb9",
+    "app/src/test/java/takagi/ru/monica/data/model/WalletEditorOrderTest.kt": "75ad1489e5b85b98dc71e129ff87313d88a69683a37f7244bae0167682b88263"
+  },
+  "mainEarlierRegression": {
+    "tests": 12,
+    "passed": 11,
+    "failed": 1,
+    "reason": "Add-content click raced the IME closing; explicit keyboard wait added to test helper.",
+    "resolution": "WalletContentEditorTest rerun: 3/3 passed; remaining 9 regression cases unchanged and passed."
+  }
+}
