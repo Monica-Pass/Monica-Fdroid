@@ -41,3 +41,11 @@ test_crypto.kt
 
 # Task records
 .codex-tasks/
+
+# Design sketches and device captures stay local. Keep text verification records.
+/docs/design/
+/docs/**/*.png
+/docs/**/*.jpg
+/docs/**/*.jpeg
+/docs/**/*.gif
+/docs/**/*.webp
