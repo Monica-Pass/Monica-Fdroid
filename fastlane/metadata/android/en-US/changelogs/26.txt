@@ -1,0 +1,5 @@
+Steam shares database/folder filters and remembers selections.
+Move or copy Passkeys and Steam entries into folders; cancel or skip blocked entries, and remove sources only after successful writes.
+Fix repeated local Passkey sync; cache compatibility labels and retain filters.
+Preserve Passkey backup flags and other Bitwarden/Vaultwarden login data; explain transfer limits.
+Fix synced entries missing from the overview and search for Bitwarden/Vaultwarden-only users.

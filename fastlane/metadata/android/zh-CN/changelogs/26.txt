@@ -1,0 +1,5 @@
+Steam 筛选统一数据库与文件夹菜单，记住所选文件夹。
+Passkey 和 Steam 支持移动或复制到文件夹；受限条目可取消或跳过，跨库写入成功后才清理源记录。
+修复本地 Passkey 反复触发同步，缓存可用性标记并保留列表筛选。
+保留 Passkey 备份标志，保护 Bitwarden/Vaultwarden 同项其他数据，显示跨端限制。
+修复仅绑定 Bitwarden/Vaultwarden 时已同步条目在首页和搜索中不可见。
