@@ -4,6 +4,8 @@
 
 ## 中文
 
+- 修复附近同步准备内容时的文件夹标识缺失异常：本地 Steam 等条目使用关联 Bitwarden 的共享分类时保留文件夹归属，不复制外部账户绑定；本地 Passkey 遗留 MDBX 文件夹引用不再阻断同步。准备失败诊断增加具体操作位置，不记录凭据内容。
+
 - 新增附近设备加密同步：同一可互通 Wi-Fi／局域网中扫码或粘贴链接配对，自动或手动同步本地密码、验证器、Steam 账户、通行密钥、笔记、卡片、文件夹与附件；支持双向、仅发送及仅接收，离线冲突保留副本。Bitwarden／Vaultwarden、KeePass 继续使用各自同步。
 - 发送前复用通行密钥迁移弹窗，说明仅本地与跨平台限制，可取消同步或了解后继续；不可导出密钥只同步凭据信息，可导出密钥在接收端重新加密。锁定或编辑时暂停保存，校验和保存完成后才记录成功。
 - 附近同步使用 M3E 分组设置与底部弹层，生成二维码时可复制链接；统一附近同步和扫码转场，扫码返回停留在附近同步页，修复快速失败或取消配对导致的前台服务闪退。
@@ -28,6 +30,8 @@
 - 修复仅绑定 Bitwarden／Vaultwarden 时密码库首页和搜索可能看不到已同步条目：未保存数据库范围时默认显示“全部”，旧版省略范围的设置同步采用该默认值；明确保存的本地库或具体数据库选择继续保留，锁定库仍不参与展示与搜索。
 
 ## English
+
+- Fixed missing folder identities aborting Nearby sync preparation. Local Steam and other entries retain shared categories linked to Bitwarden without copying external account bindings; stale MDBX folder references on local Passkeys no longer block sync. Preparation diagnostics identify the failing operation without recording credential content.
 
 - Added encrypted Nearby sync: pair by QR code or link on the same reachable Wi-Fi/LAN, then sync local passwords, authenticators, Steam accounts, Passkeys, notes, cards, folders and attachments automatically or manually. Supports two-way, send-only and receive-only modes, preserving offline conflict copies. Bitwarden/Vaultwarden and KeePass keep their own sync mechanisms.
 - Reused the Passkey transfer dialog before sending to explain local-only and cross-platform restrictions, with options to cancel or continue. Non-exportable keys sync metadata only; exportable keys are encrypted again on receipt. Incoming saves pause while locked or editing; success is recorded after validation and saving.

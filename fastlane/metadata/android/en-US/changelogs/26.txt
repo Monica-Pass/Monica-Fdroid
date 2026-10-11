@@ -2,3 +2,4 @@ Added encrypted Nearby sync with direction controls, local Steam accounts, folde
 M3E pairing with QR codes and copyable links; fixed scanner Back, transitions and pairing crashes.
 Passkey/Steam folder moves, copies and filters; cached compatibility labels.
 Fixed repeated local sync, legacy Passkey flags, missing synced entries and Bitwarden updates overwriting other fields.
+Fixed shared-folder sync preparation failures.
