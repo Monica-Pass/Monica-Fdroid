@@ -235,7 +235,9 @@ fun ImportDataScreen(
                                 )
                             }
                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             android.util.Log.e("ImportDataScreen", "文件选择异常", e)
                             localImporting = false
                             snackbarHostState.showSnackbar(
@@ -337,7 +339,9 @@ fun ImportDataScreen(
                                             }
                                         }
                                     } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                                        if (e is CancellationException) {
+                                            throw e
+                                        }
                                         android.util.Log.e("ImportDataScreen", "导入异常", e)
                                         localImporting = false
                                         snackbarHostState.showSnackbar(
@@ -468,7 +472,9 @@ fun ImportDataScreen(
                                                 }
                                             }
                                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                                            if (e is CancellationException) {
+                                                throw e
+                                            }
                                             android.util.Log.e("ImportDataScreen", "导入异常", e)
                                             localImporting = false
                                             snackbarHostState.showSnackbar(
@@ -834,7 +840,9 @@ fun ImportDataScreen(
                                 onNavigateBack
                             )
                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             android.util.Log.e("ImportDataScreen", "密码键盘 CSV 导入异常", e)
                             localImporting = false
                             snackbarHostState.showSnackbar(
@@ -871,7 +879,9 @@ fun ImportDataScreen(
                                 onNavigateBack
                             )
                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             android.util.Log.e("ImportDataScreen", "密码键盘 CSV 导入异常", e)
                             localImporting = false
                             snackbarHostState.showSnackbar(
@@ -930,7 +940,9 @@ fun ImportDataScreen(
                                 }
                             }
                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             android.util.Log.e("ImportDataScreen", "ZIP导入异常", e)
                             localImporting = false
                             snackbarHostState.showSnackbar(
@@ -1005,7 +1017,9 @@ fun ImportDataScreen(
                                 }
                             }
                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             android.util.Log.e("ImportDataScreen", "加密导入异常", e)
                             localImporting = false
                             snackbarHostState.showSnackbar(
@@ -1067,7 +1081,9 @@ fun ImportDataScreen(
                                 }
                             }
                         } catch (e: Exception) {
-                            if (e is CancellationException) throw e
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             if (e is KeePassOperationException) {
                                 keepassImportError = e
                                 showKeepassImportErrorDialog = true

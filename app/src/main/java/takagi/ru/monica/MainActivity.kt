@@ -89,6 +89,7 @@ import takagi.ru.monica.external.ExternalTotpImportController
 import takagi.ru.monica.external.ExternalTotpImportRequest
 import takagi.ru.monica.keepass.KeePassNativeResolvedRoute
 import takagi.ru.monica.ui.components.navigateEntryTemplate
+import takagi.ru.monica.navigation.nearbySyncDestinations
 import takagi.ru.monica.navigation.Screen
 import takagi.ru.monica.data.dedup.DedupMergeService
 import takagi.ru.monica.repository.PasswordRepository
@@ -3869,6 +3870,8 @@ fun MonicaContent(
             )
         }
         
+        nearbySyncDestinations(navController)
+
         composable(
             route = Screen.SyncBackup.route,
             enterTransition = { easyNotesScreenEnter() },
@@ -3910,6 +3913,7 @@ fun MonicaContent(
                 onNavigateToBitwarden = {
                     navController.navigate(Screen.BitwardenSettings.route)
                 },
+                onNavigateToLanSync = { navController.navigate(Screen.LanSync.route) },
                 isPlusActivated = settingsViewModel.settings.collectAsState().value.isPlusActivated
             )
             }

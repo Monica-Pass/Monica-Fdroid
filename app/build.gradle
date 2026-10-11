@@ -219,6 +219,8 @@ tasks.register('buildMonicaRustJniFromSource') {
                  new File(monicaRustSourceDir, 'Cargo.lock')
     inputs.dir new File(rootDir, 'rust-core/src')
     inputs.dir new File(rootDir, 'rust-crypto/src')
+    inputs.files new File(rootDir, 'rust-lan-sync/Cargo.toml'), new File(rootDir, 'rust-lan-sync/Cargo.lock')
+    inputs.dir new File(rootDir, 'rust-lan-sync/src')
     inputs.dir new File(monicaRustSourceDir, 'src')
     outputs.dir outputDir
     doLast {
@@ -410,6 +412,8 @@ dependencies {
     // Testing
     testImplementation libs.junit
     testImplementation 'org.robolectric:robolectric:4.16.1'
+    // Host vault integration needs JNA's desktop bridge alongside the Android AAR.
+    testImplementation 'net.java.dev.jna:jna:5.17.0@jar'
     testImplementation libs.kotlin.coroutines.test
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
     androidTestImplementation libs.androidx.junit

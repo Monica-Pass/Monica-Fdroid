@@ -1,5 +1,4 @@
-Steam shares database/folder filters and remembers selections.
-Move or copy Passkeys and Steam entries into folders; cancel or skip blocked entries, and remove sources only after successful writes.
-Fix repeated local Passkey sync; cache compatibility labels and retain filters.
-Preserve Passkey backup flags and other Bitwarden/Vaultwarden login data; explain transfer limits.
-Fix synced entries missing from the overview and search for Bitwarden/Vaultwarden-only users.
+Added encrypted Nearby sync with direction controls, local Steam accounts, folders and attachments. Restricted Passkeys are reviewed before sending.
+M3E pairing with QR codes and copyable links; fixed scanner Back, transitions and pairing crashes.
+Passkey/Steam folder moves, copies and filters; cached compatibility labels.
+Fixed repeated local sync, legacy Passkey flags, missing synced entries and Bitwarden updates overwriting other fields.

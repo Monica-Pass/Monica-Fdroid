@@ -4,6 +4,12 @@
 
 ## 中文
 
+- 新增附近设备加密同步：同一可互通 Wi-Fi／局域网中扫码或粘贴链接配对，自动或手动同步本地密码、验证器、Steam 账户、通行密钥、笔记、卡片、文件夹与附件；支持双向、仅发送及仅接收，离线冲突保留副本。Bitwarden／Vaultwarden、KeePass 继续使用各自同步。
+- 发送前复用通行密钥迁移弹窗，说明仅本地与跨平台限制，可取消同步或了解后继续；不可导出密钥只同步凭据信息，可导出密钥在接收端重新加密。锁定或编辑时暂停保存，校验和保存完成后才记录成功。
+- 附近同步使用 M3E 分组设置与底部弹层，生成二维码时可复制链接；统一附近同步和扫码转场，扫码返回停留在附近同步页，修复快速失败或取消配对导致的前台服务闪退。
+- Steam 本地账户同步保留令牌、会话、未知 maFile 字段及文件夹，接收端重新加密；同 Steam ID 的独立副本不合并，当前选中账户保持本机设置。
+- 附近同步使用开源组件与 Android 局域网接口，不依赖 Google Nearby、Play 服务或云中转，保留 F-Droid 的源码构建与功能差异。
+
 - Steam 筛选复用密码与通行密钥页面的数据库／文件夹菜单，支持本地分类、MDBX 文件夹、KeePass 分组及 Bitwarden／Vaultwarden 文件夹；记住所选文件夹，并可与搜索组合。切换同库文件夹不重复加载或同步账户，共用菜单支持从 MDBX 子文件夹逐级返回。
 
 - Passkey 和 Steam 支持选择数据库内的文件夹进行移动或复制，也可在当前数据库中整理归属；修复 Passkey 目标选择器未加载 MDBX 文件夹的问题。
@@ -22,6 +28,12 @@
 - 修复仅绑定 Bitwarden／Vaultwarden 时密码库首页和搜索可能看不到已同步条目：未保存数据库范围时默认显示“全部”，旧版省略范围的设置同步采用该默认值；明确保存的本地库或具体数据库选择继续保留，锁定库仍不参与展示与搜索。
 
 ## English
+
+- Added encrypted Nearby sync: pair by QR code or link on the same reachable Wi-Fi/LAN, then sync local passwords, authenticators, Steam accounts, Passkeys, notes, cards, folders and attachments automatically or manually. Supports two-way, send-only and receive-only modes, preserving offline conflict copies. Bitwarden/Vaultwarden and KeePass keep their own sync mechanisms.
+- Reused the Passkey transfer dialog before sending to explain local-only and cross-platform restrictions, with options to cancel or continue. Non-exportable keys sync metadata only; exportable keys are encrypted again on receipt. Incoming saves pause while locked or editing; success is recorded after validation and saving.
+- Nearby sync uses M3E settings groups and bottom sheets, with copyable links beside generated QR codes. Nearby and scanner transitions are consistent, scanner Back returns to Nearby, and immediate failure or cancellation no longer races foreground-service startup.
+- Local Steam account sync preserves tokens, sessions, unknown maFile fields and folders, with destination encryption. Independent copies sharing a Steam ID remain separate; the selected account remains a local preference.
+- Nearby sync uses open-source components and Android LAN APIs, without Google Nearby, Play Services or a cloud relay; F-Droid source-build and feature differences are preserved.
 
 - Steam now shares the database/folder filter menu used by passwords and Passkeys, supporting local categories, MDBX folders, KeePass groups and Bitwarden/Vaultwarden folders. Folder selections persist and work with search. Switching folders within a database does not reload or sync accounts; the shared menu also supports navigating back through MDBX parent folders.
 
