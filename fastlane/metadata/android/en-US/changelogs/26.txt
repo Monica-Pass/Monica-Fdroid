@@ -1,5 +1,1 @@
-Encrypted Nearby sync includes Steam, folders, attachments and Passkey transfer warnings.
-Manual sync works with automatic sync off; choose Local or an MDBX vault.
-Fixed reference/folder preparation errors, pairing crashes and scanner Back; added M3E pairing and copyable links.
-Passkey/Steam folder moves, copies and filters; cached compatibility labels.
-Fixed repeated local sync, legacy Passkey flags, missing synced entries and Bitwarden field overwrites.
+Encrypted Nearby sync supports Steam, folders, attachments and Passkey warnings. Manual sync works with automatic sync off; choose Local or MDBX. Stable progress and useful connection diagnostics. Fixed preparation, pairing and scanner Back errors; M3E pairing and copyable links. Passkey/Steam folder moves, copies and filters; cached compatibility labels. Fixed repeated local sync, legacy Passkey flags, missing synced entries and Bitwarden field overwrites.
