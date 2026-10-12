@@ -4,7 +4,7 @@ Kho lưu trữ này chỉ dành cho việc xây dựng **F-Droid**. Kho chính: 
 
 <div align="center">
 
-[中文](README.md) | [English](README_EN.md) | [日本語](README_JA.md) | **Tiếng Việt** | [Русский](README_RU.md) | [黑羽川](README_Nya.md)
+[中文](README.md) | [English](README_EN.md) | [日本語](README_JA.md) | **Tiếng Việt** | [Русский](README_RU.md) | [黑羽川](彩蛋语言备份/README_Nya.md)
 
 <img src="image/themepng.png" alt="Monica App Icon" width="500" />
 
