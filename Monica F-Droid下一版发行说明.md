@@ -4,34 +4,13 @@
 
 ## 中文
 
-- 修复刚解锁时附近同步偶发误判会话过期，导致自动同步或开关点击失效的问题。
-
-- 优化附近自动同步流量：仅在两端 Monica 均处于前台且已解锁时参与自动同步，本机退到后台即暂停发现和连接；未发现可用的已配对应用时，不准备数据、不反复定向探测或重连。改用 Android 系统局域网服务发现，仍有少量发现报文；数据未变化时重新打开不会强制重传。诊断显示可用应用数量，旧版或服务发现受限的网络可在两端手动同步。
-
-- 已配对附近设备后，各主要页面右上角菜单新增“手动 Wi-Fi 同步”，关闭自动同步后仍可使用；点击进入同步页并按已配置的数据库和方向立即同步，进行中可直接查看进度而不重复启动。
-
-- 通行密钥跨设备限制弹窗可勾选“不再提醒”，点击继续后保存并在重启后保留；取消不保存。同步内容与连接诊断中可查看受限条目、重新检查所选库及恢复提醒，非零签名计数跳过和不可导出密钥的限制保持不变。
-
-- 修复附近自动同步开关在准备、传输或保存期间无法及时切换的问题；设置立即保存且不会被进度刷新覆盖。关闭后停止发起新一轮自动同步，正在传输的内容正常完成，手动同步与配对仍可使用。
-
-- 修复空文件附件导致附近同步打包失败的问题；空附件仍经过加密和完整性校验。
-- 修复附近同步首次接收回收站中的笔记、验证码、卡片等条目时报 `invalid_password_payload` 的问题。接收端保存失败会先回传拒绝结果，发送端提示查看对方诊断，避免只显示连接断开；密码格式诊断补充不含凭据内容的字段原因。
-- 通行密钥确认弹窗中的“跳过并继续”会跳过所有签名计数非零的 Passkey，继续同步其他条目；本地密钥和计数、对方已有副本保持不变，缓存及冲突副本也遵守跳过规则。
+- 新增“附近设备同步”：在同一可互通 Wi-Fi／局域网中扫码或使用链接配对，加密同步本地或受支持的 MDBX 数据库，包含密码、独立验证器、Steam 本地账户、通行密钥、笔记、卡片、文件夹、标签和附件。同步库默认“本地”；Bitwarden／Vaultwarden 与 KeePass 外部库继续使用各自的同步方式。附近同步不依赖 Google Nearby、Play 服务或云中转。
+- 支持双向、仅发送和仅接收，可选择自动或手动同步。自动同步开关随时可切换，关闭后当前传输正常收尾；配对后也可从主要页面右上角菜单手动同步或查看进度，两端均关闭自动同步时需分别点击。
+- 自动同步仅在两端 Monica 均处于前台且已解锁时进行，退到后台后暂停；未发现对方时不反复探测，数据未变化时重新打开不会强制重传。系统仍有少量设备发现报文，服务发现受限时可在两端手动同步。
+- 同步前说明通行密钥的跨设备限制，可勾选“不再提醒”，并在诊断中查看限制及恢复提醒。签名计数非零的 Passkey 会跳过；不可导出的系统／硬件密钥仅同步凭据信息，可导出密钥在接收端重新加密保存。跨端使用需双方安装兼容版本。
+- 提供同步进度、连接诊断和失败处理建议；校验及保存完成后才确认成功，离线冲突保留副本。
 
 - 移除喵喵语、芝士雪豹语和雪豹彩蛋图标，原始语言与图标资源归档至“彩蛋语言备份”；旧语言设置自动恢复简体中文，保留升级后的正常桌面入口。
-
-- 附近同步使用常驻状态区显示准备、传输、保存、失败与完成，避免进度条和提示出现时推挤设备卡片；诊断补充实时阶段、所选数据库、默认网络、连接与发现统计、重试及最近成功时间，并提供对应处理建议和可复制信息。
-
-- 修复附近同步引用解析错误：普通扩展字段不再被当作对象 ID，保留原始内容；诊断异常类型不再显示混淆名称。
-- 自动同步与手动同步独立：关闭自动同步后仍可点击“立即同步”，支持取消本次操作；两端均手动时需分别点击。同步数据库默认“本地”，可选择受支持的 MDBX 库，发送范围和接收目标均限所选库，切换不会删除其他库内容。
-
-- 修复附近同步准备内容时的文件夹标识缺失异常：本地 Steam 等条目使用关联 Bitwarden 的共享分类时保留文件夹归属，不复制外部账户绑定；本地 Passkey 遗留 MDBX 文件夹引用不再阻断同步。准备失败诊断增加具体操作位置，不记录凭据内容。
-
-- 新增附近设备加密同步：同一可互通 Wi-Fi／局域网中扫码或粘贴链接配对，自动或手动同步本地密码、验证器、Steam 账户、通行密钥、笔记、卡片、文件夹与附件；支持双向、仅发送及仅接收，离线冲突保留副本。Bitwarden／Vaultwarden、KeePass 继续使用各自同步。
-- 发送前复用通行密钥迁移弹窗，说明仅本地与跨平台限制，可取消同步或了解后继续；不可导出密钥只同步凭据信息，可导出密钥在接收端重新加密。锁定或编辑时暂停保存，校验和保存完成后才记录成功。
-- 附近同步使用 M3E 分组设置与底部弹层，生成二维码时可复制链接；统一附近同步和扫码转场，扫码返回停留在附近同步页，修复快速失败或取消配对导致的前台服务闪退。
-- Steam 本地账户同步保留令牌、会话、未知 maFile 字段及文件夹，接收端重新加密；同 Steam ID 的独立副本不合并，当前选中账户保持本机设置。
-- 附近同步使用开源组件与 Android 局域网接口，不依赖 Google Nearby、Play 服务或云中转，保留 F-Droid 的源码构建与功能差异。
 
 - Steam 筛选复用密码与通行密钥页面的数据库／文件夹菜单，支持本地分类、MDBX 文件夹、KeePass 分组及 Bitwarden／Vaultwarden 文件夹；记住所选文件夹，并可与搜索组合。切换同库文件夹不重复加载或同步账户，共用菜单支持从 MDBX 子文件夹逐级返回。
 
@@ -52,34 +31,13 @@
 
 ## English
 
-- Fix nearby sync occasionally treating a just-unlocked session as expired, preventing automatic sync or toggle actions.
-
-- Reduce nearby automatic-sync traffic: participate only while both Monica apps are visible and unlocked, and pause discovery/connections in the background. With no available paired app, skip data preparation and repeated direct probes/reconnects. Android LAN service discovery still uses small discovery messages. Reopening unchanged data no longer forces a full resend; diagnostics show available apps, with manual sync on both ends for older clients or restricted discovery networks.
-
-- After pairing a nearby device, main-page overflow menus offer manual Wi-Fi sync even with automatic sync off. The shortcut opens sync status and starts a round using the configured database and direction; during a round it shows progress without starting another transfer.
-
-- Passkey sync warnings offer a persistent “Don’t show again” checkbox, saved only when continuing. Sync contents and connection diagnostics lets you inspect restricted entries, recheck the selected database and restore reminders. Nonzero-counter skipping and non-exportable-key restrictions still apply.
-
-- Fixed the nearby automatic-sync switch waiting for preparation, transfer or saving to finish. Changes persist immediately and survive progress updates. Turning it off prevents new automatic rounds while allowing the current transfer to finish; manual sync and pairing remain available.
-
-- Fixed empty file attachments aborting Nearby bundle preparation; empty attachments remain encrypted and authenticated.
-- Fixed `invalid_password_payload` when Nearby sync first receives trashed notes, authenticators, cards and other items. Failed receiver saves send a rejection before closing; the sender directs users to the receiver diagnostics. Password validation reports field reasons without credential contents.
-- “Skip and continue” in Passkey review skips every Passkey with a nonzero signature counter while syncing other items. Local keys and counters and existing destination copies are preserved; cached and conflict copies follow the same exclusion policy.
+- Added Nearby device sync: pair by QR code or link on the same reachable Wi-Fi/LAN to securely sync Local or supported MDBX vaults, including passwords, standalone authenticators, local Steam accounts, Passkeys, notes, cards, folders, tags and attachments. The default sync database is Local; external Bitwarden/Vaultwarden and KeePass vaults keep their own sync mechanisms. Nearby sync requires no Google Nearby, Play Services or cloud relay.
+- Choose bidirectional, send-only or receive-only transfers, with automatic or manual sync. The automatic toggle works at any time; switching it off lets the current transfer finish. After pairing, main-page menus offer manual sync and progress access. When automatic sync is off on both devices, start a manual round on each.
+- Automatic sync runs while both Monica apps are visible and unlocked, pausing in the background. Unavailable peers are not repeatedly probed, and reopening unchanged data does not force a resend. Small system discovery messages remain; use manual sync on both devices if service discovery is restricted.
+- Passkey review explains cross-device restrictions, offers a persistent “Don’t show again” choice and lets you inspect limits or restore reminders in diagnostics. Passkeys with nonzero signature counters are skipped. Non-exportable system/hardware keys sync credential metadata only; exportable keys are encrypted again on receipt. Both devices need compatible app versions.
+- View sync progress, connection diagnostics and failure guidance. Success is confirmed after validation and saving; offline conflicts retain copies.
 
 - Removed the Nya and Snow Leopard Easter egg languages and Snow Leopard icon. Original resources are archived in “彩蛋语言备份”; existing selections migrate to Simplified Chinese while preserving a working launcher entry.
-
-- Nearby sync keeps preparation, transfer, saving, failure and completion in a stable status panel so progress updates do not shift device cards. Diagnostics now show the live stage, selected database, default network, connection/discovery counts, retry timing and last success, with actionable guidance and copyable details.
-
-- Fixed Nearby reference resolution: opaque extension fields are no longer mistaken for object IDs and are preserved unchanged. Diagnostic exception types remain readable in release builds.
-- Manual sync works with automatic sync off and can be cancelled; when both devices use manual mode, tap Sync now on each. The sync database defaults to Local and can be changed to a supported MDBX vault. Sending and receiving use only the selected store; switching stores does not delete other contents.
-
-- Fixed missing folder identities aborting Nearby sync preparation. Local Steam and other entries retain shared categories linked to Bitwarden without copying external account bindings; stale MDBX folder references on local Passkeys no longer block sync. Preparation diagnostics identify the failing operation without recording credential content.
-
-- Added encrypted Nearby sync: pair by QR code or link on the same reachable Wi-Fi/LAN, then sync local passwords, authenticators, Steam accounts, Passkeys, notes, cards, folders and attachments automatically or manually. Supports two-way, send-only and receive-only modes, preserving offline conflict copies. Bitwarden/Vaultwarden and KeePass keep their own sync mechanisms.
-- Reused the Passkey transfer dialog before sending to explain local-only and cross-platform restrictions, with options to cancel or continue. Non-exportable keys sync metadata only; exportable keys are encrypted again on receipt. Incoming saves pause while locked or editing; success is recorded after validation and saving.
-- Nearby sync uses M3E settings groups and bottom sheets, with copyable links beside generated QR codes. Nearby and scanner transitions are consistent, scanner Back returns to Nearby, and immediate failure or cancellation no longer races foreground-service startup.
-- Local Steam account sync preserves tokens, sessions, unknown maFile fields and folders, with destination encryption. Independent copies sharing a Steam ID remain separate; the selected account remains a local preference.
-- Nearby sync uses open-source components and Android LAN APIs, without Google Nearby, Play Services or a cloud relay; F-Droid source-build and feature differences are preserved.
 
 - Steam now shares the database/folder filter menu used by passwords and Passkeys, supporting local categories, MDBX folders, KeePass groups and Bitwarden/Vaultwarden folders. Folder selections persist and work with search. Switching folders within a database does not reload or sync accounts; the shared menu also supports navigating back through MDBX parent folders.
 

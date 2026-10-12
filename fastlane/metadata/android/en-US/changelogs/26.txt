@@ -1,1 +1,4 @@
-LAN: Steam, folders, files, Local/MDBX and manual menu. Foreground-only auto; absent peers are not probed; small discovery traffic remains. No forced resend on reopening. Live auto toggle; fixed unlock race. Fixed trash/empty-file imports, preparation, receipts, pairing and scanner Back. Skip nonzero-counter Passkeys; remember warnings, view limits. Stable M3E progress. Passkey/Steam moves/copies/filters. Fixed sync loops, flags, missing items and Bitwarden overwrites. Archived Easter eggs.
+New encrypted Wi-Fi sync for Local/MDBX vaults, Steam and attachments. QR/link pairing, two-way or one-way modes, manual menu action and foreground automatic sync. Passkey restrictions and diagnostics included; small discovery traffic remains.
+Passkey/Steam folder moves, copies and filters; cached labels.
+Fixed local sync loops, legacy Passkey flags, missing Bitwarden entries and updates overwriting other login data.
+Removed Easter-egg languages/icons; resources backed up.
