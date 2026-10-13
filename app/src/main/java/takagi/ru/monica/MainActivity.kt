@@ -2826,6 +2826,9 @@ fun MonicaContent(
                 onImportBitwardenCsv = { uri ->
                     dataExportImportViewModel.importBitwardenCsv(uri, destination = importDestination)
                 },
+                onImportBitwardenAuthenticatorCsv = { uri ->
+                    dataExportImportViewModel.importBitwardenAuthenticatorCsv(uri, destination = importDestination)
+                },
                 onImportProtonPassCsv = { uri ->
                     dataExportImportViewModel.importProtonPassCsv(uri, destination = importDestination)
                 },
