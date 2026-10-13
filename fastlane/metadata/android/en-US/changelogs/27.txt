@@ -1,3 +1,4 @@
 - Added a default bank branch field to bank cards, with editing, copying and search, preserved in backups and supported database sync.
 - Authenticator imports now use the issuer as the default name for QR codes, links and batch imports, keeping the account in its own field and preserving manually entered names.
 Added a separate Bitwarden Auth. CSV import, preserving accounts and OTP parameters.
+Improved database manager: two-line names, swipe selection, pane actions and context menus.
