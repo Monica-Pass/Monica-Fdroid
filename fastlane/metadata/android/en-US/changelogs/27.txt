@@ -1,0 +1,1 @@
+- Added a default bank branch field to bank cards, with editing, copying and search, preserved in backups and supported database sync.
