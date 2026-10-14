@@ -1,5 +1,3 @@
-Bank cards: editable, searchable bank branch, preserved in backup/sync.
-Authenticator imports use issuer names and retain separate accounts and manual names.
-Separate Bitwarden Auth. CSV import preserves OTP parameters.
-Database manager: two-line names, swipe selection, pane actions and context menus; fix cross-format MDBX transfers.
-Web autofill: browser hints, distinct password/OTP roles and active-form scope; retain native/legacy compatibility.
+Bank cards: bank branch field. Authenticator imports use issuer names; separate Bitwarden Auth. CSV import.
+Database manager: two-line names, swipe selection, pane actions and context menus; fixed MDBX transfers.
+Autofill: browser hints and active forms; safer new-password fill/save, reviewed updates, multi-step login and verification return. Bounded context, cancellation, cache refresh and local timing diagnostics.
