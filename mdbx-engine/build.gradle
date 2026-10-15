@@ -36,6 +36,8 @@ android {
 // Previously shipped read-session, sync-delta and lossless JSON fixes are retained.
 // GLITTER_SOURCE_MANIFEST.json pins every vendored build input and the exact patch.
 // Resolve order: -PmdbxRustSrc=<path> > MDBX_RUST_SRC env > <rootDir>/Mdbx-ffi
+apply from: rootProject.file('gradle/rust-toolchain.gradle')
+
 def mdbxRustSourceDir = (project.findProperty('mdbxRustSrc')
         ?: System.getenv('MDBX_RUST_SRC')
         ?: new File(rootDir, 'Mdbx-ffi').absolutePath) as String
@@ -49,6 +51,7 @@ tasks.register('buildMdbxFfiFromSource') {
     inputs.dir new File(sourceDir, 'crates')
     inputs.file new File(sourceDir, 'Cargo.toml')
     inputs.file new File(sourceDir, 'Cargo.lock')
+    inputs.file rootProject.file('gradle/rust-toolchain.gradle')
     inputs.property 'rustCommit', mdbxRustCommit
     outputs.dir outputDir
     doLast {
@@ -59,15 +62,13 @@ tasks.register('buildMdbxFfiFromSource') {
                 "or set -PmdbxRustSrc=<matching-source-path> / MDBX_RUST_SRC env."
             )
         }
-        def command = ['cargo', 'ndk',
+        def command = ['ndk',
                        '-t', 'arm64-v8a', '-t', 'armeabi-v7a', '-t', 'x86_64',
                        '-P', '26',
                        '-o', outputDir.absolutePath,
                        'build', '--locked', '--profile', 'mdbx3-release', '-p', 'mdbx-ffi']
         println "Building libmdbx_ffi.so from ${sourceDir} (cargo ndk)"
-        def proc = new ProcessBuilder(command)
-                .directory(sourceDir)
-                .redirectErrorStream(true)
+        def proc = rustCargoProcess(command, sourceDir, android.sdkDirectory)
         def rustFlags = proc.environment().get('RUSTFLAGS')?.trim()
         proc.environment().put('RUSTFLAGS', rustFlags ? "${rustFlags} -C link-arg=-Wl,--build-id=sha1" : '-C link-arg=-Wl,--build-id=sha1')
         proc = proc.start()

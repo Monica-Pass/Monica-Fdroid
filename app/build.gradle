@@ -206,8 +206,8 @@ android {
     }
 }
 
-// The Play build receives these libraries from CI artifacts. The F-Droid tree
-// vendors every Rust source file and compiles the JNI bridge during Gradle builds.
+// Compile the JNI bridge from the sources in this checkout.
+apply from: rootProject.file('gradle/rust-toolchain.gradle')
 def monicaRustSourceDir = new File(rootDir, 'rust-jni')
 tasks.register('buildMonicaRustJniFromSource') {
     group = 'build'
@@ -222,17 +222,15 @@ tasks.register('buildMonicaRustJniFromSource') {
     inputs.files new File(rootDir, 'rust-lan-sync/Cargo.toml'), new File(rootDir, 'rust-lan-sync/Cargo.lock')
     inputs.dir new File(rootDir, 'rust-lan-sync/src')
     inputs.dir new File(monicaRustSourceDir, 'src')
+    inputs.file rootProject.file('gradle/rust-toolchain.gradle')
     outputs.dir outputDir
     doLast {
-        def command = ['cargo', 'ndk',
+        def command = ['ndk',
                        '-t', 'arm64-v8a', '-t', 'armeabi-v7a', '-t', 'x86_64',
                        '-o', outputDir.absolutePath,
                        'build', '--release', '--locked']
         println "Building libmonica_rust_jni.so from ${monicaRustSourceDir} (cargo ndk)"
-        def proc = new ProcessBuilder(command)
-                .directory(monicaRustSourceDir)
-                .redirectErrorStream(true)
-                .start()
+        def proc = rustCargoProcess(command, monicaRustSourceDir, android.sdkDirectory).start()
         proc.inputStream.eachLine { line -> println line }
         def exitCode = proc.waitFor()
         if (exitCode != 0) {
