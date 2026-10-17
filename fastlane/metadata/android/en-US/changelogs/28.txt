@@ -1,3 +1,4 @@
-Added sync for readable Bitwarden team/organization items and attachment metadata, including organization and per-item keys. Updates retain organization, collections and key ownership; read-only or failed operations preserve pending local changes.
-Fixed folder actions in database filter edit mode for KeePass, MDBX and Bitwarden, with shared rename/delete dialogs, deletion confirmation and folder-list refresh after successful changes.
+Added readable Bitwarden team/organization items and attachment metadata sync, with organization/per-item keys and ownership preserved. Failed or read-only updates retain local changes.
+Fixed KeePass, MDBX and Bitwarden folder rename/delete actions in database filters.
 Fixed receive-only nearby sync and manual retry failures.
+Fixed bound-account suggestions for nested web forms and pickers opened from the keyboard or active-fill notification.
