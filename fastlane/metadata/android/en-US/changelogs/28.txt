@@ -1,5 +1,6 @@
-Sync Bitwarden organization items/attachments; retain keys, ownership and edits on failed/read-only updates.
+Sync Bitwarden organization items/attachments; retain keys, ownership and edits on read-only/failed updates.
 Fix folder actions, nearby receive-only/retries, nested-web/keyboard/active-fill suggestions, bare app packages and expiry cursor.
-M3E autofill dialogs; Accessibility fill from keyboard/Autofill/tile.
-Unified editors/generators; notes join OTP, blanks hidden; compact delete.
-Per-URL match modes incl. host, base domain, prefix, exact, regex, never; shared M3E editor menus. #171
+M3E autofill dialogs; Accessibility fill from every entry.
+Unified editors/generators; notes join OTP; compact delete.
+Per-URL match modes; shared M3E menus. #171
+Wallet membership, rewards and travel templates with filters, search, details and sync. #169
