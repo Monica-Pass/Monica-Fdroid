@@ -265,6 +265,7 @@ configurations.configureEach {
 }
 
 dependencies {
+    implementation 'com.google.re2j:re2j:1.8'
     implementation "com.googlecode.libphonenumber:libphonenumber:9.0.17"
     constraints {
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
