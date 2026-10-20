@@ -1,5 +1,5 @@
-Added readable Bitwarden team/organization items and attachment metadata sync, preserving keys, ownership and local changes on failed/read-only updates.
-Fixed KeePass, MDBX and Bitwarden folder actions in database filters.
-Fixed receive-only nearby sync and manual retries.
-Fixed bound-account suggestions in nested web forms, keyboard/active-fill pickers, and for bare Android package names saved in the website field.
+Added readable Bitwarden organization item/attachment metadata sync; keeps keys, ownership and edits on failure/read-only.
+Fixed database folder actions and receive-only nearby sync/retries.
+Fixed bound-account suggestions for nested forms, keyboard/active-fill and bare Android package bindings.
 Fixed card expiry cursor jumps and reversed year input.
+Added centered M3E autofill actions and Accessibility fill from keyboard, Autofill or tile, with setup guidance and correct app return.
