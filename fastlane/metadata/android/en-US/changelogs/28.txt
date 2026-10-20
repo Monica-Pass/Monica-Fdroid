@@ -1,4 +1,4 @@
 Bitwarden organization items/attachment metadata sync; retains keys, ownership and pending edits on failed/read-only updates.
 Fixed database folder actions, receive-only nearby sync/retries, bound-account suggestions (nested forms, keyboard/active fill, bare app packages), and card expiry cursor.
 Centered M3E autofill actions; Accessibility fill from keyboard/Autofill/tile.
-Unified credential editors, notes and note cards; compact strength/delete row.
+Unified editors; notes join verification fields/cards, blank detail notes hidden; compact strength/delete row.
