@@ -2,6 +2,6 @@ Sync Bitwarden organization items/attachments; preserve keys, ownership and loca
 Fix folder actions, nearby receive/retries, web/keyboard/active-fill suggestions, bare packages and expiry cursor.
 M3E autofill dialogs; Accessibility fill at every entry.
 Unified editors/generators; notes join OTP; compact delete.
-Per-URL matching; shared M3E menus. #171
+Per-URL rules inside cards; M3E menus. #171
 Membership/rewards/travel wallet templates. #169
-Fix duplicate KeePass OTP entries after editing and switching databases.
+Fix KeePass OTP duplicates after edits and database switches.
