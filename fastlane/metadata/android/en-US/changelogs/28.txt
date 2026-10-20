@@ -1,5 +1,4 @@
-Added readable Bitwarden organization item/attachment metadata sync; keeps keys, ownership and edits on failure/read-only.
-Fixed database folder actions and receive-only nearby sync/retries.
-Fixed bound-account suggestions for nested forms, keyboard/active-fill and bare Android package bindings.
-Fixed card expiry cursor jumps and reversed year input.
-Added centered M3E autofill actions and Accessibility fill from keyboard, Autofill or tile, with setup guidance and correct app return.
+Bitwarden organization items/attachment metadata sync; retains keys, ownership and pending edits on failed/read-only updates.
+Fixed database folder actions, receive-only nearby sync/retries, bound-account suggestions (nested forms, keyboard/active fill, bare app packages), and card expiry cursor.
+Centered M3E autofill actions; Accessibility fill from keyboard/Autofill/tile.
+Unified credential expansion, overflow actions, Username/star generator and per-credential notes.
