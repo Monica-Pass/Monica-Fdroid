@@ -2,3 +2,4 @@ Added readable Bitwarden team/organization items and attachment metadata sync, p
 Fixed KeePass, MDBX and Bitwarden folder actions in database filters.
 Fixed receive-only nearby sync and manual retries.
 Fixed bound-account suggestions in nested web forms, keyboard/active-fill pickers, and for bare Android package names saved in the website field.
+Fixed card expiry cursor jumps and reversed year input.
