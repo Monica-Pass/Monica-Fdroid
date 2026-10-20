@@ -1,4 +1,4 @@
-Added readable Bitwarden team/organization items and attachment metadata sync, with organization/per-item keys and ownership preserved. Failed or read-only updates retain local changes.
-Fixed KeePass, MDBX and Bitwarden folder rename/delete actions in database filters.
-Fixed receive-only nearby sync and manual retry failures.
-Fixed bound-account suggestions for nested web forms and pickers opened from the keyboard or active-fill notification.
+Added readable Bitwarden team/organization items and attachment metadata sync, preserving keys, ownership and local changes on failed/read-only updates.
+Fixed KeePass, MDBX and Bitwarden folder actions in database filters.
+Fixed receive-only nearby sync and manual retries.
+Fixed bound-account suggestions in nested web forms, keyboard/active-fill pickers, and for bare Android package names saved in the website field.
