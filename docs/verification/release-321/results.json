@@ -1,0 +1,136 @@
+{
+  "date": "2026-10-21",
+  "versionName": "1.0.321",
+  "versionCode": 28,
+  "mainTargetedJvm": {
+    "suites": [
+      {
+        "name": "DeviceManualSyncTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "DeviceVaultProviderTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "NearbyProgressPercentTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PasswordListPreviewPrivacyTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PasswordStackPerformanceGuardTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "total": 43
+  },
+  "fdroidTargetedJvm": {
+    "suites": [
+      {
+        "name": "DeviceManualSyncTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "DeviceVaultProviderTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "NearbyProgressPercentTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PasswordListPreviewPrivacyTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PasswordStackPerformanceGuardTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "total": 43
+  },
+  "mainCommit": "b785b51849776dc33d0a8d8c3eaa5c67bad8e06c",
+  "mainRustWorkflow": "https://github.com/Monica-Pass/Monica/actions/runs/39607609171",
+  "templateMenuSharedSources": {
+    "TemplateTypeMenu.kt": "5d0bded62e5eda7ada2c7734e9225c0ac47bba3720f6b1c326365ae89b31c16f",
+    "EntryTypeChip.kt": "d26674d2fdb1c55d99c3384b8d0f49a7b177dc5aed3c2e3884c68b33c7f7fe0d",
+    "CardWalletAddTopBars.kt": "d830b3a090d6eb22363882a3f882ef4f0f4fab3e7d41fcb8e05843d1304c1bd4"
+  },
+  "templateMenuDeviceTests": {
+    "tests": 3,
+    "completed": true,
+    "settingsRestored": true,
+    "classes": "takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#wifiMenuIncludesAllTypesAndCarriesMultipleTargets,takagi.ru.monica.credentialexchange.TemplateEditorsDeviceTest#sshUsesInheritedTargetAndExposesCompleteMenuInDarkTheme,takagi.ru.monica.credentialexchange.WalletPassTemplatesDeviceTest#travelCreateSwitchDraftAndDetailAtLargeFont"
+  },
+  "nativeReplicaTests": 18,
+  "releaseApkSha256": "2ab3c7e18c9a538672813310b357537327a99b7e1c532ae11fdf233d7f4ffe17",
+  "nativeLibraries": {
+    "arm64-v8a": {
+      "sha256": "f94858bb050ffb95315d7049dcbe9201faccdf6ed6287371c9be87afff6eaaa4",
+      "matchesSourceBuild": true
+    },
+    "armeabi-v7a": {
+      "sha256": "20de3817530023903f8081a90adef5962b3e052c597c0d9e8aa0885a8663c289",
+      "matchesSourceBuild": true
+    },
+    "x86_64": {
+      "sha256": "04918a76d319bd71cafcf967ee3aaef5b71e75e414b5e15ec4e382ce2e1d61d4",
+      "matchesSourceBuild": true
+    }
+  },
+  "newTemplateMenuPresentInReleaseDex": true,
+  "r8LaunchSmoke": {
+    "previousUser": "0",
+    "debugRestored": true,
+    "timeoutRestored": true,
+    "userRestored": true,
+    "originalReleaseSha256": "2AB3C7E18C9A538672813310B357537327A99B7E1C532AE11FDF233D7F4FFE17",
+    "previousKeyguard": "false",
+    "testCopySha256": "B2160C6307D36AB87CF571237310D2AE60081794C6C8A1F82E304DB4203A7C63",
+    "previousTimeout": "600000",
+    "foregroundPackageVerified": true,
+    "completed": true,
+    "versionCode": 28,
+    "keyguardRestored": true,
+    "versionName": "1.0.321"
+  },
+  "scope": "Selected JVM tests, native replica tests, local R8 release build and API 32 launch smoke; not the entire test suite or official F-Droid build.",
+  "earlierDeviceEvidence": [
+    "editor-menu-scale-321-results.json",
+    "nearby-device-management-321-results.json",
+    "nearby-status-cancellation-321-results.json"
+  ]
+}
