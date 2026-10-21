@@ -1,8 +1,9 @@
-Bitwarden organization items/attachments; keep keys, ownership and failed edits.
-Folder actions/move/copy; Bitwarden folders stay in one account.
+Bitwarden org items/attachments; retain keys/failed edits.
+Folder move/copy; Bitwarden stays in one account.
+Local raw manager; confirm single/batch deletion.
 Fix nearby retries, keyboard/active-fill, bare packages, local WebView suggestions and expiry cursor.
 M3E dialogs; Accessibility fill at all entries.
 Unified editors/generators; notes join OTP; compact delete.
-Per-URL rules in cards; adaptive M3E menus. #171
+Per-URL rules in cards; adaptive menus. #171
 Membership/rewards/travel templates. #169
-Fix KeePass OTP duplicates after edits/switches.
+Fix KeePass OTP edit/switch duplicates.
