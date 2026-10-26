@@ -1,4 +1,5 @@
 Fix notes showing MDK| ciphertext after nearby sync or database archive restore; affected notes are restored after unlock.
 Keep HOTP order after Generate Next; compact OTP tiles.
+Wallet multiselect: collapse/expand card stacks and drag collapsed stacks to reorder.
 Faster password list loading and scrolling.
 Direct Root authorization as a Shizuku alternative for accessibility recovery and the default password manager.
