@@ -1,6 +1,6 @@
 # Monica for Android (F-Droid) 1.0.322
 
-> 未发布 / Unreleased
+> 发布日期 / Released: 2026-10-27
 
 ## 中文
 
@@ -18,6 +18,8 @@
 - 授权方式可切换，提供授权状态、重新授权与停用入口，命令失败后仍可停用 Root。只有主动确认后才请求 Root；无 Root、拒绝或超时会提示，不会自动切换授权方式。停用或切换方式后，排队请求和迟到的授权结果不会重新启用 Root。
 - 无障碍恢复仍需手动启用后台保护和增强恢复，仅重连已开启的 Monica 服务；默认密码管理器保留配置备份、写入校验和恢复功能，仍需 Android 14 或更新版本。
 
+发布与验证：本次为 GitHub 正式源码 Release，F-Droid 官方构建、签名及索引分发由其队列独立处理。在待发布源码的干净检出上，11 个选定 JVM 测试类共 81 项通过，无跳过；API 32 模拟器上卡包与笔记修复 7 项设备测试通过；本地 R8 通用 Release 构建及启动检查通过。完整记录见 [发布验证](https://github.com/Monica-Pass/Monica-Fdroid/blob/v1.0.322/docs/verification/release-322/README.md)。
+
 ## English
 
 - Fixed some notes showing garbled `MDK|…` text. Notes received through nearby device sync, or restored from a database export archive, were stored locally in encrypted form, so the note list and details displayed the ciphertext. Received and restored notes now keep the regular note storage format, and affected notes, including ones saved again from the editor, are restored to their original text after unlocking without changing modification times or sync ownership.
@@ -33,3 +35,5 @@
 - Added direct Root authorization as an alternative to Shizuku for enhanced accessibility recovery and setting the default password manager. The Root backend works without Shizuku installed or running.
 - Choose the authorization method, view its status, authorize again, or disable Root, including after a failed command. Root is requested only after explicit confirmation; unavailable access, denial, and timeouts are reported without switching backends automatically. Disabling Root or switching backends invalidates queued requests and late authorization results.
 - Recovery still requires background protection and enhanced recovery to be enabled, and only reconnects an already enabled Monica service. Default manager changes retain configuration backups, verification, and restoration, and still require Android 14 or later.
+
+Release and validation: this is a GitHub source release. F-Droid independently builds, signs and indexes it through its own queue. On a clean checkout of the release source, 81 tests in 11 selected JVM suites passed with none skipped, and 7 wallet and note-repair device tests passed on the API 32 emulator; the local universal R8 Release build and launch check passed. See the [verification record](https://github.com/Monica-Pass/Monica-Fdroid/blob/v1.0.322/docs/verification/release-322/README.md).

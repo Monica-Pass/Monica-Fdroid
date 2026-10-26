@@ -1,0 +1,142 @@
+{
+  "date": "2026-10-27",
+  "versionName": "1.0.322",
+  "versionCode": 29,
+  "verifiedSourceCommit": "abff3efeba95d4c1ebe4516493adc43eca2e01c1",
+  "verifiedSourceNote": "Clean detached checkout; the release commit adds only release documentation on top of this commit.",
+  "fdroidTargetedJvm": {
+    "suites": [
+      {
+        "name": "AutofillProtectionStateTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "RootCommandTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "DeviceManualSyncTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "DeviceVaultProviderTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "NoteCiphertextRepairTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "NoteCustomFieldsCodecTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "HotpGenerationOrderTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "CardWalletOrderTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "WalletSelectionStackOrderTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "WalletStackProjectionTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "CardWalletSwipeActionsGuardTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "total": 81
+  },
+  "deviceTests": {
+    "device": "Monica_Issue136_API_32 (API 32, emulator-5554)",
+    "tests": 7,
+    "failures": 0,
+    "classes": [
+      "takagi.ru.monica.ui.cardwallet.WalletReorderScreenTest (2)",
+      "takagi.ru.monica.ui.cardwallet.WalletSelectionSectionTest (4)",
+      "takagi.ru.monica.security.NoteCiphertextRepairInstrumentedTest (1)"
+    ]
+  },
+  "releaseApk": {
+    "universal": true,
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "sha256": "26ba6048aa7cc2982e578716ec5b815b81b2484d8841da16c77f77916232292c"
+  },
+  "nativeLibraries": {
+    "arm64-v8a": {
+      "sha256": "30290b7c8d9f59064e31dfc6f500a5cfe7fb4addce1fdc79f80b3ace328274ed",
+      "matchesSourceBuild": true
+    },
+    "armeabi-v7a": {
+      "sha256": "6eebc4e4d8aee7fd6f9440ac717c5be4df7fede04bb3e9a18892d591a0938e2c",
+      "matchesSourceBuild": true
+    },
+    "x86_64": {
+      "sha256": "2dcbdae53e67b1ce2a2f7a686aa91fb1cd6cdbfdbd4ec99b69c56da04c48b942",
+      "matchesSourceBuild": true
+    }
+  },
+  "r8LaunchSmoke": {
+    "user": "0",
+    "versionCode": 29,
+    "versionName": "1.0.322",
+    "abi": "x86_64",
+    "processAlive": true,
+    "foregroundPackageVerified": true,
+    "fatalExceptions": 0,
+    "uiVerifiedBy": "uiautomator hierarchy (window blocks screenshots)",
+    "debugRestored": true,
+    "completed": true
+  },
+  "releaseValidator": {
+    "metadataCheck": "passed",
+    "validatorTests": 6
+  },
+  "scope": "Selected JVM tests, device tests for the wallet and note changes, local R8 release build and API 32 launch smoke; not the entire test suite or official F-Droid build.",
+  "earlierDeviceEvidence": [
+    "wallet-selection-collapse-20261025.md"
+  ]
+}
