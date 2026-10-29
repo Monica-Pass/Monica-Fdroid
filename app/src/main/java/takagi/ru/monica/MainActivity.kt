@@ -429,7 +429,8 @@ class MainActivity : BaseMonicaActivity() {
                 Log.w(TAG, "Secure storage startup blocked: ${startup.failure.reason}")
                 val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure, startup.attempts)
                 val recovery = takagi.ru.monica.security.LocalVaultRecovery(this)
-                val canRecover = recovery.available()
+                // Availability was checked inside the bounded worker; never wait for its lock on the UI thread.
+                val canRecover = startup.recoveryAvailable
                 window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
                 setContent {
                     takagi.ru.monica.ui.theme.MonicaTheme {
