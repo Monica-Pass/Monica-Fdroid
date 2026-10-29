@@ -1,0 +1,7 @@
+Passkey FAB manages USB/NFC FIDO2 keys and PIN; Android 14+ hardware registration/sign-in (emulator tested).
+KeePass icons and Monica UI with direct KDBX reads/writes, without waiting for overview indexing.
+Export record counts or locked/unavailable status.
+Phone hotspot sync retains pairing/encryption.
+WebDAV stops on directory-check failures.
+Optional search focus after unlocking and keyboard vibration keep PIN shuffle/preview.
+Scan IATA boarding passes.

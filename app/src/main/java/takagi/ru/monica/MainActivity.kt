@@ -692,6 +692,7 @@ fun MonicaApp(
             context.applicationContext
         )
     }
+    viewModel.monicaKeePassStore?.let(passkeyRepository::bindMonicaKeePassStore)
     val passkeyViewModel: takagi.ru.monica.viewmodel.PasskeyViewModel = viewModel {
         takagi.ru.monica.viewmodel.PasskeyViewModel(
             repository = passkeyRepository,
@@ -922,6 +923,15 @@ fun MonicaContent(
                     launchSingleTop = true
                 }
             }
+        }
+    }
+    LaunchedEffect(localKeePassViewModel, viewModel) {
+        localKeePassViewModel.nativeOverviewRefreshRequests.collect { databaseId ->
+            viewModel.refreshKeePassOverviewAfterNativeRead(databaseId)
+            bankCardViewModel.syncKeePassCards(databaseId)
+            documentViewModel.syncKeePassDocuments(databaseId)
+            noteViewModel.syncKeePassNotes(databaseId)
+            passkeyViewModel.refreshKeePassAfterNativeRead(databaseId)
         }
     }
     val sensitiveFieldMigrationManager = remember(database, securityManager) {
