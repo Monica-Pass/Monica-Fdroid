@@ -1,8 +1,7 @@
-USB/NFC Passkey FAB: FIDO2 info, PIN and read-only credentials; Android 14+ registration/sign-in (emulator tested).
-KDBX icons; Monica UI reads/writes directly, saving without waiting for overview index.
-Export counts or locked/unavailable status.
-Hotspot sync: pairing/encryption.
-WebDAV stops on directory-check failures.
-Optional search focus/keyboard vibration keep PIN shuffle/preview.
-Scan IATA boarding passes.
-Secure startup: 15s wait cap; keeps ciphertext, wrappers and recovery on errors.
+USB/NFC PIN/credentials; Android 14+ hardware target (emulator tested).
+KDBX: icons, native KDF, incremental saves; save/merge/reload, external changes, smooth status, recycle/cold-start fixes; cross-vault rules kept.
+Export counts; hotspot pairing/encryption; WebDAV check guards.
+Optional search/keyboard vibration; PIN shuffle/preview.
+IATA scan/saved codes; M3E actions.
+Startup: 15s, preserves ciphertext/recovery.
+Key UI, Plus confirmation and new UI: 13 languages.

@@ -7,8 +7,7 @@ publish = false
 license = "GPL-3.0-only"
 description = "Android JNI bridge for Monica runtime and cryptographic cores"
 
-# Keep this vendored native component self-contained even when the checkout lives
-# below another Cargo workspace. F-Droid builds this crate from source.
+# Keep standalone Android builds independent of a parent checkout's Cargo workspace.
 [workspace]
 
 [lib]
@@ -18,4 +17,5 @@ crate-type = ["cdylib"]
 [dependencies]
 jni = "0.21"
 monica-rust-crypto = { path = "../rust-crypto" }
+zeroize = { version = "1.8", default-features = false, features = ["alloc"] }
 monica-lan-sync = { path = "../rust-lan-sync" }
