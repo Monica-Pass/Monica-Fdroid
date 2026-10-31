@@ -1,23 +1,38 @@
 package takagi.ru.monica.utils
 
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.*
 import org.junit.Test
 import takagi.ru.monica.R
 import takagi.ru.monica.data.*
 import takagi.ru.monica.passkey.*
 import takagi.ru.monica.security.SecurityManager
+import takagi.ru.monica.webdav.WebDavGateway
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.spec.ECGenParameterSpec
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class PasskeyBackupFailureInstrumentedTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    /** Keep the real security namespace/dataDir; isolate only the HTTP test's WebDAV settings. */
+    private class HttpFixtureContext(base: Context, suffix: String) : ContextWrapper(base), AutoCloseable {
+        private val webDavPreferences = "passkey-backup-http-$suffix"
+        override fun getApplicationContext(): Context = this
+        override fun getSharedPreferences(name: String, mode: Int): SharedPreferences =
+            baseContext.getSharedPreferences(if (name == "webdav_config") webDavPreferences else name, mode)
+        override fun close() { baseContext.deleteSharedPreferences(webDavPreferences) }
+    }
     private val preferences = BackupPreferences(includePasswords = true, includeAuthenticators = false,
         includeDocuments = false, includeBankCards = false, includePasskeys = true, includeGeneratorHistory = false,
         includeImages = false, includeNotes = false, includeTimeline = false, includeTrash = false,
@@ -39,10 +54,15 @@ class PasskeyBackupFailureInstrumentedTest {
             entry("missing", "monica-passkey-key-ref-v1:missing-$suffix"), entry("device", alias))
         val dao = PasswordDatabase.getDatabase(context).passkeyDao()
         val files = mutableListOf<java.io.File>()
+        val server = MockWebServer()
+        val httpContext = HttpFixtureContext(context, suffix)
         try {
+            server.start()
+            WebDavHelper.setInsecureHttpAllowed(httpContext, true)
+            WebDavGateway.attach(httpContext)
             dao.insertAll(fixtures)
             val saved = dao.getAllPasskeysSync().filter { it.credentialId.endsWith(suffix) }.associateBy { it.credentialId.substringBefore('-') }
-            val helper = WebDavHelper(context)
+            val helper = WebDavHelper(httpContext)
             val (file, report) = helper.createBackupZip(emptyList(), emptyList(), preferences,
                 backupEncryptionPassword = "fixture-backup-password").getOrThrow()
             files += file
@@ -63,34 +83,47 @@ class PasskeyBackupFailureInstrumentedTest {
             assertTrue("The upload boundary must preserve item diagnostics", uploadError is IncompleteBackupException)
             assertTrue((uploadError as IncompleteBackupException).report.failedItems.any { it.id == saved.getValue("missing").id })
             val operations = mutableListOf<String>()
-            var uploadedBytes: ByteArray? = null
-            var uploadedPath = ""
             val clientType = com.thegrizzlylabs.sardineandroid.Sardine::class.java
             val fakeClient = java.lang.reflect.Proxy.newProxyInstance(clientType.classLoader, arrayOf(clientType)) { _, method, args ->
                 operations += method.name
                 when (method.name) {
-                    "exists" -> true
-                    "put" -> { uploadedPath = args!![0] as String; uploadedBytes = args[1] as ByteArray; null }
+                    "exists" -> {
+                        assertEquals(server.url("/fixture-$suffix/Monica_Backups").toString(), args!![0])
+                        true
+                    }
                     else -> error("Unexpected remote operation: ${method.name}")
                 }
             }
             WebDavHelper::class.java.getDeclaredField("sardine").apply { isAccessible = true }.set(helper, fakeClient)
+            WebDavHelper::class.java.getDeclaredField("serverUrl").apply { isAccessible = true }
+                .set(helper, server.url("/fixture-$suffix").toString())
             val fullBackupTime = helper.getLastBackupTime()
             val stillIncomplete = helper.createAndUploadBackup(emptyList(), emptyList(), preferences,
                 skippedPasskeys = report.failedItems.filter { it.id == saved.getValue("missing").id })
             assertTrue(stillIncomplete.exceptionOrNull() is IncompleteBackupException)
             assertTrue("New or unselected failures must still prevent upload", operations.isEmpty())
+            assertEquals("Incomplete archives must not reach the real upload transport", 0, server.requestCount)
             val skipped = report.failedItems.filter { it.type == context.getString(R.string.backup_content_passkeys) }
+            server.enqueue(MockResponse().setResponseCode(201))
             val partial = helper.createAndUploadBackup(emptyList(), emptyList(), preferences, skippedPasskeys = skipped).getOrThrow()
             assertTrue(partial.success)
             assertEquals(skipped, partial.skippedItems)
+            val upload = requireNotNull(server.takeRequest(10, TimeUnit.SECONDS)) { "Partial archive was not uploaded" }
+            val uploadedPath = requireNotNull(upload.path)
+            val uploadedBytes = upload.body.readByteArray()
+            assertEquals("PUT", upload.method)
+            assertEquals("*", upload.getHeader("If-None-Match"))
+            assertEquals(1, server.requestCount)
+            assertTrue(uploadedPath.startsWith("/fixture-$suffix/Monica_Backups/monica_backup_"))
+            assertFalse(uploadedPath.contains('?'))
             assertTrue(uploadedPath.contains("_partial_"))
             assertTrue(uploadedPath.endsWith("_permanent.enc.zip"))
-            assertEquals(listOf("exists", "put"), operations)
+            assertEquals(listOf("exists"), operations)
             assertEquals("Partial backup must not advance full-backup time", fullBackupTime, helper.getLastBackupTime())
             val partialFile = java.io.File(context.cacheDir, "fixture-partial-$suffix.enc.zip")
             files += partialFile
-            partialFile.writeBytes(requireNotNull(uploadedBytes))
+            partialFile.writeBytes(uploadedBytes)
+            assertTrue("The real HTTP body must be an encrypted Monica archive", EncryptionHelper.hasEncryptedFileHeader(partialFile))
             val overwrite = helper.restoreFromBackupFile(partialFile, decryptPassword = "fixture-backup-password", overwrite = true)
             assertEquals(context.getString(R.string.passkey_partial_replace_blocked), overwrite.exceptionOrNull()?.message)
             val merge = helper.restoreFromBackupFile(partialFile, decryptPassword = "fixture-backup-password",
@@ -110,10 +143,17 @@ class PasskeyBackupFailureInstrumentedTest {
             assertEquals(0, withoutKeys.second.totalItems.passkeys)
             assertEquals(4, dao.getAllPasskeysSync().count { it.credentialId.endsWith(suffix) })
         } finally {
-            fixtures.forEach { dao.deleteById(it.credentialId) }
-            PasskeyPrivateKeyStore.removeIfProtectedReference(context, protected)
-            KeyStore.getInstance("AndroidKeyStore").apply { load(null); deleteEntry(alias) }
-            files.distinct().forEach { it.delete() }
+            try {
+                fixtures.forEach { dao.deleteById(it.credentialId) }
+                PasskeyPrivateKeyStore.removeIfProtectedReference(context, protected)
+                KeyStore.getInstance("AndroidKeyStore").apply { load(null); deleteEntry(alias) }
+                files.distinct().forEach { it.delete() }
+            } finally {
+                try {
+                    WebDavGateway.attach(context)
+                    httpContext.close()
+                } finally { server.shutdown() }
+            }
         }
     }
 
