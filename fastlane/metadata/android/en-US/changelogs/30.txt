@@ -1,7 +1,9 @@
-USB/NFC PIN/credentials; Android 14+ hardware target (emulator tested).
-KDBX: icons, native KDF, incremental saves; save/merge/reload, external changes, smooth status, recycle/cold-start fixes; cross-vault rules kept.
-Export counts; hotspot pairing/encryption; WebDAV check guards.
-Optional search/keyboard vibration; PIN shuffle/preview.
-IATA scan/saved codes; M3E actions.
-Startup: 15s, preserves ciphertext/recovery.
-Key UI, Plus confirmation and new UI: 13 languages.
+USB/NFC PIN/credentials; Android 14+ target (emulator tested).
+KDBX icons/native KDF/incremental save; current-file merge/reload, transient path status; recycle/startup fixes; vault rules kept.
+ZIP config opt-in; format labels/export counts.
+Encrypted hotspot; WebDAV guards.
+Search/IME haptics/PIN shuffle.
+IATA saved codes/M3E.
+15s startup; ciphertext/recovery kept; safe logs.
+Plus/UI: 13 languages.
+Web autofill pairing/save (browser limits); HyperOS overlay (permission; retest needed).

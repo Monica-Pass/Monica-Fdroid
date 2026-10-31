@@ -407,6 +407,7 @@ class MainActivity : BaseMonicaActivity() {
         val splash = installSplashScreen()
         takagi.ru.monica.security.MainTaskSessionGuard.onMainTaskCreated(this)
         super.onCreate(savedInstanceState) // BaseMonicaActivity 已调用 enableEdgeToEdge()
+        takagi.ru.monica.security.RuntimeDiagnostics.mainActivityCreated()
         handleExternalTotpIntent(intent)
         takagi.ru.monica.transfer.DataTaskNavigation.receive(this, intent)
 
@@ -2876,8 +2877,9 @@ fun MonicaContent(
                 onClearSteamLoginImportSession = { sessionId ->
                     dataExportImportViewModel.clearSteamLoginImportSession(sessionId)
                 },
-                onImportZip = { uri, password ->
-                    dataExportImportViewModel.importZipBackup(uri, password, destination = importDestination)
+                onImportZip = { uri, password, restoreConfig ->
+                    dataExportImportViewModel.importZipBackup(uri, password, destination = importDestination,
+                        restoreMonicaConfig = restoreConfig)
                 },
                 onImportStratum = { uri, password ->
                     dataExportImportViewModel.importStratum(uri, password, destination = importDestination)

@@ -1,0 +1,700 @@
+10-30 02:06:23.070 14318 14318 I MonicaDiag: session=14318-53890615 event=app_start version=1.0.323 code=30 git=unknown build= api=32
+10-30 02:06:23.770 14318 14318 I MonicaDiag: session=14318-53890615 event=application_ready
+10-30 02:06:24.378 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=1 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:24.379 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=1 stage=KEYSET_OPEN elapsed_ms=0
+10-30 02:06:24.379 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure request=1 stage=KEYSET_OPEN elapsed_ms=1 attempt=2 store=OTHER code=UNKNOWN phase=KEYSET_OPEN
+10-30 02:06:24.387 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=9 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:24.388 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=9 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest.structuredStagesAndFailuresReachRealLogcatWithoutStorePathsOrSecretReasons$lambda$5:60
+10-30 02:06:24.388 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=9 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest.$r8$lambda$_V0VA6bDtQLWMKYNWm5bsn9Fn3c:0
+10-30 02:06:24.388 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=10 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:24.388 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=10 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=14 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest.structuredStagesAndFailuresReachRealLogcatWithoutStorePathsOrSecretReasons:58
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=0 frame=java.lang.reflect.Method.invoke:-2
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=0 frame=org.junit.runners.model.FrameworkMethod$1.runReflectiveCall:59
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=0 frame=org.junit.internal.runners.model.ReflectiveCallable.run:12
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 type=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest$MessageTrap
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest.structuredStagesAndFailuresReachRealLogcatWithoutStorePathsOrSecretReasons$lambda$5:61
+10-30 02:06:24.393 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest.$r8$lambda$_V0VA6bDtQLWMKYNWm5bsn9Fn3c:0
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=takagi.ru.monica.security.RuntimeDiagnosticsInstrumentedTest.structuredStagesAndFailuresReachRealLogcatWithoutStorePathsOrSecretReasons:58
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=java.lang.reflect.Method.invoke:-2
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=15 cause=1 frame=org.junit.runners.model.FrameworkMethod$1.runReflectiveCall:59
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=1 stage=KEYSET_OPEN elapsed_ms=16 cause=1 frame=org.junit.internal.runners.model.ReflectiveCallable.run:12
+10-30 02:06:24.394 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=1 stage=KEYSET_OPEN elapsed_ms=16 outcome=BLOCKED
+10-30 02:06:24.405 14318 14352 I MonicaDiag: session=14318-53890615 event=previous_exit reason=USER_REQUESTED pid=14276 timestamp=1793325974844 status=0 importance=300 pss_kb=0 rss_kb=0
+10-30 02:06:24.413 14318 14352 I MonicaDiag: session=14318-53890615 event=previous_exit reason=USER_REQUESTED pid=10363 timestamp=1793321414044 status=0 importance=125 pss_kb=380435 rss_kb=451616
+10-30 02:06:24.418 14318 14352 I MonicaDiag: session=14318-53890615 event=previous_exit reason=USER_REQUESTED pid=10277 timestamp=1793321348529 status=0 importance=125 pss_kb=0 rss_kb=0
+10-30 02:06:24.992 14318 14352 I MonicaDiag: session=14318-53890615 event=secure_begin request=2 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:25.007 14318 14352 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=QUEUED elapsed_ms=15
+10-30 02:06:25.033 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=STARTUP_CHECK elapsed_ms=38
+10-30 02:06:25.034 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=ACTIVE_STORE elapsed_ms=41
+10-30 02:06:25.035 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=ACTIVE_STORE elapsed_ms=42
+10-30 02:06:25.961 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=PREFLIGHT elapsed_ms=969
+10-30 02:06:25.967 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=MASTER_KEY elapsed_ms=975
+10-30 02:06:25.970 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=KEYSET_OPEN elapsed_ms=978
+10-30 02:06:26.126 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=VALUE_READ elapsed_ms=1133
+10-30 02:06:26.207 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=2 stage=RECOVERY_VALIDATION elapsed_ms=1215
+10-30 02:06:26.209 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=2 stage=RECOVERY_VALIDATION elapsed_ms=1216 caller_released=false
+10-30 02:06:26.210 14318 14351 I MonicaDiag: session=14318-53890615 event=secure_result request=2 stage=RECOVERY_VALIDATION elapsed_ms=1217 outcome=READY
+10-30 02:06:31.483 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=3 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:31.484 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=QUEUED elapsed_ms=2
+10-30 02:06:31.485 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=STARTUP_CHECK elapsed_ms=3
+10-30 02:06:31.486 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=ACTIVE_STORE elapsed_ms=3
+10-30 02:06:31.486 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=ACTIVE_STORE elapsed_ms=4
+10-30 02:06:31.487 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=PREFLIGHT elapsed_ms=4
+10-30 02:06:31.487 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=3 stage=PREFLIGHT elapsed_ms=5 attempt=1 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=PREFLIGHT
+10-30 02:06:31.488 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=5 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:31.488 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=6 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:65
+10-30 02:06:31.488 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=6 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:31.488 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=6 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:31.489 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=6 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:31.489 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=6 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:31.489 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=6 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:31.489 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=7 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:31.489 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=7 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:31.489 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=7 cause=1 type=java.security.ProviderException
+10-30 02:06:31.490 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=7 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:31.490 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=7 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:31.490 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=8 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:31.490 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=8 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:31.490 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=8 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:31.491 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=8 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:43
+10-30 02:06:31.491 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=8 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:31.491 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=PREFLIGHT elapsed_ms=9 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:31.492 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=RETRY_DELAY elapsed_ms=9
+10-30 02:06:31.705 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=ACTIVE_STORE elapsed_ms=222
+10-30 02:06:31.706 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=3 stage=ACTIVE_STORE elapsed_ms=223 attempt=2 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:31.708 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=226 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:31.708 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=226 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=226 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=226 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=226 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=1 type=java.security.ProviderException
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:31.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=227 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:31.713 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=231 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:31.714 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=231 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:31.714 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=231 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:31.714 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=231 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:31.714 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=232 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:31.714 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=RETRY_DELAY elapsed_ms=232
+10-30 02:06:32.321 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=ACTIVE_STORE elapsed_ms=838
+10-30 02:06:32.324 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=3 stage=ACTIVE_STORE elapsed_ms=841 attempt=3 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=842 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=842 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=842 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=842 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=842 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:32.325 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 type=java.security.ProviderException
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=843 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:32.326 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=3 stage=ACTIVE_STORE elapsed_ms=844 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:32.326 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=3 stage=RECOVERY_AVAILABLE elapsed_ms=844
+10-30 02:06:32.327 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=3 stage=RECOVERY_AVAILABLE elapsed_ms=844 caller_released=false
+10-30 02:06:32.328 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=3 stage=RECOVERY_AVAILABLE elapsed_ms=845 code=UNREADABLE_SECURE_STORAGE
+10-30 02:06:32.328 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=3 stage=RECOVERY_AVAILABLE elapsed_ms=845 outcome=BLOCKED
+10-30 02:06:32.964 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=4 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:32.977 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=QUEUED elapsed_ms=13
+10-30 02:06:32.978 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=STARTUP_CHECK elapsed_ms=14
+10-30 02:06:32.979 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=ACTIVE_STORE elapsed_ms=14
+10-30 02:06:32.980 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=PREFLIGHT elapsed_ms=16
+10-30 02:06:32.993 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=ACTIVE_STORE elapsed_ms=28
+10-30 02:06:32.994 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=PREFLIGHT elapsed_ms=29
+10-30 02:06:32.994 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=MASTER_KEY elapsed_ms=29
+10-30 02:06:32.995 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=KEYSET_OPEN elapsed_ms=31
+10-30 02:06:33.187 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=VALUE_READ elapsed_ms=223
+10-30 02:06:33.188 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=4 stage=RECOVERY_VALIDATION elapsed_ms=223
+10-30 02:06:33.188 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=4 stage=RECOVERY_VALIDATION elapsed_ms=224 caller_released=false
+10-30 02:06:33.189 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_result request=4 stage=RECOVERY_VALIDATION elapsed_ms=225 outcome=READY
+10-30 02:06:33.870 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=5 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:33.871 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=QUEUED elapsed_ms=1
+10-30 02:06:33.872 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=STARTUP_CHECK elapsed_ms=1
+10-30 02:06:33.872 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=ACTIVE_STORE elapsed_ms=2
+10-30 02:06:33.873 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=ACTIVE_STORE elapsed_ms=2
+10-30 02:06:33.874 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=PREFLIGHT elapsed_ms=3
+10-30 02:06:33.874 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=5 stage=PREFLIGHT elapsed_ms=4 attempt=1 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=PREFLIGHT
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=4 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:65
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 type=java.security.ProviderException
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:33.875 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:33.876 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:33.876 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:33.876 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:43
+10-30 02:06:33.876 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:33.876 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=5 stage=PREFLIGHT elapsed_ms=5 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:33.876 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=RETRY_DELAY elapsed_ms=5
+10-30 02:06:34.083 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=ACTIVE_STORE elapsed_ms=213
+10-30 02:06:34.091 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=ACTIVE_STORE elapsed_ms=220
+10-30 02:06:34.091 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=PREFLIGHT elapsed_ms=220
+10-30 02:06:34.093 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=MASTER_KEY elapsed_ms=223
+10-30 02:06:34.098 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=KEYSET_OPEN elapsed_ms=227
+10-30 02:06:34.167 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=VALUE_READ elapsed_ms=296
+10-30 02:06:34.167 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=5 stage=RECOVERY_VALIDATION elapsed_ms=297
+10-30 02:06:34.168 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=5 stage=RECOVERY_VALIDATION elapsed_ms=298 caller_released=false
+10-30 02:06:34.168 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_result request=5 stage=RECOVERY_VALIDATION elapsed_ms=298 outcome=READY
+10-30 02:06:34.433 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=6 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:34.434 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=QUEUED elapsed_ms=0
+10-30 02:06:34.434 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=STARTUP_CHECK elapsed_ms=1
+10-30 02:06:34.434 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=ACTIVE_STORE elapsed_ms=1
+10-30 02:06:34.435 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=ACTIVE_STORE elapsed_ms=1
+10-30 02:06:34.435 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=PREFLIGHT elapsed_ms=1
+10-30 02:06:34.438 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=MASTER_KEY elapsed_ms=4
+10-30 02:06:34.448 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=KEYSET_OPEN elapsed_ms=15
+10-30 02:06:34.532 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=VALUE_READ elapsed_ms=99
+10-30 02:06:34.539 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=6 stage=VALUE_READ elapsed_ms=106 attempt=1 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=VALUE_READ
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=106 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=106 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:117
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=106 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=106 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=107 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=107 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=107 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=107 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:34.540 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=107 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=108 cause=1 type=java.security.ProviderException
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=108 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=108 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=108 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=108 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=1 frame=androidx.security.crypto.EncryptedSharedPreferences.getAll:414
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:108
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 type=android.security.keystore.KeyPermanentlyInvalidatedException
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:180
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:34.542 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:34.543 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=VALUE_READ elapsed_ms=109 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:34.543 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=RETRY_DELAY elapsed_ms=109
+10-30 02:06:34.746 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=ACTIVE_STORE elapsed_ms=312
+10-30 02:06:34.747 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=6 stage=ACTIVE_STORE elapsed_ms=313 attempt=2 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=315 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 type=java.security.ProviderException
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:34.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=316 cause=2 type=android.security.keystore.KeyPermanentlyInvalidatedException
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=317 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:180
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=317 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=317 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=317 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:34.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=317 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:34.751 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=318 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:34.752 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=318 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:34.752 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=318 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:34.752 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=RETRY_DELAY elapsed_ms=318
+10-30 02:06:35.356 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=ACTIVE_STORE elapsed_ms=922
+10-30 02:06:35.357 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=6 stage=ACTIVE_STORE elapsed_ms=923 attempt=3 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:35.357 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=924 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:35.357 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=924 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:35.357 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=924 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:35.359 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=926 cause=1 type=java.security.ProviderException
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 type=android.security.keystore.KeyPermanentlyInvalidatedException
+10-30 02:06:35.360 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:180
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:35.361 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=6 stage=ACTIVE_STORE elapsed_ms=927 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:35.361 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=6 stage=RECOVERY_AVAILABLE elapsed_ms=928
+10-30 02:06:35.362 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=6 stage=RECOVERY_AVAILABLE elapsed_ms=929 caller_released=false
+10-30 02:06:35.363 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=6 stage=RECOVERY_AVAILABLE elapsed_ms=930 code=UNREADABLE_SECURE_STORAGE
+10-30 02:06:35.364 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=6 stage=RECOVERY_AVAILABLE elapsed_ms=930 outcome=BLOCKED
+10-30 02:06:35.609 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=7 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:35.609 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=QUEUED elapsed_ms=1
+10-30 02:06:35.610 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=STARTUP_CHECK elapsed_ms=2
+10-30 02:06:35.610 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=ACTIVE_STORE elapsed_ms=2
+10-30 02:06:35.611 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=ACTIVE_STORE elapsed_ms=2
+10-30 02:06:35.611 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=PREFLIGHT elapsed_ms=2
+10-30 02:06:35.612 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=MASTER_KEY elapsed_ms=4
+10-30 02:06:35.613 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=KEYSET_OPEN elapsed_ms=5
+10-30 02:06:35.706 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=VALUE_READ elapsed_ms=97
+10-30 02:06:35.706 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=7 stage=VALUE_READ elapsed_ms=98 attempt=1 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=VALUE_READ
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=98 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=98 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:117
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=98 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=1 type=java.security.ProviderException
+10-30 02:06:35.707 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:35.708 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:35.708 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=99 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=100 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=100 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=100 cause=1 frame=androidx.security.crypto.EncryptedSharedPreferences.getAll:414
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=100 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:108
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 type=java.security.UnrecoverableKeyException
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:181
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:35.709 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=VALUE_READ elapsed_ms=101 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:35.710 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=RETRY_DELAY elapsed_ms=101
+10-30 02:06:35.918 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=ACTIVE_STORE elapsed_ms=309
+10-30 02:06:35.919 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=7 stage=ACTIVE_STORE elapsed_ms=310 attempt=2 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=314 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=314 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:35.923 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 type=java.security.ProviderException
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=315 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=316 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=316 cause=2 type=java.security.UnrecoverableKeyException
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=316 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:181
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=316 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:35.924 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=316 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:35.927 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=319 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:35.928 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=319 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:35.928 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=319 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:35.928 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=319 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:35.928 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=319 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:35.928 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=RETRY_DELAY elapsed_ms=319
+10-30 02:06:36.541 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=ACTIVE_STORE elapsed_ms=932
+10-30 02:06:36.543 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=7 stage=ACTIVE_STORE elapsed_ms=935 attempt=3 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:36.543 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=935 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:36.543 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=935 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=935 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=936 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=936 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=936 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 type=java.security.ProviderException
+10-30 02:06:36.545 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=2 type=java.security.UnrecoverableKeyException
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=937 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:181
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:36.546 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=7 stage=ACTIVE_STORE elapsed_ms=938 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:36.546 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=7 stage=RECOVERY_AVAILABLE elapsed_ms=938
+10-30 02:06:36.547 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=7 stage=RECOVERY_AVAILABLE elapsed_ms=939 caller_released=false
+10-30 02:06:36.549 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=7 stage=RECOVERY_AVAILABLE elapsed_ms=940 code=UNREADABLE_SECURE_STORAGE
+10-30 02:06:36.550 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=7 stage=RECOVERY_AVAILABLE elapsed_ms=941 outcome=BLOCKED
+10-30 02:06:36.867 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=8 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:36.877 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=QUEUED elapsed_ms=10
+10-30 02:06:36.877 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=STARTUP_CHECK elapsed_ms=10
+10-30 02:06:36.877 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=ACTIVE_STORE elapsed_ms=10
+10-30 02:06:36.878 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=ACTIVE_STORE elapsed_ms=10
+10-30 02:06:36.879 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=PREFLIGHT elapsed_ms=11
+10-30 02:06:36.901 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=MASTER_KEY elapsed_ms=33
+10-30 02:06:36.902 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=KEYSET_OPEN elapsed_ms=35
+10-30 02:06:37.018 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=VALUE_READ elapsed_ms=150
+10-30 02:06:37.018 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=8 stage=VALUE_READ elapsed_ms=151 attempt=1 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=VALUE_READ
+10-30 02:06:37.020 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=153 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=157 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:117
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=157 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=157 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 type=java.security.ProviderException
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=androidx.security.crypto.EncryptedSharedPreferences.getAll:414
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:108
+10-30 02:06:37.025 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 type=java.security.KeyStoreException
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:182
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:37.026 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=VALUE_READ elapsed_ms=158 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:37.026 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=RETRY_DELAY elapsed_ms=158
+10-30 02:06:37.231 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=ACTIVE_STORE elapsed_ms=364
+10-30 02:06:37.233 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=8 stage=ACTIVE_STORE elapsed_ms=365 attempt=2 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=366 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=366 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=366 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=366 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:37.234 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=1 type=java.security.ProviderException
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=367 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 type=java.security.KeyStoreException
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:182
+10-30 02:06:37.235 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:37.236 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:37.236 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:37.236 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:37.236 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:37.236 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=368 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:37.236 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=369 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:37.236 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=RETRY_DELAY elapsed_ms=369
+10-30 02:06:37.850 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=ACTIVE_STORE elapsed_ms=983
+10-30 02:06:37.851 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=8 stage=ACTIVE_STORE elapsed_ms=984 attempt=3 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:37.851 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:37.852 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:37.852 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:37.852 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:37.852 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:37.852 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:37.852 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=984 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:37.854 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=986 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:37.854 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:37.854 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 type=java.security.ProviderException
+10-30 02:06:37.854 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend$lambda$1$lambda$0:188
+10-30 02:06:37.854 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.$r8$lambda$3_WqwFmt-lpweL654vr5Oro3Dtg:0
+10-30 02:06:37.854 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:37.855 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:37.855 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:37.855 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:37.855 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=987 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:37.855 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=988 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=988 cause=2 type=java.security.KeyStoreException
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$wrappedKeystoreFailuresReachBlockedStartupAndPreserveEncryptedPreferences$1.invokeSuspend:182
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith:33
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlinx.coroutines.DispatchedTask.run:101
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlinx.coroutines.EventLoopImplBase.processNextEvent:263
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlinx.coroutines.BlockingCoroutine.joinBlocking:95
+10-30 02:06:37.856 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking:69
+10-30 02:06:37.857 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlinx.coroutines.BuildersKt.runBlocking:1
+10-30 02:06:37.857 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=8 stage=ACTIVE_STORE elapsed_ms=989 cause=2 frame=kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default:47
+10-30 02:06:37.857 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=8 stage=RECOVERY_AVAILABLE elapsed_ms=989
+10-30 02:06:37.859 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=8 stage=RECOVERY_AVAILABLE elapsed_ms=991 caller_released=false
+10-30 02:06:37.860 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=8 stage=RECOVERY_AVAILABLE elapsed_ms=992 code=UNREADABLE_SECURE_STORAGE
+10-30 02:06:37.860 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=8 stage=RECOVERY_AVAILABLE elapsed_ms=992 outcome=BLOCKED
+10-30 02:06:38.126 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=9 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:38.127 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=9 stage=QUEUED elapsed_ms=0
+10-30 02:06:38.127 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=9 stage=STARTUP_CHECK elapsed_ms=1
+10-30 02:06:38.128 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=9 stage=ACTIVE_STORE elapsed_ms=1
+10-30 02:06:38.128 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=9 stage=ACTIVE_STORE elapsed_ms=2
+10-30 02:06:38.129 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=9 stage=PREFLIGHT elapsed_ms=2
+10-30 02:06:38.130 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=9 stage=PREFLIGHT elapsed_ms=4 outcome=CANCELLED
+10-30 02:06:38.132 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=9 stage=PREFLIGHT elapsed_ms=5 caller_released=true
+10-30 02:06:39.913 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_begin request=10 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:39.913 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_stage request=10 stage=QUEUED elapsed_ms=1
+10-30 02:06:39.921 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=10 stage=STARTUP_CHECK elapsed_ms=9
+10-30 02:06:39.921 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=10 stage=ACTIVE_STORE elapsed_ms=9
+10-30 02:06:39.922 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=10 stage=ACTIVE_STORE elapsed_ms=9
+10-30 02:06:39.930 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=10 stage=PREFLIGHT elapsed_ms=17
+10-30 02:06:39.951 14318 14318 W MonicaDiag: session=14318-53890615 event=secure_result request=10 stage=PREFLIGHT elapsed_ms=38 outcome=CANCELLED
+10-30 02:06:39.963 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=11 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:39.969 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=11 stage=WAIT_TURN elapsed_ms=6 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:39.978 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=11 stage=WAIT_TURN elapsed_ms=16 outcome=BLOCKED
+10-30 02:06:39.990 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=10 stage=PREFLIGHT elapsed_ms=77 caller_released=true
+10-30 02:06:40.502 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=12 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:40.506 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=QUEUED elapsed_ms=4
+10-30 02:06:40.511 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=STARTUP_CHECK elapsed_ms=9
+10-30 02:06:40.512 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=ACTIVE_STORE elapsed_ms=9
+10-30 02:06:40.512 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=ACTIVE_STORE elapsed_ms=10
+10-30 02:06:40.513 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=PREFLIGHT elapsed_ms=10
+10-30 02:06:40.513 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=12 stage=PREFLIGHT elapsed_ms=11 attempt=1 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=PREFLIGHT
+10-30 02:06:40.513 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:40.513 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:65
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=1 type=java.security.ProviderException
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=11 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=12 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=12 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:40.514 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=12 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:43
+10-30 02:06:40.516 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=13 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:40.516 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=PREFLIGHT elapsed_ms=14 cause=1 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:40.516 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=RETRY_DELAY elapsed_ms=14
+10-30 02:06:40.723 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=ACTIVE_STORE elapsed_ms=221
+10-30 02:06:40.730 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=12 stage=ACTIVE_STORE elapsed_ms=227 attempt=2 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:40.730 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=228 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:40.730 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=228 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:40.731 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=228 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:40.740 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:40.740 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:40.740 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:40.741 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:40.741 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:40.741 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:40.741 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=1 type=java.security.ProviderException
+10-30 02:06:40.741 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:40.741 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:40.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=238 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:40.749 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=247 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:40.750 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=247 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:40.753 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=250 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:40.753 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=250 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:40.753 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=250 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:40.753 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=RETRY_DELAY elapsed_ms=250
+10-30 02:06:41.364 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=ACTIVE_STORE elapsed_ms=861
+10-30 02:06:41.365 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=12 stage=ACTIVE_STORE elapsed_ms=862 attempt=3 store=MONICA code=UNREADABLE_SECURE_STORAGE phase=STARTUP_CHECK
+10-30 02:06:41.370 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=867 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:41.372 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:299
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4$lambda$3:178
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.$r8$lambda$gx-wMmfZ8HDZDFQx0WWsHBGsHUI:0
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1$$ExternalSyntheticLambda0.invoke:0
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.RuntimeDiagnostics$StartupDiagnosticTrace.run:135
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup$prepareWithRetry$result$1.invokeSuspend$lambda$5$lambda$4:175
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=870 cause=1 type=java.security.ProviderException
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext._init_$lambda$1:75
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext.$r8$lambda$T9AVWig_24nesMiJ4IfXR79rLIA:0
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$$ExternalSyntheticLambda1.invoke:0
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStartupInstrumentedTest$ReadFaultContext$getSharedPreferences$1.getAll:92
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.StartupStorageGuard$context$1$getSharedPreferences$1$1.getAll:30
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:289
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:256
+10-30 02:06:41.373 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=12 stage=ACTIVE_STORE elapsed_ms=871 cause=1 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:41.374 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=12 stage=RECOVERY_AVAILABLE elapsed_ms=871
+10-30 02:06:41.375 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=12 stage=RECOVERY_AVAILABLE elapsed_ms=872 code=UNREADABLE_SECURE_STORAGE
+10-30 02:06:41.375 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=12 stage=RECOVERY_AVAILABLE elapsed_ms=872 outcome=BLOCKED
+10-30 02:06:41.386 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=12 stage=RECOVERY_AVAILABLE elapsed_ms=884 caller_released=true
+10-30 02:06:42.386 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=13 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:42.396 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=13 stage=QUEUED elapsed_ms=9
+10-30 02:06:42.400 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=13 stage=STARTUP_CHECK elapsed_ms=13
+10-30 02:06:42.403 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=13 stage=ACTIVE_STORE elapsed_ms=17
+10-30 02:06:42.404 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=13 stage=ACTIVE_STORE elapsed_ms=17
+10-30 02:06:42.406 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=13 stage=PREFLIGHT elapsed_ms=20
+10-30 02:06:42.407 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure request=13 stage=PREFLIGHT elapsed_ms=20 attempt=1 store=MONICA code=INCOMPLETE_KEYSET phase=PREFLIGHT
+10-30 02:06:42.408 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=21 cause=0 type=takagi.ru.monica.security.SecureStorageUnavailableException
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=25 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.preflight:53
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.openRaw$app_debug:94
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open:74
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecurePreferencesStore.open$default:69
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecurityManager.<init>:74
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkStorage:293
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.checkWithRetry:240
+10-30 02:06:42.412 14318 14359 W MonicaDiag: session=14318-53890615 event=secure_failure_detail request=13 stage=PREFLIGHT elapsed_ms=26 cause=0 frame=takagi.ru.monica.security.SecureStorageStartup.access$checkWithRetry:137
+10-30 02:06:42.412 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=13 stage=RECOVERY_AVAILABLE elapsed_ms=26
+10-30 02:06:42.421 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=13 stage=RECOVERY_AVAILABLE elapsed_ms=34 caller_released=false
+10-30 02:06:42.422 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=13 stage=RECOVERY_AVAILABLE elapsed_ms=35 code=INCOMPLETE_KEYSET
+10-30 02:06:42.422 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=13 stage=RECOVERY_AVAILABLE elapsed_ms=35 outcome=BLOCKED
+10-30 02:06:43.021 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_begin request=14 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.021 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_stage request=14 stage=QUEUED elapsed_ms=1
+10-30 02:06:43.023 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=14 stage=STARTUP_CHECK elapsed_ms=2
+10-30 02:06:43.023 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=14 stage=ACTIVE_STORE elapsed_ms=2
+10-30 02:06:43.176 14318 14318 W MonicaDiag: session=14318-53890615 event=secure_result request=14 stage=ACTIVE_STORE elapsed_ms=156 outcome=TIMEOUT
+10-30 02:06:43.187 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=15 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.192 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=15 stage=WAIT_TURN elapsed_ms=5 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.192 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=15 stage=WAIT_TURN elapsed_ms=5 outcome=BLOCKED
+10-30 02:06:43.192 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=16 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.193 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=16 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.193 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=16 stage=WAIT_TURN elapsed_ms=0 outcome=BLOCKED
+10-30 02:06:43.193 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=17 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.193 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=17 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.193 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=17 stage=WAIT_TURN elapsed_ms=1 outcome=BLOCKED
+10-30 02:06:43.193 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=18 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.199 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=18 stage=WAIT_TURN elapsed_ms=6 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.200 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=18 stage=WAIT_TURN elapsed_ms=6 outcome=BLOCKED
+10-30 02:06:43.200 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=19 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.229 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=19 stage=WAIT_TURN elapsed_ms=30 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.230 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=19 stage=WAIT_TURN elapsed_ms=30 outcome=BLOCKED
+10-30 02:06:43.230 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=20 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.231 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=20 stage=WAIT_TURN elapsed_ms=2 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.237 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=20 stage=WAIT_TURN elapsed_ms=7 outcome=BLOCKED
+10-30 02:06:43.237 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=21 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.239 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=21 stage=WAIT_TURN elapsed_ms=1 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.239 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=21 stage=WAIT_TURN elapsed_ms=1 outcome=BLOCKED
+10-30 02:06:43.239 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=22 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.247 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=22 stage=WAIT_TURN elapsed_ms=9 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.247 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=22 stage=WAIT_TURN elapsed_ms=9 outcome=BLOCKED
+10-30 02:06:43.247 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=23 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.248 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=23 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.248 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=23 stage=WAIT_TURN elapsed_ms=0 outcome=BLOCKED
+10-30 02:06:43.248 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=24 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.258 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=24 stage=WAIT_TURN elapsed_ms=11 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.267 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=24 stage=WAIT_TURN elapsed_ms=20 outcome=BLOCKED
+10-30 02:06:43.267 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=25 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.273 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=25 stage=WAIT_TURN elapsed_ms=6 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.273 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=25 stage=WAIT_TURN elapsed_ms=6 outcome=BLOCKED
+10-30 02:06:43.273 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=26 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.274 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=26 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.274 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=26 stage=WAIT_TURN elapsed_ms=1 outcome=BLOCKED
+10-30 02:06:43.274 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=27 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.274 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=27 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.274 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=27 stage=WAIT_TURN elapsed_ms=0 outcome=BLOCKED
+10-30 02:06:43.275 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=28 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.275 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=28 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.275 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=28 stage=WAIT_TURN elapsed_ms=0 outcome=BLOCKED
+10-30 02:06:43.275 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=29 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.275 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=29 stage=WAIT_TURN elapsed_ms=1 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.275 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=29 stage=WAIT_TURN elapsed_ms=1 outcome=BLOCKED
+10-30 02:06:43.275 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=30 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.284 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=30 stage=WAIT_TURN elapsed_ms=1 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.284 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=30 stage=WAIT_TURN elapsed_ms=8 outcome=BLOCKED
+10-30 02:06:43.284 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=31 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.290 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=31 stage=WAIT_TURN elapsed_ms=6 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.290 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=31 stage=WAIT_TURN elapsed_ms=7 outcome=BLOCKED
+10-30 02:06:43.290 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=32 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.290 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=32 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.290 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=32 stage=WAIT_TURN elapsed_ms=0 outcome=BLOCKED
+10-30 02:06:43.290 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=33 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.291 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=33 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.291 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=33 stage=WAIT_TURN elapsed_ms=0 outcome=BLOCKED
+10-30 02:06:43.291 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=34 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.291 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result_code request=34 stage=WAIT_TURN elapsed_ms=0 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:06:43.291 14318 14337 W MonicaDiag: session=14318-53890615 event=secure_result request=34 stage=WAIT_TURN elapsed_ms=1 outcome=BLOCKED
+10-30 02:06:43.301 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=14 stage=ACTIVE_STORE elapsed_ms=280 caller_released=true
+10-30 02:06:43.324 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_begin request=35 stage=WAIT_TURN elapsed_ms=0
+10-30 02:06:43.326 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=QUEUED elapsed_ms=3
+10-30 02:06:43.327 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=STARTUP_CHECK elapsed_ms=3
+10-30 02:06:43.327 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=ACTIVE_STORE elapsed_ms=3
+10-30 02:06:43.327 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=ACTIVE_STORE elapsed_ms=4
+10-30 02:06:43.327 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=PREFLIGHT elapsed_ms=4
+10-30 02:06:43.331 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=MASTER_KEY elapsed_ms=8
+10-30 02:06:43.332 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=KEYSET_OPEN elapsed_ms=9
+10-30 02:06:43.420 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=VALUE_READ elapsed_ms=97
+10-30 02:06:43.421 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=35 stage=RECOVERY_VALIDATION elapsed_ms=97
+10-30 02:06:43.422 14318 14337 I MonicaDiag: session=14318-53890615 event=secure_result request=35 stage=RECOVERY_VALIDATION elapsed_ms=98 outcome=READY
+10-30 02:06:43.424 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=35 stage=RECOVERY_VALIDATION elapsed_ms=100 caller_released=true
+10-30 02:06:44.524 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_failure format=C2
+10-30 02:06:44.525 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 type=java.security.UnrecoverableKeyException
+10-30 02:06:44.526 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityManager.getExistingDataKey$read:843
+10-30 02:06:44.526 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityManager.getExistingDataKey:848
+10-30 02:06:44.526 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptDataCompat:1368
+10-30 02:06:44.527 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptDataWithoutDiagnostic:1336
+10-30 02:06:44.527 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptData:1299
+10-30 02:06:44.528 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityKeyReadInstrumentedTest.missingDataKey:34
+10-30 02:06:44.528 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=takagi.ru.monica.security.SecurityKeyReadInstrumentedTest.missingCompatKeyIsNotGeneratedByDecryptingOldCiphertext:20
+10-30 02:06:44.529 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=C2 cause=0 frame=java.lang.reflect.Method.invoke:-2
+10-30 02:06:45.121 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_failure format=V2
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 type=java.security.UnrecoverableKeyException
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityManager.getExistingDataKey$read:843
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityManager.getExistingDataKey:845
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptDataV2:1350
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptDataWithoutDiagnostic:1332
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptData:1299
+10-30 02:06:45.129 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityKeyReadInstrumentedTest.missingDataKey:34
+10-30 02:06:45.130 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=takagi.ru.monica.security.SecurityKeyReadInstrumentedTest.missingAuthenticatedKeyIsNotGeneratedByDecryptingOldCiphertext:21
+10-30 02:06:45.130 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=V2 cause=0 frame=java.lang.reflect.Method.invoke:-2
+10-30 02:06:46.207 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_failure format=MDK
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 type=java.lang.Exception
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptDataWithoutDiagnostic:1319
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptData:1299
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=takagi.ru.monica.security.SecurityKeyReadInstrumentedTest.missingMdkWrapperAliasesAreNotRebuiltOrRemovedByReads:77
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=java.lang.reflect.Method.invoke:-2
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.runners.model.FrameworkMethod$1.runReflectiveCall:59
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.internal.runners.model.ReflectiveCallable.run:12
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.runners.model.FrameworkMethod.invokeExplosively:56
+10-30 02:06:46.208 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.internal.runners.statements.InvokeMethod.evaluate:17
+10-30 02:06:56.783 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_failure format=MDK
+10-30 02:06:56.784 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 type=java.lang.Exception
+10-30 02:06:56.785 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptDataWithoutDiagnostic:1319
+10-30 02:06:56.788 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=takagi.ru.monica.security.SecurityManager.decryptData:1299
+10-30 02:06:56.788 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=takagi.ru.monica.security.SecurityKeyReadInstrumentedTest.damagedMdkWrapperIsRetainedAndPasswordCanStillUnlockOriginalData:57
+10-30 02:06:56.788 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=java.lang.reflect.Method.invoke:-2
+10-30 02:06:56.788 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.runners.model.FrameworkMethod$1.runReflectiveCall:59
+10-30 02:06:56.789 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.internal.runners.model.ReflectiveCallable.run:12
+10-30 02:06:56.790 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.runners.model.FrameworkMethod.invokeExplosively:56
+10-30 02:06:56.790 14318 14337 W MonicaDiag: session=14318-53890615 event=data_read_detail format=MDK cause=0 frame=org.junit.internal.runners.statements.InvokeMethod.evaluate:17
+10-30 02:07:24.967 14318 14318 I MonicaDiag: session=14318-53890615 event=main_activity_created
+10-30 02:07:24.970 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_begin request=36 stage=WAIT_TURN elapsed_ms=0
+10-30 02:07:24.983 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_stage request=36 stage=QUEUED elapsed_ms=13
+10-30 02:07:24.983 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=36 stage=STARTUP_CHECK elapsed_ms=13
+10-30 02:07:24.983 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_stage request=36 stage=ACTIVE_STORE elapsed_ms=13
+10-30 02:07:39.985 14318 14318 W MonicaDiag: session=14318-53890615 event=secure_result request=36 stage=ACTIVE_STORE elapsed_ms=15014 outcome=TIMEOUT
+10-30 02:07:41.174 14318 14318 I MonicaDiag: session=14318-53890615 event=main_activity_created
+10-30 02:07:41.175 14318 14318 I MonicaDiag: session=14318-53890615 event=secure_begin request=37 stage=WAIT_TURN elapsed_ms=0
+10-30 02:07:41.176 14318 14318 W MonicaDiag: session=14318-53890615 event=secure_result_code request=37 stage=WAIT_TURN elapsed_ms=1 code=SECURE_OPERATION_IN_PROGRESS
+10-30 02:07:41.177 14318 14318 W MonicaDiag: session=14318-53890615 event=secure_result request=37 stage=WAIT_TURN elapsed_ms=1 outcome=BLOCKED
+10-30 02:07:42.339 14318 14359 I MonicaDiag: session=14318-53890615 event=secure_worker_exit request=36 stage=ACTIVE_STORE elapsed_ms=17369 caller_released=true

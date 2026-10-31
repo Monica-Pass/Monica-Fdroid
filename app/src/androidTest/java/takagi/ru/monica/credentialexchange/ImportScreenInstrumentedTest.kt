@@ -54,7 +54,7 @@ class ImportScreenInstrumentedTest {
                             onImportAegis = { fixture.model.importAegisJson(it, selected) },
                             onImportEncryptedAegis = { uri, password -> fixture.model.importEncryptedAegisJson(uri, password, selected) },
                             onImportSteamMaFile = { Result.success(0) },
-                            onImportZip = { uri, password -> fixture.model.importZipBackup(uri, password, selected) })
+                            onImportZip = { uri, password, restoreConfig -> fixture.model.importZipBackup(uri, password, selected, restoreConfig) })
                     }
                 }
             }
@@ -106,7 +106,7 @@ class ImportScreenInstrumentedTest {
                     LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
                     MonicaTheme { ImportDataScreen(onNavigateBack = {}, onImport = { Result.success(0) },
                         onImportAegis = { Result.success(0) }, onImportEncryptedAegis = { _, _ -> Result.success(0) },
-                        onImportSteamMaFile = { Result.success(0) }, onImportZip = { _, _ -> Result.success(0) }) }
+                        onImportSteamMaFile = { Result.success(0) }, onImportZip = { _, _, _ -> Result.success(0) }) }
                 }
             }
             compose.onNodeWithText(screenContext.getString(R.string.start_import)).assertIsDisplayed()
