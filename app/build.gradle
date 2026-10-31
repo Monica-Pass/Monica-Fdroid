@@ -54,8 +54,8 @@ android {
         applicationId "takagi.ru.monica.fdroid"
         minSdk 26
         targetSdk 34
-        versionCode 30
-        versionName "1.0.323"
+        versionCode 31
+        versionName "1.0.324"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,9 +75,9 @@ android {
         // the build output non-reproducible and fail fdroidserver build verification.
         buildConfigField 'String', 'GIT_SHA', '"unknown"'
         buildConfigField 'String', 'BUILD_TIME', '""'
-        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.323"'
-        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.323"'
-        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"30"'
+        buildConfigField 'String', 'BASE_VERSION_NAME', '"1.0.324"'
+        buildConfigField 'String', 'FULL_VERSION_NAME', '"1.0.324"'
+        buildConfigField 'String', 'BUILD_DETAIL_TAG', '"31"'
         buildConfigField 'int', 'BW_DIAG_SCHEMA', '1'
 
     }
@@ -146,7 +146,7 @@ android {
         variant.outputs.all { output ->
             // 目标格式: Monica-Android-[架构]-[版本号].APK
             def archTag = resolveArchTag(output)
-            def versionNameTag = sanitizeTag('1.0.323', '0.0.0')
+            def versionNameTag = sanitizeTag('1.0.324', '0.0.0')
             outputFileName = "Monica-Android-${archTag}-${versionNameTag}.apk"
         }
     }
