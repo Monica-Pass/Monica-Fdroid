@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="webdav_allow_insecure_http">"Permitir HTTP"</string>
+    <string name="webdav_allow_insecure_http_description">"Desativado por padrão. Ative apenas para um servidor HTTP confiável, como um NAS local sem HTTPS. Enquanto esta opção estiver desativada, o WebDAV bloqueia conexões HTTP."</string>
+    <string name="fdroid_cloud_provider_unavailable">"%1$s não está disponível na versão F-Droid. Use o WebDAV."</string>
+</resources>
