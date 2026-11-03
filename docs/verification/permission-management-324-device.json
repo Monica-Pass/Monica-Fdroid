@@ -1,0 +1,21 @@
+{
+  "flavor": "fdroid",
+  "name": "permissions-complete",
+  "version_name": "1.0.324",
+  "version_code": 31,
+  "classes": [
+    "takagi.ru.monica.ui.screens.PermissionInventoryInstrumentedTest",
+    "takagi.ru.monica.util.PhotoPickerPermissionInstrumentedTest",
+    "takagi.ru.monica.ui.screens.SettingsSubpagesInstrumentedTest#permissionsExposeDetailsForEveryDeclaredPermissionAndService",
+    "takagi.ru.monica.ui.screens.SettingsSubpagesInstrumentedTest#permissionDescriptionsAndActionsFitNarrowDarkEnglishAtDoubleFontSize",
+    "takagi.ru.monica.ui.screens.SettingsSubpagesInstrumentedTest#permissionRefreshIsDisabledWhileLoading",
+    "takagi.ru.monica.ui.screens.SettingsSubpagesInstrumentedTest#permissionSystemSettingsReturnKeepsPageAndHelpUsable",
+    "takagi.ru.monica.ui.components.PhotoImportEditorTest"
+  ],
+  "main_sha256": "2cb8bf57eb07eb244618bc2e3cb03aa01296e63b2be52ff43a2ab49251819afc",
+  "test_sha256": "a3017f4eda0b3bbff5ce40fbeca772b25b91f4fd56b07d9ca538d2336453846c",
+  "user": 13,
+  "reset_own_synthetic_app_data": true,
+  "elapsed_seconds": 64.36,
+  "success": true
+}

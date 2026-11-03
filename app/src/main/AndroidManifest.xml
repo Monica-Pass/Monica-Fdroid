@@ -5,7 +5,6 @@
     <!-- Biometric permission for fingerprint/face unlock -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-    <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
     
     <!-- Camera permission for QR code scanning -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -23,21 +22,14 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
         android:usesPermissionFlags="neverForLocation" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="32" />
+    <!-- User-requested foreground address lookup also uses location on Android 13+. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     
-    <!-- Storage permissions for saving images -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+    <!-- Only Android 8/9 public-image saving needs legacy write access. Selected files use URI grants. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    
-    <!-- Autofill permission -->
-    <uses-permission android:name="android.permission.BIND_AUTOFILL_SERVICE"
-        tools:ignore="ProtectedPermissions" />
-    
     <!-- Phase 9: Haptic feedback permission -->
     <!-- Optional: only the user-enabled HyperOS save compatibility panel uses this. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -56,7 +48,8 @@
         android:minSdkVersion="33" />
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
-    <!-- F-Droid build: READ_PHONE_STATE and location permissions removed (never used). -->
+    <!-- Foreground address lookup is user initiated; no background location access. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- Android 11+ 包可见性声明 - 用于应用列表功能 -->
     <queries>
