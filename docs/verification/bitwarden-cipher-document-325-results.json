@@ -1,0 +1,54 @@
+{
+  "jvm": [
+    {
+      "name": "takagi.ru.monica.bitwarden.service.BitwardenCipherDocumentTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T03:19:13",
+      "hostname": "JOYIN",
+      "time": "10.127"
+    },
+    {
+      "name": "takagi.ru.monica.bitwarden.service.BitwardenCipherUploadProtocolTest",
+      "tests": "14",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-04T03:19:24",
+      "hostname": "JOYIN",
+      "time": "1.393"
+    }
+  ],
+  "device": {
+    "edition": "fdroid",
+    "classes": "takagi.ru.monica.bitwarden.BitwardenCipherDocumentInstrumentedTest,takagi.ru.monica.bitwarden.BitwardenSshNativeSyncInstrumentedTest,takagi.ru.monica.bitwarden.BitwardenOrganizationSyncTest",
+    "log": "C:\\Users\\joyins\\Desktop\\Monica-all\\.codex-tasks\\20261104-bitwarden-native-client\\canonical-device-fdroid-20261104-111952.log",
+    "commandExit": 0,
+    "driverSeconds": 26.9734378,
+    "apk": "C:\\Users\\joyins\\Desktop\\Monica-all\\.codex-worktrees\\monica-fdroid-nearby-steam\\app\\build\\outputs\\apk\\debug\\Monica-Android-x86_64-1.0.325.apk",
+    "apkSHA256": "9d1135dbf2f65b86a929f8bddf92126a242b1c9dad6f5df05cb785ccf70b06e6",
+    "testAPK": "C:\\Users\\joyins\\Desktop\\Monica-all\\.codex-worktrees\\monica-fdroid-nearby-steam\\app\\build\\outputs\\apk\\androidTest\\debug\\app-debug-androidTest.apk",
+    "testSHA256": "948feebf62cb938806cbf29dbf6b72b6d230bed3172f0384a4bdfb708cb2f3e4"
+  },
+  "migration": {
+    "edition": "fdroid",
+    "schema": 81,
+    "entry": [
+      2,
+      "Synthetic schema80 migration fdroid",
+      "synthetic-migration-user",
+      ""
+    ],
+    "history": [
+      1,
+      2,
+      "",
+      1793650000000
+    ],
+    "foreignKeys": "ok",
+    "quickCheck": "ok",
+    "syntheticUser": 13
+  }
+}
