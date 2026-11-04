@@ -130,7 +130,9 @@ fun ImportDataScreen(
     onImportPasswordKeyboardCsv: suspend (
         Uri,
         DataExportImportManager.PasswordKeyboardTagHandling
-    ) -> Result<Int> = { _, _ -> Result.failure(Exception("Not implemented")) } // 密码键盘软件 CSV导入
+    ) -> Result<Int> = { _, _ -> Result.failure(Exception("Not implemented")) }, // 密码键盘软件 CSV导入
+    onPreviewBitwardenJson: suspend (Uri, String?) -> Result<takagi.ru.monica.bitwarden.export.BitwardenJsonPreview> = { _, _ -> Result.failure(IllegalStateException("JSON preview unavailable")) },
+    onImportBitwardenJson: suspend (Uri, String?) -> Result<Int> = { _, _ -> Result.failure(IllegalStateException("JSON import unavailable")) },
 ) {
     val context = LocalContext.current
     val activity = context.findImportActivity()
@@ -152,6 +154,7 @@ fun ImportDataScreen(
     var choosingCsvFormat by remember { mutableStateOf(false) }
     var importType by remember { mutableStateOf("monica_zip") } // 默认选择 ZIP 备份
     var csvImportType by remember { mutableStateOf("normal") } // CSV子类型
+    var showBitwardenJsonDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     var showZipRestoreConfirmDialog by remember { mutableStateOf(false) }
     var restoreZipConfig by remember(selectedFileUri) { mutableStateOf(false) }
@@ -364,6 +367,11 @@ fun ImportDataScreen(
                                         localImporting = true
                                         try {
                                             when (effectiveImportType) {
+                                                "bitwarden_json" -> {
+                                                    localImporting = false
+                                                    showBitwardenJsonDialog = true
+                                                    return@launch
+                                                }
                                                 "monica_zip" -> {
                                                     localImporting = false
                                                     showZipRestoreConfirmDialog = true
@@ -732,7 +740,7 @@ fun ImportDataScreen(
                                 "proton_pass_csv" -> FileOperationHelper.importFromCsv(act)
                                 "chrome_csv" -> FileOperationHelper.importFromCsv(act)
                                 "password_keyboard_csv" -> FileOperationHelper.importFromCsv(act)
-                                "aegis" -> FileOperationHelper.importFromJson(act)
+                                "aegis", "bitwarden_json" -> FileOperationHelper.importFromJson(act)
                                 "stratum" -> FileOperationHelper.importFromStratum(act)
                                 "steam" -> FileOperationHelper.importFromMaFile(act)
                                 else -> FileOperationHelper.importFromCsv(act)
@@ -972,6 +980,15 @@ fun ImportDataScreen(
     }
 
     // 密码输入对话框
+    if (showBitwardenJsonDialog && selectedFileUri != null) {
+        BitwardenJsonImportDialog(selectedFileUri!!, onPreviewBitwardenJson,
+            onImport = onImportBitwardenJson,
+            onDismiss = { showBitwardenJsonDialog = false },
+            onImported = { count ->
+                showBitwardenJsonDialog = false
+                scope.launch { handleImportResult(Result.success(count), context, snackbarHostState, "bitwarden_json", onNavigateBack) }
+            })
+    }
     if (showPasswordDialog) {
         EncryptedImportPasswordDialog(
             importType = importType,

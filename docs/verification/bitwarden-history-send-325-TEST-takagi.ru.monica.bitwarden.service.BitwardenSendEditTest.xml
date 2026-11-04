@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-04T09:30:09" hostname="JOYIN" time="0.721">
+  <properties/>
+  <testcase name="concurrentRemoteChangesIncludingOpaqueFieldsRejectBaseline" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.032"/>
+  <testcase name="passwordReplacementHashesExactSpacesWithOriginalMaterial" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.307"/>
+  <testcase name="fileEditRetainsAttachmentKeyIdAndOpaqueFields" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.037"/>
+  <testcase name="upperCaseResponseDoesNotLeaveDuplicateChangedFields" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.04"/>
+  <testcase name="invalidDatesLimitsAndEmptyReplacementAreRejected" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.045"/>
+  <testcase name="keepPasswordSendsNullAndPreservesAuthentication" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.053"/>
+  <testcase name="removePasswordDoesNotSubstituteAnEmptyPasswordHash" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.038"/>
+  <testcase name="emailAndUnknownAuthRemainOpaqueWhenPasswordIsUnchanged" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.036"/>
+  <testcase name="datesAreIndependentAndNoExpirySerializesNull" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.102"/>
+  <testcase name="editedTextUsesOriginalKeyAndPreservesWhitespace" classname="takagi.ru.monica.bitwarden.service.BitwardenSendEditTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
