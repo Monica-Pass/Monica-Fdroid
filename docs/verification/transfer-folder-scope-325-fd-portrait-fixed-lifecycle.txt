@@ -1,0 +1,118 @@
+11-07 03:39:14.224 10023 10097 I TestRunner: started: keepassSwitchDoesNotAssignPreviousGroupToDelayedDatabase(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:14.338 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: PRE_ON_CREATE
+11-07 03:39:14.356 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: CREATED
+11-07 03:39:14.357 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: STARTED
+11-07 03:39:14.362 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: RESUMED
+11-07 03:39:16.231 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: PAUSED
+11-07 03:39:16.495 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: STOPPED
+11-07 03:39:16.522 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@89f6229 in: DESTROYED
+11-07 03:39:16.558 10023 10097 I TestRunner: finished: keepassSwitchDoesNotAssignPreviousGroupToDelayedDatabase(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:16.582 10023 10097 I TestRunner: started: mdbxSwitchDoesNotAssignPreviousFolderToDelayedDatabase(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:16.734 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: PRE_ON_CREATE
+11-07 03:39:16.737 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: CREATED
+11-07 03:39:16.737 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: STARTED
+11-07 03:39:16.738 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: RESUMED
+11-07 03:39:18.116 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: PAUSED
+11-07 03:39:18.165 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: STOPPED
+11-07 03:39:18.199 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ee4c68c in: DESTROYED
+11-07 03:39:18.204 10023 10097 I TestRunner: finished: mdbxSwitchDoesNotAssignPreviousFolderToDelayedDatabase(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:18.207 10023 10097 I TestRunner: started: localMoveAndCopyExcludeMdbxMirrorsButKeepEmptyAndLinkedFolders(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:18.234 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: PRE_ON_CREATE
+11-07 03:39:18.236 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: CREATED
+11-07 03:39:18.236 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: STARTED
+11-07 03:39:18.237 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: RESUMED
+11-07 03:39:19.362 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: PAUSED
+11-07 03:39:19.415 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: STOPPED
+11-07 03:39:19.442 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1e407f5 in: DESTROYED
+11-07 03:39:19.447 10023 10097 I TestRunner: finished: localMoveAndCopyExcludeMdbxMirrorsButKeepEmptyAndLinkedFolders(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:19.447 10023 10097 I TestRunner: started: pendingKeePassConfirmationRechecksConflictAndCannotBeReplayed(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:19.466 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: PRE_ON_CREATE
+11-07 03:39:19.467 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: CREATED
+11-07 03:39:19.468 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: STARTED
+11-07 03:39:19.469 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: RESUMED
+11-07 03:39:20.238 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: PAUSED
+11-07 03:39:20.276 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: STOPPED
+11-07 03:39:20.314 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88a1100 in: DESTROYED
+11-07 03:39:20.318 10023 10097 I TestRunner: finished: pendingKeePassConfirmationRechecksConflictAndCannotBeReplayed(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:20.318 10023 10097 I TestRunner: started: validDelayedConfirmationKeepsOriginalSourceCallbackAndRunsOnce(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:20.341 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: PRE_ON_CREATE
+11-07 03:39:20.342 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: CREATED
+11-07 03:39:20.343 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: STARTED
+11-07 03:39:20.344 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: RESUMED
+11-07 03:39:20.946 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: PAUSED
+11-07 03:39:20.999 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: STOPPED
+11-07 03:39:21.016 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@9f4c92c in: DESTROYED
+11-07 03:39:21.021 10023 10097 I TestRunner: finished: validDelayedConfirmationKeepsOriginalSourceCallbackAndRunsOnce(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:21.022 10023 10097 I TestRunner: started: largeTextDarkModeKeepsRootArchiveAndCancelUsable(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:21.041 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: PRE_ON_CREATE
+11-07 03:39:21.043 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: CREATED
+11-07 03:39:21.043 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: STARTED
+11-07 03:39:21.044 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: RESUMED
+11-07 03:39:22.143 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: PAUSED
+11-07 03:39:22.193 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: STOPPED
+11-07 03:39:22.195 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ff32f6d in: DESTROYED
+11-07 03:39:22.200 10023 10097 I TestRunner: finished: largeTextDarkModeKeepsRootArchiveAndCancelUsable(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:22.201 10023 10097 I TestRunner: started: reclassifiedOrRemovedLocalSelectionCannotConfirmOrResumePreflight(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:22.223 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: PRE_ON_CREATE
+11-07 03:39:22.225 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: CREATED
+11-07 03:39:22.226 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: STARTED
+11-07 03:39:22.226 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: RESUMED
+11-07 03:39:23.137 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: PAUSED
+11-07 03:39:23.194 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: STOPPED
+11-07 03:39:23.212 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@88967e6 in: DESTROYED
+11-07 03:39:23.217 10023 10097 I TestRunner: finished: reclassifiedOrRemovedLocalSelectionCannotConfirmOrResumePreflight(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:23.218 10023 10097 I TestRunner: started: changingSourceRevokesPendingConfirmationEvenAfterReselectingSameFolder(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:23.239 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: PRE_ON_CREATE
+11-07 03:39:23.240 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: CREATED
+11-07 03:39:23.240 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: STARTED
+11-07 03:39:23.241 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: RESUMED
+11-07 03:39:24.144 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: PAUSED
+11-07 03:39:24.200 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: STOPPED
+11-07 03:39:24.214 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@de0664a in: DESTROYED
+11-07 03:39:24.217 10023 10097 I TestRunner: finished: changingSourceRevokesPendingConfirmationEvenAfterReselectingSameFolder(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:24.218 10023 10097 I TestRunner: started: noAllowedSourceDoesNotFallBackToLocalFolders(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:24.240 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: PRE_ON_CREATE
+11-07 03:39:24.241 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: CREATED
+11-07 03:39:24.241 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: STARTED
+11-07 03:39:24.242 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: RESUMED
+11-07 03:39:24.528 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: PAUSED
+11-07 03:39:24.582 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: STOPPED
+11-07 03:39:24.597 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@1a2dfff in: DESTROYED
+11-07 03:39:24.606 10023 10097 I TestRunner: finished: noAllowedSourceDoesNotFallBackToLocalFolders(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:24.610 10023 10097 I TestRunner: started: pendingConfirmationIsRevokedByActionChangesAndSheetDisposal(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:24.627 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: PRE_ON_CREATE
+11-07 03:39:24.629 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: CREATED
+11-07 03:39:24.629 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: STARTED
+11-07 03:39:24.630 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: RESUMED
+11-07 03:39:25.610 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: PAUSED
+11-07 03:39:25.676 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: STOPPED
+11-07 03:39:25.686 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@ce9aa16 in: DESTROYED
+11-07 03:39:25.691 10023 10097 I TestRunner: finished: pendingConfirmationIsRevokedByActionChangesAndSheetDisposal(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:25.692 10023 10097 I TestRunner: started: bitwardenSwitchDoesNotAssignPreviousFolderToDelayedVault(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:25.708 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: PRE_ON_CREATE
+11-07 03:39:25.710 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: CREATED
+11-07 03:39:25.710 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: STARTED
+11-07 03:39:25.710 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: RESUMED
+11-07 03:39:26.709 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: PAUSED
+11-07 03:39:26.764 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: STOPPED
+11-07 03:39:26.780 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@96833a2 in: DESTROYED
+11-07 03:39:26.783 10023 10097 I TestRunner: finished: bitwardenSwitchDoesNotAssignPreviousFolderToDelayedVault(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:26.784 10023 10097 I TestRunner: started: missingNativeFolderRevokesSelection(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:26.802 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: PRE_ON_CREATE
+11-07 03:39:26.803 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: CREATED
+11-07 03:39:26.804 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: STARTED
+11-07 03:39:26.805 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: RESUMED
+11-07 03:39:27.243 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: PAUSED
+11-07 03:39:27.305 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: STOPPED
+11-07 03:39:27.317 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@fb3afdb in: DESTROYED
+11-07 03:39:27.325 10023 10097 I TestRunner: finished: missingNativeFolderRevokesSelection(takagi.ru.monica.ui.components.MoveFolderScopeTest)
+11-07 03:39:27.327 10023 10097 I TestRunner: started: nestedFolderSelectionSurvivesRecompositionAndCopyReturnsItsIdentity(takagi.ru.monica.steam.SteamFolderPickerTest)
+11-07 03:39:27.347 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: PRE_ON_CREATE
+11-07 03:39:27.348 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: CREATED
+11-07 03:39:27.349 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: STARTED
+11-07 03:39:27.349 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: RESUMED
+11-07 03:39:27.999 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: PAUSED
+11-07 03:39:28.047 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: STOPPED
+11-07 03:39:28.063 10023 10023 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@f1cd688 in: DESTROYED
+11-07 03:39:28.068 10023 10097 I TestRunner: finished: nestedFolderSelectionSurvivesRecompositionAndCopyReturnsItsIdentity(takagi.ru.monica.steam.SteamFolderPickerTest)
+11-07 03:39:28.069 10023 10097 I TestRunner: run finished: 13 tests, 0 failed, 0 ignored

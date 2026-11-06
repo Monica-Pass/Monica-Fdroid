@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-06T19:13:22" hostname="JOYIN" time="0.459">
+  <properties/>
+  <testcase name="resolveLocalCategoryIdsInScope_returnsOnlySelectedCategoryWhenDescendantsDisabled" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.001"/>
+  <testcase name="resolveLocalCategoryIdsInScope_includesAllNestedCategoriesCaseInsensitively" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.0"/>
+  <testcase name="buildLocalCategoryPathOptions_includesVirtualParentDirectories" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.004"/>
+  <testcase name="resolveLocalCategoryIdsInScope_keepsSelectedIdWhenCategoryListIsTemporarilyEmpty" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.0"/>
+  <testcase name="localCategoryHierarchyLabel_usesLeafNameWithDepthIndent" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.003"/>
+  <testcase name="planLocalCategoryRename_renamesTheWholeSubtreeButKeepsItsParent" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.298"/>
+  <testcase name="planLocalCategoryRename_rejectsANameThatWouldCollideWithAnotherTree" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.152"/>
+  <testcase name="buildLocalCategoryPathOptions_canReturnOnlyRealCategoryTargets" classname="takagi.ru.monica.utils.LocalCategoryMoveSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
