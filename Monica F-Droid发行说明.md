@@ -1,5 +1,3 @@
-# 未发布 / Unreleased
-
 # Monica for Android (F-Droid) 1.0.326
 
 ## 中文
