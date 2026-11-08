@@ -3,6 +3,7 @@ package takagi.ru.monica.autofill_ng.protection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import takagi.ru.monica.BuildConfig
 
 class AccessibilityServiceRestartTest {
     private val other = "com.example.reader/.ReaderService"
@@ -46,17 +47,18 @@ class AccessibilityServiceRestartTest {
 
     @Test fun restartsOnlyFdroidWhenBothEditionsAreEnabled() {
         val main = "takagi.ru.monica/takagi.ru.monica.service.MonicaAccessibilityService"
-        val fdroid = "takagi.ru.monica.fdroid/takagi.ru.monica.service.MonicaAccessibilityService"
+        val fdroid = "${BuildConfig.APPLICATION_ID}/takagi.ru.monica.service.MonicaAccessibilityService"
         val original = "$main:$other:$fdroid"
         val settings = Settings(original)
         assertEquals(AccessibilityRecoveryResult.RESTART_REQUESTED, AccessibilityServiceRestart(settings) {
             assertEquals("$main:$other", settings.value)
         }.restart())
         assertEquals(listOf("$main:$other", original), settings.writes)
+        assertEquals(original, settings.value)
     }
 
     @Test fun aServiceClassRelativeToTheFdroidPackageIsNotOurService() {
-        val settings = Settings("takagi.ru.monica.fdroid/.service.MonicaAccessibilityService")
+        val settings = Settings("${BuildConfig.APPLICATION_ID}/.service.MonicaAccessibilityService")
         assertEquals(AccessibilityRecoveryResult.NOT_ENABLED, AccessibilityServiceRestart(settings) {}.restart())
         assertTrue(settings.writes.isEmpty())
     }

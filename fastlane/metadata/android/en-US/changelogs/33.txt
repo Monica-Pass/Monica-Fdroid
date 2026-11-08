@@ -1,0 +1,1 @@
+Fix missing native KeePass entries in autofill lists, search and folder filters (#179), including empty folders and readable names. Correctly handle literal native credentials. Selection, system suggestions and Smart Copy recheck authorization, locks and file revisions. Local Fill and bind preserves other content; read-only, remote and referenced binding fields are excluded.
