@@ -217,6 +217,7 @@ android {
 
 // Compile the JNI bridge from the sources in this checkout.
 apply from: rootProject.file('gradle/rust-toolchain.gradle')
+apply from: rootProject.file('gradle/verify-platform-xml.gradle')
 def monicaRustSourceDir = new File(rootDir, 'rust-jni')
 def monicaAndroidSdkDirectory = androidComponents.sdkComponents.sdkDirectory
 tasks.register('buildMonicaRustJniFromSource') {
@@ -361,7 +362,14 @@ dependencies {
     implementation libs.kotlinx.serialization.json
     
     // WebDAV for cloud backup
-    implementation 'com.github.thegrizzlylabs:sardine-android:0.8'
+    implementation('com.github.thegrizzlylabs:sardine-android:0.8') {
+        // Sardine's Gradle metadata omits the XML exclusions present in its POM.
+        // Android provides XmlPullParser; packaging Xpp3 lets R8 rewrite that
+        // platform interface and breaks parsers returned by android.util.Xml.
+        exclude group: 'xpp3', module: 'xpp3'
+        exclude group: 'stax', module: 'stax'
+        exclude group: 'stax', module: 'stax-api'
+    }
     
     // KeePass KDBX library for KeePass compatibility
     // 0.10.0 is the newest release compatible with the project's Kotlin 1.9 toolchain.
