@@ -499,6 +499,11 @@ class MainActivity : BaseMonicaActivity() {
         }
 
         setContent {
+            takagi.ru.monica.ui.SecureStoreGenerationGate(securityManager, onReload = {
+                // Activity recreation otherwise retains ViewModels holding retired credentials.
+                viewModelStore.clear()
+                recreate()
+            }) {
             androidx.compose.runtime.CompositionLocalProvider(
                 takagi.ru.monica.nfc.card.LocalNfcCardEntry provides nfcCardEntry
             ) {
@@ -511,6 +516,7 @@ class MainActivity : BaseMonicaActivity() {
                 mdbxRepository = mdbxRepository,
                 externalTotpImportController = externalTotpImportController
             )
+            }
             }
         }
     }
@@ -2990,10 +2996,7 @@ fun MonicaContent(
                     onNavigateBack = {
                         navController.popBackStack()
                     },
-                    onPasswordChanged = { currentPassword, newPassword ->
-                        // TODO: 实现修改密码逻辑
-                        viewModel.changePassword(currentPassword, newPassword)
-                    }
+                    securityManager = securityManager
                 )
             }
         }
