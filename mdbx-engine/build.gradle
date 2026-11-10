@@ -1,11 +1,10 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace 'takagi.ru.monica.mdbx.engine'
-    compileSdk 35
+    compileSdk 37
 
     defaultConfig {
         minSdk 26
@@ -25,8 +24,11 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = '11'
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
     }
 }
 
@@ -42,6 +44,7 @@ def mdbxRustSourceDir = (project.findProperty('mdbxRustSrc')
         ?: System.getenv('MDBX_RUST_SRC')
         ?: new File(rootDir, 'Mdbx-ffi').absolutePath) as String
 def mdbxRustCommit = '5cf8af697727095654884e0a76bec6ca12d0ce6b+glitter-overlay'
+def mdbxAndroidSdkDirectory = androidComponents.sdkComponents.sdkDirectory
 
 tasks.register('buildMdbxFfiFromSource') {
     group = 'build'
@@ -68,7 +71,7 @@ tasks.register('buildMdbxFfiFromSource') {
                        '-o', outputDir.absolutePath,
                        'build', '--locked', '--profile', 'mdbx3-release', '-p', 'mdbx-ffi']
         println "Building libmdbx_ffi.so from ${sourceDir} (cargo ndk)"
-        def proc = rustCargoProcess(command, sourceDir, android.sdkDirectory)
+        def proc = rustCargoProcess(command, sourceDir, mdbxAndroidSdkDirectory.get().asFile)
         def rustFlags = proc.environment().get('RUSTFLAGS')?.trim()
         proc.environment().put('RUSTFLAGS', rustFlags ? "${rustFlags} -C link-arg=-Wl,--build-id=sha1" : '-C link-arg=-Wl,--build-id=sha1')
         proc = proc.start()

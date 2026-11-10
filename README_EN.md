@@ -1,5 +1,5 @@
 
-This repository is only for **F-Droid** builds. Main repository: [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
+This repository is only for **F-Droid** builds. Main repository: [Monica](https://github.com/Monica-Pass/Monica)
 # Monica Local Password Vault
 
 <div align="center">
@@ -11,9 +11,9 @@ This repository is only for **F-Droid** builds. Main repository: [Monica for And
 <p><strong>A local-first password vault that bridges Bitwarden and KeePass</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-[![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
-[![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
-[![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
+[![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-Fdroid?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/releases)
+[![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-Fdroid/total?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/releases)
+[![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-Fdroid?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/commits)
 [![QQ Group](https://img.shields.io/badge/QQ%20Group-1087865010-12B7F5?style=flat-square&logo=tencentqq&logoColor=white)](https://qm.qq.com/q/2vTdTkHV3u)
 [![Telegram](https://img.shields.io/badge/Telegram-Monica%20Community-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+IZUDLL-vWOA1Y2U1)
 
@@ -36,27 +36,30 @@ Website: https://monica-pass.github.io/MonicaDocs/
 ## User First
 
 ### Who Monica is for
+
 - Users who want local-first password management instead of fully hosted cloud storage.
 - Users who work with both Bitwarden data and KeePass (`.kdbx`) files.
 - Users who need autofill in Android apps and mobile browsers.
 
 ### What you get
+
 - Encrypted local vault for logins, cards, identity data, notes, and attachments.
 - Dual ecosystem integration: Android includes Bitwarden API/sync capability and KeePass (`.kdbx`) read/write support.
-- Optional sync/backup through your own WebDAV infrastructure.
+- Optional WebDAV backup and remote vault sync, plus paired local-network transfers.
 - Built-in TOTP management in the same app.
 
 ### MDBX local database format
 MDBX is Monica's local-first encrypted vault format in progress. It is not just a password table; it is designed around nested folders, attachments, commit history, conflict detection, tombstone-based deletion, snapshot recovery, and Tiga security modes.
 
-If you want to integrate MDBX in another client, start with the [MDBX workspace README](mdbx/README.en.md) and the [MDBX client integration guide](mdbx/CLIENT_INTEGRATION_GUIDE.md). The full format specification lives in [mdbx/docs](mdbx/docs/README.md).
+If you want to integrate MDBX in another client, start with the [MDBX workspace README](Mdbx-ffi/README.en.md) and the [MDBX client integration guide](Mdbx-ffi/CLIENT_INTEGRATION_GUIDE.md). The full format specification lives in [mdbx/docs](Mdbx-ffi/docs/README.md).
 
 ### Quick install
 
-1. Download the latest APK from [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases).
+1. Install the available version from the [F-Droid app page](https://f-droid.org/packages/takagi.ru.monica.fdroid/); build and publication timing are managed by F-Droid.
 2. Install on Android 8.0+ and initialize your master password.
 
 ### Known limitation
+
 - Due to system compatibility constraints, Monica for Android currently cannot create passkeys on some Xiaomi HyperOS devices. You can try [HyperMonica](https://github.com/Wuming155/HyperMonica), a workaround module contributed by a Coolapk community member.
 
 ---
@@ -64,6 +67,7 @@ If you want to integrate MDBX in another client, start with the [MDBX workspace 
 ## Android Focus
 
 ### Core capabilities
+
 - Local vault for credential storage.
 - Aggregated import/integration with KeePass and Bitwarden.
 - Fast search by title, domain, and tags.
@@ -71,19 +75,22 @@ If you want to integrate MDBX in another client, start with the [MDBX workspace 
 - Unified TOTP storage and generation.
 
 ### Implementation details
-- UI: Jetpack Compose + Material 3 + Navigation Compose.
-- Data: Room (`PasswordDatabase`) + DAO + Repository.
+
+- UI: Jetpack Compose + Material 3 Expressive + Navigation Compose.
+- Data: Room (`PasswordDatabase`) + DAO + Repository, with native KDBX and MDBX storage integrations.
 - Concurrency: Kotlin Coroutines + Flow.
-- DI: Koin (initialized in `MonicaApplication`).
+- Dependency wiring: explicit constructors, factories, and application entry points.
 - Security: Android Keystore, EncryptedSharedPreferences, BiometricPrompt.
 - Background tasks: WorkManager (`AutoBackupWorker`) for automatic WebDAV backup.
 - Protocols and integrations: Retrofit + OkHttp (Bitwarden API), kotpass (KeePass), sardine-android (WebDAV).
 
 ### Security model
-- Encryption: AES-256-GCM (authenticated encryption).
-- KDF: PBKDF2-HMAC-SHA256 (high iteration parameters).
+
+- Local sensitive fields: AES-256-GCM authenticated encryption in `SecurityManager`.
+- Local master password verification and derivation of the password-based MDK wrapping key: PBKDF2-HMAC-SHA256, currently 100,000 iterations.
+- Bitwarden, KeePass, and MDBX use the encryption and key derivation rules of their own formats and configurations.
 - Local protection: master password hash and security settings are managed locally.
-- Network boundary: the app declares network permissions, mainly for Bitwarden integration and WebDAV sync/backup.
+- Network boundary: the app declares network permissions for features such as Bitwarden, WebDAV, local-network transfers, and update checks.
 
 ---
 
@@ -118,32 +125,57 @@ Your support mainly funds:
 ## Developer Notes
 
 ### Project layers (current code layout)
+
 - `takagi/ru/monica/ui`: Compose screens and components.
 - `takagi/ru/monica/data`: Room entities, DAO, database migrations.
 - `takagi/ru/monica/repository`: data access wrappers.
 - `takagi/ru/monica/security`: encryption, key handling, authentication-related logic.
 - `takagi/ru/monica/bitwarden`: API, crypto, mapper, sync, and viewmodel logic.
-- `takagi/ru/monica/autofill`: Autofill services and flows.
+- `takagi/ru/monica/autofill_ng`: Autofill services and flows.
 - `takagi/ru/monica/passkey`: Android 14+ credential provider implementation.
 - `takagi/ru/monica/workers`: background tasks such as automatic WebDAV backup.
-- `mdbx`: Rust workspace and client integration documents for Monica's MDBX local database format.
+- `Mdbx-ffi`: Rust workspace and client integration documents for Monica's MDBX local database format.
 
-### Mature components currently used (verifiable in repo)
-- Android UI: Jetpack Compose, Material 3, Navigation Compose.
+### Main components (verifiable in source)
+
+- Android UI: Jetpack Compose, Material 3 Expressive, Navigation Compose.
 - Data and state: Room, DataStore Preferences, ViewModel.
 - Security: Android Keystore, EncryptedSharedPreferences, BiometricPrompt.
 - Network and protocol: Retrofit, OkHttp, Kotlinx Serialization.
 - Sync and ecosystem: sardine-android (WebDAV), kotpass (KeePass), Bitwarden API integration.
 - Async and jobs: Coroutines, Flow, WorkManager.
-- Additional capabilities: CameraX + ML Kit (QR scan), Credentials API (Passkey).
+- Additional capabilities: CameraX + ZXing (QR scan), Credentials API (Passkey).
 
 ### Build and contribution
-- Android Studio: latest stable.
-- JDK: 17+.
-- Android config: `compileSdk 35`, `targetSdk 34`, `minSdk 26` (see `Monica for Android/app/build.gradle`).
-- Android build baseline: AGP `8.6.0`, Kotlin `2.0.21`, Compose BOM `2026.03.00` (Material3 aligned by BOM).
-- Version source of truth: `Monica for Android/gradle/libs.versions.toml` and `Monica for Android/app/build.gradle`.
-- Contributions via Issues and PRs are welcome.
+
+The table describes the current development checkout. It does not imply that these versions are in the latest published APK.
+
+| Component | Current source configuration |
+| --- | --- |
+| Build JDK / Java and Kotlin bytecode | JDK 17 / target 11 |
+| Android SDK | compile 37 · target 34 · minimum 26 (Android 8.0) |
+| Gradle Wrapper / Android Gradle Plugin | 9.7.0 / 9.3.1 |
+| Kotlin / KSP | 2.4.21 / 2.3.13 |
+| Compose BOM | 2026.09.00 |
+| Material 3 Expressive | 1.5.0-rc01, pinned separately from the BOM |
+| Room / Navigation Compose | 2.8.5 / 2.10.2 |
+| Lifecycle Runtime and ViewModel | 2.11.0 |
+| DataStore / WorkManager / CameraX | 1.3.0 / 2.12.0 / 1.6.2 |
+
+Use an Android Studio version compatible with the configured AGP, or the Gradle Wrapper from the command line. Install SDK Platform 37, an Android NDK, Rust, and `cargo-ndk`; JNI libraries are built from source.
+
+Version sources: [version catalog](gradle/libs.versions.toml), [Gradle Wrapper](gradle/wrapper/gradle-wrapper.properties), and [app build configuration](app/build.gradle). Setup details: [Android build guide (Chinese)](README_ZH.md).
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+# Prepare the application and instrumentation APKs for an x86_64 emulator:
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -PincludeX86TestAbi
+```
+
+Run these commands from the repository root. In Windows PowerShell, use `./gradlew.bat`. Default APK builds target ARM; the last command adds x86_64 and prepares test APKs without running device tests.
+
+Contributions via Issues and PRs are welcome.
 
 ---
 
@@ -170,7 +202,7 @@ Monica's design, compatibility work, and several feature directions have been in
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Monica-Pass/Monica-for-Android&type=Date)](https://star-history.com/#Monica-Pass/Monica-for-Android&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Monica-Pass/Monica-Fdroid&type=Date)](https://star-history.com/#Monica-Pass/Monica-Fdroid&Date)
 
 ---
 
@@ -195,7 +227,7 @@ Monica is released under [GNU General Public License v3.0](LICENSE).
 ## Third-Party Icon Attribution
 
 - This project locally bundles icon assets from the [Stratum Auth app](https://github.com/stratumauth/app) (version [v1.4.0](https://github.com/stratumauth/app/releases/tag/v1.4.0), directories [icons](https://github.com/stratumauth/app/tree/v1.4.0/icons) / [extraicons](https://github.com/stratumauth/app/tree/v1.4.0/extraicons), GPL-3.0).
-- Bank card/payment icon source: local directory [SVG Credit Card & Payment Icons](svg-credit-card-payment-icons-main) (Apache-2.0).
+- Bank card/payment icon source: [SVG Credit Card & Payment Icons](https://github.com/aaronfagan/svg-credit-card-payment-icons) (Apache-2.0).
 - Brand names and logos remain the property of their respective owners.
 
 ## F-Droid contact

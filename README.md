@@ -1,5 +1,5 @@
 
-本仓库只用于 **F-Droid** 构建，主仓库为 [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
+本仓库只用于 **F-Droid** 构建，主仓库为 [Monica](https://github.com/Monica-Pass/Monica)
 
 本版更新见 [F-Droid 发行说明](Monica%20F-Droid发行说明.md)，维护者发布步骤见 [标签自动更新指南](docs/fdroid-release.md)。
 
@@ -15,9 +15,9 @@
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
 
-[![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
-[![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
-[![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
+[![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-Fdroid?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/releases)
+[![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-Fdroid/total?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/releases)
+[![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-Fdroid?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/commits)
 [![QQ群](https://img.shields.io/badge/QQ群-1087865010-12B7F5?style=flat-square&logo=tencentqq&logoColor=white)](https://qm.qq.com/q/2vTdTkHV3u)
 [![Telegram](https://img.shields.io/badge/Telegram-Monica%20Community-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+IZUDLL-vWOA1Y2U1)
 
@@ -40,14 +40,16 @@ Monica 是一个聚合 **Bitwarden** 与 **KeePass** 的本地密码库（Local 
 ## 用户先看
 
 ### Monica 适合谁
+
 - 需要本地优先密码管理，不希望账号数据托管到第三方云。
 - 既使用 Bitwarden，也维护 KeePass (`.kdbx`) 数据。
 - 需要在 Android 应用和手机浏览器中使用自动填充。
 
 ### 你能得到什么
+
 - 本地加密保险箱: 登录信息、银行卡、身份信息、私密笔记、附件。
 - 双生态聚合: Android 端包含 Bitwarden API/同步能力与 KeePass (`.kdbx`) 读写能力。
-- 可选同步与备份: 通过自有 WebDAV 基础设施实现跨设备数据流转。
+- 可选同步与备份: WebDAV 备份及远端库同步，以及配对后的局域网传输。
 - 内置 TOTP: 在同一应用内完成密码与二次验证码管理。
 
 ### MDBX 本地数据库格式
@@ -55,14 +57,15 @@ Monica 是一个聚合 **Bitwarden** 与 **KeePass** 的本地密码库（Local 
 跨端开发与 AI 适配请先遵守 [Monica MDBX 存储兼容契约](docs/storage/MDBX-CROSS-CLIENT-CONTRACT.zh-CN.md)，其中区分了核心格式、业务类型、未知字段保留和同步验收要求。
 MDBX 是 Monica 正在推进的本地优先加密 vault 格式。它不是简单的密码表，而是围绕嵌套文件夹、附件、提交历史、冲突检测、tombstone 删除链路、快照恢复和 Tiga 安全模式设计的数据库格式。
 
-如果你要在其他客户端接入 MDBX，请先读 [MDBX workspace 说明](mdbx/README.md) 和 [MDBX 客户端接入指南](mdbx/CLIENT_INTEGRATION_GUIDE.zh-CN.md)。完整格式规范在 [mdbx/docs](mdbx/docs/README.zh-CN.md)。
+如果你要在其他客户端接入 MDBX，请先读 [MDBX workspace 说明](Mdbx-ffi/README.md) 和 [MDBX 客户端接入指南](Mdbx-ffi/CLIENT_INTEGRATION_GUIDE.zh-CN.md)。完整格式规范在 [mdbx/docs](Mdbx-ffi/docs/README.zh-CN.md)。
 
 ### 快速安装
 
-1. 从 [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases) 下载最新 APK。
+1. 从 [F-Droid 应用页面](https://f-droid.org/packages/takagi.ru.monica.fdroid/) 安装该渠道提供的版本；构建与上架进度以 F-Droid 为准。
 2. 在 Android 8.0+ 设备安装并初始化主密码。
 
 ### 已知限制
+
 - 由于系统兼容性原因，Monica for Android 目前在部分小米 HyperOS 设备上无法创建通行密钥（Passkey）。可以尝试酷 U 提供的解决模块：[HyperMonica](https://github.com/Wuming155/HyperMonica)。
 
 ---
@@ -70,26 +73,30 @@ MDBX 是 Monica 正在推进的本地优先加密 vault 格式。它不是简单
 ## Android 版本重点
 
 ### 核心功能
+
 - 本地 Vault: 所有核心凭据本地加密存储。
 - 聚合导入: 支持 KeePass 数据迁移与 Bitwarden 兼容接入。
 - 智能检索: 按标题、域名、标签快速定位凭据。
 - 生物识别解锁: 使用系统级生物识别能力提升安全与可用性。
 - TOTP 管理: 统一存储并生成动态验证码。
 
-### 实现说明（专业版）
-- UI 层: Jetpack Compose + Material 3 + Navigation Compose。
-- 数据层: Room（`PasswordDatabase`）+ DAO + Repository。
+### 实现说明
+
+- UI 层: Jetpack Compose + Material 3 Expressive + Navigation Compose。
+- 数据层: Room（`PasswordDatabase`）+ DAO + Repository，并接入原生 KDBX 与 MDBX 存储。
 - 并发模型: Kotlin Coroutines + Flow。
-- 依赖注入: Koin（应用启动于 `MonicaApplication`）。
+- 依赖装配: 通过构造函数、工厂及应用入口显式传递依赖。
 - 安全能力: Android Keystore、EncryptedSharedPreferences、BiometricPrompt。
 - 同步任务: WorkManager（`AutoBackupWorker`）用于自动 WebDAV 备份。
 - 协议与集成: Retrofit + OkHttp（Bitwarden API）、kotpass（KeePass）、sardine-android（WebDAV）。
 
 ### 安全模型
-- 加密算法: AES-256-GCM（认证加密）。
-- 密钥派生: PBKDF2-HMAC-SHA256（高迭代参数）。
+
+- 本地敏感字段: 由 `SecurityManager` 使用 AES-256-GCM 认证加密。
+- 本地主密码校验及 MDK 密码包装密钥: PBKDF2-HMAC-SHA256，当前迭代次数为 100,000。
+- Bitwarden、KeePass 与 MDBX: 使用各自格式和配置规定的加密及密钥派生方式。
 - 本地保护: 主密码哈希与安全配置由本地安全组件管理。
-- 网络边界: 应用声明网络权限，主要用于 Bitwarden 联动与 WebDAV 备份/同步等在线能力。
+- 网络边界: 应用声明网络权限，用于 Bitwarden、WebDAV、局域网传输和更新检查等功能。
 
 ---
 
@@ -143,32 +150,57 @@ MDBX 是 Monica 正在推进的本地优先加密 vault 格式。它不是简单
 ## 开发者信息
 
 ### 项目分层（代码现状）
+
 - `takagi/ru/monica/ui`: Compose 页面与组件。
 - `takagi/ru/monica/data`: Room 实体、DAO、数据库迁移。
 - `takagi/ru/monica/repository`: 数据访问封装。
 - `takagi/ru/monica/security`: 加密、密钥与鉴权相关实现。
 - `takagi/ru/monica/bitwarden`: API、加密、映射、同步与视图模型。
-- `takagi/ru/monica/autofill`: 自动填充服务与流程。
+- `takagi/ru/monica/autofill_ng`: 自动填充服务与流程。
 - `takagi/ru/monica/passkey`: Android 14+ Credential Provider 相关实现。
 - `takagi/ru/monica/workers`: 后台任务（如自动 WebDAV 备份）。
-- `mdbx`: Monica MDBX 本地数据库格式的 Rust workspace 与客户端接入文档。
+- `Mdbx-ffi`: Monica MDBX 本地数据库格式的 Rust workspace 与客户端接入文档。
 
-### 当前已使用的成熟组件（仓库可验证）
-- Android UI: Jetpack Compose, Material 3, Navigation Compose。
+### 主要组件（源码可验证）
+
+- Android UI: Jetpack Compose, Material 3 Expressive, Navigation Compose。
 - 数据与状态: Room, DataStore Preferences, ViewModel。
 - 安全: Android Keystore, EncryptedSharedPreferences, BiometricPrompt。
 - 网络与协议: Retrofit, OkHttp, Kotlinx Serialization。
 - 同步与生态: sardine-android(WebDAV), kotpass(KeePass), Bitwarden API 对接。
 - 异步与任务: Coroutines, Flow, WorkManager。
-- 其他能力: CameraX + ML Kit（二维码扫描）, Credentials API（Passkey）。
+- 其他能力: CameraX + ZXing（二维码扫描）, Credentials API（Passkey）。
 
 ### 构建与贡献
-- Android Studio: 最新稳定版。
-- JDK: 17+。
-- Android 配置: `compileSdk 35`，`targetSdk 34`，`minSdk 26`（见 `Monica for Android/app/build.gradle`）。
-- Android 构建基线: AGP `8.6.0`，Kotlin `2.0.21`，Compose BOM `2026.03.00`（Material3 跟随 BOM）。
-- 版本信息以 `Monica for Android/gradle/libs.versions.toml` 与 `Monica for Android/app/build.gradle` 为准。
-- 欢迎通过 Issue / PR 参与功能和安全改进。
+
+下表对应当前开发源码，不代表这些版本已包含在最新发布的 APK 中。
+
+| 组件 | 当前源码配置 |
+| --- | --- |
+| 构建 JDK / Java 与 Kotlin 字节码 | JDK 17 / target 11 |
+| Android SDK | compile 37 · target 34 · minimum 26（Android 8.0） |
+| Gradle Wrapper / Android Gradle Plugin | 9.7.0 / 9.3.1 |
+| Kotlin / KSP | 2.4.21 / 2.3.13 |
+| Compose BOM | 2026.09.00 |
+| Material 3 Expressive | 1.5.0-rc01，独立固定，不随 BOM |
+| Room / Navigation Compose | 2.8.5 / 2.10.2 |
+| Lifecycle Runtime 与 ViewModel | 2.11.0 |
+| DataStore / WorkManager / CameraX | 1.3.0 / 2.12.0 / 1.6.2 |
+
+使用与当前 AGP 兼容的 Android Studio，或直接运行 Gradle Wrapper。构建前准备 SDK Platform 37、Android NDK、Rust 和 `cargo-ndk`；JNI 库会从源码构建。
+
+版本以[依赖目录](gradle/libs.versions.toml)、[Gradle Wrapper](gradle/wrapper/gradle-wrapper.properties)和[应用构建配置](app/build.gradle)为准。完整环境准备见 [Android 构建说明](README_ZH.md)。
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+# 为 x86_64 模拟器准备主包与设备测试包：
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest -PincludeX86TestAbi
+```
+
+以上命令在仓库根目录执行；Windows PowerShell 使用 `./gradlew.bat`。默认 APK 面向 ARM；最后一条增加 x86_64 并打包测试 APK，不会自动运行设备测试。
+
+欢迎通过 Issue / PR 参与功能和安全改进。
 
 ---
 
@@ -195,7 +227,7 @@ Monica 的设计、兼容性适配与部分功能方向，受到了以下优秀�
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Monica-Pass/Monica-for-Android&type=Date)](https://star-history.com/#Monica-Pass/Monica-for-Android&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Monica-Pass/Monica-Fdroid&type=Date)](https://star-history.com/#Monica-Pass/Monica-Fdroid&Date)
 
 ---
 
@@ -220,7 +252,7 @@ Monica 基于 [GNU General Public License v3.0](LICENSE) 开源发布。
 ## 第三方图标标注
 
 - 本项目本地打包了来自 [Stratum Auth app](https://github.com/stratumauth/app) 的图标资源（版本 [v1.4.0](https://github.com/stratumauth/app/releases/tag/v1.4.0)，目录 [icons](https://github.com/stratumauth/app/tree/v1.4.0/icons) / [extraicons](https://github.com/stratumauth/app/tree/v1.4.0/extraicons)，GPL-3.0）。
-- 银行卡/支付卡图标来源：本地目录 [SVG Credit Card & Payment Icons](svg-credit-card-payment-icons-main)（Apache-2.0）。
+- 银行卡/支付卡图标来源：[SVG Credit Card & Payment Icons](https://github.com/aaronfagan/svg-credit-card-payment-icons)（Apache-2.0）。
 - 品牌名称与 Logo 的商标权归各自权利人所有。
 
 ## F-Droid 联系方式

@@ -1,5 +1,7 @@
 
-Этот репозиторий предназначен только для сборки **F-Droid**. Основной репозиторий: [Monica for Android](https://github.com/Monica-Pass/Monica-for-Android)
+Этот репозиторий предназначен только для сборки **F-Droid**. Основной репозиторий: [Monica for Android](https://github.com/Monica-Pass/Monica)
+Версия F-Droid не предоставляет интеграцию OneDrive.
+
 # Monica Локальное хранилище паролей
 
 <div align="center">
@@ -11,9 +13,9 @@
 <p><strong>Локально‑ориентированное хранилище паролей, объединяющее Bitwarden и KeePass</strong></p>
 <p>Android · Local Vault · TOTP · WebDAV Backup</p>
 
-[![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
-[![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-for-Android/total?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/releases)
-[![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-for-Android?style=flat-square)](https://github.com/Monica-Pass/Monica-for-Android/commits)
+[![Release](https://img.shields.io/github/v/release/Monica-Pass/Monica-Fdroid?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/releases)
+[![Downloads](https://img.shields.io/github/downloads/Monica-Pass/Monica-Fdroid/total?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/releases)
+[![Last Commit](https://img.shields.io/github/last-commit/Monica-Pass/Monica-Fdroid?style=flat-square)](https://github.com/Monica-Pass/Monica-Fdroid/commits)
 [![QQ Group](https://img.shields.io/badge/QQ%20Group-1087865010-12B7F5?style=flat-square&logo=tencentqq&logoColor=white)](https://qm.qq.com/q/2vTdTkHV3u)
 [![Telegram](https://img.shields.io/badge/Telegram-Monica%20Community-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+IZUDLL-vWOA1Y2U1)
 
@@ -49,11 +51,11 @@ Monica — это локальное хранилище паролей, кото
 ### Локальный формат базы данных MDBX
 MDBX — это разрабатываемый Monica локально-ориентированный зашифрованный формат vault. Это не просто таблица паролей: формат проектируется вокруг вложенных папок, вложений, истории commit, обнаружения конфликтов, удаления через tombstone, восстановления из snapshot и режимов безопасности Tiga.
 
-Если вы хотите подключить MDBX в другом клиенте, начните с [MDBX workspace README](mdbx/README.en.md) и [MDBX client integration guide](mdbx/CLIENT_INTEGRATION_GUIDE.md). Полная спецификация формата находится в [mdbx/docs](mdbx/docs/README.md).
+Если вы хотите подключить MDBX в другом клиенте, начните с [MDBX workspace README](Mdbx-ffi/README.en.md) и [MDBX client integration guide](Mdbx-ffi/CLIENT_INTEGRATION_GUIDE.md). Полная спецификация формата находится в [Mdbx-ffi/docs](Mdbx-ffi/docs/README.md).
 
 ### Быстрая установка
 
-1. Скачайте последний APK из [Releases](https://github.com/Monica-Pass/Monica-for-Android/releases).
+1. Установите доступную в канале версию со [страницы приложения F-Droid](https://f-droid.org/packages/takagi.ru.monica.fdroid/). GitHub Releases содержит записи о публикации исходного кода и не гарантирует наличие APK.
 2. Установите на Android 8.0+ и задайте мастер‑пароль.
 
 ### Известное ограничение
@@ -74,14 +76,15 @@ MDBX — это разрабатываемый Monica локально-орие�
 - UI: Jetpack Compose + Material 3 + Navigation Compose.
 - Data: Room (`PasswordDatabase`) + DAO + Repository.
 - Concurrency: Kotlin Coroutines + Flow.
-- DI: Koin (инициализация в `MonicaApplication`).
+- Зависимости: Repository и Factory собираются вручную, необходимые объекты передаются явно.
 - Security: Android Keystore, EncryptedSharedPreferences, BiometricPrompt.
 - Фоновые задачи: WorkManager (`AutoBackupWorker`) для автоматического WebDAV‑бэкапа.
 - Протоколы и интеграции: Retrofit + OkHttp (Bitwarden API), kotpass (KeePass), sardine-android (WebDAV).
 
 ### Модель безопасности
-- Шифрование: AES-256-GCM (аутентифицированное шифрование).
-- KDF: PBKDF2-HMAC-SHA256 (высокие параметры итераций).
+- Локальное шифрование полей, которыми управляет `SecurityManager`, использует AES-256-GCM.
+- В локальных путях PBKDF2-HMAC-SHA256 используется для проверки мастер-пароля и выработки ключа обёртывания MDK; само обёртывание MDK выполняется AES-GCM.
+- Bitwarden, KeePass/KDBX и MDBX следуют собственным форматам и правилам шифрования/KDF. Это описание не означает единый алгоритм шифрования всей базы или один KDF для всех хранилищ.
 - Локальная защита: хэш мастер‑пароля и настройки безопасности управляются локально.
 - Сетевой периметр: приложение запрашивает сетевые разрешения в основном для интеграции Bitwarden и WebDAV синхронизации/бэкапа.
 
@@ -118,31 +121,51 @@ MDBX — это разрабатываемый Monica локально-орие�
 ## Заметки для разработчиков
 
 ### Слои проекта (текущая структура кода)
+
+Пути пакетов Kotlin/Java ниже указаны относительно `app/src/main/java/`.
+
 - `takagi/ru/monica/ui`: экраны и компоненты Compose.
 - `takagi/ru/monica/data`: сущности Room, DAO, миграции БД.
 - `takagi/ru/monica/repository`: обертки доступа к данным.
 - `takagi/ru/monica/security`: шифрование, ключи и логика аутентификации.
 - `takagi/ru/monica/bitwarden`: API, криптография, маппинг, синхронизация и логика ViewModel.
-- `takagi/ru/monica/autofill`: сервисы и потоки автозаполнения.
+- `takagi/ru/monica/autofill_ng`: сервисы и потоки автозаполнения.
 - `takagi/ru/monica/passkey`: реализация Credential Provider для Android 14+.
 - `takagi/ru/monica/workers`: фоновые задачи, например WebDAV‑бэкап.
-- `mdbx`: Rust workspace и документы интеграции клиентов для локального формата базы данных Monica MDBX.
+- `Mdbx-ffi`: Rust workspace и документы интеграции клиентов для локального формата базы данных Monica MDBX.
 
 ### Используемые зрелые компоненты (проверяемо в репозитории)
-- Android UI: Jetpack Compose, Material 3, Navigation Compose.
-- Data and state: Room, DataStore Preferences, ViewModel.
+- Android UI: Jetpack Compose, Material 3 Expressive, Navigation Compose `2.10.2`.
+- Данные и состояние: Room `2.8.5`, DataStore Preferences `1.3.0`, Lifecycle ViewModel `2.11.0`.
 - Security: Android Keystore, EncryptedSharedPreferences, BiometricPrompt.
 - Network and protocol: Retrofit, OkHttp, Kotlinx Serialization.
 - Sync and ecosystem: sardine-android (WebDAV), kotpass (KeePass), Bitwarden API integration.
-- Async and jobs: Coroutines, Flow, WorkManager.
-- Additional capabilities: CameraX + ML Kit (QR scan), Credentials API (Passkey).
+- Асинхронность и задачи: Coroutines, Flow, WorkManager `2.12.0`.
+- Дополнительные возможности: CameraX `1.6.2` + ZXing (сканирование QR), Credentials API (Passkey).
 
 ### Сборка и вклад
-- Android Studio: последняя стабильная версия.
-- JDK: 17+.
-- Android config: `compileSdk 35`, `targetSdk 34`, `minSdk 26` (см. `Monica for Android/app/build.gradle`).
-- Базовые версии сборки Android: AGP `8.6.0`, Kotlin `2.0.21`, Compose BOM `2026.03.00` (Material3 синхронизирован по BOM).
-- Источник правды версий: `Monica for Android/gradle/libs.versions.toml` и `Monica for Android/app/build.gradle`.
+
+Ниже приведена конфигурация разработки текущего checkout. Она не обозначает уже выпущенную версию или завершенную проверку на всех устройствах.
+
+| Компонент | Текущая конфигурация |
+| --- | --- |
+| Gradle Wrapper / Android Gradle Plugin | `9.7.0` / `9.3.1` |
+| Kotlin / KSP | `2.4.21` / `2.3.13` |
+| Compose BOM | `2026.09.00` |
+| Material 3 Expressive | Отдельно закреплена версия `1.5.0-rc01`, независимо от BOM |
+| Android SDK | `compileSdk 37`, `targetSdk 34`, `minSdk 26` (Android 8.0+) |
+| JDK для сборки / целевой байткод Java и Kotlin | `17` / `11` |
+
+- Используйте Android Studio с поддержкой этих версий AGP и SDK.
+- Источники конфигурации: [version catalog](gradle/libs.versions.toml), [app/build.gradle](app/build.gradle), [Gradle Wrapper](gradle/wrapper/gradle-wrapper.properties).
+- Проект Android находится в корне этого репозитория. В Windows PowerShell замените `./gradlew` на `./gradlew.bat`.
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+```
+
+- Требования к SDK, NDK и Rust определяются текущими настройками Gradle и CI.
 - Вклад через Issues и PR приветствуется.
 
 ---
@@ -170,7 +193,7 @@ MDBX — это разрабатываемый Monica локально-орие�
 
 ## История звезд
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Monica-Pass/Monica-for-Android&type=Date)](https://star-history.com/#Monica-Pass/Monica-for-Android&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Monica-Pass/Monica-Fdroid&type=Date)](https://star-history.com/#Monica-Pass/Monica-Fdroid&Date)
 
 ---
 
@@ -195,7 +218,7 @@ Monica распространяется по лицензии [GNU General Publi
 ## Указание сторонних иконок
 
 - Проект локально включает ресурсы иконок из [Stratum Auth app](https://github.com/stratumauth/app) (версия [v1.4.0](https://github.com/stratumauth/app/releases/tag/v1.4.0), каталоги [icons](https://github.com/stratumauth/app/tree/v1.4.0/icons) / [extraicons](https://github.com/stratumauth/app/tree/v1.4.0/extraicons), GPL-3.0).
-- Источник иконок банковских/платежных карт: локальный каталог [SVG Credit Card & Payment Icons](svg-credit-card-payment-icons-main) (Apache-2.0).
+- Источник иконок банковских/платежных карт: [SVG Credit Card & Payment Icons](https://github.com/aaronfagan/svg-credit-card-payment-icons) (Apache-2.0).
 - Названия брендов и логотипы принадлежат соответствующим правообладателям.
 
 ## Контакты F-Droid
