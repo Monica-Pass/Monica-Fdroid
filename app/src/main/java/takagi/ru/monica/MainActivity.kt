@@ -372,6 +372,7 @@ private fun AnimatedContentScope.AddEditRouteContent(
 
 class MainActivity : BaseMonicaActivity() {
     private var secureStartupReady = false
+    private var nfcCardEntry: takagi.ru.monica.nfc.card.NfcCardEntryController? = null
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private val externalTotpImportController = ExternalTotpImportController()
 
@@ -406,6 +407,8 @@ class MainActivity : BaseMonicaActivity() {
         val splash = installSplashScreen()
         takagi.ru.monica.security.MainTaskSessionGuard.onMainTaskCreated(this)
         super.onCreate(savedInstanceState) // BaseMonicaActivity 已调用 enableEdgeToEdge()
+        nfcCardEntry = takagi.ru.monica.nfc.card.NfcCardEntryController(this)
+        nfcCardEntry?.receive(intent)
         takagi.ru.monica.security.RuntimeDiagnostics.mainActivityCreated()
         handleExternalTotpIntent(intent)
         takagi.ru.monica.transfer.DataTaskNavigation.receive(this, intent)
@@ -496,6 +499,9 @@ class MainActivity : BaseMonicaActivity() {
         }
 
         setContent {
+            androidx.compose.runtime.CompositionLocalProvider(
+                takagi.ru.monica.nfc.card.LocalNfcCardEntry provides nfcCardEntry
+            ) {
             MonicaApp(
                 repository = repository,
                 secureItemRepository = secureItemRepository,
@@ -505,11 +511,18 @@ class MainActivity : BaseMonicaActivity() {
                 mdbxRepository = mdbxRepository,
                 externalTotpImportController = externalTotpImportController
             )
+            }
         }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        nfcCardEntry?.focus(hasFocus)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        nfcCardEntry?.receive(intent)
         handleExternalTotpIntent(intent)
         takagi.ru.monica.transfer.DataTaskNavigation.receive(this, intent)
     }
@@ -1162,6 +1175,12 @@ fun MonicaContent(
             }
         }
     }
+
+    takagi.ru.monica.nfc.card.NfcCardEntryHost(
+        authorized = isAuthenticated && !shouldRequireAuthentication && !isOnAuthRoute,
+        route = currentRoute,
+        onNewBankCard = { navController.navigate(Screen.AddEditBankCard.createRoute()) },
+    )
 
     val pendingDataTask by takagi.ru.monica.transfer.DataTaskNavigation.pending.collectAsState()
     LaunchedEffect(pendingDataTask, isAuthenticated, shouldRequireAuthentication, currentRoute) {
@@ -2334,6 +2353,10 @@ fun MonicaContent(
                 initialTitle = pendingSendDraft?.title.orEmpty(),
                 initialText = pendingSendDraft?.text.orEmpty(),
                 initialNotes = pendingSendDraft?.notes.orEmpty(),
+                localDrafts = bitwardenViewModel.localSendDrafts.collectAsState().value,
+                draftsUnavailable = bitwardenViewModel.localSendDraftsUnavailable.collectAsState().value,
+                onRefreshDrafts = bitwardenViewModel::refreshLocalSendDrafts,
+                onDiscardDraft = bitwardenViewModel::discardLocalSendDraft,
                 onSubmitStoredDraft = bitwardenViewModel::submitStoredSendDraft,
                     onLeaveForeground = bitwardenViewModel::leaveSendEditorForeground,
                 onSaveDraft = { vaultId, draft, uri, fileName ->
