@@ -22,7 +22,7 @@ class BitwardenAuthenticatorSourceTest {
     @Test fun pickerIncludesStandaloneAndPasswordOtpDespiteAuthenticatorSearch() = runBlocking {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val db=Room.inMemoryDatabaseBuilder(context,PasswordDatabase::class.java).build()
-        val model=TotpViewModel(SecureItemRepository(db.secureItemDao()),PasswordRepository(db.passwordEntryDao()),strings=AppLocaleStringResolver(context))
+        val model=TotpViewModel(SecureItemRepository(db.secureItemDao()),PasswordRepository(db.passwordEntryDao()),strings=AppLocaleStringResolver(context), sensitiveValueEncryptor = takagi.ru.monica.security.SensitiveValueEncryptor { it })
         try {
             db.secureItemDao().insertItem(SecureItem(itemType=ItemType.TOTP,title="Independent fixture",
                 itemData=Json.encodeToString(TotpData(secret="JBSWY3DPEHPK3PXP",issuer="Independent"))))

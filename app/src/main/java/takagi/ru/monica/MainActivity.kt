@@ -927,6 +927,7 @@ fun MonicaContent(
         ),
     onPermissionRequested: (String, (Boolean) -> Unit) -> Unit
 ) {
+    var pendingRecoveryPermit by remember { mutableStateOf<takagi.ru.monica.security.RecoveryPermit?>(null) }
     val context = LocalContext.current
     val clearDataViewModel: takagi.ru.monica.viewmodel.ClearDataViewModel = viewModel {
         val clearData = takagi.ru.monica.data.ClearDataUseCase(
@@ -3163,12 +3164,20 @@ fun MonicaContent(
             popExitTransition = { easyNotesScreenExit() }
         ) { backStackEntry ->
             val skipCurrentPassword = backStackEntry.arguments?.getBoolean("skipCurrentPassword") ?: false
+            val recoveryPermit = remember(backStackEntry) { pendingRecoveryPermit }
+            DisposableEffect(backStackEntry) {
+                onDispose {
+                    recoveryPermit?.let(securityManager::cancelRecovery)
+                    if (pendingRecoveryPermit === recoveryPermit) pendingRecoveryPermit = null
+                }
+            }
             androidx.compose.runtime.CompositionLocalProvider(
                 takagi.ru.monica.ui.LocalAnimatedVisibilityScope provides this
             ) {
             ResetPasswordScreen(
                 securityManager = securityManager,
                 skipCurrentPassword = skipCurrentPassword,
+                recoveryPermit = recoveryPermit,
                 onNavigateBack = {
                     navController.popBackStack()
                 },
@@ -3241,7 +3250,9 @@ fun MonicaContent(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onVerificationSuccess = {
+                onVerificationSuccess = { permit ->
+                    pendingRecoveryPermit?.let(securityManager::cancelRecovery)
+                    pendingRecoveryPermit = permit
                     navController.navigate(Screen.ResetPassword.createRoute(skipCurrentPassword = true)) {
                         popUpTo(Screen.SecurityQuestionsVerification.route) { inclusive = true }
                     }
