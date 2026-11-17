@@ -369,6 +369,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 </div>
 
+## HyperOS 参考项目与致谢
+
+感谢以下开源项目对 Monica 的 HyperOS 兼容适配提供帮助：
+
+- [Howard20181/HyperPasskey](https://github.com/Howard20181/HyperPasskey)（GPL-3.0）：内置可选模块的部分 Hook 实现来源，包括安全中心配置重置拦截、系统设置页、凭据选择界面及跨设备兼容。
+- [dingwen07/CredentialProviderManager](https://github.com/dingwen07/CredentialProviderManager)（GPL-3.0）：凭据提供方、自动填充服务及系统配置诊断的设计参考。
+- [cr-zhichen/password-manager-switch](https://github.com/cr-zhichen/password-manager-switch)（MIT）：默认密码管理器配置工具的系统设置读写、校验与恢复逻辑来源。
+
+具体参考版本与适配范围见[HyperOS 来源说明](app/src/main/assets/licenses/hyperos-builtins.txt)；随包保留 [HyperPasskey GPL-3.0 许可证](app/src/main/assets/licenses/HyperPasskey-GPL-3.0.txt)及 [password-manager-switch MIT 声明](app/src/main/assets/licenses/password-manager-switch.txt)。1.0.328（未发布）的内置模块为实验功能，默认关闭，需要兼容的模块框架，尚未经过 HyperOS 实体机验证。
+
 ## F-Droid 联系方式
 
 这是 Monica 的 F-Droid 专用构建仓库。应用问题、功能建议和用户反馈请提交到 [Monica 主仓库](https://github.com/Monica-Pass/Monica/issues)，方便 Monica 团队查看和处理。

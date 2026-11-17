@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0.328",
+  "edition": "fd",
+  "versionCode": 35,
+  "releaseStatus": "unreleased",
+  "generatedUtc": "2026-11-16T14:11:27.117003+00:00",
+  "verificationStatus": "Real-window geometry and listed regression methods have passing evidence; original failures retained; whole-window visual acceptance unavailable; cleanup pending root confirmation",
+  "environment": {
+    "kind": "isolated synthetic MuMu emulator",
+    "api": 35,
+    "abi": "x86_64",
+    "physicalDevice": false,
+    "userVaultsUsed": false,
+    "realCloudUsed": false,
+    "publicApi32AvdUsed": false
+  },
+  "productionChange": {
+    "scope": "One enableEdgeToEdge import and call immediately before super.onCreate",
+    "baselineMatchesAfterRemovingTwoLines": true,
+    "activitySha256": "6d40af0ce4821ba85cdc9d185d8c9287d3a29702be303c7820038f7f7a4fe653",
+    "testSha256": "4b9324332a23107f03ae4f5d1e42f936e034e29f9f92e9a0818eabb3e2e1142c",
+    "safety": "FLAG_SECURE, authentication, provider origin validation, cancellation, USB/NFC lifecycle and screen padding unchanged by this hardware fix"
+  },
+  "artifacts": [
+    {
+      "role": "app.apk",
+      "sha256": "10fbd31194b9868dd57db38413b486187efe1d96587da3d399d1005d34ecb937"
+    },
+    {
+      "role": "test.apk",
+      "sha256": "295584720cfeab41bb8caffdf7dd74950e6c52eea0d85df47fc75554158911f6"
+    }
+  ],
+  "builds": [
+    {
+      "label": "fd-fixed01",
+      "exit": 0,
+      "seconds": 137.45,
+      "tasks": [
+        ":app:assembleDebug",
+        ":app:assembleDebugAndroidTest"
+      ],
+      "receiptSha256": "2015696001cba2eb7806094e06d12a48e69f705b3c052d6da1f5421c2102ed1f",
+      "rawOutputSha256": "c8be714bf25f932ca7a5da4b3c320b68057112bb352255af72f971418f29793c"
+    }
+  ],
+  "deviceRuns": [
+    {
+      "label": "fd-full01",
+      "passed": true,
+      "driverExit": 0,
+      "driverSeconds": 110.046,
+      "runnerSeconds": 107.731,
+      "appSha256": "10fbd31194b9868dd57db38413b486187efe1d96587da3d399d1005d34ecb937",
+      "testSha256": "295584720cfeab41bb8caffdf7dd74950e6c52eea0d85df47fc75554158911f6",
+      "receiptSha256": "4fe9d9ebf9e9942baf785d0e53792a86b17b2aec2e56624958613d4f571bb3b6",
+      "rawOutputSha256": "9afcf4a85ecc3b92265356962df0def5ed88654dfe3435feffe0361957368297",
+      "count": 18,
+      "passedCount": 18,
+      "failedCount": 0,
+      "methods": [
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "providerSubmitDisabledWithoutDeviceAndAfterMissingPin",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "managementActivityDrawsToWindowTopWithSafeHeaderAndClose",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "cancelledNativeOpenCannotCloseOrReplaceTheNextConnection",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "chineseConnectedPageKeepsReferenceGroupsAndReadableActions",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "connectedManagementRendersActualCapabilitiesWithoutAddingNavigationDock",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "bothProviderWindowsKeepSafeHeaderAndExplicitCancellation",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "managementActivityOpensOnApi32AndDoesNotWriteVaultData",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "noDeviceStateExplainsWebsiteRegistrationAndOffersUsbWithoutOfflineWriteButton",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "largeEnglishTextKeepsFullIdentifiersAndPinActionsReachable",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest",
+          "method": "bothRealPagesShareChoiceAndReturningDoesNotUndoIt",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest",
+          "method": "renamedEntryAndHardwareAliasesNavigateToActualSwitchWithoutToggling",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest",
+          "method": "largeEnglishBothPagesKeepCompleteDescriptionAndReachableSwitch",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest",
+          "method": "chineseBothPagesRemainReadableInLightAndDarkThemes",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest",
+          "method": "disabledCachedProviderDestinationsReturnCancellationForBothRequestTypes",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest",
+          "method": "managementTogglePersistsAcrossRecreationAndBackKeepsChoice",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest",
+          "method": "disablingAnOpenRegistrationClosesDiscoveryAndDropsSelectedHardwareTarget",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest",
+          "method": "disablingRejectsACompletedHardwareResponseBeforeObserverCanRun",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest",
+          "method": "defaultOffRegistrationDoesNotCreateDiscoveryMonitor",
+          "code": 0
+        }
+      ],
+      "geometrySamples": [
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 80.0,
+          "backBottom": 150.0,
+          "windowHeight": 1920
+        },
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 80.0,
+          "backBottom": 150.0,
+          "windowHeight": 1920
+        },
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 80.0,
+          "backBottom": 150.0,
+          "windowHeight": 1920
+        },
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 80.0,
+          "backBottom": 150.0,
+          "windowHeight": 1920
+        }
+      ]
+    },
+    {
+      "label": "fd-large-dark01",
+      "passed": true,
+      "driverExit": 0,
+      "driverSeconds": 4.604,
+      "runnerSeconds": 2.317,
+      "appSha256": "10fbd31194b9868dd57db38413b486187efe1d96587da3d399d1005d34ecb937",
+      "testSha256": "295584720cfeab41bb8caffdf7dd74950e6c52eea0d85df47fc75554158911f6",
+      "receiptSha256": "6805132aecb9f5106aeae2bea8466b0e7f3f68363d22ad2e7dc6ac185caf13c0",
+      "rawOutputSha256": "b076cb13021f42b2fb07938bcc8bd1d3e96e4f7ac92650bc782a9a1878f480c9",
+      "count": 2,
+      "passedCount": 2,
+      "failedCount": 0,
+      "methods": [
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "managementActivityDrawsToWindowTopWithSafeHeaderAndClose",
+          "code": 0
+        },
+        {
+          "class": "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest",
+          "method": "bothProviderWindowsKeepSafeHeaderAndExplicitCancellation",
+          "code": 0
+        }
+      ],
+      "geometrySamples": [
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 97.0,
+          "backBottom": 167.0,
+          "windowHeight": 1920
+        },
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 97.0,
+          "backBottom": 167.0,
+          "windowHeight": 1920
+        },
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 97.0,
+          "backBottom": 167.0,
+          "windowHeight": 1920
+        },
+        {
+          "contentTop": 0,
+          "statusTop": 42,
+          "titleTop": 63.0,
+          "backTop": 97.0,
+          "backBottom": 167.0,
+          "windowHeight": 1920
+        }
+      ]
+    }
+  ],
+  "passingDistinctMethodCount": 18,
+  "passingDistinctMethods": [
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#bothProviderWindowsKeepSafeHeaderAndExplicitCancellation",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#cancelledNativeOpenCannotCloseOrReplaceTheNextConnection",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#chineseConnectedPageKeepsReferenceGroupsAndReadableActions",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#connectedManagementRendersActualCapabilitiesWithoutAddingNavigationDock",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#largeEnglishTextKeepsFullIdentifiersAndPinActionsReachable",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#managementActivityDrawsToWindowTopWithSafeHeaderAndClose",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#managementActivityOpensOnApi32AndDoesNotWriteVaultData",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#noDeviceStateExplainsWebsiteRegistrationAndOffersUsbWithoutOfflineWriteButton",
+    "takagi.ru.monica.passkey.hardware.HardwareKeyUiTest#providerSubmitDisabledWithoutDeviceAndAfterMissingPin",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest#defaultOffRegistrationDoesNotCreateDiscoveryMonitor",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest#disabledCachedProviderDestinationsReturnCancellationForBothRequestTypes",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest#disablingAnOpenRegistrationClosesDiscoveryAndDropsSelectedHardwareTarget",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest#disablingRejectsACompletedHardwareResponseBeforeObserverCanRun",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInLifecycleTest#managementTogglePersistsAcrossRecreationAndBackKeepsChoice",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest#bothRealPagesShareChoiceAndReturningDoesNotUndoIt",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest#chineseBothPagesRemainReadableInLightAndDarkThemes",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest#largeEnglishBothPagesKeepCompleteDescriptionAndReachableSwitch",
+    "takagi.ru.monica.passkey.hardware.HardwarePasskeyOptInUiTest#renamedEntryAndHardwareAliasesNavigateToActualSwitchWithoutToggling"
+  ],
+  "trustedBrowserFixture": {
+    "package": "org.mozilla.firefox",
+    "version": "144.0",
+    "apkSha256": "2e6f287190ae88b7bef4826b792f95e63eb1784b2c6ef64a6ede93d99399b926",
+    "signerSha256": "a78b62a5165b4494b2fead9e76a280d22d937fee6251aece599446b2ea319b04",
+    "matchesProductionFirefoxPin": true,
+    "receiptSha256": "7ecfe97b9748e4463d988bcc5c3b1e66fd171591a27eebf4f0a5117d0e21a840",
+    "securityCheckRelaxed": false
+  },
+  "displayFixture": {
+    "largeFontScale": 1.6,
+    "nightMode": "yes",
+    "receiptSha256": "9559d52f7a32dcefa9e56b201c994f727b52e62403f1265159813a8fb4508a0f",
+    "restoreStatus": "pending root confirmation"
+  },
+  "securePreviewRuns": [
+    {
+      "label": "large-dark01",
+      "passed": true,
+      "status": "secure_portrait_preview_completed",
+      "seconds": 28.761,
+      "appSha256": "10fbd31194b9868dd57db38413b486187efe1d96587da3d399d1005d34ecb937",
+      "probeSha256": "c81bd9a4efa44e44d5ed055c659008dc48492efc899c1d375d8601d3c143974f",
+      "receiptSha256": "a2b64adb991a55d15f6765255cd0d763714b94cf20d4b6016864eb11434200a7",
+      "rawOutputSha256": "3f3dcad43afc61882eb46ec3d9e173703b3594f13ceef8fdbffb3e6f00170b7c",
+      "observations": [
+        {
+          "initialWindow": {
+            "activity": "takagi.ru.monica.passkey.hardware.HardwareSecurityKeyActivity",
+            "secure": true,
+            "orientation": 1,
+            "fontScale": 1.600000023841858,
+            "nightMode": 32,
+            "width": 1080,
+            "height": 1920,
+            "resumed": true,
+            "focused": true,
+            "finishing": false,
+            "destroyed": false
+          },
+          "requestedHoldMs": 25000,
+          "observedHoldMs": 25000,
+          "secureObservationSamples": 250,
+          "activityCreated": true,
+          "activityDestroyed": true,
+          "passed": true,
+          "entryMode": "direct_private_activity_instrumentation_preview",
+          "mainFabNavigationTested": false,
+          "screenshotsCapturedByProbe": false,
+          "directPreferenceOrLockMutations": false,
+          "securityFlagMutatedByProbe": false
+        }
+      ],
+      "visualAcceptance": false,
+      "mainFabNavigationTested": false
+    },
+    {
+      "label": "large-dark02",
+      "passed": true,
+      "status": "secure_portrait_preview_completed",
+      "seconds": 58.677,
+      "appSha256": "10fbd31194b9868dd57db38413b486187efe1d96587da3d399d1005d34ecb937",
+      "probeSha256": "9e297694f9072db23c91f8a61579c68803a4b42af50b31fd8fcd410487f2e663",
+      "receiptSha256": "cd764172845155854ffa8a8b4ab24ddfaeb58a92cb56670ddebfb9ac1267c600",
+      "rawOutputSha256": "706830bc0138963a0a9b3e2350815a86af867abb08b036a0ad0b956473eb4bea",
+      "observations": [
+        {
+          "initialWindow": {
+            "activity": "takagi.ru.monica.passkey.hardware.HardwareSecurityKeyActivity",
+            "secure": true,
+            "orientation": 1,
+            "fontScale": 1.600000023841858,
+            "nightMode": 32,
+            "width": 1080,
+            "height": 1920,
+            "resumed": true,
+            "focused": true,
+            "finishing": false,
+            "destroyed": false
+          },
+          "requestedHoldMs": 55000,
+          "observedHoldMs": 55000,
+          "secureObservationSamples": 549,
+          "activityCreated": true,
+          "activityDestroyed": true,
+          "passed": true,
+          "entryMode": "direct_private_activity_instrumentation_preview",
+          "mainFabNavigationTested": false,
+          "screenshotsCapturedByProbe": false,
+          "directPreferenceOrLockMutations": false,
+          "securityFlagMutatedByProbe": false
+        }
+      ],
+      "visualAcceptance": false,
+      "mainFabNavigationTested": false
+    },
+    {
+      "label": "takeover-dark01",
+      "passed": true,
+      "status": "secure_portrait_preview_completed",
+      "seconds": 59.184,
+      "appSha256": "10fbd31194b9868dd57db38413b486187efe1d96587da3d399d1005d34ecb937",
+      "probeSha256": "9e297694f9072db23c91f8a61579c68803a4b42af50b31fd8fcd410487f2e663",
+      "receiptSha256": "59282931a722019d2fd9996645b6ec54e180b4b22ffa6f49beceadbcc72cf14b",
+      "rawOutputSha256": "44d99df9dd53b8a50a41a09907b6ab0b36633c47a6d42116080e027fd2510f71",
+      "observations": [
+        {
+          "initialWindow": {
+            "activity": "takagi.ru.monica.passkey.hardware.HardwareSecurityKeyActivity",
+            "secure": true,
+            "orientation": 1,
+            "fontScale": 1.600000023841858,
+            "nightMode": 32,
+            "width": 1080,
+            "height": 1920,
+            "resumed": true,
+            "focused": true,
+            "finishing": false,
+            "destroyed": false
+          },
+          "requestedHoldMs": 55000,
+          "observedHoldMs": 55000,
+          "secureObservationSamples": 549,
+          "activityCreated": true,
+          "activityDestroyed": true,
+          "passed": true,
+          "entryMode": "direct_private_activity_instrumentation_preview",
+          "mainFabNavigationTested": false,
+          "screenshotsCapturedByProbe": false,
+          "directPreferenceOrLockMutations": false,
+          "securityFlagMutatedByProbe": false
+        }
+      ],
+      "visualAcceptance": false,
+      "mainFabNavigationTested": false
+    }
+  ],
+  "exploratoryUiReceipts": [],
+  "visualObservation": {
+    "wholeWindowAccepted": false,
+    "mainFabToHardwareAccepted": false,
+    "hostCaptures": "Existing host observations showed desktop/launcher or an obscured window; failed observation retained locally",
+    "securePreviewInterpretation": "Direct private Activity creation, sampled secure/focused/resumed portrait window and observed destruction only; no screenshot captured by probe",
+    "design": "Local editable M3E light/dark eight-frame design preview retained in ignored design directory; not Android visual acceptance"
+  },
+  "cleanup": {
+    "passed": true,
+    "removedUsers": [
+      10,
+      11,
+      12
+    ],
+    "restoredCurrentUser": 0,
+    "originalRecordsPerEdition": 4,
+    "removedUser0Probes": [
+      "local.multivaultentry328.main",
+      "local.multivaultentry328.fd",
+      "local.multivaultupgrade328.main",
+      "local.multivaultupgrade328.fd"
+    ],
+    "removedTaskXmlCount": 144,
+    "muMu2Stopped": true,
+    "muMuDisksAndConfigurationPreserved": true,
+    "publicAvdConfigurationsUnchanged": true,
+    "publicAvdDiskPreserved": true,
+    "publicAvdTestsPerformed": false,
+    "receiptSha256": "b7087688578367c55bcff090c7ab93658ade98d0502f75148463b0a8d1582bb0"
+  },
+  "limits": [
+    "API35/x86_64 Debug synthetic evidence only; no physical USB/NFC key, successful hardware registration/authentication, OEM or other API/ABI validation.",
+    "Geometry regression requires actual visible positive status-bar insets; management recreation/close and missing-provider CREATE/GET explicit cancellation are real Activity checks.",
+    "Provider geometry tests use missing requests; trusted-browser lifecycle fixtures are synthetic and do not complete WebAuthn.",
+    "The historical method named OpensOnApi32 ran here on API35; its name is not API32 verification.",
+    "Component screenshots and local-density reference renders do not replace actual whole-window visual acceptance.",
+    "No R8 build belongs to this hardware task; prior autofill R8 artifacts cover their frozen phase only. Later HyperOS UI changes have separate build/evidence scope.",
+    "No screenshots, raw UI snapshots, credentials or machine-private paths are included in public evidence.",
+    "No commit, push, tag, release or APK delivery was performed by this report closeout."
+  ]
+}

@@ -28,6 +28,44 @@ fn ffi_test_vault() -> MdbxVault {
     }
 }
 
+#[test]
+fn guarded_editor_commit_is_atomic_stale_safe_and_idempotent() {
+    let vault = ffi_test_vault();
+    let project = Uuid::new_v4().to_string();
+    let entry = Uuid::new_v4().to_string();
+    let branches = vault.list_branches().unwrap();
+    let operation = Uuid::new_v4().to_string();
+    let commands = vec![
+        MdbxWriteCommand::CreateProject { project_id: project.clone(), title: "fixture".into() },
+        MdbxWriteCommand::CreateEntry { entry_id: entry.clone(), project_id: project.clone(),
+            entry_type: "login".into(), title: "before".into(), payload_json: r#"{"password_plain":"synthetic","future":9007199254740993}"#.into() },
+    ];
+    let saved = vault.execute_guarded_write_operation(vault.vault_id.clone(), branches.clone(),
+        operation.clone(), commands.clone()).unwrap();
+    assert!(!saved.already_committed);
+    let replay = vault.execute_guarded_write_operation(vault.vault_id.clone(), branches.clone(),
+        operation, commands).unwrap();
+    assert!(replay.already_committed);
+    assert_eq!(saved.commit_id, replay.commit_id);
+    let update = MdbxWriteCommand::UpdateEntry { entry_id: entry.clone(), project_id: project.clone(),
+        entry_type: "login".into(), title: "after".into(), payload_json: r#"{"password_plain":"changed"}"#.into() };
+    assert!(vault.execute_guarded_write_operation(vault.vault_id.clone(), branches,
+        Uuid::new_v4().to_string(), vec![update.clone()]).is_err());
+    assert_eq!(vault.get_object_summary(entry.clone()).unwrap().unwrap().title, "before");
+    let current = vault.list_branches().unwrap();
+    let missing = MdbxWriteCommand::DeleteEntry { entry_id: Uuid::new_v4().to_string(), project_id: project };
+    assert!(vault.execute_guarded_write_operation(vault.vault_id.clone(), current.clone(),
+        Uuid::new_v4().to_string(), vec![update.clone(), missing]).is_err());
+    assert_eq!(vault.get_object_summary(entry.clone()).unwrap().unwrap().title, "before");
+    assert_eq!(vault.list_branches().unwrap()[0].head_commit_id, saved.commit_id);
+    let final_save = vault.execute_guarded_write_operation(vault.vault_id.clone(), current,
+        Uuid::new_v4().to_string(), vec![update]).unwrap();
+    let history = vault.get_commit_history(final_save.commit_id.clone()).unwrap().unwrap();
+    assert!(history.parent_ids.contains(&saved.commit_id));
+    assert_eq!(history.changes.len(), 1);
+    assert_eq!(history.operation_kind.as_deref(), Some("native-password-editor"));
+}
+
 fn ffi_test_extension_profile(namespace: &str) -> MdbxExtensionProfile {
     MdbxExtensionProfile {
         extension_id: namespace.to_string(),

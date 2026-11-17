@@ -1,0 +1,618 @@
+{
+  "status": "completed_unpublished",
+  "edition": "fd",
+  "version": "1.0.328",
+  "versionCode": 35,
+  "validation": {
+    "compiledValues": 666,
+    "jvm": [
+      {
+        "class": "takagi.ru.monica.autofill_ng.defaultmanager.HyperOsConfigurationStatusTest",
+        "tests": 7,
+        "sha256": "43b9414e404258bfc0a935b416e02b05b231feeacafe047e7c13aa4e490698e4"
+      },
+      {
+        "class": "takagi.ru.monica.autofill_ng.defaultmanager.SettingsControllerTest",
+        "tests": 15,
+        "sha256": "fcd7d178d777fb11e5dd351965730dd011112a18d6d0270ff797db9304c4bb55"
+      },
+      {
+        "class": "takagi.ru.monica.hyperos.hooks.HookPolicyTest",
+        "tests": 9,
+        "sha256": "b452f133a4a9ea8a4738d06bb732cd75bc99469a1b9afb9fb6246ef0a149939b"
+      }
+    ],
+    "deviceMethods": 13,
+    "deviceRunnerSeconds": 9.508,
+    "sizeComparison": [
+      {
+        "abi": "arm64-v8a",
+        "beforeBytes": 34203790,
+        "afterBytes": 34697687,
+        "deltaBytes": 493897,
+        "afterSha256": "efe930bdac8ddb83a079e04711966afd6c25442d909c3a219a03f76f4cef2e63"
+      },
+      {
+        "abi": "armeabi-v7a",
+        "beforeBytes": 31843076,
+        "afterBytes": 32205903,
+        "deltaBytes": 362827,
+        "afterSha256": "7a8f05e5178ddf3d339a3f109a866180e7c82932a30cb122cee2f0392e698489"
+      },
+      {
+        "abi": "x86_64",
+        "beforeBytes": 36006019,
+        "afterBytes": 36516297,
+        "deltaBytes": 510278,
+        "afterSha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2"
+      }
+    ],
+    "buildSeconds": {
+      "debug": 91.973,
+      "release": 401.849,
+      "baseline": 318.11
+    },
+    "releaseApkSha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+    "debugApkSha256": "1fa5ea02423dd51dc2ae2307b03129850dd8438fbdfb0a71e99767c71a1f3fe2"
+  },
+  "sharedPaths": [
+    {
+      "path": "app/src/androidTest/java/io/github/libxposed/service/MonicaFrameworkPreferencesTest.java",
+      "sha256": "29247443ba84b6833d053184e826481fa8a30fdb0812b74065388fd08a1ec509"
+    },
+    {
+      "path": "app/src/androidTest/java/takagi/ru/monica/autofill_ng/defaultmanager/HyperOsSettingsDeviceTest.kt",
+      "sha256": "b4ddc9b70cbcc2101e7865ab433269d787fb28fac1ded6514d71a2802773a474"
+    },
+    {
+      "path": "app/src/androidTest/java/takagi/ru/monica/ui/screens/HyperOsBuiltinsUiTest.kt",
+      "sha256": "3ba34c603aebf53ab604c55841350cc28181bc4f5dd2986165f8686b601eb31f"
+    },
+    {
+      "path": "app/src/main/assets/licenses/HyperPasskey-GPL-3.0.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "app/src/main/assets/licenses/hyperos-builtins.txt",
+      "sha256": "4a926f3b14282c86c0946ccfcc88bd32a702a6c5d33e600448ec2c71609d23ae"
+    },
+    {
+      "path": "app/src/main/java/io/github/libxposed/service/MonicaFrameworkPreferences.java",
+      "sha256": "dcc989131b3eb2d985a5558aaa78a0828eb26bfa6453914f868bb1638944d3b6"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/autofill_ng/defaultmanager/HyperOsConfigurationStatus.kt",
+      "sha256": "383d857daa680bae2ee3e0fa0bb919ad96d1df609b5419d9cd7771e621c83142"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/autofill_ng/defaultmanager/HyperOsDiagnostics.kt",
+      "sha256": "120ec897c4dc9a10e643926f95ad6c94cb3c5e60da7336b4d8edd4b38fa34f39"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/autofill_ng/defaultmanager/ShizukuDefaultManager.kt",
+      "sha256": "23f306220eb2a7d419b4106b430e44c190221aae9ed17ad7b90c7828e3a1df56"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/hyperos/HyperOsModuleConnection.kt",
+      "sha256": "b9bebf7d02d2a20a7d27bc55500a0d4e60ce70e109ae5beb7bc8c55fd7c43989"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/hyperos/HyperOsModuleProvider.kt",
+      "sha256": "fbfdc8b37713b838dd94c7dfd58c449d5dc596996c7b871fdad41dd6bbac4bf2"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/HyperOsCompatibilitySettingsScreen.kt",
+      "sha256": "f9a703d7c452375f276d78eaf6795a4c4859c1b4b1f7d03ec39cbd9d71670460"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/HyperOsDiagnosticsScreen.kt",
+      "sha256": "6954a1ea1500bacf80766ee81f2b60953b0828e6c2d7053e4a2bf781ddb646f0"
+    },
+    {
+      "path": "app/src/main/java/takagi/ru/monica/ui/screens/HyperOsModuleSettingsScreen.kt",
+      "sha256": "31f40c2069a8cc7e67ca7b943fd1ca458bc51f327f5e147c6468e027eaf0a19f"
+    },
+    {
+      "path": "app/src/main/res/values-b+lzh/strings_hyperos_builtins.xml",
+      "sha256": "6394621ee88330f368d9ef9e16dbf73054c3eaf7240a3659191c30ea785e105e"
+    },
+    {
+      "path": "app/src/main/res/values-b+zh+Hant/strings_hyperos_builtins.xml",
+      "sha256": "08174d2f931c10095321ab6378c0512beddf09809d62cdb35b0b263ce8002039"
+    },
+    {
+      "path": "app/src/main/res/values-de/strings_hyperos_builtins.xml",
+      "sha256": "2773ae6132fa1958c117ecb669ae52b72c6aaa919aee340ba20fa1df01d5b53b"
+    },
+    {
+      "path": "app/src/main/res/values-es/strings_hyperos_builtins.xml",
+      "sha256": "0fe632e620952c906d7dd424c6ffa20eb06e4f89f1058ee410bc4481f92c0043"
+    },
+    {
+      "path": "app/src/main/res/values-fr/strings_hyperos_builtins.xml",
+      "sha256": "fd389f0eeaefeee7971d3520cfca398ba0a1859cd07af9d8f62d863e999142a1"
+    },
+    {
+      "path": "app/src/main/res/values-it/strings_hyperos_builtins.xml",
+      "sha256": "93d023c3d4e6f93180e287371c3623edb21299d26d223f455eccf87f87a238b0"
+    },
+    {
+      "path": "app/src/main/res/values-ja/strings_hyperos_builtins.xml",
+      "sha256": "199bcc5b2ce11293871439af30b9d8a88e8a182f00e33250f3edbed224b7e1b2"
+    },
+    {
+      "path": "app/src/main/res/values-ko/strings_hyperos_builtins.xml",
+      "sha256": "36d4667083c65fd7e4fcd560074d431331b46757ea11d6c8feb309e18c7d3126"
+    },
+    {
+      "path": "app/src/main/res/values-pl/strings_hyperos_builtins.xml",
+      "sha256": "db1655dc5ab2e7bc489f3bdb0f66a6493fc33e923c9e89aeb3dbd2b021f68977"
+    },
+    {
+      "path": "app/src/main/res/values-pt-rBR/strings_hyperos_builtins.xml",
+      "sha256": "50840423a8ce44a1d06106459340c32c76e61fa27125d80354155353bf4d71e5"
+    },
+    {
+      "path": "app/src/main/res/values-pt/strings_hyperos_builtins.xml",
+      "sha256": "1753d62562b422438d0d9984f9ce4afe7bb37bd8ecf59846eb84d1288aa0d098"
+    },
+    {
+      "path": "app/src/main/res/values-ru/strings_hyperos_builtins.xml",
+      "sha256": "b407ae9e60fc078f67c6919bb62ea67c508e91724c0db8958b6764c8c3695c5c"
+    },
+    {
+      "path": "app/src/main/res/values-vi/strings_hyperos_builtins.xml",
+      "sha256": "6f73687847371a1ac50c93e9bc3a7c383ed09824a919f0c087917a6fcc97e091"
+    },
+    {
+      "path": "app/src/main/res/values-zh-rCN/strings_hyperos_builtins.xml",
+      "sha256": "187a40028afca6ec5bab16f6b67f5c66105942d19c6fc931cd0f0aac9784233f"
+    },
+    {
+      "path": "app/src/main/res/values-zh-rNY/strings_hyperos_builtins.xml",
+      "sha256": "187a40028afca6ec5bab16f6b67f5c66105942d19c6fc931cd0f0aac9784233f"
+    },
+    {
+      "path": "app/src/main/res/values-zh-rXB/strings_hyperos_builtins.xml",
+      "sha256": "187a40028afca6ec5bab16f6b67f5c66105942d19c6fc931cd0f0aac9784233f"
+    },
+    {
+      "path": "app/src/main/res/values-zh/strings_hyperos_builtins.xml",
+      "sha256": "187a40028afca6ec5bab16f6b67f5c66105942d19c6fc931cd0f0aac9784233f"
+    },
+    {
+      "path": "app/src/main/res/values/strings_hyperos_builtins.xml",
+      "sha256": "86b13a6da8b232bcd0a166975dc06b342c02ad989299780bfd015f140f61a38f"
+    },
+    {
+      "path": "app/src/test/java/takagi/ru/monica/autofill_ng/defaultmanager/HyperOsConfigurationStatusTest.kt",
+      "sha256": "e9b90d12138d898ae8f2336c228bfe61f79cb8657a134229c731212b4283ed3d"
+    },
+    {
+      "path": "hyperos-hooks/build.gradle",
+      "sha256": "679cb6064007490ada376b84ac07aa2d75c0cbaeb19fabc5cc6c90e0e97a88a7"
+    },
+    {
+      "path": "hyperos-hooks/consumer-rules.pro",
+      "sha256": "5797f40d869808adebaa5463d3f4d90004e54294fa2c68fde4c52f0d83245eb9"
+    },
+    {
+      "path": "hyperos-hooks/src/main/AndroidManifest.xml",
+      "sha256": "571f2735faf5e857752ee057ac8ef63425576a721616c60b86ee5d4c0a2d682f"
+    },
+    {
+      "path": "hyperos-hooks/src/main/java/takagi/ru/monica/hyperos/hooks/HookGuard.java",
+      "sha256": "5922e6230e73ef14976cb66161d26c2f697bf6d0f16679401d4a8ef236530b35"
+    },
+    {
+      "path": "hyperos-hooks/src/main/java/takagi/ru/monica/hyperos/hooks/HookPolicy.java",
+      "sha256": "ef989890e07495e62f03cc7a57bec89ddde6e340dc94bf817d81d5b2d63fe863"
+    },
+    {
+      "path": "hyperos-hooks/src/main/java/takagi/ru/monica/hyperos/hooks/HyperOsHooks.java",
+      "sha256": "f9cc2e2f3ca4955655077122d98ac3e34496665acdd9f0d9f26da7cf8afb7581"
+    },
+    {
+      "path": "hyperos-hooks/src/main/java/takagi/ru/monica/hyperos/hooks/MemoryCache.kt",
+      "sha256": "b5de4c1af382789e0e7c27f6eb8d6c57ac4b02de2d4e7cabb1cc37974c3b1ff4"
+    },
+    {
+      "path": "hyperos-hooks/src/main/resources/META-INF/xposed/java_init.list",
+      "sha256": "22dcd90886fa2459cc171f871385a3e08b89ea92e39f4c6bcb095c1b46f32bfa"
+    },
+    {
+      "path": "hyperos-hooks/src/main/resources/META-INF/xposed/module.prop",
+      "sha256": "5e0338229ad768cc60b10e1eb36cd1cb52a6fe8579c199af3d597c66572c23c9"
+    },
+    {
+      "path": "hyperos-hooks/src/main/resources/META-INF/xposed/scope.list",
+      "sha256": "0bb7e10b6d1c15c4fc12ecfc70f45bd5498720dfd71b3708de00d1bbc1869599"
+    },
+    {
+      "path": "hyperos-hooks/src/test/java/takagi/ru/monica/hyperos/hooks/HookPolicyTest.java",
+      "sha256": "edb6d2e9135ba1bc435cc077148b91ecd34085f174bf09b7c445ea44d02c7e1c"
+    }
+  ],
+  "editionSpecificPaths": [
+    {
+      "path": "app/build.gradle",
+      "main": "60b238e83c279a54aa022b0281fa7ccdd9fd92ddaf78bb9d8f483f45b07603cb",
+      "fd": "50e71f73652e85f33eac4bb65cf1e0f3a6410c2a3668b3b697cf773164141a7c"
+    },
+    {
+      "path": "app/src/main/AndroidManifest.xml",
+      "main": "19f69e2624eac6fdfc8fbf7610c19557e17d5672bdcb3c81e8356821d429758f",
+      "fd": "f92300f5d05fab34ed686307d08c572eb6fad88aea7894b3808ef819e4429328"
+    },
+    {
+      "path": "settings.gradle",
+      "main": "fc6a38d47388fa93aec237b3cbb7e96a7548460c9a49e15c02512ac68598f4e1",
+      "fd": "e352b8dbf827c65419de1ba3127f7892d5571fa6e873228093d0b0ef48610872"
+    }
+  ],
+  "retainedData": {
+    "phases": [
+      {
+        "label": "upgrade01",
+        "phase": "upgrade",
+        "receiptSha256": "c88e21f82e7bb7a5e343ef64ae21adcb243482f7887ed0953500b707ee0e2286",
+        "results": []
+      },
+      {
+        "label": "four01",
+        "phase": "checkFour",
+        "receiptSha256": "b10f3cf16c072031365b056abef410330870862859f2a1cfa6ef71aedf27d573",
+        "results": [
+          {
+            "phase": "checkFour",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 14370,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "originals_readable": 4,
+            "password_rows": 4,
+            "retained_id_cipher_category_preserved": true,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "write01",
+        "phase": "write",
+        "receiptSha256": "53c07da4040855025a7eb034f9e87d9ad6b675191bda77f2fc3b596e0ba7e243",
+        "results": [
+          {
+            "phase": "write",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 14456,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "originals_readable": 4,
+            "password_rows": 5,
+            "retained_id_cipher_category_preserved": true,
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "active",
+            "current_owned_id": 8,
+            "owned_ids": [
+              8
+            ],
+            "all_preexisting_rows_preserved": true,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "coldFive01",
+        "phase": "check",
+        "receiptSha256": "26050388dc634ebd3bd29a3d364dac604d0a0dc5d006c3af53e7d8373377eedd",
+        "results": [
+          {
+            "phase": "check",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 14539,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "active",
+            "current_owned_id": 8,
+            "owned_ids": [
+              8
+            ],
+            "all_preexisting_rows_preserved": true,
+            "originals_readable": 4,
+            "password_rows": 5,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "prepare01",
+        "phase": "prepareRestore",
+        "receiptSha256": "99feaee5b636aa195ae09b5851b1adb62c77c4da8962004710fb8a045f30cac0",
+        "results": [
+          {
+            "phase": "prepareRestore",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 15840,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "awaiting_restore",
+            "current_owned_id": 8,
+            "owned_ids": [
+              8
+            ],
+            "all_preexisting_rows_preserved": true,
+            "originals_readable": 4,
+            "password_rows": 4,
+            "backup_sha256": "454a155bed8e9563a1e3c31181f3520152ecd719f6809aa7b6d670f8a08dce12",
+            "backup_name": "monica_backup_20261117_012803.enc.zip",
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "restored01",
+        "phase": "restored",
+        "receiptSha256": "8e676bb1d127f5035e3f6db5f11ec7eea6d0e423a81051b428012bbf318dffc2",
+        "results": [
+          {
+            "phase": "restored",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 17307,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "restored",
+            "current_owned_id": 560,
+            "owned_ids": [
+              8,
+              560
+            ],
+            "all_preexisting_rows_preserved": true,
+            "originals_readable": 4,
+            "password_rows": 5,
+            "round_trip_verified": true,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "restoredCold01",
+        "phase": "check",
+        "receiptSha256": "50363476baa87dad0aba0bf1f45bfc2ec960bcf8d05bcd92e33288b95929a99b",
+        "results": [
+          {
+            "phase": "check",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 17452,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "restored",
+            "current_owned_id": 560,
+            "owned_ids": [
+              8,
+              560
+            ],
+            "all_preexisting_rows_preserved": true,
+            "originals_readable": 4,
+            "password_rows": 5,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "cleanup01",
+        "phase": "cleanup",
+        "receiptSha256": "3b855837f2836a62d2bb73d3464839180100b7615e389998833d881f5c283ac9",
+        "results": [
+          {
+            "phase": "cleanup",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 17534,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "cleaned",
+            "current_owned_id": 560,
+            "owned_ids": [
+              8,
+              560
+            ],
+            "all_preexisting_rows_preserved": true,
+            "originals_readable": 4,
+            "owned_rows_removed": 1,
+            "password_rows": 4,
+            "round_trip_verified": true,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      },
+      {
+        "label": "finalFour01",
+        "phase": "checkFour",
+        "receiptSha256": "cf0cf3d6f0731ca5c6e959fb765a76bad886656d9e74685e248ad7ea019cee41",
+        "results": [
+          {
+            "phase": "checkFour",
+            "target_package": "takagi.ru.monica.bwca328fd",
+            "target_apk_sha256": "426e63556c138b9f897adc82a764037920927e5f08d84e1212e18623b6fb46f2",
+            "mapping_sha256": "bff3ec838811b7c45ff07fbf2d99ac365d4711ec9b70f99da8768073b0987c6b",
+            "sdk": 35,
+            "abi": "x86_64",
+            "pid": 18510,
+            "process_name": "takagi.ru.monica.bwca328fd",
+            "write_method": "SQL with production SecurityManager encryption; not a real editor",
+            "fixture_id": "3d0725ae-f07f-4716-8fd3-f51c52b22569",
+            "owner_status": "cleaned",
+            "current_owned_id": 560,
+            "owned_ids": [
+              8,
+              560
+            ],
+            "all_preexisting_rows_preserved": true,
+            "originals_readable": 4,
+            "password_rows": 4,
+            "retained_id_cipher_category_preserved": true,
+            "previous_owner_sha256": "a90b31ce49ec898ed2606ead8012c581da246718aa4ac3dbc5de565c0338d19d",
+            "previous_all_rows_preserved": true,
+            "passed": true
+          }
+        ]
+      }
+    ],
+    "backup": {
+      "filename": "monica_backup_20261117_012803.enc.zip",
+      "bytes": 2778,
+      "sha256": "454a155bed8e9563a1e3c31181f3520152ecd719f6809aa7b6d670f8a08dce12",
+      "write_receipt_sha256": "53c07da4040855025a7eb034f9e87d9ad6b675191bda77f2fc3b596e0ba7e243",
+      "new_since_fifth_write": true,
+      "contents_decrypted_by_driver": false,
+      "ui_export_observation_required": true
+    },
+    "entries": {
+      "pickerAuth": {
+        "label": "pickerAuth02",
+        "receiptSha256": "d4acc3f00e67a60f53004aef01d6413de97c0b7f9dfe62bcd6e3a5a2727198a0",
+        "passed": true,
+        "instrumentationPid": 17870
+      },
+      "pickerCancel": {
+        "label": "pickerCancel01",
+        "receiptSha256": "ee8e8edc33a19a475d9deb41525f394fc7315ee039f4de3222acdfc5ee7b85ad",
+        "passed": true,
+        "instrumentationPid": 18039
+      },
+      "imeAuth": {
+        "label": "imeAuth01",
+        "receiptSha256": "4fe5d6fd6f3a5aa105afe1e4143c881a6b8cfa711ace76bc754dd16b2999873d",
+        "passed": true,
+        "instrumentationPid": 18196
+      },
+      "imeCancel": {
+        "label": "imeCancel01",
+        "receiptSha256": "e729e15d5967e68efd25c781da88b0107e791651cc750dd62ea42857f19634c3",
+        "passed": true,
+        "instrumentationPid": 18354
+      }
+    },
+    "actualUiEvidence": {
+      "exportName": {
+        "label": "ui12",
+        "receiptSha256": "62382a244e55c9797d28496daaed230f2149d04e57ffc8f639debdb8a84438b3"
+      },
+      "exportSuccess": {
+        "label": "ui13",
+        "receiptSha256": "0ad7c384e83b60d25ffbe1280d37329397fc323bafe92570b61d856e6379adbe"
+      },
+      "restoreOptions": {
+        "label": "ui25",
+        "receiptSha256": "2a0309fdf98a1a60379ad6de9d0e46cea6fdc431c2a2db8302fce21a91e06c7e"
+      },
+      "importSuccess": {
+        "label": "ui28",
+        "receiptSha256": "83c9dfcdc3363d827b7a4644818bc7f9b2c608ee28c5ae1c58f3d089f6d325c3"
+      }
+    },
+    "restoreLocalSettings": false,
+    "regressionRunnerSeconds": 3.603
+  },
+  "retainedFailures": {
+    "firstR8PickerAuthentication": {
+      "label": "pickerAuth01",
+      "receiptSha256": "f0e1caab3f6879681602f045d6c2b7ae58087153f890296516fde495b84c06af",
+      "passed": false,
+      "observation": "Activity closed after password input; expected retained row not observed; no application crash found in captured logcat",
+      "diagnosticRetest": "pickerAuth02",
+      "productionApkUnchanged": true,
+      "causeResolved": false,
+      "probeChange": "Read-only lifecycle, lock-generation and source-state diagnostics; instrumentation timing changes are not excluded"
+    },
+    "uiDriverAttempts": [
+      {
+        "label": "ui22",
+        "passed": false,
+        "reason": "UI dump failed without the known post-write SIGSEGV status",
+        "receiptSha256": "1557e33d25f559af3d338f1ce8a4d857564fe46ccfc930a0de26e73ea42855df"
+      }
+    ]
+  },
+  "deviceEnvironment": "MuMu Android35 x86_64; isolated Debug user and retained synthetic Release user",
+  "limitations": [
+    "No physical HyperOS/OEM or live LSPosed hook execution",
+    "No actual Shizuku/root authorization chain in this task",
+    "Framework transport tests use fake Binder transport with actual pinned service library",
+    "Secure-settings test uses a shell fixture through production SettingsController",
+    "R8 uses separate synthetic package and debug certificate; upgrade fifth write uses SQL with production encryption, backup restore uses actual product UI",
+    "No cloud/user vaults, ARM runtime, Android14/16 runtime, Android17 hooks or hardware Passkey tests",
+    "Both editions first R8 Picker authentication failed; probe diagnostics then passed with unchanged production APK. Initial cause remains unresolved; diagnostics may affect scheduling."
+  ],
+  "cleanup": {
+    "passed": true,
+    "removedUsers": [
+      10
+    ],
+    "restoredCurrentUser": 0,
+    "originalRecordsPerEdition": 4,
+    "removedUser0Probes": [
+      "local.multivaultupgrade328.main",
+      "local.multivaultupgrade328.fd",
+      "local.hyperosupgrade328.main",
+      "local.hyperosupgrade328.fd",
+      "local.hyperosentry328.main",
+      "local.hyperosentry328.fd"
+    ],
+    "removedTaskXmlCount": 107,
+    "rotationRestored": true,
+    "muMu2Stopped": true,
+    "muMuDisksAndConfigurationPreserved": true,
+    "publicAvdUsed": false
+  },
+  "committed": false,
+  "pushed": false,
+  "published": false,
+  "apkDelivered": false
+}

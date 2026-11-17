@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "versionName": "1.0.328",
+  "edition": "fd",
+  "reviewedAtUtc": "2026-11-15T15:43:11.725959+00:00",
+  "status": "verified_synthetic_scope",
+  "publicationReady": true,
+  "environment": {
+    "emulator": "MuMu",
+    "androidApi": 35,
+    "abi": "x86_64",
+    "data": "synthetic fixtures only"
+  },
+  "jvm": {
+    "tests": 520,
+    "suites": 68,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "finalRun": "fd-final-debug-02",
+    "commandSeconds": 222.495
+  },
+  "debugDevice": {
+    "distinctMethods": 67,
+    "methodIdsSha256": "d5d93ea9337a3a3060538b21d11a1bd22cc851ae9bbcfa0c6a2236c3c7113d80",
+    "counts": {
+      "batchSource": 17,
+      "pickerUi": 9,
+      "walletLocal": 4,
+      "existingWallet": 7,
+      "nativeKeePass": 30
+    },
+    "runs": [
+      {
+        "run": "fd-final-batch-ui-wallet-02",
+        "methods": 37,
+        "runnerSeconds": 56.589
+      },
+      {
+        "run": "fd-final-native-02",
+        "methods": 30,
+        "runnerSeconds": 136.012
+      }
+    ]
+  },
+  "r8": {
+    "buildSeconds": 429.399,
+    "versionCode": 35,
+    "apkSha256": "d04f6e34767c81a5f95fa742bf97374d8b7e184c9771d3ff4496644798336fff",
+    "mappingSha256": "8f61183aa770b5807f58d1c3176e65fa3e710785dbdc1dda8025865db351249a",
+    "sameSignatureSyntheticCoveringUpgrade": true,
+    "entryUiChecks": [
+      {
+        "phase": "imeAuth",
+        "passed": true,
+        "pid": 27904
+      },
+      {
+        "phase": "imeCancel",
+        "passed": true,
+        "pid": 28060
+      },
+      {
+        "phase": "pickerAuth",
+        "passed": true,
+        "pid": 28207
+      },
+      {
+        "phase": "pickerCancel",
+        "passed": true,
+        "pid": 28332
+      }
+    ],
+    "entryScope": "Real Picker authentication/cancel and separate-process IME unlock Activity authentication/cancel; not end-to-end keyboard filling"
+  },
+  "performance": {
+    "metric": "unlock_to_target_row_ms",
+    "totalPasswords": 554,
+    "addedMdkUsernamePasswords": 550,
+    "bankCards": 14,
+    "samplesMs": [
+      876,
+      974,
+      964
+    ],
+    "medianMs": 964,
+    "separateProcessIds": [
+      23640,
+      23812,
+      23964
+    ],
+    "strictControlledBenchmark": false,
+    "sameEditionBeforeComparisonAvailable": false,
+    "userElevenSecondSeverityReproduced": false
+  },
+  "backupRestore": {
+    "status": "passed",
+    "exportAndImportMethod": "real application UI",
+    "importedRowsObserved": 1,
+    "skippedRowsObserved": 4,
+    "failedRowsObserved": 0,
+    "restorePid": 27517,
+    "coldReadPid": 27648,
+    "originalFourPreservedAndReadable": true,
+    "finalPasswordRows": 4,
+    "ownedFifthRemoved": 1,
+    "fifthWriteMethod": "SQL plus production SecurityManager encryption; not an editor test",
+    "restoreAssignedDifferentIdVerifiedBeforeCleanup": true
+  },
+  "fixtureCleanup": {
+    "largeOwnedRowsRemoved": 564,
+    "ownedFifthRowsRemoved": 1,
+    "originalFourRetained": true,
+    "finalEnvironmentCleanup": "verified",
+    "ownedTestUsersRemoved": 2,
+    "originalUserRestored": true,
+    "taskRecordedXmlPathsRemoved": 146,
+    "taskStartedEmulatorStopped": true,
+    "dataDiskAndConfigurationRetained": true,
+    "finalReceiptSha256": "60fc82b355d9963fdc8af715ee31cb92cf4bd8559ab23837a20b46c0c5863bf5"
+  },
+  "preservedFailures": [
+    {
+      "run": "main-old-red-01",
+      "kind": "expected_old_code_negative_control",
+      "result": "2/2 failed",
+      "runnerSeconds": 8.429
+    },
+    {
+      "run": "main-native-regression-01",
+      "kind": "initial_device_regression",
+      "result": "28/30 passed",
+      "runnerSeconds": 153.47,
+      "followup": "Notification permission supplied; unchanged-package 2/2 diagnostic pass. Recreation root cause not independently fixed; final full batches passed."
+    },
+    {
+      "run": "main-extended-test-03",
+      "kind": "test_compile_failure",
+      "seconds": 15.963,
+      "followup": "Public Android SDK lacks Dataset getters; actual runtime getter reflection retained assertions."
+    },
+    {
+      "run": "main-save-red-01",
+      "kind": "candidate_save_callback_regression",
+      "result": "1/2 failed",
+      "runnerSeconds": 26.711,
+      "followup": "Minimal success-navigation fix; same test APK passed final 37-method batch."
+    },
+    {
+      "run": "main-final-debug-05",
+      "kind": "jvm_resource_precondition",
+      "result": "1/518 failed",
+      "seconds": 112.912,
+      "followup": "512 MB test worker reported a 63 MB safe limit for a 64 MB KDF vector; task-only 1 GB worker rerun passed all 518. Production guard unchanged."
+    },
+    {
+      "run": "cleanup/result.json",
+      "kind": "host_cleanup_encoding_failure",
+      "result": "failed after owned users removed",
+      "followup": "Explicit UTF-8 finalizer verified only user0 remained, removed exact recorded UI dump paths, stopped the task-started instance and retained its data disk/configuration."
+    }
+  ],
+  "preservedUiStepFailures": [
+    {
+      "step": "fd-export-encrypt01",
+      "class": "ValueError"
+    },
+    {
+      "step": "fd-export-location01",
+      "class": "ValueError"
+    },
+    {
+      "step": "fd-export-save01",
+      "class": "ValueError"
+    },
+    {
+      "step": "fd-import-file01",
+      "class": "ValueError"
+    }
+  ],
+  "limitations": [
+    "Synthetic API35/x86_64 only; no physical OEM or real user vault/remote-service validation.",
+    "Three timing samples and uncontrolled host scheduling do not establish a universal speedup.",
+    "The first recreation failure has no independently proven root cause or dedicated fix.",
+    "Debug editor Dataset tests and R8 SQL-plus-crypto fixture writes are distinct evidence.",
+    "Cancellation prevents stale publication; running pure CPU work may finish later.",
+    "Any native lock-version change closes the picker, including LOCAL; this conservative behavior is intentional.",
+    "No claim that all save IO faults, power loss, concurrency cases or all Android versions are covered.",
+    "Final cleanup first encountered a host JSON decoding error; this failure is retained separately from app/test failures."
+  ],
+  "stageEvidence": [
+    {
+      "stage": "cleanup",
+      "run": "fd-large-cleanup-01",
+      "receiptSha256": "1311a8d79648ced33cc0a1ad18370c784bd84571e79ec44f087898ad3772944b",
+      "passed": true
+    },
+    {
+      "stage": "status",
+      "run": "fd-large-status-01",
+      "receiptSha256": "31ec908d99ed172525783505369190989d88550e088970d562bd5dead797a668",
+      "passed": true
+    },
+    {
+      "stage": "measure",
+      "run": "fd-new-large01",
+      "receiptSha256": "d846a0ea7741cf74ac9f1e1f33b7ec5f697f2e8aaaef4087e19d1532a60c0bca",
+      "passed": true
+    },
+    {
+      "stage": "measure",
+      "run": "fd-new-large02",
+      "receiptSha256": "7ad2ed5b1080c6356ceef918322fa685cd6e4487cf56fc458ee7ef298e13a617",
+      "passed": true
+    },
+    {
+      "stage": "measure",
+      "run": "fd-new-large03",
+      "receiptSha256": "f653064a59de3e36a94c1e72d47a4f51f39b5b1a4ea2e60c13ab36cf28c24959",
+      "passed": true
+    },
+    {
+      "stage": "seed",
+      "run": "fd-seed01",
+      "receiptSha256": "07d8c84827f6e612d8a6f6d3fad4a913b007ea711e4804f8d013a1f35a210692",
+      "passed": true
+    },
+    {
+      "stage": "status",
+      "run": "fd-status01",
+      "receiptSha256": "f8a70d023f8bbde1b500caf91808b94a063c0a3692a4109edcd93ecd7e1e7636",
+      "passed": true
+    },
+    {
+      "stage": "upgrade",
+      "run": "fd-covering-upgrade01",
+      "receiptSha256": "a93cd8f8d4ac5d0dda309abc3f66489b38940f1c8c22e696875722e209b641f8",
+      "passed": true
+    },
+    {
+      "stage": "check",
+      "run": "fd-fifth-check-01",
+      "receiptSha256": "e4e50469c5076c2087fb3ccf379fe2cec7bc004cdc51f2ce84ccd7cf6a31f59e",
+      "passed": true
+    },
+    {
+      "stage": "checkFour",
+      "run": "fd-fifth-checkFour-01",
+      "receiptSha256": "06c2879759b90360e9c96354c19fe555fe9bf71c43acdb27561d8be0580127c0",
+      "passed": true
+    },
+    {
+      "stage": "prepareRestore",
+      "run": "fd-fifth-prepareRestore-01",
+      "receiptSha256": "0400e1dfa11633375b15d879c7e4694b7e7d255f5893b56edc94e57c46b4aee6",
+      "passed": true
+    },
+    {
+      "stage": "write",
+      "run": "fd-fifth-write-01",
+      "receiptSha256": "0f9c4d926e03bea48c46bc76f6199d3e385874900ba7135a76c358bc450f4403",
+      "passed": true
+    },
+    {
+      "stage": "check",
+      "run": "fd-postrestore-check-01",
+      "receiptSha256": "c91b7a8d148d0e86051b22058d6a8b956197bdeb482f3bd0299325f35c0b25ea",
+      "passed": true
+    },
+    {
+      "stage": "checkFour",
+      "run": "fd-postrestore-checkFour-01",
+      "receiptSha256": "28a51841d2c30569ddf64dccee1f0d7d20765193d2b89286b5fe40f615fbefc3",
+      "passed": true
+    },
+    {
+      "stage": "cleanup",
+      "run": "fd-postrestore-cleanup-01",
+      "receiptSha256": "560e734a5387beb75dd22fa807bed71672bd1c78b35e6e6a0d2f56feadf05a8f",
+      "passed": true
+    },
+    {
+      "stage": "restored",
+      "run": "fd-postrestore-restored-01",
+      "receiptSha256": "2982d932ff75dcb834d56e83eda2f7637cebca4b74d07fff93af2a46cc1c4c53",
+      "passed": true
+    },
+    {
+      "stage": "imeAuth",
+      "run": "fd-imeAuth-01",
+      "receiptSha256": "2cc700ae9fb3e32a68d47426aa380f780bc254579b2c1a2c155f84b136913ab8",
+      "passed": true
+    },
+    {
+      "stage": "imeCancel",
+      "run": "fd-imeCancel-01",
+      "receiptSha256": "cd82f1aea74cd2b1cb105c271a3856f883f2ee98f8bc8d3d7dd874d375a99fdf",
+      "passed": true
+    },
+    {
+      "stage": "pickerAuth",
+      "run": "fd-pickerAuth-01",
+      "receiptSha256": "6554e011474e98210c3f1387d3769c51f321de1db6856ef8e3c4abdca0e3b4c4",
+      "passed": true
+    },
+    {
+      "stage": "pickerCancel",
+      "run": "fd-pickerCancel-01",
+      "receiptSha256": "c4fac803f78c6b33ff570bbfdb2d09e2a3456b3a6c48917042a1a3351fd91687",
+      "passed": true
+    }
+  ],
+  "upstreamReferences": {
+    "Keyguard": "d030b75228185b7f979f0e9ed987c8abbba12b9b",
+    "BitwardenAndroid": "6366dd5b848eeef3206501d42040302ad0be1042",
+    "upstreamDeviceBenchmarkPerformed": false,
+    "newRustImplementation": false
+  }
+}

@@ -1,0 +1,953 @@
+{
+  "edition": "fd",
+  "versionName": "1.0.328",
+  "versionCode": 35,
+  "status": "verified",
+  "environment": {
+    "device": "MuMu",
+    "api": 35,
+    "abi": "x86_64",
+    "syntheticOnly": true
+  },
+  "sharedJvm": {
+    "counts": {
+      "tests": 129,
+      "passed": 128,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "skipped": [
+      {
+        "class": "takagi.ru.monica.lansync.DeviceNativePasskeyPreparationTest",
+        "method": "classMethod",
+        "reason": "org.junit.AssumptionViolatedException: The host engine must match the Android binding; set MONICA_MDBX_HOST_LIBRARY",
+        "source": {
+          "file": "runtime-jvm/fd/TEST-takagi.ru.monica.lansync.DeviceNativePasskeyPreparationTest.xml",
+          "sha256": "8a719a08cf1a2ce5fbfcf4e140bf878d508f8ea9987ac570199b9a7bd2ee204e"
+        }
+      }
+    ],
+    "files": [
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.bitwarden.BitwardenOrganizationKeysTest.xml",
+        "sha256": "36fda5be07b82d8e567276b1a02098f001d94c93b9ce7eb08092052c1fcfd675"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.bitwarden.export.BitwardenJsonCodecTest.xml",
+        "sha256": "e342269ff28d11165af492620cf80af7ec2c3de1544f37a336ff684eff4bae69"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.bitwarden.mapper.PasskeyMapperInteropTest.xml",
+        "sha256": "e49d0b1f688ac9f41ae54eec7d89a7e73880eeb7404da76ecb1034b2a4b73cdf"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.bitwarden.mapper.PasskeyNotesCodecTest.xml",
+        "sha256": "fd3232778c70c8c3835d3927973f90dba636f561961c2d5ed8f7d55a178e63ac"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.bitwarden.service.BitwardenFolderTransferTest.xml",
+        "sha256": "52e40272744e01b88390a1cca82df1ff178f1a257171257cf56efa952a5b97bd"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.bitwarden.service.PasskeyCipherUpdateTest.xml",
+        "sha256": "d55e23c2918ad63aee4e40dee19835cab455f3d874fc7434fc783b823c97c6a4"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.credentialexchange.CxfCredentialCodecTest.xml",
+        "sha256": "d5ec74ae39776815c6047afb4016add1af85150c838ef9d626a3778c584fe826"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.data.PasskeyBackupFlagsMigrationTest.xml",
+        "sha256": "6517e99f050d7ae0ee3adc497011666973b8ee1d46af66addcc4e31041b8734e"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.data.QuickSetupPresetTest.xml",
+        "sha256": "41699185ab411871f35d0b8cebb20639caa569c6d94912655e9ae77f91b37cd3"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.ime.MonicaImeRegressionGuardTest.xml",
+        "sha256": "f9af6c7609cec3d8775fd74b37a9b6d2bf860f12274feacd9ece686f3ffeadac"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.keepass.KeePassDxPasskeyCodecTest.xml",
+        "sha256": "a6ba425a2900ff2a0c3908d662eb1766623af72891ae45a39f0deaa8b5941a4a"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.keepass.KeePassFieldRegistryTest.xml",
+        "sha256": "4cfdd74969ca40b9d6b034c3c488b0af0b0be30f3fd5f1f38a0d8b6bc607eda0"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.lansync.DeviceNativePasskeyPreparationTest.xml",
+        "sha256": "8a719a08cf1a2ce5fbfcf4e140bf878d508f8ea9987ac570199b9a7bd2ee204e"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.lansync.DevicePasskeyShapeTest.xml",
+        "sha256": "4362c26c99a89b1a086a567305363e5bad6a32f32c0fd28221b56c523232d14e"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.lansync.DevicePasskeySyncConsentTest.xml",
+        "sha256": "64922d160d05b01dc59dc23213a452e6506fa73ed6c97477c92eb496bd5d5b85"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyBackupFlagsTest.xml",
+        "sha256": "3ad3ba8fb59d252a8018932ea58351e8949309c9811e9bac2587e3e7e8d92713"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyBackupPortabilityPolicyTest.xml",
+        "sha256": "8e8af4f7a4c57b9b36389815d556800a6589ed876b56c13fffcc4c87c4048b38"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyBatchMoveExecutorTest.xml",
+        "sha256": "9e8f4d02f677041a31725f91fa96f55246a2109e6f8286f4835bf7f373d32beb"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyCipherFolderIntentTest.xml",
+        "sha256": "cc13166a53ee33cb47b3564a6fbaf10e9309ce2aad3b8efd72ba169ddc87bb0f"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyCredentialDiscoveryPolicyTest.xml",
+        "sha256": "5798d3f6126fdb63730d25f6b5a249a966b6517947803b84c0141f9af3c132dd"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyCredentialIdCodecTest.xml",
+        "sha256": "9b9d9af970c61f421bc60d490ea56de2e11426610e8606811d1205004db3c569"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyDiscoverabilityResolverTest.xml",
+        "sha256": "b93a9c5201e26cd52351933ef9f918963a80b322a7f7196489dd3640a3b3fcd3"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyGetRequestPolicyTest.xml",
+        "sha256": "c5abfc55530ee20bf0f599a11ce9f1d887c043e45fe2afc9a68269556f1bb105"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyMoveReporterTest.xml",
+        "sha256": "e29331b8091ebb738fc00a02f7ec7ae4c7c1e2159605a611588006e10ed8f9d1"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyPageSyncPolicyTest.xml",
+        "sha256": "8e0c80a4037341f231a7083217cbc4c00360f4d03d47c52898a6436ad4b6c283"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyPortabilityCacheTest.xml",
+        "sha256": "9cdc51692b3089ab6eef7399a544eff7395d254a389ca3c7b6f5ddf36661d09e"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyPortabilityTest.xml",
+        "sha256": "4fdb826235fadb603c1ce77f7e9bf599eeca943e6beb47eef735365b948b47d0"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyRemarkAndNavigationGuardTest.xml",
+        "sha256": "7d79c68f3b7920ac6c3033d564144af64b7ec733414c593b383acf1dd415ac78"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyTransferPolicyTest.xml",
+        "sha256": "2846e477bebe5e3713a98240ed4aab62b986ca1ea4a2f2c2ab138df717ff925b"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.passkey.PasskeyUserVerificationGuardTest.xml",
+        "sha256": "500f822e427ae50a08a2ba2bac16cfb84492fd603784fb537e6d37aa980f2b65"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.repository.KeePassPasskeySyncMergeTest.xml",
+        "sha256": "8bc0620425e850fce3460ee1d510abf3a314b45dbb9515a26afd3fc0b23785ca"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.repository.MdbxAndroidIntegrationGuardTest.xml",
+        "sha256": "fbfcdbe8f7ea44eea5c84ec4282a8223207b68af6f064dadb79124d04a3fc4ed"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.ui.password.PasswordAggregateMdbxFilterTest.xml",
+        "sha256": "3a0ce7d4fa045a78748cdcdd41caeb4bf50458c649900dd1f39e2d4a8784ee2f"
+      },
+      {
+        "file": "runtime-jvm/fd/TEST-takagi.ru.monica.utils.BackupContentPolicyTest.xml",
+        "sha256": "5ddea6544b68e448cefb052a783d2e2a48fba5623d6c594718853eca14403197"
+      }
+    ],
+    "scope": "Shared Runtime JVM batch; the same results are referenced by both reports, not additive"
+  },
+  "builds": [
+    {
+      "run": "runtime-fd-build-01",
+      "edition": "fd",
+      "exit": 0,
+      "seconds": 260.488,
+      "receipt": {
+        "file": "raw/runtime-fd-build-01.json",
+        "sha256": "bd104cbddd7a908c34ae059478ca76727a9af92a714ed01b5cab6d22a4ceabc7"
+      }
+    },
+    {
+      "run": "runtime-fd-r8-build-01",
+      "edition": "fd",
+      "exit": 0,
+      "seconds": 828.055,
+      "receipt": {
+        "file": "raw/runtime-fd-r8-build-01.json",
+        "sha256": "f8f79b57b14986bbee8556e83949f801c0ee30490ac6ee708916e0525c1ebfa9"
+      }
+    },
+    {
+      "run": "runtime-fd-tests-02",
+      "edition": "fd",
+      "exit": 0,
+      "seconds": 41.661,
+      "receipt": {
+        "file": "raw/runtime-fd-tests-02.json",
+        "sha256": "521922bef813e35b08581572ef36d4c93693cf5e84a07b30aacb219eae78f7f6"
+      }
+    },
+    {
+      "run": "runtime-fd-tests-03",
+      "edition": "fd",
+      "exit": 0,
+      "seconds": 24.448,
+      "receipt": {
+        "file": "raw/runtime-fd-tests-03.json",
+        "sha256": "de1c38b46996d5d8a1fbd5fe8c76f306c3fc4c2ffd69519b21f53650a91f6f40"
+      }
+    },
+    {
+      "run": "runtime-fd-tests-04",
+      "edition": "fd",
+      "exit": 0,
+      "seconds": 46.872,
+      "receipt": {
+        "file": "raw/runtime-fd-tests-04.json",
+        "sha256": "1cb8e09b4296bc4e27429e506cd27ff2ba9bbca0e54fcf152f51d474aa33cf79"
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "receipt": {
+        "file": "raw/runtime-fd-apk-01.json",
+        "sha256": "9673c6d505051d5bc2db39d62bd4da1dfa0d3a8fbf90620f858b48e45269b995"
+      },
+      "checkedArtifacts": [
+        {
+          "file": "artifacts/runtime-fd-apk-01/app.apk",
+          "sha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4"
+        },
+        {
+          "file": "artifacts/runtime-fd-apk-01/test.apk",
+          "sha256": "29926c2910edb53f1f676b2be26ae498a1119e68031075df5c1482c4ffbb8d7a"
+        }
+      ],
+      "oldAppSha256": "2246994a6383145f50e09d106fa2165c67e91dc176ca178588fc56a8bacdc06e"
+    },
+    {
+      "receipt": {
+        "file": "raw/runtime-fd-apk-02.json",
+        "sha256": "f8193fcb2217eea39e7d47aff15f4afde1468f2d23ee324d128bf399cb7689e2"
+      },
+      "checkedArtifacts": [
+        {
+          "file": "artifacts/runtime-fd-apk-02/app.apk",
+          "sha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4"
+        },
+        {
+          "file": "artifacts/runtime-fd-apk-02/test.apk",
+          "sha256": "a98304085c8906549895e276ee4197ef88b5e36a0229f8bce372cea39a80a6cf"
+        }
+      ],
+      "oldAppSha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4"
+    },
+    {
+      "receipt": {
+        "file": "raw/runtime-fd-apk-03.json",
+        "sha256": "6e85324f5b31b79eb7832c4cb205bce3faa1f62357e52950d626b7a697a11279"
+      },
+      "checkedArtifacts": [
+        {
+          "file": "artifacts/runtime-fd-apk-03/app.apk",
+          "sha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4"
+        },
+        {
+          "file": "artifacts/runtime-fd-apk-03/test.apk",
+          "sha256": "3cd4856ab36b1acd28bcf164233082c994f92fa137fb559e69c6b2bd4419ac38"
+        }
+      ],
+      "oldAppSha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4"
+    }
+  ],
+  "deviceRuns": [
+    {
+      "run": "passkey-fd-green-01",
+      "edition": "fd",
+      "appSha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4",
+      "runnerCompleted": true,
+      "wholeRunPassed": true,
+      "seconds": 337.762,
+      "runnerSeconds": 334.771,
+      "methods": [
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "stopDuringLookupRejectsLateRowAndReturnsCancellation",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "differentPlatformChallengeCannotAdmitAuthentication",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "deletionDuringLookupCannotFallBackToDuplicateCredential",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "lockingDuringLookupRejectsLateRowAndReturnsCancellation",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "compatibilityLookupWithoutRecordIdKeepsExistingSelectionOrder",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "failedDaoReadReturnsControlledErrorAndPreservesRows",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "lookupDeadlineRejectsUncooperativeLateResult",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "normalizedCredentialIdStillSelectsExactRecordInsteadOfNewerDuplicate",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "actualSelectedLookupKeepsMainResponsive",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "backDuringLookupRejectsLateRowAndReturnsCancellation",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "deletionAfterDisplayIsStillRejectedBySigningTimeReread",
+          "statusCode": 0,
+          "passed": true
+        },
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "recreationStartsFreshLookupWithoutPublishingOldResult",
+          "statusCode": 0,
+          "passed": true
+        }
+      ],
+      "output": {
+        "file": "raw/passkey-fd-green-01.txt",
+        "sha256": "68618c8dace8ef3627d8c58ba6f841f0736f98cd0c45275216093f1bad0be4d9"
+      },
+      "receipt": {
+        "file": "raw/passkey-fd-green-01.json",
+        "sha256": "d134bc1bf7f940ebe65984f5d982d2c5011795da7350955d914b6e8ae4d2d828"
+      }
+    },
+    {
+      "run": "runtime-fd-red-01",
+      "edition": "fd",
+      "appSha256": "2246994a6383145f50e09d106fa2165c67e91dc176ca178588fc56a8bacdc06e",
+      "runnerCompleted": true,
+      "wholeRunPassed": false,
+      "seconds": 11.71,
+      "runnerSeconds": 9.027,
+      "methods": [
+        {
+          "class": "takagi.ru.monica.passkey.PasskeyAuthLoadingTest",
+          "method": "actualSelectedLookupKeepsMainResponsive",
+          "statusCode": -2,
+          "passed": false
+        }
+      ],
+      "output": {
+        "file": "raw/runtime-fd-red-01.txt",
+        "sha256": "9f02f8f9820f831aa1a8c455adbfb39a0f6f8883771238e53493726a3a5a1803"
+      },
+      "receipt": {
+        "file": "raw/runtime-fd-red-01.json",
+        "sha256": "30d7ebe4b9196eb376c0c34df58d0b0e4ebed21006e9ec806a6d4640c43ddc36"
+      }
+    }
+  ],
+  "observedMetrics": [
+    {
+      "source": {
+        "file": "raw/runtime-main-red-metrics.txt",
+        "sha256": "d66057a500c13f05a1b016d3db3af95b61189a5376d14fd7b20915629e17d22c"
+      },
+      "lines": [
+        "1794732306.900 55099 55115 I System.out: PASSKEY_LOOKUP main_heartbeat_ms=1000 query_on_main=true",
+        "1794732334.421 55228 55244 I System.out: note_metadata_search_12={category=factory=27,start=27,active=1, keepass=factory=27,start=27,active=1, mdbx=factory=27,start=27,active=1, bitwarden=factory=27,start=27,active=1}"
+      ]
+    },
+    {
+      "source": {
+        "file": "raw/runtime-main-green-metrics-01.txt",
+        "sha256": "987c3c76ab152622e835e5fdbce38ac161dddf1c18849324204d826f5fbdced8"
+      },
+      "lines": [
+        "1794732306.900 55099 55115 I System.out: PASSKEY_LOOKUP main_heartbeat_ms=1000 query_on_main=true",
+        "1794732334.421 55228 55244 I System.out: note_metadata_search_12={category=factory=27,start=27,active=1, keepass=factory=27,start=27,active=1, mdbx=factory=27,start=27,active=1, bitwarden=factory=27,start=27,active=1}",
+        "1794732680.607 55479 55495 I System.out: PASSKEY_LOOKUP main_heartbeat_ms=5 query_on_main=false",
+        "1794732787.824 55479 55495 I System.out: note_metadata_search_12={category=factory=1,start=1,active=1, keepass=factory=1,start=1,active=1, mdbx=factory=1,start=1,active=1, bitwarden=factory=1,start=1,active=1}",
+        "1794732789.941 55479 55495 I System.out: note_metadata_reentry={category=factory=2,start=2,active=1, keepass=factory=2,start=2,active=1, mdbx=factory=2,start=2,active=1, bitwarden=factory=2,start=2,active=1}"
+      ]
+    },
+    {
+      "source": {
+        "file": "raw/runtime-diagnostic-02-logcat.txt",
+        "sha256": "2d906aab80802ae10f08c05ab02114ee8d5c9e8d1ed87199f8c3bce295e19cc4"
+      },
+      "lines": [
+        "I/System.out(55479): note_metadata_search_12={category=factory=1,start=1,active=1, keepass=factory=1,start=1,active=1, mdbx=factory=1,start=1,active=1, bitwarden=factory=1,start=1,active=1}",
+        "I/System.out(55479): note_metadata_reentry={category=factory=2,start=2,active=1, keepass=factory=2,start=2,active=1, mdbx=factory=2,start=2,active=1, bitwarden=factory=2,start=2,active=1}",
+        "I/System.out(56486): PASSKEY_LOOKUP main_heartbeat_ms=1000 query_on_main=true",
+        "I/System.out(56486): note_metadata_search_12={category=factory=28,start=28,active=1, keepass=factory=28,start=28,active=1, mdbx=factory=28,start=28,active=1, bitwarden=factory=28,start=28,active=1}",
+        "I/System.out(57788): PASSKEY_LOOKUP main_heartbeat_ms=9 query_on_main=false"
+      ]
+    }
+  ],
+  "finalR8": {
+    "status": "passed",
+    "frozenArtifacts": {
+      "artifacts": [
+        {
+          "version": "old",
+          "sha256": "0458479768831c154533ae41e8c8182fb17d06ac870db7566070c57c367740b0",
+          "mappingSha256": "fa37b30d37444dbd993d882e20229b378b4978002532d0647a7f6c6ef52995f9",
+          "package": "takagi.ru.monica.bwca328fd",
+          "versionCode": 35,
+          "versionName": "1.0.328",
+          "cert": "Signer #1 certificate SHA-256 digest: 6e1c4c795d062b74c28c3d4fa13833a71deef19f6501e917ee6b3df60797a4b0",
+          "abis": [
+            "x86_64"
+          ],
+          "profiles": {
+            "assets/dexopt/baseline.prof": {
+              "bytes": 18478,
+              "sha256": "c37942f5832417e454413a2922c857a905c30e29b7617a43a77f13333c8db25a"
+            },
+            "assets/dexopt/baseline.profm": {
+              "bytes": 2114,
+              "sha256": "b3daed0f05f7672f31e96ed9664307feee7d4008225f25d6cdce084af0a9eed3"
+            }
+          }
+        },
+        {
+          "version": "new",
+          "sha256": "ed4d7b08af796db63459a6bc203eef2f4f0d103fef06c4bcfaf849ae93b4e6cd",
+          "mappingSha256": "9fa79240214c19f116575a45b9c224f30a285d957a77e86a58f6f4d6084e77ae",
+          "package": "takagi.ru.monica.bwca328fd",
+          "versionCode": 35,
+          "versionName": "1.0.328",
+          "cert": "Signer #1 certificate SHA-256 digest: 6e1c4c795d062b74c28c3d4fa13833a71deef19f6501e917ee6b3df60797a4b0",
+          "abis": [
+            "x86_64"
+          ],
+          "profiles": {
+            "assets/dexopt/baseline.prof": {
+              "bytes": 18508,
+              "sha256": "5156ae74e219ac7b2dbd68e525d5f004a2a03d00b26289a3a4d52bd54c8f4e93"
+            },
+            "assets/dexopt/baseline.profm": {
+              "bytes": 2111,
+              "sha256": "b70b35aced805b395554054b1d0db24d8a39e6dfc190913e576ff74f98dae062"
+            }
+          }
+        }
+      ],
+      "receipt": {
+        "file": "runtime-release/raw/fd-apks.json",
+        "sha256": "ea7e7b3c85e63f63a672c39c57029f82c544ab3c37ad1197856cd6084208bc39"
+      },
+      "freezeReceipt": {
+        "file": "runtime-release/raw/fd-freeze.json",
+        "sha256": "3b16a7a5222e076751c0bcf721531ce47377cdd3041c4e3170dafd3de54a3fcf"
+      }
+    },
+    "build": {
+      "driverSeconds": 828.055,
+      "receipt": {
+        "file": "raw/runtime-fd-r8-build-01.json",
+        "sha256": "f8f79b57b14986bbee8556e83949f801c0ee30490ac6ee708916e0525c1ebfa9"
+      },
+      "output": {
+        "file": "raw/runtime-fd-r8-build-01.txt",
+        "sha256": "fc12c42f539d648fe598dce99974e2522d98c87f626d3e448e94953a57aeed20"
+      },
+      "r8TaskExecuted": true,
+      "isolationInitScript": {
+        "file": "upgrade.init.gradle",
+        "sha256": "3344b076afc04d4c9d50c826b9ef36b66035c57aac6028c1bf82d8a37823314b"
+      },
+      "isolation": "Separate applicationId and local debug signer; actual Release minification retained"
+    },
+    "buildGradleIdentity": {
+      "r8BuildInputSha256": "894ce8a0069df2e3926be1dc2d028800039bec2000998246fc26a5ac4ac8fe6c",
+      "currentSha256": "894ce8a0069df2e3926be1dc2d028800039bec2000998246fc26a5ac4ac8fe6c"
+    },
+    "sameSignerUpgrade": {
+      "passed": true,
+      "receipt": {
+        "file": "runtime-release/raw/runtime-fd-upgrade.json",
+        "sha256": "b58b9b92ebfa87bd2bcbe3b981914903dcf100823b99d655a64e9d4a7c3e0a7c"
+      }
+    },
+    "oldDataNewWriteColdRead": {
+      "passed": true,
+      "stages": {
+        "before": {
+          "passed": true,
+          "phase": "profile",
+          "pid": 64540,
+          "driverSeconds": 0.766,
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-before.json",
+            "sha256": "9caf044e873aa95ad8f4cce18a87178aa9b4d61dddef2f69a5da169897e6411c"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-before.txt",
+            "sha256": "6de991f0d503ea7e5c72ed5ce5215f70cdd00e8acc31fbb57c537b220a40613a"
+          }
+        },
+        "after-upgrade": {
+          "passed": true,
+          "phase": "profile",
+          "pid": 64711,
+          "driverSeconds": 0.654,
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-after-upgrade.json",
+            "sha256": "7b5ed28ac059973871d67db13130dc8ceefb471170fe1d4ee02c4068717758d6"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-after-upgrade.txt",
+            "sha256": "ebc035cc55af0c11586ec60613bc684c9c7f7e870f8e141b5e211bc222646d0e"
+          }
+        },
+        "write": {
+          "passed": true,
+          "phase": "writeRuntime",
+          "pid": 64793,
+          "driverSeconds": 0.615,
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-write.json",
+            "sha256": "94420b07abd4f9ce4945b8eb3430a6c49e90a6192220f1f99dc07f914db48a33"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-write.txt",
+            "sha256": "6dc3733f419a915f007ffa86ee42246629ce87766d7885dcba39de189eb37fa8"
+          }
+        },
+        "cold": {
+          "passed": true,
+          "phase": "runtime",
+          "pid": 64874,
+          "driverSeconds": 0.599,
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-cold.json",
+            "sha256": "7de3e35462e7ddfbcaafb98554dd705450684c6ba346e38202e16f315c067c63"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-cold.txt",
+            "sha256": "aeb7f1a8bf3826ecf7c3a6c5ce9deef411354412bf6221571dd7a0d3ad01936b"
+          }
+        }
+      },
+      "differentWriteAndColdPids": true,
+      "scope": "Production password crypto and repository browse plus direct SQL fixture writes/reads; not full editor save UI"
+    },
+    "realUiBackupRestore": {
+      "status": "passed",
+      "preparation": {
+        "passed": true,
+        "phase": "prepareRestore",
+        "pid": 2179,
+        "driverSeconds": 0.568,
+        "receipt": {
+          "file": "runtime-release/raw/runtime-fd-prepare-restore.json",
+          "sha256": "1f753d621fd0c94c57b4a8eb8d02e37fa92cb44d8568bebcaa493234f4386e75"
+        },
+        "output": {
+          "file": "runtime-release/raw/runtime-fd-prepare-restore.txt",
+          "sha256": "7eeeaaa278af3f6bb1cce712b87628b9daa095eb8d62c3ee9ed56eb5d7a88947"
+        }
+      },
+      "restoredData": {
+        "passed": true,
+        "phase": "runtime",
+        "pid": 4164,
+        "driverSeconds": 0.525,
+        "receipt": {
+          "file": "runtime-release/raw/runtime-fd-restored.json",
+          "sha256": "3633f66ec1b3ed3e2fd042d7565c59a23e31d6edb0c24fa73bc94f416ce54f29"
+        },
+        "output": {
+          "file": "runtime-release/raw/runtime-fd-restored.txt",
+          "sha256": "ea0a8726c7cd2f39a56472b01c1517fafd940cdf16f6602bfdc94a6d08514329"
+        }
+      },
+      "actualUiImportedRecords": 1,
+      "scope": "Real export and file-picker restore UI; only owned Performance new record removed, other three retained, then all four verified with production crypto plus SQL fixture probe",
+      "backupFilename": "monica_backup_20261115_183215.enc.zip",
+      "uiSuccessFrames": [
+        {
+          "file": "runtime-release/raw/ui-fd-1794739684594294000.xml",
+          "sha256": "a0795294d5ccf25a354d27dbcee964d44ccd825aa5dd15ebd6ed370a5393d8d7"
+        }
+      ],
+      "selectedBackupConfirmationFrames": [
+        {
+          "file": "runtime-release/raw/ui-fd-1794739670850193400.xml",
+          "sha256": "4f6c1519062ea477dd91f18b2efc45c84e5ccbb9df6bc28c990ecd1c7c57df35"
+        },
+        {
+          "file": "runtime-release/raw/ui-fd-1794739673150103700.xml",
+          "sha256": "4f6c1519062ea477dd91f18b2efc45c84e5ccbb9df6bc28c990ecd1c7c57df35"
+        }
+      ],
+      "exportListingFrames": [
+        {
+          "file": "runtime-release/raw/ui-fd-1794738737470635400.xml",
+          "sha256": "ffdcd979300487486d73ef2c8d2db1be1a17a4ec5ddaacfef55f61f509dcc11c"
+        },
+        {
+          "file": "runtime-release/raw/ui-fd-1794739047986711800.xml",
+          "sha256": "ffdcd979300487486d73ef2c8d2db1be1a17a4ec5ddaacfef55f61f509dcc11c"
+        },
+        {
+          "file": "runtime-release/raw/ui-fd-1794739661581611200.xml",
+          "sha256": "454b0408c97aeded9aae28237aa956cb82494f6207baf059a990836d83b5c38c"
+        },
+        {
+          "file": "runtime-release/raw/ui-fd-1794739664041719400.xml",
+          "sha256": "454b0408c97aeded9aae28237aa956cb82494f6207baf059a990836d83b5c38c"
+        },
+        {
+          "file": "runtime-release/raw/ui-fd-1794739666305719900.xml",
+          "sha256": "b87dd543ec19b11af30e0f1cf900c2ea4bf0e28c4e78fe39e3d9eb154b5dd2e3"
+        },
+        {
+          "file": "runtime-release/raw/ui-fd-1794739668609030200.xml",
+          "sha256": "b87dd543ec19b11af30e0f1cf900c2ea4bf0e28c4e78fe39e3d9eb154b5dd2e3"
+        }
+      ],
+      "uiDetailedCounts": {
+        "imported": 1,
+        "skipped": 3,
+        "failed": 0
+      },
+      "exportDrivers": [
+        {
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-export.json",
+            "sha256": "44433f319ce0b344a1ebb647ecab2e16a2453bfa5c3ce1bebed18aa2bd93a29d"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-export.txt",
+            "sha256": "fdb4ce6935de6fb63ddd00f338a9ef4f8c9fa004c874d1efddd60c13efa2ccd1"
+          },
+          "driverSuccessAloneDoesNotEstablishRestore": true
+        }
+      ],
+      "importDrivers": [
+        {
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-import-02.json",
+            "sha256": "7b0f46c3595c142dd12e05569684302260babc313213b75acd7e579b91806c04"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-import-02.txt",
+            "sha256": "471a1c9321b34f7ec44ab4da73740a1bda775deb89571dcf8bb3c90fbddcb6ab"
+          },
+          "driverSuccessAloneDoesNotEstablishRestore": true
+        },
+        {
+          "receipt": {
+            "file": "runtime-release/raw/runtime-fd-import.json",
+            "sha256": "c2a5e00f0fd49bc9d02950a176e2d63bbab8ccee7f12812a4c8f41303281a449"
+          },
+          "output": {
+            "file": "runtime-release/raw/runtime-fd-import.txt",
+            "sha256": "d06193bb4390bfa0ca48906ec5189153f0b8212105c942c1044d42e5266fb0dd"
+          },
+          "driverSuccessAloneDoesNotEstablishRestore": true
+        }
+      ]
+    },
+    "passkeySystemCeremony": {
+      "status": "passed",
+      "probeSource": {
+        "file": "tasks/04-passkey/PasskeyReleaseProbe.java",
+        "sha256": "80febda730a7113a6564d3acf608472fddb45df48144e5c39c63ba6e472c3653"
+      },
+      "probeApk": {
+        "file": "tasks/04-passkey/release-signing/passkey-final-01/fd/probe.apk",
+        "sha256": "201fe364d999ee986fe8d45ad70c72c5875fcdd4417aaa67f73a7b0315be43ae"
+      },
+      "buildReceipt": {
+        "file": "tasks/04-passkey/release-signing/passkey-final-01/fd/build.json",
+        "sha256": "d3a53765edc1daf7758d5c48cc687b2da3bcc62c225ddd3bb61f5023df546892"
+      },
+      "phases": {
+        "success": {
+          "passed": true,
+          "driverSeconds": 1.717,
+          "pid": 64987,
+          "receipt": {
+            "file": "tasks/04-passkey/release-signing/passkey-final-01/fd/success.json",
+            "sha256": "b17e38f09a664da964e9be7041318e1e162b29051d4e890b98393a3bee1be283"
+          },
+          "output": {
+            "file": "tasks/04-passkey/release-signing/passkey-final-01/fd/success.txt",
+            "sha256": "04ed463d7bb8fe7bd3c5425fcef42e9196a3575fe08551fa898accb34d8832ef"
+          }
+        },
+        "cancel": {
+          "passed": true,
+          "driverSeconds": 1.475,
+          "pid": 65230,
+          "receipt": {
+            "file": "tasks/04-passkey/release-signing/passkey-final-01/fd/cancel.json",
+            "sha256": "756b2b82219b5c4a841da8765ac870f961c86253dcf6652e1348356261e915da"
+          },
+          "output": {
+            "file": "tasks/04-passkey/release-signing/passkey-final-01/fd/cancel.txt",
+            "sha256": "a218b1e3df0bf22625b4fd3ee1e410570528ae661b4c99a4d732bb0854db4818"
+          }
+        }
+      },
+      "scope": [
+        "Native synthetic caller through framework GetCredentialRequest and target-UID PendingIntent",
+        "Real password authentication, independent ES256 assertion verification, platform result and one usage increment",
+        "Cancel has no assertion or usage change; existing password/passkey row hashes retained",
+        "Late-completion reflection is a negative check after the real result, not a duplicated biometric callback",
+        "No browser website/DAL, actual biometrics, physical device or OEM acceptance"
+      ]
+    },
+    "relatedSystemEntries": {
+      "status": "passed",
+      "phases": {
+        "imeAuth": [
+          {
+            "passed": true,
+            "driverSeconds": 0.993,
+            "receipt": {
+              "file": "runtime-release/raw/runtime-fd-imeAuth.json",
+              "sha256": "e5afca240a3251c2e08acd8e5e8a6c9467d030c1f17d734544623adfa175568d"
+            },
+            "output": {
+              "file": "runtime-release/raw/runtime-fd-imeAuth.txt",
+              "sha256": "c1eeac27bdf4ed8a17700e7bf96aa3fea1ca8831bbe18abb8b418b09be8e91f0"
+            }
+          }
+        ],
+        "imeCancel": [
+          {
+            "passed": true,
+            "driverSeconds": 0.877,
+            "receipt": {
+              "file": "runtime-release/raw/runtime-fd-imeCancel.json",
+              "sha256": "e5c8a2b33ba27460befd2df8a247d8f742cf8b1d290f6f8c36a2108dbf4bf4af"
+            },
+            "output": {
+              "file": "runtime-release/raw/runtime-fd-imeCancel.txt",
+              "sha256": "f5cf11506c4ea3965c47461aceb0fc729a1cf3a34fbc268a78a7f7c5f5f574f4"
+            }
+          }
+        ],
+        "pickerAuth": [
+          {
+            "passed": true,
+            "driverSeconds": 1.122,
+            "receipt": {
+              "file": "runtime-release/raw/runtime-fd-pickerAuth.json",
+              "sha256": "489325d3071bafdf181dab32bb430b11662f131ae12814d47fad9cb8d5146b7e"
+            },
+            "output": {
+              "file": "runtime-release/raw/runtime-fd-pickerAuth.txt",
+              "sha256": "c5f7692770c72b68778394f322f920675da20c7319af4f5dc17760ad603c6e9d"
+            }
+          }
+        ],
+        "pickerCancel": [
+          {
+            "passed": true,
+            "driverSeconds": 0.83,
+            "receipt": {
+              "file": "runtime-release/raw/runtime-fd-pickerCancel.json",
+              "sha256": "45b7ece59fad46ba044bd4a25f5657e7cac04d46930ccb4fd655a09c9bdd0019"
+            },
+            "output": {
+              "file": "runtime-release/raw/runtime-fd-pickerCancel.txt",
+              "sha256": "24d5b6361ef0558dcd5aca292b8420c291f2a51a89addc342eafbcee30c53d42"
+            }
+          }
+        ]
+      },
+      "probeSource": {
+        "file": "runtime-release/EntryReleaseProbe.java",
+        "sha256": "f399e529b70e484709b7b54ca68766e979d3dbd166d390282cb627440c7d7d7b"
+      },
+      "probeApk": {
+        "file": "runtime-release/entry-probe/fd/probe.apk",
+        "sha256": "23e73271c25a0a7595833f8d29d62bd9ce4e1cd361bae70c021ed3facba9db03"
+      },
+      "driver": {
+        "file": "runtime-release/entry_release_probe.py",
+        "sha256": "c7e3f059eef3e149cf338a63f4c5f68aff91b533a1eef0f1a276d0ac6fc6cda8"
+      },
+      "bindingBasis": "Driver verifies installed APK SHA against frozen new artifact before every run; original run receipts contain phase/result/time, not APK hash",
+      "scope": [
+        "Real AutofillPickerActivityV2 password UI, retained-record listing and Back cancellation",
+        "Real ImeUnlockActivity in distinct :ime process with authenticated-result broadcast and cancellation",
+        "Direct target-context Activity launches; not a full OS autofill dataset session or actual keyboard field insertion"
+      ]
+    },
+    "probeSource": {
+      "file": "runtime-release/upgrade/FolderUpgradeProbe.java",
+      "sha256": "0c57fa8c5681e36642eeaf1e2ceebd19b4465030854d1faad0d5f02b5603e3d6"
+    },
+    "probePreparationReceipt": {
+      "file": "runtime-release/raw/preparation-check.json",
+      "sha256": "126f8595c6947a29204c7bb18d6dd87db28e0eba4bd865633e38f193251354e3"
+    },
+    "dataBindingBasis": "Upgrade driver checks installed APK against frozen old/new artifact before each run; original probe receipt records command/phase but not APK hash"
+  },
+  "failuresRetained": [
+    {
+      "run": "runtime-main-build-01",
+      "reason": "AndroidTest referenced absent AndroidX UiAutomator; changed fixture to existing platform UiAutomation, production had compiled"
+    },
+    {
+      "run": "runtime-main-green-01",
+      "tests": 15,
+      "passed": 12,
+      "failed": 3,
+      "failures": [
+        "Home caller Bootstrap not foreground for Activity result delivery",
+        "Selected username clipped in existing landscape provider layout",
+        "Internal Compose tree note remained beneath opaque lock/loading surface"
+      ]
+    },
+    {
+      "run": "runtime-main-diagnostic-02",
+      "tests": 3,
+      "passed": 1,
+      "failed": 2,
+      "note": "Home caller restoration passed; original username/internal-tree assertions still failed; secure screenshot not visual acceptance"
+    },
+    {
+      "run": "runtime-main-diagnostic-03",
+      "tests": 2,
+      "passed": 1,
+      "failed": 1,
+      "note": "Visible unique account display title passed; original internal-tree absence assertion still failed; actual surface/system accessibility captured"
+    }
+  ],
+  "limitations": [
+    "No physical-device/OEM/user-vault acceptance",
+    "JVM host-native assumption remains skipped; not reported as passed",
+    "Performance counts and synthetic heartbeat measurements do not establish end-to-end login or frame-time gains",
+    "R8 data probe uses production crypto plus SQL fixture operations; does not establish full editor-save coverage",
+    "R8 Passkey uses a native synthetic caller; no actual website/DAL or biometric ceremony",
+    "See finalR8 per-stage status for remaining validation"
+  ],
+  "scope": "passkey",
+  "source": {
+    "file": "app/src/main/java/takagi/ru/monica/passkey/PasskeyAuthActivity.kt",
+    "sha256": "85d6c288eb975950707c1d0fe69345c4d638e9d1b120d60e601b248cdd78ce1e",
+    "editionsByteIdentical": true
+  },
+  "testSource": {
+    "file": "app/src/androidTest/java/takagi/ru/monica/passkey/PasskeyAuthLoadingTest.kt",
+    "sha256": "631d7f68592f853c434651010612e993d049f0f4b92e247583358fa2f9a667e4",
+    "editionsByteIdentical": true,
+    "snapshot": {
+      "file": "tasks/runtime-debug-final/passkey-test.kt",
+      "sha256": "631d7f68592f853c434651010612e993d049f0f4b92e247583358fa2f9a667e4"
+    }
+  },
+  "finalDebug": {
+    "passed": true,
+    "run": "passkey-fd-green-01",
+    "tests": 12,
+    "runnerSeconds": 334.771,
+    "driverSeconds": 337.762,
+    "output": {
+      "file": "raw/passkey-fd-green-01.txt",
+      "sha256": "68618c8dace8ef3627d8c58ba6f841f0736f98cd0c45275216093f1bad0be4d9"
+    },
+    "runReceipt": {
+      "file": "raw/passkey-fd-green-01.json",
+      "sha256": "d134bc1bf7f940ebe65984f5d982d2c5011795da7350955d914b6e8ae4d2d828"
+    },
+    "artifacts": {
+      "app.apk": {
+        "file": "artifacts/runtime-fd-apk-02/app.apk",
+        "sha256": "f477bf77bc26530ef1c5c5699c381d379123456d6eabcd6d65e029c754d425c4"
+      },
+      "test.apk": {
+        "file": "artifacts/runtime-fd-apk-02/test.apk",
+        "sha256": "a98304085c8906549895e276ee4197ef88b5e36a0229f8bce372cea39a80a6cf"
+      }
+    },
+    "artifactReceipt": {
+      "file": "raw/runtime-fd-apk-02.json",
+      "sha256": "f8193fcb2217eea39e7d47aff15f4afde1468f2d23ee324d128bf399cb7689e2"
+    },
+    "bindingBasis": "Root confirmed exact installation order and freeze-current receipt; original run receipt records app hash but not test hash",
+    "source": {
+      "file": "app/src/main/java/takagi/ru/monica/passkey/PasskeyAuthActivity.kt",
+      "sha256": "85d6c288eb975950707c1d0fe69345c4d638e9d1b120d60e601b248cdd78ce1e",
+      "editionsByteIdentical": true
+    },
+    "testSource": {
+      "file": "app/src/androidTest/java/takagi/ru/monica/passkey/PasskeyAuthLoadingTest.kt",
+      "sha256": "631d7f68592f853c434651010612e993d049f0f4b92e247583358fa2f9a667e4",
+      "editionsByteIdentical": true,
+      "snapshot": {
+        "file": "tasks/runtime-debug-final/passkey-test.kt",
+        "sha256": "631d7f68592f853c434651010612e993d049f0f4b92e247583358fa2f9a667e4"
+      }
+    }
+  },
+  "distinctMethodsWithAtLeastOnePass": [
+    "actualSelectedLookupKeepsMainResponsive",
+    "backDuringLookupRejectsLateRowAndReturnsCancellation",
+    "compatibilityLookupWithoutRecordIdKeepsExistingSelectionOrder",
+    "deletionAfterDisplayIsStillRejectedBySigningTimeReread",
+    "deletionDuringLookupCannotFallBackToDuplicateCredential",
+    "differentPlatformChallengeCannotAdmitAuthentication",
+    "failedDaoReadReturnsControlledErrorAndPreservesRows",
+    "lockingDuringLookupRejectsLateRowAndReturnsCancellation",
+    "lookupDeadlineRejectsUncooperativeLateResult",
+    "normalizedCredentialIdStillSelectsExactRecordInsteadOfNewerDuplicate",
+    "recreationStartsFreshLookupWithoutPublishingOldResult",
+    "stopDuringLookupRejectsLateRowAndReturnsCancellation"
+  ],
+  "signingAndFollowingProductionCodeUnchanged": true,
+  "lookupDeadlineMillis": 15000,
+  "deadlineIsHardInterrupt": false
+}

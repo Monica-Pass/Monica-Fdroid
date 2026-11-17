@@ -232,6 +232,16 @@ Monica is released under [GNU General Public License v3.0](LICENSE).
 - Bank card/payment icon source: [SVG Credit Card & Payment Icons](https://github.com/aaronfagan/svg-credit-card-payment-icons) (Apache-2.0).
 - Brand names and logos remain the property of their respective owners.
 
+## HyperOS references and acknowledgments
+
+Monica's HyperOS compatibility work benefits from these open-source projects:
+
+- [Howard20181/HyperPasskey](https://github.com/Howard20181/HyperPasskey) (GPL-3.0): source for parts of the optional built-in hooks covering Security Center configuration resets, system settings pages, credential selection and cross-device compatibility.
+- [dingwen07/CredentialProviderManager](https://github.com/dingwen07/CredentialProviderManager) (GPL-3.0): design reference for credential-provider, autofill-service and system-configuration diagnostics.
+- [cr-zhichen/password-manager-switch](https://github.com/cr-zhichen/password-manager-switch) (MIT): source for the default password manager helper's secure-settings read/write, verification and restoration logic.
+
+See the [HyperOS attribution notice](app/src/main/assets/licenses/hyperos-builtins.txt) for the referenced revisions and adaptation scope. The [HyperPasskey GPL-3.0 license](app/src/main/assets/licenses/HyperPasskey-GPL-3.0.txt) and [password-manager-switch MIT notice](app/src/main/assets/licenses/password-manager-switch.txt) are bundled with the app. The built-in module in unreleased 1.0.328 is experimental, disabled by default, requires a compatible module framework and has not been tested on physical HyperOS devices.
+
 ## F-Droid contact
 
 This is Monica’s dedicated F-Droid build repository. Please report app issues, feature requests, and user feedback in the [main Monica repository](https://github.com/Monica-Pass/Monica/issues), so the Monica team can track and handle them.

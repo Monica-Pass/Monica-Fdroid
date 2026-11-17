@@ -566,7 +566,7 @@ fn hash_composite_write_intent(
     hasher.finalize().to_vec()
 }
 
-fn write_operation_result(
+pub(crate) fn write_operation_result(
     changes: &[CommitChange],
     commit_id: String,
     already_committed: bool,

@@ -1,0 +1,77 @@
+{
+  "schema": "monica-mdbx-glitter-portable-provenance-v2",
+  "status": "portable-implemented-validation-in-progress",
+  "source_manifest": "GLITTER_SOURCE_MANIFEST.json",
+  "source_manifest_sha256": "32b57b6885e857ab941753031fe0d00c7306e91b41fb5cbee5105f9792ffd64f",
+  "historical_provenance": "MDBX3_RUNTIME_PROVENANCE.pre-glitter.json",
+  "historical_validation_applies_to_current_binary": false,
+  "runtime": {
+    "glitter_critical_extension": "tiga-glitter-v1",
+    "glitter_policy_version": 3,
+    "storage_format": "MDBX-2",
+    "glitter_authentication": "master-password-and-key-file",
+    "name": "MDBX3",
+    "other_profiles_policy_version": 2
+  },
+  "build": {
+    "profile": "mdbx3-release",
+    "cargo_ndk": "4.1.2",
+    "rust": "1.86.0",
+    "ndk": "28.2.13676358",
+    "rustflags": "-C link-arg=-Wl,--build-id=sha1",
+    "target": "android-api-26",
+    "strip": "llvm-strip --strip-all --keep-section=.note.gnu.build-id"
+  },
+  "binding": {
+    "sha256": "e27bb26dc7da9e8e8c4461c2d12665e2d432f30b67c79b60f5d8358c8205600e",
+    "uniffi_contract_version": 30,
+    "symbols": 545,
+    "checksums": 242
+  },
+  "main_native_artifacts": {
+    "arm64-v8a": {
+      "sha256": "448eb753441444701ab4aebd04348450ad93caf796ee58b4538bff5016d20e65",
+      "bytes": 7665160,
+      "build_id": "65b80352c6beeda3aa9b7b86a0241eeb2baec060"
+    },
+    "armeabi-v7a": {
+      "sha256": "3165fb0b032b5aabb12d58c263081bb13df6ad136f2348e8e708f7749d4cdc94",
+      "bytes": 5893316,
+      "build_id": "bead8254adc2c6657759341c24806c9f370ab5d1"
+    },
+    "x86_64": {
+      "sha256": "9a7e274f50ed558d03a001c5118915455453fd77510f56af19699efa92dd5e58",
+      "bytes": 9142616,
+      "build_id": "7fabcee50351e91dfd0a6d9e53ca09e6a1101502"
+    }
+  },
+  "fdroid_build": "Vendored source; Gradle cargo-ndk build required. No prebuilt libraries added to F-Droid source.",
+  "validation": {
+    "authentication": "Standard context; no hardware attestation required",
+    "physical_device": "not-run",
+    "report": "Portable Glitter verification pending"
+  },
+  "fdroid_native_artifacts": {
+    "arm64-v8a": {
+      "sha256": "30ce48b257e08ba64a9268a12fdae367cf357b65b4cf227da0562e34e52b3b71",
+      "bytes": 7665224,
+      "build_id": "f08c9651d946d943c0f696ca2ad9b4afa9cad5ad"
+    },
+    "armeabi-v7a": {
+      "sha256": "8af26d872503c6aafefb457bffd0446cc9c2bad7824fabf2a0dd497347b8d829",
+      "bytes": 5893316,
+      "build_id": "60fb8707bf3bb377b8c425c66c0f20a772bd20a9"
+    },
+    "x86_64": {
+      "sha256": "50d8bf3a231afa55c8283811a78db0ebceacc7b495a739484913c5d564c56f68",
+      "bytes": 9142680,
+      "build_id": "e1a02abd52da4afb69e480738a686ad0e8ceb634"
+    }
+  },
+  "native_editor_328": {
+    "patch": "patches/native-editor-328.patch",
+    "format_change": false,
+    "report": "../docs/verification/mdbx-native-editor-328.md",
+    "scope": "Guarded ordinary login editor writes; original source manifest and Glitter validation caveats retained."
+  }
+}

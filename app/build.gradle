@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.baseline.profile)
     id 'kotlin-parcelize'
 }
 
@@ -273,6 +274,10 @@ ksp {
 }
 
 dependencies {
+    implementation project(':hyperos-hooks')
+    implementation 'io.github.libxposed:service:102.0.0'
+    implementation 'io.github.libxposed:interface:102.0.0'
+    baselineProfile project(':baselineprofile')
     implementation 'com.google.re2j:re2j:1.8'
     implementation "com.googlecode.libphonenumber:libphonenumber:9.0.17"
     // Align application runtimes without forcing the compiler/processor classpaths.
@@ -438,4 +443,21 @@ dependencies {
     androidTestImplementation libs.androidx.ui.test.junit4
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
+}
+
+
+// Generation is explicit; normal builds consume reviewed rules without needing a device.
+baselineProfile {
+    automaticGenerationDuringBuild = false
+    saveInSrc = true
+    mergeIntoMain = true
+    // Dependencies already supply their own profiles; keep generated rules scoped to Monica.
+    filter { include "takagi.ru.monica.**" }
+}
+
+// Synthetic profiling variants must never replace the user's normal installation.
+androidComponents.finalizeDsl { dsl ->
+    dsl.buildTypes.matching { it.name.startsWith('nonMinified') || it.name.startsWith('benchmark') }.configureEach {
+        applicationIdSuffix = '.benchmark'
+    }
 }

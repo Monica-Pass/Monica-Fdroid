@@ -11,6 +11,7 @@ mod conflict_facade;
 mod extension_facade;
 mod history_action_facade;
 mod history_facade;
+mod guarded_write_facade;
 mod integrity_root_facade;
 mod lifecycle_facade;
 mod object_facade;

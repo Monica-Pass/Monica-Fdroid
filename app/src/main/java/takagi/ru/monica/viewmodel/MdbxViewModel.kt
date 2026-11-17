@@ -1364,6 +1364,8 @@ class MdbxViewModel(
                     createMdbx2OneDriveVault(
                         name = name,
                         masterPassword = masterPassword,
+                        unlockMethod = unlockMethod,
+                        keyFile = keyFile,
                         tigaMode = tigaMode,
                         accountId = accountId,
                         directoryPath = directoryPath,
@@ -1403,6 +1405,8 @@ class MdbxViewModel(
                         connectToMdbx2OneDriveVault(
                             name = displayName,
                             masterPassword = masterPassword,
+                            unlockMethod = unlockMethod,
+                            keyFile = keyFile,
                             accountId = accountId,
                             remoteFilePath = remoteFilePath,
                             description = description
@@ -1636,6 +1640,8 @@ class MdbxViewModel(
     private suspend fun createMdbx2OneDriveVault(
         name: String,
         masterPassword: String,
+        unlockMethod: MdbxUnlockMethod,
+        keyFile: MdbxKeyFileSelection?,
         tigaMode: MdbxTigaMode,
         accountId: String,
         directoryPath: String?,
@@ -1653,7 +1659,9 @@ class MdbxViewModel(
         )
         val transport = OneDriveMdbxRemoteTransport(context, accountId)
         transport.testConnection()
-        val localVaultFile = mdbx2Repository.createInitializedVaultFile(tigaMode, masterPassword)
+        val credential = buildCredential(unlockMethod, masterPassword, keyFile)
+        val protectedCredential = protectMdbxCredential(tigaMode, credential)
+        val localVaultFile = mdbx2Repository.createInitializedVaultFile(tigaMode, credential)
         val accessToken = OneDriveAuthManager(context).acquireAccessToken(accountId).accessToken
             ?: throw IllegalStateException("OneDrive access token unavailable")
         val sourceId = remoteSourceDao.insertSource(
@@ -1675,10 +1683,11 @@ class MdbxViewModel(
                 sourceId = sourceId,
                 engineType = MdbxEngineType.RUST_MDBX2.name,
                 tigaMode = tigaMode.name,
-                encryptedPassword = securityManager.encryptData(
-                    Mdbx2VaultSessionExecutor.normalizePassword(masterPassword)
-                ),
-                unlockMethod = MdbxUnlockMethod.MASTER_PASSWORD.storedValue,
+                encryptedPassword = protectedCredential,
+                unlockMethod = unlockMethod.storedValue,
+                keyFileName = keyFile?.name,
+                keyFileUri = keyFile?.uri,
+                keyFileFingerprint = keyFile?.fingerprint,
                 kdfProfile = "argon2id",
                 description = description,
                 workingCopyPath = localVaultFile.absolutePath,
@@ -1701,6 +1710,8 @@ class MdbxViewModel(
     private suspend fun connectToMdbx2OneDriveVault(
         name: String,
         masterPassword: String,
+        unlockMethod: MdbxUnlockMethod,
+        keyFile: MdbxKeyFileSelection?,
         accountId: String,
         remoteFilePath: String,
         description: String?
@@ -1714,7 +1725,11 @@ class MdbxViewModel(
             File(context.filesDir, "mdbx2").also { check(it.exists() || it.mkdirs()) },
             "onedrive_${UUID.randomUUID()}.mdbx"
         )
-        mdbx2RemoteSyncCoordinator.downloadBootstrapTo(normalizedRemotePath, transport, localVaultFile)
+        val credential = buildCredential(unlockMethod, masterPassword, keyFile)
+        val detectedMode = mdbx2Repository.downloadRemoteVaultFile(localVaultFile, credential) { destination ->
+            mdbx2RemoteSyncCoordinator.downloadBootstrapTo(normalizedRemotePath, transport, destination)
+        }
+        val protectedCredential = protectMdbxCredential(detectedMode, credential)
         val accessToken = OneDriveAuthManager(context).acquireAccessToken(accountId).accessToken
             ?: throw IllegalStateException("OneDrive access token unavailable")
         val sourceId = remoteSourceDao.insertSource(
@@ -1735,10 +1750,12 @@ class MdbxViewModel(
                 sourceType = MdbxSourceType.REMOTE_ONEDRIVE.name,
                 sourceId = sourceId,
                 engineType = MdbxEngineType.RUST_MDBX2.name,
-                encryptedPassword = securityManager.encryptData(
-                    Mdbx2VaultSessionExecutor.normalizePassword(masterPassword)
-                ),
-                unlockMethod = MdbxUnlockMethod.MASTER_PASSWORD.storedValue,
+                tigaMode = detectedMode.name,
+                encryptedPassword = protectedCredential,
+                unlockMethod = unlockMethod.storedValue,
+                keyFileName = keyFile?.name,
+                keyFileUri = keyFile?.uri,
+                keyFileFingerprint = keyFile?.fingerprint,
                 kdfProfile = "argon2id",
                 description = description,
                 workingCopyPath = localVaultFile.absolutePath,
@@ -3444,6 +3461,8 @@ class MdbxViewModel(
             }
             entries = vaultStore.readStoredEntries(databaseId)
         }
+        val nativeFolderIds = if (database.engineTypeEnum == MdbxEngineType.RUST_MDBX2)
+            vaultStore.listFolders(databaseId).mapTo(mutableSetOf()) { it.folderId } else null
         val payloadByEntryId = mutableMapOf<String, JSONObject>()
         val importedPasswordIds = mutableMapOf<String, Long>()
         val importedSecureItemIds = mutableMapOf<String, Long>()
@@ -3459,7 +3478,8 @@ class MdbxViewModel(
             .toMap()
         val existingPasswordsByEntryId = normalizeLegacyMdbxPasswordRows(
             databaseId = databaseId,
-            remoteRoomIdsByEntryId = remotePasswordRoomIdsByEntryId
+            remoteRoomIdsByEntryId = remotePasswordRoomIdsByEntryId,
+            nativeEntryIds = entries.mapTo(mutableSetOf()) { it.entryId }
         )
             .dedupeMdbxPasswordRowsByEntryId()
             .mapNotNull { entry -> entry.replicaGroupId?.let { it to entry } }
@@ -3522,7 +3542,8 @@ class MdbxViewModel(
                         databaseId = databaseId,
                         stored = stored,
                         payload = payload,
-                        existing = existingPasswordsByEntryId[stored.entryId]
+                        existing = existingPasswordsByEntryId[stored.entryId],
+                        nativeFolderIds = nativeFolderIds
                     )
                     importedPasswordIds[stored.entryId] = passwordId
                 }
@@ -3564,8 +3585,14 @@ class MdbxViewModel(
                     orphanedRows.filter(MdbxUnknownEntry::isProjection).forEach {
                         passwordEntryDao.deletePasswordEntryById(it.id)
                     }
+                    // Confirmed native UUID projections follow the engine's deletion/type
+                    // state. They must never be rescued as newly generated legacy objects.
+                    val nativeRows = orphanedRows.filter { row -> row.replicaGroupId?.let { id ->
+                        id in entries.map { it.entryId } && runCatching { UUID.fromString(id).toString() == id }.getOrDefault(false)
+                    } == true }
+                    applyRemoteStateToOrphanedMdbxPasswordRows(database, nativeRows, "native_source_changed")
                     val (remoteDeletedRows, missingRemoteRows) = orphanedRows
-                        .filterNot(MdbxUnknownEntry::isProjection).partition {
+                        .filterNot { MdbxUnknownEntry.isProjection(it) || it in nativeRows }.partition {
                         it.replicaGroupId in deletedPasswordEntryIds
                     }
                     if (orphanedRows.isNotEmpty()) {
@@ -3947,12 +3974,15 @@ class MdbxViewModel(
 
     private suspend fun normalizeLegacyMdbxPasswordRows(
         databaseId: Long,
-        remoteRoomIdsByEntryId: Map<String, Long>
+        remoteRoomIdsByEntryId: Map<String, Long>,
+        nativeEntryIds: Set<String>
     ): List<PasswordEntry> {
         val rows = passwordEntryDao.getByMdbxDatabaseIdSync(databaseId)
         if (rows.isEmpty()) return rows
 
-        val normalizedRows = rows.map { it.withNormalizedMdbxPasswordEntryId() }
+        val normalizedRows = rows.map { row ->
+            if (row.replicaGroupId in nativeEntryIds) row else row.withNormalizedMdbxPasswordEntryId()
+        }
         val rowsNeedingReplicaUpdate = normalizedRows.filterIndexed { index, row ->
             row.replicaGroupId != rows[index].replicaGroupId
         }
@@ -4091,7 +4121,8 @@ class MdbxViewModel(
         databaseId: Long,
         stored: MdbxStoredVaultEntry,
         payload: JSONObject,
-        existing: PasswordEntry?
+        existing: PasswordEntry?,
+        nativeFolderIds: Set<String>?
     ): Long {
         val plainPassword = if (payload.has("password_plain") && !payload.isNull("password_plain")) {
             payload.getString("password_plain")
@@ -4119,7 +4150,8 @@ class MdbxViewModel(
             ),
             categoryId = existing?.categoryId,
             mdbxDatabaseId = databaseId,
-            mdbxFolderId = payload.optMdbxFolderId(),
+            mdbxFolderId = if (nativeFolderIds != null) stored.collectionId?.takeIf { it in nativeFolderIds }
+                else payload.optMdbxFolderId(),
             replicaGroupId = stored.entryId,
             authenticatorKey = encodeMdbxSensitiveValueForLocalStorage(
                 value = payload.optString("authenticator_key"),
