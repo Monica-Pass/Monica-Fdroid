@@ -2,3 +2,4 @@
 Updates use F-Droid’s recommended version and official app page.
 Local password and batch creates roll back rows and fields on failure; retry no longer creates extra projects.
 Version & Links now has background blur, adaptive links and a labeled codename.
+Folder shortcuts collapse smoothly during password search, and results slide up.
