@@ -66,9 +66,9 @@ class ReleaseCheckTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "already identifies another commit"):
             self.run_check(env={"EXPECTED_TAG": "", "GITHUB_REF_TYPE": "tag", "GITHUB_REF_NAME": self.tag})
 
-    def test_fresh_proposed_tag_passes_with_final_notes(self):
+    def test_fresh_proposed_tag_passes_with_codenamed_final_notes(self):
         self.tags = []
-        self.notes.write_text(self.heading, encoding="utf-8")
+        self.notes.write_text(self.heading.rstrip() + " · 千石抚子（SengokuNadeko）\n", encoding="utf-8")
         self.assertIn("Metadata checked", self.run_check(["--tag", self.tag]))
 
     def test_branch_still_rejects_mismatched_version_heading(self):

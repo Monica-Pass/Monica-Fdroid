@@ -76,9 +76,10 @@ def main():
     notes_path = ROOT / "Monica F-Droid发行说明.md"
     notes = notes_path.read_text(encoding="utf-8") if notes_path.is_file() else ""
     version_heading = f"# Monica for Android (F-Droid) {version}"
-    if version_heading not in notes.splitlines():
+    headings = (version_heading, f"{version_heading} · 千石抚子（SengokuNadeko）")
+    if not any(heading in notes.splitlines() for heading in headings):
         fail("Update the root F-Droid release notes to match versionName.")
-    if release_check and not notes.startswith(version_heading + "\n"):
+    if release_check and not notes.startswith(tuple(heading + "\n" for heading in headings)):
         fail("Finalize the unreleased notes under the new version heading before tagging.")
 
     changelog_root = ROOT / "fastlane/metadata/android"
