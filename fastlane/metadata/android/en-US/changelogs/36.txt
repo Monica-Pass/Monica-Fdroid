@@ -1,0 +1,5 @@
+329: Fixed Bitwarden OTPs appearing under Monica Local when no folder was assigned. Their cipher identity, revision and pending changes are preserved.
+Updates use F-Droid’s recommended version and official app page.
+Local password and batch creates roll back rows and fields on failure; retry no longer creates extra projects.
+Steam-style overview search opens, filters and returns smoothly.
+Version & Links now has background blur, adaptive links and a labeled codename.
