@@ -1,5 +1,8 @@
-329: Fixed Bitwarden OTPs appearing under Monica Local when no folder was assigned. Their cipher identity, revision and pending changes are preserved.
-Updates use F-Droid’s recommended version and official app page.
-Local password and batch creates roll back rows and fields on failure; retry no longer creates extra projects.
-Version & Links now has background blur, adaptive links and a labeled codename.
-Folder shortcuts collapse smoothly during password search, and results slide up.
+329: Multi-password projects show once in lists and overview.
+Failed local password/batch saves roll back; retries add no extra projects.
+Bitwarden OTPs retain source, revision and pending changes.
+Updates use F-Droid's recommended version and official page.
+Version & Links adds blur, adaptive links and codename.
+Folder shortcuts animate during search.
+New settings auto-index for search, including HyperOS.
+Security Analysis adds a larger morphing score indicator; top progress bar removed.

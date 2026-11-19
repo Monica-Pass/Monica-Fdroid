@@ -69,12 +69,13 @@ class UnifiedSettingsInstrumentedTest {
         capture("database-dark")
         listOf(R.string.mdbx_ui_manager_entry_title to "mdbx", R.string.local_keepass_database to "keepass",
             R.string.webdav_backup to "webdav",
-            R.string.onedrive_backup_title to "onedrive", R.string.sync_backup_bitwarden_sync_title to "bitwarden",
+            R.string.sync_backup_bitwarden_sync_title to "bitwarden",
             R.string.lan_title to "nearby", R.string.export_data to "export", R.string.import_data to "import").forEach { (id, expected) ->
             compose.onNodeWithText(label(id)).performScrollTo().performClick()
             assertEquals(expected, events.last())
         }
-        assertEquals(8, events.size)
+        assertEquals(7, events.size)
+        compose.onNodeWithText(label(R.string.onedrive_backup_title)).assertDoesNotExist()
         capture("database-bottom")
     }
     @Test fun unavailablePlusRouteStaysDisabledAtLargeText() {
