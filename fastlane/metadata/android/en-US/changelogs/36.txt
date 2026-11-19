@@ -1,8 +1,1 @@
-329: Multi-password projects show once in lists and overview.
-Failed local password/batch saves roll back; retries add no extra projects.
-Bitwarden OTPs retain source, revision and pending changes.
-Updates use F-Droid's recommended version and official page.
-Version & Links adds blur, adaptive links and codename.
-Folder shortcuts animate during search.
-New settings auto-index for search, including HyperOS.
-Security Analysis adds a larger morphing score indicator; top progress bar removed.
+329: Multi-password projects show once; failed local saves roll back. Bitwarden OTPs keep source identity. F-Droid-only updates. Version links blur; folder search animates. Settings enter search automatically. Security Analysis gains a morphing score. Foldable layouts add a rail, list/detail panes and readable widths. Timeline adds Changes/Recoverable/Sync, filters, paging and verified local field recovery; later edits are protected.

@@ -1274,7 +1274,9 @@ fun MonicaContent(
             eligible = settingsLoaded && isAuthenticated && !shouldRequireAuthentication && !isOnAuthRoute,
             allowAutomatic = currentRoute == Screen.Main.routePattern && settings.quickSetupCompleted,
         )
-        Box(modifier = Modifier.fillMaxSize()) {
+        takagi.ru.monica.ui.common.layout.AdaptiveAppLayout(
+            wideContent = currentRoute == Screen.Main.routePattern || currentRoute == Screen.Login.route
+        ) {
             NavHost(
                 navController = navController,
                 startDestination = fixedStartDestination
