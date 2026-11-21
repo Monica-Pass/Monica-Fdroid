@@ -1,0 +1,69 @@
+Group 0
+INSTRUMENTATION_RESULT: stream=
+
+
+
+Time: 23.09
+
+
+
+OK (23 tests)
+
+
+
+
+
+INSTRUMENTATION_CODE: -1
+
+Group 1
+INSTRUMENTATION_RESULT: stream=
+
+
+
+Time: 147.217
+
+
+
+OK (56 tests)
+
+
+
+
+
+INSTRUMENTATION_CODE: -1
+
+Group 2
+INSTRUMENTATION_RESULT: stream=
+
+
+
+Time: 74.482
+
+
+
+OK (16 tests)
+
+
+
+
+
+INSTRUMENTATION_CODE: -1
+
+Release: {
+  "sourceVersion": "1.0.329",
+  "targetVersion": "1.0.331",
+  "samePackageAndSignature": true,
+  "minified": true,
+  "originalPassword": true,
+  "oldNewRecords": true,
+  "encryptedOldBackupRestore": true,
+  "realRepairUI": true,
+  "coldPersistentRead": true,
+  "postRepairData": {
+    "pid": "52978",
+    "oldRecord": true,
+    "newRecord": true,
+    "password": true,
+    "edition": "fd"
+  }
+}

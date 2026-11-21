@@ -1,0 +1,362 @@
+{
+  "edition": "fd",
+  "version": "1.0.331",
+  "versionCode": 38,
+  "debugBuildSeconds": 215.66200340003707,
+  "releaseBuildSeconds": 470.68042959994636,
+  "artifacts": {
+    "debug": {
+      "sha256": "8109f6e0b8129db3bada7a7cff03213a6dcbb77956ecd8b6176209ff8a05765f"
+    },
+    "androidTest": {
+      "sha256": "482d10c8140ca92a3a2dc1e9f69a3f142f685c48f85473e7c6e0ef2b28e8ed1f"
+    },
+    "release": {
+      "sha256": "30798b0fa831013f1ce95f8f8e9c4cf63e8a6ec11e48264f561d678fbb91d672"
+    }
+  },
+  "sourceMatchesTestedBuilds": true,
+  "regularMethodsPassed": 95,
+  "regularSearchFailure": false,
+  "jvm": {
+    "tests": 57,
+    "failures": 3,
+    "skipped": 0,
+    "failedNames": [
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest#compatDataEncryptionDoesNotUsePredictableMasterKeyString",
+      "takagi.ru.monica.security.BiometricUnlockRegressionGuardTest#pageSwitchHotPathsDoNotRunAuthOrBitwardenSyncWorkOnMainThread",
+      "takagi.ru.monica.ui.SteamMarketSensitiveActionGuardTest#protectedExecutorRequiresMasterPasswordOrStrongBiometricSuccess"
+    ]
+  },
+  "coldPhases": [
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "corrupt",
+      "phase": "seed",
+      "seconds": 1.0561705001164228,
+      "success": true,
+      "proof": [
+        "corrupt/seed pid=28874 uid=1310067\r"
+      ],
+      "source": "fd-system-corrupt-seed-1795260647318195800.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "corrupt",
+      "phase": "repair",
+      "seconds": 1.0951779999304563,
+      "success": true,
+      "proof": [
+        "corrupt/repair pid=28986 uid=1310067\r"
+      ],
+      "source": "fd-system-corrupt-repair-1795260648485612900.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "corrupt",
+      "phase": "cold",
+      "seconds": 0.7613556999713182,
+      "success": true,
+      "proof": [
+        "corrupt/cold pid=29040 uid=1310067\r"
+      ],
+      "source": "fd-system-corrupt-cold-1795260649636555200.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "corrupt",
+      "phase": "verifyNew",
+      "seconds": 0.9436937998980284,
+      "success": true,
+      "proof": [
+        "corrupt/verifyNew pid=29160 uid=1310067\r"
+      ],
+      "source": "fd-system-corrupt-verifyNew-1795260650448961600.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "missing",
+      "phase": "seed",
+      "seconds": 0.9182217998895794,
+      "success": true,
+      "proof": [
+        "missing/seed pid=29217 uid=1310067\r"
+      ],
+      "source": "fd-system-missing-seed-1795260651443239700.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "missing",
+      "phase": "repair",
+      "seconds": 0.9937038000207394,
+      "success": true,
+      "proof": [
+        "missing/repair pid=29328 uid=1310067\r"
+      ],
+      "source": "fd-system-missing-repair-1795260652410879900.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "missing",
+      "phase": "cold",
+      "seconds": 0.66398960002698,
+      "success": true,
+      "proof": [
+        "missing/cold pid=29383 uid=1310067\r"
+      ],
+      "source": "fd-system-missing-cold-1795260653453289800.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "missing",
+      "phase": "verifyNew",
+      "seconds": 0.9180183000862598,
+      "success": true,
+      "proof": [
+        "missing/verifyNew pid=29474 uid=1310067\r"
+      ],
+      "source": "fd-system-missing-verifyNew-1795260654165399300.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "replaced",
+      "phase": "seed",
+      "seconds": 0.9007731000892818,
+      "success": true,
+      "proof": [
+        "replaced/seed pid=29554 uid=1310067\r"
+      ],
+      "source": "fd-system-replaced-seed-1795260655133562100.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "replaced",
+      "phase": "repair",
+      "seconds": 1.044092700118199,
+      "success": true,
+      "proof": [
+        "replaced/repair pid=29613 uid=1310067\r"
+      ],
+      "source": "fd-system-replaced-repair-1795260656098640800.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "replaced",
+      "phase": "cold",
+      "seconds": 0.6908305999822915,
+      "success": true,
+      "proof": [
+        "replaced/cold pid=29727 uid=1310067\r"
+      ],
+      "source": "fd-system-replaced-cold-1795260657190571200.json"
+    },
+    {
+      "edition": "fd",
+      "route": "system",
+      "failure": "replaced",
+      "phase": "verifyNew",
+      "seconds": 0.9353630000259727,
+      "success": true,
+      "proof": [
+        "replaced/verifyNew pid=29783 uid=1310067\r"
+      ],
+      "source": "fd-system-replaced-verifyNew-1795260657929288400.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "corrupt",
+      "phase": "seed",
+      "seconds": 1.6515393999870867,
+      "success": true,
+      "proof": [
+        "corrupt/seed pid=29946 uid=1410067\r"
+      ],
+      "source": "fd-omk-corrupt-seed-1795260659558721300.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "corrupt",
+      "phase": "repair",
+      "seconds": 1.5460421000607312,
+      "success": true,
+      "proof": [
+        "corrupt/repair pid=30068 uid=1410067\r"
+      ],
+      "source": "fd-omk-corrupt-repair-1795260661327934400.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "corrupt",
+      "phase": "cold",
+      "seconds": 1.1634398000314832,
+      "success": true,
+      "proof": [
+        "corrupt/cold pid=30177 uid=1410067\r"
+      ],
+      "source": "fd-omk-corrupt-cold-1795260662928719000.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "corrupt",
+      "phase": "verifyNew",
+      "seconds": 1.4374512999784201,
+      "success": true,
+      "proof": [
+        "corrupt/verifyNew pid=30229 uid=1410067\r"
+      ],
+      "source": "fd-omk-corrupt-verifyNew-1795260664164218700.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "missing",
+      "phase": "seed",
+      "seconds": 1.3892343000043184,
+      "success": true,
+      "proof": [
+        "missing/seed pid=30350 uid=1410067\r"
+      ],
+      "source": "fd-omk-missing-seed-1795260665654894300.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "missing",
+      "phase": "repair",
+      "seconds": 1.5658003999851644,
+      "success": true,
+      "proof": [
+        "missing/repair pid=30460 uid=1410067\r"
+      ],
+      "source": "fd-omk-missing-repair-1795260667096518800.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "missing",
+      "phase": "cold",
+      "seconds": 1.222158799879253,
+      "success": true,
+      "proof": [
+        "missing/cold pid=30570 uid=1410067\r"
+      ],
+      "source": "fd-omk-missing-cold-1795260668725088400.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "missing",
+      "phase": "verifyNew",
+      "seconds": 1.4456252998206764,
+      "success": true,
+      "proof": [
+        "missing/verifyNew pid=30625 uid=1410067\r"
+      ],
+      "source": "fd-omk-missing-verifyNew-1795260670010711400.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "replaced",
+      "phase": "seed",
+      "seconds": 1.4349926998838782,
+      "success": true,
+      "proof": [
+        "replaced/seed pid=30743 uid=1410067\r"
+      ],
+      "source": "fd-omk-replaced-seed-1795260671509141700.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "replaced",
+      "phase": "repair",
+      "seconds": 1.6378046998288482,
+      "success": true,
+      "proof": [
+        "replaced/repair pid=30853 uid=1410067\r"
+      ],
+      "source": "fd-omk-replaced-repair-1795260672995309600.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "replaced",
+      "phase": "cold",
+      "seconds": 1.2495053999591619,
+      "success": true,
+      "proof": [
+        "replaced/cold pid=30908 uid=1410067\r"
+      ],
+      "source": "fd-omk-replaced-cold-1795260674686658900.json"
+    },
+    {
+      "edition": "fd",
+      "route": "omk",
+      "failure": "replaced",
+      "phase": "verifyNew",
+      "seconds": 1.4842370999976993,
+      "success": true,
+      "proof": [
+        "replaced/verifyNew pid=31026 uid=1410067\r"
+      ],
+      "source": "fd-omk-replaced-verifyNew-1795260675995450900.json"
+    }
+  ],
+  "releaseUpgrade": {
+    "sourceVersion": "1.0.329",
+    "targetVersion": "1.0.331",
+    "samePackageAndSignature": true,
+    "minified": true,
+    "originalPassword": true,
+    "oldNewRecords": true,
+    "encryptedOldBackupRestore": true,
+    "realRepairUI": true,
+    "coldPersistentRead": true,
+    "postRepairData": {
+      "pid": "52978",
+      "oldRecord": true,
+      "newRecord": true,
+      "password": true,
+      "edition": "fd"
+    }
+  },
+  "cleanup": {
+    "originalUsersRetained": [
+      0,
+      10,
+      11,
+      12
+    ],
+    "ownedUsersRemoved": [
+      13,
+      14,
+      15,
+      16
+    ],
+    "omkScopeAndConfigRestored": true,
+    "adbdUid": 2000,
+    "taskInstanceStopped": true
+  },
+  "limits": [
+    "synthetic MuMuAPI35/x86_64",
+    "no fingerprint sensor/physicalTEE/OEM/Android16",
+    "JVM3 baseline failures retained",
+    "main search1 package-isolation guard failure retained"
+  ]
+}

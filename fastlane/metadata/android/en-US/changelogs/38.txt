@@ -1,0 +1,1 @@
+Unreleased 1.0.331: repair biometric unlock with the original master password and explicit confirmation. Verified independent binding preserves vault data, password protection and recovery material. Truthful failure guidance, persistent enablement checks, cancellation/lock guards and bounded background reads. Searchable setting in all supported languages.
