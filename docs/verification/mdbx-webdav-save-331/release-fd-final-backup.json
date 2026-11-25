@@ -1,0 +1,22 @@
+{
+  "edition": "fd",
+  "originalPassword": true,
+  "wrongPasswordRejected": true,
+  "oldRecordReadable": true,
+  "newRecordWrittenAndColdReadable": true,
+  "coldPids": [
+    "57084",
+    "57879",
+    "59520"
+  ],
+  "passed": true,
+  "backupTimeoutMinutes": 5,
+  "immediateRestoredAndLoginVerified": true,
+  "backupRestoration": {
+    "items": 1,
+    "encryptedOldBackup": true,
+    "source": "Documents/issue189-fd-old331.enc.zip",
+    "restoredRecordRead": true,
+    "newRecordRetained": true
+  }
+}

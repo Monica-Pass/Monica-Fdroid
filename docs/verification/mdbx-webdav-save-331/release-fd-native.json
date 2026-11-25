@@ -1,0 +1,12 @@
+{
+  "edition": "fd",
+  "passed": true,
+  "retainedOldNativeRead": true,
+  "nativeEditSaved": true,
+  "coldNativeRead": true,
+  "coldPids": [
+    "60465",
+    "61053"
+  ],
+  "viaRealReleaseUi": true
+}

@@ -32,5 +32,6 @@
         <receiver
             android:name="androidx.profileinstaller.ProfileInstallReceiver"
             tools:node="remove" />
+        <activity android:name="takagi.ru.monica.utils.BiometricPromptTestActivity" android:exported="false" />
     </application>
 </manifest>

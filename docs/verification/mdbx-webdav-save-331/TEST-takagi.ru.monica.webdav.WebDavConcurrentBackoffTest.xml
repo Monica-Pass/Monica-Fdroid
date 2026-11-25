@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.webdav.WebDavConcurrentBackoffTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-25T16:02:03.185Z" hostname="JOYIN" time="0.178">
+  <properties/>
+  <testcase name="inFlightSuccessCannotClearAnotherClientsRetryAfter" classname="takagi.ru.monica.webdav.WebDavConcurrentBackoffTest" time="0.084"/>
+  <testcase name="retryAfterCanOutlastTheTemporaryDisable" classname="takagi.ru.monica.webdav.WebDavConcurrentBackoffTest" time="0.045"/>
+  <testcase name="successPreservesTemporaryDisableAndResetsAfterExpiry" classname="takagi.ru.monica.webdav.WebDavConcurrentBackoffTest" time="0.043"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,85 @@
+{
+  "device": {
+    "completedMethodPasses": 42,
+    "completedMethodFailures": 0,
+    "edition": "fd",
+    "selector": "takagi.ru.monica.credentialexchange.LocalBitwardenMoveIssue189Test,takagi.ru.monica.credentialexchange.LocalBitwardenMoveIssue189UiTest,takagi.ru.monica.bitwarden.BitwardenPasswordHistoryStoreInstrumentedTest,takagi.ru.monica.credentialexchange.BitwardenCredentialCreateAtomicityTest,takagi.ru.monica.credentialexchange.BitwardenCredentialCreateUiTest,takagi.ru.monica.keepass.KeePassSavePipelineInstrumentedTest",
+    "tests": 42,
+    "failures": 0,
+    "success": true,
+    "seconds": 37.32972240000527
+  },
+  "unit": [
+    {
+      "name": "takagi.ru.monica.bitwarden.service.BitwardenPasswordHistoryTest",
+      "tests": 18
+    },
+    {
+      "name": "takagi.ru.monica.viewmodel.MultiPasswordSaveRegressionGuardTest",
+      "tests": 1
+    }
+  ],
+  "upgrade": {
+    "edition": "fd",
+    "originalPassword": true,
+    "wrongPasswordRejected": true,
+    "oldRecordReadable": true,
+    "newRecordWrittenAndColdReadable": true,
+    "coldPids": [
+      "14992",
+      "15815",
+      "17477"
+    ],
+    "passed": true,
+    "backupTimeoutMinutes": 5,
+    "immediateRestoredAndLoginVerified": true,
+    "backupRestoration": {
+      "items": 1,
+      "encryptedOldBackup": true,
+      "source": "Documents/issue189-fd-old331.enc.zip",
+      "restoredRecordRead": true,
+      "newRecordRetained": true
+    }
+  },
+  "finalTestBuild": {
+    "edition": "fd",
+    "mode": "verify",
+    "package": "takagi.ru.monica.issue189fd33120261125.debug",
+    "exit": 0,
+    "seconds": 66.64741759999742,
+    "sourceUnchanged": true,
+    "apks": [
+      {
+        "sha256": "27ea8acf938e4542e48c0f978fbfdb5b7ae01954fccd807419ef43ab5a5f0576",
+        "artifact": "app.apk"
+      },
+      {
+        "sha256": "f5ca0b5c57b94cd8dfc8f41324fefabc9a6d15d3f40c7b9a5aa8272219d9112c",
+        "artifact": "test.apk"
+      }
+    ]
+  },
+  "fixedReleaseBuild": {
+    "edition": "fd",
+    "mode": "release",
+    "package": "takagi.ru.monica.issue189fd33120261125",
+    "exit": 0,
+    "seconds": 396.3295115000001,
+    "sourceUnchanged": false,
+    "apks": [
+      {
+        "sha256": "35a2e394df039593742cb94acb8c4e01284e4dcc75a0de86d0abca68ed8a397a",
+        "artifact": "app.apk"
+      }
+    ]
+  },
+  "cleanup": {
+    "success": true,
+    "restoredUser": 0,
+    "removedOwnUser": 10,
+    "stoppedTaskStartedMuMu": 2,
+    "stoppedOwnAdbPort": 15071,
+    "originalInstancesUnchanged": true,
+    "vmConfigurationAndDataDisksRetained": true
+  }
+}

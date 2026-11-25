@@ -1,0 +1,10 @@
+{
+  "completedMethodPasses": 34,
+  "completedMethodFailures": 0,
+  "edition": "fd",
+  "selector": "takagi.ru.monica.autofill_ng.MdbxWebDavSaveUiTest,takagi.ru.monica.repository.MdbxPasswordEditorInstrumentedTest,takagi.ru.monica.autofill_ng.MdbxAutofillSourceInstrumentedTest,takagi.ru.monica.autofill_ng.MdbxAutofillLocalArchiveInstrumentedTest,takagi.ru.monica.autofill_ng.MdbxFrameworkAutofillInstrumentedTest,takagi.ru.monica.repository.Mdbx2SyncDependencyInstrumentedTest,takagi.ru.monica.ui.MdbxOrdinaryEditorUiTest",
+  "tests": 34,
+  "failures": 0,
+  "success": true,
+  "seconds": 48.98777210000844
+}

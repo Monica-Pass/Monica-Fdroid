@@ -432,13 +432,15 @@ class MainActivity : BaseMonicaActivity() {
             is takagi.ru.monica.security.SecureStartupResult.Ready -> startup.manager
             is takagi.ru.monica.security.SecureStartupResult.Blocked -> {
                 Log.w(TAG, "Secure storage startup blocked: ${startup.failure.reason}")
-                val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure, startup.attempts)
+                val diagnostic = takagi.ru.monica.security.SecureStorageStartup.diagnostic(startup.failure, startup.attempts, startup.recoveryMaterial)
                 // Availability was checked inside the bounded worker; never wait for its lock on the UI thread.
                 val canRecover = startup.recoveryAvailable
                 window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
                 setContent {
                     takagi.ru.monica.ui.theme.MonicaTheme {
                         takagi.ru.monica.ui.screens.SecureStorageRecoveryScreen(
+                            failureReason = startup.failure.reason,
+                            recoveryMaterial = startup.recoveryMaterial,
                             onRetry = { recreate() },
                             onCopyDiagnostic = {
                                 getSystemService(android.content.ClipboardManager::class.java)
@@ -1251,6 +1253,7 @@ fun MonicaContent(
         takagi.ru.monica.ui.LocalSharedTransitionScope provides null,
         takagi.ru.monica.ui.LocalReduceAnimations provides true,
         takagi.ru.monica.ui.components.LocalExpansionAnimationsEnabled provides !settings.reduceAnimations,
+        takagi.ru.monica.ui.LocalHapticFeedbackStrength provides settings.hapticFeedbackStrength,
         takagi.ru.monica.ui.LocalHapticFeedbackEnabled provides settings.hapticFeedbackEnabled
     ) {
         takagi.ru.monica.ui.screens.NearbyDeletionReviewHost()
@@ -3113,7 +3116,8 @@ fun MonicaContent(
                         navController.navigate(Screen.SecurityQuestionsSetup.route) {
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    onBackup = { navController.navigate(Screen.SyncBackup.route) { launchSingleTop = true } }
                 )
             }
         }
@@ -3771,6 +3775,8 @@ fun MonicaContent(
                 },
                 isPlusActivated = settings.isPlusActivated,
                 hapticFeedbackEnabled = settings.hapticFeedbackEnabled,
+                hapticFeedbackStrength = settings.hapticFeedbackStrength,
+                onHapticStrengthChange = settingsViewModel::updateHapticFeedbackStrength,
                 onHapticFeedbackChange = { enabled ->
                     settingsViewModel.updateHapticFeedbackEnabled(enabled)
                 },

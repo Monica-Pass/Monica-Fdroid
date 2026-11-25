@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">HTTP\'ya izin ver</string>
+    <string name="webdav_allow_insecure_http_description">Varsayılan olarak kapalıdır. Yalnızca HTTPS\'suz yerel NAS gibi güvenilir bir HTTP sunucusu için etkinleştirin. WebDAV, bu kapalıyken HTTP bağlantılarını engeller.</string>
+    <string name="fdroid_cloud_provider_unavailable">%1$s, F-Droid yapısında mevcut değildir. WebDAV\'yu kullanın.</string>
+</resources>

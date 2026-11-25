@@ -1,0 +1,289 @@
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=1
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stream=
+
+takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest:
+
+INSTRUMENTATION_STATUS: test=externalUpdatesAndDisabledOrMutedControlsRemainSilent
+
+INSTRUMENTATION_STATUS_CODE: 1
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=1
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stream=.
+
+INSTRUMENTATION_STATUS: test=externalUpdatesAndDisabledOrMutedControlsRemainSilent
+
+INSTRUMENTATION_STATUS_CODE: 0
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=2
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stream=
+
+INSTRUMENTATION_STATUS: test=accessibilityAndRtlRetainRangeDirectionAndTouchTarget
+
+INSTRUMENTATION_STATUS_CODE: 1
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=2
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Actual height is 38.285717.dp, expected at least 48.0.dp (tolerance: 0.5.dp)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertIsAtLeast-cWfXhoU(BoundsAssertions.kt:342)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertIsAtLeast-cWfXhoU$default(BoundsAssertions.kt:339)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertHeightIsAtLeast_3ABfNKs$lambda$0(BoundsAssertions.kt:98)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt$$ExternalSyntheticLambda2.invoke(D8$$SyntheticClass:0)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.withUnclippedBoundsInRoot(BoundsAssertions.kt:266)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertHeightIsAtLeast-3ABfNKs(BoundsAssertions.kt:98)
+
+	at takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest.accessibilityAndRtlRetainRangeDirectionAndTouchTarget(MonicaSliderInstrumentedTest.kt:106)
+
+
+
+INSTRUMENTATION_STATUS: stream=
+
+Error in accessibilityAndRtlRetainRangeDirectionAndTouchTarget(takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest):
+
+java.lang.AssertionError: Actual height is 38.285717.dp, expected at least 48.0.dp (tolerance: 0.5.dp)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertIsAtLeast-cWfXhoU(BoundsAssertions.kt:342)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertIsAtLeast-cWfXhoU$default(BoundsAssertions.kt:339)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertHeightIsAtLeast_3ABfNKs$lambda$0(BoundsAssertions.kt:98)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt$$ExternalSyntheticLambda2.invoke(D8$$SyntheticClass:0)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.withUnclippedBoundsInRoot(BoundsAssertions.kt:266)
+
+	at androidx.compose.ui.test.BoundsAssertionsKt.assertHeightIsAtLeast-3ABfNKs(BoundsAssertions.kt:98)
+
+	at takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest.accessibilityAndRtlRetainRangeDirectionAndTouchTarget(MonicaSliderInstrumentedTest.kt:106)
+
+
+
+INSTRUMENTATION_STATUS: test=accessibilityAndRtlRetainRangeDirectionAndTouchTarget
+
+INSTRUMENTATION_STATUS_CODE: -2
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=3
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stream=
+
+INSTRUMENTATION_STATUS: test=dragTicksInBothDirectionsAndCommitsOnlyOnRelease
+
+INSTRUMENTATION_STATUS_CODE: 1
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=3
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stream=.
+
+INSTRUMENTATION_STATUS: test=dragTicksInBothDirectionsAndCommitsOnlyOnRelease
+
+INSTRUMENTATION_STATUS_CODE: 0
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=4
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stream=
+
+INSTRUMENTATION_STATUS: test=dpiSheetRetainsDraftUntilReleaseAndResetStillWorks
+
+INSTRUMENTATION_STATUS_CODE: 1
+
+INSTRUMENTATION_STATUS: class=takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest
+
+INSTRUMENTATION_STATUS: current=4
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: numtests=4
+
+INSTRUMENTATION_STATUS: stack=java.lang.IllegalStateException: Expected AndroidViewHolder to be attached when observing reads.
+
+	at androidx.compose.ui.internal.InlineClassHelperKt.throwIllegalStateException(InlineClassHelper.kt:28)
+
+	at androidx.compose.ui.viewinterop.AndroidViewHolder.getSnapshotObserver(AndroidViewHolder.android.kt:786)
+
+	at androidx.compose.ui.viewinterop.AndroidViewHolder.onDetachedFromWindow(AndroidViewHolder.android.kt:310)
+
+	at android.view.View.dispatchDetachedFromWindow(View.java:23133)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3991)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewRootImpl.dispatchDetachedFromWindow(ViewRootImpl.java:6502)
+
+	at android.view.ViewRootImpl.doDie(ViewRootImpl.java:10042)
+
+	at android.view.ViewRootImpl.die(ViewRootImpl.java:10014)
+
+	at android.view.WindowManagerGlobal.removeViewLocked(WindowManagerGlobal.java:555)
+
+	at android.view.WindowManagerGlobal.removeView(WindowManagerGlobal.java:496)
+
+	at android.view.WindowManagerImpl.removeViewImmediate(WindowManagerImpl.java:216)
+
+	at android.app.ActivityThread.handleDestroyActivity(ActivityThread.java:6204)
+
+	at android.app.servertransaction.DestroyActivityItem.execute(DestroyActivityItem.java:52)
+
+	at android.app.servertransaction.ActivityTransactionItem.execute(ActivityTransactionItem.java:63)
+
+	at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:169)
+
+	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+
+	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+
+	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2784)
+
+	at android.os.Handler.dispatchMessage(Handler.java:109)
+
+	at android.os.Looper.loopOnce(Looper.java:232)
+
+	at android.os.Looper.loop(Looper.java:317)
+
+	at android.app.ActivityThread.main(ActivityThread.java:8971)
+
+	at java.lang.reflect.Method.invoke(Native Method)
+
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:597)
+
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:919)
+
+
+
+INSTRUMENTATION_STATUS: stream=
+
+Process crashed while executing dpiSheetRetainsDraftUntilReleaseAndResetStillWorks(takagi.ru.monica.ui.components.MonicaSliderInstrumentedTest):
+
+java.lang.IllegalStateException: Expected AndroidViewHolder to be attached when observing reads.
+
+	at androidx.compose.ui.internal.InlineClassHelperKt.throwIllegalStateException(InlineClassHelper.kt:28)
+
+	at androidx.compose.ui.viewinterop.AndroidViewHolder.getSnapshotObserver(AndroidViewHolder.android.kt:786)
+
+	at androidx.compose.ui.viewinterop.AndroidViewHolder.onDetachedFromWindow(AndroidViewHolder.android.kt:310)
+
+	at android.view.View.dispatchDetachedFromWindow(View.java:23133)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3991)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewGroup.dispatchDetachedFromWindow(ViewGroup.java:3983)
+
+	at android.view.ViewRootImpl.dispatchDetachedFromWindow(ViewRootImpl.java:6502)
+
+	at android.view.ViewRootImpl.doDie(ViewRootImpl.java:10042)
+
+	at android.view.ViewRootImpl.die(ViewRootImpl.java:10014)
+
+	at android.view.WindowManagerGlobal.removeViewLocked(WindowManagerGlobal.java:555)
+
+	at android.view.WindowManagerGlobal.removeView(WindowManagerGlobal.java:496)
+
+	at android.view.WindowManagerImpl.removeViewImmediate(WindowManagerImpl.java:216)
+
+	at android.app.ActivityThread.handleDestroyActivity(ActivityThread.java:6204)
+
+	at android.app.servertransaction.DestroyActivityItem.execute(DestroyActivityItem.java:52)
+
+	at android.app.servertransaction.ActivityTransactionItem.execute(ActivityTransactionItem.java:63)
+
+	at android.app.servertransaction.TransactionExecutor.executeLifecycleItem(TransactionExecutor.java:169)
+
+	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:101)
+
+	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+
+	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2784)
+
+	at android.os.Handler.dispatchMessage(Handler.java:109)
+
+	at android.os.Looper.loopOnce(Looper.java:232)
+
+	at android.os.Looper.loop(Looper.java:317)
+
+	at android.app.ActivityThread.main(ActivityThread.java:8971)
+
+	at java.lang.reflect.Method.invoke(Native Method)
+
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:597)
+
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:919)
+
+
+
+INSTRUMENTATION_STATUS: test=dpiSheetRetainsDraftUntilReleaseAndResetStillWorks
+
+INSTRUMENTATION_STATUS_CODE: -2
+
+INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+
+INSTRUMENTATION_CODE: 0
