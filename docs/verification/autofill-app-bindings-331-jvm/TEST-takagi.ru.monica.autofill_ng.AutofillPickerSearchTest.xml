@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="takagi.ru.monica.autofill_ng.AutofillPickerSearchTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-24T20:32:41.397Z" hostname="JOYIN" time="0.099">
+  <properties/>
+  <testcase name="labelsCoverEveryBindingAndAndroidUrisWithOneLookupPerPackage" classname="takagi.ru.monica.autofill_ng.AutofillPickerSearchTest" time="0.094"/>
+  <testcase name="websitesDoNotResolveHostnamesAsInstalledApps" classname="takagi.ru.monica.autofill_ng.AutofillPickerSearchTest" time="0.002"/>
+  <testcase name="unavailableAppsKeepStoredNamesAndPackagesSearchable" classname="takagi.ru.monica.autofill_ng.AutofillPickerSearchTest" time="0.001"/>
+  <testcase name="queryWhitespaceHasSameMeaningForStoredFieldsAndResolvedLabels" classname="takagi.ru.monica.autofill_ng.AutofillPickerSearchTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
