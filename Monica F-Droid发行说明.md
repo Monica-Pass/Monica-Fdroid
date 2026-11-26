@@ -1,6 +1,6 @@
 # Monica for Android (F-Droid) 1.0.331 · 千石抚子（SengokuNadeko）
 
-未发布 / Unreleased
+发布日期 / Released: 2026-11-26
 
 ## 中文
 
@@ -40,6 +40,8 @@
 
 - 「主密码与锁定」采用 M3E 连接卡片组；重做 Monica Plus 概览页，以紧凑分组说明免费、开源和自愿打赏，适配大字号与深浅主题。
 
+F-Droid 版的构建、签名和仓库上架由 F-Droid 完成，实际可更新的时间以 F-Droid 仓库为准。
+
 ## English
 
 - Storage recovery now offers an explicitly confirmed, original-master-password fallback that restores the original MDK and encrypted configuration from valid recovery material even without Keystore. Original files and aliases are retained; normal users do not switch backends automatically. Biometrics and full data reset remain disabled in this mode. Fixed legacy migration omissions for whitespace-wrapped ciphertext and stale attachment configuration handles after recovery. Permanently lost keys without independent wrappers remain unrecoverable.
@@ -77,3 +79,5 @@
 - Added Settings → Master password and locking → Repair biometric unlock. Confirm with the original master password to create and verify a new binding while retaining the vault and previous recovery material. Repair does not enable biometrics automatically. Replaced the inaccurate promise that one password unlock repairs biometrics. Cancellation, backgrounding, locking or timeout revoke recovery/repair results; bounded background key reads after biometric authentication reduce stalls from slow security providers. Content protected only by a permanently lost key still needs independent recovery material and may be unrecoverable.
 
 - Master Password & Locking now uses M3E connected cards. The redesigned Monica Plus overview uses compact groups to explain free use, open source and optional donations, with large-text and light/dark support.
+
+F-Droid handles its own builds, signing and repository publication. Update availability depends on the F-Droid repository.
