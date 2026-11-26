@@ -1,0 +1,59 @@
+VibratorManagerService:
+  VibrationSettings:
+    vibrateOn = true
+    vibrateInputDevices = false
+    batterySaverMode = false
+    ringerMode = normal
+    onWirelessCharger = false
+    processStateCache size = 22
+    VibrationIntensities:
+      UNKNOWN = MEDIUM, default: MEDIUM
+      ALARM = MEDIUM, default: MEDIUM
+      TOUCH = OFF, default: MEDIUM
+      MEDIA = MEDIUM, default: MEDIUM
+      RINGTONE = MEDIUM, default: MEDIUM
+      PHYSICAL_EMULATION = MEDIUM, default: MEDIUM
+      NOTIFICATION = MEDIUM, default: MEDIUM
+      HARDWARE_FEEDBACK = MEDIUM, default: MEDIUM
+      COMMUNICATION_REQUEST = MEDIUM, default: MEDIUM
+      ACCESSIBILITY = MEDIUM, default: MEDIUM
+      IME = MEDIUM, default: MEDIUM
+    VibrationConfig:
+      ignoreVibrationsOnWirelessCharger = false
+      defaultVibrationAmplitude = 255
+      hapticChannelMaxAmplitude = 0.0
+      rampStepDurationMs = 5
+      rampDownDurationMs = 0
+      requestVibrationParamsForUsages = [ALARM, RINGTONE, NOTIFICATION, COMMUNICATION_REQUEST]
+      requestVibrationParamsTimeoutMs = 50
+
+  VibrationScaler:
+    ScaleLevels:
+      VERY_LOW = 0.6
+      LOW = 0.8
+      NONE = 1.0
+      HIGH = 1.2
+      VERY_HIGH = 1.4
+    AdaptiveHapticsScales:
+
+
+preview-light
+11-26 08:10:51.944 |   effect |             finished | duration:    22ms | start: 08:10:51.948 | end: 08:10:51.965 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+switch-light
+11-26 08:10:52.089 |   effect |             finished | duration:    11ms | start: 08:10:52.089 | end: 08:10:52.100 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+slider-light
+11-26 08:10:52.252 |   effect |             finished | duration:    11ms | start: 08:10:52.253 | end: 08:10:52.264 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+select-strong
+11-26 08:10:52.369 |   effect |             finished | duration:    31ms | start: 08:10:52.370 | end: 08:10:52.400 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=0): ViewRootImpl#performHapticFeedback | played: Prebaked=HEAVY_CLICK(MEDIUM, with fallback) | original: null
+preview-strong
+11-26 08:10:52.523 |   effect |             finished | duration:    31ms | start: 08:10:52.524 | end: 08:10:52.554 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=0): ViewRootImpl#performHapticFeedback | played: Prebaked=HEAVY_CLICK(MEDIUM, with fallback) | original: null
+slider-strong
+11-26 08:10:52.703 |   effect |             finished | duration:    31ms | start: 08:10:52.704 | end: 08:10:52.734 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=0): ViewRootImpl#performHapticFeedback | played: Prebaked=HEAVY_CLICK(MEDIUM, with fallback) | original: null
+disable
+
+disabled-switch
+
+disabled-slider
+
+reenable-light
+11-26 08:10:53.586 |   effect |             finished | duration:    11ms | start: 08:10:53.587 | end: 08:10:53.597 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.hapticstrengthfd33120261126.localedebug (uid=1510110, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null

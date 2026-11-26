@@ -1,0 +1,40 @@
+System TOUCH = OFF; unmodified host View; real service output
+SYMBOL before=12.0 bounds=Rect.fromLTRB(49.0, 847.0, 1871.0, 931.0)
+SYMBOL right=110.0 bounds=Rect.fromLTRB(49.0, 847.0, 1871.0, 931.0)
+SYMBOL-drag-right
+11-26 08:35:38.328 |   effect |             finished | duration:    11ms | start: 08:35:38.329 | end: 08:35:38.339 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+SYMBOL-drag-left
+11-26 08:35:38.558 |   effect |             finished | duration:    11ms | start: 08:35:38.559 | end: 08:35:38.569 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+SYMBOL-release
+
+SYMBOL-muted
+
+PASSWORD before=12.0 bounds=Rect.fromLTRB(49.0, 847.0, 1871.0, 931.0)
+PASSWORD right=110.0 bounds=Rect.fromLTRB(49.0, 847.0, 1871.0, 931.0)
+PASSWORD-drag-right
+11-26 08:35:40.523 |   effect |             finished | duration:    11ms | start: 08:35:40.524 | end: 08:35:40.534 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+PASSWORD-drag-left
+11-26 08:35:40.733 |   effect |             finished | duration:    11ms | start: 08:35:40.734 | end: 08:35:40.744 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+PASSWORD-release
+
+PASSWORD-muted
+
+PASSPHRASE before=5.0 bounds=Rect.fromLTRB(49.0, 828.0, 1871.0, 912.0)
+PASSPHRASE right=17.0 bounds=Rect.fromLTRB(49.0, 828.0, 1871.0, 912.0)
+PASSPHRASE-drag-right
+11-26 08:35:42.655 |   effect |             finished | duration:    12ms | start: 08:35:42.656 | end: 08:35:42.667 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+PASSPHRASE-drag-left
+11-26 08:35:42.890 |   effect |             finished | duration:    11ms | start: 08:35:42.890 | end: 08:35:42.901 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+PASSPHRASE-release
+
+PASSPHRASE-muted
+
+PIN before=6.0 bounds=Rect.fromLTRB(49.0, 847.0, 1871.0, 931.0)
+PIN right=8.0 bounds=Rect.fromLTRB(49.0, 847.0, 1871.0, 931.0)
+PIN-drag-right
+11-26 08:35:44.772 |   effect |             finished | duration:    12ms | start: 08:35:44.772 | end: 08:35:44.783 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+PIN-drag-left
+11-26 08:35:44.968 |   effect |             finished | duration:    12ms | start: 08:35:44.968 | end: 08:35:44.979 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+PIN-release
+
+PIN-muted

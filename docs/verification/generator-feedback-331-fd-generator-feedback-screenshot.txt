@@ -1,0 +1,8 @@
+System TOUCH = OFF; unmodified host View; real service output
+screenshot-card-1
+11-26 08:35:35.537 |   effect |             finished | duration:    11ms | start: 08:35:35.538 | end: 08:35:35.549 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=6): ViewRootImpl#performHapticFeedback | played: Prebaked=TICK(MEDIUM, with fallback) | original: null
+screenshot-card-2
+11-26 08:35:35.896 |   effect |             finished | duration:    32ms | start: 08:35:35.896 | end: 08:35:35.927 | scale:     NONE (adaptive=1.00) | flags:   10 | usage: TOUCH | takagi.ru.monica.generatorhapticstrengthfd33120261126.localedebug (uid=1710114, deviceId=0) | reason: performHapticFeedback(constant=0): ViewRootImpl#performHapticFeedback | played: Prebaked=HEAVY_CLICK(MEDIUM, with fallback) | original: null
+screenshot-card-muted
+
+external-setting-change
