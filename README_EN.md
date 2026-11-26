@@ -54,6 +54,7 @@ Version 1.0.331 adds an explicitly confirmed recovery path using the original ma
 - Dual ecosystem integration: Android includes Bitwarden API/sync capability and KeePass (`.kdbx`) read/write support.
 - Optional WebDAV backup and remote vault sync, plus paired local-network transfers.
 - Built-in TOTP management in the same app.
+- Multiple interface languages, including العربية (Arabic) with right-to-left navigation and correctly ordered passwords, OTP codes and Latin keyboard keys.
 
 ### MDBX local database format
 MDBX is Monica's local-first encrypted vault format in progress. It is not just a password table; it is designed around nested folders, attachments, commit history, conflict detection, tombstone-based deletion, snapshot recovery, and Tiga security modes.
@@ -262,3 +263,5 @@ The filled slider track and rotating floral thumb are adapted from [T8RIN/ImageT
 Interaction strength also follows ImageToolbox’s 1/light (CONTEXT_CLICK) and 2/strong (LONG_PRESS) choices. Monica adds a test button and one touch-attributed fallback for rejected requests, while respecting the system feedback setting.
 
 Selection toolbars also take visual inspiration from ImageToolbox’s filled circular icon buttons; Monica implements its own theme contrast and narrow-screen layout.
+
+Interface scaling and setting-card size transitions also reference the project’s continuous layout motion. They are implemented independently using Monica’s existing components; no additional upstream source was copied for this behavior.

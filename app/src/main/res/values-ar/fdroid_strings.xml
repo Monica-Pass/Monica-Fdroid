@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_allow_insecure_http">السماح بـ HTTP</string>
+    <string name="webdav_allow_insecure_http_description">معطل بشكل افتراضي. قم بالتمكين فقط لخادم HTTP الموثوق به، مثل NAS محلي بدون HTTPS. يقوم WebDAV بحظر اتصالات HTTP أثناء إيقاف تشغيله.</string>
+    <string name="fdroid_cloud_provider_unavailable">%1$s غير متوفر في إصدار F-Droid. استخدم WebDAV.</string>
+</resources>
