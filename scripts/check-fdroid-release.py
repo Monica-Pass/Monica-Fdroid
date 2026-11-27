@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -76,7 +77,13 @@ def main():
     notes_path = ROOT / "Monica F-Droid发行说明.md"
     notes = notes_path.read_text(encoding="utf-8") if notes_path.is_file() else ""
     version_heading = f"# Monica for Android (F-Droid) {version}"
-    headings = (version_heading, f"{version_heading} · 千石抚子（SengokuNadeko）")
+    codename_path = ROOT / "app/src/main/res/values/strings_version_codename.xml"
+    codename = ""
+    if codename_path.is_file():
+        node = ET.parse(codename_path).find("string[@name='version_info_codename']")
+        if node is not None:
+            codename = (node.text or "").strip()
+    headings = (version_heading, f"{version_heading} · {codename}")
     if not any(heading in notes.splitlines() for heading in headings):
         fail("Update the root F-Droid release notes to match versionName.")
     if release_check and not notes.startswith(tuple(heading + "\n" for heading in headings)):

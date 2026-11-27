@@ -1,0 +1,1 @@
+Added encrypted folder backups via system storage and providers such as RSAF, with automatic backups and retention. Failures preserve existing backups. Fixed stale MDBX sync status after write failures. Codename: Hanekawa Tsubasa. Generator strength labels now follow the selected language, including Arabic.

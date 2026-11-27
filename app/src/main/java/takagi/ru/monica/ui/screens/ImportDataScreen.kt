@@ -101,6 +101,7 @@ internal fun fallbackImportFileDisplayName(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportDataScreen(
+    initialBackupUri: Uri? = null,
     destination: ImportDestination = ImportDestination.Local,
     onDestinationChange: (ImportDestination) -> Unit = {},
     importSummary: ImportResultSummary? = null,
@@ -153,6 +154,14 @@ fun ImportDataScreen(
     LaunchedEffect(isImporting) { if (isImporting) scrollState.animateScrollTo(0) }
     var showFormatChooser by remember { mutableStateOf(false) }
     var choosingCsvFormat by remember { mutableStateOf(false) }
+    LaunchedEffect(initialBackupUri) {
+        initialBackupUri?.let { uri ->
+            selectedFileUri = uri
+            selectedFileName = withContext(Dispatchers.IO) {
+                resolveImportFileDisplayName(context, uri, context.getString(R.string.import_data_file_selected))
+            }
+        }
+    }
     var importType by remember { mutableStateOf("monica_zip") } // 默认选择 ZIP 备份
     var csvImportType by remember { mutableStateOf("normal") } // CSV子类型
     var showBitwardenJsonDialog by remember { mutableStateOf(false) }

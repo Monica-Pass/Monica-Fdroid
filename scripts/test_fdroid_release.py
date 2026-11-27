@@ -24,6 +24,9 @@ class ReleaseCheckTest(unittest.TestCase):
         self.tag = "v" + self.version
         self.source = source
         (self.root / "app").mkdir()
+        codename = self.root / "app/src/main/res/values/strings_version_codename.xml"
+        codename.parent.mkdir(parents=True)
+        codename.write_text('<resources><string name="version_info_codename">Hanekawa Tsubasa（羽川翼）</string></resources>', encoding="utf-8")
         (self.root / check.GRADLE_PATH).write_text(source, encoding="utf-8")
         self.notes = self.root / "Monica F-Droid发行说明.md"
         self.heading = f"# Monica for Android (F-Droid) {self.version}\n"
@@ -68,7 +71,7 @@ class ReleaseCheckTest(unittest.TestCase):
 
     def test_fresh_proposed_tag_passes_with_codenamed_final_notes(self):
         self.tags = []
-        self.notes.write_text(self.heading.rstrip() + " · 千石抚子（SengokuNadeko）\n", encoding="utf-8")
+        self.notes.write_text(self.heading.rstrip() + " · Hanekawa Tsubasa（羽川翼）\n", encoding="utf-8")
         self.assertIn("Metadata checked", self.run_check(["--tag", self.tag]))
 
     def test_branch_still_rejects_mismatched_version_heading(self):
